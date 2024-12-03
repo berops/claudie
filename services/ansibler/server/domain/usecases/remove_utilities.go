@@ -5,7 +5,10 @@ import (
 	"os"
 	"path/filepath"
 
-	cutils "github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/fileutils"
+	"github.com/berops/claudie/internal/hash"
+	"github.com/berops/claudie/internal/loggerutils"
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/ansibler/server/utils"
 	"github.com/berops/claudie/services/ansibler/templates"
@@ -15,7 +18,7 @@ import (
 )
 
 func (u *Usecases) RemoveUtilities(req *pb.RemoveClaudieUtilitiesRequest) (*pb.RemoveClaudieUtilitiesResponse, error) {
-	logger := cutils.CreateLoggerWithProjectAndClusterName(req.ProjectName, req.Current.ClusterInfo.Name)
+	logger := loggerutils.WithProjectAndCluster(req.ProjectName, req.Current.ClusterInfo.Id())
 	logger.Info().Msgf("Removing Claudie installed utilities")
 
 	vpnInfo := &VPNInfo{
@@ -23,10 +26,10 @@ func (u *Usecases) RemoveUtilities(req *pb.RemoveClaudieUtilitiesRequest) (*pb.R
 		NodepoolsInfos: []*NodepoolsInfo{
 			{
 				Nodepools: utils.NodePools{
-					Dynamic: cutils.GetCommonDynamicNodePools(req.Current.ClusterInfo.NodePools),
-					Static:  cutils.GetCommonStaticNodePools(req.Current.ClusterInfo.NodePools),
+					Dynamic: nodepools.Dynamic(req.Current.ClusterInfo.NodePools),
+					Static:  nodepools.Static(req.Current.ClusterInfo.NodePools),
 				},
-				ClusterID:      cutils.GetClusterID(req.Current.ClusterInfo),
+				ClusterID:      req.Current.ClusterInfo.Id(),
 				ClusterNetwork: req.Current.Network,
 			},
 		},
@@ -35,15 +38,15 @@ func (u *Usecases) RemoveUtilities(req *pb.RemoveClaudieUtilitiesRequest) (*pb.R
 	for _, lbCluster := range req.CurrentLbs {
 		vpnInfo.NodepoolsInfos = append(vpnInfo.NodepoolsInfos, &NodepoolsInfo{
 			Nodepools: utils.NodePools{
-				Dynamic: cutils.GetCommonDynamicNodePools(lbCluster.ClusterInfo.NodePools),
-				Static:  cutils.GetCommonStaticNodePools(lbCluster.ClusterInfo.NodePools),
+				Dynamic: nodepools.Dynamic(lbCluster.ClusterInfo.NodePools),
+				Static:  nodepools.Static(lbCluster.ClusterInfo.NodePools),
 			},
-			ClusterID:      cutils.GetClusterID(lbCluster.ClusterInfo),
+			ClusterID:      lbCluster.ClusterInfo.Id(),
 			ClusterNetwork: req.Current.Network,
 		})
 	}
 
-	if err := removeUtilities(cutils.GetClusterID(req.Current.ClusterInfo), vpnInfo, u.SpawnProcessLimit); err != nil {
+	if err := removeUtilities(req.Current.ClusterInfo.Id(), vpnInfo, u.SpawnProcessLimit); err != nil {
 		return nil, fmt.Errorf("failed to remove wiregaurd from nodes: %w", err)
 	}
 
@@ -51,8 +54,8 @@ func (u *Usecases) RemoveUtilities(req *pb.RemoveClaudieUtilitiesRequest) (*pb.R
 }
 
 func removeUtilities(clusterID string, vpnInfo *VPNInfo, processLimit *semaphore.Weighted) error {
-	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, cutils.CreateHash(cutils.HashLength)))
-	if err := cutils.CreateDirectory(clusterDirectory); err != nil {
+	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, hash.Create(hash.Length)))
+	if err := fileutils.CreateDirectory(clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", clusterDirectory, err)
 	}
 
@@ -64,11 +67,11 @@ func removeUtilities(clusterID string, vpnInfo *VPNInfo, processLimit *semaphore
 	}
 
 	for _, nodepoolInfo := range vpnInfo.NodepoolsInfos {
-		if err := cutils.CreateKeysForDynamicNodePools(nodepoolInfo.Nodepools.Dynamic, clusterDirectory); err != nil {
+		if err := nodepools.DynamicGenerateKeys(nodepoolInfo.Nodepools.Dynamic, clusterDirectory); err != nil {
 			return fmt.Errorf("failed to create key file(s) for dynamic nodepools : %w", err)
 		}
 
-		if err := cutils.CreateKeysForStaticNodepools(nodepoolInfo.Nodepools.Static, clusterDirectory); err != nil {
+		if err := nodepools.StaticGenerateKeys(nodepoolInfo.Nodepools.Static, clusterDirectory); err != nil {
 			return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 		}
 	}

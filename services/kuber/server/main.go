@@ -12,8 +12,10 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/internal/utils/metrics"
+	"github.com/berops/claudie/internal/envs"
+	"github.com/berops/claudie/internal/grpcutils"
+	"github.com/berops/claudie/internal/loggerutils"
+	"github.com/berops/claudie/internal/metrics"
 	"github.com/berops/claudie/services/kuber/server/adapters/inbound/grpc"
 	"github.com/berops/claudie/services/kuber/server/domain/usecases"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -27,8 +29,7 @@ const (
 )
 
 func main() {
-	// Initialize logger
-	utils.InitLog("kuber")
+	loggerutils.Init("kuber")
 
 	usecases := &usecases.Usecases{}
 	grpcAdapter := grpc.GrpcAdapter{}
@@ -36,11 +37,11 @@ func main() {
 		usecases,
 		grpc2.ChainUnaryInterceptor(
 			metrics.MetricsMiddleware,
-			utils.PeerInfoInterceptor(&log.Logger),
+			grpcutils.PeerInfoInterceptor(&log.Logger),
 		),
 	)
 
-	metricsServer := &http.Server{Addr: fmt.Sprintf(":%s", utils.GetEnvDefault("PROMETHEUS_PORT", defaultPrometheusPort))}
+	metricsServer := &http.Server{Addr: fmt.Sprintf(":%s", envs.GetOrDefault("PROMETHEUS_PORT", defaultPrometheusPort))}
 	metrics.MustRegisterCounters()
 
 	errGroup, errGroupContext := errgroup.WithContext(context.Background())

@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/health/grpc_health_v1"
 
 	"github.com/berops/claudie/internal/envs"
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/grpcutils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/manager/internal/store"
 	"github.com/rs/zerolog/log"
@@ -32,7 +32,7 @@ type GRPC struct {
 func NewGRPC(ctx context.Context, opts ...grpc.ServerOption) (*GRPC, error) {
 	g := new(GRPC)
 
-	port := utils.GetEnvDefault("MANAGER_PORT", fmt.Sprint(defaultManagerPort))
+	port := envs.GetOrDefault("MANAGER_PORT", fmt.Sprint(defaultManagerPort))
 	listeningAddress := net.JoinHostPort("0.0.0.0", port)
 
 	tcpListener, err := net.Listen("tcp", listeningAddress)
@@ -43,7 +43,7 @@ func NewGRPC(ctx context.Context, opts ...grpc.ServerOption) (*GRPC, error) {
 
 	log.Info().Msgf("manager microservice bound to %s", listeningAddress)
 
-	g.server = utils.NewGRPCServer(opts...)
+	g.server = grpcutils.NewGRPCServer(opts...)
 	pb.RegisterManagerServiceServer(g.server, g)
 
 	// Add health-check service to gRPC

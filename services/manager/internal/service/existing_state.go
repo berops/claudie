@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/manifest"
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/rs/zerolog/log"
 )
@@ -48,12 +49,12 @@ func deduplicateNodepoolNames(from *manifest.Manifest, state *spec.ClusterState)
 		}
 
 		for _, np := range references {
-			hash := utils.CreateHash(utils.HashLength)
-			for _, ok := used[hash]; ok; {
-				hash = utils.CreateHash(utils.HashLength)
+			h := hash.Create(hash.Length)
+			for _, ok := used[h]; ok; {
+				h = hash.Create(hash.Length)
 			}
-			used[hash] = struct{}{}
-			np.Name += fmt.Sprintf("-%s", hash)
+			used[h] = struct{}{}
+			np.Name += fmt.Sprintf("-%s", h)
 		}
 	}
 }
@@ -77,7 +78,7 @@ func copyLbNodePoolNamesFromCurrentState(used map[string]struct{}, nodepool stri
 			}
 
 			for _, np := range current.GetClusterInfo().GetNodePools() {
-				_, hash := utils.MatchNameAndHashWithTemplate(nodepool, np.Name)
+				_, hash := nodepools.MatchNameAndHashWithTemplate(nodepool, np.Name)
 				if hash == "" {
 					continue
 				}
@@ -112,7 +113,7 @@ func copyK8sNodePoolsNamesFromCurrentState(used map[string]struct{}, nodepool st
 	}
 
 	for _, np := range current.GetClusterInfo().GetNodePools() {
-		_, hash := utils.MatchNameAndHashWithTemplate(nodepool, np.Name)
+		_, hash := nodepools.MatchNameAndHashWithTemplate(nodepool, np.Name)
 		if hash == "" {
 			continue
 		}
@@ -122,13 +123,13 @@ func copyK8sNodePoolsNamesFromCurrentState(used map[string]struct{}, nodepool st
 		if np.IsControl && control != nil {
 			// if there are multiple nodepools in the current state (for example on a failed rolling update)
 			// transfer only one of them.
-			if _, h := utils.MatchNameAndHashWithTemplate(nodepool, control.Name); h == "" {
+			if _, h := nodepools.MatchNameAndHashWithTemplate(nodepool, control.Name); h == "" {
 				control.Name += fmt.Sprintf("-%s", hash)
 			}
 		} else if !np.IsControl && compute != nil {
 			// if there are multiple nodepools in the current state (for example on a failed rolling update)
 			// transfer only one of them.
-			if _, h := utils.MatchNameAndHashWithTemplate(nodepool, compute.Name); h == "" {
+			if _, h := nodepools.MatchNameAndHashWithTemplate(nodepool, compute.Name); h == "" {
 				compute.Name += fmt.Sprintf("-%s", hash)
 			}
 		}
@@ -205,8 +206,8 @@ desired:
 			}
 
 			switch {
-			case transferDynamicNp(utils.GetClusterID(desired), currentNp, desiredNp, true):
-			case transferStaticNodes(utils.GetClusterID(desired), currentNp, desiredNp):
+			case transferDynamicNp(desired.Id(), currentNp, desiredNp, true):
+			case transferStaticNodes(desired.Id(), currentNp, desiredNp):
 			default:
 				return fmt.Errorf("%q is neither dynamic nor static, unexpected value: %T", desiredNp.Name, desiredNp.Type)
 			}
@@ -322,7 +323,7 @@ func transferExistingDns(current, desired *spec.LoadBalancers) {
 		previous, ok := currentLbs[cluster.ClusterInfo.Name]
 		if !ok || previous.Dns == nil {
 			if cluster.Dns.Hostname == "" {
-				cluster.Dns.Hostname = utils.CreateHash(hostnameHashLength)
+				cluster.Dns.Hostname = hash.Create(hostnameHashLength)
 			}
 			continue
 		}

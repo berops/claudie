@@ -5,7 +5,7 @@ import (
 	"math"
 	"strings"
 
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/generics"
 
 	"github.com/go-playground/validator/v10"
 	k8sV1 "k8s.io/api/core/v1"
@@ -63,7 +63,7 @@ func (p *NodePool) Validate(m *Manifest) error {
 
 		for _, sn := range n.Nodes {
 			if otherNodePool, ok := reusedStaticIp[sn.Endpoint]; ok {
-				nodepools := utils.RemoveDuplicates([]string{n.Name, otherNodePool})
+				nodepools := generics.RemoveDuplicates([]string{n.Name, otherNodePool})
 				return fmt.Errorf("same IP %q is referenced by multiple static nodes inside %q", sn.Endpoint, nodepools)
 			}
 			reusedStaticIp[sn.Endpoint] = n.Name

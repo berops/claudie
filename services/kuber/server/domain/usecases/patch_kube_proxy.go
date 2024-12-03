@@ -6,13 +6,13 @@ import (
 	"fmt"
 
 	"github.com/berops/claudie/internal/kubectl"
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/proto/pb"
 	"gopkg.in/yaml.v3"
 )
 
 func (u *Usecases) PatchKubeProxyConfigMap(ctx context.Context, request *pb.PatchKubeProxyConfigMapRequest) (*pb.PatchKubeProxyConfigMapResponse, error) {
-	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(request.DesiredCluster.ClusterInfo))
+	logger := loggerutils.WithClusterName(request.DesiredCluster.ClusterInfo.Id())
 	logger.Info().Msgf("Patching kube-proxy ConfigMap")
 
 	k := kubectl.Kubectl{

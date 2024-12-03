@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	cluster_builder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
 	"github.com/rs/zerolog"
@@ -35,8 +34,7 @@ func (l *LBcluster) Id() string {
 	if state == nil {
 		state = l.CurrentState
 	}
-
-	return utils.GetClusterID(state.ClusterInfo)
+	return state.ClusterInfo.Id()
 }
 
 func (l *LBcluster) Build(logger zerolog.Logger) error {

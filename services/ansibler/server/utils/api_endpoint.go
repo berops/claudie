@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 
 	"golang.org/x/sync/semaphore"
@@ -38,7 +37,7 @@ func ChangeAPIEndpoint(clusterName, oldEndpoint, newEndpoint, directory string, 
 func FindCurrentAPIServerTypeLBCluster(lbClusters []*LBClusterData) *LBClusterData {
 	for _, lbClusterData := range lbClusters {
 		if lbClusterData.CurrentLbCluster != nil {
-			if utils.HasAPIServerRole(lbClusterData.CurrentLbCluster.Roles) && lbClusterData.CurrentLbCluster.Dns != nil {
+			if lbClusterData.CurrentLbCluster.HasApiRole() && lbClusterData.CurrentLbCluster.Dns != nil {
 				return lbClusterData
 			}
 		}

@@ -1,9 +1,10 @@
-package utils
+package generics
 
 import (
 	"cmp"
-	"golang.org/x/exp/constraints"
 	"slices"
+
+	"golang.org/x/exp/constraints"
 )
 
 type inorder interface {
@@ -41,26 +42,6 @@ func MergeMaps[M ~map[K]V, K comparable, V any](maps ...M) M {
 	return merged
 }
 
-// Into traverse the elements in k and calls the supplied function f to
-// convert them into elements of type V.
-func Into[K, V any](k []K, f func(k K) *V) []*V {
-	result := make([]*V, 0, len(k))
-	for _, k := range k {
-		if v := f(k); v != nil {
-			result = append(result, v)
-		}
-	}
-	return result
-}
-
-func Sum[M ~map[K]V, K comparable, V constraints.Integer | constraints.Float](m M) int {
-	var out int
-	for _, v := range m {
-		out += int(v)
-	}
-	return out
-}
-
 func RemoveDuplicates[K comparable](slice []K) []K {
 	keys := make(map[K]bool)
 	list := []K{}
@@ -71,16 +52,4 @@ func RemoveDuplicates[K comparable](slice []K) []K {
 		}
 	}
 	return list
-}
-
-func PointerValEqual[K comparable](left, right *K) bool {
-	if left == nil && right == nil {
-		return true
-	}
-
-	if left == nil || right == nil {
-		return false
-	}
-
-	return *left == *right
 }

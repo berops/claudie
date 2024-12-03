@@ -4,15 +4,15 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/kuber/server/domain/utils/nodes"
 )
 
 // PatchNodes uses kube API patch to set correct metadata for nodes.
 func (u *Usecases) PatchNodes(ctx context.Context, request *pb.PatchNodesRequest) (*pb.PatchNodesResponse, error) {
-	clusterID := utils.GetClusterID(request.Cluster.ClusterInfo)
-	logger := utils.CreateLoggerWithClusterName(clusterID)
+	clusterID := request.Cluster.ClusterInfo.Id()
+	logger := loggerutils.WithClusterName(clusterID)
 
 	patcher := nodes.NewPatcher(request.Cluster, logger)
 

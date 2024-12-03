@@ -16,8 +16,10 @@ import (
 	grpc2 "google.golang.org/grpc"
 	"google.golang.org/grpc/health/grpc_health_v1"
 
-	"github.com/berops/claudie/internal/utils"
-	"github.com/berops/claudie/internal/utils/metrics"
+	"github.com/berops/claudie/internal/envs"
+	"github.com/berops/claudie/internal/grpcutils"
+	"github.com/berops/claudie/internal/loggerutils"
+	"github.com/berops/claudie/internal/metrics"
 	"github.com/berops/claudie/services/terraformer/server/adapters/inbound/grpc"
 	outboundAdapters "github.com/berops/claudie/services/terraformer/server/adapters/outbound"
 	"github.com/berops/claudie/services/terraformer/server/domain/usecases"
@@ -31,7 +33,7 @@ const (
 
 func main() {
 	// Initialize logger
-	utils.InitLog("terraformer")
+	loggerutils.Init("terraformer")
 
 	dynamoDBAdapter := outboundAdapters.CreateDynamoDBAdapter()
 	stateAdapter := outboundAdapters.CreateS3Adapter()
@@ -42,7 +44,7 @@ func main() {
 		SpawnProcessLimit: semaphore.NewWeighted(usecases.SpawnProcessLimit),
 	}
 
-	metricsServer := &http.Server{Addr: fmt.Sprintf(":%s", utils.GetEnvDefault("PROMETHEUS_PORT", defaultPrometheusPort))}
+	metricsServer := &http.Server{Addr: fmt.Sprintf(":%s", envs.GetOrDefault("PROMETHEUS_PORT", defaultPrometheusPort))}
 	metrics.MustRegisterCounters()
 
 	grpcAdapter := &grpc.GrpcAdapter{}
@@ -50,7 +52,7 @@ func main() {
 		usecases,
 		grpc2.ChainUnaryInterceptor(
 			metrics.MetricsMiddleware,
-			utils.PeerInfoInterceptor(&log.Logger),
+			grpcutils.PeerInfoInterceptor(&log.Logger),
 		),
 	)
 

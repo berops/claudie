@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/proto/pb"
 	scrapeconfig "github.com/berops/claudie/services/kuber/server/domain/utils/scrape-config"
 )
 
 func (u *Usecases) StoreLBScrapeConfig(ctx context.Context, req *pb.StoreLBScrapeConfigRequest) (*pb.StoreLBScrapeConfigResponse, error) {
-	clusterID := utils.GetClusterID(req.Cluster.ClusterInfo)
-	logger := utils.CreateLoggerWithClusterName(clusterID)
+	clusterID := req.Cluster.ClusterInfo.Id()
+	logger := loggerutils.WithClusterName(clusterID)
 
 	clusterDir := filepath.Join(outputDir, clusterID)
 	logger.Info().Msgf("Storing loadbalancer scrape-config")

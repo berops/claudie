@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 
 	comm "github.com/berops/claudie/internal/command"
+	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/kubectl"
-	"github.com/berops/claudie/internal/utils"
 	"gopkg.in/yaml.v3"
 )
 
@@ -66,7 +66,7 @@ func (s *Secret) Apply(namespace, kubeconfig string) error {
 
 	path := filepath.Join(s.Directory, filename)
 
-	if err := utils.CreateDirectory(s.Directory); err != nil {
+	if err := fileutils.CreateDirectory(s.Directory); err != nil {
 		return fmt.Errorf("error while creating directory %s : %w", s.Directory, err)
 	}
 

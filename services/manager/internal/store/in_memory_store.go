@@ -6,7 +6,7 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/berops/claudie/internal/checksum"
+	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/manifest"
 )
 
@@ -89,7 +89,7 @@ func (i *InMemoryStore) MarkForDeletion(_ context.Context, name string, version 
 
 	cfg.Manifest.Raw = ""
 	cfg.Manifest.Checksum = nil
-	cfg.Manifest.LastAppliedChecksum = checksum.Digest("delete")
+	cfg.Manifest.LastAppliedChecksum = hash.Digest("delete")
 
 	cfg.Version += 1
 

@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/manifest"
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/manager/internal/store"
 	"github.com/rs/zerolog/log"
@@ -95,7 +95,7 @@ func createK8sClustersFromManifest(from *manifest.Manifest, into *store.Config) 
 		newCluster := &spec.K8Scluster{
 			ClusterInfo: &spec.ClusterInfo{
 				Name: strings.ToLower(cluster.Name),
-				Hash: utils.CreateHash(utils.HashLength),
+				Hash: hash.Create(hash.Length),
 			},
 			Kubernetes:        cluster.Version,
 			Network:           cluster.Network,
@@ -120,7 +120,7 @@ func createK8sClustersFromManifest(from *manifest.Manifest, into *store.Config) 
 
 		clusterBytes, err := proto.Marshal(newCluster)
 		if err != nil {
-			return fmt.Errorf("failed to marshal k8s cluster %q: %w", utils.GetClusterID(newCluster.GetClusterInfo()), err)
+			return fmt.Errorf("failed to marshal k8s cluster %q: %w", newCluster.GetClusterInfo().Id(), err)
 		}
 
 		// It is guaranteed by validation, that within a single InputManifest no two clusters (including LB)
@@ -166,7 +166,7 @@ func createLBClustersFromManifest(from *manifest.Manifest, into *store.Config) e
 		newLbCluster := &spec.LBcluster{
 			ClusterInfo: &spec.ClusterInfo{
 				Name: lbCluster.Name,
-				Hash: utils.CreateHash(utils.HashLength),
+				Hash: hash.Create(hash.Length),
 			},
 			Roles:       attachedRoles,
 			Dns:         dns,
@@ -302,7 +302,7 @@ func generateSSHKeyPair() (string, string, error) {
 }
 
 func fillMissingDynamicNodes(c *spec.Clusters) {
-	k8sID := utils.GetClusterID(c.GetK8S().GetClusterInfo())
+	k8sID := c.GetK8S().GetClusterInfo().Id()
 
 	for _, np := range c.GetK8S().GetClusterInfo().GetNodePools() {
 		if np.GetDynamicNodePool() == nil {
@@ -318,7 +318,7 @@ func fillMissingDynamicNodes(c *spec.Clusters) {
 	}
 
 	for _, lb := range c.GetLoadBalancers().GetClusters() {
-		lbID := utils.GetClusterID(lb.ClusterInfo)
+		lbID := lb.ClusterInfo.Id()
 		for _, np := range lb.GetClusterInfo().GetNodePools() {
 			if np.GetDynamicNodePool() == nil {
 				continue

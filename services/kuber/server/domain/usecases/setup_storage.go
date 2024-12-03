@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/kuber/server/domain/utils/longhorn"
 )
@@ -13,9 +13,9 @@ import (
 // SetUpStorage installs and configures Longhorn in the given K8s cluster.
 // (Installation of Longhorn prerequisites has already been taken care in the ansibler microservice.)
 func (u *Usecases) SetUpStorage(ctx context.Context, request *pb.SetUpStorageRequest) (*pb.SetUpStorageResponse, error) {
-	logger := utils.CreateLoggerWithClusterName(utils.GetClusterID(request.DesiredCluster.ClusterInfo))
+	clusterID := request.DesiredCluster.ClusterInfo.Id()
+	logger := loggerutils.WithClusterName(clusterID)
 
-	clusterID := utils.GetClusterID(request.DesiredCluster.ClusterInfo)
 	clusterDir := filepath.Join(outputDir, clusterID)
 
 	logger.Info().Msgf("Setting up the longhorn")

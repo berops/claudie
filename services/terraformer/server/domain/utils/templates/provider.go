@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/berops/claudie/internal/templateUtils"
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 )
 
@@ -51,8 +50,8 @@ func (p UsedProviders) CreateUsedProvider(currentCluster, desiredCluster *spec.C
 
 	var data usedProvidersTemplateData
 
-	getProvidersUsed(utils.GetDynamicNodePoolsFromCI(currentCluster), &data)
-	getProvidersUsed(utils.GetDynamicNodePoolsFromCI(desiredCluster), &data)
+	getProvidersUsed(currentCluster.DynamicNodePools(), &data)
+	getProvidersUsed(desiredCluster.DynamicNodePools(), &data)
 
 	tpl, err := templateUtils.LoadTemplate(providersTemplate)
 	if err != nil {

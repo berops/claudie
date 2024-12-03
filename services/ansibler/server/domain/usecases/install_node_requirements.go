@@ -5,12 +5,13 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rs/zerolog/log"
-
-	commonUtils "github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/fileutils"
+	"github.com/berops/claudie/internal/hash"
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/ansibler/server/utils"
 	"github.com/berops/claudie/services/ansibler/templates"
+	"github.com/rs/zerolog/log"
 
 	"golang.org/x/sync/semaphore"
 )
@@ -24,10 +25,10 @@ func (u *Usecases) InstallNodeRequirements(request *pb.InstallRequest) (*pb.Inst
 
 	NodepoolsInfo := &NodepoolsInfo{
 		Nodepools: utils.NodePools{
-			Dynamic: commonUtils.GetCommonDynamicNodePools(request.Desired.ClusterInfo.NodePools),
-			Static:  commonUtils.GetCommonStaticNodePools(request.Desired.ClusterInfo.NodePools),
+			Dynamic: nodepools.Dynamic(request.Desired.ClusterInfo.NodePools),
+			Static:  nodepools.Static(request.Desired.ClusterInfo.NodePools),
 		},
-		ClusterID:      commonUtils.GetClusterID(request.Desired.ClusterInfo),
+		ClusterID:      request.Desired.ClusterInfo.Id(),
 		ClusterNetwork: request.Desired.Network,
 	}
 
@@ -43,16 +44,16 @@ func (u *Usecases) InstallNodeRequirements(request *pb.InstallRequest) (*pb.Inst
 // installLonghornRequirements installs pre-requisite tools for LongHorn in all the nodes
 func installLonghornRequirements(nodepoolsInfo *NodepoolsInfo, processLimit *semaphore.Weighted) error {
 	// Directory where files (required by Ansible) will be generated.
-	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, commonUtils.CreateHash(commonUtils.HashLength))
-	if err := commonUtils.CreateDirectory(clusterDirectory); err != nil {
+	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, hash.Create(hash.Length))
+	if err := fileutils.CreateDirectory(clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
 	}
 
-	if err := commonUtils.CreateKeysForDynamicNodePools(nodepoolsInfo.Nodepools.Dynamic, clusterDirectory); err != nil {
+	if err := nodepools.DynamicGenerateKeys(nodepoolsInfo.Nodepools.Dynamic, clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for dynamic nodepools: %w", err)
 	}
 
-	if err := commonUtils.CreateKeysForStaticNodepools(nodepoolsInfo.Nodepools.Static, clusterDirectory); err != nil {
+	if err := nodepools.StaticGenerateKeys(nodepoolsInfo.Nodepools.Static, clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}
 

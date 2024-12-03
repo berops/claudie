@@ -3,7 +3,8 @@ package usecases
 import (
 	"errors"
 
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/concurrent"
+	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/kubernetes"
@@ -21,7 +22,7 @@ func (u *Usecases) BuildInfrastructure(request *pb.BuildInfrastructureRequest) (
 		SpawnProcessLimit:  u.SpawnProcessLimit,
 	}
 
-	k8slogger := utils.CreateLoggerWithProjectAndClusterName(request.ProjectName, k8sCluster.Id())
+	k8slogger := loggerutils.WithProjectAndCluster(request.ProjectName, k8sCluster.Id())
 	k8slogger.Info().Msg("Creating infrastructure")
 	if err := k8sCluster.Build(k8slogger); err != nil {
 		k8slogger.Err(err).Msgf("failed tu build k8s cluster")
@@ -59,8 +60,8 @@ func (u *Usecases) BuildInfrastructure(request *pb.BuildInfrastructureRequest) (
 	}
 
 	failed := make([]error, len(lbClusters))
-	err := utils.ConcurrentExec(lbClusters, func(idx int, cluster *loadbalancer.LBcluster) error {
-		logger := utils.CreateLoggerWithProjectAndClusterName(request.ProjectName, cluster.Id())
+	err := concurrent.Exec(lbClusters, func(idx int, cluster *loadbalancer.LBcluster) error {
+		logger := loggerutils.WithProjectAndCluster(request.ProjectName, cluster.Id())
 		logger.Info().Msg("Creating infrastructure")
 
 		if err := cluster.Build(logger); err != nil {

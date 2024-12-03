@@ -4,13 +4,12 @@ import (
 	"encoding/base64"
 	"fmt"
 
+	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/internal/templateUtils"
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/kuber/templates"
-
-	comm "github.com/berops/claudie/internal/command"
 )
 
 type ScrapeConfig struct {
@@ -73,9 +72,8 @@ func (sc *ScrapeConfig) GenerateAndApplyScrapeConfig() error {
 
 	// Apply namespace and secret to the cluster
 	k := kubectl.Kubectl{Kubeconfig: sc.Cluster.Kubeconfig, Directory: sc.Directory}
-	prefix := utils.GetClusterID(sc.Cluster.ClusterInfo)
-	k.Stdout = comm.GetStdOut(prefix)
-	k.Stderr = comm.GetStdErr(prefix)
+	k.Stdout = comm.GetStdOut(sc.Cluster.ClusterInfo.Id())
+	k.Stderr = comm.GetStdErr(sc.Cluster.ClusterInfo.Id())
 
 	if err = k.KubectlApply(scManifestFile); err != nil {
 		return fmt.Errorf("error while applying %s on %s: %w", scManifestFile, sc.Cluster.ClusterInfo.Name, err)
@@ -87,9 +85,8 @@ func (sc *ScrapeConfig) GenerateAndApplyScrapeConfig() error {
 // RemoveIfNoLBScrapeConfig will remove the LB scrape-config.yml
 func (sc *ScrapeConfig) RemoveLBScrapeConfig() error {
 	k := kubectl.Kubectl{Kubeconfig: sc.Cluster.Kubeconfig, MaxKubectlRetries: 3}
-	prefix := utils.GetClusterID(sc.Cluster.ClusterInfo)
-	k.Stdout = comm.GetStdOut(prefix)
-	k.Stderr = comm.GetStdErr(prefix)
+	k.Stdout = comm.GetStdOut(sc.Cluster.ClusterInfo.Id())
+	k.Stderr = comm.GetStdErr(sc.Cluster.ClusterInfo.Id())
 
 	if err := k.KubectlDeleteResource("secret", "loadbalancers-scrape-config", "-n", scrapeConfigNamespace); err != nil {
 		return fmt.Errorf("error while removing LB scrape-config on %s: %w", sc.Cluster.ClusterInfo.Name, err)
@@ -101,8 +98,8 @@ func (sc *ScrapeConfig) getData() SCData {
 	lbs := make([]*LBcluster, 0, len(sc.LBClusters))
 	for _, l := range sc.LBClusters {
 		lbs = append(lbs, &LBcluster{NodePools: &NodePools{
-			Dynamic: utils.GetCommonDynamicNodePools(l.ClusterInfo.NodePools),
-			Static:  utils.GetCommonStaticNodePools(l.ClusterInfo.NodePools),
+			Dynamic: nodepools.Dynamic(l.ClusterInfo.NodePools),
+			Static:  nodepools.Static(l.ClusterInfo.NodePools),
 		}})
 	}
 	return SCData{LBClusters: lbs}

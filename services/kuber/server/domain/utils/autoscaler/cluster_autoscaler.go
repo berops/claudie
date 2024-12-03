@@ -14,7 +14,6 @@ import (
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/templateUtils"
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/kuber/templates"
 	"github.com/rs/zerolog/log"
@@ -71,9 +70,8 @@ func (a *AutoscalerManager) SetUpClusterAutoscaler() error {
 	}
 	// Apply generated files.
 	kc := kubectl.Kubectl{Directory: a.directory, MaxKubectlRetries: 3}
-	prefix := utils.GetClusterID(a.cluster.ClusterInfo)
-	kc.Stdout = comm.GetStdOut(prefix)
-	kc.Stderr = comm.GetStdErr(prefix)
+	kc.Stdout = comm.GetStdOut(a.cluster.ClusterInfo.Id())
+	kc.Stderr = comm.GetStdErr(a.cluster.ClusterInfo.Id())
 
 	if err := kc.KubectlApply(clusterAutoscalerDeployment, "-n", envs.Namespace); err != nil {
 		return fmt.Errorf("error while applying cluster autoscaler for cluster %s : %w", a.cluster.ClusterInfo.Name, err)
@@ -89,9 +87,8 @@ func (a *AutoscalerManager) DestroyClusterAutoscaler() error {
 	}
 	// Apply generated files.
 	kc := kubectl.Kubectl{Directory: a.directory, MaxKubectlRetries: 3}
-	prefix := utils.GetClusterID(a.cluster.ClusterInfo)
-	kc.Stdout = comm.GetStdOut(prefix)
-	kc.Stderr = comm.GetStdErr(prefix)
+	kc.Stdout = comm.GetStdOut(a.cluster.ClusterInfo.Id())
+	kc.Stderr = comm.GetStdErr(a.cluster.ClusterInfo.Id())
 
 	if err := kc.KubectlDeleteManifest(clusterAutoscalerDeployment, "-n", envs.Namespace); err != nil {
 		return fmt.Errorf("error while deleting cluster autoscaler for cluster %s : %w", a.cluster.ClusterInfo.Name, err)
@@ -110,10 +107,10 @@ func (a *AutoscalerManager) generateFiles() error {
 		return fmt.Errorf("error loading cluster autoscaler template : %w", err)
 	}
 	// Prepare data
-	clusterId := utils.GetClusterID(a.cluster.ClusterInfo)
+	clusterId := a.cluster.ClusterInfo.Id()
 	version, err := getK8sVersion(a.cluster.Kubernetes)
-	operatorHostname := utils.GetEnvDefault("OPERATOR_HOSTNAME", defaultOperatorHostname)
-	operatorPort := utils.GetEnvDefault("OPERATOR_PORT", defaultOperatorPort)
+	operatorHostname := envs.GetOrDefault("OPERATOR_HOSTNAME", defaultOperatorHostname)
+	operatorPort := envs.GetOrDefault("OPERATOR_PORT", defaultOperatorPort)
 	if err != nil {
 		return err
 	}

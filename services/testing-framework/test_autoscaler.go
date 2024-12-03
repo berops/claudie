@@ -7,7 +7,6 @@ import (
 
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	managerclient "github.com/berops/claudie/services/manager/client"
 	"github.com/rs/zerolog/log"
@@ -218,9 +217,8 @@ func testAutoscaler(ctx context.Context, config *spec.Config) error {
 // applyDeployment applies specified deployment into specified cluster.
 func applyDeployment(c *spec.K8Scluster, deployment string) error {
 	kc := kubectl.Kubectl{Kubeconfig: c.Kubeconfig, MaxKubectlRetries: 5}
-	prefix := utils.GetClusterID(c.ClusterInfo)
-	kc.Stdout = comm.GetStdOut(prefix)
-	kc.Stderr = comm.GetStdErr(prefix)
+	kc.Stdout = comm.GetStdOut(c.ClusterInfo.Id())
+	kc.Stderr = comm.GetStdErr(c.ClusterInfo.Id())
 
 	if err := kc.KubectlApplyString(deployment, "-n", "default"); err != nil {
 		return fmt.Errorf("failed to apply deployment on cluster %s : %w", c.ClusterInfo.Name, err)
@@ -231,9 +229,8 @@ func applyDeployment(c *spec.K8Scluster, deployment string) error {
 // removeDeployment deletes specified deployment from specified cluster.
 func removeDeployment(c *spec.K8Scluster, deployment string) error {
 	kc := kubectl.Kubectl{Kubeconfig: c.Kubeconfig, MaxKubectlRetries: 5}
-	prefix := utils.GetClusterID(c.ClusterInfo)
-	kc.Stdout = comm.GetStdOut(prefix)
-	kc.Stderr = comm.GetStdErr(prefix)
+	kc.Stdout = comm.GetStdOut(c.ClusterInfo.Id())
+	kc.Stderr = comm.GetStdErr(c.ClusterInfo.Id())
 
 	if err := kc.KubectlDeleteString(deployment, "-n", "default"); err != nil {
 		return fmt.Errorf("failed to remove deployment on cluster %s : %w", c.ClusterInfo.Name, err)

@@ -2,7 +2,7 @@ package outbound
 
 import (
 	"github.com/berops/claudie/internal/envs"
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/grpcutils"
 	"github.com/berops/claudie/proto/pb"
 	builder "github.com/berops/claudie/services/builder/internal"
 	terraformer "github.com/berops/claudie/services/terraformer/client"
@@ -16,7 +16,7 @@ type TerraformerConnector struct {
 
 // Connect establishes a gRPC connection with the terraformer microservice.
 func (t *TerraformerConnector) Connect() error {
-	connection, err := utils.GrpcDialWithRetryAndBackoff("terraformer", envs.TerraformerURL)
+	connection, err := grpcutils.GrpcDialWithRetryAndBackoff("terraformer", envs.TerraformerURL)
 	if err != nil {
 		return err
 	}
@@ -49,12 +49,12 @@ func (t *TerraformerConnector) DestroyInfrastructure(builderCtx *builder.Context
 
 // Disconnect closes the underlying gRPC connection to terraformer microservice.
 func (t *TerraformerConnector) Disconnect() {
-	utils.CloseClientConnection(t.Connection)
+	grpcutils.CloseClientConnection(t.Connection)
 }
 
 // PerformHealthCheck checks health of the underlying gRPC connection to terraformer microservice.
 func (t *TerraformerConnector) PerformHealthCheck() error {
-	if err := utils.IsConnectionReady(t.Connection); err == nil {
+	if err := grpcutils.IsConnectionReady(t.Connection); err == nil {
 		return nil
 	} else {
 		t.Connection.Connect()

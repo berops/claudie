@@ -16,7 +16,7 @@ import (
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/generics"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"github.com/oracle/oci-go-sdk/v65/common"
@@ -83,7 +83,7 @@ func (nm *NodeManager) cacheAws(np *spec.DynamicNodePool) error {
 		if err != nil {
 			return fmt.Errorf("AWS client got error : %w", err)
 		}
-		nm.awsVMs = utils.MergeMaps(getTypeInfoAws(res.InstanceTypes), nm.awsVMs)
+		nm.awsVMs = generics.MergeMaps(getTypeInfoAws(res.InstanceTypes), nm.awsVMs)
 		// Check if there are any more results to query.
 		token = res.NextToken
 		if res.NextToken == nil {
@@ -127,7 +127,7 @@ func (nm *NodeManager) cacheGcp(np *spec.DynamicNodePool) error {
 		}
 		machineTypes = append(machineTypes, mt)
 	}
-	nm.gcpVMs = utils.MergeMaps(getTypeInfoGcp(machineTypes), nm.gcpVMs)
+	nm.gcpVMs = generics.MergeMaps(getTypeInfoGcp(machineTypes), nm.gcpVMs)
 
 	return nil
 }
@@ -152,7 +152,7 @@ func (nm *NodeManager) cacheOci(np *spec.DynamicNodePool) error {
 		if len(r.Items) == 0 {
 			return fmt.Errorf("OCI client got empty response")
 		}
-		nm.ociVMs = utils.MergeMaps(getTypeInfoOci(r.Items), nm.ociVMs)
+		nm.ociVMs = generics.MergeMaps(getTypeInfoOci(r.Items), nm.ociVMs)
 		if r.OpcNextPage != nil {
 			req.Page = r.OpcNextPage
 		} else {
@@ -182,7 +182,7 @@ func (nm *NodeManager) cacheAzure(np *spec.DynamicNodePool) error {
 		if err != nil {
 			return fmt.Errorf("azure client got error : %w", err)
 		}
-		nm.azureVMs = utils.MergeMaps(getTypeInfoAzure(nextResult.Value), nm.azureVMs)
+		nm.azureVMs = generics.MergeMaps(getTypeInfoAzure(nextResult.Value), nm.azureVMs)
 	}
 
 	return nil

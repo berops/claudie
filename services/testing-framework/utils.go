@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/berops/claudie/internal/kubectl"
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	managerclient "github.com/berops/claudie/services/manager/client"
 	"github.com/google/go-cmp/cmp"
@@ -154,7 +153,7 @@ func getAutoscaledClusters(c *spec.Config) []*spec.K8Scluster {
 	clusters := make([]*spec.K8Scluster, 0, len(c.Clusters))
 
 	for _, s := range c.Clusters {
-		if utils.IsAutoscaled(s.Current.GetK8S()) {
+		if s.Current != nil && s.Current.K8S.AnyAutoscaledNodePools() {
 			clusters = append(clusters, s.Current.GetK8S())
 		}
 	}
@@ -172,7 +171,7 @@ func validateKubeconfigAlternativeNames(clusters map[string]*spec.ClusterState) 
 		// generated KubeConfig.
 		apiLb := false
 		for _, l := range v.GetCurrent().GetLoadBalancers().GetClusters() {
-			if utils.HasAPIServerRole(l.Roles) {
+			if l.HasApiRole() {
 				apiLb = true
 				break
 			}

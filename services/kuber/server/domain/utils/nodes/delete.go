@@ -7,8 +7,10 @@ import (
 	"strings"
 
 	comm "github.com/berops/claudie/internal/command"
+	"github.com/berops/claudie/internal/concurrent"
 	"github.com/berops/claudie/internal/kubectl"
-	"github.com/berops/claudie/internal/utils"
+	"github.com/berops/claudie/internal/loggerutils"
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/rs/zerolog"
 )
@@ -35,23 +37,23 @@ type Deleter struct {
 // masterNodes - master nodes to DELETE
 // workerNodes - worker nodes to DELETE
 func NewDeleter(masterNodes, workerNodes []string, cluster *spec.K8Scluster) *Deleter {
-	prefix := utils.GetClusterID(cluster.ClusterInfo)
+	clusterID := cluster.ClusterInfo.Id()
 
 	for i := range masterNodes {
-		masterNodes[i] = strings.TrimPrefix(masterNodes[i], fmt.Sprintf("%s-", prefix))
+		masterNodes[i] = strings.TrimPrefix(masterNodes[i], fmt.Sprintf("%s-", clusterID))
 	}
 
 	for i := range workerNodes {
-		workerNodes[i] = strings.TrimPrefix(workerNodes[i], fmt.Sprintf("%s-", prefix))
+		workerNodes[i] = strings.TrimPrefix(workerNodes[i], fmt.Sprintf("%s-", clusterID))
 	}
 
 	return &Deleter{
 		masterNodes:   masterNodes,
 		workerNodes:   workerNodes,
 		cluster:       cluster,
-		clusterPrefix: prefix,
+		clusterPrefix: clusterID,
 
-		logger: utils.CreateLoggerWithClusterName(prefix),
+		logger: loggerutils.WithClusterName(clusterID),
 	}
 }
 
@@ -83,13 +85,15 @@ func (d *Deleter) DeleteNodes() (*spec.K8Scluster, error) {
 	}
 
 	// Cordon worker nodes to prevent any new pods/volume replicas being scheduled there
-	if err := utils.ConcurrentExec(d.workerNodes, func(_ int, worker string) error {
-		if realNodeName := utils.FindName(realNodeNames, worker); realNodeName != "" {
-			return kubectl.KubectlCordon(worker)
+	err = concurrent.Exec(d.workerNodes, func(_ int, worker string) error {
+		i := slices.Index(realNodeNames, worker)
+		if i < 0 {
+			d.logger.Warn().Msgf("Node name %s not found in cluster.", worker)
+			return nil
 		}
-		d.logger.Warn().Msgf("Node name %s not found in cluster.", worker)
-		return nil
-	}); err != nil {
+		return kubectl.KubectlCordon(worker)
+	})
+	if err != nil {
 		return nil, fmt.Errorf("error while cordoning worker nodes from cluster %s which were marked for deletion : %w", d.clusterPrefix, err)
 	}
 
@@ -138,21 +142,26 @@ func (d *Deleter) isNodeDynamic(worker string) bool {
 
 // deleteNodesByName deletes node from the k8s cluster.
 func (d *Deleter) deleteNodesByName(kc kubectl.Kubectl, nodeName string, realNodeNames []string) error {
-	if realNodeName := utils.FindName(realNodeNames, nodeName); realNodeName != "" {
-		d.logger.Info().Msgf("Deleting node %s from k8s cluster", realNodeName)
-
-		if err := kc.KubectlDrain(realNodeName); err != nil {
-			return fmt.Errorf("error while draining node %s from cluster %s : %w", nodeName, d.clusterPrefix, err)
-		}
-
-		if err := kc.KubectlDeleteResource("nodes", realNodeName); err != nil {
-			return fmt.Errorf("error while deleting node %s from cluster %s : %w", nodeName, d.clusterPrefix, err)
-		}
-
+	i := slices.Index(realNodeNames, nodeName)
+	if i < 0 {
+		d.logger.Warn().Msgf("Node name that contains %s not found in cluster", nodeName)
 		return nil
 	}
 
-	d.logger.Warn().Msgf("Node name that contains %s not found in cluster", nodeName)
+	name := realNodeNames[i]
+
+	d.logger.Info().Msgf("Deleting node %s from k8s cluster", name)
+
+	//kubectl drain <node-name> --ignore-daemonsets --delete-emptydir-data
+	if err := kc.KubectlDrain(name); err != nil {
+		return fmt.Errorf("error while draining node %s from cluster %s : %w", nodeName, d.clusterPrefix, err)
+	}
+
+	//kubectl delete node <node-name>
+	if err := kc.KubectlDeleteResource("nodes", name); err != nil {
+		return fmt.Errorf("error while deleting node %s from cluster %s : %w", nodeName, d.clusterPrefix, err)
+	}
+
 	return nil
 }
 
@@ -205,8 +214,7 @@ nodes:
 // function returns any master node which will not be deleted.
 // return API EP node if successful, nil otherwise
 func (d *Deleter) getMainMaster() *spec.Node {
-	n, err := utils.FindAPIEndpointNode(d.cluster.ClusterInfo.NodePools)
-	if err == nil {
+	if _, n := nodepools.FindApiEndpoint(d.cluster.ClusterInfo.NodePools); n != nil {
 		return n
 	}
 
