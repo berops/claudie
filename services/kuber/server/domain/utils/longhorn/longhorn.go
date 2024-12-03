@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	comm "github.com/berops/claudie/internal/command"
@@ -16,10 +17,10 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// Cluster - k8s cluster where longhorn will be set up
-// Directory - directory where to create storage class manifest
 type Longhorn struct {
-	Cluster   *spec.K8Scluster
+	// Cluster where longhorn will be set up
+	Cluster *spec.K8Scluster
+	// Directory where to create storage class manifest
 	Directory string
 }
 
@@ -35,147 +36,131 @@ type enableCA struct {
 const (
 	longhornYaml         = "services/kuber/server/manifests/longhorn.yaml"
 	longhornDefaultsYaml = "services/kuber/server/manifests/claudie-defaults.yaml"
-	longhornEnableCaTpl  = "enable-ca.goyaml"
-	storageManifestTpl   = "storage-class.goyaml"
 	defaultSC            = "longhorn"
-	storageClassLabel    = "claudie.io/provider-instance"
+	storageClassLabel    = "claudie.io/storage-class"
 )
 
 // SetUp function will set up the longhorn on the k8s cluster saved in l.Longhorn
 func (l *Longhorn) SetUp() error {
-	kubectl := kubectl.Kubectl{Kubeconfig: l.Cluster.GetKubeconfig(), MaxKubectlRetries: 3}
-	// apply longhorn.yaml and settings
-	prefix := utils.GetClusterID(l.Cluster.ClusterInfo)
-	kubectl.Stdout = comm.GetStdOut(prefix)
-	kubectl.Stderr = comm.GetStdErr(prefix)
-
-	// Apply longhorn manifests after nodes are annotated.
-	if err := l.applyManifests(kubectl); err != nil {
-		return fmt.Errorf("error while applying longhorn manifests in cluster %s : %w", l.Cluster.ClusterInfo.Name, err)
+	k := kubectl.Kubectl{
+		Kubeconfig:        l.Cluster.GetKubeconfig(),
+		MaxKubectlRetries: 3,
 	}
+	prefix := utils.GetClusterID(l.Cluster.ClusterInfo)
+	k.Stdout = comm.GetStdOut(prefix)
+	k.Stderr = comm.GetStdErr(prefix)
 
-	//get existing sc so we can delete them if we do not need them any more
-	existingSC, err := l.getStorageClasses(kubectl)
+	current, err := l.currentClaudieStorageClasses(k)
 	if err != nil {
 		return fmt.Errorf("error while getting existing storage classes for %s : %w", l.Cluster.ClusterInfo.Name, err)
 	}
-	//save applied sc so we can find a difference with existing ones and remove the redundant ones
-	var appliedSC []string
 
-	//load the templates
-	template := templateUtils.Templates{Directory: l.Directory}
+	if err := k.KubectlApply(longhornYaml); err != nil {
+		return fmt.Errorf("error while applying longhorn.yaml in %s : %w", l.Directory, err)
+	}
+
+	if err := k.KubectlApply(longhornDefaultsYaml); err != nil {
+		return fmt.Errorf("error while applying claudie default settings for longhorn in %s : %w", l.Directory, err)
+	}
+
+	template := templateUtils.Templates{
+		Directory: l.Directory,
+	}
+
 	storageTpl, err := templateUtils.LoadTemplate(templates.StorageClassTemplate)
 	if err != nil {
 		return err
 	}
+
 	enableCATpl, err := templateUtils.LoadTemplate(templates.EnableClusterAutoscalerTemplate)
 	if err != nil {
 		return err
 	}
 
-	// Apply setting about CA
-	enableCa := enableCA{fmt.Sprintf("%v", utils.IsAutoscaled(l.Cluster))}
-	if setting, err := template.GenerateToString(enableCATpl, enableCa); err != nil {
+	ca := enableCA{
+		fmt.Sprintf("%v", utils.IsAutoscaled(l.Cluster)),
+	}
+
+	setting, err := template.GenerateToString(enableCATpl, ca)
+	if err != nil {
 		return err
-	} else if err := kubectl.KubectlApplyString(setting); err != nil {
-		return fmt.Errorf("error while applying CA setting for longhorn in cluster %s : %w", l.Cluster.ClusterInfo.Name, err)
+	}
+
+	if err := k.KubectlApplyString(setting); err != nil {
+		return fmt.Errorf("error while applying CA setting for longhorn in cluster %s: %w", l.Cluster.ClusterInfo.Name, err)
 	}
 
 	sortedNodePools := utils.GroupNodepoolsByProviderSpecName(l.Cluster.ClusterInfo)
-	// get real nodes names in a case when provider appends some string to the set name
-	realNodesInfo, err := kubectl.KubectlGetNodeNames()
-	if err != nil {
-		return err
-	}
-	realNodeNames := strings.Split(string(realNodesInfo), "\n")
-	// tag nodes based on the zones
-	for providerInstance, nodepools := range sortedNodePools {
-		zoneName := utils.SanitiseString(fmt.Sprintf("%s-zone", providerInstance))
-		storageClassName := fmt.Sprintf("longhorn-%s", zoneName)
-		//flag to determine whether we need to create storage class or not
-		isWorkerNodeProvider := false
+
+	var desired []string
+	for provider, nodepools := range sortedNodePools {
+		wk := false
 		for _, np := range nodepools {
-			// tag worker nodes from nodepool based on the future zone
-			// NOTE: the master nodes are by default set to NoSchedule, therefore we do not need to annotate them
-			// If in the future, we add functionality to allow scheduling on master nodes, the longhorn will need add the annotation
 			if !np.IsControl {
-				isWorkerNodeProvider = true
-				for _, node := range np.GetNodes() {
-					nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", utils.GetClusterID(l.Cluster.ClusterInfo)))
-					annotation := fmt.Sprintf("node.longhorn.io/default-node-tags='[\"%s\"]'", zoneName)
-					realNodeName := utils.FindName(realNodeNames, nodeName)
-					if realNodeName == "" {
-						log.Warn().Str("cluster", utils.GetClusterID(l.Cluster.ClusterInfo)).Msgf("Node %s was not found in cluster %v", nodeName, realNodeNames)
-						continue
-					}
-					// Add tag to the node via kubectl annotate, use --overwrite to avoid getting error of already tagged node
-					if err := kubectl.KubectlAnnotate("node", realNodeName, annotation, "--overwrite"); err != nil {
-						return fmt.Errorf("error while annotating the node %s from cluster %s via kubectl annotate : %w", realNodeName, l.Cluster.ClusterInfo.Name, err)
-					}
-				}
+				wk = true
+				break
 			}
 		}
-		if isWorkerNodeProvider {
-			// create storage class manifest based on zones from templates
-			zoneData := zoneData{ZoneName: zoneName, StorageClassName: storageClassName}
-			manifest := fmt.Sprintf("%s.yaml", storageClassName)
-			err := template.Generate(storageTpl, manifest, zoneData)
-			if err != nil {
+
+		if wk {
+			zn := utils.SanitiseString(fmt.Sprintf("%s-zone", provider))
+			sc := fmt.Sprintf("longhorn-%s", zn)
+			manifest := fmt.Sprintf("%s.yaml", sc)
+			data := zoneData{
+				ZoneName:         zn,
+				StorageClassName: sc,
+			}
+
+			if err := template.Generate(storageTpl, manifest, data); err != nil {
 				return fmt.Errorf("error while generating %s manifest : %w", manifest, err)
 			}
-			//update the kubectl working directory
-			kubectl.Directory = l.Directory
-			// apply manifest
-			err = kubectl.KubectlApply(manifest, "")
-			if err != nil {
+
+			k.Directory = l.Directory
+			if err := k.KubectlApply(manifest, ""); err != nil {
 				return fmt.Errorf("error while applying %s manifest : %w", manifest, err)
 			}
-			appliedSC = append(appliedSC, storageClassName)
+			desired = append(desired, sc)
 		}
 	}
 
-	err = l.deleteOldStorageClasses(existingSC, appliedSC, kubectl)
-	if err != nil {
+	if err := l.deleteUnused(current, desired, k); err != nil {
 		return err
 	}
 
-	// Clean up
 	if err := os.RemoveAll(l.Directory); err != nil {
 		return fmt.Errorf("error while deleting files %s : %w", l.Directory, err)
 	}
+
 	return nil
 }
 
-// getStorageClasses returns a slice of names of storage classes currently deployed in cluster
-// returns slice of storage classes if successful, error otherwise
-func (l *Longhorn) getStorageClasses(kc kubectl.Kubectl) (result []string, err error) {
-	//define output struct
+// currentClaudieStorageClasses returns a slice of names of claudie related storage classes currently deployed in cluster
+func (l *Longhorn) currentClaudieStorageClasses(kc kubectl.Kubectl) (result []string, err error) {
 	type KubectlOutputJSON struct {
 		APIVersion string                   `json:"apiVersion"`
 		Items      []map[string]interface{} `json:"items"`
 		Kind       string                   `json:"kind"`
 		Metadata   map[string]interface{}   `json:"metadata"`
 	}
-	//get existing storage classes
+
 	out, err := kc.KubectlGet("sc", "-o", "json")
 	if err != nil {
 		return nil, fmt.Errorf("error while getting storage classes from cluster %s : %w", l.Cluster.ClusterInfo.Name, err)
 	}
-	//no storage class defined yet
+
 	if strings.Contains(string(out), "No resources found") {
 		return result, nil
 	}
-	//parse output
+
 	var parsedJSON KubectlOutputJSON
-	err = json.Unmarshal(out, &parsedJSON)
-	if err != nil {
+	if err := json.Unmarshal(out, &parsedJSON); err != nil {
 		return nil, fmt.Errorf("error while unmarshalling kubectl output for cluster %s : %w", l.Cluster.ClusterInfo.Name, err)
 	}
-	//return name of the storage classes
+
 	for _, sc := range parsedJSON.Items {
 		metadata := sc["metadata"].(map[string]interface{})
 		name := metadata["name"].(string)
-		//check if storage class has a claudie label
+
 		if labels, ok := metadata["labels"]; ok {
 			labelsMap := labels.(map[string]interface{})
 			if _, ok := labelsMap[storageClassLabel]; ok {
@@ -183,44 +168,23 @@ func (l *Longhorn) getStorageClasses(kc kubectl.Kubectl) (result []string, err e
 			}
 		}
 	}
+
 	return result, nil
 }
 
-// deleteOldStorageClasses deletes storage classes, which does not have a worker nodes behind it
-func (l *Longhorn) deleteOldStorageClasses(existing, applied []string, kc kubectl.Kubectl) error {
+// deleteUnused deleted unused storage classes previously created by claudie.
+func (l *Longhorn) deleteUnused(existing, applied []string, kc kubectl.Kubectl) error {
 	for _, ex := range existing {
 		if ex == defaultSC {
 			//ignore the default sc
 			continue
 		}
-		found := false
-		for _, app := range applied {
-			if ex == app {
-				found = true
-				break
-			}
-		}
-		//if not found in applied, delete the sc
-		if !found {
-			err := kc.KubectlDeleteResource("sc", ex)
+		if !slices.Contains(applied, ex) {
 			log.Debug().Msgf("Deleting storage class %s", ex)
-			if err != nil {
+			if err := kc.KubectlDeleteResource("sc", ex); err != nil {
 				return fmt.Errorf("error while deleting storage class %s due to no nodes backing it : %w", ex, err)
 			}
 		}
-	}
-	return nil
-}
-
-// applyManifests applies longhorn manifests to the managed cluster.
-func (l *Longhorn) applyManifests(kc kubectl.Kubectl) error {
-	// Apply longhorn.yaml
-	if err := kc.KubectlApply(longhornYaml); err != nil {
-		return fmt.Errorf("error while applying longhorn.yaml in %s : %w", l.Directory, err)
-	}
-	// Apply longhorn setting
-	if err := kc.KubectlApply(longhornDefaultsYaml); err != nil {
-		return fmt.Errorf("error while applying claudie default settings for longhorn in %s : %w", l.Directory, err)
 	}
 	return nil
 }
