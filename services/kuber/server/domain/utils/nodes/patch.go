@@ -94,22 +94,6 @@ func (p *Patcher) PatchLabels() error {
 	return err
 }
 
-// TODO: refactor
-func zone(np *spec.NodePool) string {
-	var sn string
-
-	switch {
-	case np.GetDynamicNodePool() != nil:
-		sn = np.GetDynamicNodePool().Provider.SpecName
-	case np.GetStaticNodePool() != nil:
-		sn = spec.StaticNodepoolInfo_STATIC_PROVIDER.String()
-	default:
-		panic("unsupported nodepool type")
-	}
-
-	return fmt.Sprintf("%s-zone", sn)
-}
-
 func (p *Patcher) PatchAnnotations() error {
 	var errAll error
 	for _, np := range p.desiredNodepools {
@@ -138,13 +122,13 @@ func (p *Patcher) PatchAnnotations() error {
 				if !ok {
 					continue
 				}
-				if s == zone(np) {
+				if s == np.Zone() {
 					found = true
 					break
 				}
 			}
 			if !found {
-				v = append(v, zone(np))
+				v = append(v, np.Zone())
 			}
 
 			b, err := json.Marshal(v)

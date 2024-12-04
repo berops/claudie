@@ -10,8 +10,9 @@ import (
 
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
+	"github.com/berops/claudie/internal/nodepools"
+	"github.com/berops/claudie/internal/sanitise"
 	"github.com/berops/claudie/internal/templateUtils"
-	"github.com/berops/claudie/internal/utils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/kuber/templates"
 	"github.com/rs/zerolog/log"
@@ -46,9 +47,8 @@ func (l *Longhorn) SetUp() error {
 		Kubeconfig:        l.Cluster.GetKubeconfig(),
 		MaxKubectlRetries: 3,
 	}
-	prefix := utils.GetClusterID(l.Cluster.ClusterInfo)
-	k.Stdout = comm.GetStdOut(prefix)
-	k.Stderr = comm.GetStdErr(prefix)
+	k.Stdout = comm.GetStdOut(l.Cluster.ClusterInfo.Id())
+	k.Stderr = comm.GetStdErr(l.Cluster.ClusterInfo.Id())
 
 	current, err := l.currentClaudieStorageClasses(k)
 	if err != nil {
@@ -78,7 +78,7 @@ func (l *Longhorn) SetUp() error {
 	}
 
 	ca := enableCA{
-		fmt.Sprintf("%v", utils.IsAutoscaled(l.Cluster)),
+		fmt.Sprintf("%v", l.Cluster.AnyAutoscaledNodePools()),
 	}
 
 	setting, err := template.GenerateToString(enableCATpl, ca)
@@ -90,12 +90,10 @@ func (l *Longhorn) SetUp() error {
 		return fmt.Errorf("error while applying CA setting for longhorn in cluster %s: %w", l.Cluster.ClusterInfo.Name, err)
 	}
 
-	sortedNodePools := utils.GroupNodepoolsByProviderSpecName(l.Cluster.ClusterInfo)
-
 	var desired []string
-	for provider, nodepools := range sortedNodePools {
+	for provider, nps := range nodepools.ByProviderSpecName(l.Cluster.ClusterInfo.NodePools) {
 		wk := false
-		for _, np := range nodepools {
+		for _, np := range nps {
 			if !np.IsControl {
 				wk = true
 				break
@@ -103,7 +101,7 @@ func (l *Longhorn) SetUp() error {
 		}
 
 		if wk {
-			zn := utils.SanitiseString(fmt.Sprintf("%s-zone", provider))
+			zn := sanitise.String(fmt.Sprintf("%s-zone", provider))
 			sc := fmt.Sprintf("longhorn-%s", zn)
 			manifest := fmt.Sprintf("%s.yaml", sc)
 			data := zoneData{

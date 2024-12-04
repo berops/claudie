@@ -1,8 +1,8 @@
 package nodes
 
 import (
+	"errors"
 	"fmt"
-	"slices"
 
 	"github.com/berops/claudie/internal/kubectl"
 	"gopkg.in/yaml.v3"
@@ -24,11 +24,12 @@ type LonghornReplica struct {
 	} `yaml:"status"`
 
 	Spec struct {
-		NodeID string `yaml:"nodeID"`
+		NodeID   string `yaml:"nodeID"`
+		FailedAt string `yaml:"failedAt"`
 	} `yaml:"spec"`
 }
 
-func deleteReplicaOnNode(kc kubectl.Kubectl, node string) error {
+func removeReplicasOnDeletedNode(kc kubectl.Kubectl, node string) error {
 	out, err := kc.KubectlGet("replicas.longhorn.io", "-n", longhornNamespace, "-o", "yaml")
 	if err != nil {
 		return fmt.Errorf("failed to list all replicas : %w", err)
@@ -39,16 +40,24 @@ func deleteReplicaOnNode(kc kubectl.Kubectl, node string) error {
 		return fmt.Errorf("failed unmarshal kubectl output : %w", err)
 	}
 
-	i := slices.IndexFunc(replicaList.Items, func(replica LonghornReplica) bool {
+	var errAll error
+	for _, replica := range replicaList.Items {
+		// https://github.com/longhorn/longhorn/blob/6cc47ec5e942f33b10f644a5eaf0970b650e27a7/deploy/longhorn.yaml#L3048
+		// spec.NodeID is the node where the replica is on, this should
+		// matched the deleted node.
 		del := replica.Spec.NodeID == node
 		del = del && replica.Status.CurrentState == "stopped"
 		del = del && !replica.Status.Started
 		del = del && replica.Status.InstanceManagerName == ""
-		return del
-	})
-	if i < 0 {
-		return nil
+		del = del && replica.Spec.FailedAt != ""
+
+		if del {
+			err := kc.KubectlDeleteResource("replicas.longhorn.io", replica.Metadata.Name, "-n", longhornNamespace)
+			if err != nil {
+				errAll = errors.Join(errAll, fmt.Errorf("failed to delete replica %s: %w", replica.Metadata.Name, err))
+			}
+		}
 	}
 
-	return kc.KubectlDeleteResource("replicas.longhorn.io", replicaList.Items[i].Metadata.Name, "-n", longhornNamespace)
+	return errAll
 }

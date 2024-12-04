@@ -6,14 +6,13 @@ metadata:
   namespace: longhorn-system
 value: claudie.io/node-type:compute
 ---
-# Make sure longhorn is deployed only on compute nodes
+# Make sure longhorn is using block on eviction if last replica is on the node deleted.
 apiVersion: longhorn.io/v1beta1
 kind: Setting
 metadata:
   name: node-drain-policy
   namespace: longhorn-system
 value: block-for-eviction-if-last-replica
-#value: block-for-eviction
 ---
 # Default path to use for storing data on a host
 apiVersion: longhorn.io/v1beta1

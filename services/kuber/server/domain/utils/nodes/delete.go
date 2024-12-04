@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	comm "github.com/berops/claudie/internal/command"
-	"github.com/berops/claudie/internal/concurrent"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/nodepools"
@@ -84,36 +83,27 @@ func (d *Deleter) DeleteNodes() (*spec.K8Scluster, error) {
 		}
 	}
 
-	// Cordon worker nodes to prevent any new pods/volume replicas being scheduled there
-	err = concurrent.Exec(d.workerNodes, func(_ int, worker string) error {
-		i := slices.Index(realNodeNames, worker)
-		if i < 0 {
-			d.logger.Warn().Msgf("Node name %s not found in cluster.", worker)
-			return nil
-		}
-		return kubectl.KubectlCordon(worker)
-	})
-	if err != nil {
-		return nil, fmt.Errorf("error while cordoning worker nodes from cluster %s which were marked for deletion : %w", d.clusterPrefix, err)
-	}
-
 	// Remove worker nodes sequentially to minimise risk of fault when replicating PVC
 	var errDel error
 	for _, worker := range d.workerNodes {
-		// Delete worker nodes
-		if err := d.deleteNodesByName(kubectl, worker, realNodeNames); err != nil {
-			errDel = errors.Join(errDel, fmt.Errorf("error while deleting worker node %s from cluster %s: %w", worker, d.clusterPrefix, err))
+		if !slices.Contains(realNodeNames, worker) {
+			d.logger.Warn().Msgf("Node name that contains %s not found in cluster", worker)
 			continue
 		}
 
-		if d.isNodeDynamic(worker) {
-			// we delete the failed replicas on the dynamic nodes as they same volumes will definitely
-			// not be reused again. This might not be the case for static nodes where the same volume
-			// may be reused.
-			if err := deleteReplicaOnNode(kubectl, worker); err != nil {
-				// not a fatal error.
-				d.logger.Warn().Msgf("failed to delete unused replica from replicas.longhorn.io, after node %s deletion: %s", worker, err)
-			}
+		if err := kubectl.KubectlCordon(worker); err != nil {
+			errDel = errors.Join(errDel, fmt.Errorf("error while cordon worker node %s from cluster %s: %w", worker, d.clusterPrefix, err))
+			continue
+		}
+
+		if err := d.deleteNodesByName(kubectl, worker, realNodeNames); err != nil {
+			errDel = errors.Join(errDel, fmt.Errorf("error while deleting node %s from cluster %s: %w", worker, d.clusterPrefix, err))
+			continue
+		}
+
+		if err := removeReplicasOnDeletedNode(kubectl, worker); err != nil {
+			// not a fatal error.
+			d.logger.Warn().Msgf("failed to delete unused replicas from replicas.longhorn.io, after node %s deletion: %s", worker, err)
 		}
 	}
 	if errDel != nil {
@@ -125,40 +115,22 @@ func (d *Deleter) DeleteNodes() (*spec.K8Scluster, error) {
 	return d.cluster, nil
 }
 
-func (d *Deleter) isNodeDynamic(worker string) bool {
-	for _, n := range utils.GetCommonDynamicNodePools(d.cluster.ClusterInfo.NodePools) {
-		if n.GetStaticNodePool() != nil {
-			continue
-		}
-
-		for _, n := range n.Nodes {
-			if n.Name == worker {
-				return true
-			}
-		}
-	}
-	return false
-}
-
 // deleteNodesByName deletes node from the k8s cluster.
 func (d *Deleter) deleteNodesByName(kc kubectl.Kubectl, nodeName string, realNodeNames []string) error {
-	i := slices.Index(realNodeNames, nodeName)
-	if i < 0 {
+	if !slices.Contains(realNodeNames, nodeName) {
 		d.logger.Warn().Msgf("Node name that contains %s not found in cluster", nodeName)
 		return nil
 	}
 
-	name := realNodeNames[i]
-
-	d.logger.Info().Msgf("Deleting node %s from k8s cluster", name)
+	d.logger.Info().Msgf("Deleting node %s from k8s cluster", nodeName)
 
 	//kubectl drain <node-name> --ignore-daemonsets --delete-emptydir-data
-	if err := kc.KubectlDrain(name); err != nil {
+	if err := kc.KubectlDrain(nodeName); err != nil {
 		return fmt.Errorf("error while draining node %s from cluster %s : %w", nodeName, d.clusterPrefix, err)
 	}
 
 	//kubectl delete node <node-name>
-	if err := kc.KubectlDeleteResource("nodes", name); err != nil {
+	if err := kc.KubectlDeleteResource("nodes", nodeName); err != nil {
 		return fmt.Errorf("error while deleting node %s from cluster %s : %w", nodeName, d.clusterPrefix, err)
 	}
 
