@@ -9,6 +9,7 @@
         state: present
         regexp: '^{{ item.name }}='
         line: '{{ item.name }}="{{ item.value }}"'
+        backrefs: yes
       loop:
         - { name: 'HTTP_PROXY', value: '{{ http_proxy_url }}' }
         - { name: 'HTTPS_PROXY', value: '{{ http_proxy_url }}' }
