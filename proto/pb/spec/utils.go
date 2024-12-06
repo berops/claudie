@@ -163,3 +163,22 @@ func (r *TemplateRepository) MustExtractTargetPath() string {
 		r.Path,
 	)
 }
+
+func (n *NodePool) Zone() string {
+	var sn string
+
+	switch {
+	case n.GetDynamicNodePool() != nil:
+		sn = n.GetDynamicNodePool().Provider.SpecName
+	case n.GetStaticNodePool() != nil:
+		sn = StaticNodepoolInfo_STATIC_PROVIDER.String()
+	default:
+		panic("unsupported nodepool type")
+	}
+
+	if sn == "" {
+		panic("no zone specified")
+	}
+
+	return fmt.Sprintf("%s-zone", sn)
+}
