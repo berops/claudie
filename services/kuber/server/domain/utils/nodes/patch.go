@@ -2,6 +2,7 @@ package nodes
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -94,22 +95,64 @@ func (p *Patcher) PatchLabels() error {
 }
 
 func (p *Patcher) PatchAnnotations() error {
-	var err error
+	var errAll error
 	for _, np := range p.desiredNodepools {
-		nodeAnnotations := np.Annotations
+		annotations := np.Annotations
+		if annotations == nil {
+			annotations = make(map[string]string)
+		}
+		// annotate worker nodes with provider spec name to match the storage classes
+		// created in the SetupLonghorn step.
+		// NOTE: the master nodes are by default set to NoSchedule, therefore we do not need to annotate them
+		// If in the future, if add functionality to allow scheduling on master nodes, longhorn will need to add the annotation.
+		if !np.IsControl {
+			k := "node.longhorn.io/default-node-tags"
+			tags, ok := annotations[k]
+			if !ok {
+				tags = "[]"
+			}
+			var v []any
+			if err := json.Unmarshal([]byte(tags), &v); err != nil {
+				errAll = errors.Join(errAll, fmt.Errorf("nodepool %s has invalid value for annotation %v, expected value to by of type array: %w", np.Name, k, err))
+				continue
+			}
+			var found bool
+			for i := range v {
+				s, ok := v[i].(string)
+				if !ok {
+					continue
+				}
+				if s == np.Zone() {
+					found = true
+					break
+				}
+			}
+			if !found {
+				v = append(v, np.Zone())
+			}
+
+			b, err := json.Marshal(v)
+			if err != nil {
+				errAll = errors.Join(errAll, fmt.Errorf("failed to marshal modified annotations for nodepool %s: %w", np.Name, err))
+				continue
+			}
+			annotations[k] = string(b)
+		}
+
 		for _, node := range np.Nodes {
 			nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", p.clusterID))
-			patchPath, err1 := buildJSONAnnotationPatch(nodeAnnotations)
-			if err1 != nil {
-				return fmt.Errorf("failed to create annotations patch for %s : %w, %w", np.Name, err, err1)
+			patch, err := buildJSONAnnotationPatch(annotations)
+			if err != nil {
+				errAll = errors.Join(errAll, fmt.Errorf("failed to create annotation for node %s: %w", nodeName, err))
+				continue
 			}
-			if err1 := p.kc.KubectlPatch("node", nodeName, patchPath, "--type", "merge"); err1 != nil {
-				p.logger.Err(err1).Str("node", nodeName).Msgf("Failed to patch annotations on node with path %s", patchPath)
-				err = fmt.Errorf("error while patching one or more nodes with annotations")
+			if err := p.kc.KubectlPatch("node", nodeName, patch, "--type", "merge"); err != nil {
+				errAll = errors.Join(err, fmt.Errorf("error while applying annotations %v for node %s: %w", annotations, nodeName, err))
+				continue
 			}
 		}
 	}
-	return err
+	return errAll
 }
 
 func (p *Patcher) PatchTaints() error {
