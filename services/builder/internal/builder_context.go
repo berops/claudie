@@ -106,6 +106,15 @@ func (ctx *Context) DetermineProxyUpdate() bool {
 		hetznerInDesired := HasHetznerNode(ctx.DesiredCluster.ClusterInfo)
 		hetznerInCurrent := HasHetznerNode(ctx.CurrentCluster.ClusterInfo)
 
+		// For clusters build before the changes to the proxy setting
+		// the InstallationProxy field will be nil, to avoid panic
+		// we set it to the default mode.
+		// TODO: in future releases, remove this.
+		if ctx.CurrentCluster.InstallationProxy == nil {
+			ctx.CurrentCluster.InstallationProxy = &spec.InstallationProxy{
+				Mode: "default",
+			}
+		}
 		currProxySettings := ctx.CurrentCluster.InstallationProxy
 		desiredProxySettings := ctx.DesiredCluster.InstallationProxy
 
