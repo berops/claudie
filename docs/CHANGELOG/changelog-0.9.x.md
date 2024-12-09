@@ -119,5 +119,5 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 - Up until now, if there was any invalid input in the InputManifest or the infrastructure was able to be only partially created, the InputManifest would end up with an error where only manual deletion would help to remove the partially constructed infrastructure, This was fixed, so that if anything fails during the addition of new infrastructure into the cluster, claudie will rollback to the last working point, by removing the partially created infrastructure [#1566](https://github.com/berops/claudie/pull/1566)
  
 - Longhorn related issues, especially during node deletion resulted in many InputManifest issues, In this release we fixed the issues by switching to a different drain policy for longhorn replicas deployed across the nodes on the cluster, namely `block-for-eviction-if-last-replica`[#1596](https://github.com/berops/claudie/pull/1596) which results in:
-  - Protecting data by preventing the drain operation from completing until there is a healthy replica available for each volume available on another node.
-  - Automatically evicts replicas, so the user does not need to do it manually.
+    - Protecting data by preventing the drain operation from completing until there is a healthy replica available for each volume available on another node.
+    - Automatically evicts replicas, so the user does not need to do it manually.
