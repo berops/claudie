@@ -77,3 +77,47 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 - Fixed an edge case where part of the load balancer infrastructure was incorrectly destroyed when a failure occurred in the middle of the workflow. [#1533](https://github.com/berops/claudie/pull/1533)
 - The whitespace when generating keys will no longer be trimmed [#1539](https://github.com/berops/claudie/pull/1539)
 - GenesisCloud autoscaling will now correctly work [#1543](https://github.com/berops/claudie/pull/1543)
+
+
+## v0.9.1
+
+## What's Changed
+- Allow to overwrite the following default labels for static nodepools, which enables more customization for the static nodepools [#1550](https://github.com/berops/claudie/pull/1550)
+    ```
+        claudie.io/provider=static-provider 
+        claudie.io/provider-instance=static-provider
+        topology.kubernetes.io/region=static-region
+        topology.kubernetes.io/zone=static-zone
+    ```
+- In the previous release proxy was introduced as an experimental feature. This release further stabilizes the proxy interface by introducing the following options to be set within the InputManifest [#1540](https://github.com/berops/claudie/pull/1540)
+    ```
+        kubernetes:
+        clusters:
+          - name: proxy-example
+            version: "1.30.0"
+            network: 192.168.2.0/24
+            installationProxy:
+                mode: "(on|off|default)"
+    ```
+  - On  - proxy will be used across all nodes in the cluster at all times.
+  - Off - proxy will be turned of across the cluster.
+  - Default - proxy will be turned on across the cluster for all nodes if the cluster contains at least one hetzner node.
+  
+    NOTE: if your cluster was build with the proxy turned on during the experimental phase, this change may or may not work, create backups before updating to the new version.
+
+
+- When triggering a change of the the API endpoint of a cluster, an endless retry was added to the task executing the change as in the case of an error the cluster would endup malformed. This change will require user intervention to fix the underlying issue, if any occurs [#1577](https://github.com/berops/claudie/pull/1577)
+
+
+- Basic reconciliation was added for autoscaled events in case of an error during the execution [#1582](https://github.com/berops/claudie/pull/1582)
+    - If error occurs during the addition of the node, claudie will rollback by deleting the added node and any associated infrastructure
+    - If errors occurs during the deletion of the node, claudie will retry the deletion multiple times
+  
+    For both of the cases it will retry the rollback or deletion of the node multiple times with an exponential backoff with up to an hour.
+
+## Bug fixes
+- Up until now, if there was any invalid input in the InputManifest or the infrastructure was able to be only partially created, the InputManifest would end up with an error where only manual deletion would help to remove the partially constructed infrastructure, This was fixed, so that if anything fails during the addition of new infrastructure into the cluster, claudie will rollback to the last working point, by removing the partially created infrastructure [#1566](https://github.com/berops/claudie/pull/1566)
+ 
+- Longhorn related issues, especially during node deletion resulted in many InputManifest issues, In this release we fixed the issues by switching to a different drain policy for longhorn replicas deployed across the nodes on the cluster, namely `block-for-eviction-if-last-replica`[#1596](https://github.com/berops/claudie/pull/1596) which results in:
+  - Protecting data by preventing the drain operation from completing until there is a healthy replica available for each volume available on another node.
+  - Automatically evicts replicas, so the user does not need to do it manually.
