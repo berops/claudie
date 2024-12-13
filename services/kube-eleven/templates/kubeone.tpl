@@ -10,7 +10,7 @@ features:
     replicas: 2
     deployPodDisruptionBudget: true
   nodeLocalDNS:
-    deploy: false
+    deploy: true
 
 clusterNetwork:
   cni:
