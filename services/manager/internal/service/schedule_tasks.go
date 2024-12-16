@@ -247,6 +247,27 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 
 	var events []*spec.TaskEvent
 
+	if current.Kubernetes != desired.Kubernetes {
+		events = append(events, &spec.TaskEvent{
+			Id:          uuid.New().String(),
+			Timestamp:   timestamppb.New(time.Now().UTC()),
+			Event:       spec.Event_UPDATE,
+			Description: fmt.Sprintf("changing kubernetes version from %v to %v", current.Kubernetes, desired.Kubernetes),
+			Task: &spec.Task{
+				UpdateState: &spec.UpdateState{
+					K8S: &spec.K8Scluster{
+						ClusterInfo:       current.ClusterInfo,
+						Network:           current.Network,
+						Kubeconfig:        current.Kubeconfig,
+						Kubernetes:        desired.Kubernetes,
+						InstallationProxy: current.InstallationProxy,
+					},
+					Lbs: &spec.LoadBalancers{Clusters: currentLbs},
+				},
+			},
+		})
+	}
+
 	currProxySettings := &spec.InstallationProxy{
 		Mode: "default",
 	}
