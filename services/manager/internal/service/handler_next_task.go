@@ -4,9 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
-
 	"github.com/berops/claudie/internal/manifest"
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/manager/internal/store"
@@ -116,15 +115,10 @@ func transferExistingData(state *spec.ClusterState, te *spec.TaskEvent) error {
 				if cnp.GetDynamicNodePool() == nil {
 					continue
 				}
-
-				di := slices.IndexFunc(state.Desired.K8S.ClusterInfo.NodePools, func(pool *spec.NodePool) bool {
-					return pool.Name == cnp.Name
-				})
-				if di < 0 {
+				dnp := nodepools.FindByName(cnp.Name, state.Desired.K8S.ClusterInfo.NodePools)
+				if dnp == nil {
 					continue
 				}
-
-				dnp := state.Desired.K8S.ClusterInfo.NodePools[di]
 				transferDynamicNp(state.Desired.K8S.ClusterInfo.Id(), cnp, dnp, false)
 			}
 			return nil

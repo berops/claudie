@@ -433,8 +433,8 @@ type DynamicNodePool struct {
 	MachineSpec *MachineSpec `protobuf:"bytes,10,opt,name=machineSpec,proto3" json:"machineSpec,omitempty"`
 	PublicKey   string       `protobuf:"bytes,11,opt,name=publicKey,proto3" json:"publicKey,omitempty"`
 	PrivateKey  string       `protobuf:"bytes,12,opt,name=privateKey,proto3" json:"privateKey,omitempty"`
-	// Cidr initially empty, will be set once the infra
-	// is spawned using terraform.
+	// Cidr initially empty, will be set once the exising state
+	// is transferred.
 	Cidr string `protobuf:"bytes,14,opt,name=cidr,proto3" json:"cidr,omitempty"`
 }
 
