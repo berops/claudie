@@ -63,7 +63,7 @@ images:
 - name: ghcr.io/berops/claudie/builder
   newTag: 06cb96b-3180
 - name: ghcr.io/berops/claudie/claudie-operator
-  newTag: 06cb96b-3180
+  newTag: 556458f-3186
 - name: ghcr.io/berops/claudie/kube-eleven
   newTag: 8169839-3184
 - name: ghcr.io/berops/claudie/kuber
