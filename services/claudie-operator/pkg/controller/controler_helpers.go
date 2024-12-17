@@ -18,6 +18,7 @@ package controller
 
 import (
 	"fmt"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/berops/claudie/internal/generics"
@@ -45,8 +46,8 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 
 			providers.GCP = append(providers.GCP, manifest.GCP{
 				Name:        p.ProviderName,
-				Credentials: gcpCredentials,
-				GCPProject:  gcpProject,
+				Credentials: strings.TrimSpace(gcpCredentials),
+				GCPProject:  strings.TrimSpace(gcpProject),
 				Templates:   p.Templates,
 			})
 
@@ -62,8 +63,8 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 
 			providers.AWS = append(providers.AWS, manifest.AWS{
 				Name:      p.ProviderName,
-				AccessKey: awsAccesskey,
-				SecretKey: awsSecretkey,
+				AccessKey: strings.TrimSpace(awsAccesskey),
+				SecretKey: strings.TrimSpace(awsSecretkey),
 				Templates: p.Templates,
 			})
 		case v1beta.GENESIS_CLOUD:
@@ -73,7 +74,7 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 			}
 			var genCloud = manifest.GenesisCloud{
 				Name:      p.ProviderName,
-				ApiToken:  gcToken,
+				ApiToken:  strings.TrimSpace(gcToken),
 				Templates: p.Templates,
 			}
 			providers.GenesisCloud = append(providers.GenesisCloud, genCloud)
@@ -84,7 +85,7 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 			}
 			var hetzner = manifest.Hetzner{
 				Name:        p.ProviderName,
-				Credentials: hetzner_key,
+				Credentials: strings.TrimSpace(hetzner_key),
 				Templates:   p.Templates,
 			}
 			providers.Hetzner = append(providers.Hetzner, hetzner)
@@ -112,11 +113,11 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 
 			providers.OCI = append(providers.OCI, manifest.OCI{
 				Name:           p.ProviderName,
-				PrivateKey:     ociPrivateKey,
-				KeyFingerprint: ociFingerPrint,
-				TenancyOCID:    ociTenant,
-				CompartmentID:  ociCompartmentOcid,
-				UserOCID:       ociUserOcid,
+				PrivateKey:     strings.TrimSpace(ociPrivateKey),
+				KeyFingerprint: strings.TrimSpace(ociFingerPrint),
+				TenancyOCID:    strings.TrimSpace(ociTenant),
+				CompartmentID:  strings.TrimSpace(ociCompartmentOcid),
+				UserOCID:       strings.TrimSpace(ociUserOcid),
 				Templates:      p.Templates,
 			})
 		case v1beta.AZURE:
@@ -142,10 +143,10 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 
 			providers.Azure = append(providers.Azure, manifest.Azure{
 				Name:           p.ProviderName,
-				SubscriptionId: azureSubscriptionId,
-				TenantId:       azureTenantId,
-				ClientId:       azureClientId,
-				ClientSecret:   azureClientSecret,
+				SubscriptionId: strings.TrimSpace(azureSubscriptionId),
+				TenantId:       strings.TrimSpace(azureTenantId),
+				ClientId:       strings.TrimSpace(azureClientId),
+				ClientSecret:   strings.TrimSpace(azureClientSecret),
 				Templates:      p.Templates,
 			})
 		case v1beta.CLOUDFLARE:
@@ -155,7 +156,7 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 			}
 			providers.Cloudflare = append(providers.Cloudflare, manifest.Cloudflare{
 				Name:      p.ProviderName,
-				ApiToken:  cfApiToken,
+				ApiToken:  strings.TrimSpace(cfApiToken),
 				Templates: p.Templates,
 			})
 
@@ -166,7 +167,7 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 			}
 			providers.HetznerDNS = append(providers.HetznerDNS, manifest.HetznerDNS{
 				Name:      p.ProviderName,
-				ApiToken:  hetznerDNSCredentials,
+				ApiToken:  strings.TrimSpace(hetznerDNSCredentials),
 				Templates: p.Templates,
 			})
 		}
