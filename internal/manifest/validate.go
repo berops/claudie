@@ -89,6 +89,8 @@ func prettyPrintValidationError(err error) error {
 			nerr = fmt.Errorf("field '%s' is required to have a valid proxy mode value of \"on\", \"off\", \"default\"", err.StructField())
 		case "semver2":
 			nerr = fmt.Errorf("field '%s' is required to follow semantic version 2.0, ref: https://semver.org/", err.StructField())
+		case "required_without":
+			nerr = fmt.Errorf("'%s' needs to be set if '%s' is not specified", err.Field(), err.Param())
 		default:
 			nerr = err
 		}
