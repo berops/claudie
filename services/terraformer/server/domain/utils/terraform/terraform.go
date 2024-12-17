@@ -44,7 +44,7 @@ func (t *Terraform) Init() error {
 	}
 	defer t.SpawnProcessLimit.Release(1)
 
-	cmd := exec.Command("terraform", "init")
+	cmd := exec.Command("tofu", "init")
 	cmd.Dir = t.Directory
 	cmd.Stdout = t.Stdout
 	cmd.Stderr = t.Stderr
@@ -53,7 +53,7 @@ func (t *Terraform) Init() error {
 		log.Warn().Msgf("Error encountered while executing %s from %s: %v", cmd, t.Directory, err)
 
 		retryCmd := comm.Cmd{
-			Command: "terraform init",
+			Command: "tofu init",
 			Dir:     t.Directory,
 			Stdout:  cmd.Stdout,
 			Stderr:  cmd.Stderr,
@@ -83,13 +83,13 @@ func (t *Terraform) Apply() error {
 		fmt.Sprintf("--parallelism=%v", t.Parallelism),
 	}
 
-	cmd := exec.Command("terraform", args...)
+	cmd := exec.Command("tofu", args...)
 	cmd.Dir = t.Directory
 	cmd.Stdout = t.Stdout
 	cmd.Stderr = t.Stderr
 
 	if err := cmd.Run(); err != nil {
-		command := fmt.Sprintf("terraform %s", strings.Join(args, " "))
+		command := fmt.Sprintf("tofu %s", strings.Join(args, " "))
 
 		log.Warn().Msgf("Error encountered while executing %s from %s: %v", cmd, t.Directory, err)
 
@@ -124,13 +124,13 @@ func (t *Terraform) Destroy() error {
 		fmt.Sprintf("--parallelism=%v", t.Parallelism),
 	}
 
-	cmd := exec.Command("terraform", args...)
+	cmd := exec.Command("tofu", args...)
 	cmd.Dir = t.Directory
 	cmd.Stdout = t.Stdout
 	cmd.Stderr = t.Stderr
 
 	if err := cmd.Run(); err != nil {
-		command := fmt.Sprintf("terraform %s", strings.Join(args, " "))
+		command := fmt.Sprintf("tofu %s", strings.Join(args, " "))
 
 		log.Warn().Msgf("Error encountered while executing %s from %s: %v", cmd, t.Directory, err)
 
@@ -169,13 +169,13 @@ func (t *Terraform) DestroyTarget(targets []string) error {
 		args = append(args, fmt.Sprintf("--target=%s", resource))
 	}
 
-	cmd := exec.Command("terraform", args...)
+	cmd := exec.Command("tofu", args...)
 	cmd.Dir = t.Directory
 	cmd.Stdout = t.Stdout
 	cmd.Stderr = t.Stderr
 
 	if err := cmd.Run(); err != nil {
-		command := fmt.Sprintf("terraform %s", strings.Join(args, " "))
+		command := fmt.Sprintf("tofu %s", strings.Join(args, " "))
 
 		log.Warn().Msgf("Error encountered while executing %s from %s: %v", cmd, t.Directory, err)
 
@@ -198,13 +198,13 @@ func (t *Terraform) DestroyTarget(targets []string) error {
 }
 
 func (t *Terraform) StateList() ([]string, error) {
-	cmd := exec.Command("terraform", "state", "list")
+	cmd := exec.Command("tofu", "state", "list")
 	cmd.Dir = t.Directory
 	out, err := cmd.Output()
 	if err != nil {
 		log.Warn().Msgf("Error encountered while executing %s from %s: %v", cmd, t.Directory, err)
 		retryCmd := comm.Cmd{
-			Command: "terraform state list",
+			Command: "tofu state list",
 			Dir:     t.Directory,
 			Stdout:  cmd.Stdout,
 			Stderr:  cmd.Stderr,
@@ -227,7 +227,7 @@ func (t *Terraform) StateList() ([]string, error) {
 }
 
 func (t *Terraform) Output(resourceName string) (string, error) {
-	cmd := exec.Command("terraform", "output", "-json", resourceName)
+	cmd := exec.Command("tofu", "output", "-json", resourceName)
 	cmd.Dir = t.Directory
 	out, err := cmd.CombinedOutput()
 	return string(out), err
