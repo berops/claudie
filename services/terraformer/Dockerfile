@@ -4,9 +4,9 @@ ARG TARGETARCH
 
 # download and unzip kube-one binary
 RUN apt-get -qq update && apt-get -qq install unzip
-RUN VERSION=1.5.7 && \
-    wget -q https://releases.hashicorp.com/terraform/${VERSION}/terraform_${VERSION}_linux_$TARGETARCH.zip && \
-    unzip -qq terraform_${VERSION}_linux_$TARGETARCH.zip -d terraform
+RUN VERSION=1.6.2 && \
+    wget -qhttps://github.com/opentofu/opentofu/releases/download/v${VERSION}/tofu_${VERSION}_linux_$TARGETARCH.zip && \
+    unzip -qq tofu_${VERSION}_linux_$TARGETARCH.zip -d tofu
 
 #Unset the GOPATH
 ENV GOPATH=
@@ -22,7 +22,7 @@ RUN go mod download
 COPY . .
 
 #Change the directory
-WORKDIR /go/services/terraformer/server
+WORKDIR /go/services/opentofu/server
 
 #Compile the golang code to /out, CGO_ENABLE=0 removes cross compile dependencies
 RUN CGO_ENABLED=0 go build
@@ -33,12 +33,12 @@ LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
 #Add image name as a label
 LABEL org.opencontainers.image.base.name "docker.io/library/alpine"
 #Add description to the image
-LABEL org.opencontainers.image.description "Image for Terraformer from Claudie"
+LABEL org.opencontainers.image.description "Image for OpenTofu from Claudie"
 
 #Copy the binaries to empty base image
-COPY --from=build /go/terraform/terraform /usr/local/bin
+COPY --from=build /go/opentofu/opentofu /usr/local/bin
 
-COPY --from=build /go/services/terraformer/server/server /bin/services/terraformer/server/server
+COPY --from=build /go/services/opentofu/server/server /bin/services/opentofu/server/server
 
 COPY --from=build /usr/bin/git /usr/bin/git
 
@@ -46,6 +46,6 @@ RUN apk --no-cache add bash git
 
 #Run server
 WORKDIR /bin
-ENTRYPOINT [ "./services/terraformer/server/server" ]
+ENTRYPOINT [ "./services/opentofu/server/server" ]
 
 #NOTE: We cannot use scratch image for our dockerfile since we are using shell commands to execute commands inside the code
