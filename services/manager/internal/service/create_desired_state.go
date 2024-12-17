@@ -8,6 +8,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"net"
+	"slices"
 	"strings"
 
 	"github.com/berops/claudie/internal/hash"
@@ -75,12 +76,13 @@ func createDesiredState(pending *store.Config) error {
 	for _, state := range grpcRepr.Clusters {
 		fillMissingDynamicNodes(state.Desired)
 	}
-	// The decision was made to generate the CIDR for individual nodepools after merging of the existing
-	// state. The other possibility would be to generate the CIDRS when the desired state for each k8s cluster
-	// is created, however, there would be duplicate code that would need to be executed as well when merging
-	// existing state.
+
+	// We generate the CIDR for individual nodepools at this step, as
+	// we need contextual information about the current state so that
+	// we do not generate the same cidr for the same Provider/Region pair
+	// multiple times, avoiding conflicts.
 	for _, state := range grpcRepr.Clusters {
-		if err := fillMissingCIDR(state.Desired); err != nil {
+		if err := fillMissingCIDR(state); err != nil {
 			return fmt.Errorf("failed to generate cidrs for nodepools: %w", err)
 		}
 	}
@@ -372,10 +374,17 @@ func generateMissingDynamicNodes(nodepoolID string, usedNames map[string]struct{
 	}
 }
 
-func fillMissingCIDR(c *spec.Clusters) error {
+func fillMissingCIDR(c *spec.ClusterState) error {
 	// https://github.com/berops/claudie/issues/647
-	for _, nps := range nodepools.ByProviderRegion(c.GetK8S().GetClusterInfo().GetNodePools()) {
-		if err := calculateCIDR(baseSubnetCIDR, nodepools.ExtractDynamic(nps)); err != nil {
+	existing := make(map[string][]string)
+	for p, nps := range nodepools.ByProviderRegion(c.GetCurrent().GetK8S().GetClusterInfo().GetNodePools()) {
+		for _, np := range nodepools.ExtractDynamic(nps) {
+			existing[p] = append(existing[p], np.Cidr)
+		}
+	}
+
+	for p, nps := range nodepools.ByProviderRegion(c.GetDesired().GetK8S().GetClusterInfo().GetNodePools()) {
+		if err := calculateCIDR(baseSubnetCIDR, p, existing, nodepools.ExtractDynamic(nps)); err != nil {
 			return fmt.Errorf("error while generating cidr for nodepool: %w", err)
 		}
 	}
@@ -383,25 +392,20 @@ func fillMissingCIDR(c *spec.Clusters) error {
 }
 
 // calculateCIDR will make sure all nodepools have subnet CIDR calculated.
-func calculateCIDR(baseCIDR string, nodepools []*spec.DynamicNodePool) error {
-	exists := make(map[string]struct{})
-	for _, np := range nodepools {
-		exists[np.Cidr] = struct{}{}
-	}
-
+func calculateCIDR(baseCIDR, key string, existing map[string][]string, nodepools []*spec.DynamicNodePool) error {
 	for _, np := range nodepools {
 		if np.Cidr != "" {
 			continue
 		}
 
-		cidr, err := getCIDR(baseCIDR, defaultOctetToChange, exists)
+		cidr, err := getCIDR(baseCIDR, defaultOctetToChange, existing[key])
 		if err != nil {
 			return fmt.Errorf("failed to parse CIDR for nodepool : %w", err)
 		}
 
 		log.Debug().Msgf("Calculating new VPC subnet CIDR for nodepool. New CIDR [%s]", cidr)
 		np.Cidr = cidr
-		exists[cidr] = struct{}{}
+		existing[key] = append(existing[key], cidr)
 	}
 
 	return nil
@@ -409,7 +413,7 @@ func calculateCIDR(baseCIDR string, nodepools []*spec.DynamicNodePool) error {
 
 // getCIDR function returns CIDR in IPv4 format, with position replaced by value
 // The function does not check if it is a valid CIDR/can be used in subnet spec
-func getCIDR(baseCIDR string, position int, existing map[string]struct{}) (string, error) {
+func getCIDR(baseCIDR string, position int, existing []string) (string, error) {
 	_, ipNet, err := net.ParseCIDR(baseCIDR)
 	if err != nil {
 		return "", fmt.Errorf("cannot parse a CIDR with base %s, position %d", baseCIDR, position)
@@ -422,7 +426,7 @@ func getCIDR(baseCIDR string, position int, existing map[string]struct{}) (strin
 			return "", fmt.Errorf("maximum number of IPs assigned")
 		}
 		ip[position] = byte(i)
-		if _, ok := existing[fmt.Sprintf("%s/%d", ip.String(), ones)]; ok {
+		if slices.Contains(existing, fmt.Sprintf("%s/%d", ip.String(), ones)) {
 			i++
 			continue
 		}
