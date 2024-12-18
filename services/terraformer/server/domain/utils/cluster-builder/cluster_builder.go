@@ -110,17 +110,19 @@ func (c ClusterBuilder) CreateNodepools() error {
 		return err
 	}
 
-	oldNodes := c.getCurrentNodes()
-
-	// fill new nodes with output
-	for _, nodepool := range c.DesiredClusterInfo.NodePools {
-		np := nodepool.GetDynamicNodePool()
-		if np == nil {
-			continue
+	// DEBUG PRINT
+	fmt.Printf("before----------------------------------->")
+	for _, np := range c.DesiredClusterInfo.NodePools {
+		for _, n := range np.Nodes {
+			fmt.Printf("%s private (%q) public (%q)\n", n.Name, n.Private, n.Public)
 		}
+	}
+	fmt.Println()
 
-		f := hash.Digest128(filepath.Join(np.Provider.SpecName, np.Provider.Templates.MustExtractTargetPath()))
-		k := fmt.Sprintf("%s_%s_%s", nodepool.Name, np.Provider.SpecName, hex.EncodeToString(f))
+	for _, nodepool := range nodepools.Dynamic(c.DesiredClusterInfo.NodePools) {
+		d := nodepool.GetDynamicNodePool()
+		f := hash.Digest128(filepath.Join(d.Provider.SpecName, d.Provider.Templates.MustExtractTargetPath()))
+		k := fmt.Sprintf("%s_%s_%s", nodepool.Name, d.Provider.SpecName, hex.EncodeToString(f))
 
 		output, err := terraform.Output(k)
 		if err != nil {
@@ -130,8 +132,30 @@ func (c ClusterBuilder) CreateNodepools() error {
 		if err != nil {
 			return fmt.Errorf("error while reading the terraform output for %s : %w", nodepool.Name, err)
 		}
-		fillNodes(&out, nodepool, oldNodes)
+		for _, n := range nodepool.Nodes {
+			var found bool
+			for target, ip := range generics.IterateMapInOrder(out.IPs) {
+				if target != n.Name {
+					continue
+				}
+				found = true
+				n.Public = fmt.Sprint(ip)
+				break
+			}
+			if !found {
+				return fmt.Errorf("node %s from nodepool %s was missing from the terraform output, possibly the VM was not properly created", n.Name, nodepool.Name)
+			}
+		}
 	}
+
+	// DEBUG PRINT
+	fmt.Printf("after------------------------------------>")
+	for _, np := range c.DesiredClusterInfo.NodePools {
+		for _, n := range np.Nodes {
+			fmt.Printf("%s private (%q) public (%q)\n", n.Name, n.Private, n.Public)
+		}
+	}
+	fmt.Println()
 
 	return nil
 }
@@ -277,60 +301,6 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 	}
 
 	return nil
-}
-
-// getCurrentNodes returns all nodes which are in a current state
-func (c *ClusterBuilder) getCurrentNodes() []*spec.Node {
-	// group all the nodes together to make searching with respect to IP easy
-	var oldNodes []*spec.Node
-	if c.CurrentClusterInfo != nil {
-		for _, oldNodepool := range c.CurrentClusterInfo.NodePools {
-			if oldNodepool.GetDynamicNodePool() != nil {
-				oldNodes = append(oldNodes, oldNodepool.Nodes...)
-			}
-		}
-	}
-	return oldNodes
-}
-
-// fillNodes creates pb.Node slices in desired state, with the new nodes and old nodes
-func fillNodes(terraformOutput *templates.NodepoolIPs, newNodePool *spec.NodePool, oldNodes []*spec.Node) {
-	// fill slices from terraformOutput maps with names of nodes to ensure an order
-	var tempNodes []*spec.Node
-	// get sorted list of keys
-	_ = generics.IterateInOrder(terraformOutput.IPs, func(nodeName string, IP any) error {
-		var nodeType spec.NodeType
-		var private string
-
-		if newNodePool.IsControl {
-			nodeType = spec.NodeType_master
-		} else {
-			nodeType = spec.NodeType_worker
-		}
-
-		if len(oldNodes) > 0 {
-			for _, node := range oldNodes {
-				//check if node was defined before
-				if fmt.Sprint(IP) == node.Public && nodeName == node.Name {
-					// carry privateIP to desired state, so it will not get overwritten in Ansibler
-					private = node.Private
-					// carry node type since it might be API endpoint, which should not change once set
-					nodeType = node.NodeType
-					break
-				}
-			}
-		}
-
-		tempNodes = append(tempNodes, &spec.Node{
-			Name:     nodeName,
-			Public:   fmt.Sprint(terraformOutput.IPs[nodeName]),
-			Private:  private,
-			NodeType: nodeType,
-		})
-		return nil
-	})
-
-	newNodePool.Nodes = tempNodes
 }
 
 // readIPs reads json output format from terraform and unmarshal it into map[string]map[string]string readable by Go.

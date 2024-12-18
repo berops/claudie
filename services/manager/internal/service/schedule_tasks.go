@@ -55,6 +55,18 @@ func scheduleTasks(scheduled *store.Config) (ScheduleResult, error) {
 			// nothing to do (desired state was not build).
 		// create
 		case state.Current == nil && state.Desired != nil:
+			// Choose initial api endpoint.
+		clusters:
+			for _, state := range scheduledGRPC.Clusters {
+				for _, lb := range state.Desired.GetLoadBalancers().GetClusters() {
+					if lb.HasApiRole() {
+						continue clusters
+					}
+				}
+				nps := state.Desired.K8S.ClusterInfo.NodePools
+				nodepools.FirstControlNode(nps).NodeType = spec.NodeType_apiEndpoint
+			}
+
 			events = append(events, &spec.TaskEvent{
 				Id:          uuid.New().String(),
 				Timestamp:   timestamppb.New(time.Now().UTC()),

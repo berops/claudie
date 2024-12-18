@@ -18,22 +18,31 @@
         - "/etc/kubernetes/pki/apiserver.crt"
         - "/etc/kubernetes/pki/apiserver.key"
 
-    - name: find file that contains the hostname
-      find:
-        contains: ".*{{inventory_hostname}}.*"
-        path: /root/kubeone/cfg/
-      register: file
+    - name: Filter out relevant files containing configurations for current node
+      # this setup can change in future kubeone versions.
+      # https://github.com/kubermatic/kubeone/blob/66d3281919890e7c43148d2f72140acdff168e73/pkg/scripts/kubeadm.go#L42
+      shell: |
+        grep -r -lE "{{inventory_hostname}}" /root/kubeone/cfg/*full* | xargs grep -lE "InitConfiguration|ClusterConfiguration"
+      register: grep_results
 
     - name: fail if no file was found
       fail:
         msg: "No file with {{inventory_hostname}} was found"
-      when: file.files == []
+      when: grep_results.stdout_lines == []
+
+    - name: Select file
+      set_fact:
+        file: "{{grep_results.stdout_lines[0]}}"
+
+    - name: Chosen file with cluster configuration
+      ansible.builtin.debug:
+        var: file
 
     - name: replace endpoint
       replace:
-        path: "{{file.files[0].path}}"
-        regexp: '{{ OldEndpoint }}'
-        replace: '{{ NewEndpoint }}'
+        path: "{{file}}"
+        regexp: '^controlPlaneEndpoint:.*{{ OldEndpoint }}'
+        replace: 'controlPlaneEndpoint: {{ NewEndpoint }}'
 
     - name: update endpoint in /etc/environment
       ansible.builtin.replace:
@@ -57,7 +66,7 @@
       shell: |
         NO_PROXY={{ NoProxyList }} no_proxy={{ NoProxyList }} HTTP_PROXY={{ HttpProxyUrl }} http_proxy={{ HttpProxyUrl }} \
         HTTPS_PROXY={{ HttpProxyUrl }} https_proxy={{ HttpProxyUrl }} \
-        kubeadm init phase certs apiserver --config {{file.files[0].path}}
+        kubeadm init phase certs apiserver --config {{file}}
 
     - name: remove old /etc/kubernetes/*.conf
       file:
@@ -73,7 +82,7 @@
       ansible.builtin.shell: |
         NO_PROXY={{ NoProxyList }} no_proxy={{ NoProxyList }} HTTP_PROXY={{ HttpProxyUrl }} http_proxy={{ HttpProxyUrl }} \
         HTTPS_PROXY={{ HttpProxyUrl }} https_proxy={{ HttpProxyUrl }} \
-        kubeadm init phase kubeconfig all --config {{file.files[0].path}}
+        kubeadm init phase kubeconfig all --config {{file}}
 
     - name: restart kubelet
       ansible.builtin.service:
@@ -90,7 +99,7 @@
       ansible.builtin.shell: |
         NO_PROXY={{ NoProxyList }} no_proxy={{ NoProxyList }} HTTP_PROXY={{ HttpProxyUrl }} http_proxy={{ HttpProxyUrl }} \
         HTTPS_PROXY={{ HttpProxyUrl }} https_proxy={{ HttpProxyUrl }} \
-        kubeadm init phase upload-config all --config {{file.files[0].path}}
+        kubeadm init phase upload-config all --config {{file}}
 
     - name: restart containerd and kubelet
       ansible.builtin.service:
