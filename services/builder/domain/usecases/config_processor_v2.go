@@ -167,15 +167,21 @@ func (u *Usecases) executeUpdateTask(te *managerclient.NextTaskResponse) (*spec.
 		np := te.Event.Task.UpdateState.Endpoint.Nodepool
 		n := te.Event.Task.UpdateState.Endpoint.Node
 
-		if err := u.callUpdateAPIEndpoint(ctx, np, n); err != nil {
-			return te.Current.GetK8S(), te.Current.GetLoadBalancers().GetClusters(), err
+		if te.Event.Task.UpdateState.Endpoint.FromLoadbalancer {
+			if err := u.callTeardownAPIEndpoint(ctx, np, n); err != nil {
+				return te.Current.GetK8S(), te.Current.GetLoadBalancers().GetClusters(), err
+			}
+		} else {
+			if err := u.callUpdateAPIEndpoint(ctx, np, n); err != nil {
+				return te.Current.GetK8S(), te.Current.GetLoadBalancers().GetClusters(), err
+			}
 		}
 
 		ctx = &builder.Context{
 			ProjectName:          te.Config,
 			TaskId:               te.Event.Id,
 			DesiredCluster:       ctx.CurrentCluster,
-			DesiredLoadbalancers: te.Current.GetLoadBalancers().GetClusters(),
+			DesiredLoadbalancers: ctx.CurrentLoadbalancers,
 			Workflow:             te.State,
 		}
 

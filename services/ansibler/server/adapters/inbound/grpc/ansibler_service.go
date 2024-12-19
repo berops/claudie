@@ -41,6 +41,6 @@ func (a *AnsiblerGrpcService) SetUpLoadbalancers(_ context.Context, request *pb.
 	return a.usecases.SetUpLoadbalancers(request)
 }
 
-func (a *AnsiblerGrpcService) TeardownLoadBalancers(ctx context.Context, request *pb.TeardownLBRequest) (*pb.TeardownLBResponse, error) {
-	return a.usecases.TeardownLoadBalancers(ctx, request)
+func (a *AnsiblerGrpcService) TeardownApiEndpointLoadbalancer(ctx context.Context, request *pb.TeardownRequest) (*pb.TeardownResponse, error) {
+	return a.usecases.TeardownApiEndpointLoadbalancer(ctx, request)
 }

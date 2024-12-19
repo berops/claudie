@@ -1,6 +1,7 @@
 package kube_eleven
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -116,14 +117,15 @@ func (k *KubeEleven) DestroyCluster() error {
 // generateFiles will generate those files (kubeone.yaml and key.pem) needed by Kubeone.
 // Returns nil if successful, error otherwise.
 func (k *KubeEleven) generateFiles() error {
-	// Load the Kubeone template file as *template.Template.
 	template, err := templateUtils.LoadTemplate(templates.KubeOneTemplate)
 	if err != nil {
 		return fmt.Errorf("error while loading a kubeone template : %w", err)
 	}
 
-	// Generate templateData for the template.
-	templateParameters := k.generateTemplateData()
+	templateParameters, err := k.templateData()
+	if err != nil {
+		return err
+	}
 
 	// Generate kubeone.yaml file from the template
 	err = templateUtils.Templates{Directory: k.outputDirectory}.Generate(template, generatedKubeoneManifestName, templateParameters)
@@ -142,16 +144,18 @@ func (k *KubeEleven) generateFiles() error {
 	return nil
 }
 
-// generateTemplateData will create an instance of the templateData and fill up the fields
-// The instance will then be returned.
-func (k *KubeEleven) generateTemplateData() templateData {
+// templateData will create an instance of the templateData and fill up the fields
+func (k *KubeEleven) templateData() (templateData, error) {
 	var (
+		err            error
 		data           templateData
 		k8sApiEndpoint bool
 	)
 
 	data.Nodepools = k.getClusterNodes()
-	data.APIEndpoint, k8sApiEndpoint = k.apiEndpoint()
+	if data.APIEndpoint, k8sApiEndpoint, err = k.apiEndpoint(); err != nil {
+		return templateData{}, err
+	}
 
 	var alternativeNames []string
 	for n := range nodepools.Control(k.K8sCluster.ClusterInfo.NodePools) {
@@ -174,7 +178,7 @@ func (k *KubeEleven) generateTemplateData() templateData {
 	data.KubernetesVersion = k.K8sCluster.GetKubernetes()
 	data.ClusterName = k.K8sCluster.ClusterInfo.Name
 
-	return data
+	return data, nil
 }
 
 // getClusterNodes will parse the nodepools of k.K8sCluster and construct a slice of *NodepoolInfo.
@@ -216,18 +220,18 @@ func (k *KubeEleven) getClusterNodes() []*NodepoolInfo {
 
 // apiEndpoint will extract the publicly accessible endpoint for the api server, which can
 // be either a loadbalancer or a control plane node directly.
-func (k *KubeEleven) apiEndpoint() (string, bool) {
+func (k *KubeEleven) apiEndpoint() (string, bool, error) {
 	for _, lbCluster := range k.LBClusters {
 		if lbCluster.HasApiRole() {
-			return lbCluster.Dns.Endpoint, false
+			return lbCluster.Dns.Endpoint, false, nil
 		}
 	}
 	_, n := nodepools.FindApiEndpoint(k.K8sCluster.ClusterInfo.NodePools)
 	if n == nil {
 		// This should never happen as the apiEndpoint role is always chosen by the manager service.
-		panic("malformed k8s state, no loadbalancer attach with api role nor any control plane node has api server role")
+		return "", false, errors.New("malformed k8s state, no loadbalancer attach with api role nor any control plane node has api server role")
 	}
-	return n.Public, true
+	return n.Public, true, nil
 }
 
 // getNodeData return template data for the nodes from the cluster.

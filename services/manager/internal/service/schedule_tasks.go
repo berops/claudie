@@ -370,7 +370,7 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 			Id:          uuid.New().String(),
 			Timestamp:   timestamppb.New(time.Now().UTC()),
 			Event:       spec.Event_UPDATE,
-			Description: "loadbalancer target to new control plane nodepool",
+			Description: fmt.Sprintf("modifying loadbalancer target nodepools to include new control plane nodepool %s", nameWithoutHash),
 			Task: &spec.Task{
 				UpdateState: &spec.UpdateState{
 					K8S: ir,
@@ -390,11 +390,37 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 			Id:          uuid.New().String(),
 			Timestamp:   timestamppb.New(time.Now().UTC()),
 			Event:       spec.Event_UPDATE,
-			Description: "moving endpoint from old control plane node to a new control plane node",
+			Description: fmt.Sprintf("moving endpoint from old control plane node to a new control plane node %s from nodepool %s", node, nodePool),
 			Task: &spec.Task{
 				UpdateState: &spec.UpdateState{Endpoint: &spec.UpdateState_Endpoint{
 					Nodepool: nodePool,
 					Node:     node,
+				}},
+			},
+			OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
+				Kind: spec.Retry_Repeat_ENDLESS,
+			}}},
+		})
+	}
+
+	if findLbAPIEndpointCluster(currentLbs) != nil && findLbAPIEndpointCluster(desiredLbs) == nil {
+		// We know that there is no LB in the desired state so we move the api endpoint to the control plane.
+		// If there is an API server in the Current and Desired state this case will not be triggered and will handled
+		// as part of the traditional workflow where the endpoint is just moved after the infrastructure has been already spawned.
+		// TODO: @test.
+		// TODO: @checkin possibly we can get rid of the deletedLoadbalancers field and simplify things further.
+		// TODO: @fixme ports on the node will not be open yet need to run terraform first.
+		nodePool, node := newAPIEndpointNodeCandidate(desired.ClusterInfo.NodePools)
+		events = append(events, &spec.TaskEvent{
+			Id:          uuid.New().String(),
+			Timestamp:   timestamppb.New(time.Now().UTC()),
+			Event:       spec.Event_UPDATE,
+			Description: fmt.Sprintf("moving api endpoint from loadbalancer to a new control plane node %s from nodepool %s", node, nodePool),
+			Task: &spec.Task{
+				UpdateState: &spec.UpdateState{Endpoint: &spec.UpdateState_Endpoint{
+					Nodepool:         nodePool,
+					Node:             node,
+					FromLoadbalancer: true,
 				}},
 			},
 			OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{

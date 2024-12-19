@@ -33,22 +33,23 @@ func (u *Usecases) configureInfrastructure(ctx *builder.Context) error {
 	description := ctx.Workflow.Description
 
 	// Tear down loadbalancers.
+	// TODO: @remove
 	apiEndpoint := ""
-	if len(ctx.DeletedLoadBalancers) > 0 {
-		u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s tearing down loadbalancers", description))
-
-		logger.Info().Msgf("Calling TearDownLoadbalancers on Ansibler")
-		teardownRes, err := u.Ansibler.TeardownLoadBalancers(ctx, ansClient)
-		if err != nil {
-			return err
-		}
-		logger.Info().Msgf("TearDownLoadbalancers on Ansibler finished successfully")
-
-		ctx.DesiredCluster = teardownRes.Desired
-		ctx.DesiredLoadbalancers = teardownRes.DesiredLbs
-		ctx.DeletedLoadBalancers = teardownRes.DeletedLbs
-		apiEndpoint = teardownRes.PreviousAPIEndpoint
-	}
+	//if len(ctx.DeletedLoadBalancers) > 0 {
+	//	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s tearing down loadbalancers", description))
+	//
+	//	logger.Info().Msgf("Calling TearDownLoadbalancers on Ansibler")
+	//	teardownRes, err := u.Ansibler.TeardownLoadBalancers(ctx, ansClient)
+	//	if err != nil {
+	//		return err
+	//	}
+	//	logger.Info().Msgf("TearDownLoadbalancers on Ansibler finished successfully")
+	//
+	//	ctx.DesiredCluster = teardownRes.Desired
+	//	ctx.DesiredLoadbalancers = teardownRes.DesiredLbs
+	//	ctx.DeletedLoadBalancers = teardownRes.DeletedLbs
+	//	apiEndpoint = teardownRes.PreviousAPIEndpoint
+	//}
 
 	// Updating proxy envs on nodes.
 	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s updating proxy envs on nodes in /etc/environment", description))
@@ -134,6 +135,21 @@ func (u *Usecases) configureInfrastructure(ctx *builder.Context) error {
 		ctx.DesiredCluster = noProxyResp.Desired
 	}
 
+	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, description)
+	return nil
+}
+
+func (u *Usecases) callTeardownAPIEndpoint(ctx *builder.Context, nodepool, node string) error {
+	description := ctx.Workflow.Description
+	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s changing api endpoint from loadbalancer to a new control plane node", description))
+
+	resp, err := u.Ansibler.TeardownApiEndpointLoadbalancer(ctx, nodepool, node, u.Ansibler.GetClient())
+	if err != nil {
+		return err
+	}
+
+	ctx.CurrentCluster = resp.Current
+	ctx.CurrentLoadbalancers = resp.CurrentLbs
 	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, description)
 	return nil
 }

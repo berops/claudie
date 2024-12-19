@@ -38,22 +38,26 @@ func updateAPIEndpoint(endpoint *pb.UpdateAPIEndpointRequest_Endpoint, currentK8
 	clusterID := currentK8sCluster.ClusterInfo.Id()
 
 	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, hash.Create(hash.Length)))
+
 	if err := fileutils.CreateDirectory(clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
 	}
 
-	if err := nodepools.DynamicGenerateKeys(nodepools.Dynamic(currentK8sCluster.ClusterInfo.NodePools), clusterDirectory); err != nil {
+	dyn := nodepools.Dynamic(currentK8sCluster.ClusterInfo.NodePools)
+	stc := nodepools.Static(currentK8sCluster.ClusterInfo.NodePools)
+
+	if err := nodepools.DynamicGenerateKeys(dyn, clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for dynamic nodepools : %w", err)
 	}
 
-	if err := nodepools.StaticGenerateKeys(nodepools.Static(currentK8sCluster.ClusterInfo.NodePools), clusterDirectory); err != nil {
+	if err := nodepools.StaticGenerateKeys(stc, clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}
 
 	err := utils.GenerateInventoryFile(templates.LoadbalancerInventoryTemplate, clusterDirectory, utils.LBInventoryFileParameters{
 		K8sNodepools: utils.NodePools{
-			Dynamic: nodepools.Dynamic(currentK8sCluster.ClusterInfo.NodePools),
-			Static:  nodepools.Static(currentK8sCluster.ClusterInfo.NodePools),
+			Dynamic: dyn,
+			Static:  stc,
 		},
 		LBClusters: nil,
 		ClusterID:  clusterID,

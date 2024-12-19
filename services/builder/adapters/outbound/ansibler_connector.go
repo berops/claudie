@@ -59,13 +59,13 @@ func (a *AnsiblerConnector) SetUpLoadbalancers(builderCtx *builder.Context, apiE
 		})
 }
 
-// TeardownLoadBalancers destroys loadbalancers for the infrastructure.
-func (a *AnsiblerConnector) TeardownLoadBalancers(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.TeardownLBResponse, error) {
-	return ansibler.TeardownLoadBalancers(ansiblerGrpcClient,
-		&pb.TeardownLBRequest{
-			Desired:     builderCtx.DesiredCluster,
-			DesiredLbs:  builderCtx.DesiredLoadbalancers,
-			DeletedLbs:  builderCtx.DeletedLoadBalancers,
+// TeardownApiEndpointLoadbalancer moves the api endpoint from the current loadbalancer to the request control plane node.
+func (a *AnsiblerConnector) TeardownApiEndpointLoadbalancer(builderCtx *builder.Context, nodepool, node string, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.TeardownResponse, error) {
+	return ansibler.TeardownApiEndpointLoadbalancer(ansiblerGrpcClient,
+		&pb.TeardownRequest{
+			Current:     builderCtx.CurrentCluster,
+			CurrentLbs:  builderCtx.CurrentLoadbalancers,
+			Enpoint:     &pb.TeardownRequest_Endpoint{Nodepool: nodepool, Node: node},
 			ProxyEnvs:   builderCtx.ProxyEnvs,
 			ProjectName: builderCtx.ProjectName,
 		})

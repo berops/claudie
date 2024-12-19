@@ -24,10 +24,8 @@ import (
 )
 
 const (
-	TemplatesRootDir     = "services/terraformer/templates"
-	Output               = "services/terraformer/server/clusters"
-	baseSubnetCIDR       = "10.0.0.0/24"
-	defaultOctetToChange = 2
+	TemplatesRootDir = "services/terraformer/templates"
+	Output           = "services/terraformer/server/clusters"
 )
 
 type K8sInfo struct{ LoadBalancers []*spec.LBcluster }
@@ -110,7 +108,7 @@ func (c ClusterBuilder) CreateNodepools() error {
 		return err
 	}
 
-	// DEBUG PRINT
+	// TODO: remove DEBUG PRINT
 	fmt.Printf("before----------------------------------->")
 	for _, np := range c.DesiredClusterInfo.NodePools {
 		for _, n := range np.Nodes {
@@ -148,7 +146,7 @@ func (c ClusterBuilder) CreateNodepools() error {
 		}
 	}
 
-	// DEBUG PRINT
+	// TODO: remove DEBUG PRINT
 	fmt.Printf("after------------------------------------>")
 	for _, np := range c.DesiredClusterInfo.NodePools {
 		for _, n := range np.Nodes {

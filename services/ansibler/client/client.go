@@ -42,9 +42,9 @@ func SetUpLoadbalancers(c pb.AnsiblerServiceClient, req *pb.SetUpLBRequest) (*pb
 	return res, nil
 }
 
-// TeardownLoadBalancers correctly destroys loadbalancers including selecting the new ApiServer endpoint
-func TeardownLoadBalancers(c pb.AnsiblerServiceClient, req *pb.TeardownLBRequest) (*pb.TeardownLBResponse, error) {
-	res, err := c.TeardownLoadBalancers(context.Background(), req)
+// TeardownApiEndpointLoadbalancer moves the api endpoint from the current loadbalancer to the requested control plane node.
+func TeardownApiEndpointLoadbalancer(c pb.AnsiblerServiceClient, req *pb.TeardownRequest) (*pb.TeardownResponse, error) {
+	res, err := c.TeardownApiEndpointLoadbalancer(context.Background(), req)
 	if err != nil {
 		return res, fmt.Errorf("error while calling TeardownLoadBalancers on Ansibler: %w", err)
 	}

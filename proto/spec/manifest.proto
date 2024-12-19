@@ -246,6 +246,8 @@ message UpdateState {
   message Endpoint {
     string nodepool = 1;
     string node = 2;
+    // If the current api endpoint should be transferred from the current loadbalancer or not.
+    bool fromLoadbalancer = 3;
   }
   K8scluster k8s = 1;
   LoadBalancers lbs = 2;

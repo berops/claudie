@@ -336,7 +336,6 @@ func HandleAPIEndpointChange(
 
 	log.Debug().Str("LB-cluster", lbCluster.ClusterInfo.Id()).Msgf("Changing the API endpoint from %s to %s", oldEndpoint, newEndpoint)
 	if err := ChangeAPIEndpoint(lbCluster.ClusterInfo.Name, oldEndpoint, newEndpoint, outputDirectory, proxyEnvs, processLimit); err != nil {
-		return fmt.Errorf("error while changing the endpoint for %s : %w", lbCluster.ClusterInfo.Name, err)
 	}
 
 	return nil

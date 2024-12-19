@@ -29,20 +29,21 @@ message SetUpLBResponse {
   repeated spec.LBcluster desiredLbs = 3;
 }
 
-message TeardownLBRequest {
-  spec.K8scluster desired = 1;
-  repeated spec.LBcluster desiredLbs = 2;
-  // LB clusters which were deleted from the Claudie manifest.
-  repeated spec.LBcluster deletedLbs = 3;
+message TeardownRequest {
+  message Endpoint {
+    string nodepool = 1;
+    string node = 2;
+  }
+  spec.K8scluster current = 1;
+  repeated spec.LBcluster currentLbs = 2;
+  Endpoint enpoint = 3;
   spec.ProxyEnvs proxyEnvs = 4;
   string projectName = 5;
 }
 
-message TeardownLBResponse {
-  string previousAPIEndpoint = 1;
-  spec.K8scluster desired = 2;
-  repeated spec.LBcluster desiredLbs = 3;
-  repeated spec.LBcluster deletedLbs = 4;
+message TeardownResponse {
+  spec.K8scluster current = 1;
+  repeated spec.LBcluster currentLbs = 2;
 }
 
 message UpdateAPIEndpointRequest{
@@ -99,9 +100,8 @@ service AnsiblerService {
   rpc InstallVPN(InstallRequest) returns (InstallResponse);
   // SetUpLoadbalancers sets up the load balancers together with the DNS and verifies their configuration.
   rpc SetUpLoadbalancers(SetUpLBRequest) returns (SetUpLBResponse);
-  // TeardownLoadBalancers correctly destroys the load balancers attached to a k8s
-  // cluster by choosing a new ApiServer endpoint.
-  rpc TeardownLoadBalancers(TeardownLBRequest) returns (TeardownLBResponse);
+  // TeardownApiEndpointLoadbalancer moves the api endpoint back to the control plane.
+  rpc TeardownApiEndpointLoadbalancer(TeardownRequest) returns (TeardownResponse);
   // UpdateAPIEndpoint handles changes of API endpoint between control nodes.
   // It will update the current stage based on the information from the desired state.
   rpc UpdateAPIEndpoint(UpdateAPIEndpointRequest) returns (UpdateAPIEndpointResponse);
