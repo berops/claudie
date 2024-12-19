@@ -121,3 +121,18 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 - Longhorn related issues, especially during node deletion resulted in many InputManifest issues, In this release we fixed the issues by switching to a different drain policy for longhorn replicas deployed across the nodes on the cluster, namely `block-for-eviction-if-last-replica`[#1596](https://github.com/berops/claudie/pull/1596) which results in:
     - Protecting data by preventing the drain operation from completing until there is a healthy replica available for each volume available on another node.
     - Automatically evicts replicas, so the user does not need to do it manually.
+
+ 
+## v0.9.2
+
+## What's Changed
+* Node local dns will be deployed on all newly build clusters [#1603](https://github.com/berops/claudie/pull/1603).
+  For existing clusters that were build using older Claudie version, this change will deploy the `node-local-dns` into the cluster
+  but it will not automatically work. Manual work needs to done by first editing the `kubelet-config` map in the `kube-system` namespace of the cluster
+  to change the DNS to the address of the `node-local-dns` and then on each node the following changes need to be done: [applying-kubelet-configuration-changes](https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-reconfigure/#reflecting-the-kubelet-changes).
+
+## Bug fixes
+Improved validation errors when zero nodes are defined in a nodepool [#1605](https://github.com/berops/claudie/pull/1605)
+Claudie will now correctly recognize a change in the kubernetes version to perform an update [#1607](https://github.com/berops/claudie/pull/1607)
+Secrets with provider credentials with leading or trailing whitespace will now be trimmed, avoiding issues with generated terraform templates [#1606](https://github.com/berops/claudie/pull/1606)
+Chaning the API endpoint will not correctly work, after the recent kubeone version update [#1619](https://github.com/berops/claudie/pull/1619)
