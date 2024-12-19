@@ -1,5 +1,5 @@
 // Package templates providers exported types and necessary helper methods
-// to work with external terraform files which can be downloaded from any publicly
+// to work with external OpenTofu files which can be downloaded from any publicly
 // available git repository.
 //
 // The template repository need to follow a certain convention to work properly.
@@ -18,7 +18,7 @@
 //	claudie-config/templates/terraformer/gcp
 //
 // To only deal with the necessary template files a sparse-checkout is used when downloading the external
-// repository to have a local mirror present which will then be used to generate the terraform files.
+// repository to have a local mirror present which will then be used to generate the OpenTofu files.
 // When using the template files for generation the subtree present at "claudie-config/templates/terraformer/gcp"
 // the directory is traversed and the following rules apply:
 //

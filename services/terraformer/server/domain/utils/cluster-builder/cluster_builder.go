@@ -17,8 +17,8 @@ import (
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
+	"github.com/berops/claudie/services/terraformer/server/domain/utils/opentofu"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates"
-	"github.com/berops/claudie/services/terraformer/server/domain/utils/terraform"
 	"github.com/rs/zerolog/log"
 
 	"golang.org/x/sync/semaphore"
@@ -51,7 +51,7 @@ type ClusterBuilder struct {
 	K8sInfo K8sInfo
 	// LBInfo contains additional data for when building loadbalancer clusters.
 	LBInfo LBInfo
-	// SpawnProcessLimit limits the number of spawned terraform processes.
+	// SpawnProcessLimit limits the number of spawned OpenTofu processes.
 	SpawnProcessLimit *semaphore.Weighted
 }
 
@@ -61,7 +61,7 @@ func (c ClusterBuilder) CreateNodepools() error {
 	clusterDir := filepath.Join(Output, clusterID)
 
 	defer func() {
-		// Clean after terraform
+		// Clean after OpenTofu
 		if err := os.RemoveAll(clusterDir); err != nil {
 			log.Err(err).Msgf("error while deleting files in %s : %v", clusterDir, err)
 		}
@@ -80,30 +80,30 @@ func (c ClusterBuilder) CreateNodepools() error {
 		return fmt.Errorf("failed to generate files: %w", err)
 	}
 
-	terraform := terraform.Terraform{
+	opentofu := opentofu.OpenTofu{
 		Directory:         clusterDir,
 		SpawnProcessLimit: c.SpawnProcessLimit,
 	}
 
-	terraform.Stdout = comm.GetStdOut(clusterID)
-	terraform.Stderr = comm.GetStdErr(clusterID)
+	opentofu.Stdout = comm.GetStdOut(clusterID)
+	opentofu.Stderr = comm.GetStdErr(clusterID)
 
-	if err := terraform.Init(); err != nil {
-		return fmt.Errorf("error while running terraform init in %s : %w", clusterID, err)
+	if err := opentofu.Init(); err != nil {
+		return fmt.Errorf("error while running OpenTofu init in %s : %w", clusterID, err)
 	}
 
 	var currentState []string
 	if c.CurrentClusterInfo != nil {
 		var err error
-		if currentState, err = terraform.StateList(); err != nil {
-			return fmt.Errorf("error while running terraform state list in %s : %w", clusterID, err)
+		if currentState, err = opentofu.StateList(); err != nil {
+			return fmt.Errorf("error while running OpenTofu state list in %s : %w", clusterID, err)
 		}
 	}
 
-	if err := terraform.Apply(); err != nil {
-		updatedState, errList := terraform.StateList()
+	if err := opentofu.Apply(); err != nil {
+		updatedState, errList := opentofu.StateList()
 		if errList != nil {
-			return errors.Join(err, fmt.Errorf("%w: error while running terraform state list in %s : %w", err, clusterID, errList))
+			return errors.Join(err, fmt.Errorf("%w: error while running OpenTofu state list in %s : %w", err, clusterID, errList))
 		}
 
 		var toDelete []string
@@ -113,7 +113,7 @@ func (c ClusterBuilder) CreateNodepools() error {
 			}
 		}
 
-		if errDestroy := terraform.DestroyTarget(toDelete); errDestroy != nil {
+		if errDestroy := opentofu.DestroyTarget(toDelete); errDestroy != nil {
 			return fmt.Errorf("%w: failed to destroy partially create state: %w", err, errDestroy)
 		}
 
@@ -132,13 +132,13 @@ func (c ClusterBuilder) CreateNodepools() error {
 		f := hash.Digest128(filepath.Join(np.Provider.SpecName, np.Provider.Templates.MustExtractTargetPath()))
 		k := fmt.Sprintf("%s_%s_%s", nodepool.Name, np.Provider.SpecName, hex.EncodeToString(f))
 
-		output, err := terraform.Output(k)
+		output, err := opentofu.Output(k)
 		if err != nil {
-			return fmt.Errorf("error while getting output from terraform for %s : %w", nodepool.Name, err)
+			return fmt.Errorf("error while getting output from OpenTofu for %s : %w", nodepool.Name, err)
 		}
 		out, err := readIPs(output)
 		if err != nil {
-			return fmt.Errorf("error while reading the terraform output for %s : %w", nodepool.Name, err)
+			return fmt.Errorf("error while reading the OpenTofu output for %s : %w", nodepool.Name, err)
 		}
 		fillNodes(&out, nodepool, oldNodes)
 	}
@@ -170,26 +170,26 @@ func (c ClusterBuilder) DestroyNodepools() error {
 		return fmt.Errorf("failed to generate files: %w", err)
 	}
 
-	terraform := terraform.Terraform{
+	opentofu := opentofu.OpenTofu{
 		Directory:         clusterDir,
 		SpawnProcessLimit: c.SpawnProcessLimit,
 	}
 
-	terraform.Stdout = comm.GetStdOut(clusterID)
-	terraform.Stderr = comm.GetStdErr(clusterID)
+	opentofu.Stdout = comm.GetStdOut(clusterID)
+	opentofu.Stderr = comm.GetStdErr(clusterID)
 
-	if err := terraform.Init(); err != nil {
-		return fmt.Errorf("error while running terraform init in %s : %w", clusterID, err)
+	if err := opentofu.Init(); err != nil {
+		return fmt.Errorf("error while running OpenTofu init in %s : %w", clusterID, err)
 	}
 
-	if err := terraform.Destroy(); err != nil {
-		return fmt.Errorf("error while running terraform apply in %s : %w", clusterID, err)
+	if err := opentofu.Destroy(); err != nil {
+		return fmt.Errorf("error while running OpenTofu apply in %s : %w", clusterID, err)
 	}
 
 	return nil
 }
 
-// generateFiles creates all the necessary terraform files used to create/destroy node pools.
+// generateFiles creates all the necessary OpenTofu files used to create/destroy node pools.
 func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 	backend := templates.Backend{
 		ProjectName: c.ProjectName,
@@ -201,7 +201,7 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 		return err
 	}
 
-	// generate Providers terraform configuration
+	// generate Providers OpenTofu configuration
 	usedProviders := templates.UsedProviders{
 		ProjectName: c.ProjectName,
 		ClusterName: clusterID,
@@ -341,11 +341,11 @@ func calculateCIDR(baseCIDR string, nodepools []*spec.DynamicNodePool) error {
 }
 
 // fillNodes creates pb.Node slices in desired state, with the new nodes and old nodes
-func fillNodes(terraformOutput *templates.NodepoolIPs, newNodePool *spec.NodePool, oldNodes []*spec.Node) {
-	// fill slices from terraformOutput maps with names of nodes to ensure an order
+func fillNodes(opentofuOutput *templates.NodepoolIPs, newNodePool *spec.NodePool, oldNodes []*spec.Node) {
+	// fill slices from opentofuOutput maps with names of nodes to ensure an order
 	var tempNodes []*spec.Node
 	// get sorted list of keys
-	_ = generics.IterateInOrder(terraformOutput.IPs, func(nodeName string, IP any) error {
+	_ = generics.IterateInOrder(opentofuOutput.IPs, func(nodeName string, IP any) error {
 		var nodeType spec.NodeType
 		var private string
 
@@ -370,7 +370,7 @@ func fillNodes(terraformOutput *templates.NodepoolIPs, newNodePool *spec.NodePoo
 
 		tempNodes = append(tempNodes, &spec.Node{
 			Name:     nodeName,
-			Public:   fmt.Sprint(terraformOutput.IPs[nodeName]),
+			Public:   fmt.Sprint(opentofuOutput.IPs[nodeName]),
 			Private:  private,
 			NodeType: nodeType,
 		})
@@ -380,7 +380,7 @@ func fillNodes(terraformOutput *templates.NodepoolIPs, newNodePool *spec.NodePoo
 	newNodePool.Nodes = tempNodes
 }
 
-// readIPs reads json output format from terraform and unmarshal it into map[string]map[string]string readable by Go.
+// readIPs reads json output format from OpenTofu and unmarshal it into map[string]map[string]string readable by Go.
 func readIPs(data string) (templates.NodepoolIPs, error) {
 	var result templates.NodepoolIPs
 	// Unmarshal or Decode the JSON to the interface.
@@ -413,7 +413,7 @@ func getCIDR(baseCIDR string, position int, existing map[string]struct{}) (strin
 	}
 }
 
-// generateProviderTemplates generates only the `provider.tpl` templates so terraform can destroy the infra if needed.
+// generateProviderTemplates generates only the `provider.tpl` templates so OpenTofu can destroy the infra if needed.
 func (c *ClusterBuilder) generateProviderTemplates(current, desired *spec.ClusterInfo, clusterID, directory string, clusterData templates.ClusterData) error {
 	nps := slices.AppendSeq(
 		slices.Collect(slices.Values(current.GetNodePools())),

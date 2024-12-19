@@ -25,7 +25,7 @@ type LBcluster struct {
 	DesiredState *spec.LBcluster
 	CurrentState *spec.LBcluster
 
-	// SpawnProcessLimit  limits the number of spawned terraform processes.
+	// SpawnProcessLimit  limits the number of spawned OpenTofu processes.
 	SpawnProcessLimit *semaphore.Weighted
 }
 

@@ -46,9 +46,9 @@ type (
 	}
 )
 
-// All the following types grouped are passed in as "Inputs" when generating terraform templates.
+// All the following types grouped are passed in as "Inputs" when generating OpenTofu templates.
 type (
-	// Provider wraps all data related to generating terraform files for a Cloud provider scoped
+	// Provider wraps all data related to generating OpenTofu files for a Cloud provider scoped
 	// only for the provider block. This structure is used when generating templates files inside the
 	// provider directory of a Template repository.
 	Provider struct {
@@ -85,7 +85,7 @@ type (
 		Regions []string
 	}
 
-	// Networking wraps all data related to generating terraform files for a Provider
+	// Networking wraps all data related to generating OpenTofu files for a Provider
 	// to set up a common networking infrastructure to be used by all Nodepools from the same Provider.
 	// This structure is used when generating template files inside the networking directory
 	// of a Template repository.
@@ -122,17 +122,17 @@ type (
 		// Regions: ["europe-west2", "europe-west1"].
 		Regions []string
 		// K8sData contains some additional information that may be needed during the generation of the
-		// terraform templates. Such as if A load balancer is attached to the K8s cluster with the ApiServer port.
+		// OpenTofu templates. Such as if A load balancer is attached to the K8s cluster with the ApiServer port.
 		// This data will be set if the ClusterType within ClusterData of this object is of type "K8s".
 		K8sData K8sData
 		// LBData contains some additional information that may be needed during the generation of the
-		// terraform templates. Such as all the Roles of the loadbalancer cluster that need to be set
+		// OpenTofu templates. Such as all the Roles of the loadbalancer cluster that need to be set
 		// for the firewall.
 		// This data will be set if the ClusterType within ClusterData of this object is of type "LB".
 		LBData LBData
 	}
 
-	// Nodepools wraps all data related to generating terraform files to spawn VM instances as described
+	// Nodepools wraps all data related to generating OpenTofu files to spawn VM instances as described
 	// in nodepools from a Provider in the InputManifest. This structure is used when generating template
 	// files inside the nodepool directory of a Template repository.
 	Nodepools struct {
@@ -146,7 +146,7 @@ type (
 		NodePools []NodePoolInfo
 	}
 
-	// DNS wraps all data related to generating terraform files to spawn create the specified DNS
+	// DNS wraps all data related to generating OpenTofu files to spawn create the specified DNS
 	// infrastructure as specified in the InputManifest.
 	DNS struct {
 		// ClusterName is the name of the Loadbalancer cluster the DNS is to be created for.

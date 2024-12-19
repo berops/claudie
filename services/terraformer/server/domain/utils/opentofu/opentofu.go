@@ -1,4 +1,4 @@
-package terraform
+package opentofu
 
 import (
 	"bytes"
@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	// maxTfCommandRetryCount is the maximum amount a Terraform command can be repeated until
+	// maxTfCommandRetryCount is the maximum amount a OpenTofu command can be repeated until
 	// it succeeds. If after "maxTfCommandRetryCount" retries the commands still fails an error should be
 	// returned containing the reason.
 	maxTfCommandRetryCount = 3
@@ -24,23 +24,23 @@ const (
 	Parallelism = 8
 )
 
-type Terraform struct {
+type OpenTofu struct {
 	// Directory represents the directory of .tf files
 	Directory string
 
 	Stdout io.Writer
 	Stderr io.Writer
 
-	// Parallelism is the number of resources to be worked on in parallel by terraform.
+	// Parallelism is the number of resources to be worked on in parallel by OpenTofu.
 	Parallelism int
 
-	// SpawnProcessLimit limits the number of spawned terraform processes.
+	// SpawnProcessLimit limits the number of spawned OpenTofu processes.
 	SpawnProcessLimit *semaphore.Weighted
 }
 
-func (t *Terraform) Init() error {
+func (t *OpenTofu) Init() error {
 	if err := t.SpawnProcessLimit.Acquire(context.Background(), 1); err != nil {
-		return fmt.Errorf("failed to prepare terraform init process: %w", err)
+		return fmt.Errorf("failed to prepare OpenTofu init process: %w", err)
 	}
 	defer t.SpawnProcessLimit.Release(1)
 
@@ -67,9 +67,9 @@ func (t *Terraform) Init() error {
 	return nil
 }
 
-func (t *Terraform) Apply() error {
+func (t *OpenTofu) Apply() error {
 	if err := t.SpawnProcessLimit.Acquire(context.Background(), 1); err != nil {
-		return fmt.Errorf("failed to prepare terraform apply process: %w", err)
+		return fmt.Errorf("failed to prepare OpenTofu apply process: %w", err)
 	}
 	defer t.SpawnProcessLimit.Release(1)
 
@@ -108,9 +108,9 @@ func (t *Terraform) Apply() error {
 	return nil
 }
 
-func (t *Terraform) Destroy() error {
+func (t *OpenTofu) Destroy() error {
 	if err := t.SpawnProcessLimit.Acquire(context.Background(), 1); err != nil {
-		return fmt.Errorf("failed to prepare terraform destroy process: %w", err)
+		return fmt.Errorf("failed to prepare OpenTofu destroy process: %w", err)
 	}
 	defer t.SpawnProcessLimit.Release(1)
 
@@ -149,9 +149,9 @@ func (t *Terraform) Destroy() error {
 	return nil
 }
 
-func (t *Terraform) DestroyTarget(targets []string) error {
+func (t *OpenTofu) DestroyTarget(targets []string) error {
 	if err := t.SpawnProcessLimit.Acquire(context.Background(), 1); err != nil {
-		return fmt.Errorf("failed to prepare terraform destroy target process: %w", err)
+		return fmt.Errorf("failed to prepare OpenTofu destroy target process: %w", err)
 	}
 	defer t.SpawnProcessLimit.Release(1)
 
@@ -197,7 +197,7 @@ func (t *Terraform) DestroyTarget(targets []string) error {
 	return nil
 }
 
-func (t *Terraform) StateList() ([]string, error) {
+func (t *OpenTofu) StateList() ([]string, error) {
 	cmd := exec.Command("tofu", "state", "list")
 	cmd.Dir = t.Directory
 	out, err := cmd.Output()
@@ -226,7 +226,7 @@ func (t *Terraform) StateList() ([]string, error) {
 	return resources, nil
 }
 
-func (t *Terraform) Output(resourceName string) (string, error) {
+func (t *OpenTofu) Output(resourceName string) (string, error) {
 	cmd := exec.Command("tofu", "output", "-json", resourceName)
 	cmd.Dir = t.Directory
 	out, err := cmd.CombinedOutput()

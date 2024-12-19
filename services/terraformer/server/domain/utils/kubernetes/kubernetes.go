@@ -26,7 +26,7 @@ type K8Scluster struct {
 	// attached to this K8s cluster.
 	AttachedLBClusters []*spec.LBcluster
 
-	// SpawnProcessLimit limits the number of spawned terraform processes.
+	// SpawnProcessLimit limits the number of spawned OpenTofu processes.
 	SpawnProcessLimit *semaphore.Weighted
 }
 

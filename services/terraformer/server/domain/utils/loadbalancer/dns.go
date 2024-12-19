@@ -12,8 +12,8 @@ import (
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/proto/pb/spec"
 	cluster_builder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
+	"github.com/berops/claudie/services/terraformer/server/domain/utils/opentofu"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates"
-	"github.com/berops/claudie/services/terraformer/server/domain/utils/terraform"
 	"github.com/rs/zerolog"
 
 	"google.golang.org/protobuf/proto"
@@ -36,7 +36,7 @@ type DNS struct {
 	CurrentDNS *spec.DNS
 	DesiredDNS *spec.DNS
 
-	// SpawnProcessLimit limits the number of spawned terraform processes.
+	// SpawnProcessLimit limits the number of spawned OpenTofu processes.
 	SpawnProcessLimit *semaphore.Weighted
 }
 
@@ -48,13 +48,13 @@ func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 	dnsID := fmt.Sprintf("%s-dns", clusterID)
 	dnsDir := filepath.Join(cluster_builder.Output, dnsID)
 
-	terraform := terraform.Terraform{
+	opentofu := opentofu.OpenTofu{
 		Directory:         dnsDir,
 		SpawnProcessLimit: d.SpawnProcessLimit,
 	}
 
-	terraform.Stdout = comm.GetStdOut(clusterID)
-	terraform.Stderr = comm.GetStdErr(clusterID)
+	opentofu.Stdout = comm.GetStdOut(clusterID)
+	opentofu.Stderr = comm.GetStdErr(clusterID)
 
 	defer func() {
 		if err := os.RemoveAll(dnsDir); err != nil {
@@ -76,16 +76,16 @@ func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 		if err := d.generateFiles(dnsID, dnsDir, d.DesiredDNS, d.DesiredNodeIPs); err != nil {
 			return fmt.Errorf("error while creating desired state dns.tf files for %s : %w", dnsID, err)
 		}
-		if err := terraform.Init(); err != nil {
+		if err := opentofu.Init(); err != nil {
 			return err
 		}
 
-		stateFile, err := terraform.StateList()
+		stateFile, err := opentofu.StateList()
 		if err != nil {
 			sublogger.Warn().Msgf("absent statefile for dns, assumming the previous state was not build correctly")
 		}
 
-		if err := terraform.DestroyTarget(stateFile); err != nil {
+		if err := opentofu.DestroyTarget(stateFile); err != nil {
 			return fmt.Errorf("failed to destroy existing DNS state: %w", err)
 		}
 
@@ -106,25 +106,25 @@ func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 		return fmt.Errorf("error while creating dns .tf files for %s : %w", dnsID, err)
 	}
 
-	if err := terraform.Init(); err != nil {
+	if err := opentofu.Init(); err != nil {
 		return err
 	}
 
-	if err := terraform.Apply(); err != nil {
+	if err := opentofu.Apply(); err != nil {
 		return err
 	}
 
 	f := hash.Digest128(filepath.Join(d.DesiredDNS.Provider.SpecName, d.DesiredDNS.Provider.Templates.MustExtractTargetPath()))
 	k := fmt.Sprintf("%s_%s_%s", clusterID, d.DesiredDNS.GetProvider().GetSpecName(), hex.EncodeToString(f))
 
-	output, err := terraform.Output(k)
+	output, err := opentofu.Output(k)
 	if err != nil {
-		return fmt.Errorf("error while getting output from terraform for %s : %w", clusterID, err)
+		return fmt.Errorf("error while getting output from OpenTofu for %s : %w", clusterID, err)
 	}
 
 	out, err := readDomain(output)
 	if err != nil {
-		return fmt.Errorf("error while reading output from terraform for %s : %w", clusterID, err)
+		return fmt.Errorf("error while reading output from OpenTofu for %s : %w", clusterID, err)
 	}
 
 	outputID := fmt.Sprintf("%s-endpoint", clusterID)
@@ -156,19 +156,19 @@ func (d *DNS) DestroyDNSRecords(logger zerolog.Logger) error {
 		return fmt.Errorf("error while creating dns records for %s : %w", dnsID, err)
 	}
 
-	terraform := terraform.Terraform{
+	opentofu := opentofu.OpenTofu{
 		Directory:         dnsDir,
 		SpawnProcessLimit: d.SpawnProcessLimit,
 	}
 
-	terraform.Stdout = comm.GetStdOut(dnsID)
-	terraform.Stderr = comm.GetStdErr(dnsID)
+	opentofu.Stdout = comm.GetStdOut(dnsID)
+	opentofu.Stderr = comm.GetStdErr(dnsID)
 
-	if err := terraform.Init(); err != nil {
+	if err := opentofu.Init(); err != nil {
 		return err
 	}
 
-	if err := terraform.Destroy(); err != nil {
+	if err := opentofu.Destroy(); err != nil {
 		return err
 	}
 
@@ -197,7 +197,7 @@ func (d *DNS) generateProvider(dnsID, dnsDir string, current, desired *spec.DNS)
 	return usedProviders.CreateUsedProviderDNS(current, desired)
 }
 
-// generateFiles creates all the necessary terraform files used to create/destroy DNS.
+// generateFiles creates all the necessary OpenTofu files used to create/destroy DNS.
 func (d *DNS) generateFiles(dnsID, dnsDir string, dns *spec.DNS, nodeIPs []string) error {
 	templateDir := filepath.Join(TemplatesRootDir, dnsID, dns.GetProvider().GetSpecName())
 	if err := templates.DownloadProvider(templateDir, dns.GetProvider()); err != nil {
@@ -242,7 +242,7 @@ func validateDomain(s string) string {
 	return s
 }
 
-// readDomain reads full domain from terraform output.
+// readDomain reads full domain from OpenTofu output.
 func readDomain(data string) (templates.DNSDomain, error) {
 	var result templates.DNSDomain
 	err := json.Unmarshal([]byte(data), &result.Domain)

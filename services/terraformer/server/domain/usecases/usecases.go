@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	// SpawnProcessLimit is the number of processes concurrently executing terraform.
+	// SpawnProcessLimit is the number of processes concurrently executing OpenTofu.
 	SpawnProcessLimit = 5
 )
 
@@ -17,7 +17,7 @@ type Usecases struct {
 	DynamoDB ports.DynamoDBPort
 	// Minio connector.
 	StateStorage ports.StateStoragePort
-	// SpawnProcessLimit limits the number of spawned terraform processes.
+	// SpawnProcessLimit limits the number of spawned OpenTofu processes.
 	SpawnProcessLimit *semaphore.Weighted
 }
 
