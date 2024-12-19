@@ -126,13 +126,13 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 ## v0.9.2
 
 ## What's Changed
-* Node local dns will be deployed on all newly build clusters [#1603](https://github.com/berops/claudie/pull/1603).
+- Node local dns will be deployed on all newly build clusters [#1603](https://github.com/berops/claudie/pull/1603).
   For existing clusters that were build using older Claudie version, this change will deploy the `node-local-dns` into the cluster
-  but it will not automatically work. Manual work needs to done by first editing the `kubelet-config` map in the `kube-system` namespace of the cluster
-  to change the DNS to the address of the `node-local-dns` and then on each node the following changes need to be done: [applying-kubelet-configuration-changes](https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-reconfigure/#reflecting-the-kubelet-changes).
+  but it will not automatically work. Manual work needs to done, by first editing the `kubelet-config` ConfigMap in the `kube-system` namespace of the cluster
+  to change the DNS address to the address of the `node-local-dns` and then on each node the following changes need to be done: [applying-kubelet-configuration-changes](https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-reconfigure/#reflecting-the-kubelet-changes).
 
 ## Bug fixes
-Improved validation errors when zero nodes are defined in a nodepool [#1605](https://github.com/berops/claudie/pull/1605)
-Claudie will now correctly recognize a change in the kubernetes version to perform an update [#1607](https://github.com/berops/claudie/pull/1607)
-Secrets with provider credentials with leading or trailing whitespace will now be trimmed, avoiding issues with generated terraform templates [#1606](https://github.com/berops/claudie/pull/1606)
-Chaning the API endpoint will not correctly work, after the recent kubeone version update [#1619](https://github.com/berops/claudie/pull/1619)
+- Improved validation errors when zero nodes are defined in a nodepool [#1605](https://github.com/berops/claudie/pull/1605)
+- Claudie will now correctly recognize a change in the kubernetes version to perform an update [#1607](https://github.com/berops/claudie/pull/1607)
+- Kubernetes secrets with provider credentials that contain leading or trailing whitespace will now be trimmed, avoiding issues with generated terraform templates [#1606](https://github.com/berops/claudie/pull/1606)
+- Changing the API endpoint will now correctly work, after the recent kubeone version update [#1619](https://github.com/berops/claudie/pull/1619)
