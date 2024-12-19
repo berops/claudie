@@ -22,7 +22,7 @@ RUN go mod download
 COPY . .
 
 #Change the directory
-WORKDIR /go/services/opentofu/server
+WORKDIR /go/services/terraformer/server
 
 #Compile the golang code to /out, CGO_ENABLE=0 removes cross compile dependencies
 RUN CGO_ENABLED=0 go build
@@ -33,12 +33,12 @@ LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
 #Add image name as a label
 LABEL org.opencontainers.image.base.name "docker.io/library/alpine"
 #Add description to the image
-LABEL org.opencontainers.image.description "Image for OpenTofu from Claudie"
+LABEL org.opencontainers.image.description "Image for terraformer from Claudie"
 
 #Copy the binaries to empty base image
-COPY --from=build /go/opentofu/opentofu /usr/local/bin
+COPY --from=build /go/terraformer/terraformer /usr/local/bin
 
-COPY --from=build /go/services/opentofu/server/server /bin/services/opentofu/server/server
+COPY --from=build /go/services/terraformer/server/server /bin/services/terraformer/server/server
 
 COPY --from=build /usr/bin/git /usr/bin/git
 
@@ -46,6 +46,6 @@ RUN apk --no-cache add bash git
 
 #Run server
 WORKDIR /bin
-ENTRYPOINT [ "./services/opentofu/server/server" ]
+ENTRYPOINT [ "./services/terraformer/server/server" ]
 
 #NOTE: We cannot use scratch image for our dockerfile since we are using shell commands to execute commands inside the code
