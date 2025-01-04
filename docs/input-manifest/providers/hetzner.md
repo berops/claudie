@@ -57,7 +57,7 @@ kubectl create secret generic hetzner-secret-1 --namespace=mynamespace --from-li
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
-  name: HetznerExampleManifest
+  name: hetzner-example-manifest
   labels:
     app.kubernetes.io/part-of: claudie
 spec:
@@ -140,7 +140,7 @@ kubectl create secret generic hetzner-secret-2 --namespace=mynamespace --from-li
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
-  name: HetznerExampleManifest
+  name: hetzner-example-manifest
   labels:
     app.kubernetes.io/part-of: claudie
 spec:

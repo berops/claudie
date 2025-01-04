@@ -93,7 +93,7 @@ Rolling updates of nodepools are performed when a change to a provider's externa
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
-  name: HetznerExampleManifest
+  name: hetzner-example-manifest
   labels:
     app.kubernetes.io/part-of: claudie
 spec:

@@ -84,7 +84,7 @@ kubectl create secret generic gcp-secret-1 --namespace=mynamespace --from-litera
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
-  name: GCPExampleManifest
+  name: gcp-example-manifest
   labels:
     app.kubernetes.io/part-of: claudie
 spec:
@@ -168,7 +168,7 @@ kubectl create secret generic gcp-secret-2 --namespace=mynamespace --from-litera
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
-  name: GCPExampleManifest
+  name: gcp-example-manifest
   labels:
     app.kubernetes.io/part-of: claudie
 spec:
