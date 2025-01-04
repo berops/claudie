@@ -170,7 +170,6 @@ kubectl create secret generic azure-secret-2 --namespace=mynamespace --from-lite
 ```
 
 ```yaml
-name: InputManifest
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
