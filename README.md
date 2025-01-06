@@ -249,7 +249,7 @@ If you want to have a chat with us, feel free to join our channel on [kubernetes
 
 ## Versioning
 
-Current project releasing follows 0ver (Zerover), with the following versioning promise:
+Current project releasing follows [ZerOver](https://0ver.org), with the following versioning promise:
 - In new releases, API might break and functionality might change significantly. Any such releases increment the second digit in the release tag. The users **really need to read the release notes** before upgrading to these releases.
 - For all other releases, the third digit increments. Upgrades to these versions can be done blindly without any risk to running environments. Reading the release notes is recommended nevertheless.
 
