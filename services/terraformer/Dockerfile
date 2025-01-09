@@ -5,7 +5,7 @@ ARG TARGETARCH
 # download and unzip kube-one binary
 RUN apt-get -qq update && apt-get -qq install unzip
 RUN VERSION=1.6.2 && \
-    wget -qhttps://github.com/opentofu/opentofu/releases/download/v${VERSION}/tofu_${VERSION}_linux_$TARGETARCH.zip && \
+    wget -q https://github.com/opentofu/opentofu/releases/download/v${VERSION}/tofu_${VERSION}_linux_$TARGETARCH.zip && \
     unzip -qq tofu_${VERSION}_linux_$TARGETARCH.zip -d tofu
 
 #Unset the GOPATH
@@ -36,7 +36,7 @@ LABEL org.opencontainers.image.base.name "docker.io/library/alpine"
 LABEL org.opencontainers.image.description "Image for terraformer from Claudie"
 
 #Copy the binaries to empty base image
-COPY --from=build /go/terraformer/terraformer /usr/local/bin
+COPY --from=build /go/tofu/tofu /usr/local/bin
 
 COPY --from=build /go/services/terraformer/server/server /bin/services/terraformer/server/server
 
