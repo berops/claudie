@@ -3,6 +3,7 @@ package usecases
 import (
 	"errors"
 
+	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/concurrent"
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/proto/pb"
@@ -15,11 +16,15 @@ import (
 // and the Loadbalancer clusters related to it
 func (u *Usecases) BuildInfrastructure(request *pb.BuildInfrastructureRequest) (*pb.BuildInfrastructureResponse, error) {
 	k8sCluster := &kubernetes.K8Scluster{
-		ProjectName:        request.ProjectName,
-		DesiredState:       request.Desired,
-		CurrentState:       request.Current,
-		AttachedLBClusters: request.DesiredLbs,
-		SpawnProcessLimit:  u.SpawnProcessLimit,
+		ProjectName:       request.ProjectName,
+		DesiredState:      request.Desired,
+		CurrentState:      request.Current,
+		ExportPort6443:    clusters.FindAssignedLbApiEndpoint(request.DesiredLbs) == nil,
+		SpawnProcessLimit: u.SpawnProcessLimit,
+	}
+
+	if spec.OptionIsSet(request.Options, spec.ForceExportPort6443OnControlPlane) {
+		k8sCluster.ExportPort6443 = true
 	}
 
 	k8slogger := loggerutils.WithProjectAndCluster(request.ProjectName, k8sCluster.Id())

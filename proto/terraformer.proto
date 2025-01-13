@@ -12,6 +12,8 @@ message BuildInfrastructureRequest {
   repeated spec.LBcluster desiredLbs = 4;
 
   string projectName = 5;
+
+  uint64 options = 6;
 }
 
 message BuildInfrastructureResponse {

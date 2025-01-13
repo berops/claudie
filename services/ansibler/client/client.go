@@ -43,8 +43,8 @@ func SetUpLoadbalancers(c pb.AnsiblerServiceClient, req *pb.SetUpLBRequest) (*pb
 }
 
 // TeardownApiEndpointLoadbalancer moves the api endpoint from the current loadbalancer to the requested control plane node.
-func TeardownApiEndpointLoadbalancer(c pb.AnsiblerServiceClient, req *pb.TeardownRequest) (*pb.TeardownResponse, error) {
-	res, err := c.TeardownApiEndpointLoadbalancer(context.Background(), req)
+func DetermineApiEndpointChange(c pb.AnsiblerServiceClient, req *pb.DetermineApiEndpointChangeRequest) (*pb.DetermineApiEndpointChangeResponse, error) {
+	res, err := c.DetermineApiEndpointChange(context.Background(), req)
 	if err != nil {
 		return res, fmt.Errorf("error while calling TeardownLoadBalancers on Ansibler: %w", err)
 	}

@@ -19,29 +19,27 @@ message SetUpLBRequest {
   repeated spec.LBcluster currentLbs = 2;
   repeated spec.LBcluster desiredLbs = 3;
   spec.ProxyEnvs proxyEnvs = 4;
-  string previousAPIEndpoint = 5;
   string projectName = 6;
-  bool firstRun = 7;
 }
+
 message SetUpLBResponse {
   spec.K8scluster desired = 1;
-  repeated spec.LBcluster currentLbs = 2;
-  repeated spec.LBcluster desiredLbs = 3;
+  repeated spec.LBcluster desiredLbs = 2;
 }
 
-message TeardownRequest {
-  message Endpoint {
-    string nodepool = 1;
-    string node = 2;
-  }
+message DetermineApiEndpointChangeRequest {
   spec.K8scluster current = 1;
   repeated spec.LBcluster currentLbs = 2;
-  Endpoint enpoint = 3;
+
   spec.ProxyEnvs proxyEnvs = 4;
   string projectName = 5;
+
+  spec.ApiEndpointChangeState state = 6;
+  string currentEndpointId = 7;
+  string desiredEndpointId = 8;
 }
 
-message TeardownResponse {
+message DetermineApiEndpointChangeResponse {
   spec.K8scluster current = 1;
   repeated spec.LBcluster currentLbs = 2;
 }
@@ -100,8 +98,9 @@ service AnsiblerService {
   rpc InstallVPN(InstallRequest) returns (InstallResponse);
   // SetUpLoadbalancers sets up the load balancers together with the DNS and verifies their configuration.
   rpc SetUpLoadbalancers(SetUpLBRequest) returns (SetUpLBResponse);
-  // TeardownApiEndpointLoadbalancer moves the api endpoint back to the control plane.
-  rpc TeardownApiEndpointLoadbalancer(TeardownRequest) returns (TeardownResponse);
+  // DetermineApiEndpointChange determines if due to the changes of the loadbalancer infrastructure the api endpoint
+  // needs to be moved.
+  rpc DetermineApiEndpointChange(DetermineApiEndpointChangeRequest) returns (DetermineApiEndpointChangeResponse);
   // UpdateAPIEndpoint handles changes of API endpoint between control nodes.
   // It will update the current stage based on the information from the desired state.
   rpc UpdateAPIEndpoint(UpdateAPIEndpointRequest) returns (UpdateAPIEndpointResponse);

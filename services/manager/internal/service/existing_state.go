@@ -304,6 +304,7 @@ func transferExistingLBState(current, desired *spec.LoadBalancers) error {
 				return err
 			}
 
+			desired.UsedApiEndpoint = current.UsedApiEndpoint
 			break
 		}
 	}

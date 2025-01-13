@@ -4,6 +4,7 @@ import (
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/grpcutils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/berops/claudie/proto/pb/spec"
 	ansibler "github.com/berops/claudie/services/ansibler/client"
 	builder "github.com/berops/claudie/services/builder/internal"
 
@@ -46,28 +47,29 @@ func (a *AnsiblerConnector) InstallVPN(builderCtx *builder.Context, ansiblerGrpc
 }
 
 // SetUpLoadbalancers configures loadbalancers for the infrastructure.
-func (a *AnsiblerConnector) SetUpLoadbalancers(builderCtx *builder.Context, apiEndpoint string, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.SetUpLBResponse, error) {
+func (a *AnsiblerConnector) SetUpLoadbalancers(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.SetUpLBResponse, error) {
 	return ansibler.SetUpLoadbalancers(ansiblerGrpcClient,
 		&pb.SetUpLBRequest{
-			Desired:             builderCtx.DesiredCluster,
-			CurrentLbs:          builderCtx.CurrentLoadbalancers,
-			DesiredLbs:          builderCtx.DesiredLoadbalancers,
-			ProxyEnvs:           builderCtx.ProxyEnvs,
-			PreviousAPIEndpoint: apiEndpoint,
-			ProjectName:         builderCtx.ProjectName,
-			FirstRun:            builderCtx.CurrentCluster == nil || builderCtx.CurrentCluster.Kubeconfig == "",
+			Desired:     builderCtx.DesiredCluster,
+			CurrentLbs:  builderCtx.CurrentLoadbalancers,
+			DesiredLbs:  builderCtx.DesiredLoadbalancers,
+			ProxyEnvs:   builderCtx.ProxyEnvs,
+			ProjectName: builderCtx.ProjectName,
 		})
 }
 
-// TeardownApiEndpointLoadbalancer moves the api endpoint from the current loadbalancer to the request control plane node.
-func (a *AnsiblerConnector) TeardownApiEndpointLoadbalancer(builderCtx *builder.Context, nodepool, node string, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.TeardownResponse, error) {
-	return ansibler.TeardownApiEndpointLoadbalancer(ansiblerGrpcClient,
-		&pb.TeardownRequest{
-			Current:     builderCtx.CurrentCluster,
-			CurrentLbs:  builderCtx.CurrentLoadbalancers,
-			Enpoint:     &pb.TeardownRequest_Endpoint{Nodepool: nodepool, Node: node},
-			ProxyEnvs:   builderCtx.ProxyEnvs,
-			ProjectName: builderCtx.ProjectName,
+// DetermineApiEndpointChange determines if the api endpoint of the k8s cluster should be moved based on the changes to the
+// loadbalancer infrastructure.
+func (a *AnsiblerConnector) DetermineApiEndpointChange(builderCtx *builder.Context, cid string, did string, stt spec.ApiEndpointChangeState, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.DetermineApiEndpointChangeResponse, error) {
+	return ansibler.DetermineApiEndpointChange(ansiblerGrpcClient,
+		&pb.DetermineApiEndpointChangeRequest{
+			Current:           builderCtx.CurrentCluster,
+			CurrentLbs:        builderCtx.CurrentLoadbalancers,
+			ProxyEnvs:         builderCtx.ProxyEnvs,
+			ProjectName:       builderCtx.ProjectName,
+			State:             stt,
+			CurrentEndpointId: cid,
+			DesiredEndpointId: did,
 		})
 }
 

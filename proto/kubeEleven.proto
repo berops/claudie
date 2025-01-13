@@ -7,26 +7,33 @@ option go_package = "proto/pb";
 
 message BuildClusterRequest {
   spec.K8scluster desired = 1;
-  repeated spec.LBcluster desiredLbs = 2;
   spec.ProxyEnvs proxyEnvs = 3;
   string projectName = 4;
+  // Endpoint specifies if the endpoint
+  // is on a loadbalancer. If empty the
+  // endpoint is one of the nodes supplied
+  // in part of the desired state.
+  string loadBalancerEndpoint = 5;
 }
 
 message BuildClusterResponse {
   spec.K8scluster desired = 1;
-  repeated spec.LBcluster desiredLbs = 2;
 }
 
 message DestroyClusterRequest {
   string projectName = 1;
 
   spec.K8scluster current = 2;
-  repeated spec.LBcluster currentLbs = 3;
+  // Endpoint specifies if the endpoint
+  // is on a loadbalancer. If empty the
+  // endpoint is one of the nodes supplied
+  // in part of the desired state.
+  string loadBalancerEndpoint = 3;
+
 }
 
 message DestroyClusterResponse {
   spec.K8scluster current = 1;
-  repeated spec.LBcluster currentLbs = 2;
 }
 
 service KubeElevenService {

@@ -6,8 +6,8 @@ import (
 )
 
 type KubeElevenPort interface {
-	BuildCluster(builderCtx *builder.Context, kubeElevenGrpcClient pb.KubeElevenServiceClient) (*pb.BuildClusterResponse, error)
-	DestroyCluster(builderCtx *builder.Context, kubeElevenGrpcClient pb.KubeElevenServiceClient) (*pb.DestroyClusterResponse, error)
+	BuildCluster(builderCtx *builder.Context, loadBalancerEndpoint string, kubeElevenGrpcClient pb.KubeElevenServiceClient) (*pb.BuildClusterResponse, error)
+	DestroyCluster(builderCtx *builder.Context, loadBalancerEndpoint string, kubeElevenGrpcClient pb.KubeElevenServiceClient) (*pb.DestroyClusterResponse, error)
 
 	PerformHealthCheck() error
 	GetClient() pb.KubeElevenServiceClient

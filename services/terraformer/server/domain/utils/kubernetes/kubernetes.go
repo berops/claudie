@@ -22,9 +22,11 @@ type K8Scluster struct {
 	DesiredState *spec.K8Scluster
 	CurrentState *spec.K8Scluster
 
-	// AttachedLBClusters are the LB clusters that are
-	// attached to this K8s cluster.
-	AttachedLBClusters []*spec.LBcluster
+    // Signals whether to export port 6443 on the
+    // control plane nodes of the cluster.
+    // This value is passed down when generating
+    // the terraform templates.
+    ExportPort6443 bool
 
 	// SpawnProcessLimit limits the number of spawned terraform processes.
 	SpawnProcessLimit *semaphore.Weighted
@@ -53,7 +55,7 @@ func (k *K8Scluster) Build(logger zerolog.Logger) error {
 		ProjectName:        k.ProjectName,
 		ClusterType:        spec.ClusterType_K8s,
 		K8sInfo: cluster_builder.K8sInfo{
-			LoadBalancers: k.AttachedLBClusters,
+			ExportPort6443: k.ExportPort6443,
 		},
 		SpawnProcessLimit: k.SpawnProcessLimit,
 	}

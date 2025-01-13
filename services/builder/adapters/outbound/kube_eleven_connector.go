@@ -26,23 +26,23 @@ func (k *KubeElevenConnector) Connect() error {
 }
 
 // BuildCluster builds/reconciles given k8s cluster via kube-eleven.
-func (k *KubeElevenConnector) BuildCluster(builderCtx *builder.Context, kubeElevenGrpcClient pb.KubeElevenServiceClient) (*pb.BuildClusterResponse, error) {
+func (k *KubeElevenConnector) BuildCluster(builderCtx *builder.Context, loadBalancerEndpoint string, kubeElevenGrpcClient pb.KubeElevenServiceClient) (*pb.BuildClusterResponse, error) {
 	return kubeEleven.BuildCluster(kubeElevenGrpcClient,
 		&pb.BuildClusterRequest{
 			Desired:     builderCtx.DesiredCluster,
-			DesiredLbs:  builderCtx.DesiredLoadbalancers,
+			LoadBalancerEndpoint:  loadBalancerEndpoint,
 			ProxyEnvs:   builderCtx.ProxyEnvs,
 			ProjectName: builderCtx.ProjectName,
 		})
 }
 
 // DestroyCluster destroys k8s cluster.
-func (k *KubeElevenConnector) DestroyCluster(builderCtx *builder.Context, kubeElevenGrpcClient pb.KubeElevenServiceClient) (*pb.DestroyClusterResponse, error) {
+func (k *KubeElevenConnector) DestroyCluster(builderCtx *builder.Context, loadBalancerEndpoint string, kubeElevenGrpcClient pb.KubeElevenServiceClient) (*pb.DestroyClusterResponse, error) {
 	return kubeEleven.DestroyCluster(kubeElevenGrpcClient,
 		&pb.DestroyClusterRequest{
-			ProjectName: builderCtx.ProjectName,
-			Current:     builderCtx.CurrentCluster,
-			CurrentLbs:  builderCtx.CurrentLoadbalancers,
+			ProjectName:        builderCtx.ProjectName,
+			Current:            builderCtx.CurrentCluster,
+			LoadBalancerEndpoint: loadBalancerEndpoint,
 		})
 }
 

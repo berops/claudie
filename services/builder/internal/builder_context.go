@@ -32,6 +32,9 @@ type Context struct {
 
 	// ProxyEnvs holds information about a need to update proxy envs, proxy endpoint, and no proxy list.
 	ProxyEnvs *spec.ProxyEnvs
+
+	// Options that were set by the manager service for the task this context was created for.
+	Options uint64
 }
 
 // GetClusterName returns name of the k8s cluster for a given builder context.

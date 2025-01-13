@@ -149,29 +149,35 @@ func (u *Usecases) executeCreateTask(te *managerclient.NextTaskResponse) (*spec.
 		DesiredCluster:       te.Event.Task.CreateState.K8S,
 		DesiredLoadbalancers: te.Event.Task.CreateState.GetLbs().GetClusters(),
 		Workflow:             te.State,
+		Options:              te.Event.Task.Options,
 	}
 	ctx, err := u.buildCluster(ctx)
 	return ctx.DesiredCluster, ctx.DesiredLoadbalancers, err
 }
 
 func (u *Usecases) executeUpdateTask(te *managerclient.NextTaskResponse) (*spec.K8Scluster, []*spec.LBcluster, error) {
-	if te.Event.Task.UpdateState.Endpoint != nil {
+	if te.Event.Task.UpdateState.EndpointChange != nil {
 		ctx := &builder.Context{
 			ProjectName:          te.Config,
 			TaskId:               te.Event.Id,
 			CurrentCluster:       te.Current.K8S,
 			CurrentLoadbalancers: te.Current.GetLoadBalancers().GetClusters(),
 			Workflow:             te.State,
+			Options:              te.Event.Task.Options,
 		}
 
-		np := te.Event.Task.UpdateState.Endpoint.Nodepool
-		n := te.Event.Task.UpdateState.Endpoint.Node
-
-		if te.Event.Task.UpdateState.Endpoint.FromLoadbalancer {
-			if err := u.callTeardownAPIEndpoint(ctx, np, n); err != nil {
+		switch typ := te.Event.Task.UpdateState.EndpointChange.(type) {
+		case *spec.UpdateState_LbEndpointChange:
+			cid := typ.LbEndpointChange.CurrentEndpointId
+			did := typ.LbEndpointChange.DesiredEndpointId
+			stt := typ.LbEndpointChange.State
+			if err := u.determineApiEndpointChange(ctx, cid, did, stt); err != nil {
 				return te.Current.GetK8S(), te.Current.GetLoadBalancers().GetClusters(), err
 			}
-		} else {
+		case *spec.UpdateState_NewControlEndpoint:
+			np := typ.NewControlEndpoint.Nodepool
+			n := typ.NewControlEndpoint.Node
+
 			if err := u.callUpdateAPIEndpoint(ctx, np, n); err != nil {
 				return te.Current.GetK8S(), te.Current.GetLoadBalancers().GetClusters(), err
 			}
@@ -183,6 +189,7 @@ func (u *Usecases) executeUpdateTask(te *managerclient.NextTaskResponse) (*spec.
 			DesiredCluster:       ctx.CurrentCluster,
 			DesiredLoadbalancers: ctx.CurrentLoadbalancers,
 			Workflow:             te.State,
+			Options:              te.Event.Task.Options,
 		}
 
 		// Reconcile k8s cluster to assure new API endpoint has correct certificates.
@@ -211,21 +218,10 @@ func (u *Usecases) executeUpdateTask(te *managerclient.NextTaskResponse) (*spec.
 		DesiredLoadbalancers: te.Event.GetTask().GetUpdateState().GetLbs().GetClusters(),
 		DeletedLoadBalancers: te.Event.GetTask().GetDeleteState().GetLbs().GetClusters(),
 		Workflow:             te.State,
+		Options:              te.Event.Task.Options,
 	}
 
 	ctx, err := u.buildCluster(ctx)
-	// We let the **task be process with the desired state with missing deleted loadbalancers**,
-	// as deleted loadbalancers are not handled by the Update Task, they're deleted as a
-	// separate step, thus to avoid having issues with the diverging current state, append the deleted loadbalancers
-	// so that the current state actually reflects the infrastructure that exists.
-	// NOTE: in the case that a loadbalancer for the API server was deleted it might be the case
-	// that the current state will have "additional state" for an api server that has to be ignored until
-	// the loadbalancers are destroyed. As long as the destruction of the Lb is the next task to be processed
-	// this should not be a problem.
-	if len(ctx.DeletedLoadBalancers) > 0 {
-		ctx.DesiredLoadbalancers = append(ctx.DesiredLoadbalancers, ctx.DeletedLoadBalancers...)
-	}
-
 	return ctx.DesiredCluster, ctx.DesiredLoadbalancers, err
 }
 
@@ -251,6 +247,7 @@ func (u *Usecases) executeDeleteTask(te *managerclient.NextTaskResponse) (*spec.
 			TaskId:         te.Event.Id,
 			CurrentCluster: te.Current.K8S,
 			Workflow:       te.State,
+			Options:        te.Event.Task.Options,
 		}
 
 		u.updateTaskWithDescription(ctx, spec.Workflow_KUBER, fmt.Sprintf("deleting nodes [%q, %q] from cluster", master, worker))
@@ -282,6 +279,7 @@ func (u *Usecases) executeDeleteTask(te *managerclient.NextTaskResponse) (*spec.
 			TaskId:         te.Event.Id,
 			CurrentCluster: c,
 			Workflow:       te.State,
+			Options:        te.Event.Task.Options,
 		}
 
 		if err := u.removeClaudieUtilities(ctx); err != nil {
@@ -300,6 +298,7 @@ func (u *Usecases) executeDeleteTask(te *managerclient.NextTaskResponse) (*spec.
 		CurrentCluster:       te.Event.Task.DeleteState.GetK8S(),
 		CurrentLoadbalancers: te.Event.Task.DeleteState.GetLbs().GetClusters(),
 		Workflow:             te.State,
+		Options:              te.Event.Task.Options,
 	}
 
 	err := u.destroyCluster(ctx)

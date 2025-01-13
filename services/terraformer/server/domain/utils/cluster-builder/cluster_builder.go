@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"slices"
 
-	"github.com/berops/claudie/internal/clusters"
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/generics"
@@ -28,7 +27,7 @@ const (
 	Output           = "services/terraformer/server/clusters"
 )
 
-type K8sInfo struct{ LoadBalancers []*spec.LBcluster }
+type K8sInfo struct{ ExportPort6443 bool }
 type LBInfo struct{ Roles []*spec.Role }
 
 // ClusterBuilder wraps data needed for building a cluster.
@@ -280,10 +279,7 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 				Provider:    p,
 				Regions:     nodepools.ExtractRegions(nodepools.ExtractDynamic(pools)),
 				K8sData: templates.K8sData{
-					HasAPIServer: !slices.Contains(
-						clusters.ExtractTargetPorts(c.K8sInfo.LoadBalancers),
-						6443,
-					),
+                    HasAPIServer: c.K8sInfo.ExportPort6443,
 				},
 				LBData: templates.LBData{
 					Roles: c.LBInfo.Roles,
