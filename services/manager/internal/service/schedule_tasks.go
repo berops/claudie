@@ -371,13 +371,13 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 	applylbIr = applylbIr || (change != spec.ApiEndpointChangeState_EndpointRenamed && change != spec.ApiEndpointChangeState_NoChange)
 	if applylbIr {
 		// will contain merged roles from current/desired state
-		// and will include deleted loadbalancers if any.
+		// and will include added loadbalancers if any.
 		lbsir := craftLbsIR(currentLbs, desiredLbs, addedLoadBalancers)
 
 		// options that adjusts the processing of the task.
 		irOptions := uint64(0)
 		if change == spec.ApiEndpointChangeState_DetachingLoadBalancer || change == spec.ApiEndpointChangeState_AttachingLoadBalancer {
-			irOptions |= uint64(spec.ForceExportPort6443OnControlPlane)
+			irOptions |= spec.ForceExportPort6443OnControlPlane
 		}
 
 		events = append(events, &spec.TaskEvent{
@@ -394,27 +394,29 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 			},
 		})
 
-		events = append(events, &spec.TaskEvent{
-			Id:          uuid.New().String(),
-			Timestamp:   timestamppb.New(time.Now().UTC()),
-			Event:       spec.Event_UPDATE,
-			Description: fmt.Sprintf("perfoming API endpoint change, reason: %s", change.String()),
-			Task: &spec.Task{
-				Options: irOptions,
-				UpdateState: &spec.UpdateState{
-					EndpointChange: &spec.UpdateState_LbEndpointChange{
-						LbEndpointChange: &spec.UpdateState_LbEndpoint{
-							State:             change,
-							CurrentEndpointId: cid,
-							DesiredEndpointId: did,
+		if change != spec.ApiEndpointChangeState_EndpointRenamed && change != spec.ApiEndpointChangeState_NoChange {
+			events = append(events, &spec.TaskEvent{
+				Id:          uuid.New().String(),
+				Timestamp:   timestamppb.New(time.Now().UTC()),
+				Event:       spec.Event_UPDATE,
+				Description: fmt.Sprintf("performing API endpoint change, reason: %s", change.String()),
+				Task: &spec.Task{
+					Options: irOptions,
+					UpdateState: &spec.UpdateState{
+						EndpointChange: &spec.UpdateState_LbEndpointChange{
+							LbEndpointChange: &spec.UpdateState_LbEndpoint{
+								State:             change,
+								CurrentEndpointId: cid,
+								DesiredEndpointId: did,
+							},
 						},
 					},
 				},
-			},
-			OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
-				Kind: spec.Retry_Repeat_ENDLESS,
-			}}},
-		})
+				OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
+					Kind: spec.Retry_Repeat_ENDLESS,
+				}}},
+			})
+		}
 	}
 
 	if k8sDiffResult.deleting {
@@ -879,7 +881,7 @@ func newAPIEndpointNodeCandidate(desired []*spec.NodePool) (string, string) {
 
 // targetPoolsDeleted check whether the LB API cluster target pools are among those that get deleted, if yes returns the names.
 func targetPoolsDeleted(current []*spec.LBcluster, nps []*spec.NodePool) ([]string, bool) {
-	for _, role := range clusters.QFindLbApiEndpoint(current).GetRoles() {
+	for _, role := range clusters.FindAssignedLbApiEndpoint(current).GetRoles() {
 		if role.RoleType != spec.RoleType_ApiServer {
 			continue
 		}

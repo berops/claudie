@@ -24,9 +24,6 @@ type Context struct {
 	// properties may change during processing.
 	DesiredLoadbalancers []*spec.LBcluster
 
-	// DeletedLoadBalancers are the deleted loadbalancers for the cluster.
-	DeletedLoadBalancers []*spec.LBcluster
-
 	// Workflow is the current state of processing of the cluster.
 	Workflow *spec.Workflow
 
@@ -55,10 +52,6 @@ func (ctx *Context) GetClusterName() string {
 		return ctx.CurrentLoadbalancers[0].TargetedK8S
 	}
 
-	if len(ctx.DeletedLoadBalancers) != 0 {
-		return ctx.DeletedLoadBalancers[0].TargetedK8S
-	}
-
 	return ""
 }
 
@@ -78,10 +71,6 @@ func (ctx *Context) Id() string {
 
 	if len(ctx.CurrentLoadbalancers) != 0 {
 		return ctx.CurrentLoadbalancers[0].TargetedK8S
-	}
-
-	if len(ctx.DeletedLoadBalancers) != 0 {
-		return ctx.DeletedLoadBalancers[0].TargetedK8S
 	}
 
 	return ""

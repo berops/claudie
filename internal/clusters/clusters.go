@@ -42,15 +42,6 @@ func DetermineLBApiEndpointChange(currentLbs, desiredLbs []*spec.LBcluster) (str
 	}
 }
 
-func QFindLbApiEndpoint(clusters []*spec.LBcluster) *spec.LBcluster {
-	for _, lb := range clusters {
-		if lb.HasApiRole() {
-			return lb
-		}
-	}
-	return nil
-}
-
 func FindAssignedLbApiEndpoint(clusters []*spec.LBcluster) *spec.LBcluster {
 	for _, lb := range clusters {
 		if lb.IsApiEndpoint() {

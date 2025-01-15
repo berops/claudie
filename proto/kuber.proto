@@ -5,8 +5,8 @@ import "spec/manifest.proto";
 
 option go_package = "proto/pb";
 
-message SetUpStorageRequest { spec.K8scluster desiredCluster = 1; }
-message SetUpStorageResponse { spec.K8scluster desiredCluster = 1; }
+message SetUpStorageRequest {spec.K8scluster desiredCluster = 1;}
+message SetUpStorageResponse {spec.K8scluster desiredCluster = 1;}
 
 message StoreKubeconfigRequest {
   spec.K8scluster cluster = 1;
@@ -15,7 +15,7 @@ message StoreKubeconfigRequest {
 
 message StoreKubeconfigResponse {}
 
-message DeleteKubeconfigRequest { spec.K8scluster cluster = 1; }
+message DeleteKubeconfigRequest {spec.K8scluster cluster = 1;}
 
 message DeleteKubeconfigResponse {}
 
@@ -25,7 +25,7 @@ message DeleteNodesRequest {
   repeated string masterNodes = 3;
 }
 
-message DeleteNodesResponse { spec.K8scluster cluster = 1; }
+message DeleteNodesResponse {spec.K8scluster cluster = 1;}
 
 message StoreClusterMetadataRequest {
   spec.K8scluster cluster = 1;
@@ -42,15 +42,15 @@ message StoreLBScrapeConfigRequest {
 
 message StoreLBScrapeConfigResponse {}
 
-message RemoveLBScrapeConfigRequest { spec.K8scluster cluster = 1; }
+message RemoveLBScrapeConfigRequest {spec.K8scluster cluster = 1;}
 
 message RemoveLBScrapeConfigResponse {}
 
-message DeleteClusterMetadataRequest { spec.K8scluster cluster = 1; }
+message DeleteClusterMetadataRequest {spec.K8scluster cluster = 1;}
 
 message DeleteClusterMetadataResponse {}
 
-message PatchNodesRequest { spec.K8scluster cluster = 1; }
+message PatchNodesRequest {spec.K8scluster cluster = 1;}
 
 message PatchNodesResponse {}
 
@@ -68,16 +68,19 @@ message DestroyClusterAutoscalerRequest {
 
 message DestroyClusterAutoscalerResponse {}
 
-message PatchClusterInfoConfigMapRequest { spec.K8scluster desiredCluster = 1; }
+message PatchClusterInfoConfigMapRequest {spec.K8scluster desiredCluster = 1;}
 
 message PatchClusterInfoConfigMapResponse {}
 
-message CiliumRolloutRestartRequest { spec.K8scluster cluster = 1; }
+message CiliumRolloutRestartRequest {spec.K8scluster cluster = 1;}
 
 message CiliumRolloutRestartResponse {}
 
-message PatchKubeProxyConfigMapRequest { spec.K8scluster desiredCluster = 1; }
+message PatchKubeProxyConfigMapRequest {spec.K8scluster desiredCluster = 1;}
 message PatchKubeProxyConfigMapResponse {}
+
+message PatchKubeadmConfigMapRequest {spec.K8scluster desiredCluster = 1; string lbEndpoint = 2;}
+message PatchKubeadmConfigMapResponse {}
 
 service KuberService {
   // RemoveLBScrapeConfig removes scrape config for every LB detached from this
@@ -130,6 +133,10 @@ service KuberService {
   // after a endpoint change is performed.
   rpc PatchKubeProxyConfigMap(PatchKubeProxyConfigMapRequest)
       returns (PatchKubeProxyConfigMapResponse);
+  // PatchKubeadmConfigMap patches the certSANs of the kubeamd config map
+  // with the correct values, after an API endpoint change.
+  rpc PatchKubeadmConfigMap(PatchKubeadmConfigMapRequest)
+      returns (PatchKubeadmConfigMapResponse);
   // CiliumRolloutRestart performs a rollout restart of the cilium daemonset.
   rpc CiliumRolloutRestart(CiliumRolloutRestartRequest)
       returns (CiliumRolloutRestartResponse);

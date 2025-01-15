@@ -118,3 +118,8 @@ func PatchKubeProxyConfigMap(c pb.KuberServiceClient, req *pb.PatchKubeProxyConf
 	_, err := c.PatchKubeProxyConfigMap(context.Background(), req)
 	return err
 }
+
+func PatchKubeadmConfigMap(c pb.KuberServiceClient, req *pb.PatchKubeadmConfigMapRequest) error {
+	_, err := c.PatchKubeadmConfigMap(context.Background(), req)
+	return err
+}

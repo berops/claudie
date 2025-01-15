@@ -107,15 +107,6 @@ func (c ClusterBuilder) CreateNodepools() error {
 		return err
 	}
 
-	// TODO: remove DEBUG PRINT
-	fmt.Printf("before----------------------------------->")
-	for _, np := range c.DesiredClusterInfo.NodePools {
-		for _, n := range np.Nodes {
-			fmt.Printf("%s private (%q) public (%q)\n", n.Name, n.Private, n.Public)
-		}
-	}
-	fmt.Println()
-
 	for _, nodepool := range nodepools.Dynamic(c.DesiredClusterInfo.NodePools) {
 		d := nodepool.GetDynamicNodePool()
 		f := hash.Digest128(filepath.Join(d.Provider.SpecName, d.Provider.Templates.MustExtractTargetPath()))
@@ -144,15 +135,6 @@ func (c ClusterBuilder) CreateNodepools() error {
 			}
 		}
 	}
-
-	// TODO: remove DEBUG PRINT
-	fmt.Printf("after------------------------------------>")
-	for _, np := range c.DesiredClusterInfo.NodePools {
-		for _, n := range np.Nodes {
-			fmt.Printf("%s private (%q) public (%q)\n", n.Name, n.Private, n.Public)
-		}
-	}
-	fmt.Println()
 
 	return nil
 }
@@ -279,7 +261,7 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 				Provider:    p,
 				Regions:     nodepools.ExtractRegions(nodepools.ExtractDynamic(pools)),
 				K8sData: templates.K8sData{
-                    HasAPIServer: c.K8sInfo.ExportPort6443,
+					HasAPIServer: c.K8sInfo.ExportPort6443,
 				},
 				LBData: templates.LBData{
 					Roles: c.LBInfo.Roles,

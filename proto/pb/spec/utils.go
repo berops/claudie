@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 )
 
-type Option uint64
-
 const (
 	// ForceExportPort6443OnControlPlane Forces to export the port 6443 on
 	// all the control plane nodes in the cluster when the workflow reaches
@@ -15,7 +13,7 @@ const (
 	ForceExportPort6443OnControlPlane = 1 << iota
 )
 
-func OptionIsSet(options uint64, option Option) bool { return options&uint64(option) != 0 }
+func OptionIsSet(options uint64, option uint64) bool { return options&option != 0 }
 
 // Id returns the ID of the cluster.
 func (c *ClusterInfo) Id() string {
@@ -96,10 +94,7 @@ func (c *LBcluster) NodeCount() int {
 	return out
 }
 
-// TODO: find where all of this is reference
-// so that we dont have any inconsistencies
-// with the below added function, which is
-// similar.
+// HasApiRole checks whether the LB has a role with port 6443.
 func (c *LBcluster) HasApiRole() bool {
 	if c == nil {
 		return false
@@ -114,6 +109,7 @@ func (c *LBcluster) HasApiRole() bool {
 	return false
 }
 
+// IsApiEndpoint  checks whether the LB is selected as the API endpoint.
 func (c *LBcluster) IsApiEndpoint() bool {
 	if c == nil {
 		return false

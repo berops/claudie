@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/berops/claudie/internal/clusters"
 	"slices"
 	"sync"
 
@@ -202,6 +203,19 @@ func (u *Usecases) executeUpdateTask(te *managerclient.NextTaskResponse) (*spec.
 			return ctx.DesiredCluster, ctx.DesiredLoadbalancers, err
 		}
 
+		if err := u.Kuber.PatchKubeProxyConfigMap(ctx, u.Kuber.GetClient()); err != nil {
+			return ctx.DesiredCluster, ctx.DesiredLoadbalancers, err
+		}
+
+		var lbApiEndpoint string
+		if ep := clusters.FindAssignedLbApiEndpoint(ctx.DesiredLoadbalancers); ep != nil {
+			lbApiEndpoint = ep.Dns.Endpoint
+		}
+
+		if err := u.Kuber.PatchKubeadmConfigMap(ctx, lbApiEndpoint, u.Kuber.GetClient()); err != nil {
+			return ctx.DesiredCluster, ctx.DesiredLoadbalancers, err
+		}
+
 		if err := u.Kuber.CiliumRolloutRestart(ctx.DesiredCluster, u.Kuber.GetClient()); err != nil {
 			return ctx.DesiredCluster, ctx.DesiredLoadbalancers, err
 		}
@@ -216,7 +230,6 @@ func (u *Usecases) executeUpdateTask(te *managerclient.NextTaskResponse) (*spec.
 		DesiredCluster:       te.Event.Task.UpdateState.K8S,
 		CurrentLoadbalancers: te.Current.GetLoadBalancers().GetClusters(),
 		DesiredLoadbalancers: te.Event.GetTask().GetUpdateState().GetLbs().GetClusters(),
-		DeletedLoadBalancers: te.Event.GetTask().GetDeleteState().GetLbs().GetClusters(),
 		Workflow:             te.State,
 		Options:              te.Event.Task.Options,
 	}

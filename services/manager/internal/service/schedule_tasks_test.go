@@ -88,10 +88,9 @@ func Test_deletedTargetApiNodePool(t *testing.T) {
 		currentLbs    []*spec.LBcluster
 	}
 	tests := []struct {
-		name  string
-		args  args
-		want  []string
-		want1 bool
+		name string
+		args args
+		want bool
 	}{
 		{
 			name: "deleted-target-api-nodepools",
@@ -118,11 +117,11 @@ func Test_deletedTargetApiNodePool(t *testing.T) {
 							RoleType:    spec.RoleType_ApiServer,
 						},
 					},
-					TargetedK8S: "current",
+					TargetedK8S:     "current",
+					UsedApiEndpoint: true,
 				}},
 			},
-			want:  []string{fmt.Sprintf("dyn-%s", rnghash), fmt.Sprintf("stat-%s", rnghash)},
-			want1: true,
+			want: true,
 		},
 		{
 			name: "deleted-one-of-mane-api-nodepools",
@@ -148,19 +147,18 @@ func Test_deletedTargetApiNodePool(t *testing.T) {
 							RoleType:    spec.RoleType_ApiServer,
 						},
 					},
-					TargetedK8S: "current",
+					TargetedK8S:     "current",
+					UsedApiEndpoint: true,
 				}},
 			},
-			want:  nil,
-			want1: false,
+			want: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, got1 := deletedTargetApiNodePools(tt.args.k8sDiffResult, tt.args.current, tt.args.currentLbs)
+			got := deletedTargetApiNodePools(tt.args.k8sDiffResult, tt.args.current, tt.args.currentLbs)
 			assert.Equalf(t, tt.want, got, "deletedTargetApiNodePool(%v, %v, %v)", tt.args.k8sDiffResult, tt.args.current, tt.args.currentLbs)
-			assert.Equalf(t, tt.want1, got1, "deletedTargetApiNodePool(%v, %v, %v)", tt.args.k8sDiffResult, tt.args.current, tt.args.currentLbs)
 		})
 	}
 }
@@ -795,6 +793,7 @@ func TestDiff(t *testing.T) {
 					RoleType:    spec.RoleType_ApiServer,
 				},
 			},
+			UsedApiEndpoint: true,
 		},
 	}}
 	type args struct {
@@ -808,6 +807,24 @@ func TestDiff(t *testing.T) {
 		args args
 		want []*spec.TaskEvent
 	}{
+		{
+			name: "autoscaler-only-change",
+			args: args{
+				current:    proto.Clone(current).(*spec.K8Scluster),
+				desired:    proto.Clone(current).(*spec.K8Scluster),
+				currentLbs: nil,
+				desiredLbs: func() []*spec.LBcluster {
+					l := proto.Clone(currentLbs).(*spec.LoadBalancers).GetClusters()
+					l[0].UsedApiEndpoint = false
+					return l
+				}(),
+			},
+			want: []*spec.TaskEvent{
+				{Event: spec.Event_UPDATE, Description: "applying load balancer intermediate representation"},
+				{Event: spec.Event_UPDATE, Description: "performing API endpoint change, reason: AttachingLoadBalancer"},
+				{Event: spec.Event_UPDATE, Description: "reconciling infrastructure changes, including changes to the loadbalancer infrastructure"},
+			},
+		},
 		{
 			name: "autoscaler-only-change",
 			args: args{
@@ -896,8 +913,10 @@ func TestDiff(t *testing.T) {
 				desired:    proto.Clone(current).(*spec.K8Scluster),
 			},
 			want: []*spec.TaskEvent{
-				{Event: spec.Event_UPDATE, Description: "reconciling infrastructure changes, including changes to the loadbalancer infrastructure"},
+				{Event: spec.Event_UPDATE, Description: "applying load balancer intermediate representation"},
+				{Event: spec.Event_UPDATE, Description: "performing API endpoint change, reason: DetachingLoadBalancer"},
 				{Event: spec.Event_DELETE, Description: "deleting loadbalancer infrastructure"},
+				{Event: spec.Event_UPDATE, Description: "reconciling infrastructure changes, including changes to the loadbalancer infrastructure"},
 			},
 		},
 		{
@@ -948,7 +967,7 @@ func TestDiff(t *testing.T) {
 			},
 			want: []*spec.TaskEvent{
 				{Event: spec.Event_UPDATE, Description: "adding nodes to k8s cluster"},
-				{Event: spec.Event_UPDATE, Description: "moving endpoint from old control plane node to a new control plane node"},
+				{Event: spec.Event_UPDATE, Description: "moving endpoint from old control plane node to a new control plane node 1 from nodepool np1"},
 				{Event: spec.Event_DELETE, Description: "deleting nodes from k8s cluster"},
 				{Event: spec.Event_UPDATE, Description: "reconciling infrastructure changes, including deletion of infrastructure for deleted dynamic nodes"},
 			},
@@ -972,7 +991,7 @@ func TestDiff(t *testing.T) {
 			},
 			want: []*spec.TaskEvent{
 				{Event: spec.Event_UPDATE, Description: "adding nodes to k8s cluster"},
-				{Event: spec.Event_UPDATE, Description: "loadbalancer target to new control plane nodepool"},
+				{Event: spec.Event_UPDATE, Description: "applying load balancer intermediate representation"},
 				{Event: spec.Event_DELETE, Description: "deleting nodes from k8s cluster"},
 				{Event: spec.Event_UPDATE, Description: "reconciling infrastructure changes, including deletion of infrastructure for deleted dynamic nodes"},
 			},
@@ -995,7 +1014,7 @@ func TestDiff(t *testing.T) {
 				desiredLbs: proto.Clone(currentLbs).(*spec.LoadBalancers).GetClusters(),
 			},
 			want: []*spec.TaskEvent{
-				{Event: spec.Event_UPDATE, Description: "moving endpoint from old control plane node to a new control plane node"},
+				{Event: spec.Event_UPDATE, Description: fmt.Sprintf("moving endpoint from old control plane node to a new control plane node 1 from nodepool np0-%s", rnghash)},
 				{Event: spec.Event_DELETE, Description: "deleting nodes from k8s cluster"},
 				{Event: spec.Event_UPDATE, Description: "reconciling infrastructure changes, including deletion of infrastructure for deleted dynamic nodes"},
 			},
