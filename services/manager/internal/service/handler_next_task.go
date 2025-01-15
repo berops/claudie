@@ -108,7 +108,7 @@ func transferExistingData(state *spec.ClusterState, te *spec.TaskEvent) error {
 			// also runs only if there are no other changes being
 			// worked on and vice versa.
 			//
-			// We skip updating the autoscaler config when transfering
+			// We skip updating the autoscaler config when transferring
 			// the k8s node data for the nodepool as the count of the
 			// desired nodepool is changed by the autoscaler.
 			for _, cnp := range state.Current.K8S.ClusterInfo.NodePools {

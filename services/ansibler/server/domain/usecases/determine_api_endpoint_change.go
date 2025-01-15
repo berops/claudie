@@ -38,11 +38,11 @@ func (u *Usecases) DetermineApiEndpointChange(_ context.Context, request *pb.Det
 			request.CurrentEndpointId,
 			request.DesiredEndpointId,
 		)
-		logger.Err(err).Msgf(msg)
+		logger.Err(err).Msg(msg)
 		return nil, fmt.Errorf("%s:%w", msg, err)
 	}
 
-	logger.Info().Msgf("Sucessfully processed request for determining api endpoint state change %s, current: %s, desired: %s",
+	logger.Info().Msgf("Successfully processed request for determining api endpoint state change %s, current: %s, desired: %s",
 		request.State.String(),
 		request.CurrentEndpointId,
 		request.DesiredEndpointId,

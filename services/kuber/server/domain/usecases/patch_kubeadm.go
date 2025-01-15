@@ -88,6 +88,6 @@ func (u *Usecases) PatchKubeadmConfigMap(ctx context.Context, request *pb.PatchK
 		return nil, fmt.Errorf("failed to patch kubeadm-config config map")
 	}
 
-	logger.Info().Msgf("Kubeadm-config Config Map patched sucessfully")
+	logger.Info().Msgf("Kubeadm-config Config Map patched successfully")
 	return &pb.PatchKubeadmConfigMapResponse{}, nil
 }
