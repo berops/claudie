@@ -35,12 +35,12 @@ type KubeEleven struct {
 	// Kubernetes cluster that will be set up.
 	K8sCluster *spec.K8Scluster
 
-    // LoadBalancerEndpoint specifies the dns hostname
-    // that should be used as the endpoint for the K8sCluster.
-    // If empty, one of the nodes in the supplied K8sCluster
-    // needs to have the role ApiEndpoint.
-    LoadBalancerEndpoint string
-	
+	// LoadBalancerEndpoint specifies the dns hostname
+	// that should be used as the endpoint for the K8sCluster.
+	// If empty, one of the nodes in the supplied K8sCluster
+	// needs to have the role ApiEndpoint.
+	LoadBalancerEndpoint string
+
 	// ProxyEnvs holds information about a need to update proxy envs, proxy endpoint, and no proxy list.
 	ProxyEnvs *spec.ProxyEnvs
 
@@ -224,9 +224,9 @@ func (k *KubeEleven) getClusterNodes() []*NodepoolInfo {
 // apiEndpoint will extract the publicly accessible endpoint for the api server, which can
 // be either a loadbalancer or a control plane node directly.
 func (k *KubeEleven) apiEndpoint() (string, bool, error) {
-    if k.LoadBalancerEndpoint != "" {
-        return k.LoadBalancerEndpoint, false, nil
-    }
+	if k.LoadBalancerEndpoint != "" {
+		return k.LoadBalancerEndpoint, false, nil
+	}
 
 	_, n := nodepools.FindApiEndpoint(k.K8sCluster.ClusterInfo.NodePools)
 	if n == nil {

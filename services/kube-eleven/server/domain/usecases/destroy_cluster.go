@@ -18,9 +18,9 @@ func (u *Usecases) DestroyCluster(req *pb.DestroyClusterRequest) (*pb.DestroyClu
 	logger.Info().Msgf("Destroying kubernetes cluster")
 
 	k := kube_eleven.KubeEleven{
-		K8sCluster:             req.Current,
-		LoadBalancerEndpoint:   req.LoadBalancerEndpoint,
-		SpawnProcessLimit:      u.SpawnProcessLimit,
+		K8sCluster:           req.Current,
+		LoadBalancerEndpoint: req.LoadBalancerEndpoint,
+		SpawnProcessLimit:    u.SpawnProcessLimit,
 	}
 
 	if err := k.DestroyCluster(); err != nil {

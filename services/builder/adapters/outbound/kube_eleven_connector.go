@@ -29,10 +29,10 @@ func (k *KubeElevenConnector) Connect() error {
 func (k *KubeElevenConnector) BuildCluster(builderCtx *builder.Context, loadBalancerEndpoint string, kubeElevenGrpcClient pb.KubeElevenServiceClient) (*pb.BuildClusterResponse, error) {
 	return kubeEleven.BuildCluster(kubeElevenGrpcClient,
 		&pb.BuildClusterRequest{
-			Desired:     builderCtx.DesiredCluster,
-			LoadBalancerEndpoint:  loadBalancerEndpoint,
-			ProxyEnvs:   builderCtx.ProxyEnvs,
-			ProjectName: builderCtx.ProjectName,
+			Desired:              builderCtx.DesiredCluster,
+			LoadBalancerEndpoint: loadBalancerEndpoint,
+			ProxyEnvs:            builderCtx.ProxyEnvs,
+			ProjectName:          builderCtx.ProjectName,
 		})
 }
 
@@ -40,8 +40,8 @@ func (k *KubeElevenConnector) BuildCluster(builderCtx *builder.Context, loadBala
 func (k *KubeElevenConnector) DestroyCluster(builderCtx *builder.Context, loadBalancerEndpoint string, kubeElevenGrpcClient pb.KubeElevenServiceClient) (*pb.DestroyClusterResponse, error) {
 	return kubeEleven.DestroyCluster(kubeElevenGrpcClient,
 		&pb.DestroyClusterRequest{
-			ProjectName:        builderCtx.ProjectName,
-			Current:            builderCtx.CurrentCluster,
+			ProjectName:          builderCtx.ProjectName,
+			Current:              builderCtx.CurrentCluster,
 			LoadBalancerEndpoint: loadBalancerEndpoint,
 		})
 }

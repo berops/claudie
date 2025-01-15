@@ -22,11 +22,11 @@ type K8Scluster struct {
 	DesiredState *spec.K8Scluster
 	CurrentState *spec.K8Scluster
 
-    // Signals whether to export port 6443 on the
-    // control plane nodes of the cluster.
-    // This value is passed down when generating
-    // the terraform templates.
-    ExportPort6443 bool
+	// Signals whether to export port 6443 on the
+	// control plane nodes of the cluster.
+	// This value is passed down when generating
+	// the terraform templates.
+	ExportPort6443 bool
 
 	// SpawnProcessLimit limits the number of spawned terraform processes.
 	SpawnProcessLimit *semaphore.Weighted

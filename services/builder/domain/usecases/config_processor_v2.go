@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/berops/claudie/internal/clusters"
 	"slices"
 	"sync"
 
+	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/builder/domain/usecases/metrics"

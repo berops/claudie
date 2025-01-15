@@ -3,7 +3,7 @@ package usecases
 import (
 	"fmt"
 
-    "github.com/berops/claudie/internal/clusters"
+	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/proto/pb/spec"
 	builder "github.com/berops/claudie/services/builder/internal"
@@ -17,10 +17,10 @@ func (u *Usecases) reconcileK8sCluster(ctx *builder.Context) error {
 	description := ctx.Workflow.Description
 	u.updateTaskWithDescription(ctx, spec.Workflow_KUBE_ELEVEN, fmt.Sprintf("%s building kubernetes cluster", description))
 
-    var lbApiEndpoint string
-    if ep := clusters.FindAssignedLbApiEndpoint(ctx.DesiredLoadbalancers); ep != nil {
-        lbApiEndpoint = ep.Dns.Endpoint
-    }
+	var lbApiEndpoint string
+	if ep := clusters.FindAssignedLbApiEndpoint(ctx.DesiredLoadbalancers); ep != nil {
+		lbApiEndpoint = ep.Dns.Endpoint
+	}
 
 	logger.Info().Msgf("Calling BuildCluster on Kube-eleven")
 	res, err := u.KubeEleven.BuildCluster(ctx, lbApiEndpoint, u.KubeEleven.GetClient())
@@ -42,10 +42,10 @@ func (u *Usecases) destroyK8sCluster(ctx *builder.Context) error {
 	description := ctx.Workflow.Description
 	u.updateTaskWithDescription(ctx, spec.Workflow_KUBE_ELEVEN, fmt.Sprintf("%s destroying kubernetes cluster", description))
 
-    var lbApiEndpoint string
-    if ep := clusters.FindAssignedLbApiEndpoint(ctx.CurrentLoadbalancers); ep != nil {
-        lbApiEndpoint = ep.Dns.Endpoint
-    }
+	var lbApiEndpoint string
+	if ep := clusters.FindAssignedLbApiEndpoint(ctx.CurrentLoadbalancers); ep != nil {
+		lbApiEndpoint = ep.Dns.Endpoint
+	}
 
 	logger.Info().Msgf("Calling DestroyCluster on Kube-eleven")
 	res, err := u.KubeEleven.DestroyCluster(ctx, lbApiEndpoint, u.KubeEleven.GetClient())
