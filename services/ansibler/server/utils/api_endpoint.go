@@ -32,16 +32,3 @@ func ChangeAPIEndpoint(clusterName, oldEndpoint, newEndpoint, directory string, 
 
 	return nil
 }
-
-// FindCurrentAPIServerTypeLBCluster finds the current API server type LB cluster.
-func FindCurrentAPIServerTypeLBCluster(lbClusters []*LBClusterData) *LBClusterData {
-	for _, lbClusterData := range lbClusters {
-		if lbClusterData.CurrentLbCluster != nil {
-			if lbClusterData.CurrentLbCluster.HasApiRole() && lbClusterData.CurrentLbCluster.Dns != nil {
-				return lbClusterData
-			}
-		}
-	}
-
-	return nil
-}

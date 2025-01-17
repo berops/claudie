@@ -32,6 +32,7 @@ const (
 	KuberService_DestroyClusterAutoscaler_FullMethodName  = "/claudie.KuberService/DestroyClusterAutoscaler"
 	KuberService_PatchClusterInfoConfigMap_FullMethodName = "/claudie.KuberService/PatchClusterInfoConfigMap"
 	KuberService_PatchKubeProxyConfigMap_FullMethodName   = "/claudie.KuberService/PatchKubeProxyConfigMap"
+	KuberService_PatchKubeadmConfigMap_FullMethodName     = "/claudie.KuberService/PatchKubeadmConfigMap"
 	KuberService_CiliumRolloutRestart_FullMethodName      = "/claudie.KuberService/CiliumRolloutRestart"
 )
 
@@ -80,6 +81,9 @@ type KuberServiceClient interface {
 	// kube-proxy pods in the kube-system namespace. This change needs to be done
 	// after a endpoint change is performed.
 	PatchKubeProxyConfigMap(ctx context.Context, in *PatchKubeProxyConfigMapRequest, opts ...grpc.CallOption) (*PatchKubeProxyConfigMapResponse, error)
+	// PatchKubeadmConfigMap patches the certSANs of the kubeamd config map
+	// with the correct values, after an API endpoint change.
+	PatchKubeadmConfigMap(ctx context.Context, in *PatchKubeadmConfigMapRequest, opts ...grpc.CallOption) (*PatchKubeadmConfigMapResponse, error)
 	// CiliumRolloutRestart performs a rollout restart of the cilium daemonset.
 	CiliumRolloutRestart(ctx context.Context, in *CiliumRolloutRestartRequest, opts ...grpc.CallOption) (*CiliumRolloutRestartResponse, error)
 }
@@ -222,6 +226,16 @@ func (c *kuberServiceClient) PatchKubeProxyConfigMap(ctx context.Context, in *Pa
 	return out, nil
 }
 
+func (c *kuberServiceClient) PatchKubeadmConfigMap(ctx context.Context, in *PatchKubeadmConfigMapRequest, opts ...grpc.CallOption) (*PatchKubeadmConfigMapResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PatchKubeadmConfigMapResponse)
+	err := c.cc.Invoke(ctx, KuberService_PatchKubeadmConfigMap_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *kuberServiceClient) CiliumRolloutRestart(ctx context.Context, in *CiliumRolloutRestartRequest, opts ...grpc.CallOption) (*CiliumRolloutRestartResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CiliumRolloutRestartResponse)
@@ -277,6 +291,9 @@ type KuberServiceServer interface {
 	// kube-proxy pods in the kube-system namespace. This change needs to be done
 	// after a endpoint change is performed.
 	PatchKubeProxyConfigMap(context.Context, *PatchKubeProxyConfigMapRequest) (*PatchKubeProxyConfigMapResponse, error)
+	// PatchKubeadmConfigMap patches the certSANs of the kubeamd config map
+	// with the correct values, after an API endpoint change.
+	PatchKubeadmConfigMap(context.Context, *PatchKubeadmConfigMapRequest) (*PatchKubeadmConfigMapResponse, error)
 	// CiliumRolloutRestart performs a rollout restart of the cilium daemonset.
 	CiliumRolloutRestart(context.Context, *CiliumRolloutRestartRequest) (*CiliumRolloutRestartResponse, error)
 	mustEmbedUnimplementedKuberServiceServer()
@@ -327,6 +344,9 @@ func (UnimplementedKuberServiceServer) PatchClusterInfoConfigMap(context.Context
 }
 func (UnimplementedKuberServiceServer) PatchKubeProxyConfigMap(context.Context, *PatchKubeProxyConfigMapRequest) (*PatchKubeProxyConfigMapResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PatchKubeProxyConfigMap not implemented")
+}
+func (UnimplementedKuberServiceServer) PatchKubeadmConfigMap(context.Context, *PatchKubeadmConfigMapRequest) (*PatchKubeadmConfigMapResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PatchKubeadmConfigMap not implemented")
 }
 func (UnimplementedKuberServiceServer) CiliumRolloutRestart(context.Context, *CiliumRolloutRestartRequest) (*CiliumRolloutRestartResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CiliumRolloutRestart not implemented")
@@ -586,6 +606,24 @@ func _KuberService_PatchKubeProxyConfigMap_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
+func _KuberService_PatchKubeadmConfigMap_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PatchKubeadmConfigMapRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KuberServiceServer).PatchKubeadmConfigMap(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KuberService_PatchKubeadmConfigMap_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KuberServiceServer).PatchKubeadmConfigMap(ctx, req.(*PatchKubeadmConfigMapRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _KuberService_CiliumRolloutRestart_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CiliumRolloutRestartRequest)
 	if err := dec(in); err != nil {
@@ -662,6 +700,10 @@ var KuberService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "PatchKubeProxyConfigMap",
 			Handler:    _KuberService_PatchKubeProxyConfigMap_Handler,
+		},
+		{
+			MethodName: "PatchKubeadmConfigMap",
+			Handler:    _KuberService_PatchKubeadmConfigMap_Handler,
 		},
 		{
 			MethodName: "CiliumRolloutRestart",

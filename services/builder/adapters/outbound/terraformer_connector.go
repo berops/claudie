@@ -35,6 +35,7 @@ func (t *TerraformerConnector) BuildInfrastructure(builderCtx *builder.Context, 
 			CurrentLbs:  builderCtx.CurrentLoadbalancers,
 			DesiredLbs:  builderCtx.DesiredLoadbalancers,
 			ProjectName: builderCtx.ProjectName,
+			Options:     builderCtx.Options,
 		})
 }
 

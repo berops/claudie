@@ -7,7 +7,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/berops/claudie/internal/hash"
+	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/manager/internal/store"
@@ -55,6 +55,19 @@ func scheduleTasks(scheduled *store.Config) (ScheduleResult, error) {
 			// nothing to do (desired state was not build).
 		// create
 		case state.Current == nil && state.Desired != nil:
+			// Choose initial api endpoint.
+		clusters:
+			for _, state := range scheduledGRPC.Clusters {
+				for _, lb := range state.Desired.GetLoadBalancers().GetClusters() {
+					if lb.HasApiRole() {
+						lb.UsedApiEndpoint = true
+						continue clusters
+					}
+				}
+				nps := state.Desired.K8S.ClusterInfo.NodePools
+				nodepools.FirstControlNode(nps).NodeType = spec.NodeType_apiEndpoint
+			}
+
 			events = append(events, &spec.TaskEvent{
 				Id:          uuid.New().String(),
 				Timestamp:   timestamppb.New(time.Now().UTC()),
@@ -324,45 +337,23 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 		})
 	}
 
-	if targets, deleted := deletedTargetApiNodePools(k8sDiffResult, current, currentLbs); deleted {
-		irLbs := lbClone(currentLbs)
-		lb := findLbAPIEndpointCluster(irLbs)
-
-		var nextControlNodePool *spec.NodePool
-		for np := range nodepools.Control(desired.ClusterInfo.NodePools) {
-			if !slices.ContainsFunc(targets, func(s string) bool { return s == np.Name }) {
-				nextControlNodePool = np
-				break
-			}
-		}
-		// No need to check if nextControlNodepool is nil. Validation of the inputmanifest
-		// does not allow for the user to specify an empty list of control nodes
-		nameWithoutHash := nextControlNodePool.Name
-
-		// Each dynamic nodepool after the scheduler stage has a hash appended to it.
-		// to get the original nodepool name as defined in the input manifest
-		// we need to strip the hash.
-		if nextControlNodePool.GetDynamicNodePool() != nil {
-			nameWithoutHash = nextControlNodePool.Name[:len(nextControlNodePool.Name)-(hash.Length+1)] // +1 for '-'
-		}
-
-		for _, role := range lb.GetRoles() {
-			if role.RoleType == spec.RoleType_ApiServer {
-				role.TargetPools = slices.DeleteFunc(role.TargetPools, func(s string) bool { return slices.Contains(targets, s) })
-				role.TargetPools = append(role.TargetPools, nameWithoutHash)
-				break
-			}
-		}
+	// determine any changes to the api endpoint at the K8s level.
+	if endpointNodeDeleted(k8sDiffResult, current) {
+		nodePool, node := newAPIEndpointNodeCandidate(desired.ClusterInfo.NodePools)
 
 		events = append(events, &spec.TaskEvent{
 			Id:          uuid.New().String(),
 			Timestamp:   timestamppb.New(time.Now().UTC()),
 			Event:       spec.Event_UPDATE,
-			Description: "loadbalancer target to new control plane nodepool",
+			Description: fmt.Sprintf("moving endpoint from old control plane node to a new control plane node %s from nodepool %s", node, nodePool),
 			Task: &spec.Task{
 				UpdateState: &spec.UpdateState{
-					K8S: ir,
-					Lbs: &spec.LoadBalancers{Clusters: irLbs},
+					EndpointChange: &spec.UpdateState_NewControlEndpoint{
+						NewControlEndpoint: &spec.UpdateState_K8SEndpoint{
+							Nodepool: nodePool,
+							Node:     node,
+						},
+					},
 				},
 			},
 			OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
@@ -371,24 +362,61 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 		})
 	}
 
-	if endpointNodeDeleted(k8sDiffResult, current) {
-		nodePool, node := newAPIEndpointNodeCandidate(desired.ClusterInfo.NodePools)
+	// determine any changes to the api endpoint at the LB level.
+	cid, did, change := clusters.DetermineLBApiEndpointChange(currentLbs, desiredLbs)
+	applylbIr := deletedTargetApiNodePools(k8sDiffResult, current, currentLbs)
+	// Manager can't handle the endpoint renamed case as it requires to be part of the workflow
+	// where the new DNS hostname is generated, as it needs to be updated immediately after.
+	// Every other case can be handled by the manager as a separate step.
+	applylbIr = applylbIr || (change != spec.ApiEndpointChangeState_EndpointRenamed && change != spec.ApiEndpointChangeState_NoChange)
+	if applylbIr {
+		// will contain merged roles from current/desired state
+		// and will include added loadbalancers if any.
+		lbsir := craftLbsIR(currentLbs, desiredLbs, addedLoadBalancers)
+
+		// options that adjusts the processing of the task.
+		irOptions := uint64(0)
+		if change == spec.ApiEndpointChangeState_DetachingLoadBalancer || change == spec.ApiEndpointChangeState_AttachingLoadBalancer {
+			irOptions |= spec.ForceExportPort6443OnControlPlane
+		}
 
 		events = append(events, &spec.TaskEvent{
 			Id:          uuid.New().String(),
 			Timestamp:   timestamppb.New(time.Now().UTC()),
 			Event:       spec.Event_UPDATE,
-			Description: "moving endpoint from old control plane node to a new control plane node",
+			Description: "applying load balancer intermediate representation",
 			Task: &spec.Task{
-				UpdateState: &spec.UpdateState{Endpoint: &spec.UpdateState_Endpoint{
-					Nodepool: nodePool,
-					Node:     node,
-				}},
+				Options: irOptions,
+				UpdateState: &spec.UpdateState{
+					K8S: ir,
+					Lbs: &spec.LoadBalancers{Clusters: lbsir},
+				},
 			},
-			OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
-				Kind: spec.Retry_Repeat_ENDLESS,
-			}}},
 		})
+
+		if change != spec.ApiEndpointChangeState_EndpointRenamed && change != spec.ApiEndpointChangeState_NoChange {
+			events = append(events, &spec.TaskEvent{
+				Id:          uuid.New().String(),
+				Timestamp:   timestamppb.New(time.Now().UTC()),
+				Event:       spec.Event_UPDATE,
+				Description: fmt.Sprintf("performing API endpoint change, reason: %s", change.String()),
+				Task: &spec.Task{
+					Options: irOptions,
+					UpdateState: &spec.UpdateState{
+						EndpointChange: &spec.UpdateState_LbEndpointChange{
+							LbEndpointChange: &spec.UpdateState_LbEndpoint{
+								State:             change,
+								CurrentEndpointId: cid,
+								DesiredEndpointId: did,
+							},
+						},
+					},
+				},
+				OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
+					Kind: spec.Retry_Repeat_ENDLESS,
+				}}},
+			})
+		}
 	}
 
 	if k8sDiffResult.deleting {
@@ -401,43 +429,8 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 			Timestamp:   timestamppb.New(time.Now().UTC()),
 			Event:       spec.Event_DELETE,
 			Description: "deleting nodes from k8s cluster",
-			Task:        &spec.Task{DeleteState: &spec.DeleteState{Nodepools: dn}},
-		})
-	}
-
-	// at last infrastructure changes. The loadbalancer changes are not "rolling update"
-	// as with the changes to the k8s cluster. If nodepools are added and removed, it
-	// will be executed in one go.
-	//
-	// This will move the current state from an intermediate representation (if any)
-	// to the desired as given in the manifest.
-	lbsChanges := lbsDiffResult.adding || lbsDiffResult.deleting
-	lbsChanges = lbsChanges || !proto.Equal(&spec.LoadBalancers{Clusters: currentLbs}, &spec.LoadBalancers{Clusters: desiredLbs})
-	lbsChanges = lbsChanges || len(deletedLoadbalancers) > 0 || len(addedLoadBalancers) > 0
-	desc := "reconciling infrastructure changes"
-	if k8sDiffResult.deleting {
-		desc += ", including deletion of infrastructure for deleted dynamic nodes"
-	}
-	if lbsChanges {
-		desc += ", including changes to the loadbalancer infrastructure"
-	}
-	if lbsChanges || k8sDiffResult.deleting {
-		events = append(events, &spec.TaskEvent{
-			Id:          uuid.New().String(),
-			Timestamp:   timestamppb.New(time.Now().UTC()),
-			Event:       spec.Event_UPDATE,
-			Description: desc,
 			Task: &spec.Task{
-				UpdateState: &spec.UpdateState{
-					K8S: desired,
-					Lbs: &spec.LoadBalancers{Clusters: desiredLbs},
-				},
-				DeleteState: func() *spec.DeleteState {
-					if len(deletedLoadbalancers) > 0 {
-						return &spec.DeleteState{Lbs: &spec.LoadBalancers{Clusters: deletedLoadbalancers}}
-					}
-					return nil
-				}(),
+				DeleteState: &spec.DeleteState{Nodepools: dn},
 			},
 		})
 	}
@@ -450,6 +443,35 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 			Description: "deleting loadbalancer infrastructure",
 			Task: &spec.Task{
 				DeleteState: &spec.DeleteState{Lbs: &spec.LoadBalancers{Clusters: deletedLoadbalancers}},
+			},
+		})
+	}
+
+	// as the last step commit to the changes requested in the desired state, as edge cases and other
+	// manipulations have been done beforehand.
+	lbsChanges := lbsDiffResult.adding || lbsDiffResult.deleting
+	lbsChanges = lbsChanges || !proto.Equal(&spec.LoadBalancers{Clusters: currentLbs}, &spec.LoadBalancers{Clusters: desiredLbs})
+	lbsChanges = lbsChanges || len(deletedLoadbalancers) > 0 || len(addedLoadBalancers) > 0
+	desc := "reconciling infrastructure changes"
+	if k8sDiffResult.deleting {
+		desc += ", including deletion of infrastructure for deleted dynamic nodes"
+	}
+	if lbsChanges {
+		desc += ", including changes to the loadbalancer infrastructure"
+	}
+
+	// we match the infrastructure of the desired state.
+	if lbsChanges || k8sDiffResult.deleting {
+		events = append(events, &spec.TaskEvent{
+			Id:          uuid.New().String(),
+			Timestamp:   timestamppb.New(time.Now().UTC()),
+			Event:       spec.Event_UPDATE,
+			Description: desc,
+			Task: &spec.Task{
+				UpdateState: &spec.UpdateState{
+					K8S: desired,
+					Lbs: &spec.LoadBalancers{Clusters: desiredLbs},
+				},
 			},
 		})
 	}
@@ -762,6 +784,46 @@ func craftK8sIR(k8sDiffResult nodePoolDiffResult, current, desired *spec.K8Sclus
 	return ir
 }
 
+func craftLbsIR(current, desired, added []*spec.LBcluster) []*spec.LBcluster {
+	// 1. Create an IR from the current state.
+	// as for why current state, the desired state could have different
+	// node counts for the lbs, and we don't want to perform any changes
+	// with  the infrastructure. The LB IR will be the current state +
+	// the roles in desired state + any added loadbalancers so that we
+	// can perform any migrations safely.
+	ir := lbClone(current)
+
+	for _, lb := range desired {
+		i := clusters.IndexLoadbalancerById(lb.ClusterInfo.Id(), ir)
+		if i < 0 {
+			// desired cluster is not in the current state.
+			continue
+		}
+
+		// 2. for each role defined in the desired state
+		// we try to match it against the current state
+		// if missing we add it, if modified we merge it.
+		for _, desired := range lb.Roles {
+			var found *spec.Role
+
+			for _, current := range ir[i].Roles {
+				if desired.Name == current.Name {
+					found = current
+					break
+				}
+			}
+
+			if found == nil {
+				ir[i].Roles = append(ir[i].Roles, proto.Clone(desired).(*spec.Role))
+			} else {
+				found.MergeTargetPools(desired)
+			}
+		}
+	}
+	// 3. add new lbs.
+	return append(ir, lbClone(added)...)
+}
+
 func endpointNodeDeleted(k8sDiffResult nodePoolDiffResult, current *spec.K8Scluster) bool {
 	deletedNodePools := make(map[string][]string)
 	maps.Insert(deletedNodePools, maps.All(k8sDiffResult.deletedDynamic))
@@ -794,7 +856,7 @@ func endpointNodeDeleted(k8sDiffResult nodePoolDiffResult, current *spec.K8Sclus
 	return false
 }
 
-func deletedTargetApiNodePools(k8sDiffResult nodePoolDiffResult, current *spec.K8Scluster, currentLbs []*spec.LBcluster) ([]string, bool) {
+func deletedTargetApiNodePools(k8sDiffResult nodePoolDiffResult, current *spec.K8Scluster, currentLbs []*spec.LBcluster) bool {
 	deletedNodePools := make(map[string][]string)
 	maps.Insert(deletedNodePools, maps.All(k8sDiffResult.deletedDynamic))
 	maps.Insert(deletedNodePools, maps.All(k8sDiffResult.deletedStatic))
@@ -804,7 +866,8 @@ func deletedTargetApiNodePools(k8sDiffResult nodePoolDiffResult, current *spec.K
 		deleted = append(deleted, nodepools.FindByName(np, current.ClusterInfo.NodePools))
 	}
 
-	return targetPoolsDeleted(currentLbs, deleted)
+	_, d := targetPoolsDeleted(currentLbs, deleted)
+	return d
 }
 
 func newAPIEndpointNodeCandidate(desired []*spec.NodePool) (string, string) {
@@ -818,7 +881,7 @@ func newAPIEndpointNodeCandidate(desired []*spec.NodePool) (string, string) {
 
 // targetPoolsDeleted check whether the LB API cluster target pools are among those that get deleted, if yes returns the names.
 func targetPoolsDeleted(current []*spec.LBcluster, nps []*spec.NodePool) ([]string, bool) {
-	for _, role := range findLbAPIEndpointCluster(current).GetRoles() {
+	for _, role := range clusters.FindAssignedLbApiEndpoint(current).GetRoles() {
 		if role.RoleType != spec.RoleType_ApiServer {
 			continue
 		}
@@ -839,15 +902,6 @@ func targetPoolsDeleted(current []*spec.LBcluster, nps []*spec.NodePool) ([]stri
 		}
 	}
 	return nil, false
-}
-
-func findLbAPIEndpointCluster(current []*spec.LBcluster) *spec.LBcluster {
-	for _, lb := range current {
-		if lb.HasApiRole() {
-			return lb
-		}
-	}
-	return nil
 }
 
 func k8sAutoscalerDiff(current, desired *spec.K8Scluster) bool {

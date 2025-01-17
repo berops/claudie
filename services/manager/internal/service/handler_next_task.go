@@ -4,14 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
-
 	"github.com/berops/claudie/internal/manifest"
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/manager/internal/store"
 	"github.com/rs/zerolog/log"
-
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -103,28 +101,24 @@ func transferExistingData(state *spec.ClusterState, te *spec.TaskEvent) error {
 	switch te.Event {
 	case spec.Event_UPDATE:
 		if state.Events.Autoscaled {
-			// autoscaler only deleted or adds node to the cluster
+			// autoscaler only deletes or adds nodes to the cluster
 			// however since autoscaler can spawn multiple tasks
-			// transfer only the relevant node data (no lb changes
-			// or other changes are made by autoscaler) Autoscaler
+			// we transfer only the relevant k8s node data (no lb changes
+			// or other changes are made by autoscaler). Autoscaler
 			// also runs only if there are no other changes being
-			// worked on and vice versa. We skip updating autoscaler config
-			// as sets the desired nocepool count to the value from the current
-			// state, which we don't want because the autoscaler event increases
-			// and decreased the desired nodepool count which we want to build.
+			// worked on and vice versa.
+			//
+			// We skip updating the autoscaler config when transferring
+			// the k8s node data for the nodepool as the count of the
+			// desired nodepool is changed by the autoscaler.
 			for _, cnp := range state.Current.K8S.ClusterInfo.NodePools {
 				if cnp.GetDynamicNodePool() == nil {
 					continue
 				}
-
-				di := slices.IndexFunc(state.Desired.K8S.ClusterInfo.NodePools, func(pool *spec.NodePool) bool {
-					return pool.Name == cnp.Name
-				})
-				if di < 0 {
+				dnp := nodepools.FindByName(cnp.Name, state.Desired.K8S.ClusterInfo.NodePools)
+				if dnp == nil {
 					continue
 				}
-
-				dnp := state.Desired.K8S.ClusterInfo.NodePools[di]
 				transferDynamicNp(state.Desired.K8S.ClusterInfo.Id(), cnp, dnp, false)
 			}
 			return nil

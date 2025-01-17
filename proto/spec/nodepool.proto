@@ -82,8 +82,8 @@ message DynamicNodePool {
   string publicKey = 11;
   string privateKey = 12;
 
-  // Cidr initially empty, will be set once the infra
-  // is spawned using terraform.
+  // Cidr initially empty, will be set once the exising state
+  // is transferred.
   string cidr = 14;
 }
 

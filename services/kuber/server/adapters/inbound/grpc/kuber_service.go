@@ -17,6 +17,10 @@ func (k *KuberGrpcService) PatchKubeProxyConfigMap(ctx context.Context, request 
 	return k.usecases.PatchKubeProxyConfigMap(ctx, request)
 }
 
+func (k *KuberGrpcService) PatchKubeadmConfigMap(ctx context.Context, request *pb.PatchKubeadmConfigMapRequest) (*pb.PatchKubeadmConfigMapResponse, error) {
+	return k.usecases.PatchKubeadmConfigMap(ctx, request)
+}
+
 func (k *KuberGrpcService) CiliumRolloutRestart(ctx context.Context, request *pb.CiliumRolloutRestartRequest) (*pb.CiliumRolloutRestartResponse, error) {
 	return k.usecases.CiliumRolloutRestart(request)
 }

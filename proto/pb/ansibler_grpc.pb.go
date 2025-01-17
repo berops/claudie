@@ -22,7 +22,7 @@ const (
 	AnsiblerService_InstallNodeRequirements_FullMethodName       = "/claudie.AnsiblerService/InstallNodeRequirements"
 	AnsiblerService_InstallVPN_FullMethodName                    = "/claudie.AnsiblerService/InstallVPN"
 	AnsiblerService_SetUpLoadbalancers_FullMethodName            = "/claudie.AnsiblerService/SetUpLoadbalancers"
-	AnsiblerService_TeardownLoadBalancers_FullMethodName         = "/claudie.AnsiblerService/TeardownLoadBalancers"
+	AnsiblerService_DetermineApiEndpointChange_FullMethodName    = "/claudie.AnsiblerService/DetermineApiEndpointChange"
 	AnsiblerService_UpdateAPIEndpoint_FullMethodName             = "/claudie.AnsiblerService/UpdateAPIEndpoint"
 	AnsiblerService_UpdateProxyEnvsOnNodes_FullMethodName        = "/claudie.AnsiblerService/UpdateProxyEnvsOnNodes"
 	AnsiblerService_UpdateNoProxyEnvsInKubernetes_FullMethodName = "/claudie.AnsiblerService/UpdateNoProxyEnvsInKubernetes"
@@ -39,9 +39,9 @@ type AnsiblerServiceClient interface {
 	InstallVPN(ctx context.Context, in *InstallRequest, opts ...grpc.CallOption) (*InstallResponse, error)
 	// SetUpLoadbalancers sets up the load balancers together with the DNS and verifies their configuration.
 	SetUpLoadbalancers(ctx context.Context, in *SetUpLBRequest, opts ...grpc.CallOption) (*SetUpLBResponse, error)
-	// TeardownLoadBalancers correctly destroys the load balancers attached to a k8s
-	// cluster by choosing a new ApiServer endpoint.
-	TeardownLoadBalancers(ctx context.Context, in *TeardownLBRequest, opts ...grpc.CallOption) (*TeardownLBResponse, error)
+	// DetermineApiEndpointChange determines if due to the changes of the loadbalancer infrastructure the api endpoint
+	// needs to be moved.
+	DetermineApiEndpointChange(ctx context.Context, in *DetermineApiEndpointChangeRequest, opts ...grpc.CallOption) (*DetermineApiEndpointChangeResponse, error)
 	// UpdateAPIEndpoint handles changes of API endpoint between control nodes.
 	// It will update the current stage based on the information from the desired state.
 	UpdateAPIEndpoint(ctx context.Context, in *UpdateAPIEndpointRequest, opts ...grpc.CallOption) (*UpdateAPIEndpointResponse, error)
@@ -91,10 +91,10 @@ func (c *ansiblerServiceClient) SetUpLoadbalancers(ctx context.Context, in *SetU
 	return out, nil
 }
 
-func (c *ansiblerServiceClient) TeardownLoadBalancers(ctx context.Context, in *TeardownLBRequest, opts ...grpc.CallOption) (*TeardownLBResponse, error) {
+func (c *ansiblerServiceClient) DetermineApiEndpointChange(ctx context.Context, in *DetermineApiEndpointChangeRequest, opts ...grpc.CallOption) (*DetermineApiEndpointChangeResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(TeardownLBResponse)
-	err := c.cc.Invoke(ctx, AnsiblerService_TeardownLoadBalancers_FullMethodName, in, out, cOpts...)
+	out := new(DetermineApiEndpointChangeResponse)
+	err := c.cc.Invoke(ctx, AnsiblerService_DetermineApiEndpointChange_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -151,9 +151,9 @@ type AnsiblerServiceServer interface {
 	InstallVPN(context.Context, *InstallRequest) (*InstallResponse, error)
 	// SetUpLoadbalancers sets up the load balancers together with the DNS and verifies their configuration.
 	SetUpLoadbalancers(context.Context, *SetUpLBRequest) (*SetUpLBResponse, error)
-	// TeardownLoadBalancers correctly destroys the load balancers attached to a k8s
-	// cluster by choosing a new ApiServer endpoint.
-	TeardownLoadBalancers(context.Context, *TeardownLBRequest) (*TeardownLBResponse, error)
+	// DetermineApiEndpointChange determines if due to the changes of the loadbalancer infrastructure the api endpoint
+	// needs to be moved.
+	DetermineApiEndpointChange(context.Context, *DetermineApiEndpointChangeRequest) (*DetermineApiEndpointChangeResponse, error)
 	// UpdateAPIEndpoint handles changes of API endpoint between control nodes.
 	// It will update the current stage based on the information from the desired state.
 	UpdateAPIEndpoint(context.Context, *UpdateAPIEndpointRequest) (*UpdateAPIEndpointResponse, error)
@@ -182,8 +182,8 @@ func (UnimplementedAnsiblerServiceServer) InstallVPN(context.Context, *InstallRe
 func (UnimplementedAnsiblerServiceServer) SetUpLoadbalancers(context.Context, *SetUpLBRequest) (*SetUpLBResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetUpLoadbalancers not implemented")
 }
-func (UnimplementedAnsiblerServiceServer) TeardownLoadBalancers(context.Context, *TeardownLBRequest) (*TeardownLBResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method TeardownLoadBalancers not implemented")
+func (UnimplementedAnsiblerServiceServer) DetermineApiEndpointChange(context.Context, *DetermineApiEndpointChangeRequest) (*DetermineApiEndpointChangeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DetermineApiEndpointChange not implemented")
 }
 func (UnimplementedAnsiblerServiceServer) UpdateAPIEndpoint(context.Context, *UpdateAPIEndpointRequest) (*UpdateAPIEndpointResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateAPIEndpoint not implemented")
@@ -272,20 +272,20 @@ func _AnsiblerService_SetUpLoadbalancers_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AnsiblerService_TeardownLoadBalancers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TeardownLBRequest)
+func _AnsiblerService_DetermineApiEndpointChange_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DetermineApiEndpointChangeRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AnsiblerServiceServer).TeardownLoadBalancers(ctx, in)
+		return srv.(AnsiblerServiceServer).DetermineApiEndpointChange(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AnsiblerService_TeardownLoadBalancers_FullMethodName,
+		FullMethod: AnsiblerService_DetermineApiEndpointChange_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AnsiblerServiceServer).TeardownLoadBalancers(ctx, req.(*TeardownLBRequest))
+		return srv.(AnsiblerServiceServer).DetermineApiEndpointChange(ctx, req.(*DetermineApiEndpointChangeRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -382,8 +382,8 @@ var AnsiblerService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AnsiblerService_SetUpLoadbalancers_Handler,
 		},
 		{
-			MethodName: "TeardownLoadBalancers",
-			Handler:    _AnsiblerService_TeardownLoadBalancers_Handler,
+			MethodName: "DetermineApiEndpointChange",
+			Handler:    _AnsiblerService_DetermineApiEndpointChange_Handler,
 		},
 		{
 			MethodName: "UpdateAPIEndpoint",

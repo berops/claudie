@@ -5,12 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net"
 	"os"
 	"path/filepath"
 	"slices"
 
-	"github.com/berops/claudie/internal/clusters"
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/generics"
@@ -25,13 +23,11 @@ import (
 )
 
 const (
-	TemplatesRootDir     = "services/terraformer/templates"
-	Output               = "services/terraformer/server/clusters"
-	baseSubnetCIDR       = "10.0.0.0/24"
-	defaultOctetToChange = 2
+	TemplatesRootDir = "services/terraformer/templates"
+	Output           = "services/terraformer/server/clusters"
 )
 
-type K8sInfo struct{ LoadBalancers []*spec.LBcluster }
+type K8sInfo struct{ ExportPort6443 bool }
 type LBInfo struct{ Roles []*spec.Role }
 
 // ClusterBuilder wraps data needed for building a cluster.
@@ -66,15 +62,6 @@ func (c ClusterBuilder) CreateNodepools() error {
 			log.Err(err).Msgf("error while deleting files in %s : %v", clusterDir, err)
 		}
 	}()
-
-	// Calculate CIDR, so they do not change if nodepool order changes
-	// https://github.com/berops/claudie/issues/647
-	// Order them by provider and region
-	for _, nps := range nodepools.ByProviderRegion(c.DesiredClusterInfo.NodePools) {
-		if err := calculateCIDR(baseSubnetCIDR, nodepools.ExtractDynamic(nps)); err != nil {
-			return fmt.Errorf("error while generating CIDR for nodepools : %w", err)
-		}
-	}
 
 	if err := c.generateFiles(clusterID, clusterDir); err != nil {
 		return fmt.Errorf("failed to generate files: %w", err)
@@ -120,17 +107,10 @@ func (c ClusterBuilder) CreateNodepools() error {
 		return err
 	}
 
-	oldNodes := c.getCurrentNodes()
-
-	// fill new nodes with output
-	for _, nodepool := range c.DesiredClusterInfo.NodePools {
-		np := nodepool.GetDynamicNodePool()
-		if np == nil {
-			continue
-		}
-
-		f := hash.Digest128(filepath.Join(np.Provider.SpecName, np.Provider.Templates.MustExtractTargetPath()))
-		k := fmt.Sprintf("%s_%s_%s", nodepool.Name, np.Provider.SpecName, hex.EncodeToString(f))
+	for _, nodepool := range nodepools.Dynamic(c.DesiredClusterInfo.NodePools) {
+		d := nodepool.GetDynamicNodePool()
+		f := hash.Digest128(filepath.Join(d.Provider.SpecName, d.Provider.Templates.MustExtractTargetPath()))
+		k := fmt.Sprintf("%s_%s_%s", nodepool.Name, d.Provider.SpecName, hex.EncodeToString(f))
 
 		output, err := terraform.Output(k)
 		if err != nil {
@@ -140,7 +120,20 @@ func (c ClusterBuilder) CreateNodepools() error {
 		if err != nil {
 			return fmt.Errorf("error while reading the terraform output for %s : %w", nodepool.Name, err)
 		}
-		fillNodes(&out, nodepool, oldNodes)
+		for _, n := range nodepool.Nodes {
+			var found bool
+			for target, ip := range generics.IterateMapInOrder(out.IPs) {
+				if target != n.Name {
+					continue
+				}
+				found = true
+				n.Public = fmt.Sprint(ip)
+				break
+			}
+			if !found {
+				return fmt.Errorf("node %s from nodepool %s was missing from the terraform output, possibly the VM was not properly created", n.Name, nodepool.Name)
+			}
+		}
 	}
 
 	return nil
@@ -156,15 +149,6 @@ func (c ClusterBuilder) DestroyNodepools() error {
 			log.Err(err).Msgf("error while deleting files in %s : %v", clusterDir, err)
 		}
 	}()
-
-	// Calculate CIDR, in case some nodepools do not have it, due to error.
-	// https://github.com/berops/claudie/issues/647
-	// Order them by provider and region
-	for _, nps := range nodepools.ByProviderRegion(c.CurrentClusterInfo.NodePools) {
-		if err := calculateCIDR(baseSubnetCIDR, nodepools.ExtractDynamic(nps)); err != nil {
-			return fmt.Errorf("error while generating CIDR for nodepools : %w", err)
-		}
-	}
 
 	if err := c.generateFiles(clusterID, clusterDir); err != nil {
 		return fmt.Errorf("failed to generate files: %w", err)
@@ -229,7 +213,7 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 		return fmt.Errorf("error while generating provider templates: %w", err)
 	}
 
-	for info, pools := range nodepools.ByProvider(clusterInfo.NodePools) {
+	for info, pools := range nodepools.ByProviderDynamic(clusterInfo.NodePools) {
 		templatesDownloadDir := filepath.Join(TemplatesRootDir, clusterID, info.SpecName)
 
 		for path, pools := range nodepools.ByTemplates(pools) {
@@ -277,10 +261,7 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 				Provider:    p,
 				Regions:     nodepools.ExtractRegions(nodepools.ExtractDynamic(pools)),
 				K8sData: templates.K8sData{
-					HasAPIServer: !slices.Contains(
-						clusters.ExtractTargetPorts(c.K8sInfo.LoadBalancers),
-						6443,
-					),
+					HasAPIServer: c.K8sInfo.ExportPort6443,
 				},
 				LBData: templates.LBData{
 					Roles: c.LBInfo.Roles,
@@ -298,119 +279,12 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 	return nil
 }
 
-// getCurrentNodes returns all nodes which are in a current state
-func (c *ClusterBuilder) getCurrentNodes() []*spec.Node {
-	// group all the nodes together to make searching with respect to IP easy
-	var oldNodes []*spec.Node
-	if c.CurrentClusterInfo != nil {
-		for _, oldNodepool := range c.CurrentClusterInfo.NodePools {
-			if oldNodepool.GetDynamicNodePool() != nil {
-				oldNodes = append(oldNodes, oldNodepool.Nodes...)
-			}
-		}
-	}
-	return oldNodes
-}
-
-// calculateCIDR will make sure all nodepools have subnet CIDR calculated.
-func calculateCIDR(baseCIDR string, nodepools []*spec.DynamicNodePool) error {
-	exists := make(map[string]struct{})
-	// Save CIDRs which already exist.
-	for _, np := range nodepools {
-		exists[np.Cidr] = struct{}{}
-	}
-
-	// Calculate new ones if needed.
-	for _, np := range nodepools {
-		if np.Cidr != "" {
-			continue
-		}
-
-		cidr, err := getCIDR(baseCIDR, defaultOctetToChange, exists)
-		if err != nil {
-			return fmt.Errorf("failed to parse CIDR for nodepool : %w", err)
-		}
-
-		log.Debug().Msgf("Calculating new VPC subnet CIDR for nodepool. New CIDR [%s]", cidr)
-		np.Cidr = cidr
-		// Cache calculated CIDR.
-		exists[cidr] = struct{}{}
-	}
-
-	return nil
-}
-
-// fillNodes creates pb.Node slices in desired state, with the new nodes and old nodes
-func fillNodes(terraformOutput *templates.NodepoolIPs, newNodePool *spec.NodePool, oldNodes []*spec.Node) {
-	// fill slices from terraformOutput maps with names of nodes to ensure an order
-	var tempNodes []*spec.Node
-	// get sorted list of keys
-	_ = generics.IterateInOrder(terraformOutput.IPs, func(nodeName string, IP any) error {
-		var nodeType spec.NodeType
-		var private string
-
-		if newNodePool.IsControl {
-			nodeType = spec.NodeType_master
-		} else {
-			nodeType = spec.NodeType_worker
-		}
-
-		if len(oldNodes) > 0 {
-			for _, node := range oldNodes {
-				//check if node was defined before
-				if fmt.Sprint(IP) == node.Public && nodeName == node.Name {
-					// carry privateIP to desired state, so it will not get overwritten in Ansibler
-					private = node.Private
-					// carry node type since it might be API endpoint, which should not change once set
-					nodeType = node.NodeType
-					break
-				}
-			}
-		}
-
-		tempNodes = append(tempNodes, &spec.Node{
-			Name:     nodeName,
-			Public:   fmt.Sprint(terraformOutput.IPs[nodeName]),
-			Private:  private,
-			NodeType: nodeType,
-		})
-		return nil
-	})
-
-	newNodePool.Nodes = tempNodes
-}
-
 // readIPs reads json output format from terraform and unmarshal it into map[string]map[string]string readable by Go.
 func readIPs(data string) (templates.NodepoolIPs, error) {
 	var result templates.NodepoolIPs
 	// Unmarshal or Decode the JSON to the interface.
 	err := json.Unmarshal([]byte(data), &result.IPs)
 	return result, err
-}
-
-// getCIDR function returns CIDR in IPv4 format, with position replaced by value
-// The function does not check if it is a valid CIDR/can be used in subnet spec
-func getCIDR(baseCIDR string, position int, existing map[string]struct{}) (string, error) {
-	_, ipNet, err := net.ParseCIDR(baseCIDR)
-	if err != nil {
-		return "", fmt.Errorf("cannot parse a CIDR with base %s, position %d", baseCIDR, position)
-	}
-	ip := ipNet.IP
-	ones, _ := ipNet.Mask.Size()
-	var i int
-	for {
-		if i > 255 {
-			return "", fmt.Errorf("maximum number of IPs assigned")
-		}
-		ip[position] = byte(i)
-		if _, ok := existing[fmt.Sprintf("%s/%d", ip.String(), ones)]; ok {
-			// CIDR already assigned.
-			i++
-			continue
-		}
-		// CIDR does not exist yet, return.
-		return fmt.Sprintf("%s/%d", ip.String(), ones), nil
-	}
 }
 
 // generateProviderTemplates generates only the `provider.tpl` templates so terraform can destroy the infra if needed.
@@ -420,7 +294,7 @@ func (c *ClusterBuilder) generateProviderTemplates(current, desired *spec.Cluste
 		slices.Values(desired.GetNodePools()),
 	)
 
-	for info, pools := range nodepools.ByProvider(nps) {
+	for info, pools := range nodepools.ByProviderDynamic(nps) {
 		if err := fileutils.CreateKey(info.Creds, directory, info.SpecName); err != nil {
 			return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", info.SpecName, directory, err)
 		}

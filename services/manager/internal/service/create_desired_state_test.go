@@ -672,3 +672,128 @@ func Test_createK8sClustersFromManifest(t *testing.T) {
 		})
 	}
 }
+
+func Test_calculateCIDR(t *testing.T) {
+	type args struct {
+		baseCIDR  string
+		key       string
+		exits     map[string][]string
+		nodepools []*spec.DynamicNodePool
+	}
+	tests := []struct {
+		name      string
+		args      args
+		wantErr   bool
+		wantCidrs []string
+	}{
+		{
+			name: "test-01",
+			args: args{
+				baseCIDR: baseSubnetCIDR,
+				key:      "test-01",
+				exits:    map[string][]string{"test-01": {}},
+				nodepools: []*spec.DynamicNodePool{
+					{Cidr: ""},
+					{Cidr: ""},
+					{Cidr: ""},
+				},
+			},
+			wantErr: false,
+			wantCidrs: []string{
+				"10.0.0.0/24",
+				"10.0.1.0/24",
+				"10.0.2.0/24",
+			},
+		},
+		{
+			name: "test-02",
+			args: args{
+				baseCIDR: baseSubnetCIDR,
+				key:      "test-02",
+				exits:    map[string][]string{"test-02": {}},
+				nodepools: []*spec.DynamicNodePool{
+					{Cidr: "10.0.0.0/24"},
+					{Cidr: "10.0.2.0/24"},
+				},
+			},
+			wantErr: false,
+			wantCidrs: []string{
+				"10.0.0.0/24",
+				"10.0.2.0/24",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := calculateCIDR(tt.args.baseCIDR, tt.args.key, tt.args.exits, tt.args.nodepools); (err != nil) != tt.wantErr {
+				t.Errorf("calculateCIDR() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			for i, cidr := range tt.wantCidrs {
+				if tt.args.nodepools[i].Cidr != cidr {
+					t.Errorf("calculateCIDR() error = %v want %v", tt.args.nodepools[i].Cidr, cidr)
+				}
+			}
+		})
+	}
+}
+
+func TestGetCIDR(t *testing.T) {
+	type testCase struct {
+		desc     string
+		baseCIDR string
+		position int
+		existing []string
+		out      string
+	}
+
+	testDataSucc := []testCase{
+		{
+			desc:     "Second octet change",
+			baseCIDR: "10.0.0.0/24",
+			position: 1,
+			existing: []string{"10.1.0.0/24"},
+			out:      "10.0.0.0/24",
+		},
+		{
+			desc:     "Third octet change",
+			baseCIDR: "10.0.0.0/24",
+			position: 2,
+			existing: []string{"10.0.0.0/24"},
+			out:      "10.0.1.0/24",
+		},
+	}
+	for _, test := range testDataSucc {
+		if out, err := getCIDR(test.baseCIDR, test.position, test.existing); out != test.out || err != nil {
+			t.Error(test.desc, err, out)
+		}
+	}
+	testDataFail := []testCase{
+		{
+			desc:     "Max IP error",
+			baseCIDR: "10.0.0.0/24",
+			position: 2,
+			existing: func() []string {
+				var m []string
+				for i := 0; i < 256; i++ {
+					m = append(m, fmt.Sprintf("10.0.%d.0/24", i))
+				}
+				return m
+			}(),
+			out: "",
+		},
+		{
+			desc:     "Invalid base CIDR",
+			baseCIDR: "300.0.0.0/24",
+			position: 2,
+			existing: []string{"10.0.0.0/24"},
+			out:      "10.0.10.0/24",
+		},
+	}
+	for _, test := range testDataFail {
+		if _, err := getCIDR(test.baseCIDR, test.position, test.existing); err == nil {
+			t.Error(test.desc, "test should have failed, but was successful")
+		} else {
+			t.Log(err)
+		}
+	}
+}

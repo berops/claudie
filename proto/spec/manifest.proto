@@ -119,6 +119,13 @@ message LBcluster {
   DNS dns = 3;
   // Kubernetes cluster name of the cluster this load balancer is attached to.
   string targetedK8s = 4;
+  // usedApiEndpoint signals which LB is actually used as the api endpoint.
+  // Claudie manifest validation does not allow for multiple API endpoints
+  // to be present, however. Internally claudie can deal with more loadbalancers
+  // that have the API role, this is due to the creation of intermediate representation
+  // which always add new infrastructure before making any further changes.
+  // To recognize which of them is actually used this field was added.
+  bool usedApiEndpoint = 5;
 }
 
 // ClusterInfo holds general information about the clusters.
@@ -235,6 +242,7 @@ message Task {
   CreateState createState = 1;
   UpdateState updateState = 2;
   DeleteState deleteState = 3;
+  uint64 options = 4;
 }
 
 message CreateState {
@@ -242,14 +250,46 @@ message CreateState {
   LoadBalancers lbs = 2;
 }
 
+enum ApiEndpointChangeState {
+  // NoChange represents the 1st case - no change is needed as the LB cluster is currently
+  // attached and the desired spec contains no changes.
+  NoChange = 0;
+  // AttachingLoadBalancer represents 2nd case - the K8s cluster previously
+  // didn't have an LB cluster attached and the ports needed to communicate with the API server
+  // were exposed. After attaching an LB cluster to the existing K8s cluster the ports
+  // were closed and are no longer accessible, and thus we need to change the API endpoint.
+  AttachingLoadBalancer = 1;
+  // DetachingLoadBalancer represents 3rd. case - the K8s cluster had an existing
+  // LB cluster attached but the new state removed the LB cluster and thus the API endpoint
+  // needs to be changed back to one of the control nodes of the cluster.
+  DetachingLoadBalancer = 2;
+  // EndpointRenamed represents the 4th. case - the K8s cluster has an existing
+  // LB cluster attached and also keeps it but the endpoint has changed in the desired state.
+  EndpointRenamed = 3;
+  // MoveEndpoint represents the 5th. case - the K8s cluster has an existing
+  // LB cluster attached, but it will be switched to a different LB cluster
+  // in the desired state.
+  MoveEndpoint = 4;
+}
+
 message UpdateState {
-  message Endpoint {
+  message K8sEndpoint {
     string nodepool = 1;
     string node = 2;
   }
+  message LbEndpoint {
+    ApiEndpointChangeState state = 1;
+    string currentEndpointId = 2;
+    string desiredEndpointId = 3;
+  }
+
   K8scluster k8s = 1;
   LoadBalancers lbs = 2;
-  Endpoint endpoint = 3;
+
+  oneof EndpointChange {
+    K8sEndpoint newControlEndpoint = 3;
+    LbEndpoint  lbEndpointChange = 4;
+  }
 }
 
 message DeleteState {

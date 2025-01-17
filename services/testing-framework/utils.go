@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/proto/pb/spec"
 	managerclient "github.com/berops/claudie/services/manager/client"
@@ -51,7 +52,10 @@ var (
 		spec.Task{},
 		spec.CreateState{},
 		spec.UpdateState{},
-		spec.UpdateState_Endpoint{},
+		spec.UpdateState_K8SEndpoint{},
+		spec.UpdateState_NewControlEndpoint{},
+		spec.UpdateState_LbEndpoint{},
+		spec.UpdateState_LbEndpointChange{},
 		spec.DeleteState{},
 		spec.DeletedNodes{},
 		spec.NodePool{},
@@ -161,22 +165,15 @@ func getAutoscaledClusters(c *spec.Config) []*spec.K8Scluster {
 	return clusters
 }
 
-func validateKubeconfigAlternativeNames(clusters map[string]*spec.ClusterState) error {
-	for c, v := range clusters {
+func validateKubeconfigAlternativeNames(c map[string]*spec.ClusterState) error {
+	for c, v := range c {
 		if v.Current == nil || v.Current.K8S.Kubeconfig == "" {
 			continue
 		}
 		// if the clusters has no APIServer Loadbalancer we can test all
 		// control plane nodes to validate if they all can be used with the
 		// generated KubeConfig.
-		apiLb := false
-		for _, l := range v.GetCurrent().GetLoadBalancers().GetClusters() {
-			if l.HasApiRole() {
-				apiLb = true
-				break
-			}
-		}
-		if apiLb {
+		if clusters.FindAssignedLbApiEndpoint(v.GetCurrent().GetLoadBalancers().GetClusters()) == nil {
 			continue
 		}
 

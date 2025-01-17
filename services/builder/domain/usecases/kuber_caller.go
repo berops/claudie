@@ -3,6 +3,7 @@ package usecases
 import (
 	"fmt"
 
+	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/proto/pb/spec"
 	builder "github.com/berops/claudie/services/builder/internal"
@@ -18,7 +19,12 @@ func (u *Usecases) reconcileK8sConfiguration(ctx *builder.Context) error {
 	description := ctx.Workflow.Description
 	u.updateTaskWithDescription(ctx, spec.Workflow_KUBER, fmt.Sprintf("%s processing kuber commands", description))
 
-	if err := u.Kuber.CiliumRolloutRestart(ctx.DesiredCluster, kuberClient); err != nil {
+	var lbApiEndpoint string
+	if ep := clusters.FindAssignedLbApiEndpoint(ctx.DesiredLoadbalancers); ep != nil {
+		lbApiEndpoint = ep.Dns.Endpoint
+	}
+
+	if err := u.Kuber.PatchKubeadmConfigMap(ctx, lbApiEndpoint, kuberClient); err != nil {
 		return err
 	}
 
@@ -30,6 +36,10 @@ func (u *Usecases) reconcileK8sConfiguration(ctx *builder.Context) error {
 		if err := u.Kuber.PatchKubeProxyConfigMap(ctx, kuberClient); err != nil {
 			return err
 		}
+	}
+
+	if err := u.Kuber.CiliumRolloutRestart(ctx.DesiredCluster, kuberClient); err != nil {
+		return err
 	}
 
 	// If previous cluster had loadbalancers, and the new one does not, the old scrape config will be removed.

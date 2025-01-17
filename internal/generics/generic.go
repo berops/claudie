@@ -2,6 +2,8 @@ package generics
 
 import (
 	"cmp"
+	"iter"
+	"maps"
 	"slices"
 
 	"golang.org/x/exp/constraints"
@@ -12,23 +14,16 @@ type inorder interface {
 	comparable
 }
 
-func IterateInOrder[M ~map[K]V, K inorder, V any](m M, f func(k K, v V) error) error {
-	keys := make([]K, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-
-	slices.SortStableFunc(keys, func(first, second K) int {
-		return cmp.Compare(first, second)
-	})
-
-	for _, k := range keys {
-		if err := f(k, m[k]); err != nil {
-			return err
+func IterateMapInOrder[M ~map[K]V, K inorder, V any](m M) iter.Seq2[K, V] {
+	keys := slices.Collect(maps.Keys(m))
+	slices.SortStableFunc(keys, func(first, second K) int { return cmp.Compare(first, second) })
+	return func(yield func(K, V) bool) {
+		for _, k := range keys {
+			if !yield(k, m[k]) {
+				return
+			}
 		}
 	}
-
-	return nil
 }
 
 // MergeMaps merges two or more maps together, into single map.
