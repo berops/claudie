@@ -92,7 +92,7 @@ kubectl create secret generic azure-secret-1 --namespace=mynamespace --from-lite
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
-  name: AzureExampleManifest
+  name: azure-example-manifest
   labels:
     app.kubernetes.io/part-of: claudie
 spec:
@@ -170,11 +170,10 @@ kubectl create secret generic azure-secret-2 --namespace=mynamespace --from-lite
 ```
 
 ```yaml
-name: AzureExampleManifest
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
-  name: AzureExampleManifest
+  name: azure-example-manifest
   labels:
     app.kubernetes.io/part-of: claudie
 spec:

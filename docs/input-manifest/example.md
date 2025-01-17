@@ -2,7 +2,7 @@
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
-  name: ExampleManifest
+  name: example-manifest
   labels:
     app.kubernetes.io/part-of: claudie
 spec:

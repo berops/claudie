@@ -97,7 +97,7 @@ kubectl create secret generic aws-secret-1 --namespace=mynamespace --from-litera
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
-  name: AWSExampleManifest
+  name: aws-example-manifest
   labels:
     app.kubernetes.io/part-of: claudie
 spec:
@@ -183,7 +183,7 @@ kubectl create secret generic aws-secret-2 --namespace=mynamespace --from-litera
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
-  name: AWSExampleManifest
+  name: aws-example-manifest
   labels:
     app.kubernetes.io/part-of: claudie
 spec:

@@ -130,7 +130,7 @@ kubectl create secret generic oci-secret-1 --namespace=mynamespace --from-litera
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
-  name: OCIExampleManifest
+  name: oci-example-manifest
   labels:
     app.kubernetes.io/part-of: claudie
 spec:
@@ -218,7 +218,7 @@ kubectl create secret generic oci-secret-2 --namespace=mynamespace --from-litera
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
-  name: OCIExampleManifest
+  name: oci-example-manifest
   labels:
     app.kubernetes.io/part-of: claudie
 spec:
@@ -325,7 +325,7 @@ kubectl create secret generic oci-secret-1 --namespace=mynamespace --from-litera
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
-  name: OCIExampleManifest
+  name: oci-example-manifest
   labels:
     app.kubernetes.io/part-of: claudie
 spec:
