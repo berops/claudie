@@ -13,8 +13,8 @@ type ProviderTemplateGroup struct {
 	Creds         string
 }
 
-// ByProvider returns an iterator that groups nodepools by provider.
-func ByProvider(nps []*spec.NodePool) iter.Seq2[ProviderTemplateGroup, []*spec.NodePool] {
+// ByProviderDynamic returns an iterator that groups dynamic nodepools only by provider.
+func ByProviderDynamic(nps []*spec.NodePool) iter.Seq2[ProviderTemplateGroup, []*spec.NodePool] {
 	m := make(map[ProviderTemplateGroup][]*spec.NodePool)
 
 	for _, nodepool := range nps {

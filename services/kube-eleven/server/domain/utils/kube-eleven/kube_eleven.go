@@ -1,6 +1,7 @@
 package kube_eleven
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -33,9 +34,12 @@ type KubeEleven struct {
 
 	// Kubernetes cluster that will be set up.
 	K8sCluster *spec.K8Scluster
-	// LB clusters attached to the above Kubernetes cluster.
-	// If nil, the first control node becomes the api endpoint of the cluster.
-	LBClusters []*spec.LBcluster
+
+	// LoadBalancerEndpoint specifies the dns hostname
+	// that should be used as the endpoint for the K8sCluster.
+	// If empty, one of the nodes in the supplied K8sCluster
+	// needs to have the role ApiEndpoint.
+	LoadBalancerEndpoint string
 
 	// ProxyEnvs holds information about a need to update proxy envs, proxy endpoint, and no proxy list.
 	ProxyEnvs *spec.ProxyEnvs
@@ -116,14 +120,15 @@ func (k *KubeEleven) DestroyCluster() error {
 // generateFiles will generate those files (kubeone.yaml and key.pem) needed by Kubeone.
 // Returns nil if successful, error otherwise.
 func (k *KubeEleven) generateFiles() error {
-	// Load the Kubeone template file as *template.Template.
 	template, err := templateUtils.LoadTemplate(templates.KubeOneTemplate)
 	if err != nil {
 		return fmt.Errorf("error while loading a kubeone template : %w", err)
 	}
 
-	// Generate templateData for the template.
-	templateParameters := k.generateTemplateData()
+	templateParameters, err := k.templateData()
+	if err != nil {
+		return err
+	}
 
 	// Generate kubeone.yaml file from the template
 	err = templateUtils.Templates{Directory: k.outputDirectory}.Generate(template, generatedKubeoneManifestName, templateParameters)
@@ -142,23 +147,21 @@ func (k *KubeEleven) generateFiles() error {
 	return nil
 }
 
-// generateTemplateData will create an instance of the templateData and fill up the fields
-// The instance will then be returned.
-func (k *KubeEleven) generateTemplateData() templateData {
+// templateData will create an instance of the templateData and fill up the fields
+func (k *KubeEleven) templateData() (templateData, error) {
 	var (
-		data                  templateData
-		potentialEndpointNode *spec.Node
-		k8sApiEndpoint        bool
+		err            error
+		data           templateData
+		k8sApiEndpoint bool
 	)
 
-	data.Nodepools, potentialEndpointNode = k.getClusterNodes()
-	data.APIEndpoint, k8sApiEndpoint = k.lbApiEndpointOrDefault(potentialEndpointNode)
+	data.Nodepools = k.getClusterNodes()
+	if data.APIEndpoint, k8sApiEndpoint, err = k.apiEndpoint(); err != nil {
+		return templateData{}, err
+	}
 
 	var alternativeNames []string
-	for _, n := range k.K8sCluster.ClusterInfo.NodePools {
-		if !n.IsControl {
-			continue
-		}
+	for n := range nodepools.Control(k.K8sCluster.ClusterInfo.NodePools) {
 		for _, n := range n.Nodes {
 			if n.NodeType != spec.NodeType_apiEndpoint {
 				alternativeNames = append(alternativeNames, n.Public)
@@ -176,110 +179,69 @@ func (k *KubeEleven) generateTemplateData() templateData {
 	}
 
 	data.KubernetesVersion = k.K8sCluster.GetKubernetes()
-
 	data.ClusterName = k.K8sCluster.ClusterInfo.Name
 
-	return data
+	return data, nil
 }
 
 // getClusterNodes will parse the nodepools of k.K8sCluster and construct a slice of *NodepoolInfo.
 // Returns the slice of *NodepoolInfo and the potential endpoint node.
-func (k *KubeEleven) getClusterNodes() ([]*NodepoolInfo, *spec.Node) {
+func (k *KubeEleven) getClusterNodes() []*NodepoolInfo {
 	nodepoolInfos := make([]*NodepoolInfo, 0, len(k.K8sCluster.ClusterInfo.NodePools))
-	var endpointNode *spec.Node
 
-	// Construct the slice of *NodepoolInfo
 	for _, nodepool := range k.K8sCluster.ClusterInfo.GetNodePools() {
 		var nodepoolInfo *NodepoolInfo
 
 		if nodepool.GetDynamicNodePool() != nil {
-			var nodes []*NodeInfo
-			nodes, potentialEndpointNode := getNodeData(nodepool.Nodes, func(name string) string {
-				return strings.TrimPrefix(name, fmt.Sprintf("%s-%s-", k.K8sCluster.ClusterInfo.Name, k.K8sCluster.ClusterInfo.Hash))
-			})
-
-			if endpointNode == nil || (potentialEndpointNode != nil && potentialEndpointNode.NodeType == spec.NodeType_apiEndpoint) {
-				endpointNode = potentialEndpointNode
-			}
-
 			nodepoolInfo = &NodepoolInfo{
 				NodepoolName:      nodepool.Name,
 				Region:            sanitise.String(nodepool.GetDynamicNodePool().Region),
 				Zone:              sanitise.String(nodepool.GetDynamicNodePool().Zone),
 				CloudProviderName: sanitise.String(nodepool.GetDynamicNodePool().Provider.CloudProviderName),
 				ProviderName:      sanitise.String(nodepool.GetDynamicNodePool().Provider.SpecName),
-				Nodes:             nodes,
-				IsDynamic:         true,
+				Nodes: getNodeData(nodepool.Nodes, func(name string) string {
+					return strings.TrimPrefix(name, fmt.Sprintf("%s-", k.K8sCluster.ClusterInfo.Id()))
+				}),
+				IsDynamic: true,
 			}
 		} else if nodepool.GetStaticNodePool() != nil {
-			var nodes []*NodeInfo
-			nodes, potentialEndpointNode := getNodeData(nodepool.Nodes, func(s string) string { return s })
-			if endpointNode == nil || (potentialEndpointNode != nil && potentialEndpointNode.NodeType == spec.NodeType_apiEndpoint) {
-				endpointNode = potentialEndpointNode
-			}
 			nodepoolInfo = &NodepoolInfo{
 				NodepoolName:      nodepool.Name,
 				Region:            sanitise.String(staticRegion),
 				Zone:              sanitise.String(staticZone),
 				CloudProviderName: sanitise.String(staticProvider),
 				ProviderName:      sanitise.String(staticProviderName),
-				Nodes:             nodes,
+				Nodes:             getNodeData(nodepool.Nodes, func(s string) string { return s }),
 				IsDynamic:         false,
 			}
 		}
 		nodepoolInfos = append(nodepoolInfos, nodepoolInfo)
 	}
 
-	return nodepoolInfos, endpointNode
+	return nodepoolInfos
 }
 
-// lbApiEndpointOrDefault returns the hostname of the attached api endpoint loadbalancer.
-// If not present the node that is passed will be used a the default api endpoint.
-// Returns the selected endpoint and a bool indicating whether the default was used or not.
-func (k *KubeEleven) lbApiEndpointOrDefault(potentialEndpointNode *spec.Node) (string, bool) {
-	apiEndpoint := ""
-
-	for _, lbCluster := range k.LBClusters {
-		// And if the LB cluster if of type ApiServer
-		for _, role := range lbCluster.Roles {
-			if role.RoleType == spec.RoleType_ApiServer {
-				return lbCluster.Dns.Endpoint, false
-			}
-		}
+// apiEndpoint will extract the publicly accessible endpoint for the api server, which can
+// be either a loadbalancer or a control plane node directly.
+func (k *KubeEleven) apiEndpoint() (string, bool, error) {
+	if k.LoadBalancerEndpoint != "" {
+		return k.LoadBalancerEndpoint, false, nil
 	}
 
-	// If any LB cluster of type ApiServer is not found
-	// Then we will use the potential endpoint type control node.
-	if potentialEndpointNode != nil {
-		apiEndpoint = potentialEndpointNode.Public
-		potentialEndpointNode.NodeType = spec.NodeType_apiEndpoint
-	} else {
-		log.Error().Msgf("Cluster %s does not have any API endpoint specified", k.K8sCluster.ClusterInfo.Name)
+	_, n := nodepools.FindApiEndpoint(k.K8sCluster.ClusterInfo.NodePools)
+	if n == nil {
+		// This should never happen as the apiEndpoint role is always chosen by the manager service.
+		return "", false, errors.New("malformed k8s state, no loadbalancer attach with api role nor any control plane node has api server role")
 	}
-
-	return apiEndpoint, true
+	return n.Public, true, nil
 }
 
 // getNodeData return template data for the nodes from the cluster.
-func getNodeData(nodes []*spec.Node, nameFunc func(string) string) ([]*NodeInfo, *spec.Node) {
+func getNodeData(nodes []*spec.Node, nameFunc func(string) string) []*NodeInfo {
 	n := make([]*NodeInfo, 0, len(nodes))
-	var potentialEndpointNode *spec.Node
-	// Construct the Nodes slice inside the NodePoolInfo
 	for _, node := range nodes {
 		nodeName := nameFunc(node.Name)
 		n = append(n, &NodeInfo{Name: nodeName, Node: node})
-
-		// Find potential control node which can act as the cluster api endpoint
-		// in case there is no LB cluster (of ApiServer type) provided in the Claudie config.
-
-		// If cluster api endpoint is already set, use it.
-		if node.GetNodeType() == spec.NodeType_apiEndpoint {
-			potentialEndpointNode = node
-
-			// otherwise choose one master node which will act as the cluster api endpoint
-		} else if node.GetNodeType() == spec.NodeType_master && potentialEndpointNode == nil {
-			potentialEndpointNode = node
-		}
 	}
-	return n, potentialEndpointNode
+	return n
 }

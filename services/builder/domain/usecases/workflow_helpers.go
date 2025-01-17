@@ -22,7 +22,7 @@ func (u *Usecases) buildCluster(ctx *builder.Context) (*builder.Context, error) 
 	// LB add nodes prometheus metrics.
 	for _, lb := range ctx.DesiredLoadbalancers {
 		var currNodes int
-		if idx := clusters.IndexLoadbalancerByName(lb.ClusterInfo.Name, ctx.CurrentLoadbalancers); idx >= 0 {
+		if idx := clusters.IndexLoadbalancerById(lb.ClusterInfo.Id(), ctx.CurrentLoadbalancers); idx >= 0 {
 			currNodes = ctx.CurrentLoadbalancers[idx].NodeCount()
 		}
 

@@ -2,28 +2,51 @@ package clusters
 
 import "github.com/berops/claudie/proto/pb/spec"
 
-func IndexLoadbalancerByName(target string, clusters []*spec.LBcluster) int {
+func IndexLoadbalancerById(target string, clusters []*spec.LBcluster) int {
 	for i, cluster := range clusters {
-		if cluster.ClusterInfo.Name == target {
+		if cluster.ClusterInfo.Id() == target {
 			return i
 		}
 	}
 	return -1
 }
 
-// ExtractTargetPorts extracts target ports defined inside the role in the LoadBalancer.
-func ExtractTargetPorts(lbs []*spec.LBcluster) []int {
-	ports := make(map[int32]struct{})
-
-	var result []int
-	for _, c := range lbs {
-		for _, role := range c.Roles {
-			if _, ok := ports[role.TargetPort]; !ok {
-				result = append(result, int(role.TargetPort))
+func DetermineLBApiEndpointChange(currentLbs, desiredLbs []*spec.LBcluster) (string, string, spec.ApiEndpointChangeState) {
+	var first *spec.LBcluster
+	desired := make(map[string]*spec.LBcluster)
+	for _, lb := range desiredLbs {
+		if lb.HasApiRole() {
+			desired[lb.ClusterInfo.Id()] = lb
+			if first == nil {
+				first = lb
 			}
-			ports[role.TargetPort] = struct{}{}
 		}
 	}
 
-	return result
+	if current := FindAssignedLbApiEndpoint(currentLbs); current != nil {
+		if len(desired) == 0 {
+			return current.ClusterInfo.Id(), "", spec.ApiEndpointChangeState_DetachingLoadBalancer
+		}
+		if desired, ok := desired[current.ClusterInfo.Id()]; ok {
+			if current.Dns.Endpoint != desired.Dns.Endpoint {
+				return current.ClusterInfo.Id(), desired.ClusterInfo.Id(), spec.ApiEndpointChangeState_EndpointRenamed
+			}
+			return "", "", spec.ApiEndpointChangeState_NoChange
+		}
+		return current.ClusterInfo.Id(), first.ClusterInfo.Id(), spec.ApiEndpointChangeState_MoveEndpoint
+	} else {
+		if len(desired) == 0 {
+			return "", "", spec.ApiEndpointChangeState_NoChange
+		}
+		return "", first.ClusterInfo.Id(), spec.ApiEndpointChangeState_AttachingLoadBalancer
+	}
+}
+
+func FindAssignedLbApiEndpoint(clusters []*spec.LBcluster) *spec.LBcluster {
+	for _, lb := range clusters {
+		if lb.IsApiEndpoint() {
+			return lb
+		}
+	}
+	return nil
 }

@@ -24,14 +24,14 @@ type Context struct {
 	// properties may change during processing.
 	DesiredLoadbalancers []*spec.LBcluster
 
-	// DeletedLoadBalancers are the deleted loadbalancers for the cluster.
-	DeletedLoadBalancers []*spec.LBcluster
-
 	// Workflow is the current state of processing of the cluster.
 	Workflow *spec.Workflow
 
 	// ProxyEnvs holds information about a need to update proxy envs, proxy endpoint, and no proxy list.
 	ProxyEnvs *spec.ProxyEnvs
+
+	// Options that were set by the manager service for the task this context was created for.
+	Options uint64
 }
 
 // GetClusterName returns name of the k8s cluster for a given builder context.
@@ -50,10 +50,6 @@ func (ctx *Context) GetClusterName() string {
 
 	if len(ctx.CurrentLoadbalancers) != 0 {
 		return ctx.CurrentLoadbalancers[0].TargetedK8S
-	}
-
-	if len(ctx.DeletedLoadBalancers) != 0 {
-		return ctx.DeletedLoadBalancers[0].TargetedK8S
 	}
 
 	return ""
@@ -75,10 +71,6 @@ func (ctx *Context) Id() string {
 
 	if len(ctx.CurrentLoadbalancers) != 0 {
 		return ctx.CurrentLoadbalancers[0].TargetedK8S
-	}
-
-	if len(ctx.DeletedLoadBalancers) != 0 {
-		return ctx.DeletedLoadBalancers[0].TargetedK8S
 	}
 
 	return ""

@@ -3,6 +3,7 @@ package usecases
 import (
 	"fmt"
 
+	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/proto/pb/spec"
 	builder "github.com/berops/claudie/services/builder/internal"
@@ -16,8 +17,13 @@ func (u *Usecases) reconcileK8sCluster(ctx *builder.Context) error {
 	description := ctx.Workflow.Description
 	u.updateTaskWithDescription(ctx, spec.Workflow_KUBE_ELEVEN, fmt.Sprintf("%s building kubernetes cluster", description))
 
+	var lbApiEndpoint string
+	if ep := clusters.FindAssignedLbApiEndpoint(ctx.DesiredLoadbalancers); ep != nil {
+		lbApiEndpoint = ep.Dns.Endpoint
+	}
+
 	logger.Info().Msgf("Calling BuildCluster on Kube-eleven")
-	res, err := u.KubeEleven.BuildCluster(ctx, u.KubeEleven.GetClient())
+	res, err := u.KubeEleven.BuildCluster(ctx, lbApiEndpoint, u.KubeEleven.GetClient())
 	if err != nil {
 		return fmt.Errorf("error while building kubernetes cluster %s project %s : %w", ctx.Id(), ctx.ProjectName, err)
 	}
@@ -25,7 +31,6 @@ func (u *Usecases) reconcileK8sCluster(ctx *builder.Context) error {
 
 	// Update desired state with returned data.
 	ctx.DesiredCluster = res.Desired
-	ctx.DesiredLoadbalancers = res.DesiredLbs
 	// Set description to original string.
 	u.updateTaskWithDescription(ctx, spec.Workflow_KUBE_ELEVEN, description)
 	return nil
@@ -37,8 +42,13 @@ func (u *Usecases) destroyK8sCluster(ctx *builder.Context) error {
 	description := ctx.Workflow.Description
 	u.updateTaskWithDescription(ctx, spec.Workflow_KUBE_ELEVEN, fmt.Sprintf("%s destroying kubernetes cluster", description))
 
+	var lbApiEndpoint string
+	if ep := clusters.FindAssignedLbApiEndpoint(ctx.CurrentLoadbalancers); ep != nil {
+		lbApiEndpoint = ep.Dns.Endpoint
+	}
+
 	logger.Info().Msgf("Calling DestroyCluster on Kube-eleven")
-	res, err := u.KubeEleven.DestroyCluster(ctx, u.KubeEleven.GetClient())
+	res, err := u.KubeEleven.DestroyCluster(ctx, lbApiEndpoint, u.KubeEleven.GetClient())
 	if err != nil {
 		return fmt.Errorf("error while destroying kubernetes cluster %s project %s: %w", ctx.Id(), ctx.ProjectName, err)
 	}
@@ -46,7 +56,6 @@ func (u *Usecases) destroyK8sCluster(ctx *builder.Context) error {
 	logger.Info().Msgf("DestroyCluster on Kube-eleven finished successfully")
 
 	ctx.CurrentCluster = res.Current
-	ctx.CurrentLoadbalancers = res.CurrentLbs
 
 	u.updateTaskWithDescription(ctx, spec.Workflow_KUBE_ELEVEN, description)
 	return nil

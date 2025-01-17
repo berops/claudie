@@ -10,7 +10,7 @@ import (
 
 func (u *Usecases) DestroyCluster(req *pb.DestroyClusterRequest) (*pb.DestroyClusterResponse, error) {
 	if req.Current == nil {
-		return &pb.DestroyClusterResponse{Current: req.Current, CurrentLbs: req.CurrentLbs}, nil
+		return &pb.DestroyClusterResponse{Current: req.Current}, nil
 	}
 
 	logger := loggerutils.WithProjectAndCluster(req.ProjectName, req.Current.ClusterInfo.Id())
@@ -18,9 +18,9 @@ func (u *Usecases) DestroyCluster(req *pb.DestroyClusterRequest) (*pb.DestroyClu
 	logger.Info().Msgf("Destroying kubernetes cluster")
 
 	k := kube_eleven.KubeEleven{
-		K8sCluster:        req.Current,
-		LBClusters:        req.CurrentLbs,
-		SpawnProcessLimit: u.SpawnProcessLimit,
+		K8sCluster:           req.Current,
+		LoadBalancerEndpoint: req.LoadBalancerEndpoint,
+		SpawnProcessLimit:    u.SpawnProcessLimit,
 	}
 
 	if err := k.DestroyCluster(); err != nil {
@@ -29,5 +29,5 @@ func (u *Usecases) DestroyCluster(req *pb.DestroyClusterRequest) (*pb.DestroyClu
 	}
 
 	logger.Info().Msgf("Kubernetes cluster was successfully destroyed")
-	return &pb.DestroyClusterResponse{Current: req.Current, CurrentLbs: req.CurrentLbs}, nil
+	return &pb.DestroyClusterResponse{Current: req.Current}, nil
 }

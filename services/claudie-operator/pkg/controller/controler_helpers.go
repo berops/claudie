@@ -177,34 +177,27 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 	nodePools.Dynamic = crd.Spec.NodePools.Dynamic
 	nodePools.Static = make([]manifest.StaticNodePool, 0, len(crd.Spec.NodePools.Static))
 
-	err := generics.IterateInOrder(staticNodesWithSecret, func(nodepool string, nws []v1beta.StaticNodeWithData) error {
-		nodes := make([]manifest.Node, 0, len(nws))
-		// Iterate over nodes and retrieve private key from secret
-		for _, n := range nws {
+	for nodepool, withSecret := range generics.IterateMapInOrder(staticNodesWithSecret) {
+		nodes := make([]manifest.Node, 0, len(withSecret))
+		for _, n := range withSecret {
 			if key, ok := n.Secret.Data[string(v1beta.PRIVATE_KEY)]; ok {
 				if !utf8.ValidString(string(key)) {
 					secretNamespaceName := n.Secret.Namespace + "/" + n.Secret.Name
-					return buildSecretError(secretNamespaceName, fmt.Errorf("field %s is not a valid UTF-8 string", v1beta.PRIVATE_KEY))
+					return manifest.Manifest{}, buildSecretError(secretNamespaceName, fmt.Errorf("field %s is not a valid UTF-8 string", v1beta.PRIVATE_KEY))
 				}
 				nodes = append(nodes, manifest.Node{Endpoint: n.Endpoint, Username: n.Username, Key: string(key)})
 			} else {
 				secretNamespaceName := n.Secret.Namespace + "/" + n.Secret.Name
-				return buildSecretError(secretNamespaceName, fmt.Errorf("field %s not found", v1beta.PRIVATE_KEY))
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, fmt.Errorf("field %s not found", v1beta.PRIVATE_KEY))
 			}
 		}
-
 		np := getStaticNodePool(nodepool, crd.Spec.NodePools.Static)
-
 		nodePools.Static = append(nodePools.Static, manifest.StaticNodePool{
 			Name:   nodepool,
 			Nodes:  nodes,
 			Labels: np.Labels,
 			Taints: np.Taints,
 		})
-		return nil
-	})
-	if err != nil {
-		return manifest.Manifest{}, err
 	}
 
 	return manifest.Manifest{

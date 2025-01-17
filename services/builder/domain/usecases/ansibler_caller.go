@@ -32,24 +32,6 @@ func (u *Usecases) configureInfrastructure(ctx *builder.Context) error {
 
 	description := ctx.Workflow.Description
 
-	// Tear down loadbalancers.
-	apiEndpoint := ""
-	if len(ctx.DeletedLoadBalancers) > 0 {
-		u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s tearing down loadbalancers", description))
-
-		logger.Info().Msgf("Calling TearDownLoadbalancers on Ansibler")
-		teardownRes, err := u.Ansibler.TeardownLoadBalancers(ctx, ansClient)
-		if err != nil {
-			return err
-		}
-		logger.Info().Msgf("TearDownLoadbalancers on Ansibler finished successfully")
-
-		ctx.DesiredCluster = teardownRes.Desired
-		ctx.DesiredLoadbalancers = teardownRes.DesiredLbs
-		ctx.DeletedLoadBalancers = teardownRes.DeletedLbs
-		apiEndpoint = teardownRes.PreviousAPIEndpoint
-	}
-
 	// Updating proxy envs on nodes.
 	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s updating proxy envs on nodes in /etc/environment", description))
 
@@ -111,14 +93,13 @@ func (u *Usecases) configureInfrastructure(ctx *builder.Context) error {
 	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s setting up Loadbalancers", description))
 
 	logger.Info().Msgf("Calling SetUpLoadbalancers on Ansibler")
-	setUpRes, err := u.Ansibler.SetUpLoadbalancers(ctx, apiEndpoint, ansClient)
+	setUpRes, err := u.Ansibler.SetUpLoadbalancers(ctx, ansClient)
 	if err != nil {
 		return err
 	}
 	logger.Info().Msgf("SetUpLoadbalancers on Ansibler finished successfully")
 
 	ctx.DesiredCluster = setUpRes.Desired
-	ctx.CurrentLoadbalancers = setUpRes.CurrentLbs
 	ctx.DesiredLoadbalancers = setUpRes.DesiredLbs
 
 	if updateProxyFlag {
@@ -134,6 +115,21 @@ func (u *Usecases) configureInfrastructure(ctx *builder.Context) error {
 		ctx.DesiredCluster = noProxyResp.Desired
 	}
 
+	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, description)
+	return nil
+}
+
+func (u *Usecases) determineApiEndpointChange(ctx *builder.Context, cid, did string, stt spec.ApiEndpointChangeState) error {
+	description := ctx.Workflow.Description
+	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s determining if API endpoint of the cluster should change based on the changes to the loadbalancers infrastructure", description))
+
+	resp, err := u.Ansibler.DetermineApiEndpointChange(ctx, cid, did, stt, u.Ansibler.GetClient())
+	if err != nil {
+		return err
+	}
+
+	ctx.CurrentCluster = resp.Current
+	ctx.CurrentLoadbalancers = resp.CurrentLbs
 	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, description)
 	return nil
 }

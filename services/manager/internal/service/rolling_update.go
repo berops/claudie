@@ -184,10 +184,14 @@ func rollingUpdate(current, desired *spec.Clusters) (*spec.Clusters, []*spec.Tas
 				Event:       spec.Event_UPDATE,
 				Description: fmt.Sprintf("rolling update: moving endpoint from old control plane node to a new control plane node %q from nodepool %q", updated.Nodes[0].Name, updated.Name),
 				Task: &spec.Task{
-					UpdateState: &spec.UpdateState{Endpoint: &spec.UpdateState_Endpoint{
-						Nodepool: updated.Name,
-						Node:     updated.Nodes[0].Name,
-					}},
+					UpdateState: &spec.UpdateState{
+						EndpointChange: &spec.UpdateState_NewControlEndpoint{
+							NewControlEndpoint: &spec.UpdateState_K8SEndpoint{
+								Nodepool: updated.Name,
+								Node:     updated.Nodes[0].Name,
+							},
+						},
+					},
 				},
 				OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
 					Kind: spec.Retry_Repeat_ENDLESS,

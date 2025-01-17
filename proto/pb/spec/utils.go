@@ -6,6 +6,15 @@ import (
 	"path/filepath"
 )
 
+const (
+	// ForceExportPort6443OnControlPlane Forces to export the port 6443 on
+	// all the control plane nodes in the cluster when the workflow reaches
+	// the terraformer stage.
+	ForceExportPort6443OnControlPlane = 1 << iota
+)
+
+func OptionIsSet(options uint64, option uint64) bool { return options&option != 0 }
+
 // Id returns the ID of the cluster.
 func (c *ClusterInfo) Id() string {
 	if c == nil {
@@ -85,6 +94,7 @@ func (c *LBcluster) NodeCount() int {
 	return out
 }
 
+// HasApiRole checks whether the LB has a role with port 6443.
 func (c *LBcluster) HasApiRole() bool {
 	if c == nil {
 		return false
@@ -97,6 +107,14 @@ func (c *LBcluster) HasApiRole() bool {
 	}
 
 	return false
+}
+
+// IsApiEndpoint  checks whether the LB is selected as the API endpoint.
+func (c *LBcluster) IsApiEndpoint() bool {
+	if c == nil {
+		return false
+	}
+	return c.HasApiRole() && c.UsedApiEndpoint
 }
 
 // EndpointNode searches for a node with type ApiEndpoint.
@@ -181,4 +199,22 @@ func (n *NodePool) Zone() string {
 	}
 
 	return fmt.Sprintf("%s-zone", sn)
+}
+
+// MergeTargetPools takes the target pools from the other role
+// and adds them to this role, ignoring duplicates.
+func (r *Role) MergeTargetPools(o *Role) {
+	for _, o := range o.TargetPools {
+		found := false
+		for _, c := range r.TargetPools {
+			if o == c {
+				found = true
+				break
+			}
+		}
+		if !found {
+			// append missing target pool.
+			r.TargetPools = append(r.TargetPools, o)
+		}
+	}
 }

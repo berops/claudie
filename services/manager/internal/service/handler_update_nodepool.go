@@ -262,10 +262,14 @@ func autoscaledEvents(diff nodeDiffResult, current, desired *spec.Clusters) []*s
 			Event:       spec.Event_UPDATE,
 			Description: "autoscaler: moving endpoint from old control plane node to a new control plane node",
 			Task: &spec.Task{
-				UpdateState: &spec.UpdateState{Endpoint: &spec.UpdateState_Endpoint{
-					Nodepool: nodePool,
-					Node:     node,
-				}},
+				UpdateState: &spec.UpdateState{
+					EndpointChange: &spec.UpdateState_NewControlEndpoint{
+						NewControlEndpoint: &spec.UpdateState_K8SEndpoint{
+							Nodepool: nodePool,
+							Node:     node,
+						},
+					},
+				},
 			},
 			OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
 				Kind: spec.Retry_Repeat_ENDLESS,
