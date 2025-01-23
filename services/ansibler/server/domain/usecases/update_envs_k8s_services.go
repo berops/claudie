@@ -43,7 +43,7 @@ func (u *Usecases) UpdateProxyEnvsK8sServices(request *pb.UpdateProxyEnvsK8SServ
 	}
 
 	log.Info().
-		Msgf("Updated proxy envs for kube-proxy DaemonSet and static pods for cluster %s project %s successfuly",
+		Msgf("Updated proxy envs for kube-proxy DaemonSet and static pods for cluster %s project %s successfully",
 			request.Current.ClusterInfo.Name,
 			request.ProjectName)
 

@@ -30,13 +30,13 @@ func (u *Usecases) UpdateProxyEnvsOnNodes(request *pb.UpdateProxyEnvsOnNodesRequ
 	// proxy and include setting the proxy to relevant k8s
 	// services.
 	// NOTE: that the changed proxy settings for the k8s
-	// will not take effect until they are propertly configured
+	// will not take effect until they are properly configured
 	// with the update_envs_k8s_services call.
 	log.Info().Msgf("Updating proxy envs for nodes in cluster %s project %s", request.Desired.ClusterInfo.Name, request.ProjectName)
 	if err := updateProxyEnvsOnNodes(request.Desired.ClusterInfo, request.ProxyEnvs, u.SpawnProcessLimit); err != nil {
 		return nil, fmt.Errorf("failed to update proxy envs for nodes in cluster %s project %s", request.Desired.ClusterInfo.Name, request.ProjectName)
 	}
-	log.Info().Msgf("Successfuly updated proxy envs for nodes in cluster %s project %s", request.Desired.ClusterInfo.Name, request.ProjectName)
+	log.Info().Msgf("Successfully updated proxy envs for nodes in cluster %s project %s", request.Desired.ClusterInfo.Name, request.ProjectName)
 	return &pb.UpdateProxyEnvsOnNodesResponse{}, nil
 }
 
