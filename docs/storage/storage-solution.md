@@ -24,7 +24,7 @@ To follow along, have a look at the example of `InputManifest` below.
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
-  name: ExampleManifestForStorageClasses
+  name: storageclass-example-manifest
   labels:
     app.kubernetes.io/part-of: claudie
 spec:

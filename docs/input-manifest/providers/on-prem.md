@@ -36,7 +36,7 @@ kubectl create secret generic static-node-key --namespace=mynamespace --from-fil
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
-  name: PrivateClusterExample
+  name: private-cluster-example
   labels:
     app.kubernetes.io/part-of: claudie
 spec:
@@ -86,7 +86,7 @@ kubectl create secret generic static-node-key --namespace=mynamespace --from-fil
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
-  name: HybridCloudExample
+  name: hybrid-cloud-example
   labels:
     app.kubernetes.io/part-of: claudie
 spec:
