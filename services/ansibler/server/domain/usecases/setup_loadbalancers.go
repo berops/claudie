@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/concurrent"
@@ -238,14 +237,11 @@ func handleMoveApiEndpoint(logger zerolog.Logger, request *pb.SetUpLBRequest, ou
 
 	logger.Debug().Msgf("Changing the API endpoint from %s to %s", oldEndpoint, newEndpoint)
 
-	request.ProxyEnvs.NoProxyList = strings.ReplaceAll(request.ProxyEnvs.NoProxyList, oldEndpoint, newEndpoint)
-
 	err := utils.ChangeAPIEndpoint(
 		request.Desired.ClusterInfo.Id(),
 		oldEndpoint,
 		newEndpoint,
 		outputDirectory,
-		request.ProxyEnvs,
 		processLimit,
 	)
 	if err != nil {

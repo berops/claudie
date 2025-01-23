@@ -12,16 +12,49 @@ import (
 func (u *Usecases) removeClaudieUtilities(ctx *builder.Context) error {
 	description := ctx.Workflow.Description
 	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s removing claudie installed utilities", description))
-
-	resp, err := u.Ansibler.RemoveClaudieUtilities(ctx, u.Ansibler.GetClient())
-	if err != nil {
+	if err := u.Ansibler.RemoveClaudieUtilities(ctx, u.Ansibler.GetClient()); err != nil {
 		return err
 	}
-
-	ctx.CurrentCluster = resp.Current
-	ctx.CurrentLoadbalancers = resp.CurrentLbs
-
 	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, description)
+	return nil
+}
+
+func (u *Usecases) updateProxyEnvsOnNodes(ctx *builder.Context) error {
+	if ctx.ProxyEnvs.GetOp() == spec.ProxyOp_NONE {
+		return nil
+	}
+	ctx.PopulateProxy()
+
+	logger := loggerutils.WithProjectAndCluster(ctx.ProjectName, ctx.Id())
+	description := ctx.Workflow.Description
+
+	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s updating proxy envs on nodes", description))
+	logger.Info().Msgf("Calling UpdateProxyEnvsOnNodes on Ansibler")
+	if err := u.Ansibler.UpdateProxyEnvsOnNodes(ctx, u.Ansibler.GetClient()); err != nil {
+		return err
+	}
+	logger.Info().Msgf("UpdateProxyEnvsOnNodes on Ansibler finished successfully")
+	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, description)
+	return nil
+}
+
+func (u *Usecases) updateProxyEnvsInK8sServices(ctx *builder.Context) error {
+	if ctx.ProxyEnvs.GetOp() == spec.ProxyOp_NONE {
+		return nil
+	}
+	ctx.PopulateProxy()
+
+	logger := loggerutils.WithProjectAndCluster(ctx.ProjectName, ctx.Id())
+	description := ctx.Workflow.Description
+
+	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s updating proxy envs for k8s services", description))
+	logger.Info().Msgf("Calling UpdateNoProxyEnvsInKubernetes on Ansibler")
+	if err := u.Ansibler.UpdateProxyEnvsK8SServices(ctx, u.Ansibler.GetClient()); err != nil {
+		return err
+	}
+	logger.Info().Msgf("UpdateNoProxyEnvsInKubernetes on Ansibler finished successfully")
+	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, description)
+
 	return nil
 }
 
@@ -29,29 +62,11 @@ func (u *Usecases) removeClaudieUtilities(ctx *builder.Context) error {
 func (u *Usecases) configureInfrastructure(ctx *builder.Context) error {
 	logger := loggerutils.WithProjectAndCluster(ctx.ProjectName, ctx.Id())
 	ansClient := u.Ansibler.GetClient()
-
 	description := ctx.Workflow.Description
 
-	// Updating proxy envs on nodes.
-	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s updating proxy envs on nodes in /etc/environment", description))
-
-	updateProxyFlag := ctx.ProxyEnvs.UpdateProxyEnvsFlag
-	if updateProxyFlag {
-		// In this case only a public IP of newly provisioned VMs will be in no proxy list
-		// because they don't have a Wireguard IP yet.
-		hasHetznerNodeFlag := builder.HasHetznerNode(ctx.DesiredCluster.ClusterInfo)
-		httpProxyUrl, noProxyList := builder.GetHttpProxyUrlAndNoProxyList(ctx.DesiredCluster.ClusterInfo, ctx.DesiredLoadbalancers, hasHetznerNodeFlag, ctx.DesiredCluster.InstallationProxy)
-		ctx.ProxyEnvs.HttpProxyUrl = httpProxyUrl
-		ctx.ProxyEnvs.NoProxyList = noProxyList
-
-		logger.Info().Msgf("Calling UpdateProxyEnvsOnNodes on Ansibler")
-		proxyResp, err := u.Ansibler.UpdateProxyEnvsOnNodes(ctx, ansClient)
-		if err != nil {
-			return err
-		}
-
-		logger.Info().Msgf("UpdateProxyEnvsOnNodes on Ansibler finished successfully")
-		ctx.DesiredCluster = proxyResp.Desired
+	// Update envs mainly for downloading packages.
+	if err := u.updateProxyEnvsOnNodes(ctx); err != nil {
+		return err
 	}
 
 	// Install VPN.
@@ -67,13 +82,9 @@ func (u *Usecases) configureInfrastructure(ctx *builder.Context) error {
 	ctx.DesiredCluster = installRes.Desired
 	ctx.DesiredLoadbalancers = installRes.DesiredLbs
 
-	if updateProxyFlag {
-		// As soon as the VPN is installed, we can update the proxy envs (the newly added VMs have a Wireguard IP).
-		hasHetznerNodeFlag := builder.HasHetznerNode(ctx.DesiredCluster.ClusterInfo)
-		httpProxyUrl, noProxyList := builder.GetHttpProxyUrlAndNoProxyList(
-			ctx.DesiredCluster.ClusterInfo, ctx.DesiredLoadbalancers, hasHetznerNodeFlag, ctx.DesiredCluster.InstallationProxy)
-		ctx.ProxyEnvs.HttpProxyUrl = httpProxyUrl
-		ctx.ProxyEnvs.NoProxyList = noProxyList
+	// New nodes will now have private ips assigned, update proxy envs.
+	if err := u.updateProxyEnvsOnNodes(ctx); err != nil {
+		return err
 	}
 
 	// Install node requirements.
@@ -102,17 +113,9 @@ func (u *Usecases) configureInfrastructure(ctx *builder.Context) error {
 	ctx.DesiredCluster = setUpRes.Desired
 	ctx.DesiredLoadbalancers = setUpRes.DesiredLbs
 
-	if updateProxyFlag {
-		// NOTE: UpdateNoProxyEnvsInKubernetes has to be called after SetUpLoadbalancers
-		u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s updating NO_PROXY and no_proxy env variables in kube-proxy and static pods", description))
-		logger.Info().Msgf("Calling UpdateNoProxyEnvsInKubernetes on Ansibler")
-		noProxyResp, err := u.Ansibler.UpdateNoProxyEnvsInKubernetes(ctx, ansClient)
-		if err != nil {
-			return err
-		}
-
-		logger.Info().Msgf("UpdateNoProxyEnvsInKubernetes on Ansibler finished successfully")
-		ctx.DesiredCluster = noProxyResp.Desired
+	// propagate the proxy changes to k8s services.
+	if err := u.updateProxyEnvsInK8sServices(ctx); err != nil {
+		return err
 	}
 
 	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, description)

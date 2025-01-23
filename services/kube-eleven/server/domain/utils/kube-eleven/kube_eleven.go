@@ -41,9 +41,6 @@ type KubeEleven struct {
 	// needs to have the role ApiEndpoint.
 	LoadBalancerEndpoint string
 
-	// ProxyEnvs holds information about a need to update proxy envs, proxy endpoint, and no proxy list.
-	ProxyEnvs *spec.ProxyEnvs
-
 	// SpawnProcessLimit limits the number of spawned kubeone processes.
 	SpawnProcessLimit *semaphore.Weighted
 }
@@ -170,12 +167,6 @@ func (k *KubeEleven) templateData() (templateData, error) {
 	}
 	if k8sApiEndpoint {
 		data.AlternativeNames = alternativeNames
-	}
-
-	if k.ProxyEnvs != nil && k.ProxyEnvs.UpdateProxyEnvsFlag {
-		data.UtilizeHttpProxy = k.ProxyEnvs.UpdateProxyEnvsFlag
-		data.NoProxyList = k.ProxyEnvs.NoProxyList
-		data.HttpProxyUrl = k.ProxyEnvs.HttpProxyUrl
 	}
 
 	data.KubernetesVersion = k.K8sCluster.GetKubernetes()

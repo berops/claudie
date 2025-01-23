@@ -50,7 +50,7 @@ func (u *Usecases) RemoveUtilities(req *pb.RemoveClaudieUtilitiesRequest) (*pb.R
 		return nil, fmt.Errorf("failed to remove wiregaurd from nodes: %w", err)
 	}
 
-	return &pb.RemoveClaudieUtilitiesResponse{Current: req.Current, CurrentLbs: req.CurrentLbs}, nil
+	return &pb.RemoveClaudieUtilitiesResponse{}, nil
 }
 
 func removeUtilities(clusterID string, vpnInfo *VPNInfo, processLimit *semaphore.Weighted) error {

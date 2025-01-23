@@ -41,31 +41,11 @@
     - name: replace endpoint
       replace:
         path: "{{file}}"
-        regexp: '^controlPlaneEndpoint:.*{{ OldEndpoint }}'
-        replace: 'controlPlaneEndpoint: {{ NewEndpoint }}'
-
-    - name: update endpoint in /etc/environment
-      ansible.builtin.replace:
-        path: "/etc/environment"
-        regexp: '{{ OldEndpoint }}'
-        replace: '{{ NewEndpoint }}'
-
-    - name: restart containerd and kubelet
-      ansible.builtin.service:
-        name: "{{ item }}"
-        state: restarted
-      register: serviceDetails
-      until: serviceDetails.status.ActiveState == "active"
-      retries: 10
-      delay: 20
-      loop:
-        - "kubelet"
-        - "containerd"
+        regexp: "^controlPlaneEndpoint:.*{{ OldEndpoint }}"
+        replace: "controlPlaneEndpoint: {{ NewEndpoint }}"
 
     - name: generate new certs
       shell: |
-        NO_PROXY={{ NoProxyList }} no_proxy={{ NoProxyList }} HTTP_PROXY={{ HttpProxyUrl }} http_proxy={{ HttpProxyUrl }} \
-        HTTPS_PROXY={{ HttpProxyUrl }} https_proxy={{ HttpProxyUrl }} \
         kubeadm init phase certs apiserver --config {{file}}
 
     - name: remove old /etc/kubernetes/*.conf
@@ -80,25 +60,10 @@
 
     - name: generate kubeconfig
       ansible.builtin.shell: |
-        NO_PROXY={{ NoProxyList }} no_proxy={{ NoProxyList }} HTTP_PROXY={{ HttpProxyUrl }} http_proxy={{ HttpProxyUrl }} \
-        HTTPS_PROXY={{ HttpProxyUrl }} https_proxy={{ HttpProxyUrl }} \
         kubeadm init phase kubeconfig all --config {{file}}
-
-    - name: restart kubelet
-      ansible.builtin.service:
-        name: "{{ item }}"
-        state: restarted
-      register: serviceDetails
-      until: serviceDetails.status.ActiveState == "active"
-      retries: 5
-      delay: 20
-      loop:
-        - "kubelet"
 
     - name: upload config map
       ansible.builtin.shell: |
-        NO_PROXY={{ NoProxyList }} no_proxy={{ NoProxyList }} HTTP_PROXY={{ HttpProxyUrl }} http_proxy={{ HttpProxyUrl }} \
-        HTTPS_PROXY={{ HttpProxyUrl }} https_proxy={{ HttpProxyUrl }} \
         kubeadm init phase upload-config all --config {{file}}
 
     - name: restart containerd and kubelet
@@ -131,14 +96,8 @@
     - name: replace endpoint
       replace:
         path: "/etc/kubernetes/kubelet.conf"
-        regexp: '{{ OldEndpoint}}'
-        replace: '{{ NewEndpoint}}'
-    
-    - name: update NO_PROXY and no_proxy in /etc/environment
-      ansible.builtin.replace:
-        path: "/etc/environment"
-        regexp: '{{ OldEndpoint }}'
-        replace: '{{ NewEndpoint }}'
+        regexp: "{{ OldEndpoint}}"
+        replace: "{{ NewEndpoint}}"
 
     - name: restart containerd and kubelet
       ansible.builtin.service:
