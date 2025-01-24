@@ -18,29 +18,28 @@ import (
 )
 
 const (
-	proxyPlaybookFilePath = "../../ansible-playbooks/update-proxy-envs-on-nodes.yml"
+	populateProxy = "../../ansible-playbooks/proxy/populate-proxy-envs.yml"
+	removeProxy   = "../../ansible-playbooks/proxy/remove-proxy-envs.yml"
 )
 
 func (u *Usecases) UpdateProxyEnvsOnNodes(request *pb.UpdateProxyEnvsOnNodesRequest) (*pb.UpdateProxyEnvsOnNodesResponse, error) {
-	if request.ProxyEnvs == nil || !request.ProxyEnvs.UpdateProxyEnvsFlag {
-		return &pb.UpdateProxyEnvsOnNodesResponse{Desired: request.Desired}, nil
+	if request.ProxyEnvs.GetOp() == spec.ProxyOp_NONE {
+		return &pb.UpdateProxyEnvsOnNodesResponse{}, nil
 	}
-
-	// Update proxy envs even when the cluster wasn't build yet
-	// because wireguard installation have to utilize the proxy.
-	log.Info().Msgf("Updating proxy env variables in /etc/environment for cluster %s project %s",
-		request.Desired.ClusterInfo.Name, request.ProjectName)
+	// Update Proxy envs in package tool to install packages using
+	// proxy and include setting the proxy to relevant k8s
+	// services.
+	// NOTE: that the changed proxy settings for the k8s
+	// will not take effect until they are properly configured
+	// with the update_envs_k8s_services call.
+	log.Info().Msgf("Updating proxy envs for nodes in cluster %s project %s", request.Desired.ClusterInfo.Name, request.ProjectName)
 	if err := updateProxyEnvsOnNodes(request.Desired.ClusterInfo, request.ProxyEnvs, u.SpawnProcessLimit); err != nil {
-		return nil, fmt.Errorf("failed to update proxy env variables in /etc/environment for cluster %s project %s",
-			request.Desired.ClusterInfo.Name, request.ProjectName)
+		return nil, fmt.Errorf("failed to update proxy envs for nodes in cluster %s project %s", request.Desired.ClusterInfo.Name, request.ProjectName)
 	}
-	log.Info().Msgf("Updated proxy env variables in /etc/environment for cluster %s project %s",
-		request.Desired.ClusterInfo.Name, request.ProjectName)
-
-	return &pb.UpdateProxyEnvsOnNodesResponse{Desired: request.Desired}, nil
+	log.Info().Msgf("Successfully updated proxy envs for nodes in cluster %s project %s", request.Desired.ClusterInfo.Name, request.ProjectName)
+	return &pb.UpdateProxyEnvsOnNodesResponse{}, nil
 }
 
-// UpdateProxyEnvsOnNodes updates proxy envs in /etc/environment
 func updateProxyEnvsOnNodes(desiredK8sClusterInfo *spec.ClusterInfo, proxyEnvs *spec.ProxyEnvs, processLimit *semaphore.Weighted) error {
 	clusterID := desiredK8sClusterInfo.Id()
 
@@ -58,7 +57,7 @@ func updateProxyEnvsOnNodes(desiredK8sClusterInfo *spec.ClusterInfo, proxyEnvs *
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}
 
-	if err := utils.GenerateInventoryFile(templates.UpdateProxyEnvsInventoryTemplate, clusterDirectory, utils.ProxyInventoryFileParameters{
+	if err := utils.GenerateInventoryFile(templates.ProxyEnvsInventoryTemplate, clusterDirectory, utils.ProxyInventoryFileParameters{
 		K8sNodepools: utils.NodePools{
 			Dynamic: nodepools.Dynamic(desiredK8sClusterInfo.NodePools),
 			Static:  nodepools.Static(desiredK8sClusterInfo.NodePools),
@@ -71,10 +70,18 @@ func updateProxyEnvsOnNodes(desiredK8sClusterInfo *spec.ClusterInfo, proxyEnvs *
 	}
 
 	ansible := utils.Ansible{
-		Playbook:          proxyPlaybookFilePath,
 		Inventory:         utils.InventoryFileName,
 		Directory:         clusterDirectory,
 		SpawnProcessLimit: processLimit,
+	}
+
+	switch proxyEnvs.Op {
+	case spec.ProxyOp_MODIFIED:
+		ansible.Playbook = populateProxy
+	case spec.ProxyOp_OFF:
+		ansible.Playbook = removeProxy
+	default:
+		return fmt.Errorf("unrecognized proxy operation: %v", proxyEnvs.Op.String())
 	}
 
 	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("Update proxy envs in /etc/environment - %s", clusterID)); err != nil {

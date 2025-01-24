@@ -12,9 +12,9 @@ type AnsiblerPort interface {
 	SetUpLoadbalancers(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.SetUpLBResponse, error)
 	DetermineApiEndpointChange(builderCtx *builder.Context, cid string, did string, stt spec.ApiEndpointChangeState, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.DetermineApiEndpointChangeResponse, error)
 	UpdateAPIEndpoint(builderCtx *builder.Context, nodepool, node string, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.UpdateAPIEndpointResponse, error)
-	UpdateNoProxyEnvsInKubernetes(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.UpdateNoProxyEnvsInKubernetesResponse, error)
-	UpdateProxyEnvsOnNodes(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.UpdateProxyEnvsOnNodesResponse, error)
-	RemoveClaudieUtilities(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.RemoveClaudieUtilitiesResponse, error)
+	UpdateProxyEnvsK8SServices(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) error
+	UpdateProxyEnvsOnNodes(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) error
+	RemoveClaudieUtilities(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) error
 
 	PerformHealthCheck() error
 	GetClient() pb.AnsiblerServiceClient

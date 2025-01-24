@@ -31,7 +31,6 @@ func (k *KubeElevenConnector) BuildCluster(builderCtx *builder.Context, loadBala
 		&pb.BuildClusterRequest{
 			Desired:              builderCtx.DesiredCluster,
 			LoadBalancerEndpoint: loadBalancerEndpoint,
-			ProxyEnvs:            builderCtx.ProxyEnvs,
 			ProjectName:          builderCtx.ProjectName,
 		})
 }

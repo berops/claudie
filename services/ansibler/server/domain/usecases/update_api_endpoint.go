@@ -23,7 +23,7 @@ func (u *Usecases) UpdateAPIEndpoint(request *pb.UpdateAPIEndpointRequest) (*pb.
 	}
 
 	log.Info().Msgf("Updating api endpoint for cluster %s project %s", request.Current.ClusterInfo.Name, request.ProjectName)
-	if err := updateAPIEndpoint(request.Endpoint, request.Current, request.ProxyEnvs, u.SpawnProcessLimit); err != nil {
+	if err := updateAPIEndpoint(request.Endpoint, request.Current, u.SpawnProcessLimit); err != nil {
 		return nil, fmt.Errorf("failed to update api endpoint for cluster %s project %s", request.Current.ClusterInfo.Name, request.ProjectName)
 	}
 	log.Info().Msgf("Updated api endpoint for cluster %s project %s", request.Current.ClusterInfo.Name, request.ProjectName)
@@ -34,7 +34,7 @@ func (u *Usecases) UpdateAPIEndpoint(request *pb.UpdateAPIEndpointRequest) (*pb.
 // updateAPIEndpoint handles the case where the ApiEndpoint node is removed from
 // the desired state. Thus, a new control node needs to be selected among the existing
 // control nodes. This new control node will then represent the ApiEndpoint of the cluster.
-func updateAPIEndpoint(endpoint *pb.UpdateAPIEndpointRequest_Endpoint, currentK8sCluster *spec.K8Scluster, proxyEnvs *spec.ProxyEnvs, processLimit *semaphore.Weighted) error {
+func updateAPIEndpoint(endpoint *pb.UpdateAPIEndpointRequest_Endpoint, currentK8sCluster *spec.K8Scluster, processLimit *semaphore.Weighted) error {
 	clusterID := currentK8sCluster.ClusterInfo.Id()
 
 	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, hash.Create(hash.Length)))
@@ -95,16 +95,11 @@ func updateAPIEndpoint(endpoint *pb.UpdateAPIEndpointRequest_Endpoint, currentK8
 
 	newApiEndpoint := newEndpointNode.GetPublic()
 
-	if proxyEnvs == nil {
-		proxyEnvs = &spec.ProxyEnvs{}
-	}
-
 	err = utils.ChangeAPIEndpoint(
 		currentK8sCluster.ClusterInfo.Name,
 		apiEndpointNode.GetPublic(),
 		newApiEndpoint,
 		clusterDirectory,
-		proxyEnvs,
 		processLimit,
 	)
 	if err != nil {

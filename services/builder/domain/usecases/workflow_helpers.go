@@ -73,14 +73,13 @@ func (u *Usecases) buildCluster(ctx *builder.Context) (*builder.Context, error) 
 		}).Add(-float64(c))
 	}(max(0, ctx.DesiredCluster.NodeCount()-ctx.CurrentCluster.NodeCount()))
 
+	ctx.ProxyEnvs = &spec.ProxyEnvs{
+		Op: builder.DetermineProxyOperation(ctx),
+	}
+
 	// Reconcile infrastructure via terraformer.
 	if err := u.reconcileInfrastructure(ctx); err != nil {
 		return ctx, fmt.Errorf("error in Terraformer for cluster %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
-	}
-
-	// HttProxyUrl and NoProxyList will be set before first task in ansibler and then updated after ansibler Install VPN phase.
-	ctx.ProxyEnvs = &spec.ProxyEnvs{
-		UpdateProxyEnvsFlag: ctx.DetermineProxyUpdate(),
 	}
 
 	// Configure infrastructure via Ansibler.

@@ -1,0 +1,81 @@
+- hosts: control
+  gather_facts: true
+  become: true
+  tasks:
+    - name: Filter out relevant files containing configurations for current node
+      # this setup can change in future kubeone versions.
+      # https://github.com/kubermatic/kubeone/blob/66d3281919890e7c43148d2f72140acdff168e73/pkg/scripts/kubeadm.go#L42
+      shell: |
+        grep -r -lE "{{inventory_hostname}}" /root/kubeone/cfg/*full* | xargs grep -lE "InitConfiguration|ClusterConfiguration"
+      register: grep_results
+
+    - name: fail if no file was found
+      fail:
+        msg: "No file with {{inventory_hostname}} was found"
+      when: grep_results.stdout_lines == []
+
+    - name: Select file
+      set_fact:
+        file: "{{grep_results.stdout_lines[0]}}"
+
+    - name: Chosen file with cluster configuration
+      ansible.builtin.debug:
+        var: file
+
+    # refresh and restart proxy daemon set.
+    - name: Update NO_PROXY and no_proxy in kube-proxy DaemonSet
+      ansible.builtin.shell: |
+        kubeadm init phase addon kube-proxy --config {{file}}
+
+    # Update and restart static pods with new proxy envs.
+    - name: Update NO_PROXY and no_proxy in static pods /etc/kubernetes/manifests
+      ansible.builtin.shell: |
+        kubeadm init phase control-plane all --config {{file}}
+    - name: restart controller
+      ansible.builtin.shell: |
+        crictl pods | grep kube-controller-manager | awk '{print $1}' | xargs -I {} sh -c 'crictl stopp {} && crictl rmp {}'
+    - name: restart scheduler
+      ansible.builtin.shell: |
+        crictl pods | grep kube-scheduler | awk '{print $1}' | xargs -I {} sh -c 'crictl stopp {} && crictl rmp {}'
+
+- hosts: all
+  gather_facts: true
+  become: true
+  tasks:
+    # This will reload the systemd unit files present under /etc/systemd/system/.
+    - name: Daemon reload
+      ansible.builtin.shell: |
+        systemctl daemon-reload
+
+    - name: Check if services exist
+      command: systemctl is-active {{ item }}
+      register: service_status
+      ignore_errors: yes
+      loop:
+        - docker
+        - containerd
+        - kubelet
+
+    - name: Restart services that are active
+      ansible.builtin.service:
+        name: "{{ item.item }}"
+        state: restarted
+      when: item.rc == 0
+      loop: "{{ service_status.results }}"
+
+- hosts: control
+  gather_facts: true
+  become: true
+  tasks:
+    - name: Try 10 times to check kube-apiserver health
+      ansible.builtin.uri:
+        url: "https://localhost:6443/readyz"
+        method: GET
+        return_content: yes
+        validate_certs: no
+        status_code:
+          - 200
+      register: api_response
+      retries: 10
+      delay: 10
+      until: api_response.status == 200

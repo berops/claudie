@@ -53,7 +53,6 @@ func (a *AnsiblerConnector) SetUpLoadbalancers(builderCtx *builder.Context, ansi
 			Desired:     builderCtx.DesiredCluster,
 			CurrentLbs:  builderCtx.CurrentLoadbalancers,
 			DesiredLbs:  builderCtx.DesiredLoadbalancers,
-			ProxyEnvs:   builderCtx.ProxyEnvs,
 			ProjectName: builderCtx.ProjectName,
 		})
 }
@@ -65,7 +64,6 @@ func (a *AnsiblerConnector) DetermineApiEndpointChange(builderCtx *builder.Conte
 		&pb.DetermineApiEndpointChangeRequest{
 			Current:           builderCtx.CurrentCluster,
 			CurrentLbs:        builderCtx.CurrentLoadbalancers,
-			ProxyEnvs:         builderCtx.ProxyEnvs,
 			ProjectName:       builderCtx.ProjectName,
 			State:             stt,
 			CurrentEndpointId: cid,
@@ -78,37 +76,39 @@ func (a *AnsiblerConnector) UpdateAPIEndpoint(builderCtx *builder.Context, nodep
 	return ansibler.UpdateAPIEndpoint(ansiblerGrpcClient, &pb.UpdateAPIEndpointRequest{
 		Endpoint:    &pb.UpdateAPIEndpointRequest_Endpoint{Nodepool: nodepool, Node: node},
 		Current:     builderCtx.CurrentCluster,
-		ProxyEnvs:   builderCtx.ProxyEnvs,
 		ProjectName: builderCtx.ProjectName,
 	})
 }
 
 // UpdateNoProxyEnvsInKubernetes updates NO_PROXY and no_proxy envs in kube-proxy and static pods.
-func (a *AnsiblerConnector) UpdateNoProxyEnvsInKubernetes(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.UpdateNoProxyEnvsInKubernetesResponse, error) {
-	return ansibler.UpdateNoProxyEnvsInKubernetes(ansiblerGrpcClient, &pb.UpdateNoProxyEnvsInKubernetesRequest{
+func (a *AnsiblerConnector) UpdateProxyEnvsK8SServices(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) error {
+	_, err := ansibler.UpdateProxyEnvsK8SServices(ansiblerGrpcClient, &pb.UpdateProxyEnvsK8SServicesRequest{
 		Current:     builderCtx.CurrentCluster,
 		Desired:     builderCtx.DesiredCluster,
 		ProxyEnvs:   builderCtx.ProxyEnvs,
 		ProjectName: builderCtx.ProjectName,
 	})
+	return err
 }
 
 // UpdateProxyEnvsOnNodes updates proxy envs on all nodes of the cluster.
-func (a *AnsiblerConnector) UpdateProxyEnvsOnNodes(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.UpdateProxyEnvsOnNodesResponse, error) {
-	return ansibler.UpdateProxyEnvsOnNodes(ansiblerGrpcClient, &pb.UpdateProxyEnvsOnNodesRequest{
+func (a *AnsiblerConnector) UpdateProxyEnvsOnNodes(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) error {
+	_, err := ansibler.UpdateProxyEnvsOnNodes(ansiblerGrpcClient, &pb.UpdateProxyEnvsOnNodesRequest{
 		Desired:     builderCtx.DesiredCluster,
 		ProxyEnvs:   builderCtx.ProxyEnvs,
 		ProjectName: builderCtx.ProjectName,
 	})
+	return err
 }
 
 // RemoveClaudieUtilities removes claudie installed utilities from the nodes of the cluster.
-func (a *AnsiblerConnector) RemoveClaudieUtilities(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.RemoveClaudieUtilitiesResponse, error) {
-	return ansibler.RemoveClaudieUtilities(ansiblerGrpcClient, &pb.RemoveClaudieUtilitiesRequest{
+func (a *AnsiblerConnector) RemoveClaudieUtilities(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) error {
+	_, err := ansibler.RemoveClaudieUtilities(ansiblerGrpcClient, &pb.RemoveClaudieUtilitiesRequest{
 		Current:     builderCtx.CurrentCluster,
 		CurrentLbs:  builderCtx.CurrentLoadbalancers,
 		ProjectName: builderCtx.ProjectName,
 	})
+	return err
 }
 
 // Disconnect closes the underlying gRPC connection to ansibler microservice

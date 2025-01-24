@@ -93,11 +93,6 @@ func determineApiChanges(
 	if err != nil {
 		return fmt.Errorf("error while creating inventory file for %s : %w", clusterDirectory, err)
 	}
-
-	if request.ProxyEnvs == nil {
-		request.ProxyEnvs = &spec.ProxyEnvs{}
-	}
-
 	return handleAPIEndpointChange(logger, request, clusterDirectory, processLimit)
 }
 
@@ -164,5 +159,5 @@ func handleAPIEndpointChange(
 	}
 
 	logger.Debug().Str("LB-cluster", request.Current.ClusterInfo.Id()).Msgf("Changing the API endpoint from %s to %s", oldEndpoint, newEndpoint)
-	return utils.ChangeAPIEndpoint(request.Current.ClusterInfo.Name, oldEndpoint, newEndpoint, outputDirectory, request.ProxyEnvs, processLimit)
+	return utils.ChangeAPIEndpoint(request.Current.ClusterInfo.Name, oldEndpoint, newEndpoint, outputDirectory, processLimit)
 }

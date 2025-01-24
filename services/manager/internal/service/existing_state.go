@@ -233,11 +233,18 @@ func fillDynamicNodes(clusterID string, current, desired *spec.NodePool) {
 		log.Debug().Str("cluster", clusterID).Msgf("reusing node %q from current state nodepool %q, IsControl: %v, into desired state of the nodepool", node.Name, desired.Name, desired.IsControl)
 	}
 
+	typ := spec.NodeType_worker
+	if desired.IsControl {
+		typ = spec.NodeType_master
+	}
 	nodepoolID := fmt.Sprintf("%s-%s", clusterID, desired.Name)
 	for len(nodes) < int(dnp.Count) {
 		name := uniqueNodeName(nodepoolID, nodeNames)
 		nodeNames[name] = struct{}{}
-		nodes = append(nodes, &spec.Node{Name: name})
+		nodes = append(nodes, &spec.Node{
+			Name:     name,
+			NodeType: typ,
+		})
 		log.Debug().Str("cluster", clusterID).Msgf("adding node %q into desired state nodepool %q, IsControl: %v", name, desired.Name, desired.IsControl)
 	}
 

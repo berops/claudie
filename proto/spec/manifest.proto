@@ -146,10 +146,21 @@ message InstallationProxy {
   string endpoint = 2;
 }
 
+enum ProxyOp {
+ // None specifies that no change happened in the desired
+ // state of the Proxy settings compared to the current.
+ NONE = 0;
+ // Modified indicates some change happened, either add,
+ // delete, modified, replaced etc.
+ MODIFIED = 1;
+ // Off indicates that the Proxy envs should be turned off.
+ OFF = 2;
+}
+
 // ProxyEnvs holds information about a need to update proxy envs, proxy endpoint, and no proxy list.
 message ProxyEnvs {
   // Signal a need to update proxy envs
-  bool updateProxyEnvsFlag = 1;
+  ProxyOp op = 1;
   // Holds a proxy endpoint.
   string httpProxyUrl = 2;
   // Holds a list of IPs and hostnames that aren't routed through proxy.
