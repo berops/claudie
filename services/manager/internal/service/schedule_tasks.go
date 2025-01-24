@@ -49,6 +49,13 @@ func scheduleTasks(scheduled *store.Config) (ScheduleResult, error) {
 	var result ScheduleResult
 
 	for cluster, state := range scheduledGRPC.Clusters {
+		// TODO: improve
+		if ips, err := AllNodesReachable(state.Current); err != nil {
+			log.Info().Msgf("%v nodes are not reachable for cluster %v", ips, cluster)
+			return NotReady, nil
+		}
+		// end
+
 		var events []*spec.TaskEvent
 		switch {
 		case state.Current == nil && state.Desired == nil:
