@@ -18,7 +18,6 @@ message SetUpLBRequest {
   spec.K8scluster desired = 1;
   repeated spec.LBcluster currentLbs = 2;
   repeated spec.LBcluster desiredLbs = 3;
-  spec.ProxyEnvs proxyEnvs = 4;
   string projectName = 6;
 }
 
@@ -31,7 +30,6 @@ message DetermineApiEndpointChangeRequest {
   spec.K8scluster current = 1;
   repeated spec.LBcluster currentLbs = 2;
 
-  spec.ProxyEnvs proxyEnvs = 4;
   string projectName = 5;
 
   spec.ApiEndpointChangeState state = 6;
@@ -51,7 +49,6 @@ message UpdateAPIEndpointRequest{
   }
   spec.K8scluster current = 1;
   Endpoint endpoint = 2;
-  spec.ProxyEnvs proxyEnvs = 3;
   string projectName = 4;
 }
 
@@ -65,20 +62,16 @@ message UpdateProxyEnvsOnNodesRequest{
   string projectName = 3;
 }
 
-message UpdateProxyEnvsOnNodesResponse{
-  spec.K8scluster desired = 1;
-}
+message UpdateProxyEnvsOnNodesResponse{}
 
-message UpdateNoProxyEnvsInKubernetesRequest{
+message UpdateProxyEnvsK8sServicesRequest{
   spec.K8scluster current = 1;
   spec.K8scluster desired = 2;
   spec.ProxyEnvs proxyEnvs = 3;
   string projectName = 4;
 }
 
-message UpdateNoProxyEnvsInKubernetesResponse{
-  spec.K8scluster desired = 1;
-}
+message UpdateProxyEnvsK8sServicesResponse{}
 
 message RemoveClaudieUtilitiesRequest {
   spec.K8scluster current = 1;
@@ -86,10 +79,7 @@ message RemoveClaudieUtilitiesRequest {
   string projectName = 3;
 }
 
-message RemoveClaudieUtilitiesResponse {
-  spec.K8scluster current = 1;
-  repeated spec.LBcluster currentLbs = 2;
-}
+message RemoveClaudieUtilitiesResponse {}
 
 service AnsiblerService {
   // InstallNodeRequirements installs any requirements there are on all of the nodes.
@@ -106,8 +96,8 @@ service AnsiblerService {
   rpc UpdateAPIEndpoint(UpdateAPIEndpointRequest) returns (UpdateAPIEndpointResponse);
   // UpdateProxyEnvsOnNodes handles changes of HTTP_PROXY, HTTPS_PROXY, NO_PROXY, http_proxy, https_proxy and no_proxy envs in /etc/environment
   rpc UpdateProxyEnvsOnNodes(UpdateProxyEnvsOnNodesRequest) returns (UpdateProxyEnvsOnNodesResponse);
-  // UpdateNoProxyEnvsInKubernetes handles changes of NO_PROXY and no_proxy envs in kube-proxy and static pods
-  rpc UpdateNoProxyEnvsInKubernetes(UpdateNoProxyEnvsInKubernetesRequest) returns (UpdateNoProxyEnvsInKubernetesResponse);
+  // UpdateProxyEnvsK8sServices propagates the changes to the HTTP proxy to relevant kubernetes services.
+  rpc UpdateProxyEnvsK8sServices(UpdateProxyEnvsK8sServicesRequest) returns (UpdateProxyEnvsK8sServicesResponse);
   // Removes utilities installed by claudie via ansible playbooks.
   rpc RemoveClaudieUtilities(RemoveClaudieUtilitiesRequest) returns (RemoveClaudieUtilitiesResponse);
 }
