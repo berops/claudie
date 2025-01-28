@@ -49,13 +49,6 @@ func scheduleTasks(scheduled *store.Config) (ScheduleResult, error) {
 	var result ScheduleResult
 
 	for cluster, state := range scheduledGRPC.Clusters {
-		// TODO: improve
-		if ips, err := AllNodesReachable(state.Current); err != nil {
-			log.Info().Msgf("%v nodes are not reachable for cluster %v", ips, cluster)
-			return NotReady, nil
-		}
-		// end
-
 		var events []*spec.TaskEvent
 		switch {
 		case state.Current == nil && state.Desired == nil:
@@ -489,7 +482,7 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 			Id:          uuid.New().String(),
 			Timestamp:   timestamppb.New(time.Now().UTC()),
 			Event:       spec.Event_UPDATE,
-			Description: "updating autoscaler config",
+			Description: "updating non-infrastructure related changes",
 			Task: &spec.Task{
 				UpdateState: &spec.UpdateState{
 					K8S: desired,

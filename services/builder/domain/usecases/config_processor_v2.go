@@ -7,6 +7,7 @@ import (
 	"slices"
 	"sync"
 
+	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -157,6 +158,13 @@ func (u *Usecases) executeCreateTask(te *managerclient.NextTaskResponse) (*spec.
 }
 
 func (u *Usecases) executeUpdateTask(te *managerclient.NextTaskResponse) (*spec.K8Scluster, []*spec.LBcluster, error) {
+	sl := loggerutils.WithProjectAndCluster(te.Config, te.Current.K8S.ClusterInfo.Id())
+	sl.Info().Msg("veryfing if all nodes in the current state are reachable")
+
+	if _, err := clusters.PingNodes(sl, te.Current); err != nil {
+		return te.Current.GetK8S(), te.Current.GetLoadBalancers().GetClusters(), err
+	}
+
 	if te.Event.Task.UpdateState.EndpointChange != nil {
 		ctx := &builder.Context{
 			ProjectName:          te.Config,
@@ -267,7 +275,7 @@ func (u *Usecases) executeDeleteTask(te *managerclient.NextTaskResponse) (*spec.
 
 		k8s, err := u.callDeleteNodes(master, worker, ctx.CurrentCluster)
 		if err != nil {
-			return te.Current.GetK8S(), te.Current.GetLoadBalancers().GetClusters(), fmt.Errorf("error while deleting nodes for %s: %w", te.Current.K8S.ClusterInfo.NodePools, err)
+			return te.Current.GetK8S(), te.Current.GetLoadBalancers().GetClusters(), fmt.Errorf("error while deleting nodes for %s: %w", te.Current.K8S.ClusterInfo.Id(), err)
 		}
 
 		if len(static) == 0 {
