@@ -6,8 +6,8 @@ import (
 	"slices"
 	"strings"
 
-	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/clusters"
+	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/nodepools"
@@ -25,9 +25,9 @@ type etcdPodInfo struct {
 }
 
 type nodeInfo struct {
-	fullname string
-	k8sName string
-	ipv4 string
+	fullname       string
+	k8sName        string
+	publicEndpoint string
 }
 
 type Deleter struct {
@@ -48,17 +48,17 @@ func NewDeleter(masterNodes, workerNodes []string, cluster *spec.K8Scluster) *De
 
 	for i := range masterNodes {
 		mn = append(mn, nodeInfo{
-			fullname: masterNodes[i],
-			k8sName: strings.TrimPrefix(masterNodes[i], fmt.Sprintf("%s-", clusterID)),
-			ipv4: clusters.NodeIPv4(masterNodes[i], cluster),
+			fullname:       masterNodes[i],
+			k8sName:        strings.TrimPrefix(masterNodes[i], fmt.Sprintf("%s-", clusterID)),
+			publicEndpoint: clusters.NodePublic(masterNodes[i], cluster),
 		})
 	}
 
 	for i := range workerNodes {
 		wn = append(wn, nodeInfo{
-			fullname: workerNodes[i],
-			k8sName: strings.TrimPrefix(workerNodes[i], fmt.Sprintf("%s-", clusterID)),
-			ipv4: clusters.NodeIPv4(workerNodes[i], cluster),
+			fullname:       workerNodes[i],
+			k8sName:        strings.TrimPrefix(workerNodes[i], fmt.Sprintf("%s-", clusterID)),
+			publicEndpoint: clusters.NodePublic(workerNodes[i], cluster),
 		})
 	}
 
@@ -139,7 +139,7 @@ func (d *Deleter) deleteNodesByName(kc kubectl.Kubectl, node nodeInfo, realNodeN
 	}
 
 	d.logger.Info().Msgf("verifying if node %s is reachable", node.k8sName)
-	if err := clusters.Ping(d.logger, clusters.PingRetryCount, node.ipv4); err != nil {
+	if err := clusters.Ping(d.logger, clusters.PingRetryCount, node.publicEndpoint); err != nil {
 		if errors.Is(err, clusters.ErrEchoTimeout) {
 			d.logger.Info().Msgf("Node %s is unreachable, marking node with `out-of-service` taint before deleting it from the cluster", node.k8sName)
 			if err := kc.KubectlTaintNodeShutdown(node.k8sName); err != nil {
@@ -197,15 +197,23 @@ func (d *Deleter) deleteFromEtcd(kc kubectl.Kubectl, etcdEpNode *spec.Node) erro
 
 // updateClusterData will remove deleted nodes from nodepools
 func (d *Deleter) updateClusterData() {
+	// TODO: validate.
 nodes:
 	for _, deleted := range append(d.masterNodes, d.workerNodes...) {
 		for _, np := range d.cluster.ClusterInfo.NodePools {
-			for i, node := range np.Nodes {
-				if node.Name == deleted.fullname {
-					np.Nodes = append(np.Nodes[:i], np.Nodes[i+1:]...)
-					continue nodes
-				}
+			i := slices.IndexFunc(np.Nodes, func(n *spec.Node) bool { return n.Name == deleted.fullname })
+			if i < 0 {
+				continue
 			}
+
+			np.Nodes = slices.Delete(np.Nodes, i, i+1)
+
+			// for static nodes we also need to update the KeyMap.
+			if s := np.GetStaticNodePool(); s != nil {
+				delete(s.NodeKeys, deleted.publicEndpoint)
+			}
+
+			continue nodes
 		}
 	}
 }

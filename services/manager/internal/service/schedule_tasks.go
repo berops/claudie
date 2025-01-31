@@ -5,9 +5,11 @@ import (
 	"maps"
 	"reflect"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/berops/claudie/internal/clusters"
+	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/manager/internal/store"
@@ -96,6 +98,81 @@ func scheduleTasks(scheduled *store.Config) (ScheduleResult, error) {
 			})
 		// update
 		default:
+			// 1. check for unreachable nodes. If any, do not allow the manifest
+			// to be scheduled. Prompt the user into fixing/deleting the unreachable
+			// node. Prepend the new tasks before existing tasks so that they would be
+			// eventally worked on ? No bad Idea we would need to recalculate desired state
+			// again after that.
+			// TODO: categorize unreachable nodes into k8s/lbs
+			unreachable, err := clusters.PingNodes(log.Logger, state.Current)
+			if err != nil {
+				log.Info().
+					Str("cluster", cluster).
+					Msgf("%v nodes are unreachable. Fix the unreachable node or manually remove it from the cluster.", unreachable)
+
+				state.State = &spec.Workflow{
+					Stage:       spec.Workflow_NONE,
+					Status:      spec.Workflow_ERROR,
+					Description: err.Error(),
+				}
+
+				kubectl := kubectl.Kubectl{
+					Kubeconfig:        state.Current.K8S.Kubeconfig,
+					MaxKubectlRetries: 5,
+				}
+
+				n, err := kubectl.KubectlGetNodeNames()
+				if err != nil {
+					log.Err(err).
+						Str("cluster", cluster).
+						Msgf("failed to retrieve actuall nodes present in the cluster, retrying later")
+
+					// TODO: maybe not return here and just use break
+					// so that the above state will get propagated.
+					return NotReady, nil
+				}
+
+				nodesInCluster := make(map[string]struct{})
+				for _, n := range strings.Split(string(n), "\n") {
+					nodesInCluster[n] = struct{}{}
+				}
+
+				// TODO: maybe distinguish between static and dynamic nodepools ?
+				toDelete := make(map[string][]string)
+				for _, np := range state.Current.GetK8S().GetClusterInfo().GetNodePools() {
+					for _, n := range np.Nodes {
+						// node name inside k8s cluster have stripped cluster prefix.
+						name := strings.TrimPrefix(n.Name, fmt.Sprintf("%s-", state.Current.GetK8S().GetClusterInfo().Id()))
+						if _, ok := nodesInCluster[name]; !ok {
+							toDelete[np.Name] = append(toDelete[np.Name], n.Name)
+						}
+					}
+				}
+
+				if len(toDelete) < 1 {
+					return NotReady, nil
+				}
+
+				log.Info().Msgf("to delete %#v", toDelete)
+
+				dn := make(map[string]*spec.DeletedNodes)
+				for k, v := range toDelete {
+					dn[k] = &spec.DeletedNodes{Nodes: v}
+				}
+
+				events = append(events, &spec.TaskEvent{
+					Id:          uuid.New().String(),
+					Timestamp:   timestamppb.New(time.Now().UTC()),
+					Event:       spec.Event_DELETE,
+					Description: "deleting nodes from k8s cluster",
+					Task: &spec.Task{
+						DeleteState: &spec.DeleteState{Nodepools: dn},
+					},
+				})
+				result = Reschedule
+				break
+			}
+
 			if state.State.Status == spec.Workflow_ERROR {
 				if tasks := state.Events.Events; len(tasks) != 0 && tasks[0].OnError.Do != nil {
 					task := tasks[0]
@@ -945,5 +1022,6 @@ func labelsTaintsAnnotationsDiff(current, desired *spec.K8Scluster) bool {
 			}
 		}
 	}
+
 	return false
 }
