@@ -136,3 +136,9 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 - Claudie will now correctly recognize a change in the kubernetes version to perform an update [#1607](https://github.com/berops/claudie/pull/1607)
 - Kubernetes secrets with provider credentials that contain leading or trailing whitespace will now be trimmed, avoiding issues with generated terraform templates [#1606](https://github.com/berops/claudie/pull/1606)
 - Changing the API endpoint will now correctly work, after the recent kubeone version update [#1619](https://github.com/berops/claudie/pull/1619)
+
+## v0.9.3
+
+## Bug fixes
+- Correctly turn HTTP proxy on/off [#1636](https://github.com/berops/claudie/pull/1636).
+  HTTP proxy feature introduced in v0.9.1 was not working correctly mostly when switching between the on/off mode.
