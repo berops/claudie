@@ -197,24 +197,8 @@ func (d *Deleter) deleteFromEtcd(kc kubectl.Kubectl, etcdEpNode *spec.Node) erro
 
 // updateClusterData will remove deleted nodes from nodepools
 func (d *Deleter) updateClusterData() {
-	// TODO: validate.
-nodes:
 	for _, deleted := range append(d.masterNodes, d.workerNodes...) {
-		for _, np := range d.cluster.ClusterInfo.NodePools {
-			i := slices.IndexFunc(np.Nodes, func(n *spec.Node) bool { return n.Name == deleted.fullname })
-			if i < 0 {
-				continue
-			}
-
-			np.Nodes = slices.Delete(np.Nodes, i, i+1)
-
-			// for static nodes we also need to update the KeyMap.
-			if s := np.GetStaticNodePool(); s != nil {
-				delete(s.NodeKeys, deleted.publicEndpoint)
-			}
-
-			continue nodes
-		}
+		nodepools.DeleteNodeByName(d.cluster.ClusterInfo.NodePools, deleted.fullname)
 	}
 }
 

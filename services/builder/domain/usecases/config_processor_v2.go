@@ -7,7 +7,6 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -158,13 +157,6 @@ func (u *Usecases) executeCreateTask(te *managerclient.NextTaskResponse) (*spec.
 }
 
 func (u *Usecases) executeUpdateTask(te *managerclient.NextTaskResponse) (*spec.K8Scluster, []*spec.LBcluster, error) {
-	sl := loggerutils.WithProjectAndCluster(te.Config, te.Current.K8S.ClusterInfo.Id())
-	sl.Info().Msg("veryfing if all nodes in the current state are reachable")
-
-	if _, err := clusters.PingNodes(sl, te.Current); err != nil {
-		return te.Current.GetK8S(), te.Current.GetLoadBalancers().GetClusters(), err
-	}
-
 	if te.Event.Task.UpdateState.EndpointChange != nil {
 		ctx := &builder.Context{
 			ProjectName:          te.Config,
@@ -250,6 +242,7 @@ func (u *Usecases) executeDeleteTask(te *managerclient.NextTaskResponse) (*spec.
 	if len(te.Event.Task.DeleteState.Nodepools) != 0 {
 		var static []*spec.NodePool
 		var master, worker []string
+		var staticCount, dynamicCount int
 
 		for np, deleted := range te.Event.Task.DeleteState.Nodepools {
 			nodepool := nodepools.FindByName(np, te.Current.K8S.ClusterInfo.NodePools)
@@ -260,6 +253,9 @@ func (u *Usecases) executeDeleteTask(te *managerclient.NextTaskResponse) (*spec.
 			}
 			if nodepool.GetStaticNodePool() != nil {
 				static = append(static, proto.Clone(nodepool).(*spec.NodePool))
+				staticCount += len(nodepool.Nodes)
+			} else {
+				dynamicCount += len(nodepool.Nodes)
 			}
 		}
 
@@ -278,7 +274,25 @@ func (u *Usecases) executeDeleteTask(te *managerclient.NextTaskResponse) (*spec.
 			return te.Current.GetK8S(), te.Current.GetLoadBalancers().GetClusters(), fmt.Errorf("error while deleting nodes for %s: %w", te.Current.K8S.ClusterInfo.Id(), err)
 		}
 
-		if len(static) == 0 {
+		if dynamicCount != 0 {
+			ctx := &builder.Context{
+				ProjectName:          te.Config,
+				TaskId:               te.Event.Id,
+				CurrentCluster:       te.Current.K8S,
+				DesiredCluster:       k8s,
+				CurrentLoadbalancers: te.Current.GetLoadBalancers().GetClusters(),
+				DesiredLoadbalancers: te.Current.GetLoadBalancers().GetClusters(),
+				Workflow:             te.State,
+				Options:              te.Event.Task.Options,
+			}
+
+			// for dynamic nodes delete the terraform spawned infra.
+			if err := u.reconcileInfrastructure(ctx); err != nil {
+				return te.Current.GetK8S(), te.Current.GetLoadBalancers().GetClusters(), fmt.Errorf("error while deleting nodes for %s: %w", te.Current.K8S.ClusterInfo.Id(), err)
+			}
+		}
+
+		if staticCount == 0 {
 			u.updateTaskWithDescription(ctx, spec.Workflow_KUBER, fmt.Sprintf("finished deleting nodes [%q, %q] from cluster", master, worker))
 			return k8s, te.Current.GetLoadBalancers().GetClusters(), nil
 		}

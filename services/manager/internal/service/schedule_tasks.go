@@ -10,10 +10,12 @@ import (
 
 	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/kubectl"
+	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/manager/internal/store"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	"google.golang.org/protobuf/proto"
@@ -51,6 +53,8 @@ func scheduleTasks(scheduled *store.Config) (ScheduleResult, error) {
 	var result ScheduleResult
 
 	for cluster, state := range scheduledGRPC.Clusters {
+		logger := loggerutils.WithProjectAndCluster(scheduledGRPC.Name, cluster)
+
 		var events []*spec.TaskEvent
 		switch {
 		case state.Current == nil && state.Desired == nil:
@@ -98,77 +102,14 @@ func scheduleTasks(scheduled *store.Config) (ScheduleResult, error) {
 			})
 		// update
 		default:
-			// 1. check for unreachable nodes. If any, do not allow the manifest
-			// to be scheduled. Prompt the user into fixing/deleting the unreachable
-			// node. Prepend the new tasks before existing tasks so that they would be
-			// eventally worked on ? No bad Idea we would need to recalculate desired state
-			// again after that.
-			// TODO: categorize unreachable nodes into k8s/lbs
-			unreachable, err := clusters.PingNodes(log.Logger, state.Current)
+			k8sip, _, err := clusters.PingNodes(logger, state.Current)
 			if err != nil {
-				log.Info().
-					Str("cluster", cluster).
-					Msgf("%v nodes are unreachable. Fix the unreachable node or manually remove it from the cluster.", unreachable)
-
-				state.State = &spec.Workflow{
-					Stage:       spec.Workflow_NONE,
-					Status:      spec.Workflow_ERROR,
-					Description: err.Error(),
+				apply, e := tryReachK8sNodes(logger, k8sip, state)
+				if !apply {
+					result = NotReady
+					break
 				}
-
-				kubectl := kubectl.Kubectl{
-					Kubeconfig:        state.Current.K8S.Kubeconfig,
-					MaxKubectlRetries: 5,
-				}
-
-				n, err := kubectl.KubectlGetNodeNames()
-				if err != nil {
-					log.Err(err).
-						Str("cluster", cluster).
-						Msgf("failed to retrieve actuall nodes present in the cluster, retrying later")
-
-					// TODO: maybe not return here and just use break
-					// so that the above state will get propagated.
-					return NotReady, nil
-				}
-
-				nodesInCluster := make(map[string]struct{})
-				for _, n := range strings.Split(string(n), "\n") {
-					nodesInCluster[n] = struct{}{}
-				}
-
-				// TODO: maybe distinguish between static and dynamic nodepools ?
-				toDelete := make(map[string][]string)
-				for _, np := range state.Current.GetK8S().GetClusterInfo().GetNodePools() {
-					for _, n := range np.Nodes {
-						// node name inside k8s cluster have stripped cluster prefix.
-						name := strings.TrimPrefix(n.Name, fmt.Sprintf("%s-", state.Current.GetK8S().GetClusterInfo().Id()))
-						if _, ok := nodesInCluster[name]; !ok {
-							toDelete[np.Name] = append(toDelete[np.Name], n.Name)
-						}
-					}
-				}
-
-				if len(toDelete) < 1 {
-					return NotReady, nil
-				}
-
-				log.Info().Msgf("to delete %#v", toDelete)
-
-				dn := make(map[string]*spec.DeletedNodes)
-				for k, v := range toDelete {
-					dn[k] = &spec.DeletedNodes{Nodes: v}
-				}
-
-				events = append(events, &spec.TaskEvent{
-					Id:          uuid.New().String(),
-					Timestamp:   timestamppb.New(time.Now().UTC()),
-					Event:       spec.Event_DELETE,
-					Description: "deleting nodes from k8s cluster",
-					Task: &spec.Task{
-						DeleteState: &spec.DeleteState{Nodepools: dn},
-					},
-				})
+				events = append(events, e...)
 				result = Reschedule
 				break
 			}
@@ -200,22 +141,14 @@ func scheduleTasks(scheduled *store.Config) (ScheduleResult, error) {
 						}
 
 						result = Reschedule
-						log.Debug().
-							Str("cluster", cluster).
-							Msgf("rescheduled for a retry of previously failed task with ID %q.", task.Id)
+						logger.Debug().Msgf("rescheduled for a retry of previously failed task with ID %q.", task.Id)
 					case *spec.Retry_Rollback_:
 						result = Reschedule
 						events = s.Rollback.Tasks
-
-						log.Debug().
-							Str("cluster", cluster).
-							Msgf("rescheduled for a rollback with task ID %q of previous failed task with ID %q.", events[0].Id, task.Id)
+						logger.Debug().Msgf("rescheduled for a rollback with task ID %q of previous failed task with ID %q.", events[0].Id, task.Id)
 					default:
 						result = NoReschedule
-
-						log.Debug().
-							Str("cluster", cluster).
-							Msgf("has not been rescheduled for a retry on failure")
+						logger.Debug().Msgf("has not been rescheduled for a retry on failure")
 					}
 
 					if result == Reschedule || result == NotReady || result == FinalRetry {
@@ -231,8 +164,7 @@ func scheduleTasks(scheduled *store.Config) (ScheduleResult, error) {
 
 			events = append(events, e...)
 			if len(events) != 0 {
-				log.Debug().
-					Str("cluster", cluster).
+				logger.Debug().
 					Msgf("[%d] rolling updates scheduled for k8s cluster, to be performed before building the actual desired state, starting with task with ID %q.", len(events), events[0].Id)
 				// First we will let claudie to work on the rolling update
 				// to have the latest versions of the terraform manifests.
@@ -256,8 +188,7 @@ func scheduleTasks(scheduled *store.Config) (ScheduleResult, error) {
 
 			events = append(events, e...)
 			if len(events) > 0 {
-				log.Debug().
-					Str("cluster", cluster).
+				logger.Debug().
 					Msgf("[%d] rolling updates scheduled for attached lb clusters, to be performed before building the actual desired state, starting with task with ID %q.", len(events), events[0].Id)
 				result = Reschedule
 				state.Desired = ir
@@ -271,9 +202,7 @@ func scheduleTasks(scheduled *store.Config) (ScheduleResult, error) {
 				state.Desired.GetLoadBalancers().GetClusters(),
 			)...)
 
-			log.Debug().
-				Str("cluster", cluster).
-				Msgf("Scheduled final [%d] tasks to be worked on to build the desired state", len(events))
+			logger.Debug().Msgf("Scheduled final [%d] tasks to be worked on to build the desired state", len(events))
 		}
 
 		switch result {
@@ -526,48 +455,19 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 
 	// as the last step commit to the changes requested in the desired state, as edge cases and other
 	// manipulations have been done beforehand.
-	lbsChanges := lbsDiffResult.adding || lbsDiffResult.deleting
-	lbsChanges = lbsChanges || !proto.Equal(&spec.LoadBalancers{Clusters: currentLbs}, &spec.LoadBalancers{Clusters: desiredLbs})
-	lbsChanges = lbsChanges || len(deletedLoadbalancers) > 0 || len(addedLoadBalancers) > 0
-	desc := "reconciling infrastructure changes"
-	if k8sDiffResult.deleting {
-		desc += ", including deletion of infrastructure for deleted dynamic nodes"
-	}
-	if lbsChanges {
-		desc += ", including changes to the loadbalancer infrastructure"
-	}
-
 	// we match the infrastructure of the desired state.
-	if lbsChanges || k8sDiffResult.deleting {
-		events = append(events, &spec.TaskEvent{
-			Id:          uuid.New().String(),
-			Timestamp:   timestamppb.New(time.Now().UTC()),
-			Event:       spec.Event_UPDATE,
-			Description: desc,
-			Task: &spec.Task{
-				UpdateState: &spec.UpdateState{
-					K8S: desired,
-					Lbs: &spec.LoadBalancers{Clusters: desiredLbs},
-				},
+	events = append(events, &spec.TaskEvent{
+		Id:          uuid.New().String(),
+		Timestamp:   timestamppb.New(time.Now().UTC()),
+		Event:       spec.Event_UPDATE,
+		Description: "commiting requested desired state",
+		Task: &spec.Task{
+			UpdateState: &spec.UpdateState{
+				K8S: desired,
+				Lbs: &spec.LoadBalancers{Clusters: desiredLbs},
 			},
-		})
-	}
-
-	// No-infrastructure related changes.
-	if (autoscalerConfigUpdated || labelsAnnotationsTaintsUpdated) && len(events) == 0 {
-		events = append(events, &spec.TaskEvent{
-			Id:          uuid.New().String(),
-			Timestamp:   timestamppb.New(time.Now().UTC()),
-			Event:       spec.Event_UPDATE,
-			Description: "updating non-infrastructure related changes",
-			Task: &spec.Task{
-				UpdateState: &spec.UpdateState{
-					K8S: desired,
-					Lbs: &spec.LoadBalancers{Clusters: desiredLbs},
-				},
-			},
-		})
-	}
+		},
+	})
 
 	return events
 }
@@ -1024,4 +924,96 @@ func labelsTaintsAnnotationsDiff(current, desired *spec.K8Scluster) bool {
 	}
 
 	return false
+}
+
+// tryReachK8sNodes determines if the InputManifest should be rescheduled or not based on the desired state and the reachability of the
+// kubernetes nodes of the cluster. If the InputManifest is not ready to be scheduled yet apply will be false. Only if apply is true
+// will the function also returns events that need to be handled before any other.
+func tryReachK8sNodes(logger zerolog.Logger, ips []string, state *spec.ClusterState) (apply bool, events []*spec.TaskEvent) {
+	logger.Info().Msgf("%v kubernetes cluster nodes are unreachable", ips)
+
+	state.State = &spec.Workflow{
+		Stage:       spec.Workflow_NONE,
+		Status:      spec.Workflow_ERROR,
+		Description: fmt.Sprintf("%v kubernetes nodes are unreachable", ips),
+	}
+
+	kubectl := kubectl.Kubectl{
+		Kubeconfig:        state.Current.K8S.Kubeconfig,
+		MaxKubectlRetries: 5,
+	}
+
+	n, err := kubectl.KubectlGetNodeNames()
+	if err != nil {
+		logger.Err(err).Msgf("failed to retrieve actuall nodes present in the cluster, retrying later")
+		return
+	}
+
+	nodesInCluster := make(map[string]struct{})
+	for _, n := range strings.Split(string(n), "\n") {
+		nodesInCluster[n] = struct{}{}
+	}
+
+	// look which out of the current nodes that claudie tracks is not present
+	// inside the actual kubernetes cluster.
+	toDelete := make(map[string]*spec.DeletedNodes)
+	for _, np := range state.Current.GetK8S().GetClusterInfo().GetNodePools() {
+		for _, n := range np.Nodes {
+			// node name inside k8s cluster have stripped cluster prefix.
+			name := strings.TrimPrefix(n.Name, fmt.Sprintf("%s-", state.Current.GetK8S().GetClusterInfo().Id()))
+			if _, ok := nodesInCluster[name]; !ok {
+				if _, ok := toDelete[np.Name]; !ok {
+					toDelete[np.Name] = new(spec.DeletedNodes)
+				}
+				toDelete[np.Name].Nodes = append(toDelete[np.Name].Nodes, n.Name)
+			}
+		}
+	}
+
+	if len(toDelete) < 1 {
+		logger.Info().Msgf("Fix the unreachable nodes or deleted them manually from the cluster via 'kubectl'")
+		return
+	}
+
+	// delete node from desired state so that
+	// the manifest would not be rescheduled to
+	// again include the same node.
+	// For Dynamic nodes this will trigger a new
+	// workflow that will trigger a build of a new node
+	// since we dont change the count.
+	// and for static nodes this will just remove the node
+	// from the state and not reschedule again.
+	// if it is a static node and is still present require it to be deleted from the desired state.
+	// for dynamic nodepools this is not needed.
+	var fixNeeded bool
+deletion:
+	for np, d := range toDelete {
+		for _, nodeName := range d.Nodes {
+			static, node := nodepools.FindNode(state.Desired.K8S.ClusterInfo.NodePools, nodeName)
+			if node != nil && static { // we found the node that was delete from the kubernetes cluster in the desired state.
+				logger.Info().
+					Msgf("static node %s with endpoint %s from nodepool %s needs to be removed from the desired state. Remove the node from the InputManifest and apply the changes", nodeName, node.Public, np)
+				fixNeeded = true
+				break deletion
+			}
+			logger.Info().Msgf("node %s from nodepool %s no longer part of the kubernetes cluster, scheduling deletion", nodeName, np)
+		}
+	}
+
+	if fixNeeded {
+		return // Wait for the user to fix the InputManifest.
+	}
+
+	events = append(events, &spec.TaskEvent{
+		Id:          uuid.New().String(),
+		Timestamp:   timestamppb.New(time.Now().UTC()),
+		Event:       spec.Event_DELETE,
+		Description: "deleting nodes from k8s cluster",
+		Task: &spec.Task{
+			DeleteState: &spec.DeleteState{Nodepools: toDelete},
+		},
+	})
+
+	apply = true
+	return
 }
