@@ -7,7 +7,6 @@ option go_package = "proto/pb";
 
 message BuildClusterRequest {
   spec.K8scluster desired = 1;
-  spec.ProxyEnvs proxyEnvs = 3;
   string projectName = 4;
   // Endpoint specifies if the endpoint
   // is on a loadbalancer. If empty the

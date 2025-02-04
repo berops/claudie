@@ -17,7 +17,6 @@ func (u *Usecases) BuildCluster(req *pb.BuildClusterRequest) (*pb.BuildClusterRe
 	k := kube_eleven.KubeEleven{
 		K8sCluster:           req.Desired,
 		LoadBalancerEndpoint: req.LoadBalancerEndpoint,
-		ProxyEnvs:            req.ProxyEnvs,
 		SpawnProcessLimit:    u.SpawnProcessLimit,
 	}
 
