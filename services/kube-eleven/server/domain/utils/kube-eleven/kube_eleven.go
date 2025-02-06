@@ -222,7 +222,7 @@ func (k *KubeEleven) apiEndpoint() (string, bool, error) {
 	_, n := nodepools.FindApiEndpoint(k.K8sCluster.ClusterInfo.NodePools)
 	if n == nil {
 		// This should never happen as the apiEndpoint role is always chosen by the manager service.
-		return "", false, errors.New("malformed k8s state, no loadbalancer attach with api role nor any control plane node has api server role")
+		return "", false, errors.New("malformed k8s state, no loadbalancer attached with api role nor any control plane node has api server role")
 	}
 	return n.Public, true, nil
 }
