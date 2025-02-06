@@ -316,7 +316,7 @@ func transferExistingLBState(current, desired *spec.LoadBalancers) error {
 			anyApiServerLoadBalancerSelected = true
 			break
 		}
-		if current.HasApiRole() && current.UsedApiEndpoint == false {
+		if current.HasApiRole() && !current.UsedApiEndpoint {
 			apiServerLoadBalancers = append(apiServerLoadBalancers, i)
 		}
 	}
