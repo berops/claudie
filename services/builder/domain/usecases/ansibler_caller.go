@@ -60,6 +60,10 @@ func (u *Usecases) updateProxyEnvsInK8sServices(ctx *builder.Context) error {
 
 // configureInfrastructure configures infrastructure via ansibler.
 func (u *Usecases) configureInfrastructure(ctx *builder.Context) error {
+	ctx.ProxyEnvs = &spec.ProxyEnvs{
+		Op: builder.DetermineProxyOperation(ctx),
+	}
+
 	logger := loggerutils.WithProjectAndCluster(ctx.ProjectName, ctx.Id())
 	ansClient := u.Ansibler.GetClient()
 	description := ctx.Workflow.Description

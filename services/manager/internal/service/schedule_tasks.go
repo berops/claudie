@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"maps"
 	"reflect"
@@ -102,14 +103,24 @@ func scheduleTasks(scheduled *store.Config) (ScheduleResult, error) {
 			})
 		// update
 		default:
-			k8sip, _, err := clusters.PingNodes(logger, state.Current)
+			k8sip, lbsip, err := clusters.PingNodes(logger, state.Current)
 			if err != nil {
-				apply, e := tryReachK8sNodes(logger, k8sip, state)
-				if !apply {
-					result = NotReady
-					break
+				if len(k8sip) > 0 {
+					e, apply := tryReachK8sNodes(logger, k8sip, state)
+					if !apply {
+						result = NotReady
+						break
+					}
+					events = append(events, e...)
 				}
-				events = append(events, e...)
+				if len(lbsip) > 0 {
+					e, apply := tryReachLbNodes(logger, lbsip, state)
+					if !apply {
+						result = NotReady
+						break
+					}
+					events = append(events, e...)
+				}
 				result = Reschedule
 				break
 			}
@@ -455,20 +466,39 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 
 	// as the last step commit to the changes requested in the desired state, as edge cases and other
 	// manipulations have been done beforehand.
-	// we match the infrastructure of the desired state.
-	events = append(events, &spec.TaskEvent{
-		Id:          uuid.New().String(),
-		Timestamp:   timestamppb.New(time.Now().UTC()),
-		Event:       spec.Event_UPDATE,
-		Description: "commiting requested desired state",
-		Task: &spec.Task{
-			UpdateState: &spec.UpdateState{
-				K8S: desired,
-				Lbs: &spec.LoadBalancers{Clusters: desiredLbs},
-			},
-		},
-	})
+	match := lbsDiffResult.adding || lbsDiffResult.deleting
+	match = match || !proto.Equal(&spec.LoadBalancers{Clusters: currentLbs}, &spec.LoadBalancers{Clusters: desiredLbs})
+	match = match || len(deletedLoadbalancers) > 0 || len(addedLoadBalancers) > 0
+	desc := "reconciling infrastructure changes"
+	if match {
+		desc += ", including changes to the loadbalancer infrastructure"
+	}
 
+	match = match || autoscalerConfigUpdated
+	match = match || labelsAnnotationsTaintsUpdated
+
+	if autoscalerConfigUpdated {
+		desc += ", updating autoscaler config"
+	}
+	if labelsAnnotationsTaintsUpdated {
+		desc += ", updating labels/annotations/taints"
+	}
+
+	// we match the infrastructure of the desired state.
+	if match {
+		events = append(events, &spec.TaskEvent{
+			Id:          uuid.New().String(),
+			Timestamp:   timestamppb.New(time.Now().UTC()),
+			Event:       spec.Event_UPDATE,
+			Description: desc,
+			Task: &spec.Task{
+				UpdateState: &spec.UpdateState{
+					K8S: desired,
+					Lbs: &spec.LoadBalancers{Clusters: desiredLbs},
+				},
+			},
+		})
+	}
 	return events
 }
 
@@ -926,16 +956,67 @@ func labelsTaintsAnnotationsDiff(current, desired *spec.K8Scluster) bool {
 	return false
 }
 
+func tryReachLbNodes(logger zerolog.Logger, ips map[string]map[string][]string, state *spec.ClusterState) (events []*spec.TaskEvent, apply bool) {
+	logger.Info().Msgf("%v loadbalancer nodes are unreachable", ips)
+	// state.State = &spec.Workflow{
+	// 	Stage:       spec.Workflow_NONE,
+	// 	Status:      spec.Workflow_ERROR,
+	// 	Description: fmt.Sprintf("%v kubernetes nodes are unreachable", ips),
+	// }
+	return
+}
+
 // tryReachK8sNodes determines if the InputManifest should be rescheduled or not based on the desired state and the reachability of the
 // kubernetes nodes of the cluster. If the InputManifest is not ready to be scheduled yet apply will be false. Only if apply is true
 // will the function also returns events that need to be handled before any other.
-func tryReachK8sNodes(logger zerolog.Logger, ips []string, state *spec.ClusterState) (apply bool, events []*spec.TaskEvent) {
-	logger.Info().Msgf("%v kubernetes cluster nodes are unreachable", ips)
+func tryReachK8sNodes(logger zerolog.Logger, nps map[string][]string, state *spec.ClusterState) (events []*spec.TaskEvent, apply bool) {
+	// Check if the nodepools with unreachability are present in the desired state.
+	// We then need to check if they are present in the k8s cluster, and based on that make a
+	// decision about what to do with the nodes.
+	type unreachableNodeInfo struct {
+		name   string
+		static bool
+	}
+	var (
+		unreachableNodes = make(map[string]unreachableNodeInfo)
+		toDelete         = make(map[string]*spec.DeletedNodes)
+		errUnreachable   error
+	)
+
+	for np, ips := range nps {
+		current := nodepools.FindByName(np, state.Current.GetK8S().GetClusterInfo().GetNodePools())
+		desired := nodepools.FindByName(np, state.Desired.GetK8S().GetClusterInfo().GetNodePools())
+
+		if desired == nil {
+			toDelete[np] = new(spec.DeletedNodes)
+			for _, n := range current.Nodes {
+				toDelete[np].Nodes = append(toDelete[np].Nodes, n.Name)
+			}
+		}
+
+		errMsg := strings.Builder{}
+		errMsg.WriteString("[")
+		for _, ip := range ips {
+			ci := slices.IndexFunc(current.Nodes, func(n *spec.Node) bool { return n.Public == ip })
+			unreachableNodes[ip] = unreachableNodeInfo{
+				name:   current.Nodes[ci].Name,
+				static: current.GetStaticNodePool() != nil,
+			}
+			errMsg.WriteString(fmt.Sprintf("node: %q, public endpoint: %q, static: %v;",
+				current.Nodes[ci].Name,
+				current.Nodes[ci].Public,
+				current.GetStaticNodePool() != nil,
+			))
+		}
+		errMsg.WriteByte(']')
+
+		errUnreachable = errors.Join(errUnreachable, fmt.Errorf("nodepool %q has %v unreachable kubernetes node/s: %s", np, len(ips), errMsg.String()))
+	}
 
 	state.State = &spec.Workflow{
-		Stage:       spec.Workflow_NONE,
-		Status:      spec.Workflow_ERROR,
-		Description: fmt.Sprintf("%v kubernetes nodes are unreachable", ips),
+		Stage:  spec.Workflow_NONE,
+		Status: spec.Workflow_ERROR,
+		// Description: will be filled based on what action needs to be done.
 	}
 
 	kubectl := kubectl.Kubectl{
@@ -945,7 +1026,12 @@ func tryReachK8sNodes(logger zerolog.Logger, ips []string, state *spec.ClusterSt
 
 	n, err := kubectl.KubectlGetNodeNames()
 	if err != nil {
-		logger.Err(err).Msgf("failed to retrieve actuall nodes present in the cluster, retrying later")
+		state.State.Description = fmt.Sprintf("%v\nfailed to retrieve actual nodes present in the cluster via 'kubectl': %v", errUnreachable, err)
+		logger.Err(err).Msgf("failed to retrieve actuall nodes present in the cluster via `kubectl`, retrying later\n%v", errUnreachable)
+		// We are not able to retrieve the actuall nodes within the kubernetes cluster.
+		// If this persists that means the control plane is down and there is nothing we can do from
+		// claudie's POV. Deletion of the nodepools would also not help, essentially we are locked
+		// until resolved manually.
 		return
 	}
 
@@ -954,66 +1040,93 @@ func tryReachK8sNodes(logger zerolog.Logger, ips []string, state *spec.ClusterSt
 		nodesInCluster[n] = struct{}{}
 	}
 
-	// look which out of the current nodes that claudie tracks is not present
-	// inside the actual kubernetes cluster.
-	toDelete := make(map[string]*spec.DeletedNodes)
-	for _, np := range state.Current.GetK8S().GetClusterInfo().GetNodePools() {
-		for _, n := range np.Nodes {
-			// node name inside k8s cluster have stripped cluster prefix.
-			name := strings.TrimPrefix(n.Name, fmt.Sprintf("%s-", state.Current.GetK8S().GetClusterInfo().Id()))
-			if _, ok := nodesInCluster[name]; !ok {
-				if _, ok := toDelete[np.Name]; !ok {
-					toDelete[np.Name] = new(spec.DeletedNodes)
-				}
-				toDelete[np.Name].Nodes = append(toDelete[np.Name].Nodes, n.Name)
+	// ignore the nodepools that were deleted in the desired state.
+	for np := range toDelete {
+		delete(nps, np)
+	}
+
+	// For any nodepools which have unreachable ips and the user did not remove the
+	// nodepool from the desired state of the InputManifest, check if any of the nodes
+	// were deleted manually from the cluster via 'kubectl'
+	errUnreachable = nil
+	for np, ips := range nps {
+		fix := 0
+		errMsg := strings.Builder{}
+
+		for _, ip := range ips {
+			info := unreachableNodes[ip]
+			// node names inside k8s cluster have stripped cluster prefix.
+			k8sname := strings.TrimPrefix(info.name, fmt.Sprintf("%s-", state.Current.GetK8S().GetClusterInfo().Id()))
+			if _, ok := nodesInCluster[k8sname]; ok {
+				// unreachable node is still in the cluster.
+				errMsg.WriteString(fmt.Sprintf(" - node: %q, public endpoint: %q, static: %v", info.name, ip, info.static))
+				fix++
+				continue
 			}
+			if _, ok := toDelete[np]; !ok {
+				toDelete[np] = new(spec.DeletedNodes)
+			}
+			toDelete[np].Nodes = append(toDelete[np].Nodes, info.name)
+
+			// For the nodes that were manualy deleted check which of them are static nodes
+			// as they will also need to be deleted from the desired state to not re-join the
+			// unreachable static node again on the next iteration.
+			static, node := nodepools.FindNode(state.GetDesired().GetK8S().GetClusterInfo().GetNodePools(), info.name)
+			if node != nil && static {
+				fix++
+				errMsg.WriteString(
+					fmt.Sprintf(" - detected that static node %q with endpoint %q from nodepool %q was removed from the kubernetes cluster, remove the static node from the desired state by adjusting the InputManifest.",
+						info.name,
+						node.Public,
+						np,
+					),
+				)
+				continue
+			}
+			logger.Info().Msgf("node %q from nodepool %q no longer part of the kubernetes cluster, will be scheduled for deletion", info.name, np)
+		}
+
+		if fix > 0 {
+			errUnreachable = errors.Join(errUnreachable, fmt.Errorf("\nnodepool %q has %v unreachable kubernetes node/s that need to be fixed:\n%s",
+				np,
+				fix,
+				errMsg.String(),
+			))
 		}
 	}
 
-	if len(toDelete) < 1 {
-		logger.Info().Msgf("Fix the unreachable nodes or deleted them manually from the cluster via 'kubectl'")
+	// If the user did not delete the unreachable nodes via kubectl or the user
+	// did not remove the whole nodepool with the unreachable nodes from the
+	// desired state we cannot proceed further as we need to remove all the
+	// nodes with connectivity issue in one go. We cannot issue partial
+	// removal as the workflow will get stuck in ansibler which connects
+	// to the nodes via ssh.
+	if errUnreachable != nil {
+		state.State.Description = fmt.Sprintf(`%v
+
+fix the unreachable nodes by either:
+- fixing the connectivity issue
+- deleting the selected unreachable nodes manually from the cluster via 'kubectl'
+  - if its a static node you will also need to remove it from the InputManifest
+  - if its a dynamic node claudie will replace it.
+- deleting the whole nodepool from the InputManifest
+`, errUnreachable)
+		// neither deletion in the desired state
+		// nor deletion in the kubernetes cluster
+		// has been done. nothing to do.
+		logger.Warn().Msgf("%v", state.State.Description)
 		return
-	}
-
-	// delete node from desired state so that
-	// the manifest would not be rescheduled to
-	// again include the same node.
-	// For Dynamic nodes this will trigger a new
-	// workflow that will trigger a build of a new node
-	// since we dont change the count.
-	// and for static nodes this will just remove the node
-	// from the state and not reschedule again.
-	// if it is a static node and is still present require it to be deleted from the desired state.
-	// for dynamic nodepools this is not needed.
-	var fixNeeded bool
-deletion:
-	for np, d := range toDelete {
-		for _, nodeName := range d.Nodes {
-			static, node := nodepools.FindNode(state.Desired.K8S.ClusterInfo.NodePools, nodeName)
-			if node != nil && static { // we found the node that was delete from the kubernetes cluster in the desired state.
-				logger.Info().
-					Msgf("static node %s with endpoint %s from nodepool %s needs to be removed from the desired state. Remove the node from the InputManifest and apply the changes", nodeName, node.Public, np)
-				fixNeeded = true
-				break deletion
-			}
-			logger.Info().Msgf("node %s from nodepool %s no longer part of the kubernetes cluster, scheduling deletion", nodeName, np)
-		}
-	}
-
-	if fixNeeded {
-		return // Wait for the user to fix the InputManifest.
 	}
 
 	events = append(events, &spec.TaskEvent{
 		Id:          uuid.New().String(),
 		Timestamp:   timestamppb.New(time.Now().UTC()),
 		Event:       spec.Event_DELETE,
-		Description: "deleting nodes from k8s cluster",
+		Description: "deleting unreachable nodes from k8s cluster",
 		Task: &spec.Task{
 			DeleteState: &spec.DeleteState{Nodepools: toDelete},
 		},
 	})
-
 	apply = true
 	return
 }

@@ -233,6 +233,8 @@ func autoscaledEvents(diff nodeDiffResult, current, desired *spec.Clusters) []*s
 								StopAfter:   uint32(25 * time.Minute / Tick),
 							}}},
 						},
+						// TODO: don't think we need this anymore since we added the deletion of the templates to the deletion of the nodes.
+						// TODO: we don't actually need this from other parts as well such as rolling updates...
 						{
 							Id:          uuid.New().String(),
 							Timestamp:   timestamppb.New(time.Now().UTC()),
@@ -294,6 +296,7 @@ func autoscaledEvents(diff nodeDiffResult, current, desired *spec.Clusters) []*s
 				StopAfter:   uint32(25 * time.Minute / Tick),
 			}}},
 		})
+		// TODO: we don't need this.
 		events = append(events, &spec.TaskEvent{
 			Id:          uuid.New().String(),
 			Timestamp:   timestamppb.New(time.Now().UTC()),

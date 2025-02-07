@@ -35,6 +35,7 @@ type Deleter struct {
 	workerNodes   []nodeInfo
 	cluster       *spec.K8Scluster
 	clusterPrefix string
+	keepNodePools map[string]struct{}
 
 	logger zerolog.Logger
 }
@@ -42,7 +43,7 @@ type Deleter struct {
 // New returns new Deleter struct, used for node deletion from a k8s cluster
 // masterNodes - master nodes to DELETE
 // workerNodes - worker nodes to DELETE
-func NewDeleter(masterNodes, workerNodes []string, cluster *spec.K8Scluster) *Deleter {
+func NewDeleter(masterNodes, workerNodes []string, cluster *spec.K8Scluster, keepNodePools map[string]struct{}) *Deleter {
 	clusterID := cluster.ClusterInfo.Id()
 	var mn, wn []nodeInfo
 
@@ -67,8 +68,8 @@ func NewDeleter(masterNodes, workerNodes []string, cluster *spec.K8Scluster) *De
 		workerNodes:   wn,
 		cluster:       cluster,
 		clusterPrefix: clusterID,
-
-		logger: loggerutils.WithClusterName(clusterID),
+		keepNodePools: keepNodePools,
+		logger:        loggerutils.WithClusterName(clusterID),
 	}
 }
 
@@ -198,7 +199,7 @@ func (d *Deleter) deleteFromEtcd(kc kubectl.Kubectl, etcdEpNode *spec.Node) erro
 // updateClusterData will remove deleted nodes from nodepools
 func (d *Deleter) updateClusterData() {
 	for _, deleted := range append(d.masterNodes, d.workerNodes...) {
-		nodepools.DeleteNodeByName(d.cluster.ClusterInfo.NodePools, deleted.fullname)
+		d.cluster.ClusterInfo.NodePools = nodepools.DeleteNodeByName(d.cluster.ClusterInfo.NodePools, deleted.fullname, d.keepNodePools)
 	}
 }
 

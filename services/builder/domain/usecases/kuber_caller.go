@@ -10,6 +10,26 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+func (u *Usecases) patchConfigMapsWithNewApiEndpoint(ctx *builder.Context) error {
+	if err := u.callPatchClusterInfoConfigMap(ctx); err != nil {
+		return err
+	}
+	return u.Kuber.PatchKubeProxyConfigMap(ctx, u.Kuber.GetClient())
+}
+
+func (u *Usecases) patchKubeadmAndUpdateCilium(ctx *builder.Context) error {
+	var lbApiEndpoint string
+	if ep := clusters.FindAssignedLbApiEndpoint(ctx.DesiredLoadbalancers); ep != nil {
+		lbApiEndpoint = ep.Dns.Endpoint
+	}
+
+	if err := u.Kuber.PatchKubeadmConfigMap(ctx, lbApiEndpoint, u.Kuber.GetClient()); err != nil {
+		return err
+	}
+
+	return u.Kuber.CiliumRolloutRestart(ctx.DesiredCluster, u.Kuber.GetClient())
+}
+
 // reconcileK8sConfiguration reconciles desired k8s cluster configuration via kuber.
 func (u *Usecases) reconcileK8sConfiguration(ctx *builder.Context) error {
 	logger := loggerutils.WithProjectAndCluster(ctx.ProjectName, ctx.Id())
@@ -19,26 +39,14 @@ func (u *Usecases) reconcileK8sConfiguration(ctx *builder.Context) error {
 	description := ctx.Workflow.Description
 	u.updateTaskWithDescription(ctx, spec.Workflow_KUBER, fmt.Sprintf("%s processing kuber commands", description))
 
-	var lbApiEndpoint string
-	if ep := clusters.FindAssignedLbApiEndpoint(ctx.DesiredLoadbalancers); ep != nil {
-		lbApiEndpoint = ep.Dns.Endpoint
-	}
-
-	if err := u.Kuber.PatchKubeadmConfigMap(ctx, lbApiEndpoint, kuberClient); err != nil {
-		return err
-	}
-
 	// Only patch ConfigMaps if kubeconfig changed.
 	if ctx.CurrentCluster != nil && (ctx.CurrentCluster.Kubeconfig != ctx.DesiredCluster.Kubeconfig) {
-		if err := u.callPatchClusterInfoConfigMap(ctx); err != nil {
-			return err
-		}
-		if err := u.Kuber.PatchKubeProxyConfigMap(ctx, kuberClient); err != nil {
+		if err := u.patchConfigMapsWithNewApiEndpoint(ctx); err != nil {
 			return err
 		}
 	}
 
-	if err := u.Kuber.CiliumRolloutRestart(ctx.DesiredCluster, kuberClient); err != nil {
+	if err := u.patchKubeadmAndUpdateCilium(ctx); err != nil {
 		return err
 	}
 
@@ -170,11 +178,11 @@ func (u *Usecases) deleteClusterData(ctx *builder.Context) error {
 }
 
 // callDeleteNodes calls Kuber.DeleteNodes which will gracefully delete nodes from cluster
-func (u *Usecases) callDeleteNodes(master, worker []string, cluster *spec.K8Scluster) (*spec.K8Scluster, error) {
+func (u *Usecases) callDeleteNodes(cluster *spec.K8Scluster, nodepools map[string]*spec.DeletedNodes) (*spec.K8Scluster, error) {
 	logger := loggerutils.WithClusterName(cluster.ClusterInfo.Id())
 
 	logger.Info().Msg("Calling DeleteNodes on Kuber")
-	resDelete, err := u.Kuber.DeleteNodes(cluster, master, worker, u.Kuber.GetClient())
+	resDelete, err := u.Kuber.DeleteNodes(cluster, nodepools, u.Kuber.GetClient())
 	if err != nil {
 		return nil, err
 	}

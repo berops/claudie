@@ -310,5 +310,15 @@ message DeleteState {
 }
 
 message DeletedNodes {
+  // nodes specifies which nodes should be deleted
+  // from the nodepool.
   repeated string nodes = 1;
+  // keepNodePoolIfEmpty specifies if the nodepool should
+  // be deleted from the current state if its node count
+  // reaches zero. Currently this will only be used with
+  // autoscaled dynamic nodepools which can have a minimum
+  // of 0 nodes, other nodepool types will have this always
+  // set to false to indicate that after deletion of all nodes
+  // the nodepool should no longer be tracked in the current state.
+  bool keepNodePoolIfEmpty = 2;
 }
