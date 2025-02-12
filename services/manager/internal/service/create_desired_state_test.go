@@ -673,6 +673,207 @@ func Test_createK8sClustersFromManifest(t *testing.T) {
 	}
 }
 
+func Test_fillMissingCIDR(t *testing.T) {
+	type args struct {
+		c *spec.ClusterState
+	}
+	tests := []struct {
+		name     string
+		args     args
+		wantErr  bool
+		validate func(t *testing.T, args args)
+	}{
+		{
+			name: "test01",
+			args: args{
+				c: &spec.ClusterState{
+					Current: &spec.Clusters{
+						K8S: &spec.K8Scluster{ClusterInfo: &spec.ClusterInfo{
+							Name: "k8s-current-test-01",
+							Hash: "01",
+							NodePools: []*spec.NodePool{
+								{
+									Name: "k8s-01",
+									Type: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{
+										Cidr:     "10.0.0.0/24",
+										Region:   "europe-west",
+										Provider: &spec.Provider{SpecName: "hetzner-1", CloudProviderName: "hetzner"},
+									}},
+								},
+								{
+									Name: "k8s-02",
+									Type: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{
+										Cidr:     "10.0.1.0/24",
+										Region:   "europe-east",
+										Provider: &spec.Provider{SpecName: "gcp-1", CloudProviderName: "gcp"},
+									}},
+								},
+							}}},
+						LoadBalancers: &spec.LoadBalancers{Clusters: []*spec.LBcluster{
+							{
+								ClusterInfo: &spec.ClusterInfo{
+									Name: "lb-current-test-01",
+									Hash: "03",
+									NodePools: []*spec.NodePool{
+										{
+											Name: "lb-01",
+											Type: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{
+												Cidr:     "10.0.0.0/24",
+												Region:   "europe-east",
+												Provider: &spec.Provider{SpecName: "gcp-1", CloudProviderName: "gcp"},
+											}},
+										},
+										{
+											Name: "lb-02",
+											Type: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{
+												Cidr:     "10.0.1.0/24",
+												Region:   "europe-east",
+												Provider: &spec.Provider{SpecName: "gcp-1", CloudProviderName: "gcp"},
+											}},
+										},
+									}},
+							},
+							{
+								ClusterInfo: &spec.ClusterInfo{
+									Name: "lb-current-test-02",
+									Hash: "04",
+									NodePools: []*spec.NodePool{
+										{
+											Name: "lb-02-01",
+											Type: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{
+												Cidr:     "10.0.0.0/24",
+												Region:   "europe-north",
+												Provider: &spec.Provider{SpecName: "oci-1", CloudProviderName: "oci"},
+											}},
+										},
+										{
+											Name: "lb-02-02",
+											Type: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{
+												Cidr:     "10.0.1.0/24",
+												Region:   "europe-north",
+												Provider: &spec.Provider{SpecName: "oci-2", CloudProviderName: "oci"},
+											}},
+										},
+									}},
+							},
+						}},
+					},
+					Desired: &spec.Clusters{
+						K8S: &spec.K8Scluster{ClusterInfo: &spec.ClusterInfo{
+							Name: "k8s-current-test-01",
+							Hash: "01",
+							NodePools: []*spec.NodePool{
+								{
+									Name: "k8s-01",
+									Type: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{
+										Cidr:     "10.0.0.0/24",
+										Region:   "europe-west",
+										Provider: &spec.Provider{SpecName: "hetzner-1", CloudProviderName: "hetzner"},
+									}},
+								},
+								{
+									Name: "k8s-03",
+									Type: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{
+										Cidr:     "",
+										Region:   "europe-west",
+										Provider: &spec.Provider{SpecName: "hetzner-1", CloudProviderName: "hetzner"},
+									}},
+								},
+							}}},
+						LoadBalancers: &spec.LoadBalancers{Clusters: []*spec.LBcluster{
+							{
+								ClusterInfo: &spec.ClusterInfo{
+									Name: "lb-current-test-01",
+									Hash: "03",
+									NodePools: []*spec.NodePool{
+										{
+											Name: "lb-01",
+											Type: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{
+												Cidr:     "10.0.0.0/24",
+												Region:   "europe-east",
+												Provider: &spec.Provider{SpecName: "gcp-1", CloudProviderName: "gcp"},
+											}},
+										},
+										{
+											Name: "lb-03",
+											Type: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{
+												Cidr:     "",
+												Region:   "europe-east",
+												Provider: &spec.Provider{SpecName: "gcp-1", CloudProviderName: "gcp"},
+											}},
+										},
+									}},
+							},
+							{
+								ClusterInfo: &spec.ClusterInfo{
+									Name: "lb-current-test-02",
+									Hash: "04",
+									NodePools: []*spec.NodePool{
+										{
+											Name: "lb-02-01",
+											Type: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{
+												Cidr:     "10.0.0.0/24",
+												Region:   "europe-north",
+												Provider: &spec.Provider{SpecName: "oci-1", CloudProviderName: "oci"},
+											}},
+										},
+										{
+											Name: "lb-02-02",
+											Type: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{
+												Cidr:     "10.0.1.0/24",
+												Region:   "europe-north",
+												Provider: &spec.Provider{SpecName: "oci-2", CloudProviderName: "oci"},
+											}},
+										},
+									}},
+							},
+							{
+								ClusterInfo: &spec.ClusterInfo{
+									Name: "lb-current-test-03",
+									Hash: "04",
+									NodePools: []*spec.NodePool{
+										{
+											Name: "lb-02-01",
+											Type: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{
+												Cidr:     "",
+												Region:   "europe-north",
+												Provider: &spec.Provider{SpecName: "oci-1", CloudProviderName: "oci"},
+											}},
+										},
+										{
+											Name: "lb-02-02",
+											Type: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{
+												Cidr:     "",
+												Region:   "europe-north",
+												Provider: &spec.Provider{SpecName: "oci-2", CloudProviderName: "oci"},
+											}},
+										},
+									}},
+							},
+						}},
+					},
+				},
+			},
+			wantErr: false,
+			validate: func(t *testing.T, args args) {
+				assert.Equal(t, "10.0.1.0/24", args.c.Desired.K8S.ClusterInfo.NodePools[1].GetDynamicNodePool().Cidr)
+				assert.Equal(t, "10.0.2.0/24", args.c.Desired.LoadBalancers.Clusters[0].ClusterInfo.NodePools[1].GetDynamicNodePool().Cidr)
+				assert.Equal(t, "10.0.0.0/24", args.c.Desired.LoadBalancers.Clusters[2].ClusterInfo.NodePools[0].GetDynamicNodePool().Cidr)
+				assert.Equal(t, "10.0.0.0/24", args.c.Desired.LoadBalancers.Clusters[2].ClusterInfo.NodePools[1].GetDynamicNodePool().Cidr)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := fillMissingCIDR(tt.args.c); (err != nil) != tt.wantErr {
+				t.Errorf("fillMissingCIDR() = %v want = %v", err, tt.wantErr)
+			}
+			tt.validate(t, tt.args)
+		})
+	}
+}
+
 func Test_calculateCIDR(t *testing.T) {
 	type args struct {
 		baseCIDR  string

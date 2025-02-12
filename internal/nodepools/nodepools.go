@@ -12,6 +12,15 @@ import (
 	"github.com/berops/claudie/proto/pb/spec"
 )
 
+func DeleteByName(nodepools []*spec.NodePool, name string) []*spec.NodePool {
+	for i, np := range nodepools {
+		if np.Name == name {
+			return slices.Delete(nodepools, i, i+1)
+		}
+	}
+	return nodepools
+}
+
 // DeleteNodeByName goes through each nodepool until if find the node with the specified name. If the nodepool
 // reaches 0 nodes the keepNodePools map is checked whether the nodepool should be removed or not.
 func DeleteNodeByName(nodepools []*spec.NodePool, nodeName string, keepNodePools map[string]struct{}) []*spec.NodePool {

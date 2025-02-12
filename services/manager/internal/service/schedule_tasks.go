@@ -94,12 +94,7 @@ func scheduleTasks(scheduled *store.Config) (ScheduleResult, error) {
 				Timestamp:   timestamppb.New(time.Now().UTC()),
 				Event:       spec.Event_DELETE,
 				Description: "deleting cluster",
-				Task: &spec.Task{
-					DeleteState: &spec.DeleteState{
-						K8S: state.Current.GetK8S(),
-						Lbs: state.Current.GetLoadBalancers(),
-					},
-				},
+				Task:        &spec.Task{DeleteState: &spec.DeleteState{K8S: &spec.DeleteState_K8S{Destroy: true}}},
 			})
 		// update
 		default:
@@ -255,13 +250,16 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 	maps.Insert(k8sAllDeletedNodes, maps.All(k8sDiffResult.partialDeletedDynamic))
 	maps.Insert(k8sAllDeletedNodes, maps.All(k8sDiffResult.partialDeletedStatic))
 
-	var deletedLoadbalancers []*spec.LBcluster
+	var deletedLoadbalancers []*spec.DeleteState_LoadBalancer
 	for _, current := range currentLbs {
 		found := slices.ContainsFunc(desiredLbs, func(bcluster *spec.LBcluster) bool {
 			return current.ClusterInfo.Name == bcluster.ClusterInfo.Name
 		})
 		if !found {
-			deletedLoadbalancers = append(deletedLoadbalancers, current)
+			deletedLoadbalancers = append(deletedLoadbalancers, &spec.DeleteState_LoadBalancer{
+				Id:      current.ClusterInfo.Id(),
+				Destroy: true,
+			})
 		}
 	}
 
@@ -446,9 +444,7 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 			Timestamp:   timestamppb.New(time.Now().UTC()),
 			Event:       spec.Event_DELETE,
 			Description: "deleting nodes from k8s cluster",
-			Task: &spec.Task{
-				DeleteState: &spec.DeleteState{Nodepools: dn},
-			},
+			Task:        &spec.Task{DeleteState: &spec.DeleteState{K8S: &spec.DeleteState_K8S{Nodepools: dn}}},
 		})
 	}
 
@@ -458,9 +454,7 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 			Timestamp:   timestamppb.New(time.Now().UTC()),
 			Event:       spec.Event_DELETE,
 			Description: "deleting loadbalancer infrastructure",
-			Task: &spec.Task{
-				DeleteState: &spec.DeleteState{Lbs: &spec.LoadBalancers{Clusters: deletedLoadbalancers}},
-			},
+			Task:        &spec.Task{DeleteState: &spec.DeleteState{Lbs: deletedLoadbalancers}},
 		})
 	}
 
@@ -956,13 +950,89 @@ func labelsTaintsAnnotationsDiff(current, desired *spec.K8Scluster) bool {
 	return false
 }
 
-func tryReachLbNodes(logger zerolog.Logger, ips map[string]map[string][]string, state *spec.ClusterState) (events []*spec.TaskEvent, apply bool) {
-	logger.Info().Msgf("%v loadbalancer nodes are unreachable", ips)
-	// state.State = &spec.Workflow{
-	// 	Stage:       spec.Workflow_NONE,
-	// 	Status:      spec.Workflow_ERROR,
-	// 	Description: fmt.Sprintf("%v kubernetes nodes are unreachable", ips),
-	// }
+func tryReachLbNodes(logger zerolog.Logger, lbs map[string]map[string][]string, state *spec.ClusterState) (events []*spec.TaskEvent, apply bool) {
+	// for each loadbalancer check if the nodepool with the unreachable nodes is present in the desired
+	// state. If not issue a delete, if yes wait for either the connectivity issue to be resolved or the
+	// removal of the nodepool from the desired state.
+	// We do not allow deleting of a single node from a loadbalancer nodepool at this time, as it is the
+	// case for kuberentes nodes.
+	var (
+		errUnreachable error
+		toDelete       = make(map[string]*spec.DeleteState_LoadBalancer)
+	)
+
+	for lb, unreachable := range lbs {
+		toDelete[lb] = &spec.DeleteState_LoadBalancer{
+			Id:        lb,
+			Nodepools: make(map[string]*spec.DeletedNodes),
+		}
+
+		ci := clusters.IndexLoadbalancerById(lb, state.Current.GetLoadBalancers().GetClusters())
+		di := clusters.IndexLoadbalancerById(lb, state.Desired.GetLoadBalancers().GetClusters())
+
+		current := state.Current.GetLoadBalancers().GetClusters()[ci]
+
+		if di < 0 {
+			// cluster with the unrechable ips has been deleted from the desired state.
+			if current.IsApiEndpoint() {
+				// deleted api endpoint in desired
+				errUnreachable = errors.Join(errUnreachable, fmt.Errorf("can't delete loadbalancer %q with unreachable nodes, the loadbalancer is targeting the kube-api server and deleting it from the desired state would result in a broken kubernetes cluster", lb))
+			}
+			toDelete[lb].Destroy = true
+			continue
+		}
+
+		desired := state.Desired.GetLoadBalancers().GetClusters()[di]
+		for np, ips := range unreachable {
+			current := nodepools.FindByName(np, current.GetClusterInfo().GetNodePools())
+			desired := nodepools.FindByName(np, desired.GetClusterInfo().GetNodePools())
+
+			if desired == nil {
+				// nodepool with bad ips was deleted from the desired state.
+				dn := new(spec.DeletedNodes)
+				for _, n := range current.Nodes {
+					dn.Nodes = append(dn.Nodes, n.Name)
+				}
+				toDelete[lb].Nodepools[np] = dn
+				continue
+			}
+
+			errMsg := strings.Builder{}
+			errMsg.WriteString("[")
+			for _, ip := range ips {
+				ci := slices.IndexFunc(current.Nodes, func(n *spec.Node) bool { return n.Public == ip })
+				errMsg.WriteString(fmt.Sprintf("node: %q, public endpoint: %q, static: %v;",
+					current.Nodes[ci].Name,
+					current.Nodes[ci].Public,
+					current.GetStaticNodePool() != nil,
+				))
+			}
+			errMsg.WriteByte(']')
+			errUnreachable = errors.Join(errUnreachable, fmt.Errorf("nodepool %q from loadbalancer %q has %v unreachable loadbalancer node/s: %s", np, lb, len(ips), errMsg.String()))
+		}
+	}
+
+	if errUnreachable != nil {
+		state.State.Description = fmt.Sprintf(`%v
+
+fix the unreachable nodes by either:
+- fixing the connectivity issue
+- if the connectivity issue cannot be resolved, you can:
+  - delete the whole nodepool from the loadbalancer cluster in the InputManifest
+  - delete the whole loadbalancer cluster from the InputManifest
+`, errUnreachable)
+		logger.Warn().Msgf("%v", state.State.Description)
+		return
+	}
+
+	events = append(events, &spec.TaskEvent{
+		Id:          uuid.New().String(),
+		Timestamp:   timestamppb.New(time.Now().UTC()),
+		Event:       spec.Event_DELETE,
+		Description: "deleting unreachable nodes from k8s cluster",
+		Task:        &spec.Task{DeleteState: &spec.DeleteState{Lbs: slices.Collect(maps.Values(toDelete))}},
+	})
+	apply = true
 	return
 }
 
@@ -995,7 +1065,7 @@ func tryReachK8sNodes(logger zerolog.Logger, nps map[string][]string, state *spe
 		}
 
 		errMsg := strings.Builder{}
-		errMsg.WriteString("[")
+		errMsg.WriteByte('[')
 		for _, ip := range ips {
 			ci := slices.IndexFunc(current.Nodes, func(n *spec.Node) bool { return n.Public == ip })
 			unreachableNodes[ip] = unreachableNodeInfo{
@@ -1024,6 +1094,9 @@ func tryReachK8sNodes(logger zerolog.Logger, nps map[string][]string, state *spe
 		MaxKubectlRetries: 5,
 	}
 
+	// TODO: if the cluster has more than one control plane node
+	// we should be able to recover by using the other control plane
+	// nodes, however currently we do not have the structure for this.
 	n, err := kubectl.KubectlGetNodeNames()
 	if err != nil {
 		state.State.Description = fmt.Sprintf("%v\nfailed to retrieve actual nodes present in the cluster via 'kubectl': %v", errUnreachable, err)
@@ -1106,10 +1179,13 @@ func tryReachK8sNodes(logger zerolog.Logger, nps map[string][]string, state *spe
 
 fix the unreachable nodes by either:
 - fixing the connectivity issue
-- deleting the selected unreachable nodes manually from the cluster via 'kubectl'
-  - if its a static node you will also need to remove it from the InputManifest
-  - if its a dynamic node claudie will replace it.
-- deleting the whole nodepool from the InputManifest
+- if the connectivity issue cannot be resolved, you can:
+  - delete the whole nodepool from the kubernetes cluster in the InputManifest
+  - delete the selected unreachable node/s manually from the cluster via 'kubectl'
+    - if its a static node you will also need to remove it from the InputManifest
+    - if its a dynamic node claudie will replace it.
+    NOTE: if the unreachable node is the kube-apiserver, claudie will not be able to recover
+          after the deletion.
 `, errUnreachable)
 		// neither deletion in the desired state
 		// nor deletion in the kubernetes cluster
@@ -1123,9 +1199,7 @@ fix the unreachable nodes by either:
 		Timestamp:   timestamppb.New(time.Now().UTC()),
 		Event:       spec.Event_DELETE,
 		Description: "deleting unreachable nodes from k8s cluster",
-		Task: &spec.Task{
-			DeleteState: &spec.DeleteState{Nodepools: toDelete},
-		},
+		Task:        &spec.Task{DeleteState: &spec.DeleteState{K8S: &spec.DeleteState_K8S{Nodepools: toDelete}}},
 	})
 	apply = true
 	return

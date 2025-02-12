@@ -304,9 +304,25 @@ message UpdateState {
 }
 
 message DeleteState {
-  K8scluster k8s = 1;
-  LoadBalancers lbs = 2;
-  map<string, DeletedNodes> nodepools = 3;
+  message K8s {
+    // if set, the whole k8s cluster and all of its attached
+    // loadbalancers should be destroyed.
+    bool destroy = 1;
+    // if 'destroy' is not set, the deletion process should look at
+    // the specifies nodepools and their nodes which should be deleted.
+    map<string, DeletedNodes> nodepools = 2;
+  }
+  message LoadBalancer {
+    // id of the loadbalancer.
+    string id = 1;
+    // if set, the whole loadbalancer cluster will be destroyed.
+    bool destroy = 2;
+    // if 'destroy' is not set, the deletion process should look at
+    // the specifies nodepools and their nodes which should be deleted.
+    map<string, DeletedNodes> nodepools = 3;
+  }
+  K8s k8s = 1;
+  repeated LoadBalancer lbs = 2;
 }
 
 message DeletedNodes {

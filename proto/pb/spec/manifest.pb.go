@@ -1851,9 +1851,8 @@ type DeleteState struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	K8S       *K8Scluster              `protobuf:"bytes,1,opt,name=k8s,proto3" json:"k8s,omitempty"`
-	Lbs       *LoadBalancers           `protobuf:"bytes,2,opt,name=lbs,proto3" json:"lbs,omitempty"`
-	Nodepools map[string]*DeletedNodes `protobuf:"bytes,3,rep,name=nodepools,proto3" json:"nodepools,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	K8S *DeleteState_K8S            `protobuf:"bytes,1,opt,name=k8s,proto3" json:"k8s,omitempty"`
+	Lbs []*DeleteState_LoadBalancer `protobuf:"bytes,2,rep,name=lbs,proto3" json:"lbs,omitempty"`
 }
 
 func (x *DeleteState) Reset() {
@@ -1886,23 +1885,16 @@ func (*DeleteState) Descriptor() ([]byte, []int) {
 	return file_spec_manifest_proto_rawDescGZIP(), []int{19}
 }
 
-func (x *DeleteState) GetK8S() *K8Scluster {
+func (x *DeleteState) GetK8S() *DeleteState_K8S {
 	if x != nil {
 		return x.K8S
 	}
 	return nil
 }
 
-func (x *DeleteState) GetLbs() *LoadBalancers {
+func (x *DeleteState) GetLbs() []*DeleteState_LoadBalancer {
 	if x != nil {
 		return x.Lbs
-	}
-	return nil
-}
-
-func (x *DeleteState) GetNodepools() map[string]*DeletedNodes {
-	if x != nil {
-		return x.Nodepools
 	}
 	return nil
 }
@@ -2204,6 +2196,128 @@ func (x *UpdateState_LbEndpoint) GetDesiredEndpointId() string {
 	return ""
 }
 
+type DeleteState_K8S struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// if set, the whole k8s cluster and all of its attached
+	// loadbalancers should be destroyed.
+	Destroy bool `protobuf:"varint,1,opt,name=destroy,proto3" json:"destroy,omitempty"`
+	// if 'destroy' is not set, the deletion process should look at
+	// the specifies nodepools and their nodes which should be deleted.
+	Nodepools map[string]*DeletedNodes `protobuf:"bytes,2,rep,name=nodepools,proto3" json:"nodepools,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+}
+
+func (x *DeleteState_K8S) Reset() {
+	*x = DeleteState_K8S{}
+	mi := &file_spec_manifest_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteState_K8S) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteState_K8S) ProtoMessage() {}
+
+func (x *DeleteState_K8S) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteState_K8S.ProtoReflect.Descriptor instead.
+func (*DeleteState_K8S) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{19, 0}
+}
+
+func (x *DeleteState_K8S) GetDestroy() bool {
+	if x != nil {
+		return x.Destroy
+	}
+	return false
+}
+
+func (x *DeleteState_K8S) GetNodepools() map[string]*DeletedNodes {
+	if x != nil {
+		return x.Nodepools
+	}
+	return nil
+}
+
+type DeleteState_LoadBalancer struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// id of the loadbalancer.
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// if set, the whole loadbalancer cluster will be destroyed.
+	Destroy bool `protobuf:"varint,2,opt,name=destroy,proto3" json:"destroy,omitempty"`
+	// if 'destroy' is not set, the deletion process should look at
+	// the specifies nodepools and their nodes which should be deleted.
+	Nodepools map[string]*DeletedNodes `protobuf:"bytes,3,rep,name=nodepools,proto3" json:"nodepools,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+}
+
+func (x *DeleteState_LoadBalancer) Reset() {
+	*x = DeleteState_LoadBalancer{}
+	mi := &file_spec_manifest_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteState_LoadBalancer) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteState_LoadBalancer) ProtoMessage() {}
+
+func (x *DeleteState_LoadBalancer) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteState_LoadBalancer.ProtoReflect.Descriptor instead.
+func (*DeleteState_LoadBalancer) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{19, 1}
+}
+
+func (x *DeleteState_LoadBalancer) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *DeleteState_LoadBalancer) GetDestroy() bool {
+	if x != nil {
+		return x.Destroy
+	}
+	return false
+}
+
+func (x *DeleteState_LoadBalancer) GetNodepools() map[string]*DeletedNodes {
+	if x != nil {
+		return x.Nodepools
+	}
+	return nil
+}
+
 var File_spec_manifest_proto protoreflect.FileDescriptor
 
 var file_spec_manifest_proto_rawDesc = []byte{
@@ -2438,15 +2552,32 @@ var file_spec_manifest_proto_rawDesc = []byte{
 	0x45, 0x6e, 0x64, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x49, 0x64, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09,
 	0x52, 0x11, 0x64, 0x65, 0x73, 0x69, 0x72, 0x65, 0x64, 0x45, 0x6e, 0x64, 0x70, 0x6f, 0x69, 0x6e,
 	0x74, 0x49, 0x64, 0x42, 0x10, 0x0a, 0x0e, 0x45, 0x6e, 0x64, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x43,
-	0x68, 0x61, 0x6e, 0x67, 0x65, 0x22, 0xea, 0x01, 0x0a, 0x0b, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65,
-	0x53, 0x74, 0x61, 0x74, 0x65, 0x12, 0x22, 0x0a, 0x03, 0x6b, 0x38, 0x73, 0x18, 0x01, 0x20, 0x01,
-	0x28, 0x0b, 0x32, 0x10, 0x2e, 0x73, 0x70, 0x65, 0x63, 0x2e, 0x4b, 0x38, 0x73, 0x63, 0x6c, 0x75,
-	0x73, 0x74, 0x65, 0x72, 0x52, 0x03, 0x6b, 0x38, 0x73, 0x12, 0x25, 0x0a, 0x03, 0x6c, 0x62, 0x73,
-	0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x13, 0x2e, 0x73, 0x70, 0x65, 0x63, 0x2e, 0x4c, 0x6f,
-	0x61, 0x64, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65, 0x72, 0x73, 0x52, 0x03, 0x6c, 0x62, 0x73,
-	0x12, 0x3e, 0x0a, 0x09, 0x6e, 0x6f, 0x64, 0x65, 0x70, 0x6f, 0x6f, 0x6c, 0x73, 0x18, 0x03, 0x20,
-	0x03, 0x28, 0x0b, 0x32, 0x20, 0x2e, 0x73, 0x70, 0x65, 0x63, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74,
-	0x65, 0x53, 0x74, 0x61, 0x74, 0x65, 0x2e, 0x4e, 0x6f, 0x64, 0x65, 0x70, 0x6f, 0x6f, 0x6c, 0x73,
+	0x68, 0x61, 0x6e, 0x67, 0x65, 0x22, 0xfa, 0x03, 0x0a, 0x0b, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65,
+	0x53, 0x74, 0x61, 0x74, 0x65, 0x12, 0x27, 0x0a, 0x03, 0x6b, 0x38, 0x73, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x15, 0x2e, 0x73, 0x70, 0x65, 0x63, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65,
+	0x53, 0x74, 0x61, 0x74, 0x65, 0x2e, 0x4b, 0x38, 0x73, 0x52, 0x03, 0x6b, 0x38, 0x73, 0x12, 0x30,
+	0x0a, 0x03, 0x6c, 0x62, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x73, 0x70,
+	0x65, 0x63, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x53, 0x74, 0x61, 0x74, 0x65, 0x2e, 0x4c,
+	0x6f, 0x61, 0x64, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65, 0x72, 0x52, 0x03, 0x6c, 0x62, 0x73,
+	0x1a, 0xb5, 0x01, 0x0a, 0x03, 0x4b, 0x38, 0x73, 0x12, 0x18, 0x0a, 0x07, 0x64, 0x65, 0x73, 0x74,
+	0x72, 0x6f, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x64, 0x65, 0x73, 0x74, 0x72,
+	0x6f, 0x79, 0x12, 0x42, 0x0a, 0x09, 0x6e, 0x6f, 0x64, 0x65, 0x70, 0x6f, 0x6f, 0x6c, 0x73, 0x18,
+	0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x24, 0x2e, 0x73, 0x70, 0x65, 0x63, 0x2e, 0x44, 0x65, 0x6c,
+	0x65, 0x74, 0x65, 0x53, 0x74, 0x61, 0x74, 0x65, 0x2e, 0x4b, 0x38, 0x73, 0x2e, 0x4e, 0x6f, 0x64,
+	0x65, 0x70, 0x6f, 0x6f, 0x6c, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x09, 0x6e, 0x6f, 0x64,
+	0x65, 0x70, 0x6f, 0x6f, 0x6c, 0x73, 0x1a, 0x50, 0x0a, 0x0e, 0x4e, 0x6f, 0x64, 0x65, 0x70, 0x6f,
+	0x6f, 0x6c, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x28, 0x0a, 0x05, 0x76, 0x61,
+	0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x12, 0x2e, 0x73, 0x70, 0x65, 0x63,
+	0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x64, 0x4e, 0x6f, 0x64, 0x65, 0x73, 0x52, 0x05, 0x76,
+	0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x1a, 0xd7, 0x01, 0x0a, 0x0c, 0x4c, 0x6f, 0x61,
+	0x64, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65, 0x72, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x18, 0x0a, 0x07, 0x64, 0x65, 0x73,
+	0x74, 0x72, 0x6f, 0x79, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x64, 0x65, 0x73, 0x74,
+	0x72, 0x6f, 0x79, 0x12, 0x4b, 0x0a, 0x09, 0x6e, 0x6f, 0x64, 0x65, 0x70, 0x6f, 0x6f, 0x6c, 0x73,
+	0x18, 0x03, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x2d, 0x2e, 0x73, 0x70, 0x65, 0x63, 0x2e, 0x44, 0x65,
+	0x6c, 0x65, 0x74, 0x65, 0x53, 0x74, 0x61, 0x74, 0x65, 0x2e, 0x4c, 0x6f, 0x61, 0x64, 0x42, 0x61,
+	0x6c, 0x61, 0x6e, 0x63, 0x65, 0x72, 0x2e, 0x4e, 0x6f, 0x64, 0x65, 0x70, 0x6f, 0x6f, 0x6c, 0x73,
 	0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x09, 0x6e, 0x6f, 0x64, 0x65, 0x70, 0x6f, 0x6f, 0x6c, 0x73,
 	0x1a, 0x50, 0x0a, 0x0e, 0x4e, 0x6f, 0x64, 0x65, 0x70, 0x6f, 0x6f, 0x6c, 0x73, 0x45, 0x6e, 0x74,
 	0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
@@ -2497,47 +2628,50 @@ func file_spec_manifest_proto_rawDescGZIP() []byte {
 }
 
 var file_spec_manifest_proto_enumTypes = make([]protoimpl.EnumInfo, 9)
-var file_spec_manifest_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
+var file_spec_manifest_proto_msgTypes = make([]protoimpl.MessageInfo, 30)
 var file_spec_manifest_proto_goTypes = []any{
-	(ProxyOp)(0),                    // 0: spec.ProxyOp
-	(RoleType)(0),                   // 1: spec.RoleType
-	(ClusterType)(0),                // 2: spec.ClusterType
-	(Event)(0),                      // 3: spec.Event
-	(ApiEndpointChangeState)(0),     // 4: spec.ApiEndpointChangeState
-	(Manifest_State)(0),             // 5: spec.Manifest.State
-	(Workflow_Stage)(0),             // 6: spec.Workflow.Stage
-	(Workflow_Status)(0),            // 7: spec.Workflow.Status
-	(Retry_Repeat_Kind)(0),          // 8: spec.Retry.Repeat.Kind
-	(*Config)(nil),                  // 9: spec.Config
-	(*Manifest)(nil),                // 10: spec.Manifest
-	(*ClusterState)(nil),            // 11: spec.ClusterState
-	(*Clusters)(nil),                // 12: spec.Clusters
-	(*LoadBalancers)(nil),           // 13: spec.LoadBalancers
-	(*KubernetesContext)(nil),       // 14: spec.KubernetesContext
-	(*Workflow)(nil),                // 15: spec.Workflow
-	(*K8Scluster)(nil),              // 16: spec.K8scluster
-	(*LBcluster)(nil),               // 17: spec.LBcluster
-	(*ClusterInfo)(nil),             // 18: spec.ClusterInfo
-	(*InstallationProxy)(nil),       // 19: spec.InstallationProxy
-	(*ProxyEnvs)(nil),               // 20: spec.ProxyEnvs
-	(*Role)(nil),                    // 21: spec.Role
-	(*Events)(nil),                  // 22: spec.Events
-	(*TaskEvent)(nil),               // 23: spec.TaskEvent
-	(*Retry)(nil),                   // 24: spec.Retry
-	(*Task)(nil),                    // 25: spec.Task
-	(*CreateState)(nil),             // 26: spec.CreateState
-	(*UpdateState)(nil),             // 27: spec.UpdateState
-	(*DeleteState)(nil),             // 28: spec.DeleteState
-	(*DeletedNodes)(nil),            // 29: spec.DeletedNodes
-	nil,                             // 30: spec.Config.ClustersEntry
-	(*Retry_Repeat)(nil),            // 31: spec.Retry.Repeat
-	(*Retry_Rollback)(nil),          // 32: spec.Retry.Rollback
-	(*UpdateState_K8SEndpoint)(nil), // 33: spec.UpdateState.K8sEndpoint
-	(*UpdateState_LbEndpoint)(nil),  // 34: spec.UpdateState.LbEndpoint
-	nil,                             // 35: spec.DeleteState.NodepoolsEntry
-	(*DNS)(nil),                     // 36: spec.DNS
-	(*NodePool)(nil),                // 37: spec.NodePool
-	(*timestamppb.Timestamp)(nil),   // 38: google.protobuf.Timestamp
+	(ProxyOp)(0),                     // 0: spec.ProxyOp
+	(RoleType)(0),                    // 1: spec.RoleType
+	(ClusterType)(0),                 // 2: spec.ClusterType
+	(Event)(0),                       // 3: spec.Event
+	(ApiEndpointChangeState)(0),      // 4: spec.ApiEndpointChangeState
+	(Manifest_State)(0),              // 5: spec.Manifest.State
+	(Workflow_Stage)(0),              // 6: spec.Workflow.Stage
+	(Workflow_Status)(0),             // 7: spec.Workflow.Status
+	(Retry_Repeat_Kind)(0),           // 8: spec.Retry.Repeat.Kind
+	(*Config)(nil),                   // 9: spec.Config
+	(*Manifest)(nil),                 // 10: spec.Manifest
+	(*ClusterState)(nil),             // 11: spec.ClusterState
+	(*Clusters)(nil),                 // 12: spec.Clusters
+	(*LoadBalancers)(nil),            // 13: spec.LoadBalancers
+	(*KubernetesContext)(nil),        // 14: spec.KubernetesContext
+	(*Workflow)(nil),                 // 15: spec.Workflow
+	(*K8Scluster)(nil),               // 16: spec.K8scluster
+	(*LBcluster)(nil),                // 17: spec.LBcluster
+	(*ClusterInfo)(nil),              // 18: spec.ClusterInfo
+	(*InstallationProxy)(nil),        // 19: spec.InstallationProxy
+	(*ProxyEnvs)(nil),                // 20: spec.ProxyEnvs
+	(*Role)(nil),                     // 21: spec.Role
+	(*Events)(nil),                   // 22: spec.Events
+	(*TaskEvent)(nil),                // 23: spec.TaskEvent
+	(*Retry)(nil),                    // 24: spec.Retry
+	(*Task)(nil),                     // 25: spec.Task
+	(*CreateState)(nil),              // 26: spec.CreateState
+	(*UpdateState)(nil),              // 27: spec.UpdateState
+	(*DeleteState)(nil),              // 28: spec.DeleteState
+	(*DeletedNodes)(nil),             // 29: spec.DeletedNodes
+	nil,                              // 30: spec.Config.ClustersEntry
+	(*Retry_Repeat)(nil),             // 31: spec.Retry.Repeat
+	(*Retry_Rollback)(nil),           // 32: spec.Retry.Rollback
+	(*UpdateState_K8SEndpoint)(nil),  // 33: spec.UpdateState.K8sEndpoint
+	(*UpdateState_LbEndpoint)(nil),   // 34: spec.UpdateState.LbEndpoint
+	(*DeleteState_K8S)(nil),          // 35: spec.DeleteState.K8s
+	(*DeleteState_LoadBalancer)(nil), // 36: spec.DeleteState.LoadBalancer
+	nil,                              // 37: spec.DeleteState.K8s.NodepoolsEntry
+	nil,                              // 38: spec.DeleteState.LoadBalancer.NodepoolsEntry
+	(*DNS)(nil),                      // 39: spec.DNS
+	(*NodePool)(nil),                 // 40: spec.NodePool
+	(*timestamppb.Timestamp)(nil),    // 41: google.protobuf.Timestamp
 }
 var file_spec_manifest_proto_depIdxs = []int32{
 	14, // 0: spec.Config.k8sCtx:type_name -> spec.KubernetesContext
@@ -2557,12 +2691,12 @@ var file_spec_manifest_proto_depIdxs = []int32{
 	19, // 14: spec.K8scluster.installationProxy:type_name -> spec.InstallationProxy
 	18, // 15: spec.LBcluster.clusterInfo:type_name -> spec.ClusterInfo
 	21, // 16: spec.LBcluster.roles:type_name -> spec.Role
-	36, // 17: spec.LBcluster.dns:type_name -> spec.DNS
-	37, // 18: spec.ClusterInfo.nodePools:type_name -> spec.NodePool
+	39, // 17: spec.LBcluster.dns:type_name -> spec.DNS
+	40, // 18: spec.ClusterInfo.nodePools:type_name -> spec.NodePool
 	0,  // 19: spec.ProxyEnvs.op:type_name -> spec.ProxyOp
 	1,  // 20: spec.Role.roleType:type_name -> spec.RoleType
 	23, // 21: spec.Events.events:type_name -> spec.TaskEvent
-	38, // 22: spec.TaskEvent.timestamp:type_name -> google.protobuf.Timestamp
+	41, // 22: spec.TaskEvent.timestamp:type_name -> google.protobuf.Timestamp
 	3,  // 23: spec.TaskEvent.event:type_name -> spec.Event
 	25, // 24: spec.TaskEvent.task:type_name -> spec.Task
 	24, // 25: spec.TaskEvent.onError:type_name -> spec.Retry
@@ -2577,19 +2711,21 @@ var file_spec_manifest_proto_depIdxs = []int32{
 	13, // 34: spec.UpdateState.lbs:type_name -> spec.LoadBalancers
 	33, // 35: spec.UpdateState.newControlEndpoint:type_name -> spec.UpdateState.K8sEndpoint
 	34, // 36: spec.UpdateState.lbEndpointChange:type_name -> spec.UpdateState.LbEndpoint
-	16, // 37: spec.DeleteState.k8s:type_name -> spec.K8scluster
-	13, // 38: spec.DeleteState.lbs:type_name -> spec.LoadBalancers
-	35, // 39: spec.DeleteState.nodepools:type_name -> spec.DeleteState.NodepoolsEntry
-	11, // 40: spec.Config.ClustersEntry.value:type_name -> spec.ClusterState
-	8,  // 41: spec.Retry.Repeat.kind:type_name -> spec.Retry.Repeat.Kind
-	23, // 42: spec.Retry.Rollback.tasks:type_name -> spec.TaskEvent
-	4,  // 43: spec.UpdateState.LbEndpoint.state:type_name -> spec.ApiEndpointChangeState
-	29, // 44: spec.DeleteState.NodepoolsEntry.value:type_name -> spec.DeletedNodes
-	45, // [45:45] is the sub-list for method output_type
-	45, // [45:45] is the sub-list for method input_type
-	45, // [45:45] is the sub-list for extension type_name
-	45, // [45:45] is the sub-list for extension extendee
-	0,  // [0:45] is the sub-list for field type_name
+	35, // 37: spec.DeleteState.k8s:type_name -> spec.DeleteState.K8s
+	36, // 38: spec.DeleteState.lbs:type_name -> spec.DeleteState.LoadBalancer
+	11, // 39: spec.Config.ClustersEntry.value:type_name -> spec.ClusterState
+	8,  // 40: spec.Retry.Repeat.kind:type_name -> spec.Retry.Repeat.Kind
+	23, // 41: spec.Retry.Rollback.tasks:type_name -> spec.TaskEvent
+	4,  // 42: spec.UpdateState.LbEndpoint.state:type_name -> spec.ApiEndpointChangeState
+	37, // 43: spec.DeleteState.K8s.nodepools:type_name -> spec.DeleteState.K8s.NodepoolsEntry
+	38, // 44: spec.DeleteState.LoadBalancer.nodepools:type_name -> spec.DeleteState.LoadBalancer.NodepoolsEntry
+	29, // 45: spec.DeleteState.K8s.NodepoolsEntry.value:type_name -> spec.DeletedNodes
+	29, // 46: spec.DeleteState.LoadBalancer.NodepoolsEntry.value:type_name -> spec.DeletedNodes
+	47, // [47:47] is the sub-list for method output_type
+	47, // [47:47] is the sub-list for method input_type
+	47, // [47:47] is the sub-list for extension type_name
+	47, // [47:47] is the sub-list for extension extendee
+	0,  // [0:47] is the sub-list for field type_name
 }
 
 func init() { file_spec_manifest_proto_init() }
@@ -2613,7 +2749,7 @@ func file_spec_manifest_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_spec_manifest_proto_rawDesc,
 			NumEnums:      9,
-			NumMessages:   27,
+			NumMessages:   30,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

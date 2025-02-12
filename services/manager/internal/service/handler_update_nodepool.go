@@ -215,18 +215,20 @@ func autoscaledEvents(diff nodeDiffResult, current, desired *spec.Clusters) []*s
 							Event:       spec.Event_DELETE,
 							Description: fmt.Sprintf("autoscaler rollback: deleting nodes from nodepool %s", diff.nodepool),
 							Task: &spec.Task{DeleteState: &spec.DeleteState{
-								Nodepools: map[string]*spec.DeletedNodes{
-									diff.nodepool: {
-										Nodes: func() []string {
-											var result []string
-											for _, n := range diff.added {
-												result = append(result, n.Name)
-											}
-											return result
-										}(),
+								K8S: &spec.DeleteState_K8S{
+									Nodepools: map[string]*spec.DeletedNodes{
+										diff.nodepool: {
+											Nodes: func() []string {
+												var result []string
+												for _, n := range diff.added {
+													result = append(result, n.Name)
+												}
+												return result
+											}(),
+										},
 									},
-								},
-							}},
+								}},
+							},
 							OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
 								Kind:        spec.Retry_Repeat_EXPONENTIAL,
 								CurrentTick: 1,
@@ -289,7 +291,7 @@ func autoscaledEvents(diff nodeDiffResult, current, desired *spec.Clusters) []*s
 			Timestamp:   timestamppb.New(time.Now().UTC()),
 			Event:       spec.Event_DELETE,
 			Description: "autoscaler: deleting nodes from k8s cluster",
-			Task:        &spec.Task{DeleteState: &spec.DeleteState{Nodepools: dn}},
+			Task:        &spec.Task{DeleteState: &spec.DeleteState{K8S: &spec.DeleteState_K8S{Nodepools: dn}}},
 			OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
 				Kind:        spec.Retry_Repeat_EXPONENTIAL,
 				CurrentTick: 1,
