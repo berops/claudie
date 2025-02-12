@@ -11,6 +11,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/internal/nodepools"
@@ -376,6 +377,7 @@ func generateMissingDynamicNodes(nodepoolID string, usedNames map[string]struct{
 
 func fillMissingCIDR(c *spec.ClusterState) error {
 	// https://github.com/berops/claudie/issues/647
+	// 1. generate cidrs for k8s nodepools.
 	existing := make(map[string][]string)
 	for p, nps := range nodepools.ByProviderRegion(c.GetCurrent().GetK8S().GetClusterInfo().GetNodePools()) {
 		for _, np := range nodepools.ExtractDynamic(nps) {
@@ -386,6 +388,24 @@ func fillMissingCIDR(c *spec.ClusterState) error {
 	for p, nps := range nodepools.ByProviderRegion(c.GetDesired().GetK8S().GetClusterInfo().GetNodePools()) {
 		if err := calculateCIDR(baseSubnetCIDR, p, existing, nodepools.ExtractDynamic(nps)); err != nil {
 			return fmt.Errorf("error while generating cidr for nodepool: %w", err)
+		}
+	}
+
+	// 2. generate cidrs for each lb nodepool
+	for _, desired := range c.GetDesired().GetLoadBalancers().GetClusters() {
+		existing := make(map[string][]string)
+		if i := clusters.IndexLoadbalancerById(desired.GetClusterInfo().Id(), c.GetCurrent().GetLoadBalancers().GetClusters()); i >= 0 {
+			current := c.GetCurrent().GetLoadBalancers().GetClusters()[i]
+			for p, nps := range nodepools.ByProviderRegion(current.GetClusterInfo().GetNodePools()) {
+				for _, np := range nodepools.ExtractDynamic(nps) {
+					existing[p] = append(existing[p], np.Cidr)
+				}
+			}
+		}
+		for p, nps := range nodepools.ByProviderRegion(desired.GetClusterInfo().GetNodePools()) {
+			if err := calculateCIDR(baseSubnetCIDR, p, existing, nodepools.ExtractDynamic(nps)); err != nil {
+				return fmt.Errorf("error while generating cidr for loadbalancer %q, nodepools: %w", desired.GetClusterInfo().Id(), err)
+			}
 		}
 	}
 	return nil
