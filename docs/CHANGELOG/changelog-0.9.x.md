@@ -148,3 +148,9 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 ## Bug fixes
 * Fix backwards compatibility with changes introduced in Claudie version 0.9.3 for clusters build using older versions 0.9.x [#1651](https://github.com/berops/claudie/pull/1651).
  If you built your cluster using the Claudie version 0.9.3, you can ignore this minor release.
+
+## v0.9.5
+
+## Bug fixes
+- Correclty assign CIDR to loadbalancer nodepools [#1654](https://github.com/berops/claudie/pull/1654).
+  This issue was prelevant mostly when working with loadbalancer from cloud providers that were not hetzner.
