@@ -101,7 +101,7 @@ func (g *GRPC) UpdateNodePool(ctx context.Context, request *pb.UpdateNodePoolReq
 	dnp[di].Nodes = append(append([]*spec.Node(nil), diffResult.reused...), diffResult.added...)
 
 	cluster.Events = &spec.Events{
-		Events:     autoscaledEvents(diffResult, cluster.Current, cluster.Desired),
+		Events:     autoscaledEvents(diffResult, cluster.Desired),
 		Autoscaled: true,
 	}
 
@@ -193,7 +193,7 @@ func nodeDiff(nodepoolId string, current, desired *spec.NodePool) nodeDiffResult
 	return result
 }
 
-func autoscaledEvents(diff nodeDiffResult, current, desired *spec.Clusters) []*spec.TaskEvent {
+func autoscaledEvents(diff nodeDiffResult, desired *spec.Clusters) []*spec.TaskEvent {
 	var events []*spec.TaskEvent
 
 	if diff.oldCount < diff.newCount || len(diff.added) > 0 {
@@ -229,23 +229,6 @@ func autoscaledEvents(diff nodeDiffResult, current, desired *spec.Clusters) []*s
 									},
 								}},
 							},
-							OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
-								Kind:        spec.Retry_Repeat_EXPONENTIAL,
-								CurrentTick: 1,
-								StopAfter:   uint32(25 * time.Minute / Tick),
-							}}},
-						},
-						// TODO: don't think we need this anymore since we added the deletion of the templates to the deletion of the nodes.
-						// TODO: we don't actually need this from other parts as well such as rolling updates...
-						{
-							Id:          uuid.New().String(),
-							Timestamp:   timestamppb.New(time.Now().UTC()),
-							Event:       spec.Event_UPDATE,
-							Description: fmt.Sprintf("autoscaler rollback: deleting nodes from nodepool %s", diff.nodepool),
-							Task: &spec.Task{UpdateState: &spec.UpdateState{
-								K8S: current.K8S,
-								Lbs: current.LoadBalancers,
-							}},
 							OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
 								Kind:        spec.Retry_Repeat_EXPONENTIAL,
 								CurrentTick: 1,
@@ -292,24 +275,6 @@ func autoscaledEvents(diff nodeDiffResult, current, desired *spec.Clusters) []*s
 			Event:       spec.Event_DELETE,
 			Description: "autoscaler: deleting nodes from k8s cluster",
 			Task:        &spec.Task{DeleteState: &spec.DeleteState{K8S: &spec.DeleteState_K8S{Nodepools: dn}}},
-			OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
-				Kind:        spec.Retry_Repeat_EXPONENTIAL,
-				CurrentTick: 1,
-				StopAfter:   uint32(25 * time.Minute / Tick),
-			}}},
-		})
-		// TODO: we don't need this.
-		events = append(events, &spec.TaskEvent{
-			Id:          uuid.New().String(),
-			Timestamp:   timestamppb.New(time.Now().UTC()),
-			Event:       spec.Event_UPDATE,
-			Description: "autoscaler: deleting infrastructure of deleted k8s nodes",
-			Task: &spec.Task{
-				UpdateState: &spec.UpdateState{
-					K8S: desired.K8S,
-					Lbs: desired.GetLoadBalancers(),
-				},
-			},
 			OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{
 				Kind:        spec.Retry_Repeat_EXPONENTIAL,
 				CurrentTick: 1,

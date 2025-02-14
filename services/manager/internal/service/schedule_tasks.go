@@ -100,6 +100,7 @@ func scheduleTasks(scheduled *store.Config) (ScheduleResult, error) {
 		default:
 			k8sip, lbsip, err := clusters.PingNodes(logger, state.Current)
 			if err != nil {
+				logger.Err(err).Msg("unreachable nodes")
 				if len(k8sip) > 0 {
 					e, apply := tryReachK8sNodes(logger, k8sip, state)
 					if !apply {

@@ -2,6 +2,10 @@ FROM docker.io/library/golang:1.23.4 AS build
 
 ARG TARGETARCH
 
+#Install kubectl
+RUN KC_VERSION=v1.27.0 && \
+    wget -q https://storage.googleapis.com/kubernetes-release/release/${KC_VERSION}/bin/linux/$TARGETARCH/kubectl
+
 #Unset the GOPATH
 ENV GOPATH=
 
@@ -25,19 +29,26 @@ RUN CGO_ENABLED=0 go build
 FROM alpine:latest as certs
 RUN apk --update add ca-certificates
 
-#Use empty base image
-FROM scratch
+FROM docker.io/library/alpine:3.20
 #Add repository label
 LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
 #Add base image name as a label
-LABEL org.opencontainers.image.base.name "scratch"
+LABEL org.opencontainers.image.base.name "docker.io/library/alpine"
 #Add description to the image
 LABEL org.opencontainers.image.description "Image for Manager from Claudie"
 
 #Copy the binaries to empty base image
+COPY --from=build /go/kubectl /usr/local/bin/kubectl
 COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=build  /go/services/manager/cmd/api-server/api-server /bin/services/manager/api-server
 
 WORKDIR /bin
+
+RUN chmod +x /usr/local/bin/kubectl && \
+apk add -q bash && \
+apk add -q iputils && \
+apk add libcap && \
+setcap cap_net_raw+ep ./services/manager/api-server
+
 #Run server
 ENTRYPOINT [ "./services/manager/api-server" ]
