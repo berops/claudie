@@ -15,11 +15,10 @@ import (
 func Test_autoscaledEvents(t *testing.T) {
 	t.Parallel()
 
-	current := &spec.Clusters{K8S: spectesting.GenerateRandomK8SCluster(false)}
+	current := &spec.Clusters{K8S: spectesting.GenerateFakeK8SCluster(false)}
 	desired := &spec.Clusters{K8S: proto.Clone(current.K8S).(*spec.K8Scluster)}
 
 	affected, affectedNodes := spectesting.DeleteNodes(5+rand.IntN(50), desired.K8S.ClusterInfo, spectesting.NodesDynamic)
-
 	addedNodes := spectesting.AddNodes(5+rand.IntN(15), desired.K8S.ClusterInfo, spectesting.NodesDynamic)
 
 	for _, dnp := range affected {

@@ -98,24 +98,32 @@ func scheduleTasks(scheduled *store.Config) (ScheduleResult, error) {
 			})
 		// update
 		default:
+			// TODO: if the cluster fails due to an unreachable node the on error
+			// tasks will not be executed and we need to find a way to executed them.
+			// maybe push the new tasks on top. but then we also need to take care of
+			// things like correctly omitted the deleted nodes from the on error events.
+			// this is for example mostly prelevant for autoscaler nodes.
 			k8sip, lbsip, err := clusters.PingNodes(logger, state.Current)
 			if err != nil {
-				logger.Err(err).Msg("unreachable nodes")
-				if len(k8sip) > 0 {
-					e, apply := tryReachK8sNodes(logger, k8sip, state)
-					if !apply {
-						result = NotReady
-						break
+				if errors.Is(err, clusters.ErrEchoTimeout) {
+					if len(k8sip) > 0 {
+						e, apply := tryReachK8sNodes(logger, k8sip, state)
+						if !apply {
+							result = NotReady
+							break
+						}
+						events = append(events, e...)
 					}
-					events = append(events, e...)
-				}
-				if len(lbsip) > 0 {
-					e, apply := tryReachLbNodes(logger, lbsip, state)
-					if !apply {
-						result = NotReady
-						break
+					if len(lbsip) > 0 {
+						e, apply := tryReachLbNodes(logger, lbsip, state)
+						if !apply {
+							result = NotReady
+							break
+						}
+						events = append(events, e...)
 					}
-					events = append(events, e...)
+				} else {
+					logger.Err(err).Msg("failed to determine if any nodes were unreachable")
 				}
 				result = Reschedule
 				break

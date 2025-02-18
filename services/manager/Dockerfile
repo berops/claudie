@@ -44,11 +44,7 @@ COPY --from=build  /go/services/manager/cmd/api-server/api-server /bin/services/
 
 WORKDIR /bin
 
-RUN chmod +x /usr/local/bin/kubectl && \
-apk add -q bash && \
-apk add -q iputils && \
-apk add libcap && \
-setcap cap_net_raw+ep ./services/manager/api-server
+RUN chmod +x /usr/local/bin/kubectl && apk add -q bash
 
 #Run server
 ENTRYPOINT [ "./services/manager/api-server" ]
