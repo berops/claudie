@@ -48,6 +48,7 @@ func Test_autoscaledEvents(t *testing.T) {
 			}
 			rollback := events[eventCount].OnError.GetRollback().Tasks[0]
 			for np, d := range rollback.Task.DeleteState.K8S.Nodepools {
+				assert.True(t, d.KeepNodePoolIfEmpty)
 				for _, n := range d.Nodes {
 					assert.True(t, slices.ContainsFunc(addedNodes[np], func(added string) bool {
 						return added == n
@@ -59,6 +60,7 @@ func Test_autoscaledEvents(t *testing.T) {
 		if len(diff.deleted) > 0 {
 			assert.Equal(t, events[eventCount].Event, spec.Event_DELETE)
 			for np, d := range events[eventCount].Task.DeleteState.K8S.Nodepools {
+				assert.True(t, d.KeepNodePoolIfEmpty)
 				for _, node := range d.Nodes {
 					assert.True(t, slices.ContainsFunc(affectedNodes[np], func(n string) bool {
 						return node == n

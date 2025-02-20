@@ -225,7 +225,6 @@ func (u *Usecases) executeUpdateTask(te *managerclient.NextTaskResponse) (*spec.
 }
 
 func (u *Usecases) executeDeleteTask(te *managerclient.NextTaskResponse) (*spec.K8Scluster, []*spec.LBcluster, error) {
-	// TODO: test out the new deletion mechanism and make changes where ever two events were called.
 	if te.Event.Task.DeleteState.K8S != nil {
 		if te.Event.Task.DeleteState.K8S.Destroy {
 			ctx := &builder.Context{
@@ -275,16 +274,21 @@ func (u *Usecases) executeDeleteTask(te *managerclient.NextTaskResponse) (*spec.
 		currentLbs.Clusters = slices.DeleteFunc(currentLbs.Clusters, func(bcluster *spec.LBcluster) bool { return deleted.ClusterInfo.Id() == bcluster.ClusterInfo.Id() })
 	}
 
-	// TODO: skip if none found.
 	lbs := proto.Clone(&currentLbs).(*spec.LoadBalancers)
+	var npsDeleted bool
 	for _, lb := range te.Event.Task.DeleteState.Lbs {
 		i := clusters.IndexLoadbalancerById(lb.Id, lbs.Clusters)
 		if i < 0 || len(lb.Nodepools) < 1 {
 			continue
 		}
+		npsDeleted = true
 		for np := range lb.Nodepools {
 			lbs.Clusters[i].ClusterInfo.NodePools = nodepools.DeleteByName(lbs.Clusters[i].ClusterInfo.NodePools, np)
 		}
+	}
+
+	if !npsDeleted {
+		return te.Current.K8S, currentLbs.Clusters, nil
 	}
 
 	ctx := &builder.Context{

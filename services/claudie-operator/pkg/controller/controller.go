@@ -198,9 +198,6 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			return ctrl.Result{}, nil
 		}
 
-		// TODO: this is wrong we should be able
-		// to overwrite it if its pending.
-		// if configState == spec.Manifest_Pending || configState == spec.Manifest_Scheduled {
 		if configState == spec.Manifest_Scheduled {
 			inputManifest.SetUpdateResourceStatus(currentState)
 			if err := r.kc.Status().Update(ctx, inputManifest); err != nil {

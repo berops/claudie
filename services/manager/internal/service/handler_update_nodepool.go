@@ -218,6 +218,7 @@ func autoscaledEvents(diff nodeDiffResult, desired *spec.Clusters) []*spec.TaskE
 								K8S: &spec.DeleteState_K8S{
 									Nodepools: map[string]*spec.DeletedNodes{
 										diff.nodepool: {
+											KeepNodePoolIfEmpty: true, // keep autoscaled nodepool as it is allowed to have 0 nodes.
 											Nodes: func() []string {
 												var result []string
 												for _, n := range diff.added {
@@ -265,7 +266,11 @@ func autoscaledEvents(diff nodeDiffResult, desired *spec.Clusters) []*spec.TaskE
 	}
 
 	if len(diff.deleted) > 0 {
-		dn := map[string]*spec.DeletedNodes{diff.nodepool: new(spec.DeletedNodes)}
+		dn := map[string]*spec.DeletedNodes{
+			diff.nodepool: {
+				KeepNodePoolIfEmpty: true, // autosacled nodepools can have 0 nodes.
+			},
+		}
 		for _, v := range diff.deleted {
 			dn[diff.nodepool].Nodes = append(dn[diff.nodepool].Nodes, v.Name)
 		}

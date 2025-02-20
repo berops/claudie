@@ -24,7 +24,7 @@ spec:
         fsGroup: 2000
       volumes:
         - name: data
-          emptyDir: { }
+          emptyDir: {}
       containers:
         - name: kuber
           imagePullPolicy: Always
@@ -121,12 +121,12 @@ metadata:
     app.kubernetes.io/part-of: claudie
     app.kubernetes.io/name: kuber
 rules:
-  - apiGroups: [ "" ]
-    resources: [ "secrets", "configmaps", "services" ]
-    verbs: [ "create", "patch", "update", "get", "list", "delete" ]
-  - apiGroups: [ "apps" ]
-    resources: [ "deployments" ]
-    verbs: [ "create", "patch", "update", "get", "list", "delete" ]
+  - apiGroups: [""]
+    resources: ["secrets", "configmaps", "services"]
+    verbs: ["create", "patch", "update", "get", "list", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["create", "patch", "update", "get", "list", "delete"]
 ---
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
