@@ -337,7 +337,7 @@ func (u *Usecases) deleteK8sNodes(te *managerclient.NextTaskResponse) (*spec.K8S
 	// delete the nodes from the k8s cluster.
 	k8s, err := u.callDeleteNodes(te.Current.K8S, te.Event.Task.DeleteState.K8S.Nodepools)
 	if err != nil {
-		return te.Current.K8S, te.Current.GetLoadBalancers().GetClusters(), fmt.Errorf("error while deleting nodes for %s: %w", te.Current.K8S.ClusterInfo.NodePools, err)
+		return te.Current.K8S, te.Current.GetLoadBalancers().GetClusters(), fmt.Errorf("error while deleting nodes for %s: %w", te.Current.K8S.ClusterInfo.Name, err)
 	}
 
 	// for dynamic nodes remove the infrastructure via terraform.
@@ -385,9 +385,8 @@ func (u *Usecases) deleteK8sNodes(te *managerclient.NextTaskResponse) (*spec.K8S
 		}
 	}
 
-	// After removing the nodes, we need to run the new current state through ansibler to remove the existing VPNs connections to these nodes.
-	// update ansibler vpn... We can ignore the kube-eleven step (the nodes were already deleted from the k8s cluster) and the kuber stage
-	// no patching of nodes needs to be done.
+	// After removing the nodes, we need to run the new current state through ansibler to remove the existing VPNs connections to these nodes.and Update ansibler VPN.
+	//  We can ignore the kube-eleven step (the nodes were already deleted from the k8s cluster), the kuber stage no patching of nodes needs to be done only updade of the kubeadm config map..
 	ctx = &builder.Context{
 		ProjectName:          te.Config,
 		TaskId:               te.Event.Id,
