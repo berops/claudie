@@ -63,14 +63,15 @@ func scheduleTasks(scheduled *store.Config) (ScheduleResult, error) {
 		// create
 		case state.Current == nil && state.Desired != nil:
 			// Choose initial api endpoint.
-		clusters:
-			for _, state := range scheduledGRPC.Clusters {
-				for _, lb := range state.Desired.GetLoadBalancers().GetClusters() {
-					if lb.HasApiRole() {
-						lb.UsedApiEndpoint = true
-						continue clusters
-					}
+			var ep bool
+			for _, lb := range state.Desired.GetLoadBalancers().GetClusters() {
+				if lb.HasApiRole() {
+					lb.UsedApiEndpoint = true
+					ep = true
+					break
 				}
+			}
+			if !ep {
 				nps := state.Desired.K8S.ClusterInfo.NodePools
 				nodepools.FirstControlNode(nps).NodeType = spec.NodeType_apiEndpoint
 			}

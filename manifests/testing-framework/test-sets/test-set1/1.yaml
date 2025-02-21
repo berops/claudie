@@ -88,7 +88,7 @@ spec:
           test-set: test-set1
         annotations:
           claudie.io/example-annotation: >
-            ["test-set1"]         
+            ["test-set1"]
 
       - name: gcp-ctrl-nodes
         providerSpec:
@@ -180,7 +180,7 @@ spec:
           test-set: test-set1
         annotations:
           claudie.io/example-annotation: >
-            ["test-set1"]        
+            ["test-set1"]
       - name: azr-cmpt-nodes
         providerSpec:
           name: azure-sponsor-1
