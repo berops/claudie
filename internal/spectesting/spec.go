@@ -323,15 +323,15 @@ func WithProviderSpecName(name string) FakeProviderOption {
 	}
 }
 
-func WithAutoscalerMax(max int32) FakeAutoscalerOption {
+func WithAutoscalerMax(m int32) FakeAutoscalerOption {
 	return func(a *spec.AutoscalerConf) {
-		a.Max = max
+		a.Max = m
 	}
 }
 
-func WithAutoscalerMin(min int32) FakeAutoscalerOption {
+func WithAutoscalerMin(m int32) FakeAutoscalerOption {
 	return func(a *spec.AutoscalerConf) {
-		a.Min = min
+		a.Min = m
 	}
 }
 

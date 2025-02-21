@@ -841,7 +841,9 @@ func Test_fillMissingCIDR2(t *testing.T) {
 	}
 
 	// 3. generate cidrs
-	fillMissingCIDR(state)
+	if err := fillMissingCIDR(state); err != nil {
+		t.Errorf("failed to generate CIDRs: %fv", err)
+	}
 
 	// 4. each np within a cluster should have a different cidr.
 	existing := make(map[string][]string)

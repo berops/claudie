@@ -1146,7 +1146,7 @@ func tryReachK8sNodes(logger zerolog.Logger, nps map[string][]string, state *spe
 			}
 			toDelete[np].Nodes = append(toDelete[np].Nodes, info.name)
 
-			// For the nodes that were manualy deleted check which of them are static nodes
+			// For the nodes that were manually deleted check which of them are static nodes
 			// as they will also need to be deleted from the desired state to not re-join the
 			// unreachable static node again on the next iteration.
 			static, node := nodepools.FindNode(state.GetDesired().GetK8S().GetClusterInfo().GetNodePools(), info.name)

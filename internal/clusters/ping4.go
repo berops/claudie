@@ -106,7 +106,7 @@ func ping4(logger zerolog.Logger, conn *icmp.PacketConn, id, seq int, dst *net.U
 				// As long as there are no two concurrent ping attempts to the
 				// same peer this should be fine.
 				// if body.ID != id {
-				// 	logger.Debug().Msgf("Recieved icmp echo reply id: %v does not match echo request id: %v, skipping", body.ID, id)
+				// 	logger.Debug().Msgf("Received icmp echo reply id: %v does not match echo request id: %v, skipping", body.ID, id)
 				// 	continue
 				// }
 				if body.Seq != seq {

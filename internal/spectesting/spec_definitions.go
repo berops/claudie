@@ -1,6 +1,7 @@
 package spectesting
 
 import (
+	crand "crypto/rand"
 	"fmt"
 	"maps"
 	"math"
@@ -26,6 +27,10 @@ var (
 )
 
 func init() {
+	var seed [32]byte
+	must(crand.Read(seed[:]))
+	rng = rand.NewChaCha8(seed)
+
 	KnownProviderTypes = make(map[string]any)
 	ProviderTypeOption = make(map[string]func(any) FakeProviderOption)
 
@@ -90,7 +95,7 @@ func init() {
 
 func GenerateFakeProvider() *spec.Provider {
 	r := make([]byte, 15)
-	rng.Read(r)
+	must(rng.Read(r))
 
 	iter := int(uint32(rng.Uint64())) % len(KnownProviderTypes)
 	var chosen string
@@ -124,9 +129,9 @@ func GenerateFakeDNS() *spec.DNS {
 		endpoint = make([]byte, 20)
 	)
 
-	rng.Read(zone)
-	rng.Read(hostname)
-	rng.Read(endpoint)
+	must(rng.Read(zone))
+	must(rng.Read(hostname))
+	must(rng.Read(endpoint))
 
 	return CreateFakeDNS(
 		WithDNSZone(string(zone)),
@@ -157,15 +162,15 @@ func GenerateFakeLBClusterInfo(
 			name      = make([]byte, 50)
 		)
 
-		rng.Read(name)
+		must(rng.Read(name))
 
 		for range cap(nodes) {
 			var (
 				name     = make([]byte, 50)
 				username = make([]byte, 50)
 			)
-			rng.Read(name)
-			rng.Read(username)
+			must(rng.Read(name))
+			must(rng.Read(username))
 
 			if !privateNetwork.Contains(privateStartAddress) {
 				panic(fmt.Sprintf("failed to generate nodes %s does not belong in %s", privateStartAddress, privateNetwork))
@@ -189,7 +194,7 @@ func GenerateFakeLBClusterInfo(
 			keys := make(map[string]string)
 			for _, n := range nodes {
 				key := make([]byte, 256)
-				rng.Read(key)
+				must(rng.Read(key))
 				keys[n.Public] = string(key)
 			}
 
@@ -212,22 +217,22 @@ func GenerateFakeLBClusterInfo(
 				count      = len(nodes)
 			)
 
-			rng.Read(serverType)
-			rng.Read(image)
-			rng.Read(region)
-			rng.Read(zone)
-			rng.Read(pk)
-			rng.Read(sk)
-			rng.Read(cidr[:3])
+			must(rng.Read(serverType))
+			must(rng.Read(image))
+			must(rng.Read(region))
+			must(rng.Read(zone))
+			must(rng.Read(pk))
+			must(rng.Read(sk))
+			must(rng.Read(cidr[:3]))
 
 			if rng.Uint64()%6 == 0 {
-				min := 1 + (rng.Uint64() % nodeCount)
-				max := max(min, (rng.Uint64() % nodeCount))
-				count = int(max)
+				minRange := 1 + (rng.Uint64() % nodeCount)
+				maxRange := max(minRange, (rng.Uint64() % nodeCount))
+				count = int(maxRange)
 				nodes = nodes[:count]
 				autoscaler = &spec.AutoscalerConf{
-					Min: int32(min),
-					Max: int32(max),
+					Min: int32(minRange),
+					Max: int32(maxRange),
 				}
 			}
 
@@ -253,8 +258,8 @@ func GenerateFakeLBClusterInfo(
 		}
 	}
 
-	rng.Read(name)
-	rng.Read(hash)
+	must(rng.Read(name))
+	must(rng.Read(hash))
 
 	return CreateFakeClusterInfo(
 		WithClusterInfoName(string(name)),
@@ -286,15 +291,15 @@ func GenerateFakeK8SClusterInfo(
 			name      = make([]byte, 50)
 		)
 
-		rng.Read(name)
+		must(rng.Read(name))
 
 		for range cap(nodes) {
 			var (
 				name     = make([]byte, 50)
 				username = make([]byte, 50)
 			)
-			rng.Read(name)
-			rng.Read(username)
+			must(rng.Read(name))
+			must(rng.Read(username))
 
 			if !privateNetwork.Contains(privateStartAddress) {
 				panic(fmt.Sprintf("failed to generate nodes %s does not belong in %s", privateStartAddress, privateNetwork))
@@ -318,7 +323,7 @@ func GenerateFakeK8SClusterInfo(
 			keys := make(map[string]string)
 			for _, n := range nodes {
 				key := make([]byte, 256)
-				rng.Read(key)
+				must(rng.Read(key))
 				keys[n.Public] = string(key)
 			}
 
@@ -341,22 +346,22 @@ func GenerateFakeK8SClusterInfo(
 				count      = len(nodes)
 			)
 
-			rng.Read(serverType)
-			rng.Read(image)
-			rng.Read(region)
-			rng.Read(zone)
-			rng.Read(pk)
-			rng.Read(sk)
-			rng.Read(cidr[:3])
+			must(rng.Read(serverType))
+			must(rng.Read(image))
+			must(rng.Read(region))
+			must(rng.Read(zone))
+			must(rng.Read(pk))
+			must(rng.Read(sk))
+			must(rng.Read(cidr[:3]))
 
 			if rng.Uint64()%6 == 0 {
-				min := 1 + (rng.Uint64() % nodeCount)
-				max := max(min, (rng.Uint64() % nodeCount))
-				count = int(max)
+				minRange := 1 + (rng.Uint64() % nodeCount)
+				maxRange := max(minRange, (rng.Uint64() % nodeCount))
+				count = int(maxRange)
 				nodes = nodes[:count]
 				autoscaler = &spec.AutoscalerConf{
-					Min: int32(min),
-					Max: int32(max),
+					Min: int32(minRange),
+					Max: int32(maxRange),
 				}
 			}
 
@@ -389,15 +394,15 @@ func GenerateFakeK8SClusterInfo(
 			name      = make([]byte, 50)
 		)
 
-		rng.Read(name)
+		must(rng.Read(name))
 
 		for range cap(nodes) {
 			var (
 				name     = make([]byte, 50)
 				username = make([]byte, 50)
 			)
-			rng.Read(name)
-			rng.Read(username)
+			must(rng.Read(name))
+			must(rng.Read(username))
 
 			if !privateNetwork.Contains(privateStartAddress) {
 				panic(fmt.Sprintf("failed to generate nodes %s does not belong in %s", privateStartAddress, privateNetwork))
@@ -421,7 +426,7 @@ func GenerateFakeK8SClusterInfo(
 			keys := make(map[string]string)
 			for _, n := range nodes {
 				key := make([]byte, 256)
-				rng.Read(key)
+				must(rng.Read(key))
 				keys[n.Public] = string(key)
 			}
 
@@ -444,22 +449,22 @@ func GenerateFakeK8SClusterInfo(
 				count      = len(nodes)
 			)
 
-			rng.Read(serverType)
-			rng.Read(image)
-			rng.Read(region)
-			rng.Read(zone)
-			rng.Read(pk)
-			rng.Read(sk)
-			rng.Read(cidr[:3])
+			must(rng.Read(serverType))
+			must(rng.Read(image))
+			must(rng.Read(region))
+			must(rng.Read(zone))
+			must(rng.Read(pk))
+			must(rng.Read(sk))
+			must(rng.Read(cidr[:3]))
 
 			if rng.Uint64()%6 == 0 {
-				min := 1 + (rng.Uint64() % nodeCount)
-				max := max(min, (rng.Uint64() % nodeCount))
-				count = int(max)
+				minRange := 1 + (rng.Uint64() % nodeCount)
+				maxRange := max(minRange, (rng.Uint64() % nodeCount))
+				count = int(maxRange)
 				nodes = nodes[:count]
 				autoscaler = &spec.AutoscalerConf{
-					Min: int32(min),
-					Max: int32(max),
+					Min: int32(minRange),
+					Max: int32(maxRange),
 				}
 			}
 
@@ -485,8 +490,8 @@ func GenerateFakeK8SClusterInfo(
 		}
 	}
 
-	rng.Read(name)
-	rng.Read(hash)
+	must(rng.Read(name))
+	must(rng.Read(hash))
 
 	if !willHaveLbApiEndpoint {
 		controlNodepools[int(uint32(rng.Uint64()))%len(controlNodepools)].Nodes[0].NodeType = spec.NodeType_apiEndpoint
@@ -504,7 +509,7 @@ func GenerateFakeRoles(willHaveLbApiEndpoint bool, k8s *spec.ClusterInfo) []*spe
 
 	for range cap(roles) {
 		name := make([]byte, 50)
-		rng.Read(name)
+		must(rng.Read(name))
 
 		var protocol string
 		if rng.Uint64()%2 == 0 {
@@ -561,7 +566,7 @@ func GenerateFakeK8SCluster(willHaveLbApiEndpoint bool) *spec.K8Scluster {
 		publicNetwork  = "10.1.0.0/16"
 		kubeconfig     = make([]byte, 50)
 	)
-	rng.Read(kubeconfig)
+	must(rng.Read(kubeconfig))
 
 	return CreateFakeK8SCluster(
 		WithK8SClusterInfo(GenerateFakeK8SClusterInfo(willHaveLbApiEndpoint, privateNetwork, publicNetwork)),
@@ -608,10 +613,10 @@ func AddNodes(count int, ci *spec.ClusterInfo, typ NodeFilter) map[string][]stri
 		private := make([]byte, 50)
 		key := make([]byte, 50)
 
-		rng.Read(nodeName)
-		rng.Read(public)
-		rng.Read(private)
-		rng.Read(key)
+		must(rng.Read(nodeName))
+		must(rng.Read(public))
+		must(rng.Read(private))
+		must(rng.Read(key))
 
 		var np *spec.NodePool
 		switch typ {
