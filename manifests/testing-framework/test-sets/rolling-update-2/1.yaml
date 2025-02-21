@@ -13,7 +13,7 @@ spec:
       secretRef:
         name: hetzner-secret
         namespace: e2e-secrets
-    - name: hetzner-1
+    - name: hetzner-2
       providerType: hetzner
       templates:
         repository: "https://github.com/berops/claudie-config"
@@ -100,7 +100,7 @@ spec:
 
       - name: htz-cmpt-nodes
         providerSpec:
-          name: hetzner-1
+          name: hetzner-2
           region: nbg1
           zone: nbg1-dc3
         count: 1

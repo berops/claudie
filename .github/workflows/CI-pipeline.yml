@@ -186,8 +186,8 @@ jobs:
           for SERVICE in "${ARR[@]}"
           do
             echo "-----Building $SERVICE-----"
-            IMGTAG="ghcr.io/berops/claudie/$SERVICE:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}" 
-            DOCKER_BUILDKIT=1 docker build --tag $IMGTAG -f ./services/$SERVICE/Dockerfile . 
+            IMGTAG="ghcr.io/berops/claudie/$SERVICE:${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}"
+            DOCKER_BUILDKIT=1 docker build --tag $IMGTAG -f ./services/$SERVICE/Dockerfile .
             docker push $IMGTAG
           done
     outputs:
@@ -286,10 +286,10 @@ jobs:
           sudo apt update && sudo apt install -y wget tar
           wget -q https://github.com/mikefarah/yq/releases/download/v4.27.2/yq_linux_amd64.tar.gz -O - |\
           tar xz && mv yq_linux_amd64 yq
-          
+
           test_sets=$(./yq '.secretGenerator[].name' ./testing-framework/kustomization.yaml)
           selected=()
-          
+
           for set in $test_sets; do
             mnt="/go/services/testing-framework/test-sets/$set"
 
@@ -304,27 +304,27 @@ jobs:
               ./yq -i "select(di ==0).spec.template.spec.containers[].volumeMounts += [{\"name\": \"$set\", \"mountPath\": \"$mnt\"}]" ./testing-framework/testing-framework.yaml
               selected+=("$set")
             fi
-          
+
             if [ -n "$GITHUB_PR_LABEL_TEST_SET_ORDINARY" ] && [[ "$set" == *"test-set"* ]]; then
               ./yq -i "select(di ==0).spec.template.spec.volumes += [{\"name\": \"$set\", \"secret\": {\"secretName\": \"$set\"}}]"    ./testing-framework/testing-framework.yaml
               ./yq -i "select(di ==0).spec.template.spec.containers[].volumeMounts += [{\"name\": \"$set\", \"mountPath\": \"$mnt\"}]" ./testing-framework/testing-framework.yaml
               selected+=("$set")
             fi
-          
+
             if [ -n "$GITHUB_PR_LABEL_TEST_SET_ROLLING_UPDATE" ] && [[ "$set" == *"rolling-update"* ]]; then
               ./yq -i "select(di ==0).spec.template.spec.volumes += [{\"name\": \"$set\", \"secret\": {\"secretName\": \"$set\"}}]"    ./testing-framework/testing-framework.yaml
               ./yq -i "select(di ==0).spec.template.spec.containers[].volumeMounts += [{\"name\": \"$set\", \"mountPath\": \"$mnt\"}]" ./testing-framework/testing-framework.yaml
               selected+=("$set")
             fi
-          
+
             if [ -n "$GITHUB_PR_LABEL_TEST_SET_PROXY" ] && [[ "$set" == *"proxy"* ]]; then
               ./yq -i "select(di ==0).spec.template.spec.volumes += [{\"name\": \"$set\", \"secret\": {\"secretName\": \"$set\"}}]"    ./testing-framework/testing-framework.yaml
               ./yq -i "select(di ==0).spec.template.spec.containers[].volumeMounts += [{\"name\": \"$set\", \"mountPath\": \"$mnt\"}]" ./testing-framework/testing-framework.yaml
               selected+=("$set")
             fi
           done
-          
-          
+
+
           if [ ${#selected[@]} -eq 0 ]; then
             echo "skipping e2e tests"
             echo "skip_deploy=true" >> $GITHUB_OUTPUT
@@ -334,7 +334,7 @@ jobs:
           fi
 
       - name: Install terraform
-        run: | 
+        run: |
           sudo apt-get update && sudo apt-get install -y wget
           wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
           echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
@@ -416,19 +416,19 @@ jobs:
 
           echo "Running terraform init"
           terraform init > /dev/null 2>&1
-          echo "Running terraform apply"   
+          echo "Running terraform apply"
           terraform apply -auto-approve > /dev/null 2>&1
 
-          echo "Running terraform output"   
+          echo "Running terraform output"
           IPS=$(terraform output --json | jq -r '.endpoints.value | values[]')
           IP_ARR=( $IPS )
-          
+
           # use 3 nodes for the explicit static nodes test-set.
           for file in test-set5/*; do
               if [ -f "$file" ]; then
                   filename=$(basename "$file")
                   if [[ $filename == "1.yaml" ]]; then
-                      ENDPOINT=${IP_ARR[1]} ../../yq e '.spec.nodePools.static.[1].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
+                      ENDPOINT=${IP_ARR[1]} ../../yq e '.spec.nodePools.static.[0].nodes.[0].endpoint = strenv(ENDPOINT)' $file -i
                       ENDPOINT=${IP_ARR[2]} ../../yq e '.spec.nodePools.static.[0].nodes.[1].endpoint = strenv(ENDPOINT)' $file -i
                   fi
                   if [[ $filename == "2.yaml" ]]; then
@@ -440,7 +440,7 @@ jobs:
                   fi
               fi
           done
-          
+
           # use 1 node for the rolling update test.
           for file in rolling-update/*; do
               if [ -f "$file" ]; then
@@ -458,16 +458,16 @@ jobs:
         if: (steps.determine-test-sets.outputs.skip_deploy == 'false')
         working-directory: ./manifests
         run: |
-          NAME_HASH="testing-framework-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}" ./yq e -i '(select(.kind == "ClusterRoleBinding").metadata.name = strenv(NAME_HASH))' ./testing-framework/testing-framework.yaml 
-          
+          NAME_HASH="testing-framework-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}" ./yq e -i '(select(.kind == "ClusterRoleBinding").metadata.name = strenv(NAME_HASH))' ./testing-framework/testing-framework.yaml
+
           cat ./testing-framework/testing-framework.yaml
 
           kustomize edit set namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
           kustomize build . | kubectl apply -f -
 
           #Clean up
-          rm -f yq 
-          rm -f yq.1 
+          rm -f yq
+          rm -f yq.1
           rm -f install-man-page.sh
 
       - name: Monitor E2E test
@@ -479,7 +479,7 @@ jobs:
 
           # Wait for failure as background process - capture PID
           kubectl wait --for=condition=failed --timeout=25000s job/testing-framework -n claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER} && exit 1 &
-          failure_pid=$! 
+          failure_pid=$!
 
           # capture exit code of the first subprocess to exit
           wait -n $completion_pid $failure_pid
@@ -497,7 +497,7 @@ jobs:
         if: (steps.determine-test-sets.outputs.skip_deploy == 'false')
         run: |
           kubectl delete namespace claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
-      
+
       - name: Destroy test static nodes
         if: always()
         working-directory: ./manifests/testing-framework/test-sets
