@@ -19,6 +19,11 @@ spec:
     spec:
       terminationGracePeriodSeconds: 1320
       securityContext:
+        # needed by kuber to be able to ping nodes to determine
+        # which of them are reachable or not.
+        sysctls:
+          - name: net.ipv4.ping_group_range
+            value: "1 3000"
         runAsUser: 1000
         runAsGroup: 3000
         fsGroup: 2000
@@ -39,6 +44,9 @@ spec:
             capabilities:
               drop:
                 - all
+              add:
+                # needed to access raw sockets for ping.
+                - NET_RAW
           resources:
             requests:
               cpu: 100m
