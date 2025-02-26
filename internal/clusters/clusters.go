@@ -24,8 +24,14 @@ func DetermineLBApiEndpointChange(currentLbs, desiredLbs []*spec.LBcluster) (str
 	}
 
 	if current := FindAssignedLbApiEndpoint(currentLbs); current != nil {
+		if len(desired) == 0 && current.Dns == nil { // current state failed to build dns, but lb was deleted.
+			return "", "", spec.ApiEndpointChangeState_NoChange
+		}
 		if len(desired) == 0 {
 			return current.ClusterInfo.Id(), "", spec.ApiEndpointChangeState_DetachingLoadBalancer
+		}
+		if current.Dns == nil { // current state failed to build dns but there is at least one cluster in desired state.
+			return "", first.ClusterInfo.Id(), spec.ApiEndpointChangeState_AttachingLoadBalancer
 		}
 		if desired, ok := desired[current.ClusterInfo.Id()]; ok {
 			if current.Dns.Endpoint != desired.Dns.Endpoint {
