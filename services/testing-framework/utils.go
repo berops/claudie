@@ -173,7 +173,7 @@ func validateKubeconfigAlternativeNames(c map[string]*spec.ClusterState) error {
 		// if the clusters has no APIServer Loadbalancer we can test all
 		// control plane nodes to validate if they all can be used with the
 		// generated KubeConfig.
-		if clusters.FindAssignedLbApiEndpoint(v.GetCurrent().GetLoadBalancers().GetClusters()) == nil {
+		if clusters.FindAssignedLbApiEndpoint(v.GetCurrent().GetLoadBalancers().GetClusters()) != nil {
 			continue
 		}
 
