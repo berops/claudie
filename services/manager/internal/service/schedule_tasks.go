@@ -826,8 +826,14 @@ func craftLbsIR(current, desired, added []*spec.LBcluster) []*spec.LBcluster {
 				found.MergeTargetPools(desired)
 			}
 		}
+
+		// 3. If the current state DNS failed to build we take the dns
+		// from the desired state.
+		if ir[i].Dns == nil {
+			ir[i].Dns = lb.Dns
+		}
 	}
-	// 3. add new lbs.
+	// 4. add new lbs.
 	return append(ir, lbClone(added)...)
 }
 
