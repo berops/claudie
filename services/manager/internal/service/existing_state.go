@@ -11,7 +11,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func backwardsCompatiblity(c *spec.Config) {
+func backwardsCompatibility(c *spec.Config) {
 	// TODO: remove in future versions, currently only for backwards compatibility.
 	// version 0.9.3 moved selection of the api server to the manager service
 	// and introduced a new field that selects which LB is used as the api endpoint.
