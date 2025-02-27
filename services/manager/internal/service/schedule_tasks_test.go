@@ -2,15 +2,21 @@ package service
 
 import (
 	"fmt"
+	"math/rand/v2"
+	"os"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/berops/claudie/internal/hash"
+	"github.com/berops/claudie/internal/nodepools"
+	"github.com/berops/claudie/internal/spectesting"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/manager/internal/store"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 
 	"google.golang.org/protobuf/proto"
@@ -837,7 +843,7 @@ func TestDiff(t *testing.T) {
 					return desired
 				}(),
 			},
-			want: []*spec.TaskEvent{{Event: spec.Event_UPDATE, Description: "updating autoscaler config"}},
+			want: []*spec.TaskEvent{{Event: spec.Event_UPDATE, Description: "reconciling infrastructure changes, updating autoscaler config"}},
 		},
 		{
 			name: "autoscaler-disable-different-count",
@@ -852,7 +858,10 @@ func TestDiff(t *testing.T) {
 					return desired
 				}(),
 			},
-			want: []*spec.TaskEvent{{Event: spec.Event_UPDATE, Description: "adding nodes to k8s cluster"}},
+			want: []*spec.TaskEvent{
+				{Event: spec.Event_UPDATE, Description: "adding nodes to k8s cluster"},
+				{Event: spec.Event_UPDATE, Description: "reconciling infrastructure changes, updating autoscaler config"},
+			},
 		},
 		{
 			name: "autoscaler-disable-different-count-2",
@@ -869,7 +878,7 @@ func TestDiff(t *testing.T) {
 			},
 			want: []*spec.TaskEvent{
 				{Event: spec.Event_DELETE, Description: "deleting nodes from k8s cluster"},
-				{Event: spec.Event_UPDATE, Description: "reconciling infrastructure changes, including deletion of infrastructure for deleted dynamic nodes"},
+				{Event: spec.Event_UPDATE, Description: "reconciling infrastructure changes, updating autoscaler config"},
 			},
 		},
 		{
@@ -884,7 +893,7 @@ func TestDiff(t *testing.T) {
 					return desired
 				}(),
 			},
-			want: []*spec.TaskEvent{{Event: spec.Event_UPDATE, Description: "updating autoscaler config"}},
+			want: []*spec.TaskEvent{{Event: spec.Event_UPDATE, Description: "reconciling infrastructure changes, updating autoscaler config"}},
 		},
 		{
 			name: "autoscaler-enable-same-count",
@@ -902,7 +911,7 @@ func TestDiff(t *testing.T) {
 					return desired
 				}(),
 			},
-			want: []*spec.TaskEvent{{Event: spec.Event_UPDATE, Description: "updating autoscaler config"}},
+			want: []*spec.TaskEvent{{Event: spec.Event_UPDATE, Description: "reconciling infrastructure changes, updating autoscaler config"}},
 		},
 		{
 			name: "delete-only-lb",
@@ -934,7 +943,6 @@ func TestDiff(t *testing.T) {
 			},
 			want: []*spec.TaskEvent{
 				{Event: spec.Event_DELETE, Description: "deleting nodes from k8s cluster"},
-				{Event: spec.Event_UPDATE, Description: "reconciling infrastructure changes, including deletion of infrastructure for deleted dynamic nodes"},
 			},
 		},
 		{
@@ -969,7 +977,6 @@ func TestDiff(t *testing.T) {
 				{Event: spec.Event_UPDATE, Description: "adding nodes to k8s cluster"},
 				{Event: spec.Event_UPDATE, Description: "moving endpoint from old control plane node to a new control plane node 1 from nodepool np1"},
 				{Event: spec.Event_DELETE, Description: "deleting nodes from k8s cluster"},
-				{Event: spec.Event_UPDATE, Description: "reconciling infrastructure changes, including deletion of infrastructure for deleted dynamic nodes"},
 			},
 		},
 		{
@@ -993,7 +1000,6 @@ func TestDiff(t *testing.T) {
 				{Event: spec.Event_UPDATE, Description: "adding nodes to k8s cluster"},
 				{Event: spec.Event_UPDATE, Description: "applying load balancer intermediate representation"},
 				{Event: spec.Event_DELETE, Description: "deleting nodes from k8s cluster"},
-				{Event: spec.Event_UPDATE, Description: "reconciling infrastructure changes, including deletion of infrastructure for deleted dynamic nodes"},
 			},
 		},
 		{
@@ -1016,7 +1022,6 @@ func TestDiff(t *testing.T) {
 			want: []*spec.TaskEvent{
 				{Event: spec.Event_UPDATE, Description: fmt.Sprintf("moving endpoint from old control plane node to a new control plane node 1 from nodepool np0-%s", rnghash)},
 				{Event: spec.Event_DELETE, Description: "deleting nodes from k8s cluster"},
-				{Event: spec.Event_UPDATE, Description: "reconciling infrastructure changes, including deletion of infrastructure for deleted dynamic nodes"},
 			},
 		},
 	}
@@ -1457,4 +1462,52 @@ func Test_scheduleTasksRollback(t *testing.T) {
 		diff := cmp.Diff(got, rollback, opts)
 		t.Fatalf("schedule tasks (rollback) failed: %s", diff)
 	}
+}
+
+func Test_tryReachK8sNodes(t *testing.T) {
+	k8s := spectesting.GenerateFakeK8SCluster(true)
+	lbs := spectesting.GenerateFakeLBCluster(true, k8s.ClusterInfo)
+	s := &spec.ClusterState{
+		Current: &spec.Clusters{
+			K8S:           k8s,
+			LoadBalancers: &spec.LoadBalancers{Clusters: []*spec.LBcluster{lbs}},
+		},
+		State: new(spec.Workflow),
+	}
+	s.Desired = proto.Clone(s.Current).(*spec.Clusters)
+
+	unreachable := map[string]map[string][]string{
+		lbs.ClusterInfo.Id(): {},
+	}
+	np := lbs.ClusterInfo.NodePools[rand.IntN(len(lbs.ClusterInfo.NodePools))]
+	unreachableNodes := rand.IntN(len(np.Nodes))
+
+	for i := range unreachableNodes {
+		unreachable[lbs.ClusterInfo.Id()][np.Name] = append(unreachable[lbs.ClusterInfo.Id()][np.Name], np.Nodes[i].Public)
+	}
+
+	logger := zerolog.New(os.Stdout)
+	events, apply := tryReachLbNodes(logger, unreachable, s)
+	assert.False(t, apply)
+	assert.Nil(t, events)
+	assert.True(t, strings.Contains(s.State.Description, "fix the unreachable nodes by either:"))
+
+	s.Desired.LoadBalancers.Clusters[0].ClusterInfo.NodePools = nodepools.DeleteByName(s.Desired.LoadBalancers.Clusters[0].ClusterInfo.NodePools, np.Name)
+
+	events, apply = tryReachLbNodes(logger, unreachable, s)
+	assert.True(t, apply)
+	assert.NotNil(t, events)
+
+	for _, lb := range events[0].Task.DeleteState.Lbs {
+		assert.Equal(t, lbs.ClusterInfo.Id(), lb.Id)
+		assert.False(t, lb.Destroy)
+		_, ok := lb.Nodepools[np.Name]
+		assert.True(t, ok)
+	}
+
+	s.Desired.LoadBalancers = nil
+	events, apply = tryReachLbNodes(logger, unreachable, s)
+	assert.False(t, apply)
+	assert.Nil(t, events)
+	assert.True(t, strings.Contains(s.State.Description, "broken kubernetes cluster"))
 }

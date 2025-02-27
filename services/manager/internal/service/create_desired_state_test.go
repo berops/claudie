@@ -2,9 +2,13 @@ package service
 
 import (
 	"fmt"
+	"math/rand/v2"
+	"slices"
 	"testing"
 
 	"github.com/berops/claudie/internal/manifest"
+	"github.com/berops/claudie/internal/nodepools"
+	"github.com/berops/claudie/internal/spectesting"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/manager/internal/store"
 	"github.com/stretchr/testify/assert"
@@ -798,6 +802,72 @@ func TestGetCIDR(t *testing.T) {
 	}
 }
 
+func Test_fillMissingCIDR2(t *testing.T) {
+	var (
+		k8s   = spectesting.GenerateFakeK8SCluster(true)
+		lbs1  = spectesting.GenerateFakeLBCluster(false, k8s.ClusterInfo)
+		lbs2  = spectesting.GenerateFakeLBCluster(true, k8s.ClusterInfo)
+		state = &spec.ClusterState{
+			Desired: &spec.Clusters{
+				K8S: k8s,
+				LoadBalancers: &spec.LoadBalancers{
+					Clusters: []*spec.LBcluster{lbs1, lbs2},
+				},
+			},
+		}
+	)
+	// 1. remove all generated cidrs. an
+	for _, np := range nodepools.ExtractDynamic(state.Desired.K8S.ClusterInfo.NodePools) {
+		np.Cidr = ""
+	}
+	for _, c := range state.Desired.LoadBalancers.Clusters {
+		for _, np := range nodepools.ExtractDynamic(c.ClusterInfo.NodePools) {
+			np.Cidr = ""
+		}
+	}
+
+	// 2. narrow down the spec name and provider region.
+	regions := []string{"a", "b", "c"}
+	specName := []string{"g", "h", "i"}
+	for _, np := range nodepools.ExtractDynamic(state.Desired.K8S.ClusterInfo.NodePools) {
+		np.Provider.SpecName = specName[rand.IntN(len(specName))]
+		np.Region = regions[rand.IntN(len(specName))]
+	}
+	for _, c := range state.Desired.LoadBalancers.Clusters {
+		for _, np := range nodepools.ExtractDynamic(c.ClusterInfo.NodePools) {
+			np.Provider.SpecName = specName[rand.IntN(len(specName))]
+			np.Region = regions[rand.IntN(len(specName))]
+		}
+	}
+
+	// 3. generate cidrs
+	if err := fillMissingCIDR(state); err != nil {
+		t.Errorf("failed to generate CIDRs: %fv", err)
+	}
+
+	// 4. each np within a cluster should have a different cidr.
+	existing := make(map[string][]string)
+	for p, np := range nodepools.ByProviderRegion(state.Desired.K8S.ClusterInfo.NodePools) {
+		assert.True(t, len(np) > 0)
+		for _, np := range nodepools.ExtractDynamic(np) {
+			assert.NotEmpty(t, np.Cidr)
+			assert.False(t, slices.Contains(existing[p], np.Cidr))
+			existing[p] = append(existing[p], np.Cidr)
+		}
+	}
+	for _, c := range state.Desired.LoadBalancers.Clusters {
+		clear(existing)
+		for p, np := range nodepools.ByProviderRegion(c.ClusterInfo.NodePools) {
+			assert.True(t, len(np) > 0)
+			for _, np := range nodepools.ExtractDynamic(np) {
+				assert.NotEmpty(t, np.Cidr)
+				assert.False(t, slices.Contains(existing[p], np.Cidr))
+				existing[p] = append(existing[p], np.Cidr)
+			}
+		}
+	}
+}
+
 func Test_fillMissingCIDR(t *testing.T) {
 	type args struct {
 		c *spec.ClusterState
@@ -997,4 +1067,59 @@ func Test_fillMissingCIDR(t *testing.T) {
 			tt.validate(t, tt.args)
 		})
 	}
+}
+
+func Test_generateMissingDynamicNode(t *testing.T) {
+	// control nodepool
+	np := &spec.NodePool{
+		Nodes:     make([]*spec.Node, 2),
+		IsControl: true,
+		Type: &spec.NodePool_DynamicNodePool{
+			DynamicNodePool: &spec.DynamicNodePool{
+				Count: 4,
+			},
+		},
+	}
+
+	generateMissingDynamicNodes("testing-1", map[string]struct{}{}, np)
+	assert.Equal(t, 4, len(np.Nodes))
+	assert.Equal(t, "testing-1-01", np.Nodes[2].Name)
+	assert.Equal(t, "testing-1-02", np.Nodes[3].Name)
+	assert.Equal(t, spec.NodeType_master, np.Nodes[2].NodeType)
+	assert.Equal(t, spec.NodeType_master, np.Nodes[3].NodeType)
+
+	// worker nodepool
+	np = &spec.NodePool{
+		Nodes:     make([]*spec.Node, 2),
+		IsControl: false,
+		Type: &spec.NodePool_DynamicNodePool{
+			DynamicNodePool: &spec.DynamicNodePool{
+				Count: 3,
+			},
+		},
+	}
+
+	generateMissingDynamicNodes("testing-2", map[string]struct{}{}, np)
+	assert.Equal(t, 3, len(np.Nodes))
+	assert.Equal(t, "testing-2-01", np.Nodes[2].Name)
+	assert.Equal(t, spec.NodeType_worker, np.Nodes[2].NodeType)
+
+	np = &spec.NodePool{
+		Nodes:     []*spec.Node{{Name: "testing-2-02"}},
+		IsControl: false,
+		Type: &spec.NodePool_DynamicNodePool{
+			DynamicNodePool: &spec.DynamicNodePool{
+				Count: 3,
+			},
+		},
+	}
+
+	generateMissingDynamicNodes("testing-2", map[string]struct{}{
+		"testing-2-02": {},
+	}, np)
+
+	assert.Equal(t, 3, len(np.Nodes))
+	assert.Equal(t, "testing-2-02", np.Nodes[0].Name)
+	assert.Equal(t, "testing-2-01", np.Nodes[1].Name)
+	assert.Equal(t, "testing-2-03", np.Nodes[2].Name)
 }

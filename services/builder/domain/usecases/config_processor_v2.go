@@ -118,7 +118,7 @@ func (u *Usecases) processTaskEvent(t *managerclient.NextTaskResponse) (*spec.Cl
 	case spec.Event_DELETE:
 		metrics.TasksProcessedDeleteCounter.Inc()
 		metrics.ClusterProcessedCounter.Inc()
-		metrics.LoadBalancersProcessedCounter.Add(float64(len(t.Event.Task.DeleteState.GetLbs().GetClusters())))
+		metrics.LoadBalancersProcessedCounter.Add(float64(len(t.Event.Task.DeleteState.GetLbs())))
 		metrics.LoadBalancersInProgress.Add(float64(len(t.Event.Task.CreateState.GetLbs().GetClusters())))
 		defer metrics.LoadBalancersInProgress.Sub(float64(len(t.Event.Task.CreateState.GetLbs().GetClusters())))
 		metrics.ClustersInDelete.Inc()
@@ -198,25 +198,11 @@ func (u *Usecases) executeUpdateTask(te *managerclient.NextTaskResponse) (*spec.
 			return ctx.DesiredCluster, ctx.DesiredLoadbalancers, err
 		}
 
-		// Patch cluster-info config map to update certificates.
-		if err := u.callPatchClusterInfoConfigMap(ctx); err != nil {
+		if err := u.patchConfigMapsWithNewApiEndpoint(ctx); err != nil {
 			return ctx.DesiredCluster, ctx.DesiredLoadbalancers, err
 		}
 
-		if err := u.Kuber.PatchKubeProxyConfigMap(ctx, u.Kuber.GetClient()); err != nil {
-			return ctx.DesiredCluster, ctx.DesiredLoadbalancers, err
-		}
-
-		var lbApiEndpoint string
-		if ep := clusters.FindAssignedLbApiEndpoint(ctx.DesiredLoadbalancers); ep != nil {
-			lbApiEndpoint = ep.Dns.Endpoint
-		}
-
-		if err := u.Kuber.PatchKubeadmConfigMap(ctx, lbApiEndpoint, u.Kuber.GetClient()); err != nil {
-			return ctx.DesiredCluster, ctx.DesiredLoadbalancers, err
-		}
-
-		if err := u.Kuber.CiliumRolloutRestart(ctx.DesiredCluster, u.Kuber.GetClient()); err != nil {
+		if err := u.patchKubeadmAndUpdateCilium(ctx); err != nil {
 			return ctx.DesiredCluster, ctx.DesiredLoadbalancers, err
 		}
 
@@ -239,46 +225,145 @@ func (u *Usecases) executeUpdateTask(te *managerclient.NextTaskResponse) (*spec.
 }
 
 func (u *Usecases) executeDeleteTask(te *managerclient.NextTaskResponse) (*spec.K8Scluster, []*spec.LBcluster, error) {
-	if len(te.Event.Task.DeleteState.Nodepools) != 0 {
-		var static []*spec.NodePool
-		var master, worker []string
-
-		for np, deleted := range te.Event.Task.DeleteState.Nodepools {
-			nodepool := nodepools.FindByName(np, te.Current.K8S.ClusterInfo.NodePools)
-			if nodepool.IsControl {
-				master = append(master, deleted.Nodes...)
-			} else {
-				worker = append(worker, deleted.Nodes...)
+	if te.Event.Task.DeleteState.K8S != nil {
+		if te.Event.Task.DeleteState.K8S.Destroy {
+			ctx := &builder.Context{
+				ProjectName:          te.Config,
+				TaskId:               te.Event.Id,
+				CurrentCluster:       te.Current.K8S,
+				CurrentLoadbalancers: te.Current.GetLoadBalancers().GetClusters(),
+				Workflow:             te.State,
+				Options:              te.Event.Task.Options,
 			}
-			if nodepool.GetStaticNodePool() != nil {
-				static = append(static, proto.Clone(nodepool).(*spec.NodePool))
+			if err := u.destroyCluster(ctx); err != nil {
+				return te.Current.K8S, te.Current.GetLoadBalancers().GetClusters(), err
 			}
+			return nil, nil, nil
 		}
+		if len(te.Event.Task.DeleteState.K8S.Nodepools) > 0 {
+			return u.deleteK8sNodes(te)
+		}
+	}
 
+	var deleted []*spec.LBcluster
+	for _, lb := range te.Event.Task.DeleteState.Lbs {
+		i := clusters.IndexLoadbalancerById(lb.Id, te.Current.GetLoadBalancers().GetClusters())
+		if i < 0 {
+			continue
+		}
+		if lb.Destroy {
+			deleted = append(deleted, te.Current.GetLoadBalancers().GetClusters()[i])
+		}
+	}
+
+	if len(deleted) > 0 {
 		ctx := &builder.Context{
-			ProjectName:    te.Config,
-			TaskId:         te.Event.Id,
-			CurrentCluster: te.Current.K8S,
-			Workflow:       te.State,
-			Options:        te.Event.Task.Options,
+			ProjectName:          te.Config,
+			TaskId:               te.Event.Id,
+			CurrentLoadbalancers: deleted,
+			Workflow:             te.State,
+			Options:              te.Event.Task.Options,
+		}
+		if err := u.destroyInfrastructure(ctx); err != nil {
+			return te.Current.K8S, te.Current.GetLoadBalancers().GetClusters(), err
+		}
+	}
+
+	currentLbs := spec.LoadBalancers{Clusters: te.Current.GetLoadBalancers().GetClusters()}
+	for _, deleted := range deleted {
+		currentLbs.Clusters = slices.DeleteFunc(currentLbs.Clusters, func(bcluster *spec.LBcluster) bool { return deleted.ClusterInfo.Id() == bcluster.ClusterInfo.Id() })
+	}
+
+	lbs := proto.Clone(&currentLbs).(*spec.LoadBalancers)
+	var npsDeleted bool
+	for _, lb := range te.Event.Task.DeleteState.Lbs {
+		i := clusters.IndexLoadbalancerById(lb.Id, lbs.Clusters)
+		if i < 0 || len(lb.Nodepools) < 1 {
+			continue
+		}
+		npsDeleted = true
+		for np := range lb.Nodepools {
+			lbs.Clusters[i].ClusterInfo.NodePools = nodepools.DeleteByName(lbs.Clusters[i].ClusterInfo.NodePools, np)
+		}
+	}
+
+	if !npsDeleted {
+		return te.Current.K8S, currentLbs.Clusters, nil
+	}
+
+	ctx := &builder.Context{
+		ProjectName:          te.Config,
+		TaskId:               te.Event.Id,
+		CurrentCluster:       te.Current.K8S,
+		DesiredCluster:       te.Current.K8S,
+		CurrentLoadbalancers: currentLbs.Clusters,
+		DesiredLoadbalancers: lbs.Clusters,
+		Workflow:             te.State,
+		Options:              te.Event.Task.Options,
+	}
+
+	if err := u.reconcileInfrastructure(ctx); err != nil {
+		return te.Current.K8S, currentLbs.Clusters, err
+	}
+
+	return te.Current.K8S, lbs.Clusters, nil
+}
+
+func (u *Usecases) deleteK8sNodes(te *managerclient.NextTaskResponse) (*spec.K8Scluster, []*spec.LBcluster, error) {
+	var (
+		staticCount  int
+		dynamicCount int
+		static       []*spec.NodePool
+	)
+
+	for np, deleted := range te.Event.Task.DeleteState.K8S.Nodepools {
+		if np := nodepools.FindByName(np, te.Current.K8S.ClusterInfo.NodePools); np.GetStaticNodePool() != nil {
+			static = append(static, proto.Clone(np).(*spec.NodePool))
+			staticCount += len(deleted.Nodes)
+		} else {
+			dynamicCount += len(deleted.Nodes)
+		}
+	}
+
+	ctx := &builder.Context{
+		ProjectName:    te.Config,
+		TaskId:         te.Event.Id,
+		CurrentCluster: te.Current.K8S,
+		Workflow:       te.State,
+		Options:        te.Event.Task.Options,
+	}
+	u.updateTaskWithDescription(ctx, spec.Workflow_KUBER, fmt.Sprintf("deleting nodes from cluster static:%v,dynamic:%v ", staticCount, dynamicCount))
+
+	// delete the nodes from the k8s cluster.
+	k8s, err := u.callDeleteNodes(te.Current.K8S, te.Event.Task.DeleteState.K8S.Nodepools)
+	if err != nil {
+		return te.Current.K8S, te.Current.GetLoadBalancers().GetClusters(), fmt.Errorf("error while deleting nodes for %s: %w", te.Current.K8S.ClusterInfo.Name, err)
+	}
+
+	// for dynamic nodes remove the infrastructure via terraform.
+	if dynamicCount != 0 {
+		ctx := &builder.Context{
+			ProjectName:          te.Config,
+			TaskId:               te.Event.Id,
+			CurrentCluster:       te.Current.K8S,
+			DesiredCluster:       k8s,
+			CurrentLoadbalancers: te.Current.GetLoadBalancers().GetClusters(),
+			DesiredLoadbalancers: te.Current.GetLoadBalancers().GetClusters(),
+			Workflow:             te.State,
+			Options:              te.Event.Task.Options,
 		}
 
-		u.updateTaskWithDescription(ctx, spec.Workflow_KUBER, fmt.Sprintf("deleting nodes [%q, %q] from cluster", master, worker))
-
-		k8s, err := u.callDeleteNodes(master, worker, ctx.CurrentCluster)
-		if err != nil {
-			return te.Current.GetK8S(), te.Current.GetLoadBalancers().GetClusters(), fmt.Errorf("error while deleting nodes for %s: %w", te.Current.K8S.ClusterInfo.NodePools, err)
+		if err := u.reconcileInfrastructure(ctx); err != nil {
+			return te.Current.K8S, te.Current.GetLoadBalancers().GetClusters(), fmt.Errorf("error while deleting nodes for %s: %w", te.Current.K8S.ClusterInfo.Id(), err)
 		}
+	}
 
-		if len(static) == 0 {
-			u.updateTaskWithDescription(ctx, spec.Workflow_KUBER, fmt.Sprintf("finished deleting nodes [%q, %q] from cluster", master, worker))
-			return k8s, te.Current.GetLoadBalancers().GetClusters(), nil
-		}
-
+	// for static nodes de-initialize them by removing installed binaries.
+	if staticCount != 0 {
 		// for static nodes we need to delete installed claudie utilities.
 		for _, np := range static {
 			np.Nodes = slices.DeleteFunc(np.Nodes, func(node *spec.Node) bool {
-				return !slices.ContainsFunc(te.Event.Task.DeleteState.Nodepools[np.Name].Nodes, func(s string) bool {
+				return !slices.ContainsFunc(te.Event.Task.DeleteState.K8S.Nodepools[np.Name].Nodes, func(s string) bool {
 					return node.Name == s
 				})
 			})
@@ -287,7 +372,7 @@ func (u *Usecases) executeDeleteTask(te *managerclient.NextTaskResponse) (*spec.
 		c := proto.Clone(te.Current.K8S).(*spec.K8Scluster)
 		c.ClusterInfo.NodePools = static
 
-		ctx = &builder.Context{
+		ctx := &builder.Context{
 			ProjectName:    te.Config,
 			TaskId:         te.Event.Id,
 			CurrentCluster: c,
@@ -296,39 +381,31 @@ func (u *Usecases) executeDeleteTask(te *managerclient.NextTaskResponse) (*spec.
 		}
 
 		if err := u.removeClaudieUtilities(ctx); err != nil {
-			return k8s, te.Current.GetLoadBalancers().GetClusters(), fmt.Errorf("error while removing utilities for static nodes from %s: %w", te.Current.K8S.ClusterInfo.Name, err)
+			return te.Current.K8S, te.Current.GetLoadBalancers().GetClusters(), fmt.Errorf("error while removing utilities for static nodes from %s: %w", te.Current.K8S.ClusterInfo.Id(), err)
 		}
-
-		u.updateTaskWithDescription(ctx, spec.Workflow_KUBER, fmt.Sprintf("finished deleting nodes [%q, %q] from cluster", master, worker))
-		return k8s, te.Current.GetLoadBalancers().GetClusters(), nil
 	}
 
-	clusterDeletion := te.Event.Task.DeleteState.GetK8S() != nil
-
-	ctx := &builder.Context{
+	// After removing the nodes, we need to run the new current state through ansibler to remove the existing VPNs connections to these nodes.and Update ansibler VPN.
+	//  We can ignore the kube-eleven step (the nodes were already deleted from the k8s cluster), the kuber stage no patching of nodes needs to be done only updade of the kubeadm config map..
+	ctx = &builder.Context{
 		ProjectName:          te.Config,
 		TaskId:               te.Event.Id,
-		CurrentCluster:       te.Event.Task.DeleteState.GetK8S(),
-		CurrentLoadbalancers: te.Event.Task.DeleteState.GetLbs().GetClusters(),
+		CurrentCluster:       te.Current.K8S,
+		DesiredCluster:       k8s,
+		CurrentLoadbalancers: te.Current.GetLoadBalancers().GetClusters(),
+		DesiredLoadbalancers: te.Current.GetLoadBalancers().GetClusters(),
 		Workflow:             te.State,
 		Options:              te.Event.Task.Options,
 	}
 
-	err := u.destroyCluster(ctx)
-	if err == nil {
-		if clusterDeletion {
-			return nil, nil, nil
-		} else {
-			currentLbs := te.Current.GetLoadBalancers().GetClusters()
-			for _, deleted := range te.Event.Task.DeleteState.GetLbs().GetClusters() {
-				currentLbs = slices.DeleteFunc(currentLbs, func(bcluster *spec.LBcluster) bool {
-					return deleted.ClusterInfo.Name == bcluster.ClusterInfo.Name
-				})
-			}
-			return te.Current.GetK8S(), currentLbs, nil
-		}
+	if err := u.configureInfrastructure(ctx); err != nil {
+		return te.Current.K8S, te.Current.GetLoadBalancers().GetClusters(), fmt.Errorf("error while configuring infrastructure after node deletion from %s: %w", te.Current.K8S.ClusterInfo.Id(), err)
 	}
 
-	log.Warn().Msgf("Failed destroying cluster task %q config %q cluster %q: %v", te.Event.Id, te.Config, te.Current.K8S.ClusterInfo.Name, err.Error())
-	return te.Current.K8S, te.Current.GetLoadBalancers().GetClusters(), err
+	if err := u.patchKubeadmAndUpdateCilium(ctx); err != nil {
+		return te.Current.K8S, te.Current.GetLoadBalancers().GetClusters(), fmt.Errorf("error while configuring infrastructure after node deletion from %s: %w", te.Current.K8S.ClusterInfo.Id(), err)
+	}
+
+	u.updateTaskWithDescription(ctx, spec.Workflow_KUBER, fmt.Sprintf("finished deleting nodes from cluster static%v,dynamic%v", staticCount, dynamicCount))
+	return k8s, te.Current.GetLoadBalancers().GetClusters(), nil
 }

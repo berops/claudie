@@ -123,15 +123,17 @@ func rollingUpdate(current, desired *spec.Clusters) (*spec.Clusters, []*spec.Tas
 						Event:       spec.Event_DELETE,
 						Description: fmt.Sprintf("rollback: deleting nodes from replaced nodepool %s", updated.Name),
 						Task: &spec.Task{DeleteState: &spec.DeleteState{
-							Nodepools: map[string]*spec.DeletedNodes{
-								updated.Name: {
-									Nodes: func() []string {
-										var result []string
-										for _, n := range updated.Nodes {
-											result = append(result, n.Name)
-										}
-										return result
-									}(),
+							K8S: &spec.DeleteState_K8S{
+								Nodepools: map[string]*spec.DeletedNodes{
+									updated.Name: {
+										Nodes: func() []string {
+											var result []string
+											for _, n := range updated.Nodes {
+												result = append(result, n.Name)
+											}
+											return result
+										}(),
+									},
 								},
 							},
 						}},
@@ -209,8 +211,10 @@ func rollingUpdate(current, desired *spec.Clusters) (*spec.Clusters, []*spec.Tas
 			Event:       spec.Event_DELETE,
 			Description: fmt.Sprintf("rolling update: deleting nodes from replaced nodepool %s", currentPool.Name),
 			Task: &spec.Task{DeleteState: &spec.DeleteState{
-				Nodepools: map[string]*spec.DeletedNodes{
-					currentPool.Name: {Nodes: delNodes},
+				K8S: &spec.DeleteState_K8S{
+					Nodepools: map[string]*spec.DeletedNodes{
+						currentPool.Name: {Nodes: delNodes},
+					},
 				},
 			}},
 			OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{

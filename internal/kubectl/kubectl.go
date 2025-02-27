@@ -27,9 +27,9 @@ type Kubectl struct {
 const (
 	defaultMaxKubectlRetries = 10
 	getEtcdPodsCmd           = "get pods -n kube-system --no-headers -o custom-columns=\":metadata.name\" | grep etcd"
-	exportEtcdEnvsCmd        = `export ETCDCTL_API=3 && 
-		export ETCDCTL_CACERT=/etc/kubernetes/pki/etcd/ca.crt && 
-		export ETCDCTL_CERT=/etc/kubernetes/pki/etcd/healthcheck-client.crt && 
+	exportEtcdEnvsCmd        = `export ETCDCTL_API=3 &&
+		export ETCDCTL_CACERT=/etc/kubernetes/pki/etcd/ca.crt &&
+		export ETCDCTL_CERT=/etc/kubernetes/pki/etcd/healthcheck-client.crt &&
 		export ETCDCTL_KEY=/etc/kubernetes/pki/etcd/healthcheck-client.key`
 	kubectlTimeout = 3 * 60 // cancel kubectl command after kubectlTimeout seconds
 )
@@ -101,6 +101,20 @@ func (k *Kubectl) KubectlDeleteString(str string, options ...string) error {
 
 	command := fmt.Sprintf("echo '%s' | kubectl delete -f - %s", str, arg)
 	return k.run(command, options...)
+}
+
+// KubectlTaintNodeShutdown applies the out-of-service to the requested node
+// so that pods scheduled on that node can be moved to another node.
+// https://kubernetes.io/blog/2023/08/16/kubernetes-1-28-non-graceful-node-shutdown-ga/#what-is-a-non-graceful-node-shutdown
+func (k *Kubectl) KubectlTaintNodeShutdown(nodeName string) error {
+	arg, cleanup, err := k.getKubeconfig()
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+
+	command := fmt.Sprintf("kubectl taint nodes %s node.kubernetes.io/out-of-service=nodeshutdown:NoExecute %s", nodeName, arg)
+	return k.run(command)
 }
 
 // KubectlDrain runs kubectl drain in k.Directory, on a specified node with flags --ignore-daemonsets --delete-emptydir-data
