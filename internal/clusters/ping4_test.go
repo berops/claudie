@@ -3,10 +3,16 @@ package clusters
 import (
 	"errors"
 	"math/rand/v2"
+	"net/netip"
+	"os"
+	"slices"
 	"strings"
 	"testing"
 
+	"github.com/berops/claudie/internal/spectesting"
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/rs/zerolog"
+	"github.com/stretchr/testify/assert"
 )
 
 func FuzzPingAll(f *testing.F) {
@@ -29,6 +35,74 @@ func FuzzPingAll(f *testing.F) {
 			t.Errorf("pingAll() goroutines = %v, ips = %v, unreachable = %v, err = %v", gc, ips, u, err)
 		}
 	})
+}
+
+func TestPingNodes(t *testing.T) {
+	logger := zerolog.New(os.Stdout)
+
+	var (
+		wantK8sIps = make(map[string][]string)
+		wantLbsIps = make(map[string][]string)
+	)
+
+	// re-assign ips so that no two nodes have the same ip.
+	network, err := netip.ParsePrefix("172.0.1.0/16")
+	assert.Nil(t, err)
+	iter := network.Addr()
+
+	k8s := spectesting.GenerateFakeK8SCluster(true)
+	k8s.ClusterInfo.NodePools = k8s.ClusterInfo.NodePools[:2]
+	for _, np := range k8s.ClusterInfo.NodePools {
+		np.Nodes = np.Nodes[:2]
+		np.Nodes[0].Public = iter.String()
+		iter = iter.Next()
+
+		np.Nodes[1].Public = iter.String()
+		iter = iter.Next()
+		wantK8sIps[np.Name] = append(wantK8sIps[np.Name], np.Nodes[0].Public)
+		wantK8sIps[np.Name] = append(wantK8sIps[np.Name], np.Nodes[1].Public)
+	}
+
+	lbs := spectesting.GenerateFakeLBCluster(true, k8s.ClusterInfo)
+	lbs.ClusterInfo.NodePools = lbs.ClusterInfo.NodePools[:2]
+	for _, np := range lbs.ClusterInfo.NodePools {
+		np.Nodes = np.Nodes[:2]
+		np.Nodes[0].Public = iter.String()
+		iter = iter.Next()
+
+		np.Nodes[1].Public = iter.String()
+		iter = iter.Next()
+		wantLbsIps[np.Name] = append(wantLbsIps[np.Name], np.Nodes[0].Public)
+		wantLbsIps[np.Name] = append(wantLbsIps[np.Name], np.Nodes[1].Public)
+	}
+	s := &spec.Clusters{
+		K8S:           k8s,
+		LoadBalancers: &spec.LoadBalancers{Clusters: []*spec.LBcluster{lbs}},
+	}
+
+	gotK8s, gotLbs, err := PingNodes(logger, s)
+	assert.NotNil(t, err)
+
+	assert.Equal(t, 2, len(gotK8s))
+	assert.Equal(t, 1, len(gotLbs))
+
+	assert.Equal(t, 2, len(gotK8s[k8s.ClusterInfo.NodePools[0].Name]))
+	assert.Equal(t, 2, len(gotK8s[k8s.ClusterInfo.NodePools[1].Name]))
+
+	assert.Equal(t, 2, len(gotLbs[lbs.ClusterInfo.Id()][lbs.ClusterInfo.NodePools[0].Name]))
+	assert.Equal(t, 2, len(gotLbs[lbs.ClusterInfo.Id()][lbs.ClusterInfo.NodePools[1].Name]))
+
+	for np, v := range wantK8sIps {
+		for _, ip := range v {
+			assert.True(t, slices.Contains(gotK8s[np], ip))
+		}
+	}
+
+	for np, v := range wantLbsIps {
+		for _, ip := range v {
+			assert.True(t, slices.Contains(gotLbs[lbs.ClusterInfo.Id()][np], ip))
+		}
+	}
 }
 
 func TestPingAll(t *testing.T) {

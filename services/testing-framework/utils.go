@@ -117,12 +117,9 @@ func waitForDoneOrError(ctx context.Context, manager managerclient.CrudAPI, set 
 			}
 
 			// Rolling update can have multiple stages, thus we also check for the manifest checksum equality.
-			if res.Config.Manifest.State == spec.Manifest_Done {
-				if bytes.Equal(res.Config.Manifest.LastAppliedChecksum, res.Config.Manifest.Checksum) {
-					if err := validateKubeconfigAlternativeNames(res.Config.Clusters); err != nil {
-						return nil, err
-					}
-					return res.Config, nil
+			if res.Config.Manifest.State == spec.Manifest_Done && bytes.Equal(res.Config.Manifest.LastAppliedChecksum, res.Config.Manifest.Checksum) {
+				if err := validateKubeconfigAlternativeNames(res.Config.Clusters); err != nil {
+					return nil, err
 				}
 
 				// In case a test-set contains static nodepools and the test set performs
@@ -138,6 +135,8 @@ func waitForDoneOrError(ctx context.Context, manager managerclient.CrudAPI, set 
 						return nil, fmt.Errorf("cluster %q has current state diverging from the desired state", c)
 					}
 				}
+
+				return res.Config, nil
 			}
 
 			if res.Config.Manifest.State == spec.Manifest_Error && bytes.Equal(res.Config.Manifest.LastAppliedChecksum, res.Config.Manifest.Checksum) {
