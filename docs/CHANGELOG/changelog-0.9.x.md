@@ -154,3 +154,9 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 ## Bug fixes
 - Correclty assign CIDR to loadbalancer nodepools [#1654](https://github.com/berops/claudie/pull/1654).
   This issue was prelevant mostly when working with loadbalancer from cloud providers that were not hetzner.
+
+## v0.9.6
+
+## Bug fixes
+- Fixed issue where failing to build a load balancer would cause Claudie to hang if the DNS part failed [#1660](https://github.com/berops/claudie/pull/1660).
+  Claudie will now recover from this scenario and it is possible for the user to specify the correct DNS settings in the InputManifest to fixed the reported issue.
