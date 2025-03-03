@@ -133,7 +133,7 @@ func Test_rollingUpdate(t *testing.T) {
 				assert.Equal(t, spec.NodeType_master, got.ClusterInfo.NodePools[0].Nodes[0].NodeType)
 				assert.NotEqual(t, "node-0", got.ClusterInfo.NodePools[0].Nodes[0].Name)
 				assert.Equal(t, "hash-6", got.ClusterInfo.NodePools[0].GetDynamicNodePool().Provider.Templates.CommitHash)
-				assert.Empty(t, got.ClusterInfo.NodePools[0].GetDynamicNodePool().Cidr)
+				assert.Equal(t, "10.0.0.0/24", got.ClusterInfo.NodePools[0].GetDynamicNodePool().Cidr)
 				assert.NotEqual(t, current.K8S.ClusterInfo.NodePools[0].GetDynamicNodePool().PrivateKey, got.ClusterInfo.NodePools[0].GetDynamicNodePool().PrivateKey)
 				assert.NotEqual(t, current.K8S.ClusterInfo.NodePools[0].GetDynamicNodePool().PublicKey, got.ClusterInfo.NodePools[0].GetDynamicNodePool().PublicKey)
 			},
@@ -173,7 +173,7 @@ func Test_rollingUpdate(t *testing.T) {
 				assert.Equal(t, spec.NodeType_apiEndpoint, got.ClusterInfo.NodePools[0].Nodes[0].NodeType)
 				assert.Equal(t, "node-0", got.ClusterInfo.NodePools[0].Nodes[0].Name)
 				assert.Equal(t, "hash-1", got.ClusterInfo.NodePools[0].GetDynamicNodePool().Provider.Templates.CommitHash)
-				assert.NotEmpty(t, got.ClusterInfo.NodePools[0].GetDynamicNodePool().Cidr)
+				assert.Equal(t, "cidr", got.ClusterInfo.NodePools[0].GetDynamicNodePool().Cidr)
 				assert.Equal(t, current.K8S.ClusterInfo.NodePools[0].GetDynamicNodePool().PrivateKey, got.ClusterInfo.NodePools[0].GetDynamicNodePool().PrivateKey)
 				assert.Equal(t, current.K8S.ClusterInfo.NodePools[0].GetDynamicNodePool().PublicKey, got.ClusterInfo.NodePools[0].GetDynamicNodePool().PublicKey)
 
@@ -186,7 +186,7 @@ func Test_rollingUpdate(t *testing.T) {
 				assert.NotEqual(t, "node-1", got.ClusterInfo.NodePools[1].Nodes[1].Name)
 				assert.NotEqual(t, "node-2", got.ClusterInfo.NodePools[1].Nodes[2].Name)
 				assert.Equal(t, "hash-2", got.ClusterInfo.NodePools[1].GetDynamicNodePool().Provider.Templates.CommitHash)
-				assert.Empty(t, got.ClusterInfo.NodePools[1].GetDynamicNodePool().Cidr)
+				assert.Equal(t, "10.0.0.0/24", got.ClusterInfo.NodePools[1].GetDynamicNodePool().Cidr)
 				assert.NotEqual(t, np2.GetDynamicNodePool().PrivateKey, got.ClusterInfo.NodePools[1].GetDynamicNodePool().PrivateKey)
 				assert.NotEqual(t, np3.GetDynamicNodePool().PublicKey, got.ClusterInfo.NodePools[1].GetDynamicNodePool().PublicKey)
 
@@ -199,7 +199,7 @@ func Test_rollingUpdate(t *testing.T) {
 				assert.NotEqual(t, "node-1", got.ClusterInfo.NodePools[2].Nodes[1].Name)
 				assert.NotEqual(t, "node-2", got.ClusterInfo.NodePools[2].Nodes[2].Name)
 				assert.Equal(t, "hash-2", got.ClusterInfo.NodePools[2].GetDynamicNodePool().Provider.Templates.CommitHash)
-				assert.Empty(t, got.ClusterInfo.NodePools[2].GetDynamicNodePool().Cidr)
+				assert.Equal(t, "10.0.1.0/24", got.ClusterInfo.NodePools[2].GetDynamicNodePool().Cidr)
 				assert.NotEqual(t, np2.GetDynamicNodePool().PrivateKey, got.ClusterInfo.NodePools[2].GetDynamicNodePool().PrivateKey)
 				assert.NotEqual(t, np3.GetDynamicNodePool().PublicKey, got.ClusterInfo.NodePools[2].GetDynamicNodePool().PublicKey)
 			},

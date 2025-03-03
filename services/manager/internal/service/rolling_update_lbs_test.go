@@ -245,8 +245,8 @@ func Test_rollingUpdateLB(t *testing.T) {
 				assert.True(t, strings.HasPrefix(got.Clusters[0].ClusterInfo.NodePools[0].Name, "np2"))
 				assert.True(t, strings.HasPrefix(got.Clusters[0].ClusterInfo.NodePools[1].Name, "np3"))
 
-				assert.Empty(t, got.Clusters[0].ClusterInfo.NodePools[0].GetDynamicNodePool().Cidr)
-				assert.Empty(t, got.Clusters[0].ClusterInfo.NodePools[1].GetDynamicNodePool().Cidr)
+				assert.Equal(t, "10.0.0.0/24", got.Clusters[0].ClusterInfo.NodePools[0].GetDynamicNodePool().Cidr)
+				assert.Equal(t, "10.0.1.0/24", got.Clusters[0].ClusterInfo.NodePools[1].GetDynamicNodePool().Cidr)
 
 				assert.NotEqual(t, current.LoadBalancers.Clusters[0].ClusterInfo.NodePools[0].GetDynamicNodePool().Provider.Templates.CommitHash, got.Clusters[0].ClusterInfo.NodePools[0].GetDynamicNodePool().Provider.Templates.CommitHash)
 
