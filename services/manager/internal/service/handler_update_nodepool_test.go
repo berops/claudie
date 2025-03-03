@@ -18,8 +18,8 @@ func Test_autoscaledEvents(t *testing.T) {
 	current := &spec.Clusters{K8S: spectesting.GenerateFakeK8SCluster(false)}
 	desired := &spec.Clusters{K8S: proto.Clone(current.K8S).(*spec.K8Scluster)}
 
-	affected, affectedNodes := spectesting.DeleteNodes(5+rand.IntN(50), desired.K8S.ClusterInfo, spectesting.NodesDynamic)
-	addedNodes := spectesting.AddNodes(5+rand.IntN(15), desired.K8S.ClusterInfo, spectesting.NodesDynamic)
+	affected, affectedNodes := spectesting.DeleteNodes(5+rand.IntN(50), desired.K8S.ClusterInfo, spectesting.NodesDynamicSkipApiServer)
+	addedNodes := spectesting.AddNodes(5+rand.IntN(15), desired.K8S.ClusterInfo, spectesting.NodesDynamicSkipApiServer)
 
 	for _, dnp := range affected {
 		cnp := nodepools.FindByName(dnp.Name, current.K8S.ClusterInfo.NodePools)

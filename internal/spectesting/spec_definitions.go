@@ -286,7 +286,7 @@ func GenerateFakeK8SClusterInfo(
 
 	for range cap(controlNodepools) {
 		var (
-			nodeCount = rng.Uint64() % 255
+			nodeCount = max(10, rng.Uint64()%255)
 			nodes     = make([]*spec.Node, 0, nodeCount)
 			name      = make([]byte, 50)
 		)
@@ -582,6 +582,7 @@ type NodeFilter uint8
 const (
 	NodesAll NodeFilter = iota
 	NodesDynamic
+	NodesDynamicSkipApiServer
 	NodesStatic
 )
 
@@ -626,6 +627,14 @@ func AddNodes(count int, ci *spec.ClusterInfo, typ NodeFilter) map[string][]stri
 			np = stat[int(uint32(rng.Uint64()))%len(stat)]
 		case NodesAll:
 			np = ci.NodePools[int(uint32(rng.Uint64()))%len(ci.NodePools)]
+		case NodesDynamicSkipApiServer:
+			np = dyn[int(uint32(rng.Uint64()))%len(dyn)]
+			for {
+				if _, node := nodepools.FindApiEndpoint([]*spec.NodePool{np}); node == nil {
+					break
+				}
+				np = dyn[int(uint32(rng.Uint64()))%len(dyn)]
+			}
 		}
 
 		if np.GetDynamicNodePool() != nil {
@@ -665,6 +674,18 @@ func DeleteNodes(count int, ci *spec.ClusterInfo, typ NodeFilter) ([]*spec.NodeP
 		case NodesStatic:
 			if np.GetStaticNodePool() == nil {
 				continue
+			}
+		case NodesDynamicSkipApiServer:
+			for {
+				if np.GetDynamicNodePool() == nil {
+					np = ci.NodePools[int(uint32(rng.Uint64()))%len(ci.NodePools)]
+					continue
+				}
+				if _, node := nodepools.FindApiEndpoint([]*spec.NodePool{np}); node != nil {
+					np = ci.NodePools[int(uint32(rng.Uint64()))%len(ci.NodePools)]
+					continue
+				}
+				break
 			}
 		}
 		node := np.Nodes[int(uint32(rng.Uint64()))%len(np.Nodes)]
