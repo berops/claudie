@@ -88,7 +88,6 @@ secretGenerator:
   - test-sets/succeeds-on-last-4/3.yaml
   name: succeeds-on-last-4
 
-
 images:
 - name: ghcr.io/berops/claudie/testing-framework
-  newTag: 63297c6-3248
+  newTag: 5d487af-3268

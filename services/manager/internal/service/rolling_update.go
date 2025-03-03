@@ -78,7 +78,7 @@ func rollingUpdate(current, desired *spec.Clusters) (*spec.Clusters, []*spec.Tas
 			}
 		}
 
-		// 2. new keys/cidr
+		// 2. new keys
 		var err error
 		updatedDyn := updated.GetDynamicNodePool()
 		updatedDyn.Cidr = ""
@@ -98,6 +98,22 @@ func rollingUpdate(current, desired *spec.Clusters) (*spec.Clusters, []*spec.Tas
 		rollback := proto.Clone(rollingUpdates).(*spec.K8Scluster) // clone in case of failure to rollback to.
 
 		rollingUpdates.ClusterInfo.NodePools = append(rollingUpdates.ClusterInfo.NodePools, updated)
+
+		// 5. generate CIDR for new nodepool
+		err = fillMissingCIDR(&spec.ClusterState{
+			Current: &spec.Clusters{
+				K8S:           rollback,
+				LoadBalancers: current.GetLoadBalancers(),
+			},
+			Desired: &spec.Clusters{
+				K8S:           rollingUpdates,
+				LoadBalancers: current.GetLoadBalancers(),
+			},
+		})
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to generate CIDR for newly constructed nodepool: %w", err)
+		}
+
 		addNodePool := proto.Clone(rollingUpdates).(*spec.K8Scluster) // clone as the cluster will gradually change.
 
 		rollingUpdates.ClusterInfo.NodePools = slices.Delete(rollingUpdates.ClusterInfo.NodePools, ci, ci+1)
@@ -123,15 +139,17 @@ func rollingUpdate(current, desired *spec.Clusters) (*spec.Clusters, []*spec.Tas
 						Event:       spec.Event_DELETE,
 						Description: fmt.Sprintf("rollback: deleting nodes from replaced nodepool %s", updated.Name),
 						Task: &spec.Task{DeleteState: &spec.DeleteState{
-							Nodepools: map[string]*spec.DeletedNodes{
-								updated.Name: {
-									Nodes: func() []string {
-										var result []string
-										for _, n := range updated.Nodes {
-											result = append(result, n.Name)
-										}
-										return result
-									}(),
+							K8S: &spec.DeleteState_K8S{
+								Nodepools: map[string]*spec.DeletedNodes{
+									updated.Name: {
+										Nodes: func() []string {
+											var result []string
+											for _, n := range updated.Nodes {
+												result = append(result, n.Name)
+											}
+											return result
+										}(),
+									},
 								},
 							},
 						}},
@@ -209,8 +227,10 @@ func rollingUpdate(current, desired *spec.Clusters) (*spec.Clusters, []*spec.Tas
 			Event:       spec.Event_DELETE,
 			Description: fmt.Sprintf("rolling update: deleting nodes from replaced nodepool %s", currentPool.Name),
 			Task: &spec.Task{DeleteState: &spec.DeleteState{
-				Nodepools: map[string]*spec.DeletedNodes{
-					currentPool.Name: {Nodes: delNodes},
+				K8S: &spec.DeleteState_K8S{
+					Nodepools: map[string]*spec.DeletedNodes{
+						currentPool.Name: {Nodes: delNodes},
+					},
 				},
 			}},
 			OnError: &spec.Retry{Do: &spec.Retry_Repeat_{Repeat: &spec.Retry_Repeat{

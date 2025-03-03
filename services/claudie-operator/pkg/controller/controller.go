@@ -198,7 +198,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			return ctrl.Result{}, nil
 		}
 
-		if configState == spec.Manifest_Pending || configState == spec.Manifest_Scheduled {
+		if configState == spec.Manifest_Scheduled {
 			inputManifest.SetUpdateResourceStatus(currentState)
 			if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 				return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)

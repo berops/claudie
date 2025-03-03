@@ -40,10 +40,11 @@ func GenerateInventoryFile(inventoryTemplate, outputDirectory string, data inter
 }
 
 type Ansible struct {
-	Playbook  string
-	Inventory string
-	Flags     string
-	Directory string
+	RetryCount int
+	Playbook   string
+	Inventory  string
+	Flags      string
+	Directory  string
 	// SpawnProcessLimit limits the number of spawned ansible processes.
 	SpawnProcessLimit *semaphore.Weighted
 }
@@ -60,6 +61,10 @@ func (a *Ansible) RunAnsiblePlaybook(prefix string) error {
 
 	if err := setEnv(); err != nil {
 		return err
+	}
+
+	if a.RetryCount <= 0 {
+		a.RetryCount = maxAnsibleRetries
 	}
 
 	command := fmt.Sprintf("ansible-playbook %s -i %s -f %d %s", a.Playbook, a.Inventory, defaultAnsibleForks, a.Flags)
@@ -79,7 +84,7 @@ func (a *Ansible) RunAnsiblePlaybook(prefix string) error {
 			Stderr:  cmd.Stderr,
 		}
 
-		if err := retryCmd.RetryCommand(maxAnsibleRetries); err != nil {
+		if err := retryCmd.RetryCommand(a.RetryCount); err != nil {
 			return fmt.Errorf("failed to execute cmd: %s: %w", retryCmd.Command, err)
 		}
 	}

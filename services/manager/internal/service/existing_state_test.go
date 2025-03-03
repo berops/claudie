@@ -2,13 +2,17 @@ package service
 
 import (
 	"fmt"
+	"slices"
+	"strings"
 	"testing"
 
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/internal/nodepools"
+	"github.com/berops/claudie/internal/spectesting"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/proto"
 )
 
 func Test_transferExistingDns(t *testing.T) {
@@ -529,4 +533,47 @@ func Test_deduplicateNodepoolNames(t *testing.T) {
 			deduplicateNodepoolNames(tt.args.from, tt.args.state)
 		})
 	}
+}
+
+func Test_transferStaticNodes(t *testing.T) {
+	k8s := spectesting.GenerateFakeK8SCluster(false)
+	desired := nodepools.Static(k8s.ClusterInfo.NodePools)[0]
+	current := proto.Clone(desired).(*spec.NodePool)
+
+	prevCount := len(desired.Nodes)
+	prevNames := []string{desired.Nodes[0].Name, desired.Nodes[1].Name}
+	// 1. delete some nodes from current state to simulate adding new nodes
+	current.Nodes = current.Nodes[2:]
+
+	assert.True(t, transferStaticNodes("id1", current, desired))
+
+	newCount := len(desired.Nodes)
+	newNames := []string{desired.Nodes[0].Name, desired.Nodes[1].Name}
+
+	assert.NotEqual(t, newNames[0], prevNames[0])
+	assert.NotEqual(t, newNames[1], prevNames[1])
+	assert.Equal(t, newCount, prevCount)
+}
+
+func Test_fillDynamicNodes(t *testing.T) {
+	k8s := spectesting.GenerateFakeK8SCluster(false)
+	desired := slices.Collect(nodepools.Control(nodepools.Dynamic(k8s.ClusterInfo.NodePools)))[0]
+	current := proto.Clone(desired).(*spec.NodePool)
+
+	// 1. increase desired count to simulate adding nodes
+	c := len(desired.Nodes)
+	cd := desired.GetDynamicNodePool().Count
+
+	desired.GetDynamicNodePool().Count += 2
+	fillDynamicNodes("id1", current, desired)
+
+	assert.NotEqual(t, len(desired.Nodes), c)
+	assert.Equal(t, len(desired.Nodes), c+2)
+	assert.Equal(t, desired.GetDynamicNodePool().Count, cd+2)
+
+	assert.Equal(t, spec.NodeType_master, desired.Nodes[len(desired.Nodes)-1].NodeType)
+	assert.Equal(t, spec.NodeType_master, desired.Nodes[len(desired.Nodes)-2].NodeType)
+	assert.True(t, strings.HasPrefix(desired.Nodes[len(desired.Nodes)-1].Name, "id1"))
+	assert.True(t, strings.HasPrefix(desired.Nodes[len(desired.Nodes)-2].Name, "id1"))
+	assert.False(t, strings.HasPrefix(desired.Nodes[len(desired.Nodes)-3].Name, "id1"))
 }

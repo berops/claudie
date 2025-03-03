@@ -24,11 +24,11 @@ spec:
         fsGroup: 2000
       volumes:
         - name: data
-          emptyDir: { }
+          emptyDir: {}
         - name: temp
-          emptyDir: { }
+          emptyDir: {}
         - name: templates
-          emptyDir: { }
+          emptyDir: {}
       containers:
         - name: terraformer
           imagePullPolicy: Always

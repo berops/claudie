@@ -19,12 +19,17 @@ spec:
     spec:
       terminationGracePeriodSeconds: 1320
       securityContext:
+        # needed by kuber to be able to ping nodes to determine
+        # which of them are reachable or not.
+        sysctls:
+          - name: net.ipv4.ping_group_range
+            value: "1 3000"
         runAsUser: 1000
         runAsGroup: 3000
         fsGroup: 2000
       volumes:
         - name: data
-          emptyDir: { }
+          emptyDir: {}
       containers:
         - name: kuber
           imagePullPolicy: Always
@@ -39,6 +44,9 @@ spec:
             capabilities:
               drop:
                 - all
+              add:
+                # needed to access raw sockets for ping.
+                - NET_RAW
           resources:
             requests:
               cpu: 100m
@@ -121,12 +129,12 @@ metadata:
     app.kubernetes.io/part-of: claudie
     app.kubernetes.io/name: kuber
 rules:
-  - apiGroups: [ "" ]
-    resources: [ "secrets", "configmaps", "services" ]
-    verbs: [ "create", "patch", "update", "get", "list", "delete" ]
-  - apiGroups: [ "apps" ]
-    resources: [ "deployments" ]
-    verbs: [ "create", "patch", "update", "get", "list", "delete" ]
+  - apiGroups: [""]
+    resources: ["secrets", "configmaps", "services"]
+    verbs: ["create", "patch", "update", "get", "list", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["create", "patch", "update", "get", "list", "delete"]
 ---
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
