@@ -56,3 +56,14 @@ func FindAssignedLbApiEndpoint(clusters []*spec.LBcluster) *spec.LBcluster {
 	}
 	return nil
 }
+
+func NodePublic(name string, cluster *spec.K8Scluster) string {
+	for _, np := range cluster.GetClusterInfo().GetNodePools() {
+		for _, n := range np.Nodes {
+			if n.Name == name {
+				return n.Public
+			}
+		}
+	}
+	return ""
+}

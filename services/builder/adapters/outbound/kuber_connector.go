@@ -122,12 +122,11 @@ func (k *KuberConnector) PatchNodes(builderCtx *builder.Context, kuberGrpcClient
 }
 
 // DeleteNodes gracefully removes nodes from a given k8s cluster.
-func (k *KuberConnector) DeleteNodes(cluster *spec.K8Scluster, masterNodes, workerNodes []string, kuberGrpcClient pb.KuberServiceClient) (*pb.DeleteNodesResponse, error) {
+func (k *KuberConnector) DeleteNodes(cluster *spec.K8Scluster, nodepools map[string]*spec.DeletedNodes, kuberGrpcClient pb.KuberServiceClient) (*pb.DeleteNodesResponse, error) {
 	return kuber.DeleteNodes(kuberGrpcClient,
 		&pb.DeleteNodesRequest{
-			MasterNodes: masterNodes,
-			WorkerNodes: workerNodes,
-			Cluster:     cluster,
+			Cluster:   cluster,
+			Nodepools: nodepools,
 		})
 }
 

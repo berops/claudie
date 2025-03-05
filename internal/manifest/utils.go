@@ -386,7 +386,7 @@ func staticNodes(np *StaticNodePool, isControl bool) []*spec.Node {
 		nodes = append(nodes, &spec.Node{
 			// Name only matters on the first run of the static nodepool,
 			// on subsequent runs, if there are previously build nodes
-			// with the same public IP we will transfer that existing names.
+			// with the same public IP we will transfer that existing name.
 			// see existing_state.go:transferStaticNodes
 			Name:     fmt.Sprintf("%s-%02x", np.Name, uint8(i+1)),
 			Public:   node.Endpoint,

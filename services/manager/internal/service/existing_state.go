@@ -11,6 +11,37 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+func backwardsCompatibility(c *spec.Config) {
+	// TODO: remove in future versions, currently only for backwards compatibility.
+	// version 0.9.3 moved selection of the api server to the manager service
+	// and introduced a new field that selects which LB is used as the api endpoint.
+	// To have backwards compatibility with clusters build with versions before 0.9.3
+	// select the first load balancer in the current state and set this new field to true.
+	for _, state := range c.GetClusters() {
+		currentLbs := state.GetCurrent().GetLoadBalancers().GetClusters()
+		var (
+			anyApiServerLoadBalancerSelected bool
+			apiServerLoadBalancers           []int
+		)
+
+		for i, current := range currentLbs {
+			if current.IsApiEndpoint() {
+				anyApiServerLoadBalancerSelected = true
+				break
+			}
+			if current.HasApiRole() && !current.UsedApiEndpoint && current.Dns != nil {
+				apiServerLoadBalancers = append(apiServerLoadBalancers, i)
+			}
+		}
+		if !anyApiServerLoadBalancerSelected && len(apiServerLoadBalancers) > 0 {
+			currentLbs[apiServerLoadBalancers[0]].UsedApiEndpoint = true
+			log.Info().
+				Str("cluster", currentLbs[apiServerLoadBalancers[0]].GetClusterInfo().Id()).
+				Msgf("detected api-server loadbalancer build with claudie version older than 0.9.3, selecting as the loadbalancer for the api-server")
+		}
+	}
+}
+
 // transferExistingState transfers existing data from current state to desired.
 func transferExistingState(c *spec.Config) error {
 	for cluster, state := range c.GetClusters() {
@@ -300,32 +331,6 @@ func transferExistingLBState(current, desired *spec.LoadBalancers) error {
 
 	currentLbs := current.GetClusters()
 	desiredLbs := desired.GetClusters()
-
-	// TODO: remove in future versions, currently only for backwards compatibility.
-	// version 0.9.3 moved selection of the api server to the manager service
-	// and introduced a new field that selects which LB is used as the api endpoint.
-	// To have backwards compatibility with clusters build with versions before 0.9.3
-	// select the first load balancer in the current state and set this new field to true.
-	var (
-		anyApiServerLoadBalancerSelected bool
-		apiServerLoadBalancers           []int
-	)
-
-	for i, current := range currentLbs {
-		if current.IsApiEndpoint() {
-			anyApiServerLoadBalancerSelected = true
-			break
-		}
-		if current.HasApiRole() && !current.UsedApiEndpoint && current.Dns != nil {
-			apiServerLoadBalancers = append(apiServerLoadBalancers, i)
-		}
-	}
-	if !anyApiServerLoadBalancerSelected && len(apiServerLoadBalancers) > 0 {
-		currentLbs[apiServerLoadBalancers[0]].UsedApiEndpoint = true
-		log.Info().
-			Str("cluster", currentLbs[apiServerLoadBalancers[0]].GetClusterInfo().Id()).
-			Msgf("detected api-server loadbalancer build with claudie version older than 0.9.3, selecting as the loadbalancer for the api-server")
-	}
 
 	for _, desired := range desiredLbs {
 		for _, current := range currentLbs {

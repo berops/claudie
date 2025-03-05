@@ -52,11 +52,16 @@ var (
 		spec.Task{},
 		spec.CreateState{},
 		spec.UpdateState{},
+		spec.InstallationProxy{},
+		spec.UpdateState_NewControlEndpoint{},
+		spec.UpdateState_LbEndpointChange{},
 		spec.UpdateState_K8SEndpoint{},
 		spec.UpdateState_NewControlEndpoint{},
 		spec.UpdateState_LbEndpoint{},
 		spec.UpdateState_LbEndpointChange{},
 		spec.DeleteState{},
+		spec.DeleteState_K8S{},
+		spec.DeleteState_LoadBalancer{},
 		spec.DeletedNodes{},
 		spec.NodePool{},
 		spec.NodePool_DynamicNodePool{},
@@ -112,12 +117,9 @@ func waitForDoneOrError(ctx context.Context, manager managerclient.CrudAPI, set 
 			}
 
 			// Rolling update can have multiple stages, thus we also check for the manifest checksum equality.
-			if res.Config.Manifest.State == spec.Manifest_Done {
-				if bytes.Equal(res.Config.Manifest.LastAppliedChecksum, res.Config.Manifest.Checksum) {
-					if err := validateKubeconfigAlternativeNames(res.Config.Clusters); err != nil {
-						return nil, err
-					}
-					return res.Config, nil
+			if res.Config.Manifest.State == spec.Manifest_Done && bytes.Equal(res.Config.Manifest.LastAppliedChecksum, res.Config.Manifest.Checksum) {
+				if err := validateKubeconfigAlternativeNames(res.Config.Clusters); err != nil {
+					return nil, err
 				}
 
 				// In case a test-set contains static nodepools and the test set performs
@@ -133,6 +135,8 @@ func waitForDoneOrError(ctx context.Context, manager managerclient.CrudAPI, set 
 						return nil, fmt.Errorf("cluster %q has current state diverging from the desired state", c)
 					}
 				}
+
+				return res.Config, nil
 			}
 
 			if res.Config.Manifest.State == spec.Manifest_Error && bytes.Equal(res.Config.Manifest.LastAppliedChecksum, res.Config.Manifest.Checksum) {
@@ -173,7 +177,7 @@ func validateKubeconfigAlternativeNames(c map[string]*spec.ClusterState) error {
 		// if the clusters has no APIServer Loadbalancer we can test all
 		// control plane nodes to validate if they all can be used with the
 		// generated KubeConfig.
-		if clusters.FindAssignedLbApiEndpoint(v.GetCurrent().GetLoadBalancers().GetClusters()) == nil {
+		if clusters.FindAssignedLbApiEndpoint(v.GetCurrent().GetLoadBalancers().GetClusters()) != nil {
 			continue
 		}
 

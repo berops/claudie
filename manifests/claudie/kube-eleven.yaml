@@ -24,7 +24,7 @@ spec:
         fsGroup: 2000
       volumes:
         - name: data
-          emptyDir: { }
+          emptyDir: {}
       containers:
         - name: kube-eleven
           imagePullPolicy: Always

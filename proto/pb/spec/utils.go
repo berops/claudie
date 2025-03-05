@@ -9,7 +9,8 @@ import (
 const (
 	// ForceExportPort6443OnControlPlane Forces to export the port 6443 on
 	// all the control plane nodes in the cluster when the workflow reaches
-	// the terraformer stage.
+	// the terraformer stage. This setting applies to the BuildInfrastructure RPC
+	// in terraformer.
 	ForceExportPort6443OnControlPlane = 1 << iota
 )
 

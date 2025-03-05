@@ -77,6 +77,7 @@ func removeUtilities(clusterID string, vpnInfo *VPNInfo, processLimit *semaphore
 	}
 
 	ansible := utils.Ansible{
+		RetryCount:        3,
 		Playbook:          wireguardUninstall,
 		Inventory:         utils.InventoryFileName,
 		Directory:         clusterDirectory,

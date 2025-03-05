@@ -70,6 +70,9 @@ func createDesiredState(pending *store.Config) error {
 	for _, state := range grpcRepr.Clusters {
 		deduplicateNodepoolNames(&m, state)
 	}
+
+	backwardsCompatibility(grpcRepr)
+
 	if err := transferExistingState(grpcRepr); err != nil {
 		return fmt.Errorf("failed to reuse current state date for desired state for %q: %w", m.Name, err)
 	}

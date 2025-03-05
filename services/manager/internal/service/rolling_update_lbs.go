@@ -96,7 +96,7 @@ func rollingUpdateLB(current, desired *spec.Clusters, position int) (*spec.Clust
 			}
 		}
 
-		// 2. new keys/cidr
+		// 2. new keys
 		var err error
 		updatedDyn := updated.GetDynamicNodePool()
 		updatedDyn.Cidr = ""
@@ -116,6 +116,21 @@ func rollingUpdateLB(current, desired *spec.Clusters, position int) (*spec.Clust
 		rollback := proto.Clone(rollingUpdates).(*spec.LoadBalancers)
 
 		rollingUpdates.Clusters[position].ClusterInfo.NodePools = append(rollingUpdates.Clusters[position].ClusterInfo.NodePools, updated)
+
+		// 5. generate CIDR for new nodepool.
+		err = fillMissingCIDR(&spec.ClusterState{
+			Current: &spec.Clusters{
+				K8S:           current.K8S,
+				LoadBalancers: rollback,
+			},
+			Desired: &spec.Clusters{
+				K8S:           current.K8S,
+				LoadBalancers: rollingUpdates,
+			},
+		})
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to generate CIDR for newly constructed lb nodepool: %w", err)
+		}
 		addNodePool := proto.Clone(rollingUpdates).(*spec.LoadBalancers)
 
 		rollingUpdates.Clusters[position].ClusterInfo.NodePools = slices.Delete(rollingUpdates.Clusters[position].ClusterInfo.NodePools, ci, ci+1)

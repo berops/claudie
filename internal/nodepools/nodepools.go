@@ -12,6 +12,55 @@ import (
 	"github.com/berops/claudie/proto/pb/spec"
 )
 
+func DeleteByName(nodepools []*spec.NodePool, name string) []*spec.NodePool {
+	for i, np := range nodepools {
+		if np.Name == name {
+			return slices.Delete(nodepools, i, i+1)
+		}
+	}
+	return nodepools
+}
+
+// DeleteNodeByName goes through each nodepool until if find the node with the specified name. If the nodepool
+// reaches 0 nodes the keepNodePools map is checked whether the nodepool should be removed or not.
+func DeleteNodeByName(nodepools []*spec.NodePool, nodeName string, keepNodePools map[string]struct{}) []*spec.NodePool {
+	for n, np := range nodepools {
+		j := slices.IndexFunc(np.Nodes, func(n *spec.Node) bool { return n.Name == nodeName })
+		if j < 0 {
+			continue
+		}
+		if s := np.GetStaticNodePool(); s != nil {
+			delete(s.NodeKeys, np.Nodes[j].Public)
+		}
+		if d := np.GetDynamicNodePool(); d != nil {
+			d.Count -= 1
+		}
+		np.Nodes = slices.Delete(np.Nodes, j, j+1)
+
+		if len(np.Nodes) == 0 {
+			if _, ok := keepNodePools[np.Name]; !ok {
+				return slices.Delete(nodepools, n, n+1)
+			}
+		}
+		break
+	}
+
+	return nodepools
+}
+
+func FindNode(nodepools []*spec.NodePool, nodeName string) (static bool, node *spec.Node) {
+	for _, np := range nodepools {
+		i := slices.IndexFunc(np.Nodes, func(n *spec.Node) bool { return n.Name == nodeName })
+		if i < 0 {
+			continue
+		}
+		static = np.GetStaticNodePool() != nil
+		node = np.Nodes[i]
+		return
+	}
+	return
+}
+
 // FindByName returns the first Nodepool that will have same name as specified in parameters, nil otherwise.
 func FindByName(nodePoolName string, nodePools []*spec.NodePool) *spec.NodePool {
 	for _, np := range nodePools {

@@ -24,9 +24,9 @@ spec:
         fsGroup: 2000
       volumes:
         - name: data
-          emptyDir: { }
+          emptyDir: {}
         - name: temp
-          emptyDir: { }
+          emptyDir: {}
       containers:
         - name: ansibler
           volumeMounts:

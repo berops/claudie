@@ -21,8 +21,7 @@ message DeleteKubeconfigResponse {}
 
 message DeleteNodesRequest {
   spec.K8scluster cluster = 1;
-  repeated string workerNodes = 2;
-  repeated string masterNodes = 3;
+  map<string, spec.DeletedNodes> nodepools = 2;
 }
 
 message DeleteNodesResponse {spec.K8scluster cluster = 1;}
