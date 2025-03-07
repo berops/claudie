@@ -163,7 +163,7 @@ func getLatestMinorVersion(k8sVersion string) (string, error) {
 	}
 
 	// Extract values from k8sVersion
-	_, err = fmt.Sscanf(k8sVersion, "1.%d.%d", &minor, &patch)
+	_, err = fmt.Sscanf(k8sVersion, "v1.%d.%d", &minor, &patch)
 	if err != nil {
 		return "", err
 	}
