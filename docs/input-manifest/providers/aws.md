@@ -77,7 +77,7 @@ type: Opaque
     ```
 
 ## DNS setup
-If you wish to use AWS as your DNS provider where Claudie creates DNS records pointing to Claudie managed clusters, you will need to create a **public hosted zone** by following [this guide](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/CreatingHostedZone.html). 
+If you wish to use AWS as your DNS provider where Claudie creates DNS records pointing to Claudie managed clusters, you will need to create a **public hosted zone** by following [this guide](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/CreatingHostedZone.html).
 
 !!! warning "AWS is not my domain registrar"
     If you haven't acquired a domain via AWS and wish to utilize AWS for hosting your zone, you can refer to [this guide](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/migrate-dns-domain-in-use.html#migrate-dns-change-name-servers-with-provider) on AWS nameservers. However, if you prefer not to use the entire domain, an alternative option is to delegate a subdomain to AWS.
@@ -122,24 +122,24 @@ spec:
         count: 1
         # Instance type name.
         serverType: t3.medium
-        # AMI ID of the image.
-        # Make sure to update it according to the region. 
-        image: ami-0965bd5ba4d59211c
-        
+        # AMI ID of the image ubuntu 24.04.
+        # Make sure to update it according to the region.
+        image: ami-07eef52105e8a2059
+
       - name: compute-1-aws
         providerSpec:
           # Name of the provider instance.
           name: aws-1
           # Region of the nodepool.
-          region: eu-central-2
+          region: eu-west-2
           # Availability zone of the nodepool.
-          zone: eu-central-2a
+          zone: eu-west-2a
         count: 2
         # Instance type name.
         serverType: t3.medium
-        # AMI ID of the image.
-        # Make sure to update it according to the region. 
-        image: ami-0e4d1886bf4bb88d5
+        # AMI ID of the image ubuntu 24.04.
+        # Make sure to update it according to the region.
+        image: ami-091f18e98bc129c4e
         storageDiskSize: 50
 
       - name: compute-2-aws
@@ -147,15 +147,15 @@ spec:
           # Name of the provider instance.
           name: aws-1
           # Region of the nodepool.
-          region: eu-central-2
+          region: eu-west-2
           # Availability zone of the nodepool.
-          zone: eu-central-2a
+          zone: eu-west-2a
         count: 2
         # Instance type name.
         serverType: t3.medium
-        # AMI ID of the image.
-        # Make sure to update it according to the region. 
-        image: ami-0965bd5ba4d59211c
+        # AMI ID of the image ubuntu 24.04.
+        # Make sure to update it according to the region.
+        image: ami-091f18e98bc129c4e
         storageDiskSize: 50
 
   kubernetes:
@@ -212,9 +212,9 @@ spec:
         count: 1
         # Instance type name.
         serverType: t3.medium
-        # AMI ID of the image.
-        # Make sure to update it according to the region. 
-        image: ami-0965bd5ba4d59211c
+        # AMI ID of the image ubuntu 24.04.
+        # Make sure to update it according to the region.
+        image: ami-07eef52105e8a2059
 
       - name: control-aws-2
         providerSpec:
@@ -227,24 +227,24 @@ spec:
         count: 2
         # Instance type name.
         serverType: t3.medium
-        # AMI ID of the image.
-        # Make sure to update it according to the region. 
-        image: ami-03df6dea56f8aa618
+        # AMI ID of the image ubuntu 24.04.
+        # Make sure to update it according to the region.
+        image: ami-09a9858973b288bdd
 
       - name: compute-aws-1
         providerSpec:
           # Name of the provider instance.
           name: aws-1
           # Region of the nodepool.
-          region: eu-central-2
+          region: eu-central-1
           # Availability zone of the nodepool.
-          zone: eu-central-2a
+          zone: eu-central-1a
         count: 2
         # Instance type name.
         serverType: t3.medium
-        # AMI ID of the image.
-        # Make sure to update it according to the region. 
-        image: ami-0e4d1886bf4bb88d5
+        # AMI ID of the image ubuntu 24.04.
+        # Make sure to update it according to the region.
+        image: ami-07eef52105e8a2059
         storageDiskSize: 50
 
       - name: compute-aws-2
@@ -252,15 +252,15 @@ spec:
           # Name of the provider instance.
           name: aws-2
           # Region of the nodepool.
-          region: eu-north-3
+          region: eu-west-3
           # Availability zone of the nodepool.
-          zone: eu-north-3a
+          zone: eu-west-3a
         count: 2
         # Instance type name.
         serverType: t3.medium
-        # AMI ID of the image.
-        # Make sure to update it according to the region. 
-        image: ami-03df6dea56f8aa618
+        # AMI ID of the image ubuntu 24.04.
+        # Make sure to update it according to the region.
+        image: ami-06e02ae7bdac6b938
         storageDiskSize: 50
 
   kubernetes:

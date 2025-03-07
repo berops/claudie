@@ -109,14 +109,14 @@ spec:
           # Name of the provider instance.
           name: azure-1
           # Location of the nodepool.
-          region: West Europe
+          region: North Europe
           # Zone of the nodepool.
           zone: "1"
         count: 2
         # VM size name.
         serverType: Standard_B2s
         # URN of the image.
-        image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
+        image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
 
       - name: compute-1-az
         providerSpec:
@@ -130,7 +130,7 @@ spec:
         # VM size name.
         serverType: Standard_B2s
         # URN of the image.
-        image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
+        image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
         storageDiskSize: 50
 
       - name: compute-2-az
@@ -138,14 +138,14 @@ spec:
           # Name of the provider instance.
           name: azure-1
           # Location of the nodepool.
-          region: West Europe
+          region: North Europe
           # Zone of the nodepool.
           zone: "1"
         count: 2
         # VM size name.
         serverType: Standard_B2s
         # URN of the image.
-        image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
+        image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
         storageDiskSize: 50
 
   kubernetes:
@@ -197,14 +197,14 @@ spec:
           # Name of the provider instance.
           name: azure-1
           # Location of the nodepool.
-          region: West Europe
+          region: North Europe
           # Zone of the nodepool.
           zone: "1"
         count: 1
         # VM size name.
         serverType: Standard_B2s
         # URN of the image.
-        image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
+        image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
 
       - name: control-az-2
         providerSpec:
@@ -218,7 +218,7 @@ spec:
         # VM size name.
         serverType: Standard_B2s
         # URN of the image.
-        image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
+        image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
 
       - name: compute-az-1
         providerSpec:
@@ -232,7 +232,7 @@ spec:
         # VM size name.
         serverType: Standard_B2s
         # URN of the image.
-        image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
+        image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
         storageDiskSize: 50
 
       - name: compute-az-2
@@ -240,14 +240,14 @@ spec:
           # Name of the provider instance.
           name: azure-2
           # Location of the nodepool.
-          region: West Europe
+          region: North Europe
           # Zone of the nodepool.
-          zone: "3"
+          zone: "1"
         count: 2
         # VM size name.
         serverType: Standard_B2s
         # URN of the image.
-        image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
+        image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
         storageDiskSize: 50
 
   kubernetes:

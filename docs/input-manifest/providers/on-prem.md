@@ -106,7 +106,7 @@ spec:
           zone: fsn1-dc14
         count: 3
         serverType: cpx11
-        image: ubuntu-22.04
+        image: ubuntu-24.04
 
     static:
         - name: datacenter-1

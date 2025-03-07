@@ -82,7 +82,7 @@ spec:
         # Machine type name.
         serverType: cpx11
         # OS image name.
-        image: ubuntu-22.04
+        image: ubuntu-24.04
 
       - name: compute-1-htz
         providerSpec:
@@ -96,7 +96,7 @@ spec:
         # Machine type name.
         serverType: cpx11
         # OS image name.
-        image: ubuntu-22.04
+        image: ubuntu-24.04
         storageDiskSize: 50
 
       - name: compute-2-htz
@@ -111,7 +111,7 @@ spec:
         # Machine type name.
         serverType: cpx11
         # OS image name.
-        image: ubuntu-22.04
+        image: ubuntu-24.04
         storageDiskSize: 50
 
   kubernetes:
@@ -170,7 +170,7 @@ spec:
         # Machine type name.
         serverType: cpx11
         # OS image name.
-        image: ubuntu-22.04
+        image: ubuntu-24.04
 
       - name: control-htz-2
         providerSpec:
@@ -184,7 +184,7 @@ spec:
         # Machine type name.
         serverType: cpx11
         # OS image name.
-        image: ubuntu-22.04
+        image: ubuntu-24.04
 
       - name: compute-htz-1
         providerSpec:
@@ -198,7 +198,7 @@ spec:
         # Machine type name.
         serverType: cpx11
         # OS image name.
-        image: ubuntu-22.04
+        image: ubuntu-24.04
         storageDiskSize: 50
 
       - name: compute-htz-2
@@ -213,7 +213,7 @@ spec:
         # Machine type name.
         serverType: cpx11
         # OS image name.
-        image: ubuntu-22.04
+        image: ubuntu-24.04
         storageDiskSize: 50
 
   kubernetes:

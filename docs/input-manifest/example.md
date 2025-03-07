@@ -6,13 +6,13 @@ metadata:
   labels:
     app.kubernetes.io/part-of: claudie
 spec:
-  # Providers field is used for defining the providers. 
+  # Providers field is used for defining the providers.
   # It is referencing a secret resource in Kubernetes cluster.
   # Each provider haves its own mandatory fields that are defined in the secret resource.
   # Every supported provider has an example in this input manifest.
   # providers:
-  #   - name: 
-  #       providerType:   # Type of the provider secret [aws|azure|gcp|oci|hetzner|hetznerdns|cloudflare]. 
+  #   - name:
+  #       providerType:   # Type of the provider secret [aws|azure|gcp|oci|hetzner|hetznerdns|cloudflare].
   #       templates:      # external templates used to build the infrastructure by that given provider. If omitted default templates will be used.
   #         repository:   # publicly available git repository where the templates can be acquired
   #         tag:          # optional tag. If set is used to checkout to a specific hash commit of the git repository.
@@ -109,7 +109,7 @@ spec:
           zone: hel1-dc2
         count: 3
         serverType: cpx11
-        image: ubuntu-22.04
+        image: ubuntu-24.04
         labels:
           country: finland
           city: helsinki
@@ -127,7 +127,7 @@ spec:
           zone: hel1-dc2
         count: 2
         serverType: cpx11
-        image: ubuntu-22.04
+        image: ubuntu-24.04
         storageDiskSize: 50
         labels:
           country: finland
@@ -141,7 +141,7 @@ spec:
           region: hel1
           zone: hel1-dc2
         serverType: cpx11
-        image: ubuntu-22.04
+        image: ubuntu-24.04
         storageDiskSize: 50
         autoscaler:
           min: 1
@@ -159,7 +159,7 @@ spec:
           zone: europe-west1-c
         count: 3
         serverType: e2-medium
-        image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
+        image: ubuntu-minimal-2404-noble-amd64-v20241116
         labels:
           country: germany
           city: frankfurt
@@ -173,7 +173,7 @@ spec:
           zone: europe-west1-c
         count: 2
         serverType: e2-small
-        image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
+        image: ubuntu-minimal-2404-noble-amd64-v20241116
         storageDiskSize: 50
         labels:
           country: germany
@@ -192,7 +192,7 @@ spec:
           zone: hsVQ:EU-MILAN-1-AD-1
         count: 3
         serverType: VM.Standard2.1
-        image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
+        image: ocid1.image.oc1.eu-milan-1.aaaaaaaa2ixn6kthb7vn6mom6bv7fts4omou5sowilrqfub2e7ouweiirkbq
 
       - name: compute-oci
         providerSpec:
@@ -201,7 +201,7 @@ spec:
           zone: hsVQ:EU-MILAN-1-AD-1
         count: 2
         serverType: VM.Standard2.1
-        image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
+        image: ocid1.image.oc1.eu-milan-1.aaaaaaaa2ixn6kthb7vn6mom6bv7fts4omou5sowilrqfub2e7ouweiirkbq
         storageDiskSize: 50
 
       - name: control-aws
@@ -211,7 +211,7 @@ spec:
           zone: eu-central-1c
         count: 2
         serverType: t3.medium
-        image: ami-0965bd5ba4d59211c
+        image: ami-07eef52105e8a2059
 
       - name: compute-aws
         providerSpec:
@@ -220,26 +220,26 @@ spec:
           zone: eu-central-1c
         count: 2
         serverType: t3.medium
-        image: ami-0965bd5ba4d59211c
+        image: ami-07eef52105e8a2059
         storageDiskSize: 50
 
       - name: control-azure
         providerSpec:
           name: azure-1
-          region: West Europe
+          region: North Europe
           zone: "1"
         count: 2
         serverType: Standard_B2s
-        image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
+        image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
 
       - name: compute-azure
         providerSpec:
           name: azure-1
-          region: West Europe
+          region: North Europe
           zone: "1"
         count: 2
         serverType: Standard_B2s
-        image: Canonical:0001-com-ubuntu-minimal-jammy:minimal-22_04-lts:22.04.202212120
+        image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
         storageDiskSize: 50
 
       - name: loadbalancer-1
@@ -250,7 +250,7 @@ spec:
           zone: europe-west1-c
         count: 2
         serverType: e2-small
-        image: ubuntu-os-cloud/ubuntu-2004-focal-v20220610
+        image: ubuntu-minimal-2404-noble-amd64-v20241116
 
       - name: loadbalancer-2
         providerSpec:
@@ -259,7 +259,7 @@ spec:
           zone: hel1-dc2
         count: 2
         serverType: cpx11
-        image: ubuntu-20.04
+        image: ubuntu-24.04
 
     # Static nodepools are created by user beforehand.
     # In case you want to use them in the Kubernetes cluster, make sure they meet the requirements. https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/#before-you-begin
@@ -301,11 +301,11 @@ spec:
         labels:
           datacenter: datacenter-1
         annotations:
-          node.longhorn.io/default-node-tags: '["datacenter-1"]'   
+          node.longhorn.io/default-node-tags: '["datacenter-1"]'
         taints:
           - key: datacenter
             effect: NoExecute
-            
+
 
   # Kubernetes field is used to define the kubernetes clusters.
   # Definition specification:
@@ -334,7 +334,7 @@ spec:
             - compute-azure
             - htz-autoscaled
         installationProxy: # learn [more](https://docs.claudie.io/latest/http-proxy)
-          mode: "on" # can be on, off or default 
+          mode: "on" # can be on, off or default
           endpoint: http://proxy.claudie.io:8880 # you can use your own HTTP proxy. If not specified http://proxy.claudie.io:8880 is the default value.
 
       - name: prod-cluster
@@ -354,7 +354,7 @@ spec:
             - compute-aws
             - compute-azure
         installationProxy: # learn [more](https://docs.claudie.io/latest/http-proxy)
-          mode: "off" # can be on, off or default 
+          mode: "off" # can be on, off or default
 
       - name: hybrid-cluster
         version: 1.27.0
@@ -367,7 +367,7 @@ spec:
             - compute-gcp
             - compute-azure
         installationProxy: # learn [more](https://docs.claudie.io/latest/http-proxy)
-          mode: "on" # can be on, off or default 
+          mode: "on" # can be on, off or default
           endpoint: http://proxy.claudie.io:8880 # you can use your own HTTP proxy. If not specified http://proxy.claudie.io:8880 is the default value.
 
   # Loadbalancers field defines loadbalancers used for the kubernetes clusters and roles for the loadbalancers.
