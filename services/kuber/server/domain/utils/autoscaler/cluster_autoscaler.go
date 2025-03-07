@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strings"
 	"text/template"
 
 	comm "github.com/berops/claudie/internal/command"
@@ -155,6 +156,10 @@ func getK8sVersion(version string) (string, error) {
 // getLatestMinorVersion returns latest patch tag for given kubernetes version
 // Example: for v1.25.1 returns v1.25.3
 func getLatestMinorVersion(k8sVersion string) (string, error) {
+	// if the kubernetes version was specified with the `v` prefix
+	// drop it, so that we can extract the minor,patch version.
+	k8sVersion = strings.TrimPrefix(k8sVersion, "v")
+
 	var minor, patch int
 
 	tagList, err := getClusterAutoscaleVersions()
@@ -163,7 +168,7 @@ func getLatestMinorVersion(k8sVersion string) (string, error) {
 	}
 
 	// Extract values from k8sVersion
-	_, err = fmt.Sscanf(k8sVersion, "v1.%d.%d", &minor, &patch)
+	_, err = fmt.Sscanf(k8sVersion, "1.%d.%d", &minor, &patch)
 	if err != nil {
 		return "", err
 	}

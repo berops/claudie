@@ -9,7 +9,7 @@ kind: Secret
 metadata:
   name: oci-secret
 data:
-  compartmentocid: b2NpZDIuY29tcGFydG1lbnQub2MyLi5hYWFhYWFhYWEycnNmdmx2eGMzNG8wNjBrZmR5Z3NkczIxbnNrZTc2a3Nqa2tvMjFscHNkZnNm    
+  compartmentocid: b2NpZDIuY29tcGFydG1lbnQub2MyLi5hYWFhYWFhYWEycnNmdmx2eGMzNG8wNjBrZmR5Z3NkczIxbnNrZTc2a3Nqa2tvMjFscHNkZnNm
   keyfingerprint: YWI6Y2Q6M2Y6MzQ6MzM6MjI6MzI6MzQ6NTQ6NTQ6NDU6NzY6NzY6Nzg6OTg6YWE=
   privatekey: >-
     LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQogICAgICAgIE1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQ2oyL2Fza0pTTG9zYWQKICAgICAgICBNSUlFdlFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLY3dnZ1NqQWdFQUFvSUJBUUNqMi9hc2tKU0xvc2FkCiAgICAgICAgTUlJRXZRSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2N3Z2dTakFnRUFBb0lCQVFDajIvYXNrSlNMb3NhZAogICAgICAgIE1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQ2oyL2Fza0pTTG9zYWQKICAgICAgICBNSUlFdlFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLY3dnZ1NqQWdFQUFvSUJBUUNqMi9hc2tKU0xvc2FkCiAgICAgICAgTUlJRXZRSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2N3Z2dTakFnRUFBb0lCQVFDajIvYXNrSlNMb3NhZAogICAgICAgIE1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQ2oyL2Fza0pTTG9zYWQKICAgICAgICBNSUlFdlFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLY3dnZ1NqQWdFQUFvSUJBUUNqMi9hc2tKU0xvc2FkCiAgICAgICAgTUlJRXZRSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2N3Z2dTakFnRUFBb0lCQVFDajIvYXNrSlNMb3NhZAogICAgICAgIE1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQ2oyL2Fza0pTTG9zYWQKICAgICAgICBNSUlFdlFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLY3dnZ1NqQWdFQUFvSUJBUUNqMi9hc2tKU0xvc2FkCiAgICAgICAgTUlJRXZRSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2N3Z2dTakFnRUFBb0lCQVFDajIvYXNrSlNMb3NhZAogICAgICAgIE1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQ2oyL2Fza0pTTG9zYWQKICAgICAgICBNSUlFdlFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLY3dnZ1NqQWdFQUFvSUJBUUNqMi9hc2tKU0xvc2FkCiAgICAgICAgTUlJRXZRSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2N3Z2dTakFnRUFBb0lCQVFDajIvYXNrSlNMb3NhZAogICAgICAgIE1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQ2oyL2Fza0pTTG9zYWQKICAgICAgICBNSUlFdlFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLY3dnZ1NqQWdFQUFvSUJBUUNqMi9hc2tKU0xvc2FkCiAgICAgICAgTUlJRXZRSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2N3Z2dTakFnRUFBb0lCQVFDajIvYXNrSlNMb3NhZAogICAgICAgIE1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQ2oyL2Fza0pTTG9zYWQKICAgICAgICBNSUlFdlFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLY3dnZ1NqQWdFQUFvSUJBUUNqMi9hc2tKU0xvc2FkCiAgICAgICAgTUlJRXZRSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2N3Z2dTakFnRUFBb0lCQVFDajIvYXNrSlNMb3NhZAogICAgICAgIE1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQ2oyL2Fza0pTTG9zYWQKICAgICAgICBNSUlFdlFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLY3dnZ1NqQWdFQUFvSUJBUUNqMi9hc2tKU0xvc2FkCiAgICAgICAgTUlJRXZRSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2N3Z2dTakFnRUFBb0lCQVFDajIvYXNrSlNMb3NhZAogICAgICAgIE1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQ2oyLz09CiAgICAgICAgLS0tLS1FTkQgUlNBIFBSSVZBVEUgS0VZLS0tLS0=
@@ -154,9 +154,10 @@ spec:
         count: 1
         # VM shape name.
         serverType: VM.Standard2.2
-        # OCID of the image.
+        # OCID of the image ubuntu 24.04.
         # Make sure to update it according to the region.
-        image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
+        # https://docs.oracle.com/en-us/iaas/images/ubuntu-2404/canonical-ubuntu-24-04-2024-08-28-0.htm
+        image: ocid1.image.oc1.eu-milan-1.aaaaaaaa2ixn6kthb7vn6mom6bv7fts4omou5sowilrqfub2e7ouweiirkbq
 
       - name: compute-1-oci
         providerSpec:
@@ -169,9 +170,10 @@ spec:
         count: 2
         # VM shape name.
         serverType: VM.Standard2.1
-        # OCID of the image.
+        # OCID of the image ubuntu 24.04.
         # Make sure to update it according to the region.
-        image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
+        # https://docs.oracle.com/en-us/iaas/images/ubuntu-2404/canonical-ubuntu-24-04-2024-08-28-0.htm
+        image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaa7hxwyz4qiasffo7n7s4ep5lywpzwgkc2am65frqrqinoyitmxxla
         storageDiskSize: 50
 
       - name: compute-2-oci
@@ -185,9 +187,10 @@ spec:
         count: 2
         # VM shape name.
         serverType: VM.Standard2.1
-        # OCID of the image.
+        # OCID of the image ubuntu 24.04.
         # Make sure to update it according to the region.
-        image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
+        # https://docs.oracle.com/en-us/iaas/images/ubuntu-2404/canonical-ubuntu-24-04-2024-08-28-0.htm
+        image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaa7hxwyz4qiasffo7n7s4ep5lywpzwgkc2am65frqrqinoyitmxxla
         storageDiskSize: 50
 
   kubernetes:
@@ -247,9 +250,10 @@ spec:
         count: 1
         # VM shape name.
         serverType: VM.Standard2.2
-        # OCID of the image.
+        # OCID of the image ubuntu 24.04.
         # Make sure to update it according to the region.
-        image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
+        # https://docs.oracle.com/en-us/iaas/images/ubuntu-2404/canonical-ubuntu-24-04-2024-08-28-0.htm
+        image: ocid1.image.oc1.eu-milan-1.aaaaaaaa2ixn6kthb7vn6mom6bv7fts4omou5sowilrqfub2e7ouweiirkbq
 
       - name: control-oci-2
         providerSpec:
@@ -262,9 +266,10 @@ spec:
         count: 2
         # VM shape name.
         serverType: VM.Standard2.1
-        # OCID of the image.
+        # OCID of the image ubuntu 24.04.
         # Make sure to update it according to the region.
-        image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
+        # https://docs.oracle.com/en-us/iaas/images/ubuntu-2404/canonical-ubuntu-24-04-2024-08-28-0.htm
+        image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaa7hxwyz4qiasffo7n7s4ep5lywpzwgkc2am65frqrqinoyitmxxla
 
       - name: compute-oci-1
         providerSpec:
@@ -277,9 +282,10 @@ spec:
         count: 2
         # VM shape name.
         serverType: VM.Standard2.1
-        # OCID of the image.
+        # OCID of the image ubuntu 24.04.
         # Make sure to update it according to the region.
-        image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
+        # https://docs.oracle.com/en-us/iaas/images/ubuntu-2404/canonical-ubuntu-24-04-2024-08-28-0.htm
+        image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaa7hxwyz4qiasffo7n7s4ep5lywpzwgkc2am65frqrqinoyitmxxla
         storageDiskSize: 50
 
       - name: compute-oci-2
@@ -293,9 +299,10 @@ spec:
         count: 2
         # VM shape name.
         serverType: VM.Standard2.1
-        # OCID of the image.
-        # Make sure to update it according to the region..
-        image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
+        # OCID of the image ubuntu 24.04.
+        # Make sure to update it according to the region.
+        # https://docs.oracle.com/en-us/iaas/images/ubuntu-2404/canonical-ubuntu-24-04-2024-08-28-0.htm
+        image: ocid1.image.oc1.eu-milan-1.aaaaaaaa2ixn6kthb7vn6mom6bv7fts4omou5sowilrqfub2e7ouweiirkbq
         storageDiskSize: 50
 
   kubernetes:
@@ -355,9 +362,10 @@ spec:
           cpuCount: 2
           # use 8 gb of memory.
           memory: 8
-        # OCID of the image.
+        # OCID of the image ubuntu 24.04.
         # Make sure to update it according to the region.
-        image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaavvsjwcjstxt4sb25na65yx6i34bzdy5oess3pkgwyfa4hxmzpqeq
+        # https://docs.oracle.com/en-us/iaas/images/ubuntu-2404/canonical-ubuntu-24-04-2024-08-28-0.htm
+        image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaa7hxwyz4qiasffo7n7s4ep5lywpzwgkc2am65frqrqinoyitmxxla
         storageDiskSize: 50
 
   kubernetes:
