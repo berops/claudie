@@ -160,3 +160,35 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 ## Bug fixes
 - Fixed issue where failing to build a load balancer would cause Claudie to hang if the DNS part failed [#1660](https://github.com/berops/claudie/pull/1660).
   Claudie will now recover from this scenario and it is possible for the user to specify the correct DNS settings in the InputManifest to fixed the reported issue.
+
+## v0.9.7
+
+## Bug fixes
+## What's Changed
+- If any of the nodes become unreachable, Claudie will report the problem and will not work on any changes until the connectivity issue is resolved. [#1658](https://github.com/berops/claudie/pull/1658)
+  
+  For unreachable nodes within the kubernetes cluster, Claudie will give you the options of resolving the issue or removing the node from the InputManifest or via `kubectl`, Claudie will report the following issue
+  ```
+  fix the unreachable nodes by either:
+   - fixing the connectivity issue
+   - if the connectivity issue cannot be resolved, you can:
+     - delete the whole nodepool from the kubernetes cluster in the InputManifest
+     - delete the selected unreachable node/s manually from the cluster via 'kubectl'
+       - if its a static node you will also need to remove it from the InputManifest
+       - if its a dynamic node claudie will replace it.
+       NOTE: if the unreachable node is the kube-apiserver, claudie will not be able to recover
+             after the deletion.
+  ```
+
+  For unreachable nods within the loadbalancer cluster, Claudie will give you the options of resolving the issue or removing the nodepool or load balancer from the InputManifest, Claudie will report the following issue
+  ```
+  fix the unreachable nodes by either:
+   - fixing the connectivity issue
+   - if the connectivity issue cannot be resolved, you can:
+     - delete the whole nodepool from the loadbalancer cluster in the InputManifest
+     - delete the whole loadbalancer cluster from the InputManifest
+  ```
+
+- It may be the case that the cluster-autoscaler image may not share the same version as the specified kubernetes version in the InputManifest. Claudie will now correctly recognize this and pick the latest available cluster-autoscaler image [#1680](https://github.com/berops/claudie/pull/1680)
+
+- Claudie will now set the limits of max open file descriptors on each node to 65535 [#1679](https://github.com/berops/claudie/pull/1679)
