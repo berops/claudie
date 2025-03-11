@@ -1,6 +1,10 @@
 stream{
 {{- range $role := .Roles }}
 upstream {{ $role.Role.Name }}{
+    {{- if $role.Role.Settings.StickySessions }}
+    hash $remote_addr consistent;
+    {{- end }}
+
     {{- range $node := $role.TargetNodes}}
     server {{$node.Private}}:{{$role.Role.TargetPort}} max_fails=3 fail_timeout=10s;
     {{- end}}
@@ -9,10 +13,13 @@ upstream {{ $role.Role.Name }}{
 server  {
     listen {{ $role.Role.Port }};
     proxy_pass {{ $role.Role.Name}};
-    {{- if ne $role.Role.Port 6443 }}
-    proxy_protocol on;
-    {{- end }}
     proxy_next_upstream on;
+
+    {{- if $role.Role.Settings.ProxyProtocol }}
+        {{- if ne $role.Role.Port 6443 }}
+    proxy_protocol on;
+        {{- end }}
+    {{- end }}
 }
 {{- end }}
 }

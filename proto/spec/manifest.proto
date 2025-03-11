@@ -169,6 +169,10 @@ message ProxyEnvs {
 
 // Role represents a single loadbalancer role from the manifest.
 message Role {
+  message Settings {
+    bool proxyProtocol = 1;
+    bool stickySessions = 2;
+  }
   // Name of the role.
   string name = 1;
   // Protocol that load balancer uses to forward traffic. ["tcp", "udp"]
@@ -181,6 +185,8 @@ message Role {
   repeated string targetPools = 7;
   // Type of the role.
   RoleType roleType = 6;
+  // Additional settings for the role.
+  Settings settings = 8;
 }
 
 // RoleType specifies the type of the role.

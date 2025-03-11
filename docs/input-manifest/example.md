@@ -379,6 +379,9 @@ spec:
   #     port:         # Port, where traffic will be coming.
   #     targetPort:   # Port, where loadbalancer will forward traffic to.
   #     targetPools:  # Targeted nodes on kubernetes cluster. Specify a nodepool that is used in the targeted K8s cluster.
+  #     settings:     # Optional settings that further configures the role.
+  #       proxyProtocol:    # Turns on the proxy protocol, can be true, false. Default is true.
+  #       stickySessions:   # Turn on sticky sessions that will hash the source ip to always choose the same node to which the traffic will be forwarded to. Can be true, false. Default is false.
   #
   # Definition specification for loadbalancer:
   #
@@ -401,10 +404,19 @@ spec:
         targetPort: 6443
         targetPools:
             - control-htz # make sure that this nodepools is acutally used by the targeted `dev-cluster` cluster.
+      - name: https
+        protocol: tcp
+        port: 443
+        targetPort: 30143 # make sure there is a NodePort service.
+        targetPools:
+            - compute-htz # make sure that this nodepools is acutally used by the targeted `dev-cluster` cluster.
+        settings:
+          proxyProtocol: true
     clusters:
       - name: apiserver-lb-dev
         roles:
           - apiserver
+          - https
         dns:
           dnsZone: dns-zone
           provider: hetznerdns-1

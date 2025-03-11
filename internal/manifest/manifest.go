@@ -250,6 +250,12 @@ type InstallationProxy struct {
 	Endpoint string `yaml:"endpoint,omitempty" json:"endpoint,omitempty"`
 }
 
+// Additional settings for a role.
+type RoleSettings struct {
+	ProxyProtocol  bool `yaml:"proxyProtocol" json:"proxyProtocol"`
+	StickySessions bool `yaml:"stickySessions" json:"stickySessions"`
+}
+
 // Role defines a concrete loadbalancer configuration. Single loadbalancer can have multiple roles.
 type Role struct {
 	// Name of the role. Used as a reference in clusters.
@@ -263,6 +269,9 @@ type Role struct {
 	TargetPort int32 `validate:"min=0,max=65535" yaml:"targetPort" json:"targetPort"`
 	// Defines nodepools of the targeted K8s cluster, from which nodes will be used for loadbalancing.
 	TargetPools []string `validate:"required,min=1" yaml:"targetPools" json:"targetPools"`
+	// Additional settings for a role.
+	// +optional
+	Settings *RoleSettings `yaml:"settings,omitempty" json:"settings,omitempty"`
 }
 
 // Collection of data used to define a loadbalancer cluster. Defines loadbalancer clusters.
