@@ -54,7 +54,7 @@ func (u *Usecases) PatchKubeadmConfigMap(ctx context.Context, request *pb.PatchK
 			return &pb.PatchKubeadmConfigMapResponse{}, nil
 		}
 		if err = yaml.Unmarshal(configMap, &rawKubeadmConfigMap); err != nil {
-			logger.Warn().Msgf("failed to unmarshal kubeadm-config cluster map: %w, trying again later", err)
+			logger.Warn().Msgf("failed to unmarshal kubeadm-config cluster map: %v, trying again later", err)
 			time.Sleep(time.Second)
 			continue
 		}
