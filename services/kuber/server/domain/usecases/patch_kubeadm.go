@@ -3,7 +3,6 @@ package usecases
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/loggerutils"
@@ -35,33 +34,16 @@ func (u *Usecases) PatchKubeadmConfigMap(ctx context.Context, request *pb.PatchK
 		Kubeconfig: request.DesiredCluster.Kubeconfig,
 	}
 
-	var configMap []byte
-	var rawKubeadmConfigMap map[string]any
-	var err error
-
-	// try to unmarshall the kubeadm config map 3 times before giving up.
-	// the e2e tests fail sometimes after the cluster has been created with error:
-	// failed to unmarshal kubeadm-config cluster map, malformed yaml: yaml: mapping values are not allowed in this context"
-	// https://github.com/berops/claudie/issues/1686
-	// This is a simple workaround until the problem is resolved.
-	const retries = 3
-	for range retries {
-		configMap, err = k.KubectlGet("cm kubeadm-config", "-oyaml", "-n kube-system")
-		if err != nil {
-			return nil, err
-		}
-		if configMap == nil {
-			return &pb.PatchKubeadmConfigMapResponse{}, nil
-		}
-		if err = yaml.Unmarshal(configMap, &rawKubeadmConfigMap); err != nil {
-			logger.Warn().Msgf("failed to unmarshal kubeadm-config cluster map: %v, trying again later", err)
-			time.Sleep(time.Second)
-			continue
-		}
-		break
+	configMap, err := k.KubectlGet("cm kubeadm-config", "-oyaml", "-n kube-system")
+	if err != nil {
+		return nil, err
+	}
+	if configMap == nil {
+		return &pb.PatchKubeadmConfigMapResponse{}, nil
 	}
 
-	if err != nil {
+	var rawKubeadmConfigMap map[string]any
+	if err := yaml.Unmarshal(configMap, &rawKubeadmConfigMap); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal kubeadm-config cluster map, malformed yaml: %w", err)
 	}
 
