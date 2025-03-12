@@ -49,7 +49,7 @@ needs to be defined.
   | `hetznerdns`   | [Hetzner](#hetznerdns) DNS provider type    |
   | `oci`          | [OCI](#oci) provider type                   |
   | `genesiscloud` | [GenesisCloud](#genesiscloud) provider type |
-  
+
 - `secretRef` [SecretRef](#secretref)
 
   Represents a Secret Reference. It has enough information to retrieve secret in any namespace.
@@ -59,7 +59,7 @@ Support for more cloud providers is in the [roadmap](https://github.com/berops/c
 !!! note "For static nodepools a provider is not needed, refer to the [static section](#static) for more detailed information."
 
 ## SecretRef
-  
+
   SecretReference represents a Kubernetes Secret Reference. It has enough information to retrieve secret in any namespace.
 
 - `name`
@@ -158,11 +158,11 @@ To find out how to configure OCI provider and service account, follow the instru
   Fingerprint of the user-supplied private key.
 
 - `tenancyocid`
-  
+
   OCID of the tenancy where `privateKey` is added as an API key
 
 - `userocid`
-  
+
   OCID of the user in the supplied tenancy
 
 - `compartmentocid`
@@ -202,7 +202,7 @@ To find out how to configure Azure provider and service account, follow the inst
   Subscription ID of your subscription in Azure.
 
 - `tenantid`
-  
+
   Tenant ID of your tenancy in Azure.
 
 - `clientid`
@@ -210,7 +210,7 @@ To find out how to configure Azure provider and service account, follow the inst
   Client ID of your client. The Claudie is design to use a service principal with appropriate permissions.
 
 - `clientsecret`
-  
+
   Client secret generated for your client.
 
 - `templates`
@@ -225,7 +225,7 @@ Collection of static and dynamic nodepool specification, to be referenced in the
 - `dynamic` [Dynamic](#dynamic)
 
   List of dynamically to-be-created nodepools of not yet existing machines, used for Kubernetes or loadbalancer clusters.
-  
+
   These are only blueprints, and will only be created per reference in `kubernetes` or `loadBalancer` clusters. E.g. if the nodepool isn't used, it won't even be created. Or if the same nodepool is used in two different clusters, it will be created twice.
 In OOP analogy, a dynamic nodepool would be a class that would get instantiated `N >= 0` times depending on which clusters reference it.
 
@@ -243,29 +243,29 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
 - `provideSpec` [Provider spec](#provider-spec)
 
-  Collection of provider data to be used while creating the nodepool.  
+  Collection of provider data to be used while creating the nodepool.
 
 - `count`
 
   Number of the nodes in the nodepool. Maximum value of 255.  Mutually exclusive with `autoscaler`.
 
 - `serverType`
-  
+
   Type of the machines in the nodepool.
-  
+
   Currently, only AMD64 machines are supported.
 
 - `machineSpec`
 
   Further describes the selected server type, if available by the cloud provider.
-  
+
   - `cpuCount`: specifies the number of cpu to be used by the `serverType`
   - `memory`: specifies the memory in GB to be used by the `serverType`
 
 - `image`
 
   OS image of the machine.
-  
+
   Currently, only Ubuntu 22.04 AMD64 images are supported.
 
 - `storageDiskSize`
@@ -277,13 +277,13 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
   The default value for this field is `50`, with a minimum value also set to `50`. This value is only applicable to compute nodes. If the disk size is set to `0`, no storage disk will be created for any nodes in the particular node pool.
 
 - `autoscaler` [Autoscaler Configuration](#autoscaler-configuration)
-  
+
   Autoscaler configuration for this nodepool. Mutually exclusive with `count`.
 
 - `labels`
 
   Map of user defined labels, which will be applied on every node in the node pool. This field is optional.
-  
+
   To see the default labels Claudie applies on each node, refer to [this section](#default-labels).
 
 - `annotations`
@@ -319,7 +319,7 @@ Provider spec is an additional specification built on top of the data from any o
 Autoscaler configuration on per nodepool basis. Defines the number of nodes, autoscaler will scale up or down specific nodepool.
 
 - `min`
-  
+
   Minimum number of nodes in nodepool.
 
 - `max`
@@ -343,7 +343,7 @@ Static nodepools are defined for static machines which Claudie will not manage. 
 - `labels`
 
   Map of user defined labels, which will be applied on every node in the node pool. This field is optional.
-  
+
   To see the default labels Claudie applies on each node, refer to [this section](#default-labels).
 
 - `annotations`
@@ -376,7 +376,7 @@ Static node defines single static node from a static nodepool.
   Secret from which private key will be taken used to SSH into the machine (as root or as a user specificed in the username attribute).
 
   The field in the secret must be `privatekey`, i.e.
-  
+
   ```yaml
   apiVersion: v1
   type: Opaque
@@ -426,7 +426,7 @@ Collection of data used to define a Kubernetes cluster.
 Defines loadbalancer clusters.
 
 - `roles` [Role](#role)
-  
+
   List of roles loadbalancers use to forward the traffic. Single role can be used in multiple loadbalancer clusters.
 
 - `clusters` [Cluster-lb](#cluster-lb)
@@ -461,6 +461,17 @@ Role defines a concrete loadbalancer configuration. Single loadbalancer can have
 - `targetPools`
   Defines from which nodepools, nodes will be targeted by the Load Balancer
 
+- `settings`
+   Optional settings that can be configured for a role
+
+    - `proxyProtocol`: Default value: `true`
+
+        Specifies whether to enable the proxy protocol. The Proxy protocol forwards connection information from the client, such as the IP address, to the target pools. The application to which the traffic is forwarded must support the proxy protocol.
+
+    - `stickySessions`: Default value: `false`
+
+        Specifies whether incoming traffic should be sent to the same node each time, rather than load balancing between available nodes. A hash of the IP is used to determine which node the traffic is routed to. <br>
+
 ## Cluster-lb
 
 Collection of data used to define a loadbalancer cluster.
@@ -470,13 +481,13 @@ Collection of data used to define a loadbalancer cluster.
   Name of the loadbalancer. The name is limited by 28 characters.
 
 - `roles`
-  
+
   List of roles the loadbalancer uses.
 
 - `dns` [DNS](#dns)
-  
+
   Specification of the loadbalancer's DNS record.
-  
+
 - `targetedK8s`
 
   Name of the Kubernetes cluster targetted by this loadbalancer.
@@ -500,7 +511,7 @@ Collection of data Claudie uses to create a DNS record for the loadbalancer.
   Name of [provider](#providers) to be used for creating an A record entry in defined DNS zone.
 
 - `hostname`
-  
+
   Custom hostname for your A record. If left empty, the hostname will be a random hash.
 
 ### Default labels
