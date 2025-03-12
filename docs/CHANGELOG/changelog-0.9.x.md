@@ -180,7 +180,7 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
              after the deletion.
   ```
 
-  For unreachable nods within the loadbalancer cluster, Claudie will give you the options of resolving the issue or removing the nodepool or load balancer from the InputManifest, Claudie will report the following issue
+  For unreachable nodes within the loadbalancer cluster, Claudie will give you the options of resolving the issue or removing the nodepool or load balancer from the InputManifest, Claudie will report the following issue
   ```
   fix the unreachable nodes by either:
    - fixing the connectivity issue
