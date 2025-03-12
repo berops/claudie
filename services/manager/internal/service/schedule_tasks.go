@@ -119,10 +119,11 @@ func scheduleTasks(scheduled *store.Config) (ScheduleResult, error) {
 						}
 						events = append(events, e...)
 					}
+					result = Reschedule
 				} else {
 					logger.Err(err).Msg("failed to determine if any nodes were unreachable")
+					result = NotReady
 				}
-				result = Reschedule
 				break
 			}
 
