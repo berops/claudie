@@ -272,6 +272,12 @@ func getRolesAttachedToLBCluster(roles []manifest.Role, roleNames []string) []*s
 					roleType = spec.RoleType_Ingress
 				}
 
+				if role.Settings == nil {
+					role.Settings = &manifest.RoleSettings{
+						ProxyProtocol: true,
+					}
+				}
+
 				newRole := &spec.Role{
 					Name:        role.Name,
 					Protocol:    role.Protocol,
@@ -279,6 +285,10 @@ func getRolesAttachedToLBCluster(roles []manifest.Role, roleNames []string) []*s
 					TargetPort:  role.TargetPort,
 					TargetPools: role.TargetPools,
 					RoleType:    roleType,
+					Settings: &spec.Role_Settings{
+						ProxyProtocol:  role.Settings.ProxyProtocol,
+						StickySessions: role.Settings.StickySessions,
+					},
 				}
 				matchingRoles = append(matchingRoles, newRole)
 			}

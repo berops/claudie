@@ -46,6 +46,10 @@ func Test_getRolesAttachedToLBCluster(t *testing.T) {
 						Port:        6443,
 						TargetPort:  6443,
 						TargetPools: []string{"control"},
+						Settings: &manifest.RoleSettings{
+							ProxyProtocol:  true,
+							StickySessions: true,
+						},
 					},
 				},
 				roleNames: []string{"test"},
@@ -58,6 +62,10 @@ func Test_getRolesAttachedToLBCluster(t *testing.T) {
 					TargetPort:  6443,
 					TargetPools: []string{"control"},
 					RoleType:    spec.RoleType_ApiServer,
+					Settings: &spec.Role_Settings{
+						ProxyProtocol:  true,
+						StickySessions: true,
+					},
 				},
 			},
 		},
@@ -181,6 +189,10 @@ func Test_createLBClustersFromManifest(t *testing.T) {
 								Port:        6443,
 								TargetPort:  6443,
 								TargetPools: []string{"control"},
+								Settings: &manifest.RoleSettings{
+									ProxyProtocol:  true,
+									StickySessions: false,
+								},
 							},
 						},
 						Clusters: []manifest.LoadBalancerCluster{
@@ -193,6 +205,7 @@ func Test_createLBClustersFromManifest(t *testing.T) {
 							},
 						},
 					},
+					Kubernetes: manifest.Kubernetes{},
 				},
 				into: &store.Config{
 					Version:  0,
@@ -213,6 +226,10 @@ func Test_createLBClustersFromManifest(t *testing.T) {
 												TargetPort:  6447,
 												TargetPools: []string{"worker"},
 												RoleType:    spec.RoleType_Ingress,
+												Settings: &spec.Role_Settings{
+													ProxyProtocol:  true,
+													StickySessions: false,
+												},
 											}},
 											Dns: &spec.DNS{
 												DnsZone:  "test-zone",
@@ -235,6 +252,10 @@ func Test_createLBClustersFromManifest(t *testing.T) {
 												TargetPort:  6443,
 												TargetPools: []string{"control"},
 												RoleType:    spec.RoleType_ApiServer,
+												Settings: &spec.Role_Settings{
+													ProxyProtocol:  true,
+													StickySessions: false,
+												},
 											}},
 											Dns: &spec.DNS{
 												DnsZone:  "test-zone",
@@ -300,6 +321,10 @@ func Test_createLBClustersFromManifest(t *testing.T) {
 								Port:        6443,
 								TargetPort:  6443,
 								TargetPools: []string{"control"},
+								Settings: &manifest.RoleSettings{
+									ProxyProtocol:  true,
+									StickySessions: true,
+								},
 							},
 						},
 						Clusters: []manifest.LoadBalancerCluster{
@@ -332,6 +357,10 @@ func Test_createLBClustersFromManifest(t *testing.T) {
 												TargetPort:  6447,
 												TargetPools: []string{"worker"},
 												RoleType:    spec.RoleType_Ingress,
+												Settings: &spec.Role_Settings{
+													ProxyProtocol:  true,
+													StickySessions: true,
+												},
 											}},
 											Dns: &spec.DNS{
 												DnsZone:  "test-zone",
@@ -354,6 +383,10 @@ func Test_createLBClustersFromManifest(t *testing.T) {
 												TargetPort:  6443,
 												TargetPools: []string{"control"},
 												RoleType:    spec.RoleType_ApiServer,
+												Settings: &spec.Role_Settings{
+													ProxyProtocol:  true,
+													StickySessions: true,
+												},
 											}},
 											Dns: &spec.DNS{
 												DnsZone:  "test-zone",
@@ -418,6 +451,10 @@ func Test_createLBClustersFromManifest(t *testing.T) {
 								Port:        6443,
 								TargetPort:  6443,
 								TargetPools: []string{"control"},
+								Settings: &manifest.RoleSettings{
+									ProxyProtocol:  true,
+									StickySessions: true,
+								},
 							},
 						},
 						Clusters: []manifest.LoadBalancerCluster{
@@ -451,6 +488,10 @@ func Test_createLBClustersFromManifest(t *testing.T) {
 												TargetPort:  6447,
 												TargetPools: []string{"worker"},
 												RoleType:    spec.RoleType_Ingress,
+												Settings: &spec.Role_Settings{
+													ProxyProtocol:  true,
+													StickySessions: true,
+												},
 											}},
 											Dns: &spec.DNS{
 												DnsZone:  "test-zone",
@@ -473,6 +514,10 @@ func Test_createLBClustersFromManifest(t *testing.T) {
 												TargetPort:  6443,
 												TargetPools: []string{"control"},
 												RoleType:    spec.RoleType_ApiServer,
+												Settings: &spec.Role_Settings{
+													ProxyProtocol:  true,
+													StickySessions: true,
+												},
 											}},
 											Dns: &spec.DNS{
 												DnsZone:  "test-zone",

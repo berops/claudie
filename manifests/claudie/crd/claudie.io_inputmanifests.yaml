@@ -16,513 +16,569 @@ spec:
     singular: inputmanifest
   scope: Namespaced
   versions:
-  - additionalPrinterColumns:
-    - description: Status of the input manifest
-      jsonPath: .status.state
-      name: Status
-      type: string
-    name: v1beta1
-    schema:
-      openAPIV3Schema:
-        description: |-
-          InputManifest is a definition of the user's infrastructure.
-          It contains cloud provider specification,
-          nodepool specification, Kubernetes and loadbalancer clusters.
-        properties:
-          apiVersion:
-            description: |-
-              APIVersion defines the versioned schema of this representation of an object.
-              Servers should convert recognized schemas to the latest internal value, and
-              may reject unrecognized values.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-            type: string
-          kind:
-            description: |-
-              Kind is a string value representing the REST resource this object represents.
-              Servers may infer this from the endpoint the client submits requests to.
-              Cannot be updated.
-              In CamelCase.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Specification of the desired behaviour of the InputManifest
-            properties:
-              kubernetes:
-                description: Kubernetes list of Kubernetes cluster this manifest will
-                  manage.
-                properties:
-                  clusters:
-                    description: List of Kubernetes clusters Claudie will create.
-                    items:
-                      description: Collection of data used to define a Kubernetes
-                        cluster.
-                      properties:
-                        installationProxy:
-                          description: General information about a proxy used to build
-                            a K8s cluster.
-                          properties:
-                            endpoint:
-                              description: Endpoint defines the proxy endpoint. If
-                                undefined, the default value is http://proxy.claudie.io:8880.
-                              type: string
-                            mode:
-                              description: Mode defines if the proxy mode (on/off/default).
-                                If undefined, the default mode is used.
-                              type: string
-                          required:
-                          - mode
-                          type: object
-                        name:
-                          description: Name of the Kubernetes cluster. Each cluster
-                            will have a random hash appended to the name, so the whole
-                            name will be of format <name>-<hash>.
-                          type: string
-                        network:
-                          description: Network range for the VPN of the cluster. The
-                            value should be defined in format A.B.C.D/mask.
-                          type: string
-                        pools:
-                          description: List of nodepool names this cluster will use.
-                          properties:
-                            compute:
-                              description: List of nodepool names, that will represent
-                                compute nodes.
-                              items:
-                                type: string
-                              type: array
-                            control:
-                              description: List of nodepool names, that will represent
-                                control plane nodes.
-                              items:
-                                type: string
-                              type: array
-                          required:
-                          - compute
-                          - control
-                          type: object
-                        version:
-                          description: |-
-                            Version should be defined in format vX.Y. In terms of supported versions of Kubernetes,
-                            Claudie follows kubeone releases and their supported versions.
-                            The current kubeone version used in Claudie is 1.8.1.
-                            To see the list of supported versions, please refer to kubeone documentation.
-                            https://docs.kubermatic.com/kubeone/v1.8/architecture/compatibility/supported-versions/
-                          type: string
-                      required:
-                      - name
-                      - network
-                      - pools
-                      - version
-                      type: object
-                    type: array
-                type: object
-              loadBalancers:
-                description: LoadBalancers list of loadbalancer clusters the Kubernetes
-                  clusters may use.
-                properties:
-                  clusters:
-                    description: A list of load balancers clusters.
-                    items:
-                      description: Collection of data used to define a loadbalancer
-                        cluster. Defines loadbalancer clusters.
-                      properties:
-                        dns:
-                          description: Specification of the loadbalancer's DNS record.
-                          properties:
-                            dnsZone:
-                              description: DNS zone inside of which the records will
-                                be created. GCP/AWS/OCI/Azure/Cloudflare/Hetzner DNS
-                                zone is accepted
-                              type: string
-                            hostname:
-                              description: Custom hostname for your A record. If left
-                                empty, the hostname will be a random hash.
-                              type: string
-                            provider:
-                              description: Name of provider to be used for creating
-                                an A record entry in defined DNS zone.
-                              type: string
-                          required:
-                          - dnsZone
-                          - provider
-                          type: object
-                        name:
-                          description: Name of the loadbalancer.
-                          type: string
-                        pools:
-                          description: |-
-                            List of nodepool names this loadbalancer will use. Remember, that nodepools defined
-                            in nodepools are only "blueprints". The actual nodepool will be created once referenced here.
-                          items:
-                            type: string
-                          type: array
-                        roles:
-                          description: List of roles the loadbalancer uses.
-                          items:
-                            type: string
-                          type: array
-                        targetedK8s:
-                          description: Name of the Kubernetes cluster targeted by
-                            this loadbalancer.
-                          type: string
-                      required:
-                      - name
-                      - pools
-                      - roles
-                      - targetedK8s
-                      type: object
-                    type: array
-                  roles:
-                    description: List of roles loadbalancers use to forward the traffic.
-                      Single role can be used in multiple loadbalancer clusters.
-                    items:
-                      description: Role defines a concrete loadbalancer configuration.
-                        Single loadbalancer can have multiple roles.
-                      properties:
-                        name:
-                          description: Name of the role. Used as a reference in clusters.
-                          type: string
-                        port:
-                          description: Port of the incoming traffic on the loadbalancer.
-                          format: int32
-                          type: integer
-                        protocol:
-                          description: 'Protocol of the rule. Allowed values are:
-                            tcp, udp.'
-                          enum:
-                          - tcp
-                          - udp
-                          type: string
-                        targetPools:
-                          description: Defines nodepools of the targeted K8s cluster,
-                            from which nodes will be used for loadbalancing.
-                          items:
-                            type: string
-                          type: array
-                        targetPort:
-                          description: Port where loadbalancer forwards the traffic.
-                          format: int32
-                          type: integer
-                      required:
-                      - name
-                      - port
-                      - protocol
-                      - targetPools
-                      - targetPort
-                      type: object
-                    type: array
-                type: object
-              nodePools:
-                description: |-
-                  NodePool is a map of dynamic nodepools and static nodepools which will be used to
-                  form kubernetes or loadbalancer clusters.
-                properties:
-                  dynamic:
-                    description: Dynamic nodepools define nodepools dynamically created
-                      by Claudie.
-                    items:
-                      description: |-
-                        DynamicNodePool List of dynamically to-be-created nodepools of not yet existing machines, used for Kubernetes or loadbalancer clusters.
-                        These are only blueprints, and will only be created per reference in kubernetes or loadBalancer clusters.
-
-
-                        E.g. if the nodepool isn't used, it won't even be created. Or if the same nodepool is used in two different clusters,
-                        it will be created twice. In OOP analogy, a dynamic nodepool would be a class
-                        that would get instantiated N >= 0 times depending on which clusters reference it.
-                      properties:
-                        annotations:
-                          additionalProperties:
-                            type: string
-                          description: User defined annotations for this nodepool.
-                          type: object
-                        autoscaler:
-                          description: Autoscaler configuration for this nodepool.
-                            Mutually exclusive with count.
-                          properties:
-                            max:
-                              description: Maximum number of nodes in nodepool.
-                              format: int32
-                              type: integer
-                            min:
-                              description: Minimum number of nodes in nodepool.
-                              format: int32
-                              type: integer
-                          type: object
-                        count:
-                          description: Number of the nodes in the nodepool. Mutually
-                            exclusive with autoscaler.
-                          format: int32
-                          type: integer
-                        image:
-                          description: OS image of the machine. Currently, only Ubuntu
-                            22.04 AMD64 images are supported.
-                          type: string
-                        labels:
-                          additionalProperties:
-                            type: string
-                          description: User defined labels for this nodepool.
-                          type: object
-                        machineSpec:
-                          description: MachineSpec further describe the properties
-                            of the selected server type.
-                          properties:
-                            cpuCount:
-                              description: CpuCount specifies the number of CPU cores
-                                to be used.
-                              type: integer
-                            memory:
-                              type: integer
-                          required:
-                          - cpuCount
-                          - memory
-                          type: object
-                        name:
-                          description: Name of the nodepool. Each nodepool will have
-                            a random hash appended to the name, so the whole name
-                            will be of format <name>-<hash>.
-                          type: string
-                        providerSpec:
-                          description: Collection of provider data to be used while
-                            creating the nodepool.
-                          properties:
-                            name:
-                              description: Name of the provider instance specified
-                                in providers
-                              type: string
-                            region:
-                              description: Region of the nodepool.
-                              type: string
-                            zone:
-                              description: Zone of the nodepool.
-                              type: string
-                          required:
-                          - name
-                          - region
-                          type: object
-                        serverType:
-                          description: "\tType of the machines in the nodepool. Currently,
-                            only AMD64 machines are supported."
-                          type: string
-                        storageDiskSize:
-                          description: |-
-                            Size of the storage disk on the nodes in the nodepool in GB. The OS disk is created automatically
-                            with predefined size of 100GB for kubernetes nodes and 50GB for Loadbalancer nodes.
-                            The value must be either -1 (no disk is created), or >= 50. If no value is specified, 50 is used.
-                          format: int32
-                          type: integer
-                        taints:
-                          description: User defined taints for this nodepool.
-                          items:
-                            description: |-
-                              The node this Taint is attached to has the "effect" on
-                              any pod that does not tolerate the Taint.
-                            properties:
-                              effect:
-                                description: |-
-                                  Required. The effect of the taint on pods
-                                  that do not tolerate the taint.
-                                  Valid effects are NoSchedule, PreferNoSchedule and NoExecute.
-                                type: string
-                              key:
-                                description: Required. The taint key to be applied
-                                  to a node.
-                                type: string
-                              timeAdded:
-                                description: |-
-                                  TimeAdded represents the time at which the taint was added.
-                                  It is only written for NoExecute taints.
-                                format: date-time
-                                type: string
-                              value:
-                                description: The taint value corresponding to the
-                                  taint key.
-                                type: string
-                            required:
-                            - effect
-                            - key
-                            type: object
-                          type: array
-                      required:
-                      - image
-                      - name
-                      - providerSpec
-                      - serverType
-                      type: object
-                    type: array
-                  static:
-                    description: Static nodepools define nodepools of already existing
-                      nodes.
-                    items:
-                      description: StaticNodePool defines nodepool of already existing
-                        nodes, managed outside of Claudie.
-                      properties:
-                        annotations:
-                          additionalProperties:
-                            type: string
-                          type: object
-                        labels:
-                          additionalProperties:
-                            type: string
-                          type: object
-                        name:
-                          description: Name of the nodepool.
-                          type: string
-                        nodes:
-                          description: List of static nodes for a particular static
-                            nodepool.
-                          items:
-                            description: StaticNode defines a single static node for
-                              a particular static nodepool.
+    - additionalPrinterColumns:
+        - description: Status of the input manifest
+          jsonPath: .status.state
+          name: Status
+          type: string
+      name: v1beta1
+      schema:
+        openAPIV3Schema:
+          description: |-
+            InputManifest is a definition of the user's infrastructure.
+            It contains cloud provider specification,
+            nodepool specification, Kubernetes and loadbalancer clusters.
+          properties:
+            apiVersion:
+              description: |-
+                APIVersion defines the versioned schema of this representation of an object.
+                Servers should convert recognized schemas to the latest internal value, and
+                may reject unrecognized values.
+                More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+              type: string
+            kind:
+              description: |-
+                Kind is a string value representing the REST resource this object represents.
+                Servers may infer this from the endpoint the client submits requests to.
+                Cannot be updated.
+                In CamelCase.
+                More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: Specification of the desired behaviour of the InputManifest
+              properties:
+                kubernetes:
+                  description:
+                    Kubernetes list of Kubernetes cluster this manifest will
+                    manage.
+                  properties:
+                    clusters:
+                      description: List of Kubernetes clusters Claudie will create.
+                      items:
+                        description:
+                          Collection of data used to define a Kubernetes
+                          cluster.
+                        properties:
+                          installationProxy:
+                            description:
+                              General information about a proxy used to build
+                              a K8s cluster.
                             properties:
                               endpoint:
-                                description: Endpoint under which Claudie will access
-                                  this node.
+                                description:
+                                  Endpoint defines the proxy endpoint. If
+                                  undefined, the default value is http://proxy.claudie.io:8880.
                                 type: string
-                              secretRef:
-                                description: Secret reference to the private key of
-                                  the node.
-                                properties:
-                                  name:
-                                    description: name is unique within a namespace
-                                      to reference a secret resource.
-                                    type: string
-                                  namespace:
-                                    description: namespace defines the space within
-                                      which the secret name must be unique.
-                                    type: string
-                                type: object
-                                x-kubernetes-map-type: atomic
-                              username:
-                                description: Username with root access. Used in SSH
-                                  connection also.
+                              mode:
+                                description:
+                                  Mode defines if the proxy mode (on/off/default).
+                                  If undefined, the default mode is used.
                                 type: string
                             required:
-                            - endpoint
-                            - secretRef
+                              - mode
                             type: object
-                          type: array
-                        taints:
-                          items:
-                            description: |-
-                              The node this Taint is attached to has the "effect" on
-                              any pod that does not tolerate the Taint.
+                          name:
+                            description:
+                              Name of the Kubernetes cluster. Each cluster
+                              will have a random hash appended to the name, so the whole
+                              name will be of format <name>-<hash>.
+                            type: string
+                          network:
+                            description:
+                              Network range for the VPN of the cluster. The
+                              value should be defined in format A.B.C.D/mask.
+                            type: string
+                          pools:
+                            description: List of nodepool names this cluster will use.
                             properties:
-                              effect:
-                                description: |-
-                                  Required. The effect of the taint on pods
-                                  that do not tolerate the taint.
-                                  Valid effects are NoSchedule, PreferNoSchedule and NoExecute.
+                              compute:
+                                description:
+                                  List of nodepool names, that will represent
+                                  compute nodes.
+                                items:
+                                  type: string
+                                type: array
+                              control:
+                                description:
+                                  List of nodepool names, that will represent
+                                  control plane nodes.
+                                items:
+                                  type: string
+                                type: array
+                            required:
+                              - compute
+                              - control
+                            type: object
+                          version:
+                            description: |-
+                              Version should be defined in format vX.Y. In terms of supported versions of Kubernetes,
+                              Claudie follows kubeone releases and their supported versions.
+                              The current kubeone version used in Claudie is 1.8.1.
+                              To see the list of supported versions, please refer to kubeone documentation.
+                              https://docs.kubermatic.com/kubeone/v1.8/architecture/compatibility/supported-versions/
+                            type: string
+                        required:
+                          - name
+                          - network
+                          - pools
+                          - version
+                        type: object
+                      type: array
+                  type: object
+                loadBalancers:
+                  description:
+                    LoadBalancers list of loadbalancer clusters the Kubernetes
+                    clusters may use.
+                  properties:
+                    clusters:
+                      description: A list of load balancers clusters.
+                      items:
+                        description:
+                          Collection of data used to define a loadbalancer
+                          cluster. Defines loadbalancer clusters.
+                        properties:
+                          dns:
+                            description: Specification of the loadbalancer's DNS record.
+                            properties:
+                              dnsZone:
+                                description:
+                                  DNS zone inside of which the records will
+                                  be created. GCP/AWS/OCI/Azure/Cloudflare/Hetzner DNS
+                                  zone is accepted
                                 type: string
-                              key:
-                                description: Required. The taint key to be applied
-                                  to a node.
+                              hostname:
+                                description:
+                                  Custom hostname for your A record. If left
+                                  empty, the hostname will be a random hash.
                                 type: string
-                              timeAdded:
-                                description: |-
-                                  TimeAdded represents the time at which the taint was added.
-                                  It is only written for NoExecute taints.
-                                format: date-time
-                                type: string
-                              value:
-                                description: The taint value corresponding to the
-                                  taint key.
+                              provider:
+                                description:
+                                  Name of provider to be used for creating
+                                  an A record entry in defined DNS zone.
                                 type: string
                             required:
-                            - effect
-                            - key
+                              - dnsZone
+                              - provider
                             type: object
-                          type: array
-                      required:
-                      - name
-                      - nodes
-                      type: object
-                    type: array
-                type: object
-              providers:
-                description: |-
-                  Providers list of defined cloud provider configuration
-                  that will be used while infrastructure provisioning.
-                items:
+                          name:
+                            description: Name of the loadbalancer.
+                            type: string
+                          pools:
+                            description: |-
+                              List of nodepool names this loadbalancer will use. Remember, that nodepools defined
+                              in nodepools are only "blueprints". The actual nodepool will be created once referenced here.
+                            items:
+                              type: string
+                            type: array
+                          roles:
+                            description: List of roles the loadbalancer uses.
+                            items:
+                              type: string
+                            type: array
+                          targetedK8s:
+                            description:
+                              Name of the Kubernetes cluster targeted by
+                              this loadbalancer.
+                            type: string
+                        required:
+                          - name
+                          - pools
+                          - roles
+                          - targetedK8s
+                        type: object
+                      type: array
+                    roles:
+                      description:
+                        List of roles loadbalancers use to forward the traffic.
+                        Single role can be used in multiple loadbalancer clusters.
+                      items:
+                        description:
+                          Role defines a concrete loadbalancer configuration.
+                          Single loadbalancer can have multiple roles.
+                        properties:
+                          name:
+                            description: Name of the role. Used as a reference in clusters.
+                            type: string
+                          port:
+                            description: Port of the incoming traffic on the loadbalancer.
+                            format: int32
+                            type: integer
+                          protocol:
+                            description:
+                              "Protocol of the rule. Allowed values are:
+                              tcp, udp."
+                            enum:
+                              - tcp
+                              - udp
+                            type: string
+                          settings:
+                            description: Additional settings for a role.
+                            properties:
+                              proxyProtocol:
+                                type: boolean
+                              stickySessions:
+                                type: boolean
+                            required:
+                              - proxyProtocol
+                              - stickySessions
+                            type: object
+                          targetPools:
+                            description:
+                              Defines nodepools of the targeted K8s cluster,
+                              from which nodes will be used for loadbalancing.
+                            items:
+                              type: string
+                            type: array
+                          targetPort:
+                            description: Port where loadbalancer forwards the traffic.
+                            format: int32
+                            type: integer
+                        required:
+                          - name
+                          - port
+                          - protocol
+                          - targetPools
+                          - targetPort
+                        type: object
+                      type: array
+                  type: object
+                nodePools:
+                  description: |-
+                    NodePool is a map of dynamic nodepools and static nodepools which will be used to
+                    form kubernetes or loadbalancer clusters.
+                  properties:
+                    dynamic:
+                      description:
+                        Dynamic nodepools define nodepools dynamically created
+                        by Claudie.
+                      items:
+                        description: |-
+                          DynamicNodePool List of dynamically to-be-created nodepools of not yet existing machines, used for Kubernetes or loadbalancer clusters.
+                          These are only blueprints, and will only be created per reference in kubernetes or loadBalancer clusters.
+
+
+                          E.g. if the nodepool isn't used, it won't even be created. Or if the same nodepool is used in two different clusters,
+                          it will be created twice. In OOP analogy, a dynamic nodepool would be a class
+                          that would get instantiated N >= 0 times depending on which clusters reference it.
+                        properties:
+                          annotations:
+                            additionalProperties:
+                              type: string
+                            description: User defined annotations for this nodepool.
+                            type: object
+                          autoscaler:
+                            description:
+                              Autoscaler configuration for this nodepool.
+                              Mutually exclusive with count.
+                            properties:
+                              max:
+                                description: Maximum number of nodes in nodepool.
+                                format: int32
+                                type: integer
+                              min:
+                                description: Minimum number of nodes in nodepool.
+                                format: int32
+                                type: integer
+                            type: object
+                          count:
+                            description:
+                              Number of the nodes in the nodepool. Mutually
+                              exclusive with autoscaler.
+                            format: int32
+                            type: integer
+                          image:
+                            description:
+                              OS image of the machine. Currently, only Ubuntu
+                              22.04 AMD64 images are supported.
+                            type: string
+                          labels:
+                            additionalProperties:
+                              type: string
+                            description: User defined labels for this nodepool.
+                            type: object
+                          machineSpec:
+                            description:
+                              MachineSpec further describe the properties
+                              of the selected server type.
+                            properties:
+                              cpuCount:
+                                description:
+                                  CpuCount specifies the number of CPU cores
+                                  to be used.
+                                type: integer
+                              memory:
+                                type: integer
+                            required:
+                              - cpuCount
+                              - memory
+                            type: object
+                          name:
+                            description:
+                              Name of the nodepool. Each nodepool will have
+                              a random hash appended to the name, so the whole name
+                              will be of format <name>-<hash>.
+                            type: string
+                          providerSpec:
+                            description:
+                              Collection of provider data to be used while
+                              creating the nodepool.
+                            properties:
+                              name:
+                                description:
+                                  Name of the provider instance specified
+                                  in providers
+                                type: string
+                              region:
+                                description: Region of the nodepool.
+                                type: string
+                              zone:
+                                description: Zone of the nodepool.
+                                type: string
+                            required:
+                              - name
+                              - region
+                            type: object
+                          serverType:
+                            description:
+                              "\tType of the machines in the nodepool. Currently,
+                              only AMD64 machines are supported."
+                            type: string
+                          storageDiskSize:
+                            description: |-
+                              Size of the storage disk on the nodes in the nodepool in GB. The OS disk is created automatically
+                              with predefined size of 100GB for kubernetes nodes and 50GB for Loadbalancer nodes.
+                              The value must be either -1 (no disk is created), or >= 50. If no value is specified, 50 is used.
+                            format: int32
+                            type: integer
+                          taints:
+                            description: User defined taints for this nodepool.
+                            items:
+                              description: |-
+                                The node this Taint is attached to has the "effect" on
+                                any pod that does not tolerate the Taint.
+                              properties:
+                                effect:
+                                  description: |-
+                                    Required. The effect of the taint on pods
+                                    that do not tolerate the taint.
+                                    Valid effects are NoSchedule, PreferNoSchedule and NoExecute.
+                                  type: string
+                                key:
+                                  description:
+                                    Required. The taint key to be applied
+                                    to a node.
+                                  type: string
+                                timeAdded:
+                                  description: |-
+                                    TimeAdded represents the time at which the taint was added.
+                                    It is only written for NoExecute taints.
+                                  format: date-time
+                                  type: string
+                                value:
+                                  description:
+                                    The taint value corresponding to the
+                                    taint key.
+                                  type: string
+                              required:
+                                - effect
+                                - key
+                              type: object
+                            type: array
+                        required:
+                          - image
+                          - name
+                          - providerSpec
+                          - serverType
+                        type: object
+                      type: array
+                    static:
+                      description:
+                        Static nodepools define nodepools of already existing
+                        nodes.
+                      items:
+                        description:
+                          StaticNodePool defines nodepool of already existing
+                          nodes, managed outside of Claudie.
+                        properties:
+                          annotations:
+                            additionalProperties:
+                              type: string
+                            type: object
+                          labels:
+                            additionalProperties:
+                              type: string
+                            type: object
+                          name:
+                            description: Name of the nodepool.
+                            type: string
+                          nodes:
+                            description:
+                              List of static nodes for a particular static
+                              nodepool.
+                            items:
+                              description:
+                                StaticNode defines a single static node for
+                                a particular static nodepool.
+                              properties:
+                                endpoint:
+                                  description:
+                                    Endpoint under which Claudie will access
+                                    this node.
+                                  type: string
+                                secretRef:
+                                  description:
+                                    Secret reference to the private key of
+                                    the node.
+                                  properties:
+                                    name:
+                                      description:
+                                        name is unique within a namespace
+                                        to reference a secret resource.
+                                      type: string
+                                    namespace:
+                                      description:
+                                        namespace defines the space within
+                                        which the secret name must be unique.
+                                      type: string
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                username:
+                                  description:
+                                    Username with root access. Used in SSH
+                                    connection also.
+                                  type: string
+                              required:
+                                - endpoint
+                                - secretRef
+                              type: object
+                            type: array
+                          taints:
+                            items:
+                              description: |-
+                                The node this Taint is attached to has the "effect" on
+                                any pod that does not tolerate the Taint.
+                              properties:
+                                effect:
+                                  description: |-
+                                    Required. The effect of the taint on pods
+                                    that do not tolerate the taint.
+                                    Valid effects are NoSchedule, PreferNoSchedule and NoExecute.
+                                  type: string
+                                key:
+                                  description:
+                                    Required. The taint key to be applied
+                                    to a node.
+                                  type: string
+                                timeAdded:
+                                  description: |-
+                                    TimeAdded represents the time at which the taint was added.
+                                    It is only written for NoExecute taints.
+                                  format: date-time
+                                  type: string
+                                value:
+                                  description:
+                                    The taint value corresponding to the
+                                    taint key.
+                                  type: string
+                              required:
+                                - effect
+                                - key
+                              type: object
+                            type: array
+                        required:
+                          - name
+                          - nodes
+                        type: object
+                      type: array
+                  type: object
+                providers:
                   description: |-
                     Providers list of defined cloud provider configuration
                     that will be used while infrastructure provisioning.
-                  properties:
-                    name:
-                      description: Name is the name of the provider specification.
-                        It has to be unique across all providers.
-                      maxLength: 32
-                      minLength: 1
-                      type: string
-                    providerType:
-                      description: |-
-                        ProviderType type of a provider.
-                        A list of available providers can be found at https://docs.claudie.io/v0.8.1/input-manifest/providers/aws/
-                      enum:
-                      - gcp
-                      - hetzner
-                      - aws
-                      - oci
-                      - azure
-                      - cloudflare
-                      - hetznerdns
-                      - genesiscloud
-                      type: string
-                    secretRef:
-                      description: |-
-                        SecretReference represents a Secret Reference. It has enough information to retrieve secret
-                        in any namespace
-                      properties:
-                        name:
-                          description: name is unique within a namespace to reference
-                            a secret resource.
-                          type: string
-                        namespace:
-                          description: namespace defines the space within which the
-                            secret name must be unique.
-                          type: string
-                      type: object
-                      x-kubernetes-map-type: atomic
-                    templates:
-                      description: External templates for building the cluster infrastructure.
-                      properties:
-                        path:
-                          type: string
-                        repository:
-                          type: string
-                        tag:
-                          type: string
-                      required:
-                      - path
-                      - repository
-                      type: object
-                  required:
-                  - name
-                  - providerType
-                  - secretRef
+                  items:
+                    description: |-
+                      Providers list of defined cloud provider configuration
+                      that will be used while infrastructure provisioning.
+                    properties:
+                      name:
+                        description:
+                          Name is the name of the provider specification.
+                          It has to be unique across all providers.
+                        maxLength: 32
+                        minLength: 1
+                        type: string
+                      providerType:
+                        description: |-
+                          ProviderType type of a provider.
+                          A list of available providers can be found at https://docs.claudie.io/v0.9.7/input-manifest/providers/aws/
+                        enum:
+                          - gcp
+                          - hetzner
+                          - aws
+                          - oci
+                          - azure
+                          - cloudflare
+                          - hetznerdns
+                          - genesiscloud
+                        type: string
+                      secretRef:
+                        description: |-
+                          SecretReference represents a Secret Reference. It has enough information to retrieve secret
+                          in any namespace
+                        properties:
+                          name:
+                            description:
+                              name is unique within a namespace to reference
+                              a secret resource.
+                            type: string
+                          namespace:
+                            description:
+                              namespace defines the space within which the
+                              secret name must be unique.
+                            type: string
+                        type: object
+                        x-kubernetes-map-type: atomic
+                      templates:
+                        description: External templates for building the cluster infrastructure.
+                        properties:
+                          path:
+                            type: string
+                          repository:
+                            type: string
+                          tag:
+                            type: string
+                        required:
+                          - path
+                          - repository
+                        type: object
+                    required:
+                      - name
+                      - providerType
+                      - secretRef
+                    type: object
+                  type: array
+              type: object
+            status:
+              description: Most recently observed status of the InputManifest
+              properties:
+                clusters:
+                  additionalProperties:
+                    properties:
+                      message:
+                        type: string
+                      phase:
+                        type: string
+                      state:
+                        type: string
+                    type: object
                   type: object
-                type: array
-            type: object
-          status:
-            description: Most recently observed status of the InputManifest
-            properties:
-              clusters:
-                additionalProperties:
-                  properties:
-                    message:
-                      type: string
-                    phase:
-                      type: string
-                    state:
-                      type: string
-                  type: object
-                type: object
-              state:
-                type: string
-            type: object
-        type: object
-    served: true
-    storage: true
-    subresources:
-      status: {}
+                state:
+                  type: string
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
