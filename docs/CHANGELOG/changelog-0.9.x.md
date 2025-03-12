@@ -163,8 +163,31 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 
 ## v0.9.7
 
-## Bug fixes
 ## What's Changed
+- Additional settings were added to roles for LoadBalancers. [#1685](https://github.com/berops/claudie/pull/1685).
+
+  It is now possible to configure adding/removing proxy protocol and sticky sessions.
+
+  `stickySessions` will always forward traffic to the same node based on the IP hash.
+  
+  `proxyProtocol` will turn on the proxy protocol. If used, the application to which the traffic is redirected must support this protocol.
+
+  ```
+    loadBalancers:
+    roles:
+      - name: example-role
+        protocol: tcp
+        port: 6443
+        targetPort: 6443
+        targetPools:
+          - htz-kube-nodes
+        # added
+        settings:
+          proxyProtocol: off (default will be on)
+          stickySession: on. (default will be off)
+  ```
+
+## Bug fixes
 - If any of the nodes become unreachable, Claudie will report the problem and will not work on any changes until the connectivity issue is resolved. [#1658](https://github.com/berops/claudie/pull/1658)
   
   For unreachable nodes within the kubernetes cluster, Claudie will give you the options of resolving the issue or removing the node from the InputManifest or via `kubectl`, Claudie will report the following issue
