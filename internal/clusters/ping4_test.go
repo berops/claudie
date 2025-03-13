@@ -252,6 +252,10 @@ func TestPingAll(t *testing.T) {
 }
 
 func TestPing(t *testing.T) {
+	if testing.Short() {
+		t.Skipf("skipping ping tests")
+	}
+
 	logger := zerolog.New(os.Stdout)
 	type args struct {
 		count int
