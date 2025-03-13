@@ -124,13 +124,18 @@ func ping4(logger zerolog.Logger, conn *icmp.PacketConn, id, seq int, dst *net.U
 // Ping pings a single IPv4 address with the requested amount of retries.
 // An error is returned when more then count/2 packets are lost.
 func Ping(logger zerolog.Logger, count int, dst string) error {
+	dstAddr := &net.UDPAddr{IP: net.ParseIP(dst)}
+	if dstAddr.IP == nil {
+		logger.Warn().Msgf("Received invalid IP address to ping %q, skipping unreachability check", dst)
+		return nil
+	}
+
 	conn, err := icmp.ListenPacket("udp4", "0.0.0.0")
 	if err != nil {
 		return fmt.Errorf("failed to listen for icmp packets: %w", err)
 	}
 	defer conn.Close()
 
-	dstAddr := &net.UDPAddr{IP: net.ParseIP(dst)}
 	id := os.Getpid() & 0xffff // 16bit id
 	lost := 0
 
