@@ -99,6 +99,168 @@ func Test_transferExistingDns(t *testing.T) {
 				assert.Empty(t, args.desired.Clusters[0].Dns.Endpoint)
 			},
 		},
+		{
+			name: "alternative-names-1",
+			args: args{
+				current: &spec.LoadBalancers{
+					Clusters: []*spec.LBcluster{
+						{
+							ClusterInfo: &spec.ClusterInfo{Name: "cluster-1"},
+							Dns: &spec.DNS{
+								Hostname: "test-hostname",
+								Endpoint: "test-endpoint",
+								AlternativeNames: []*spec.AlternativeName{
+									{
+										Hostname: "app1",
+										Endpoint: "app1.endpoint",
+									},
+									{
+										Hostname: "app2",
+										Endpoint: "app2.endpoint",
+									},
+									{
+										Hostname: "app3",
+										Endpoint: "app3.endpoint",
+									},
+								},
+							},
+						},
+					},
+				},
+				desired: &spec.LoadBalancers{
+					Clusters: []*spec.LBcluster{
+						{
+							ClusterInfo: &spec.ClusterInfo{Name: "cluster-1"},
+							Dns: &spec.DNS{
+								AlternativeNames: []*spec.AlternativeName{
+									{
+										Hostname: "app1",
+										Endpoint: "app1.endpoint",
+									},
+									{
+										Hostname: "app2",
+										Endpoint: "app2.endpoint",
+									},
+									{
+										Hostname: "app3",
+										Endpoint: "app3.endpoint",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			validate: func(t *testing.T, args args) {
+				assert.NotEmpty(t, args.desired.Clusters[0].Dns.Hostname)
+				assert.Equal(t, "test-hostname", args.desired.Clusters[0].Dns.Hostname)
+				assert.Equal(t, "test-endpoint", args.desired.Clusters[0].Dns.Endpoint)
+				assert.Equal(t, args.current.Clusters[0].Dns.AlternativeNames, args.desired.Clusters[0].Dns.AlternativeNames)
+			},
+		},
+		{
+			name: "alternative-names-2",
+			args: args{
+				current: &spec.LoadBalancers{
+					Clusters: []*spec.LBcluster{
+						{
+							ClusterInfo: &spec.ClusterInfo{Name: "cluster-1"},
+							Dns: &spec.DNS{
+								Hostname: "test-hostname",
+								Endpoint: "test-endpoint",
+								AlternativeNames: []*spec.AlternativeName{
+									{
+										Hostname: "app1",
+										Endpoint: "app1.endpoint",
+									},
+									{
+										Hostname: "app2",
+										Endpoint: "app2.endpoint",
+									},
+									{
+										Hostname: "app3",
+										Endpoint: "app3.endpoint",
+									},
+								},
+							},
+						},
+					},
+				},
+				desired: &spec.LoadBalancers{
+					Clusters: []*spec.LBcluster{
+						{
+							ClusterInfo: &spec.ClusterInfo{Name: "cluster-1"},
+							Dns: &spec.DNS{
+								AlternativeNames: []*spec.AlternativeName{
+									{
+										Hostname: "app1",
+										Endpoint: "app1.endpoint",
+									},
+									{
+										Hostname: "app3",
+										Endpoint: "app3.endpoint",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			validate: func(t *testing.T, args args) {
+				assert.NotEmpty(t, args.desired.Clusters[0].Dns.Hostname)
+				assert.Equal(t, "test-hostname", args.desired.Clusters[0].Dns.Hostname)
+				assert.Equal(t, "test-endpoint", args.desired.Clusters[0].Dns.Endpoint)
+				assert.NotEqual(t, args.current.Clusters[0].Dns.AlternativeNames, args.desired.Clusters[0].Dns.AlternativeNames)
+				assert.Equal(t, 2, len(args.desired.Clusters[0].Dns.AlternativeNames))
+				assert.False(t, slices.ContainsFunc(args.desired.Clusters[0].Dns.AlternativeNames, func(n *spec.AlternativeName) bool { return n.Hostname == "app2" }))
+				assert.True(t, slices.ContainsFunc(args.desired.Clusters[0].Dns.AlternativeNames, func(n *spec.AlternativeName) bool { return n.Hostname == "app1" && n.Endpoint == "app1.endpoint" }))
+				assert.True(t, slices.ContainsFunc(args.desired.Clusters[0].Dns.AlternativeNames, func(n *spec.AlternativeName) bool { return n.Hostname == "app3" && n.Endpoint == "app3.endpoint" }))
+			},
+		},
+		{
+			name: "alternative-names-3",
+			args: args{
+				current: &spec.LoadBalancers{
+					Clusters: []*spec.LBcluster{
+						{
+							ClusterInfo: &spec.ClusterInfo{Name: "cluster-1"},
+							Dns: &spec.DNS{
+								Hostname: "test-hostname",
+								Endpoint: "test-endpoint",
+								AlternativeNames: []*spec.AlternativeName{
+									{
+										Hostname: "app1",
+										Endpoint: "app1.endpoint",
+									},
+									{
+										Hostname: "app2",
+										Endpoint: "app2.endpoint",
+									},
+									{
+										Hostname: "app3",
+										Endpoint: "app3.endpoint",
+									},
+								},
+							},
+						},
+					},
+				},
+				desired: &spec.LoadBalancers{
+					Clusters: []*spec.LBcluster{
+						{
+							ClusterInfo: &spec.ClusterInfo{Name: "cluster-1"},
+							Dns:         &spec.DNS{AlternativeNames: nil},
+						},
+					},
+				},
+			},
+			validate: func(t *testing.T, args args) {
+				assert.NotEmpty(t, args.desired.Clusters[0].Dns.Hostname)
+				assert.Equal(t, "test-hostname", args.desired.Clusters[0].Dns.Hostname)
+				assert.Equal(t, "test-endpoint", args.desired.Clusters[0].Dns.Endpoint)
+				assert.Empty(t, args.desired.Clusters[0].Dns.AlternativeNames)
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

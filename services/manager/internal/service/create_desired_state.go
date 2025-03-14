@@ -250,7 +250,19 @@ func getDNS(dns manifest.DNS, from *manifest.Manifest) (*spec.DNS, error) {
 		return nil, fmt.Errorf("provider %s was not found in manifest %s: %w", dns.Provider, from.Name, err)
 	}
 
-	return &spec.DNS{DnsZone: dns.DNSZone, Provider: provider, Hostname: dns.Hostname}, nil
+	var alternativeNames []*spec.AlternativeName
+	for _, n := range dns.AlternativeNames {
+		alternativeNames = append(alternativeNames, &spec.AlternativeName{
+			Hostname: n,
+		})
+	}
+
+	return &spec.DNS{
+		DnsZone:          dns.DNSZone,
+		Provider:         provider,
+		Hostname:         dns.Hostname,
+		AlternativeNames: alternativeNames,
+	}, nil
 }
 
 // getRolesAttachedToLBCluster will read roles attached to the LB cluster from the unmarshalled manifest and return them.

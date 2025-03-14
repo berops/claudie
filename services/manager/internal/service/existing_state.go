@@ -360,12 +360,26 @@ func transferExistingDns(current, desired *spec.LoadBalancers) {
 
 	for _, cluster := range desired.GetClusters() {
 		previous, ok := currentLbs[cluster.ClusterInfo.Name]
+		// check if lb cluster in current state exists and was build successfully.
 		if !ok || previous.Dns == nil {
 			if cluster.Dns.Hostname == "" {
 				cluster.Dns.Hostname = hash.Create(hostnameHashLength)
 			}
 			continue
 		}
+
+		// transfer matching alternative names, if any.
+		for _, prev := range previous.Dns.AlternativeNames {
+			i := slices.IndexFunc(cluster.Dns.AlternativeNames, func(n *spec.AlternativeName) bool {
+				return n.Hostname == prev.Hostname
+			})
+			if i < 0 {
+				continue
+			}
+			cluster.Dns.AlternativeNames[i].Endpoint = prev.Endpoint
+		}
+
+		// transfer the endpoint if the hostname did not change.
 		if cluster.Dns.Hostname != "" {
 			if previous.Dns.Hostname == cluster.Dns.Hostname {
 				cluster.Dns.Endpoint = previous.Dns.Endpoint
@@ -373,7 +387,7 @@ func transferExistingDns(current, desired *spec.LoadBalancers) {
 			continue
 		}
 
-		// copy hostname from current state if not specified in manifest
+		// keep hostname from current state if not specified in manifest
 		if cluster.Dns.Hostname == "" || cluster.Dns.Endpoint == "" {
 			cluster.Dns.Hostname = previous.Dns.Hostname
 			cluster.Dns.Endpoint = previous.Dns.Endpoint

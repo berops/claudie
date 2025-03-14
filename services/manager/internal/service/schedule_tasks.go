@@ -174,6 +174,12 @@ func scheduleTasks(scheduled *store.Config) (ScheduleResult, error) {
 				return NotReady, err
 			}
 
+			if len(e) > 0 && state.Current.GetK8S().GetKubeconfig() == "" {
+				// If there are any rolling updates to be performed however the cluster
+				// in the current state was not build successfully error out.
+				return NotReady, fmt.Errorf("cannot perform rolling updates on cluster that failed to build, recreation of cluster needed")
+			}
+
 			events = append(events, e...)
 			if len(events) != 0 {
 				logger.Debug().
@@ -196,6 +202,12 @@ func scheduleTasks(scheduled *store.Config) (ScheduleResult, error) {
 			ir, e, err = rollingUpdateLBs(state.Current, state.Desired)
 			if err != nil {
 				return NotReady, err
+			}
+
+			if len(e) > 0 && state.Current.GetK8S().GetKubeconfig() == "" {
+				// If there are any rolling updates to be performed however the cluster
+				// in the current state was not build successfully error out.
+				return NotReady, fmt.Errorf("cannot perform rolling updates on cluster that failed to build, recreation of cluster needed")
 			}
 
 			events = append(events, e...)
@@ -391,13 +403,21 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 	// Every other case can be handled by the manager as a separate step.
 	applylbIr = applylbIr || (change != spec.ApiEndpointChangeState_EndpointRenamed && change != spec.ApiEndpointChangeState_NoChange)
 	if applylbIr {
+		// If the previous cluster did not pass the stage where the nodes were interconnected
+		// we only need to apply the intermediate representation, that includes the changes to the
+		// DNS on which it previosly failed. We do not need to move the endpoint, as it was not created.
+		clusterBuild := current.Kubeconfig != ""
+
 		// will contain merged roles from current/desired state
-		// and will include added loadbalancers if any.
+		// changes to DNS if previosly failed and will include
+		// added loadbalancers, if any.
 		lbsir := craftLbsIR(currentLbs, desiredLbs, addedLoadBalancers)
 
 		// options that adjusts the processing of the task.
 		irOptions := uint64(0)
-		if change == spec.ApiEndpointChangeState_DetachingLoadBalancer || change == spec.ApiEndpointChangeState_AttachingLoadBalancer {
+		if clusterBuild &&
+			(change == spec.ApiEndpointChangeState_DetachingLoadBalancer ||
+				change == spec.ApiEndpointChangeState_AttachingLoadBalancer) {
 			irOptions |= spec.ForceExportPort6443OnControlPlane
 		}
 
@@ -415,7 +435,9 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 			},
 		})
 
-		if change != spec.ApiEndpointChangeState_EndpointRenamed && change != spec.ApiEndpointChangeState_NoChange {
+		if clusterBuild &&
+			(change != spec.ApiEndpointChangeState_EndpointRenamed &&
+				change != spec.ApiEndpointChangeState_NoChange) {
 			events = append(events, &spec.TaskEvent{
 				Id:          uuid.New().String(),
 				Timestamp:   timestamppb.New(time.Now().UTC()),
