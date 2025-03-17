@@ -145,7 +145,7 @@ func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 
 		outputID = fmt.Sprintf("%s-%s-endpoint", clusterID, n.Hostname)
 		n.Endpoint = validateDomain(out.Domain[outputID])
-		sublogger.Info().Msg("DNS alternative name succesfully set up")
+		sublogger.Info().Msg("DNS alternative name successfully set up")
 	}
 
 	return nil
