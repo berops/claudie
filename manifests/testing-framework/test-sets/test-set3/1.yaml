@@ -174,15 +174,15 @@ spec:
           - gcp-ldbl-nodes
       - name: ts3-lb3-cluster-test-set-no3
         roles:
-          - apiserver-lb-2
+          - app-port
         dns:
           dnsZone: claudie.org
           provider: hetznerdns-1
           hostname: main
           alternativeNames:
-            - main2
-            - main3
-            - main4
+            - other2
+            - other3
+            - other4
         targetedK8s: ts3-c-2-cluster-test-set-no3
         pools:
           - gcp-ldbl-nodes
