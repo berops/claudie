@@ -142,6 +142,15 @@ spec:
                           dns:
                             description: Specification of the loadbalancer's DNS record.
                             properties:
+                              alternativeNames:
+                                description: |-
+                                  Alternative names that will be created in addition to the hostname. Giving the ability
+                                  to have a loadbalancer for multiple hostnames.
+                                  - api.example.com
+                                  - apiv2.example.com
+                                items:
+                                  type: string
+                                type: array
                               dnsZone:
                                 description:
                                   DNS zone inside of which the records will
