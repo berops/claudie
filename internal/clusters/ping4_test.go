@@ -250,3 +250,57 @@ func TestPingAll(t *testing.T) {
 		})
 	}
 }
+
+func TestPing(t *testing.T) {
+	if testing.Short() {
+		t.Skipf("skipping ping tests")
+	}
+
+	logger := zerolog.New(os.Stdout)
+	type args struct {
+		count int
+		dst   string
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "ok-empty",
+			args: args{
+				count: 5,
+				dst:   "",
+			},
+			wantErr: false,
+		},
+		{
+			name: "ok-localhost",
+			args: args{
+				count: 5,
+				dst:   "127.0.0.1",
+			},
+			wantErr: false,
+		},
+		{
+			name: "fail-invalid",
+			args: args{
+				count: 5,
+				dst:   "0.0.0.0",
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := Ping(logger, tt.args.count, tt.args.dst)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("Ping() = %v want %v", err, tt.wantErr)
+			}
+		})
+	}
+}

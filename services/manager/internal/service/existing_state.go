@@ -25,6 +25,21 @@ func backwardsCompatibility(c *spec.Config) {
 		)
 
 		for i, current := range currentLbs {
+			// TODO: remove in future versions, currently only for backwards compatibility.
+			// version 0.9.7 introced additional role settings, which may not be set in the
+			// current state. To have backwards compatibility add defaults to the current state.
+			for _, role := range current.Roles {
+				if role.Settings == nil {
+					log.Info().
+						Str("cluster", current.GetClusterInfo().Id()).
+						Msg("detected loadbalancer build with version older than 0.9.7, settings default role settings for its current state")
+
+					role.Settings = &spec.Role_Settings{
+						ProxyProtocol: true,
+					}
+				}
+			}
+
 			if current.IsApiEndpoint() {
 				anyApiServerLoadBalancerSelected = true
 				break
