@@ -25,7 +25,7 @@ func backwardsCompatibility(c *spec.Config) {
 		)
 
 		for i, current := range currentLbs {
-			// TODO: remove in future versions, currently only for backwards compatiblity.
+			// TODO: remove in future versions, currently only for backwards compatibility.
 			// version 0.9.7 introced additional role settings, which may not be set in the
 			// current state. To have backwards compatibility add defaults to the current state.
 			for _, role := range current.Roles {
