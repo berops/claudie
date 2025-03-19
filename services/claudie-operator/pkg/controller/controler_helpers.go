@@ -193,10 +193,11 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 		}
 		np := getStaticNodePool(nodepool, crd.Spec.NodePools.Static)
 		nodePools.Static = append(nodePools.Static, manifest.StaticNodePool{
-			Name:   nodepool,
-			Nodes:  nodes,
-			Labels: np.Labels,
-			Taints: np.Taints,
+			Name:        nodepool,
+			Nodes:       nodes,
+			Labels:      np.Labels,
+			Taints:      np.Taints,
+			Annotations: np.Annotations,
 		})
 	}
 

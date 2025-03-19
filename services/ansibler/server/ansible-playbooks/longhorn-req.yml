@@ -6,6 +6,9 @@
     nofile_soft: 65535
     nofile_hard: 65535
     file_max: 2097152
+    max_user_watches: 2097152
+    max_user_instances: 65535
+    max_queued_events: 65535
   # Install longhorn  dependencies
   tasks:
     - name: install open-iscsi
@@ -82,5 +85,23 @@
       ansible.builtin.sysctl:
         name: fs.file-max
         value: "{{ file_max }}"
+        state: present
+
+    - name: Set kernel user queued events maximum
+      ansible.builtin.sysctl:
+        name: fs.inotify.max_queued_events
+        value: "{{ max_queued_events }}"
+        state: present
+
+    - name: Set kernel user watches maximum
+      ansible.builtin.sysctl:
+        name: fs.inotify.max_user_watches
+        value: "{{ max_user_watches }}"
+        state: present
+
+    - name: Set kernel user instances maximum
+      ansible.builtin.sysctl:
+        name: fs.inotify.max_user_instances
+        value: "{{ max_user_instances }}"
         state: present
         reload: yes
