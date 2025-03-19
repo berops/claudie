@@ -215,3 +215,27 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 - It may be the case that the cluster-autoscaler image may not share the same version as the specified kubernetes version in the InputManifest. Claudie will now correctly recognize this and pick the latest available cluster-autoscaler image [#1680](https://github.com/berops/claudie/pull/1680)
 
 - Claudie will now set the limits of max open file descriptors on each node to 65535 [#1679](https://github.com/berops/claudie/pull/1679)
+
+## v0.9.8
+
+## What's Changed
+- Added support for alternative names for load balancers [#1693](https://github.com/berops/claudie/pull/1693)
+  
+  
+  ```yaml
+     dns:
+     dnsZone: example.com
+     provider: example
+     hostname: main
+     alternativeNames:
+       - other
+  ```
+
+  Templates that Claudie uses by default, will be updated separately to make use of the alternative names.
+
+## Bug fixes
+- If the current state was not built and some of the nodes did not have an assigned IP address, Claudie would fail to correctly determine if the nodes were reachable. [#1691](https://github.com/berops/claudie/pull/1691)
+- Claudie will now increase the limits for `fs.inotify` to a higher number, as depending on the workload on each node, reaching the limits would result in an error from which Claudie would not recover. [#1696](https://github.com/berops/claudie/pull/1696) 
+- Annotations for static nodepools will now be correctly propagated. [#1696](https://github.com/berops/claudie/pull/1696) 
+
+
