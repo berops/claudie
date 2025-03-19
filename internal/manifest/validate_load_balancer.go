@@ -100,7 +100,10 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 			if role == apiServerRole.Name {
 				// check if this is an ApiServer LB and another ApiServer LB already exists.
 				if apiServerLBExists[cluster.TargetedK8s] {
-					return fmt.Errorf("role %q is used across multiple Load-Balancers for k8s-cluster %s. Can have only one ApiServer Load-Balancer per k8s-cluster", role, cluster.TargetedK8s)
+					return fmt.Errorf("role %q is used across multiple load-balancers for k8s-cluster %s. Can have only one kubeapi-server load-balancer per k8s-cluster", role, cluster.TargetedK8s)
+				}
+				if len(cluster.DNS.AlternativeNames) > 0 {
+					return fmt.Errorf("cannot have alternative names for the kubeapi-server load-balancer cluster %q", cluster.Name)
 				}
 
 				// this is the first LB that uses the ApiServer role.
@@ -121,6 +124,22 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 					}
 				}
 			}
+		}
+
+		// check if alternative names are unique
+		seen := make(map[string]struct{})
+		for _, n := range cluster.DNS.AlternativeNames {
+			if _, ok := seen[n]; ok {
+				return fmt.Errorf("duplicate alternative names %q specified in cluster %q, must be unique", n, cluster.Name)
+			}
+			if cluster.DNS.Hostname != "" && n == cluster.DNS.Hostname {
+				return fmt.Errorf("alternative name %q has the same value as hostname %q in cluster %q, must be unique", n, cluster.DNS.Hostname, cluster.Name)
+			}
+			if zone, ok := hostnamesPerDNS[n]; ok && zone == cluster.DNS.DNSZone {
+				return fmt.Errorf("alternative name %q used in cluster %q is used across multiple clusters for the same DNS zone %q, must be unique", n, cluster.Name, zone)
+			}
+			seen[n] = struct{}{}
+			hostnamesPerDNS[n] = cluster.DNS.DNSZone
 		}
 
 		// check if the requested hostname is unique per DNS-ZONE

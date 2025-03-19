@@ -589,16 +589,8 @@ const (
 func AddNodes(count int, ci *spec.ClusterInfo, typ NodeFilter) map[string][]string {
 	affected := make(map[string][]string)
 
-	var dyn []*spec.NodePool
-	var stat []*spec.NodePool
-
-	for i := range ci.NodePools {
-		if ci.NodePools[i].GetStaticNodePool() != nil {
-			stat = append(stat, ci.NodePools[i])
-		} else {
-			dyn = append(dyn, ci.NodePools[i])
-		}
-	}
+	dyn := nodepools.Dynamic(ci.NodePools)
+	stat := nodepools.Static(ci.NodePools)
 
 	if len(dyn) == 0 {
 		panic("no dynamic nodepools")

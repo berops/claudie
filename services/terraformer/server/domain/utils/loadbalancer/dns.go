@@ -114,10 +114,7 @@ func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 		return err
 	}
 
-	f := hash.Digest128(filepath.Join(d.DesiredDNS.Provider.SpecName, d.DesiredDNS.Provider.Templates.MustExtractTargetPath()))
-	k := fmt.Sprintf("%s_%s_%s", clusterID, d.DesiredDNS.GetProvider().GetSpecName(), hex.EncodeToString(f))
-
-	output, err := terraform.Output(k)
+	output, err := terraform.Output(endpoint(d.DesiredDNS, clusterID, ""))
 	if err != nil {
 		return fmt.Errorf("error while getting output from terraform for %s : %w", clusterID, err)
 	}
@@ -131,6 +128,26 @@ func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 	sublogger.Info().Msg("DNS records were successfully set up")
 
 	d.DesiredDNS.Endpoint = validateDomain(out.Domain[outputID])
+
+	for _, n := range d.DesiredDNS.AlternativeNames {
+		sublogger.Info().Msgf("Detected alternative names extension, reading output for alternative name %s", n.Hostname)
+
+		if output, err = terraform.Output(endpoint(d.DesiredDNS, clusterID, n.Hostname)); err != nil {
+			// Since this is an extension to the original data
+			// we consider errors as not fatal.
+			sublogger.Warn().Msgf("error while retrieving output from terraform for %s alternative name %s: %v, templates may not support alternative names extension, skipping", clusterID, n.Hostname, err)
+			continue
+		}
+
+		if out, err = readDomain(output); err != nil {
+			return fmt.Errorf("error while reading alternative %s name from terraform output for %s: %w, skipping", n.Hostname, clusterID, err)
+		}
+
+		outputID = fmt.Sprintf("%s-%s-endpoint", clusterID, n.Hostname)
+		n.Endpoint = validateDomain(out.Domain[outputID])
+		sublogger.Info().Msg("DNS alternative name successfully set up")
+	}
+
 	return nil
 }
 
@@ -221,6 +238,12 @@ func (d *DNS) generateFiles(dnsID, dnsDir string, dns *spec.DNS, nodeIPs []strin
 		ClusterHash: d.ClusterHash,
 		RecordData:  templates.RecordData{IP: templateIPData(nodeIPs)},
 		Provider:    dns.Provider,
+
+		AlternativeNamesExtension: new(templates.AlternativeNamesExtension),
+	}
+
+	for _, n := range dns.AlternativeNames {
+		data.AlternativeNamesExtension.Names = append(data.AlternativeNamesExtension.Names, n.Hostname)
 	}
 
 	if err := g.GenerateDNS(&data); err != nil {
@@ -271,4 +294,17 @@ func templateIPData(ips []string) []templates.IPData {
 	}
 
 	return out
+}
+
+func endpoint(dns *spec.DNS, clusterID string, alternativeName string) string {
+	f := hash.Digest128(filepath.Join(
+		dns.GetProvider().GetSpecName(),
+		dns.GetProvider().GetTemplates().MustExtractTargetPath(),
+	))
+	resourceSuffix := fmt.Sprintf("%s_%s", dns.GetProvider().GetSpecName(), hex.EncodeToString(f))
+	resource := clusterID
+	if alternativeName != "" {
+		resource += "_" + alternativeName
+	}
+	return fmt.Sprintf("%s_%s", resource, resourceSuffix)
 }

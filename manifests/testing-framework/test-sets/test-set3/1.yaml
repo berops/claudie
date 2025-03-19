@@ -144,6 +144,15 @@ spec:
           - htz-cmpt-nodes
           - gcp-ctrl-nodes
           - oci-kube-nodes
+      - name: app-port
+        protocol: tcp
+        port: 8080
+        targetPort: 30182
+        targetPools:
+          - aws-kube-nodes
+        settings:
+          proxyProtocol: false
+          stickySessions: false
     clusters:
       - name: ts3-lb1-cluster-test-set-no3
         roles:
@@ -160,6 +169,20 @@ spec:
         dns:
           dnsZone: claudie.org
           provider: hetznerdns-1
+        targetedK8s: ts3-c-2-cluster-test-set-no3
+        pools:
+          - gcp-ldbl-nodes
+      - name: ts3-lb3-cluster-test-set-no3
+        roles:
+          - app-port
+        dns:
+          dnsZone: claudie.org
+          provider: hetznerdns-1
+          hostname: main
+          alternativeNames:
+            - other2
+            - other3
+            - other4
         targetedK8s: ts3-c-2-cluster-test-set-no3
         pools:
           - gcp-ldbl-nodes

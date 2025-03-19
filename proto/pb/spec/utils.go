@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"path/filepath"
+	"slices"
 )
 
 const (
@@ -206,13 +207,7 @@ func (n *NodePool) Zone() string {
 // and adds them to this role, ignoring duplicates.
 func (r *Role) MergeTargetPools(o *Role) {
 	for _, o := range o.TargetPools {
-		found := false
-		for _, c := range r.TargetPools {
-			if o == c {
-				found = true
-				break
-			}
-		}
+		found := slices.Contains(r.TargetPools, o)
 		if !found {
 			// append missing target pool.
 			r.TargetPools = append(r.TargetPools, o)

@@ -236,13 +236,7 @@ func TestPingAll(t *testing.T) {
 			}
 
 			for _, got := range got {
-				found := false
-				for _, want := range tt.want {
-					if want == got {
-						found = true
-						break
-					}
-				}
+				found := slices.Contains(tt.want, got)
 				if !found {
 					t.Fatalf("pingAll() got %v missing in want %v", got, tt.want)
 				}

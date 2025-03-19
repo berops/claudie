@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"text/template"
 )
@@ -53,6 +54,7 @@ func LoadTemplate(tplFile string) (*template.Template, error) {
 		"replaceAll":             strings.ReplaceAll,
 		"trimPrefix":             strings.TrimPrefix,
 		"extractNetmaskFromCIDR": ExtractNetmaskFromCIDR,
+		"hasExtension":           HasExtension,
 	}).Parse(tplFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse the template file : %w", err)
@@ -69,4 +71,31 @@ func ExtractNetmaskFromCIDR(cidr string) string {
 
 	ones, _ := n.Mask.Size()
 	return fmt.Sprintf("%v", ones)
+}
+
+// HasExtensions check whether data is a struct and has the specified 'field', followed
+// by a check if the 'field' has a value.
+func HasExtension(data any, field string) bool {
+	// check that the struct 'field' exists within 'data'
+	rv := reflect.ValueOf(data)
+	for rv.Kind() == reflect.Pointer || rv.Kind() == reflect.Interface {
+		rv = rv.Elem()
+	}
+	if rv.Kind() != reflect.Struct {
+		return false
+	}
+
+	val := rv.FieldByName(field)
+	if !val.IsValid() {
+		return false
+	}
+
+	// check if the 'field' has a value.
+	for val.Kind() == reflect.Pointer || val.Kind() == reflect.Interface {
+		if val.IsZero() {
+			return false
+		}
+		val = val.Elem()
+	}
+	return true
 }

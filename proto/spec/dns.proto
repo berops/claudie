@@ -5,6 +5,11 @@ option go_package = "github.com/berops/claudie/proto/pb/spec";
 
 import "spec/provider.proto";
 
+message AlternativeName {
+    string hostname = 1;
+    string endpoint = 2;
+}
+
 // DNS holds general information about the DNS records.
 message DNS {
   // DNS zone for the DNS records.
@@ -15,4 +20,6 @@ message DNS {
   Provider provider = 3;
   // The whole hostname of the DNS record.
   string endpoint = 4;
+  // alternative names for which A records will be created in addition to the hostname.
+  repeated AlternativeName alternativeNames = 5;
 }

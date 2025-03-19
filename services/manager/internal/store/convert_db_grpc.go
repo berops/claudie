@@ -191,6 +191,13 @@ func ConvertToGRPC(cfg *Config) (*spec.Config, error) {
 			return nil, fmt.Errorf("failed to convert db events back to grpc representation: %w", err)
 		}
 
+		// WARN:
+		// If making changes to .proto files in the /spec directory
+		// we need to always consider backwards compabitlity with the
+		// version stored in the database. The database is the proto message
+		// in the past and if we update the /spec directory by modifying fields
+		// or changing their order we need to consider these changes when reading it from
+		// the database aswell.
 		current, err := convertClusters(cluster.Current)
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert db clusters back to grpc representation: %w", err)

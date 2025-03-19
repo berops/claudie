@@ -297,5 +297,12 @@ type DNS struct {
 	Provider string `validate:"required" yaml:"provider" json:"provider"`
 	// Custom hostname for your A record. If left empty, the hostname will be a random hash.
 	Hostname string `yaml:"hostname,omitempty" json:"hostname,omitempty"`
-	// Templates for setting up the DNS. (optional)
+	// Alternative names that will be created in addition to the hostname. Giving the ability
+	// to have a loadbalancer for multiple hostnames.
+	//
+	// - api.example.com
+	//
+	// - apiv2.example.com
+	// +optional
+	AlternativeNames []string `validate:"dive,required" yaml:"alternativeNames,omitempty" json:"alternativeNames,omitempty"`
 }
