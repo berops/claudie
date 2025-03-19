@@ -386,12 +386,14 @@ spec:
   # Definition specification for loadbalancer:
   #
   # clusters:
-  #   - name:         # Loadbalancer cluster name
-  #     roles:        # List of role names this loadbalancer will fulfil.
-  #     dns:          # DNS specification, where DNS records will be created.
-  #       dnsZone:    # DNS zone name in your provider.
-  #       provider:   # Provider name for the DNS.
-  #       hostname:   # Hostname for the DNS record. Keep in mind the zone will be included automatically. If left empty the Claudie will create random hash as a hostname.
+  #   - name:                 # Loadbalancer cluster name
+  #     roles:                # List of role names this loadbalancer will fulfil.
+  #     dns:                  # DNS specification, where DNS records will be created.
+  #       dnsZone:            # DNS zone name in your provider.
+  #       provider:           # Provider name for the DNS.
+  #       hostname:           # Hostname for the DNS record. Keep in mind the zone will be included automatically. If left empty the Claudie will create random hash as a hostname.
+  #       alternativeNames:   # Alternative hostnames for which A records will be created in addition to the specified hostname.
+  #         - other           #
   #     targetedK8s:  # Name of the targeted kubernetes cluster
   #     pools:        # List of nodepool names used for loadbalancer
   #
@@ -430,6 +432,9 @@ spec:
           dnsZone: dns-zone
           provider: cloudflare-1
           hostname: my.fancy.url
+          alternativeNames:
+            - app1
+            - app2
         targetedK8s: prod-cluster
         pools:
           - loadbalancer-2
