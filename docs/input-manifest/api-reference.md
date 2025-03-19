@@ -514,6 +514,10 @@ Collection of data Claudie uses to create a DNS record for the loadbalancer.
 
   Custom hostname for your A record. If left empty, the hostname will be a random hash.
 
+- `alternativeNames`
+
+  Additional hostnames for which A records will be created
+
 ### Default labels
 
   By default, Claudie applies following labels on every node in the cluster, together with those defined by the user.
