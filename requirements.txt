@@ -5,7 +5,7 @@ colorama==0.4.6
 fontawesome==5.10.1.post1
 ghp-import==2.1.0
 idna==3.10
-Jinja2==3.1.5
+Jinja2==3.1.6
 Markdown==3.7
 MarkupSafe==3.0.2
 material-plausible-plugin==0.2.0
