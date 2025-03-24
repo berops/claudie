@@ -8,6 +8,7 @@ spec:
       providerType: hetzner
       templates:
         repository: "https://github.com/berops/claudie-config"
+        tag: v0.9.8
         path: "templates/terraformer/hetzner"
       secretRef:
         name: hetzner-secret
@@ -16,12 +17,17 @@ spec:
       providerType: azure
       templates:
         repository: "https://github.com/berops/claudie-config"
+        tag: v0.9.8
         path: "templates/terraformer/azure"
       secretRef:
         name: azure-sponsorship-secret
         namespace: e2e-secrets
     - name: hetznerdns-1
       providerType: hetznerdns
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.9.8
+        path: "templates/terraformer/hetznerdns"
       secretRef:
         name: hetznerdns-secret
         namespace: e2e-secrets

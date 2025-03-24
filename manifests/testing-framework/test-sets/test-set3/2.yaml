@@ -6,11 +6,19 @@ spec:
   providers:
     - name: gcp-1
       providerType: gcp
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.9.8
+        path: "templates/terraformer/gcp"
       secretRef:
         name: gcp-secret
         namespace: e2e-secrets
     - name: hetzner-1
       providerType: hetzner
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.9.8
+        path: "templates/terraformer/hetzner"
       secretRef:
         name: hetzner-secret
         namespace: e2e-secrets

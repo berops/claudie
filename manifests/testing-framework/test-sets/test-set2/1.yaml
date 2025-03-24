@@ -6,31 +6,55 @@ spec:
   providers:
     - name: gcp-1
       providerType: gcp
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.9.8
+        path: "templates/terraformer/gcp"
       secretRef:
         name: gcp-secret
         namespace: e2e-secrets
     - name: hetzner-1
       providerType: hetzner
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.9.8
+        path: "templates/terraformer/hetzner"
       secretRef:
         name: hetzner-secret
-        namespace: e2e-secrets   
+        namespace: e2e-secrets
     - name: oci-1
       providerType: oci
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.9.8
+        path: "templates/terraformer/oci"
       secretRef:
         name: oci-secret
         namespace: e2e-secrets
     - name: oci-2
       providerType: oci
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.9.8
+        path: "templates/terraformer/oci"
       secretRef:
         name: oci-secret
         namespace: e2e-secrets
     - name: aws-1
       providerType: aws
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.9.8
+        path: "templates/terraformer/aws"
       secretRef:
         name: aws-secret
         namespace: e2e-secrets
     - name: azure-sponsor-1
       providerType: azure
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.9.8
+        path: "templates/terraformer/azure"
       secretRef:
         name: azure-sponsorship-secret
         namespace: e2e-secrets

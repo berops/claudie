@@ -109,7 +109,7 @@ spec:
         # Machine type name.
         serverType: e2-medium
         # OS image name.
-        image: ubuntu-minimal-2404-noble-amd64-v20241116
+        image: ubuntu-2404-noble-amd64-v20250313
 
       - name: compute-1-gcp
         providerSpec:
@@ -123,7 +123,7 @@ spec:
         # Machine type name.
         serverType: e2-medium
         # OS image name.
-        image: ubuntu-minimal-2404-noble-amd64-v20241116
+        image: ubuntu-2404-noble-amd64-v20250313
         storageDiskSize: 50
 
       - name: compute-2-gcp
@@ -138,7 +138,7 @@ spec:
         # Machine type name.
         serverType: e2-medium
         # OS image name.
-        image: ubuntu-minimal-2404-noble-amd64-v20241116
+        image: ubuntu-2404-noble-amd64-v20250313
         storageDiskSize: 50
 
   kubernetes:
@@ -198,7 +198,7 @@ spec:
         # Machine type name.
         serverType: e2-medium
         # OS image name.
-        image: ubuntu-minimal-2404-noble-amd64-v20241116
+        image: ubuntu-2404-noble-amd64-v20250313
 
       - name: control-gcp-2
         providerSpec:
@@ -212,7 +212,7 @@ spec:
         # Machine type name.
         serverType: e2-medium
         # OS image name.
-        image: ubuntu-minimal-2404-noble-amd64-v20241116
+        image: ubuntu-2404-noble-amd64-v20250313
 
       - name: compute-gcp-1
         providerSpec:
@@ -226,7 +226,7 @@ spec:
         # Machine type name.
         serverType: e2-medium
         # OS image name.
-        image: ubuntu-minimal-2404-noble-amd64-v20241116
+        image: ubuntu-2404-noble-amd64-v20250313
         storageDiskSize: 50
 
       - name: compute-gcp-2
@@ -241,7 +241,7 @@ spec:
         # Machine type name.
         serverType: e2-medium
         # OS image name.
-        image: ubuntu-minimal-2404-noble-amd64-v20241116
+        image: ubuntu-2404-noble-amd64-v20250313
         storageDiskSize: 50
 
   kubernetes:

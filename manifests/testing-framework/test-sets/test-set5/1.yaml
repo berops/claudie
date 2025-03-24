@@ -6,11 +6,19 @@ spec:
   providers:
     - name: aws-1
       providerType: aws
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.9.8
+        path: "templates/terraformer/aws"
       secretRef:
         name: aws-secret
         namespace: e2e-secrets
     - name: cloudflare-1
       providerType: cloudflare
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.9.8
+        path: "templates/terraformer/cloudflare"
       secretRef:
         name: cloudflare-secret
         namespace: e2e-secrets

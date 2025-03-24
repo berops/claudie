@@ -45,7 +45,7 @@ terraform {
     {{- if .GenesisCloud }}
     genesiscloud = {
         source = "genesiscloud/genesiscloud"
-        version = "1.1.10"
+        version = "1.1.12"
     }
     {{- end }}
   }

@@ -8,7 +8,7 @@ spec:
       templates:
         repository: "https://github.com/berops/claudie-config"
         # performs a rolling update
-        tag: "v0.9.1-test"
+        tag: "v0.9.8"
         path: "templates/terraformer/aws"
       providerType: aws
       secretRef:
@@ -18,7 +18,7 @@ spec:
       templates:
         repository: "https://github.com/berops/claudie-config"
         # performs a rolling update
-        tag: "v0.9.1-test"
+        tag: "v0.9.8"
         path: "templates/terraformer/aws"
       providerType: aws
       secretRef:
