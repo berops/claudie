@@ -1,4 +1,4 @@
-Claudie allows to plug in your own templates for spawning the infrastructure. Specifying which templates are to be used is done at the provider level in the Input Manifest, for example: 
+Claudie allows to plug in your own templates for spawning the infrastructure. Specifying which templates are to be used is done at the provider level in the Input Manifest, for example:
 
 ```yaml
 apiVersion: claudie.io/v1beta1
@@ -13,7 +13,7 @@ spec:
       providerType: genesiscloud
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.0" # optional
+        tag: "v0.9.8" # optional
         path: "templates/terraformer/genesiscloud"
       secretRef:
         name: genesiscloud-secret

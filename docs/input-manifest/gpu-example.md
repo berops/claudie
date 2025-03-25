@@ -16,6 +16,10 @@ spec:
   providers:
     - name: genesiscloud
       providerType: genesiscloud
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: "v0.9.8"
+        path: "templates/terraformer/genesiscloud"
       secretRef:
         name: genesiscloud-secret
         namespace: secrets

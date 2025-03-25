@@ -8,6 +8,7 @@ spec:
       providerType: aws
       templates:
         repository: "https://github.com/berops/claudie-config"
+        tag: v0.9.8
         path: "templates/terraformer/aws"
       secretRef:
         name: aws-secret

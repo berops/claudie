@@ -4,11 +4,15 @@ metadata:
   name: test-set4
 spec:
   providers:
-      - name: oci-1
-        providerType: oci
-        secretRef:
-          name: oci-secret
-          namespace: e2e-secrets
+    - name: oci-1
+      providerType: oci
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.9.8
+        path: "templates/terraformer/oci"
+      secretRef:
+        name: oci-secret
+        namespace: e2e-secrets
   nodePools:
     dynamic:
       - name: oci-kube-nodes
