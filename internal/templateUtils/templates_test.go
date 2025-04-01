@@ -91,7 +91,7 @@ func TestHasExtension(t *testing.T) {
 	assert.True(t, HasExtension(tmp.Base, "Base"))
 	assert.True(t, HasExtension(tmp.Base, "Base1"))
 	assert.True(t, HasExtension(tmp.Base, "Base2"))
-	assert.True(t, HasExtension(tmp.Base.Base2, "a"))
+	assert.True(t, HasExtension(tmp.Base2, "a"))
 	assert.False(t, HasExtension(tmp.Base, "Base3"))
 	tmp.Extension = nil
 	assert.False(t, HasExtension(tmp, "Extension"))

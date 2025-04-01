@@ -116,6 +116,7 @@ func IsReferenced(name string, m *Manifest) bool {
 }
 
 func (d *DynamicNodePool) Validate(m *Manifest) error {
+	//nolint
 	if (d.StorageDiskSize != nil) && !(*d.StorageDiskSize == 0 || *d.StorageDiskSize >= 50) {
 		return fmt.Errorf("storageDiskSize size must be either 0 or >= 50")
 	}
@@ -158,6 +159,7 @@ func (a *AutoscalerConfig) isDefined() bool { return a.Min >= 0 && a.Max > 0 }
 func checkTaints(taints []k8sV1.Taint) error {
 	for _, t := range taints {
 		// Check if effect is supported
+		// nolint
 		if !(t.Effect == k8sV1.TaintEffectNoSchedule || t.Effect == k8sV1.TaintEffectNoExecute || t.Effect == k8sV1.TaintEffectPreferNoSchedule) {
 			return fmt.Errorf("taint effect \"%s\" is not supported", t.Effect)
 		}

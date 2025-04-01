@@ -105,7 +105,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
 	}
 
-	resp, err := r.Usecases.Manager.ListConfigs(ctx, new(managerclient.ListConfigRequest))
+	resp, err := r.Manager.ListConfigs(ctx, new(managerclient.ListConfigRequest))
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -220,7 +220,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 			}
 			log.Info("Calling delete config")
-			if err := r.Usecases.DeleteConfig(ctx, rawManifest.Name); err != nil {
+			if err := r.DeleteConfig(ctx, rawManifest.Name); err != nil {
 				return ctrl.Result{}, err
 			}
 			return ctrl.Result{RequeueAfter: REQUEUE_DELETE}, nil
@@ -244,7 +244,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				return ctrl.Result{}, fmt.Errorf("failed executing finalizer: %w", err)
 			}
 			log.Info("Calling create config")
-			if err := r.Usecases.CreateConfig(ctx, &rawManifest, inputManifest.Name, inputManifest.Namespace); err != nil {
+			if err := r.CreateConfig(ctx, &rawManifest, inputManifest.Name, inputManifest.Namespace); err != nil {
 				return ctrl.Result{}, err
 			}
 			return ctrl.Result{RequeueAfter: REQUEUE_NEW}, nil
@@ -293,7 +293,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 		}
 		log.Info("InputManifest has been updated", "status", currentState.State)
-		if err := r.Usecases.CreateConfig(ctx, &rawManifest, inputManifest.Name, inputManifest.Namespace); err != nil {
+		if err := r.CreateConfig(ctx, &rawManifest, inputManifest.Name, inputManifest.Namespace); err != nil {
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{RequeueAfter: REQUEUE_UPDATE}, nil
