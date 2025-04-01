@@ -238,4 +238,21 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 - Claudie will now increase the limits for `fs.inotify` to a higher number, as depending on the workload on each node, reaching the limits would result in an error from which Claudie would not recover. [#1696](https://github.com/berops/claudie/pull/1696) 
 - Annotations for static nodepools will now be correctly propagated. [#1696](https://github.com/berops/claudie/pull/1696) 
 
+## v0.9.9
+
+## What's Changed
+- General maintenance release, updated dependencies used by Claudie [#1709](https://github.com/berops/claudie/pull/1709)
+
+- Upgrading Longhorn from version 1.7.0 to version 1.8.1 [#1709](https://github.com/berops/claudie/pull/1709)
+  
+  After upgrading Longhorn to the newer version, some pods of the old and new versions will coexist if your cluster uses a PVC that uses the Longhorn storage class (which is the default), as they would reference the old v1.7.0.
+  
+  To upgrade the volumes to the newer version, it's possible to use the Longhorn UI to set `Settings > Concurrent Automatic Engine Upgrade Per Node Limit` to a value greater than 0 to upgrade old volumes.
+  This is a setting that controls how Longhorn automatically upgrades volumes’ engines to the new default engine image after upgrading Longhorn manager. More on: https://longhorn.io/docs/1.8.1/deploy/upgrade/auto-upgrade-engine/
+  
+  Once the upgrade is complete, the old engine image pods and the instance manager will be terminated after ~60 minutes of non-use (after all volumes have been upgraded to use the latest Longhorn version) You can also follow the official Longhorn post on this: https://longhorn.io/kb/troubleshooting-some-old-instance-manager-pods-are-still-running-after-upgrade/
+  
+
+
+
 
