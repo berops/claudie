@@ -224,11 +224,11 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
   
   ```yaml
      dns:
-     dnsZone: example.com
-     provider: example
-     hostname: main
-     alternativeNames:
-       - other
+       dnsZone: example.com
+       provider: example
+       hostname: main
+       alternativeNames:
+         - other
   ```
 
   Templates that Claudie uses by default, will be updated separately to make use of the alternative names.
