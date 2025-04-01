@@ -1,7 +1,6 @@
 module github.com/berops/claudie
 
 go 1.24.1
-
 require (
 	cloud.google.com/go/compute v1.36.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.8.2
@@ -10,8 +9,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.29.12
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.18.8
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.42.0
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.210.1
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.78.2
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.211.0
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.79.0
 	github.com/aws/smithy-go v1.22.3
 	github.com/docker/distribution v2.8.3+incompatible
 	github.com/go-git/go-git/v5 v5.14.0
@@ -33,8 +32,8 @@ require (
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56
 	golang.org/x/net v0.38.0
 	golang.org/x/sync v0.12.0
-	google.golang.org/api v0.227.0
-	google.golang.org/grpc v1.71.0
+	google.golang.org/api v0.228.0
+	google.golang.org/grpc v1.71.1
 	google.golang.org/protobuf v1.36.6
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.32.3
@@ -46,7 +45,7 @@ require (
 
 require (
 	cloud.google.com/go/auth v0.15.0 // indirect
-	cloud.google.com/go/auth/oauth2adapt v0.2.7 // indirect
+	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
 	cloud.google.com/go/compute/metadata v0.6.0 // indirect
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.17.0 // indirect
