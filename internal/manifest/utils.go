@@ -352,6 +352,7 @@ func FetchCommitHash(tmpl *spec.TemplateRepository) error {
 
 	if tmpl.Tag != nil {
 		rfs = slices.DeleteFunc(rfs, func(reference *plumbing.Reference) bool {
+			//nolint
 			return !(reference.Name().IsTag() && reference.Name().Short() == *tmpl.Tag)
 		})
 	} else {

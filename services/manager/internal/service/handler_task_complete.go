@@ -61,13 +61,13 @@ func (g *GRPC) TaskComplete(ctx context.Context, req *pb.TaskCompleteRequest) (*
 	}
 
 	cluster.State = req.Workflow
-	switch {
-	case req.Workflow.Status == spec.Workflow_DONE:
+	switch req.Workflow.Status {
+	case spec.Workflow_DONE:
 		cluster.Events.Ttl = 0
 		cluster.Events.Events = cluster.Events.Events[1:]
 		TasksFinishedOk.Inc()
 		log.Debug().Msgf("Completing task %q from Config: %q Cluster: %q Version: %v, Finished successfully", req.TaskId, req.Name, req.Cluster, req.Version)
-	case req.Workflow.Status == spec.Workflow_ERROR:
+	case spec.Workflow_ERROR:
 		cluster.Events.Ttl = 0
 		TasksFinishedErr.Inc()
 		log.Debug().Msgf("Completing task %q from Config: %q Cluster: %q Version: %v, Errored", req.TaskId, req.Name, req.Cluster, req.Version)

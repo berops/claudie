@@ -127,7 +127,7 @@ func testClaudie(ctx context.Context) error {
 			defer cancel()
 
 			log.Info().Msgf("Starting test set: %s", path)
-			err, cleanup := processTestSet(ctx, path, false, manager, testLonghornDeployment)
+			cleanup, err := processTestSet(ctx, path, false, manager, testLonghornDeployment)
 			if err == nil || errors.Is(err, errInterrupt) || errors.Is(err, context.Canceled) {
 				if err := cleanup(); err != nil {
 					log.Err(err).Msgf("Error in cleaning up test set %s", path)
@@ -146,7 +146,7 @@ func testClaudie(ctx context.Context) error {
 			defer cancel()
 
 			log.Info().Msgf("Starting test set: %s", path)
-			err, cleanup := processTestSet(ctx, path, true, manager, testLonghornDeployment)
+			cleanup, err := processTestSet(ctx, path, true, manager, testLonghornDeployment)
 			if err == nil || errors.Is(err, errInterrupt) || errors.Is(err, context.Canceled) {
 				if err := cleanup(); err != nil {
 					log.Err(err).Msgf("Error in cleaning up test set %s", path)
@@ -167,7 +167,7 @@ func testClaudie(ctx context.Context) error {
 
 				log.Info().Msgf("Starting test set: %s", path)
 
-				err, cleanup := processTestSet(
+				cleanup, err := processTestSet(
 					ctx,
 					path,
 					false,
@@ -203,7 +203,7 @@ func processTestSet(
 	continueOnBuildError bool,
 	m managerclient.ClientAPI,
 	testFunc func(ctx context.Context, c *spec.Config) error,
-) (error, func() error) {
+) (func() error, error) {
 	pathToTestSet := filepath.Join(testDir, setName)
 	log.Info().Msgf("Working on the test set %s", pathToTestSet)
 
@@ -224,7 +224,7 @@ func processTestSet(
 
 	dir, err := os.ReadDir(pathToTestSet)
 	if err != nil {
-		return fmt.Errorf("error while trying to read test manifests in %s : %w", pathToTestSet, err), nocleanup
+		return nocleanup, fmt.Errorf("error while trying to read test manifests in %s : %w", pathToTestSet, err)
 	}
 
 	var configs []os.DirEntry
@@ -241,16 +241,16 @@ func processTestSet(
 
 		rawManifest, err := os.ReadFile(manifestPath)
 		if err != nil {
-			return fmt.Errorf("error while reading manifest %s : %w", manifestPath, err), nocleanup
+			return nocleanup, fmt.Errorf("error while reading manifest %s : %w", manifestPath, err)
 		}
 
 		manifestName, err = getInputManifestName(rawManifest)
 		if err != nil {
-			return fmt.Errorf("error while getting the manifest name from %s : %w", manifestPath, err), nocleanup
+			return nocleanup, fmt.Errorf("error while getting the manifest name from %s : %w", manifestPath, err)
 		}
 
 		if err = applyManifest(manifestName, manifestPath, rawManifest, m); err != nil {
-			return fmt.Errorf("error applying test set %s, manifest %s from %s : %w", entry.Name(), manifestName, setName, err), nocleanup
+			return nocleanup, fmt.Errorf("error applying test set %s, manifest %s from %s : %w", entry.Name(), manifestName, setName, err)
 		}
 
 		ts := testset{
@@ -262,25 +262,25 @@ func processTestSet(
 		done, err := waitForDoneOrError(ctx, m, ts)
 		if err != nil {
 			if errors.Is(err, errInterrupt) {
-				return err, cleanup
+				return cleanup, err
 			}
 			if i != len(configs)-1 && continueOnBuildError {
 				continue
 			}
-			return fmt.Errorf("error while monitoring manifest %s from test set %s: %w", entry.Name(), setName, err), cleanup
+			return cleanup, fmt.Errorf("error while monitoring manifest %s from test set %s: %w", entry.Name(), setName, err)
 		}
 
 		for cluster, state := range done.Clusters {
 			if !proto.Equal(state.Current, state.Desired) {
 				err := fmt.Errorf("cluster %q from config %q has current and desired state that diverge after all tasks have been build successfully", cluster, manifestName)
-				return err, cleanup
+				return cleanup, err
 			}
 		}
 
 		log.Info().Msgf("Starting additional tests for manifest %s from %s", entry.Name(), setName)
 
 		if err := testFunc(ctx, done); err != nil {
-			return fmt.Errorf("error while performing additional test for manifest %s from %s : %w", entry.Name(), setName, err), cleanup
+			return cleanup, fmt.Errorf("error while performing additional test for manifest %s from %s : %w", entry.Name(), setName, err)
 		}
 
 		log.Info().Msgf("Manifest %s from %s is done...", entry.Name(), pathToTestSet)
@@ -291,9 +291,9 @@ func processTestSet(
 
 	// Delete manifest from DB to clean up the infra as errCleanUp is nil and deferred function will not clean up.
 	if err := cleanUp(setName, manifestName, m); err != nil {
-		return fmt.Errorf("error while cleaning up the infra for test set %s : %w", setName, err), cleanup
+		return cleanup, fmt.Errorf("error while cleaning up the infra for test set %s : %w", setName, err)
 	}
-	return nil, nocleanup
+	return nocleanup, nil
 }
 
 func applyManifest(manifest, path string, raw []byte, m managerclient.ClientAPI) error {
