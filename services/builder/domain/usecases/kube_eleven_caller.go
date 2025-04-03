@@ -43,7 +43,7 @@ func (u *Usecases) destroyK8sCluster(ctx *builder.Context) error {
 	u.updateTaskWithDescription(ctx, spec.Workflow_KUBE_ELEVEN, fmt.Sprintf("%s destroying kubernetes cluster", description))
 
 	var lbApiEndpoint string
-	if ep := clusters.FindAssignedLbApiEndpoint(ctx.CurrentLoadbalancers); ep != nil {
+	if ep := clusters.FindAssignedLbApiEndpoint(ctx.CurrentLoadbalancers); ep != nil && ep.Dns != nil {
 		lbApiEndpoint = ep.Dns.Endpoint
 	}
 
