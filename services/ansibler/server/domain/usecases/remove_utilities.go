@@ -46,7 +46,7 @@ func (u *Usecases) RemoveUtilities(req *pb.RemoveClaudieUtilitiesRequest) (*pb.R
 		})
 	}
 
-	logger.Info().Msgf("Starting cleanup of utilities installed by Claudie, this make take a while")
+	logger.Info().Msgf("Starting cleanup of utilities installed by Claudie, this can take a while")
 
 	if err := removeUtilities(req.Current.ClusterInfo.Id(), vpnInfo, u.SpawnProcessLimit); err != nil {
 		return nil, fmt.Errorf("failed to remove wiregaurd from nodes: %w", err)
