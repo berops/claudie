@@ -3,9 +3,11 @@ package loadbalancer
 import (
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/fileutils"
@@ -110,18 +112,42 @@ func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 		return err
 	}
 
+	var currentState []string
+	if d.CurrentDNS != nil {
+		var err error
+		if currentState, err = terraform.StateList(); err != nil {
+			return fmt.Errorf("error while running terraform state list in %s: %w", dnsID, err)
+		}
+	}
+
 	if err := terraform.Apply(); err != nil {
+		updatedState, errList := terraform.StateList()
+		if errList != nil {
+			return errors.Join(err, fmt.Errorf("%w: error while runnign terraform state list in %s: %w", err, dnsID, errList))
+		}
+
+		var toDelete []string
+		for _, resource := range updatedState {
+			if !slices.Contains(currentState, resource) {
+				toDelete = append(toDelete, resource)
+			}
+		}
+
+		if errDestroy := terraform.DestroyTarget(toDelete); errDestroy != nil {
+			return fmt.Errorf("%w: failed to destroy partially created state: %w", err, errDestroy)
+		}
+
 		return err
 	}
 
 	output, err := terraform.Output(endpoint(d.DesiredDNS, clusterID, ""))
 	if err != nil {
-		return fmt.Errorf("error while getting output from terraform for %s : %w", clusterID, err)
+		return fmt.Errorf("error while getting output from terraform for %s : %w", dnsID, err)
 	}
 
 	out, err := readDomain(output)
 	if err != nil {
-		return fmt.Errorf("error while reading output from terraform for %s : %w", clusterID, err)
+		return fmt.Errorf("error while reading output from terraform for %s : %w", dnsID, err)
 	}
 
 	outputID := fmt.Sprintf("%s-endpoint", clusterID)
@@ -140,7 +166,7 @@ func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 		}
 
 		if out, err = readDomain(output); err != nil {
-			return fmt.Errorf("error while reading alternative %s name from terraform output for %s: %w, skipping", n.Hostname, clusterID, err)
+			return fmt.Errorf("error while reading alternative %s name from terraform output for %s: %w, skipping", n.Hostname, dnsID, err)
 		}
 
 		outputID = fmt.Sprintf("%s-%s-endpoint", clusterID, n.Hostname)
