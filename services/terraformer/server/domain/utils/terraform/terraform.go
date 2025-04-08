@@ -150,6 +150,10 @@ func (t *Terraform) Destroy() error {
 }
 
 func (t *Terraform) DestroyTarget(targets []string) error {
+	if len(targets) == 0 {
+		return nil
+	}
+
 	if err := t.SpawnProcessLimit.Acquire(context.Background(), 1); err != nil {
 		return fmt.Errorf("failed to prepare terraform destroy target process: %w", err)
 	}

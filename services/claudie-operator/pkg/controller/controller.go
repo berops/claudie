@@ -167,6 +167,16 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		deleted = deletedCount == len(config.Clusters)
 	}
 
+	// Check if input-manifest has been updated
+	// Calculate the manifest checksum in inputManifest resource and
+	// compare it against msChecksum in database
+	inputManifestMarshalled, err := yaml.Marshal(rawManifest)
+	if err != nil {
+		return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, err
+	}
+	inputManifestChecksum := hash.Digest(string(inputManifestMarshalled))
+	inputManifestUpdated := !bytes.Equal(inputManifestChecksum, previousChecksum)
+
 	switch {
 	case configState == spec.Manifest_Pending:
 		currentState.State = v1beta.STATUS_NEW
@@ -250,15 +260,30 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			return ctrl.Result{RequeueAfter: REQUEUE_NEW}, nil
 		}
 
+		inputManifest.SetUpdateResourceStatus(currentState)
+
+		// InputManifest is not provisioning but is in a retry loop, allow updating it.
+		waitOnInput := configState == spec.Manifest_Pending
+		waitOnInput = waitOnInput && manifestRescheduled
+		waitOnInput = waitOnInput && inputManifestUpdated
+		waitOnInput = waitOnInput && inputManifest.DeletionTimestamp.IsZero()
+		if waitOnInput {
+			log.Info("InputManifest has been updated", "status", currentState.State)
+			if err := r.CreateConfig(ctx, &rawManifest, inputManifest.Name, inputManifest.Namespace); err != nil {
+				return ctrl.Result{}, err
+			}
+			return ctrl.Result{RequeueAfter: REQUEUE_UPDATE}, nil
+		}
+
 		// PROVISIONING LOGIC
 		// Refresh inputManifest.status fields
-		inputManifest.SetUpdateResourceStatus(currentState)
 		if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 		}
 		for cluster, wf := range currentState.Clusters {
 			log.Info("Refreshing state", "cluster", cluster, "stage", wf.Phase, "status", wf.State)
 		}
+
 		return ctrl.Result{RequeueAfter: REQUEUE_IN_PROGRES}, nil
 	}
 
@@ -274,16 +299,6 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", buildProvisioningError(currentState).Error())
 		log.Error(buildProvisioningError(currentState), "Error while building")
 	}
-
-	// Check if input-manifest has been updated
-	// Calculate the manifest checksum in inputManifest resource and
-	// compare it against msChecksum in database
-	inputManifestMarshalled, err := yaml.Marshal(rawManifest)
-	if err != nil {
-		return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, err
-	}
-	inputManifestChecksum := hash.Digest(string(inputManifestMarshalled))
-	inputManifestUpdated := !bytes.Equal(inputManifestChecksum, previousChecksum)
 
 	// Update logic if the input manifest has been updated
 	// only when the resource is not scheduled for deletion
