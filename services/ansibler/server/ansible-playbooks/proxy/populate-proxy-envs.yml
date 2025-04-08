@@ -30,6 +30,20 @@
         - kubelet
         - containerd
         - docker
+
+    - name: Delete HTTP,HTTPS,NO_PROXY from /etc/environmennt
+      ansible.builtin.lineinfile:
+        path: /etc/environment
+        regexp: "^{{ item.key }}=.*$"
+        state: absent
+      loop:
+        - { key: "HTTP_PROXY" }
+        - { key: "http_proxy" }
+        - { key: "HTTPS_PROXY" }
+        - { key: "https_proxy" }
+        - { key: "NO_PROXY" }
+        - { key: "no_proxy" }
+
     - name: Add HTTP,HTTPS,NO_PROXY into /etc/environmennt
       ansible.builtin.lineinfile:
         path: /etc/environment
