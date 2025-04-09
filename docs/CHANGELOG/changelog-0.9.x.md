@@ -251,8 +251,18 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
   This is a setting that controls how Longhorn automatically upgrades volumes’ engines to the new default engine image after upgrading Longhorn manager. More on: https://longhorn.io/docs/1.8.1/deploy/upgrade/auto-upgrade-engine/
   
   Once the upgrade is complete, the old engine image pods and the instance manager will be terminated after ~60 minutes of non-use (after all volumes have been upgraded to use the latest Longhorn version) You can also follow the official Longhorn post on this: https://longhorn.io/kb/troubleshooting-some-old-instance-manager-pods-are-still-running-after-upgrade/
-  
 
+## v0.9.10
 
+## What's Changed
+
+- Decrease the amount of retries for cleanup of static nodes during deletion from 4 to 2 [#1729](https://github.com/berops/claudie/pull/1729)
+
+## Bug fixes
+
+- Fix panic when deleting clusters with static nodes for which DNS was not built correctly [#1724](https://github.com/berops/claudie/pull/1724)
+- Fix propagation of desired state from operator to manager service [#1726](https://github.com/berops/claudie/pull/1726)
+- Fix multiple HTTP proxy environment variables present in `/etc/environment` [#1727](https://github.com/berops/claudie/pull/1727)
+- Fix partial DNS apply, which would left part of the infrastructure untracked [#1728](https://github.com/berops/claudie/pull/1728)
 
 
