@@ -46,6 +46,8 @@ func (u *Usecases) RemoveUtilities(req *pb.RemoveClaudieUtilitiesRequest) (*pb.R
 		})
 	}
 
+	logger.Info().Msgf("Starting cleanup of utilities installed by Claudie, this can take a while")
+
 	if err := removeUtilities(req.Current.ClusterInfo.Id(), vpnInfo, u.SpawnProcessLimit); err != nil {
 		return nil, fmt.Errorf("failed to remove wiregaurd from nodes: %w", err)
 	}
@@ -77,7 +79,14 @@ func removeUtilities(clusterID string, vpnInfo *VPNInfo, processLimit *semaphore
 	}
 
 	ansible := utils.Ansible{
-		RetryCount:        3,
+		// since removing claudie utilities should only be used on nodes that are either deleted, or the cluster is being
+		// deleted, have a retry count of just 1 times of connecting to each node. It can be the case that the user manually
+		// deleted the infrastructure and thus some of the nodes may not even be reachable. The other case, in which some of the
+		// nodes are not reachable it would also make no sense in having a higher retry count.
+		// However if there are connectivity issuess, some of the nodes may not be properly clean-up, but if the same nodes
+		// would then re-join a new claudie made cluster it would complain (mostly about the kubernetes binaries), and the user
+		// would have to clean it up manually.
+		RetryCount:        1,
 		Playbook:          wireguardUninstall,
 		Inventory:         utils.InventoryFileName,
 		Directory:         clusterDirectory,
