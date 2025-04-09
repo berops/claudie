@@ -21,7 +21,7 @@ spec:
 ...
 ```
 
-- if no templates are specified it will always default to the latest commit on the Master/Main branch of the respective cloudprovider on the berops repository (i.e. ` https://github.com/Despire/claudie-config`).
+- if no templates are specified it will always default to the latest commit on the Master/Main branch of the respective cloudprovider on the berops repository (i.e. ` https://github.com/berops/claudie-config`).
 
 - if templates are specified, but no tag is present it will default to the latest commit of the Master/Main branch of the respective repository.
 
@@ -166,4 +166,28 @@ spec:
           compute:
             - compute-1-htz
             - compute-2-htz
+```
+
+The rolling update is also triggered if only the tag of the template is changed.
+
+```diff
+apiVersion: claudie.io/v1beta1
+kind: InputManifest
+metadata:
+  name: hetzner-example-manifest
+  labels:
+    app.kubernetes.io/part-of: claudie
+spec:
+  providers:
+    - name: hetzner-1
+      providerType: hetzner
+      templates:
+-       repository: "https://github.com/berops/claudie-config"
+-       path: "templates/terraformer/hetzner"
++       repository: "https://github.com/berops/claudie-config"
++       tag: v0.9.8
++       path: "templates/terraformer/hetzner"
+      secretRef:
+        name: hetzner-secret-1
+        namespace: mynamespace
 ```
