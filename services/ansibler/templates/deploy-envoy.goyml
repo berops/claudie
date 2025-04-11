@@ -1,0 +1,101 @@
+---
+- hosts: {{ .LoadBalancer }}
+  gather_facts: yes
+  become: yes
+  tasks:
+    - name: Get dpkg architecture
+      command: dpkg --print-architecture
+      register: dpkg_arch
+      changed_when: false
+
+    # take the os codename from ansible and if not present than read it from the /etc/os-release
+    - name: Set fallback variables for OS codename and id
+      set_fact:
+        os_codename: "{{ "{{" }} (ansible_facts['distribution_release'] | default('')) | lower {{ "}}" }}"
+        os_id: "{{ "{{" }} (ansible_facts['distribution'] | default('')) | lower {{ "}}" }}"
+
+    # if we do not have the OS codename and ID fail the playbook
+    - name: Fail if OS codename or ID is empty
+      fail:
+        msg: "The required variables 'codename' or 'id' are not found or are empty."
+      when: (os_codename | length == 0) or (os_id | length == 0)
+
+    - debug:
+        var: os_codename
+
+    - debug:
+        var: os_id
+
+      # https://download.docker.com/linux/
+      # the os_id should be just ascii chars.
+    - name: Assert os_id contains only ASCII characters
+      assert:
+          that:
+          - os_id is string
+          - os_id is match("^[a-z]+$")
+          fail_msg: "os_id contains non-ASCII characters"
+          success_msg: "os_id contains only ASCII characters"
+
+    - name: Install aptitude
+      apt:
+        name: aptitude
+        state: latest
+        update_cache: true
+
+    - name: Install required system packages
+      apt:
+        pkg:
+          - ca-certificates
+          - curl
+        state: latest
+        update_cache: true
+
+    - name: Ensure required directories exist
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Download Docker GPG key
+      get_url:
+        url: https://download.docker.com/linux/{{ "{{" }} os_id {{ "}}" }}/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: '0644'
+
+    - name: Add repository into sources list
+      apt_repository:
+        repo: deb [arch={{ "{{" }} dpkg_arch.stdout {{ "}}" }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/{{ "{{" }} os_id {{ "}}" }} {{ "{{" }} os_codename {{ "}}" }} stable
+        state: present
+        filename: docker
+
+    - name: Update apt and install docker
+      apt:
+        name:
+            - docker-ce
+            - docker-ce-cli
+            - containerd.io
+            - docker-buildx-plugin
+            - docker-compose-plugin
+        state: latest
+        update_cache: true
+
+    - name: Create directory '/var/lib/envoy' if it does not exist
+      ansible.builtin.file:
+          path: /var/lib/envoy
+          state: directory
+          mode: '0755'
+
+    - name: copy envoy docker-compose
+      ansible.builtin.copy:
+        src: envoy-docker-compose.yml
+        dest: /var/lib/envoy/docker-compose.yml
+        remote_src: false
+
+{{- range $role := .Roles }}
+    {{ $self := $role.Role }}
+    - name: copy envoy config files for role {{ $self.Name }} to be used within the container
+      ansible.builtin.copy:
+        src: ./{{ $self.Name }}/
+        dest: /var/lib/envoy/{{ $self.Name }}
+        remote_src: false
+{{- end }}

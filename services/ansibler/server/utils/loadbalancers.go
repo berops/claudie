@@ -70,6 +70,19 @@ type (
 	NginxConfigTemplateParameters struct {
 		Roles []LBClusterRolesInfo
 	}
+
+	EnvoyConfigTemplateParams struct {
+		LoadBalancer string
+		Roles        []LBClusterRolesInfo
+	}
+
+	EnvoyTemplateParams struct {
+		LoadBalancer string
+		Role         string
+	}
+
+	EnvoyDynamicClustersTemplateParams  struct{}
+	EnvoyDynamicListenersTemplateParams struct{}
 )
 
 // GenerateLBBaseFiles generates the files like Ansible inventory file and SSH keys to be used by Ansible.

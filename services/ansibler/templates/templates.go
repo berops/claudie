@@ -9,6 +9,21 @@ var (
 	//go:embed conf.gotpl
 	NginxConfigTemplate string
 
+	//go:embed deploy-envoy.goyml
+	EnvoyTemplate string
+
+	//go:embed envoy.goyml
+	EnvoyConfig string
+
+	//go:embed envoy-dynamic-clusters.goyml
+	EnvoyDynamicClusters string
+
+	//go:embed envoy-dynamic-listeners.goyml
+	EnvoyDynamicListeners string
+
+	//go:embed envoy-docker-compose.goyml
+	EnvoyDockerCompose string
+
 	//go:embed lb-inventory.goini
 	LoadbalancerInventoryTemplate string
 

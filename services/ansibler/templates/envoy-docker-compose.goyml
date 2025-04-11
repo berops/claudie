@@ -1,0 +1,13 @@
+services:
+{{ range $role := .Roles }}
+  {{- $self := $role.Role }}
+  {{ /* TODO make it persistent across restarts. */}}
+  {{- $name := printf "%s-%s" $.LoadBalancer $self.Name }}
+  {{- $name }}:
+    image: envoyproxy/envoyproxy/envoy:distroless-v1.33-latest
+    network_mode: "host"
+    privileged: true
+    volumes:
+      - /var/lib/envoy/{{ $self.Name }}:/var/lib/envoy
+    command: ["-c", "/var/lib/envoy/envoy.yml", "--log-devel", "info"]
+{{ end }}

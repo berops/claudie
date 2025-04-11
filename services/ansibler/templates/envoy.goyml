@@ -1,0 +1,9 @@
+node:
+  cluster: {{ .LoadBalancer }}
+  id: {{ .Role }}
+
+dynamic_resources:
+  cds_config:
+    path: /var/lib/envoy/cds.yaml
+  lds_config:
+    path: /var/lib/envoy/lds.yaml
