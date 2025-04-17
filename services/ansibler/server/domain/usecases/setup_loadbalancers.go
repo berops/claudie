@@ -25,12 +25,6 @@ const (
 	// nodeExporterPlaybookFileName defines name for node exporter playbook.
 	nodeExporterPlaybookFileName = "node-exporter.yml"
 
-	// nginxPlaybookName defines name for nginx playbook.
-	nginxPlaybookName = "nginx.yml"
-
-	// nginxConfigName defines name for nginx config.
-	nginxConfigName = "lb.conf"
-
 	// envoyPlaybookName to which the template will be generated to
 	// for docker and envoy proxy setup.
 	envoyPlaybookName = "envoy.yml"
@@ -42,13 +36,13 @@ const (
 
 	// envoyConfig is the generated config for a config for a single role that
 	// dynamically updates cds and lds.
-	envoyConfig = "envoy.yml"
+	envoyConfig = "envoy_temp.yml"
 
 	// envoyCDS is the generated dynamic clusters config for a single role.
-	envoyCDS = "cds.yml"
+	envoyCDS = "cds_temp.yml"
 
 	// envoyLDS is the generated dynamic listeners config for a single role.
-	envoyLDS = "lds.yml"
+	envoyLDS = "lds_temp.yml"
 )
 
 func (u *Usecases) SetUpLoadbalancers(request *pb.SetUpLBRequest) (*pb.SetUpLBResponse, error) {
@@ -105,10 +99,6 @@ func setUpLoadbalancers(request *pb.SetUpLBRequest, logger zerolog.Logger, proce
 			return err
 		}
 
-		if err := setUpNginx(lbCluster, info.TargetK8sNodepool, clusterDirectory, processLimit); err != nil {
-			return err
-		}
-
 		if err := setupEnvoyProxyViaDocker(lbCluster, info.TargetK8sNodepool, clusterDirectory, processLimit); err != nil {
 			return err
 		}
@@ -130,9 +120,10 @@ func setUpLoadbalancers(request *pb.SetUpLBRequest, logger zerolog.Logger, proce
 // setUpNodeExporter sets up node-exporter on each node of the LB cluster.
 // Returns error if not successful, nil otherwise.
 func setUpNodeExporter(lbCluster *spec.LBcluster, clusterDirectory string, processLimit *semaphore.Weighted) error {
-	var playbookParameters = utils.LBPlaybookParameters{Loadbalancer: lbCluster.ClusterInfo.Name}
+	playbookParameters := utils.NodeExporterTamplateParams{
+		LoadBalancer: lbCluster.ClusterInfo.Name,
+	}
 
-	// Generate node-exporter Ansible playbook from template
 	template, err := templateUtils.LoadTemplate(templates.NodeExporterPlaybookTemplate)
 	if err != nil {
 		return fmt.Errorf("error while loading %s template for node_exporter playbook : %w", lbCluster.ClusterInfo.Name, err)
@@ -143,7 +134,6 @@ func setUpNodeExporter(lbCluster *spec.LBcluster, clusterDirectory string, proce
 		return fmt.Errorf("error while generating %s for %s : %w", nodeExporterPlaybookFileName, lbCluster.ClusterInfo.Name, err)
 	}
 
-	// Run the Ansible playbook
 	ansible := utils.Ansible{
 		Directory:         clusterDirectory,
 		Playbook:          nodeExporterPlaybookFileName,
@@ -154,7 +144,6 @@ func setUpNodeExporter(lbCluster *spec.LBcluster, clusterDirectory string, proce
 	if err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash)); err != nil {
 		return fmt.Errorf("error while running ansible for %s : %w", lbCluster.ClusterInfo.Name, err)
 	}
-
 	return nil
 }
 
@@ -174,11 +163,12 @@ func setupEnvoyProxyViaDocker(
 	clusterDirectory string,
 	processLimit *semaphore.Weighted,
 ) error {
+	targets := targetPools(lbCluster, targetK8sNodePool)
 	// generate per-role dynamic configs
-	for _, role := range lbCluster.Roles {
-		dir := filepath.Join(clusterDirectory, role.Name)
+	for _, tg := range targets {
+		dir := filepath.Join(clusterDirectory, tg.Role.Name)
 		if err := fileutils.CreateDirectory(dir); err != nil {
-			return fmt.Errorf("failed to create directory for envoy config for role %s for cluster %s: %w", role.Name, lbCluster.ClusterInfo.Id(), err)
+			return fmt.Errorf("failed to create directory for envoy config for role %s for cluster %s: %w", tg.Role.Name, lbCluster.ClusterInfo.Id(), err)
 		}
 		tpl := templateUtils.Templates{Directory: dir}
 
@@ -197,26 +187,30 @@ func setupEnvoyProxyViaDocker(
 			return fmt.Errorf("error while loading envoy config template for %s: %w", lbCluster.ClusterInfo.Id(), err)
 		}
 
-		err = tpl.Generate(dynClusters, envoyCDS, utils.EnvoyDynamicClustersTemplateParams{})
+		err = tpl.Generate(dynClusters, envoyCDS, utils.EnvoyDynamicConfigTemplateParams{
+			Role:        tg.Role,
+			TargetNodes: tg.TargetNodes,
+		})
 		if err != nil {
 			return fmt.Errorf("error while generating envoy dynamic clusters config for %s: %w", lbCluster.ClusterInfo.Id(), err)
 		}
 
-		err = tpl.Generate(dynListeners, envoyLDS, utils.EnvoyDynamicListenersTemplateParams{})
+		err = tpl.Generate(dynListeners, envoyLDS, utils.EnvoyDynamicConfigTemplateParams{
+			Role:        tg.Role,
+			TargetNodes: tg.TargetNodes,
+		})
 		if err != nil {
 			return fmt.Errorf("error while generating envoy dynamic listeners config for %s: %w", lbCluster.ClusterInfo.Id(), err)
 		}
 
 		err = tpl.Generate(envoy, envoyConfig, utils.EnvoyTemplateParams{
 			LoadBalancer: lbCluster.ClusterInfo.Name,
-			Role:         role,
+			Role:         tg.Role.Name,
 		})
 		if err != nil {
 			return fmt.Errorf("error while generatingf envoy config for %s: %w", lbCluster.ClusterInfo.Id(), err)
 		}
 	}
-
-	rolesInfo := targetPools(lbCluster, targetK8sNodePool)
 
 	tpl := templateUtils.Templates{Directory: clusterDirectory}
 
@@ -228,7 +222,7 @@ func setupEnvoyProxyViaDocker(
 
 	err = tpl.Generate(compose, envoyDockerCompose, utils.EnvoyConfigTemplateParams{
 		LoadBalancer: lbCluster.ClusterInfo.Name,
-		Roles:        rolesInfo,
+		Roles:        targets,
 	})
 	if err != nil {
 		return fmt.Errorf("error while generating envoy docker compose file for %s: %w", lbCluster.ClusterInfo.Id(), err)
@@ -242,14 +236,14 @@ func setupEnvoyProxyViaDocker(
 
 	err = tpl.Generate(envoyPlayBook, envoyPlaybookName, utils.EnvoyConfigTemplateParams{
 		LoadBalancer: lbCluster.ClusterInfo.Name,
-		Roles:        rolesInfo,
+		Roles:        targets,
 	})
 	if err != nil {
 		return fmt.Errorf("error while generating  %s for %s: %w", envoyPlaybookName, lbCluster.ClusterInfo.Name, err)
 	}
 
 	ansible := utils.Ansible{
-		RetryCount:        1,
+		RetryCount:        2,
 		Playbook:          envoyPlaybookName,
 		Inventory:         filepath.Join("..", utils.InventoryFileName),
 		Directory:         clusterDirectory,
@@ -259,44 +253,6 @@ func setupEnvoyProxyViaDocker(
 	err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash))
 	if err != nil {
 		return fmt.Errorf("error while running ansible for %s: %w", lbCluster.ClusterInfo.Name, err)
-	}
-
-	return nil
-}
-
-// setUpNginx sets up the nginx loadbalancer based on the input manifest specification.
-// Return error if not successful, nil otherwise
-func setUpNginx(lbCluster *spec.LBcluster, targetK8sNodepool []*spec.NodePool, clusterDirectory string, processLimit *semaphore.Weighted) error {
-	lbClusterRolesInfo := targetPools(lbCluster, targetK8sNodepool)
-	// Generate the nginx config file
-	nginxConfTemplate, err := templateUtils.LoadTemplate(templates.NginxConfigTemplate)
-	tpl := templateUtils.Templates{Directory: clusterDirectory}
-	if err != nil {
-		return fmt.Errorf("error while loading nginx config template : %w", err)
-	}
-	nginxPlaybookTemplate, err := templateUtils.LoadTemplate(templates.NginxPlaybookTemplate)
-	if err != nil {
-		return fmt.Errorf("error while loading nginx playbook template : %w", err)
-	}
-
-	if err := tpl.Generate(nginxConfTemplate, nginxConfigName, utils.NginxConfigTemplateParameters{Roles: lbClusterRolesInfo}); err != nil {
-		return fmt.Errorf("error while generating %s for %s : %w", nginxConfigName, lbCluster.ClusterInfo.Name, err)
-	}
-
-	if err := tpl.Generate(nginxPlaybookTemplate, nginxPlaybookName, utils.LBPlaybookParameters{Loadbalancer: lbCluster.ClusterInfo.Name}); err != nil {
-		return fmt.Errorf("error while generating %s for %s : %w", nginxPlaybookName, lbCluster.ClusterInfo.Name, err)
-	}
-
-	ansible := utils.Ansible{
-		Playbook:          nginxPlaybookName,
-		Inventory:         filepath.Join("..", utils.InventoryFileName),
-		Directory:         clusterDirectory,
-		SpawnProcessLimit: processLimit,
-	}
-
-	err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash))
-	if err != nil {
-		return fmt.Errorf("error while running ansible for %s : %w", lbCluster.ClusterInfo.Name, err)
 	}
 
 	return nil

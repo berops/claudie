@@ -58,17 +58,13 @@ type (
 		ClusterID string
 	}
 
-	LBPlaybookParameters struct {
-		Loadbalancer string
-	}
-
 	LBClusterRolesInfo struct {
 		Role        *spec.Role
 		TargetNodes []*spec.Node
 	}
 
-	NginxConfigTemplateParameters struct {
-		Roles []LBClusterRolesInfo
+	NodeExporterTamplateParams struct {
+		LoadBalancer string
 	}
 
 	EnvoyConfigTemplateParams struct {
@@ -81,8 +77,10 @@ type (
 		Role         string
 	}
 
-	EnvoyDynamicClustersTemplateParams  struct{}
-	EnvoyDynamicListenersTemplateParams struct{}
+	EnvoyDynamicConfigTemplateParams struct {
+		Role        *spec.Role
+		TargetNodes []*spec.Node
+	}
 )
 
 // GenerateLBBaseFiles generates the files like Ansible inventory file and SSH keys to be used by Ansible.

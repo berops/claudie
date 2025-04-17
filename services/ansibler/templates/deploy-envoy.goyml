@@ -2,7 +2,18 @@
 - hosts: {{ .LoadBalancer }}
   gather_facts: yes
   become: yes
+  vars:
+    # for node-limits tasks
+    nofile_soft: 65535
+    nofile_hard: 65535
+    file_max: 2097152
+    max_user_watches: 2097152
+    max_user_instances: 65535
+    max_queued_events: 65535
   tasks:
+    - name: update node limits
+      include_tasks: ../../../ansible-playbooks/node-limits.yml
+
     - name: Get dpkg architecture
       command: dpkg --print-architecture
       register: dpkg_arch
@@ -98,4 +109,22 @@
         src: ./{{ $self.Name }}/
         dest: /var/lib/envoy/{{ $self.Name }}
         remote_src: false
+
+    - name: move uploaded dynamic config files for role {{ $self.Name }}
+      shell: |
+        mv /var/lib/envoy/{{ $self.Name }}/envoy_temp.yml /var/lib/envoy/{{ $self.Name }}/envoy.yml
+        mv /var/lib/envoy/{{ $self.Name }}/cds_temp.yml /var/lib/envoy/{{ $self.Name }}/cds.yml
+        mv /var/lib/envoy/{{ $self.Name }}/lds_temp.yml /var/lib/envoy/{{ $self.Name }}/lds.yml
 {{- end }}
+
+    - name: run docker compose
+      community.docker.docker_compose_v2:
+        project_src: /var/lib/envoy
+        state: present
+        # removes unused containers, which stay orphaned after the removal of a role in the loadbalancer.
+        remove_orphans: true
+      register: compose_out
+
+    - name: Show compose results
+      ansible.builtin.debug:
+        var: compose_out

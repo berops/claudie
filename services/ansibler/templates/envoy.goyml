@@ -2,8 +2,18 @@ node:
   cluster: {{ .LoadBalancer }}
   id: {{ .Role }}
 
+overload_manager:
+  resource_monitors:
+    - name: envoy.resource_monitors.global_downstream_max_connections
+      typed_config:
+        "@type": type.googleapis.com/envoy.extensions.resource_monitors.downstream_connections.v3.DownstreamConnectionsConfig
+        max_active_downstream_connections: 65535
+
+{{/* https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/config_source.proto#config-core-v3-pathconfigsource */}}
 dynamic_resources:
   cds_config:
-    path: /var/lib/envoy/cds.yaml
+    path_config_source:
+        path: /var/lib/envoy/cds.yml
   lds_config:
-    path: /var/lib/envoy/lds.yaml
+    path_config_source:
+        path: /var/lib/envoy/lds.yml

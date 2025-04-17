@@ -1,13 +1,17 @@
+name: "{{ .LoadBalancer }}"
+
+{{/* The envoy containers will need to have host network access and restart: always */}}
+{{/* Each envoy proxy will need to get a base-id assinged that needs to uniquely identify */}}
+{{/* each envoy proxy instance. To avoid keeping track of additional state for the base-id */}}
+{{/* we just use the PORT number as the id, as this number must be unique within a single machine anyways */}}
 services:
-{{ range $role := .Roles }}
+{{- range $role := .Roles }}
   {{- $self := $role.Role }}
-  {{ /* TODO make it persistent across restarts. */}}
-  {{- $name := printf "%s-%s" $.LoadBalancer $self.Name }}
-  {{- $name }}:
-    image: envoyproxy/envoyproxy/envoy:distroless-v1.33-latest
+  {{ $self.Name }}:
+    image: envoyproxy/envoy:distroless-v1.34-latest
     network_mode: "host"
-    privileged: true
+    restart: always
     volumes:
       - /var/lib/envoy/{{ $self.Name }}:/var/lib/envoy
-    command: ["-c", "/var/lib/envoy/envoy.yml", "--log-devel", "info"]
-{{ end }}
+    command: ["-c", "/var/lib/envoy/envoy.yml", "--log-level", "info", "--base-id", "{{ $self.Port }}"]
+{{- end }}

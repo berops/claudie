@@ -1,0 +1,64 @@
+---
+# Update node limits.
+- name: Modify limits.conf
+  blockinfile:
+    path: /etc/security/limits.conf
+    block: |
+      * soft nofile {{ nofile_soft }}
+      * hard nofile {{ nofile_hard }}
+      root soft nofile {{ nofile_soft }}
+      root hard nofile {{ nofile_hard }}
+    state: present
+
+- name: Ensure PAM limits are enabled
+  lineinfile:
+    path: /etc/pam.d/common-session
+    line: "session required pam_limits.so"
+    state: present
+
+- name: Ensure PAM limits are enabled for non-interactive sessions
+  lineinfile:
+    path: /etc/pam.d/common-session-noninteractive
+    line: "session required pam_limits.so"
+    state: present
+
+- name: Configure systemd system limits
+  ansible.builtin.lineinfile:
+    path: /etc/systemd/system.conf
+    regexp: "^#?DefaultLimitNOFILE="
+    line: "DefaultLimitNOFILE={{ nofile_hard }}"
+
+- name: Configure systemd user limits
+  ansible.builtin.lineinfile:
+    path: /etc/systemd/user.conf
+    regexp: "^#?DefaultLimitNOFILE="
+    line: "DefaultLimitNOFILE={{ nofile_hard }}"
+
+- name: Reload systemd configuration
+  ansible.builtin.systemd:
+    daemon_reload: yes
+
+- name: Set kernel file handle maximum
+  ansible.builtin.sysctl:
+    name: fs.file-max
+    value: "{{ file_max }}"
+    state: present
+
+- name: Set kernel user queued events maximum
+  ansible.builtin.sysctl:
+    name: fs.inotify.max_queued_events
+    value: "{{ max_queued_events }}"
+    state: present
+
+- name: Set kernel user watches maximum
+  ansible.builtin.sysctl:
+    name: fs.inotify.max_user_watches
+    value: "{{ max_user_watches }}"
+    state: present
+
+- name: Set kernel user instances maximum
+  ansible.builtin.sysctl:
+    name: fs.inotify.max_user_instances
+    value: "{{ max_user_instances }}"
+    state: present
+    reload: yes
