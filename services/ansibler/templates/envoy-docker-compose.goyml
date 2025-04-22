@@ -4,6 +4,8 @@ name: "{{ .LoadBalancer }}"
 {{/* Each envoy proxy will need to get a base-id assinged that needs to uniquely identify */}}
 {{/* each envoy proxy instance. To avoid keeping track of additional state for the base-id */}}
 {{/* we just use the PORT number as the id, as this number must be unique within a single machine anyways */}}
+{{/* Run envoy as the root user, which is required for listening for ports < 1024 */}}
+{{/*https://www.envoyproxy.io/docs/envoy/latest/start/docker.html#changing-the-uid-and-or-gid-of-the-envoy-user-inside-the-container  */}}
 services:
 {{- range $role := .Roles }}
   {{- $self := $role.Role }}
@@ -11,6 +13,7 @@ services:
     image: envoyproxy/envoy:distroless-v1.34-latest
     network_mode: "host"
     restart: always
+    user: root
     volumes:
       - /var/lib/envoy/{{ $self.Name }}:/var/lib/envoy
     command: ["-c", "/var/lib/envoy/envoy.yml", "--log-level", "info", "--base-id", "{{ $self.Port }}"]

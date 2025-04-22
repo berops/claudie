@@ -7,16 +7,39 @@ resources:
         address: 0.0.0.0
         port_value: {{ $.Role.Port }}
     listener_filters:
-    {{- if and $.Role.Settings.ProxyProtocol (ne $.Role.TargetPort 6443) }}
+    {{- /* Proxy Protocol works only with TCP traffic, for UDP traffic the proxy protocol would not work or generally */ -}}
+    {{- /* replacing the source IP with the original client IP for UDP would not work, as the traffic would be forward to the service */ -}}
+    {{- /* running on the k8s node and then it would try to send it directly to the Client (not via the LB) and this would fail as */ -}}
+    {{- /* the nodes would not support the necessary firewall rules to allow outgoing TCP traffic. */ -}}
+    {{- if and (and $.Role.Settings.ProxyProtocol (ne $.Role.TargetPort 6443)) (eq $.Role.Protocol "tcp") }}
       - name: envoy.filters.listener.proxy_protocol
         typed_config:
           "@type": type.googleapis.com/envoy.extensions.filters.listener.proxy_protocol.v3.ProxyProtocol
           stat_prefix: "{{ $.Role.Name }}"
+      - name: envoy.filters.listener.tls_inspector
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+    {{- end }}
+    {{- /* https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/udp/udp_proxy/v3/udp_proxy.proto#envoy-v3-api-msg-extensions-filters-udp-udp-proxy-v3-udpproxyconfig */ -}}
+    {{- if eq $.Role.Protocol "udp" }}
+      - name: envoy.filters.udp_listener.udp_proxy
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.udp.udp_proxy.v3.UdpProxyConfig
+          stat_prefix: "{{ $.Role.Name }}"
+          cluster: "{{ $.Role.Name }}"
+          {{ if $.Role.Settings.StickySessions -}}
+          hash_policies:
+            - source_ip: true
+          {{ end -}}
+          access_log:
+            - name: envoy.access_loggers.stdout
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
     {{- end }}
     filter_chains:
-      - filters:
           {{- /* https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/tcp_proxy/v3/tcp_proxy.proto#envoy-v3-api-msg-extensions-filters-network-tcp-proxy-v3-tcpproxy */ -}}
           {{- if eq $.Role.Protocol "tcp" }}
+      - filters:
           - name: envoy.filters.network.tcp_proxy
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
@@ -25,21 +48,6 @@ resources:
               max_connect_attempts: 3
               {{ if $.Role.Settings.StickySessions -}}
               hash_policy:
-                - source_ip: {}
-              {{ end -}}
-              access_log:
-                - name: envoy.access_loggers.stdout
-                  typed_config:
-                    "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
-          {{- /* https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/udp/udp_proxy/v3/udp_proxy.proto#envoy-v3-api-msg-extensions-filters-udp-udp-proxy-v3-udpproxyconfig */ -}}
-          {{- else if eq $.Role.Protocol "udp" }}
-          - name: envoy.filters.udp_listener.udp_proxy
-            typed_config:
-              "@type": type.googleapis.com/envoy.extensions.filters.udp.udp_proxy.v3.UdpProxyConfig
-              stat_prefix: "{{ $.Role.Name }}"
-              cluster: "{{ $.Role.Name }}"
-              {{ if $.Role.Settings.StickySessions -}}
-              hash_policies:
                 - source_ip: {}
               {{ end -}}
               access_log:

@@ -90,6 +90,18 @@
         state: latest
         update_cache: true
 
+    - name: Make docker start at boot
+      ansible.builtin.systemd:
+        name: docker.service
+        enabled: yes
+        state: started
+
+    - name: Make containerd start at boot
+      ansible.builtin.systemd:
+        name: containerd.service
+        enabled: yes
+        state: started
+
     - name: Create directory '/var/lib/envoy' if it does not exist
       ansible.builtin.file:
           path: /var/lib/envoy
