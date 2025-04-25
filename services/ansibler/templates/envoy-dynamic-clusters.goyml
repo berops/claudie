@@ -8,6 +8,25 @@ resources:
     lb_policy: ROUND_ROBIN
     {{ end -}}
     connect_timeout: 10s
+    {{ if and (and $.Role.Settings.ProxyProtocol (ne $.Role.TargetPort 6443)) (eq $.Role.Protocol "tcp") -}}
+    {{- /* Proxy Protocol works only with TCP traffic, for UDP traffic the proxy protocol would not work or generally */ -}}
+    {{- /* replacing the source IP with the original client IP for UDP would not work, as the traffic would be forward to the service */ -}}
+    {{- /* running on the k8s node and then it would try to send it directly to the Client (not via the LB) and this would fail as */ -}}
+    {{- /* the nodes would not support the necessary firewall rules to allow outgoing TCP traffic. */ -}}
+    transport_socket:
+      name: envoy.transport_sockets.upstream_proxy_protocol
+      typed_config:
+        "@type": type.googleapis.com/envoy.extensions.transport_sockets.proxy_protocol.v3.ProxyProtocolUpstreamTransport
+        transport_socket:
+          name: envoy.transport_sockets.raw_buffer
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer
+    {{ end -}}
+    circuit_breakers:
+      thresholds:
+        max_connections: 65535
+        max_pending_requests: 65535
+        max_requests: 65535
     load_assignment:
       cluster_name: "{{ .Role.Name }}"
       endpoints:

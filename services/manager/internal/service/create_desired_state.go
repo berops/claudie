@@ -292,7 +292,7 @@ func getRolesAttachedToLBCluster(roles []manifest.Role, roleNames []string) []*s
 
 				newRole := &spec.Role{
 					Name:        role.Name,
-					Protocol:    role.Protocol,
+					Protocol:    strings.ToLower(role.Protocol),
 					Port:        role.Port,
 					TargetPort:  role.TargetPort,
 					TargetPools: role.TargetPools,
