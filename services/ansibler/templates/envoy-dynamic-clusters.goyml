@@ -2,7 +2,7 @@ resources:
   - "@type": type.googleapis.com/envoy.config.cluster.v3.Cluster
     name: "{{ .Role.Name }}"
     type: STATIC
-    {{ if .Role.Settings.StickySessions -}}
+    {{ if and .Role.Settings.StickySessions (ne .Role.TargetPort 6443) -}}
     lb_policy: RING_HASH
     {{ else -}}
     lb_policy: ROUND_ROBIN

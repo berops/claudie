@@ -13,7 +13,7 @@ resources:
           "@type": type.googleapis.com/envoy.extensions.filters.udp.udp_proxy.v3.UdpProxyConfig
           stat_prefix: "{{ $.Role.Name }}"
           cluster: "{{ $.Role.Name }}"
-          {{ if $.Role.Settings.StickySessions -}}
+          {{ if and $.Role.Settings.StickySessions (ne $.Role.TargetPort 6443) -}}
           hash_policies:
             - source_ip: true
           {{ end -}}
@@ -31,7 +31,7 @@ resources:
               stat_prefix: "{{ $.Role.Name }}"
               cluster: "{{ $.Role.Name }}"
               max_connect_attempts: 3
-              {{ if $.Role.Settings.StickySessions -}}
+              {{ if and $.Role.Settings.StickySessions (ne $.Role.TargetPort 6443) -}}
               hash_policy:
                 - source_ip: {}
               {{ end -}}
