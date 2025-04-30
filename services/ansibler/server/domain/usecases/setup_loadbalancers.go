@@ -171,7 +171,6 @@ func uninstallNginx(
 	processLimit *semaphore.Weighted,
 ) error {
 	tpl := templateUtils.Templates{Directory: clusterDirectory}
-	// generate nginx uninstall file.
 	uninstall, err := templateUtils.LoadTemplate(templates.UninstallNginx)
 	if err != nil {
 		return fmt.Errorf("error while loading nginx uninstall file for %s: %w", lbCluster.ClusterInfo.Id(), err)
