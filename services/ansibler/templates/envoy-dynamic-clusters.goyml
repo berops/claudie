@@ -12,7 +12,7 @@ resources:
     {{- /* Proxy Protocol works only with TCP traffic, for UDP traffic the proxy protocol would not work or generally */ -}}
     {{- /* replacing the source IP with the original client IP for UDP would not work, as the traffic would be forward to the service */ -}}
     {{- /* running on the k8s node and then it would try to send it directly to the Client (not via the LB) and this would fail as */ -}}
-    {{- /* the nodes would not support the necessary firewall rules to allow outgoing TCP traffic. */ -}}
+    {{- /* the nodes would not support the necessary firewall rules to allow outgoing UDP traffic. */ -}}
     transport_socket:
       name: envoy.transport_sockets.upstream_proxy_protocol
       typed_config:
