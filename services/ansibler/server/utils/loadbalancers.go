@@ -67,6 +67,10 @@ type (
 		LoadBalancer string
 	}
 
+	UninstallNginxParams struct {
+		LoadBalancer string
+	}
+
 	EnvoyConfigTemplateParams struct {
 		LoadBalancer string
 		Roles        []LBClusterRolesInfo

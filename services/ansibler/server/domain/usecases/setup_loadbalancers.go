@@ -23,7 +23,10 @@ import (
 
 const (
 	// nodeExporterPlaybookFileName defines name for node exporter playbook.
-	nodeExporterPlaybookFileName = "node-exporter.yml"
+	nodeExporterPlaybookName = "node-exporter.yml"
+
+	// uninstallNginx playbook.
+	uninstallNginxPlaybookName = "uninstall-nginx.yml"
 
 	// envoyPlaybookName to which the template will be generated to
 	// for docker and envoy proxy setup.
@@ -63,6 +66,12 @@ func setUpLoadbalancers(request *pb.SetUpLBRequest, logger zerolog.Logger, proce
 	clusterName := request.Desired.ClusterInfo.Id()
 	clusterBaseDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, hash.Create(hash.Length)))
 
+	defer func() {
+		if err := os.RemoveAll(clusterBaseDirectory); err != nil {
+			logger.Err(err).Msg("failed to clear up loadbalancer directory")
+		}
+	}()
+
 	info := &utils.LBClustersInfo{
 		Lbs:               request.DesiredLbs,
 		TargetK8sNodepool: request.Desired.ClusterInfo.NodePools,
@@ -99,6 +108,12 @@ func setUpLoadbalancers(request *pb.SetUpLBRequest, logger zerolog.Logger, proce
 			return err
 		}
 
+		// For older claudie version which deployed nginx as the loadbalancer uninstall the service.
+		// this is a one time update that will introduce a small downtime of the services while nginx is being replaced.
+		if err := uninstallNginx(lbCluster, clusterDirectory, processLimit); err != nil {
+			return err
+		}
+
 		if err := setupEnvoyProxyViaDocker(lbCluster, info.TargetK8sNodepool, clusterDirectory, processLimit); err != nil {
 			return err
 		}
@@ -106,6 +121,7 @@ func setUpLoadbalancers(request *pb.SetUpLBRequest, logger zerolog.Logger, proce
 		logger.Info().Str(loggerPrefix, lbClusterId).Msg("Loadbalancer cluster successfully set up")
 		return nil
 	})
+
 	if err != nil {
 		return fmt.Errorf("error while setting up the loadbalancers for cluster %s : %w", clusterName, err)
 	}
@@ -114,7 +130,7 @@ func setUpLoadbalancers(request *pb.SetUpLBRequest, logger zerolog.Logger, proce
 		return err
 	}
 
-	return os.RemoveAll(clusterBaseDirectory)
+	return nil
 }
 
 // setUpNodeExporter sets up node-exporter on each node of the LB cluster.
@@ -130,13 +146,13 @@ func setUpNodeExporter(lbCluster *spec.LBcluster, clusterDirectory string, proce
 	}
 
 	tpl := templateUtils.Templates{Directory: clusterDirectory}
-	if err := tpl.Generate(template, nodeExporterPlaybookFileName, playbookParameters); err != nil {
-		return fmt.Errorf("error while generating %s for %s : %w", nodeExporterPlaybookFileName, lbCluster.ClusterInfo.Name, err)
+	if err := tpl.Generate(template, nodeExporterPlaybookName, playbookParameters); err != nil {
+		return fmt.Errorf("error while generating %s for %s : %w", nodeExporterPlaybookName, lbCluster.ClusterInfo.Name, err)
 	}
 
 	ansible := utils.Ansible{
 		Directory:         clusterDirectory,
-		Playbook:          nodeExporterPlaybookFileName,
+		Playbook:          nodeExporterPlaybookName,
 		Inventory:         filepath.Join("..", utils.InventoryFileName),
 		SpawnProcessLimit: processLimit,
 	}
@@ -144,6 +160,42 @@ func setUpNodeExporter(lbCluster *spec.LBcluster, clusterDirectory string, proce
 	if err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s-%s", lbCluster.ClusterInfo.Name, lbCluster.ClusterInfo.Hash)); err != nil {
 		return fmt.Errorf("error while running ansible for %s : %w", lbCluster.ClusterInfo.Name, err)
 	}
+	return nil
+}
+
+func uninstallNginx(
+	lbCluster *spec.LBcluster,
+	clusterDirectory string,
+	processLimit *semaphore.Weighted,
+) error {
+	tpl := templateUtils.Templates{Directory: clusterDirectory}
+	// generate nginx uninstall file.
+	uninstall, err := templateUtils.LoadTemplate(templates.UninstallNginx)
+	if err != nil {
+		return fmt.Errorf("error while loading nginx uninstall file for %s: %w", lbCluster.ClusterInfo.Id(), err)
+	}
+
+	err = tpl.Generate(uninstall, uninstallNginxPlaybookName, utils.UninstallNginxParams{
+		LoadBalancer: lbCluster.ClusterInfo.Name,
+	})
+
+	if err != nil {
+		return fmt.Errorf("error while generating uninstall nginx playbook for %s: %w", lbCluster.ClusterInfo.Id(), err)
+	}
+
+	ansible := utils.Ansible{
+		RetryCount:        2,
+		Playbook:          uninstallNginxPlaybookName,
+		Inventory:         filepath.Join("..", utils.InventoryFileName),
+		Directory:         clusterDirectory,
+		SpawnProcessLimit: processLimit,
+	}
+
+	err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s", lbCluster.ClusterInfo.Id()))
+	if err != nil {
+		return fmt.Errorf("error while running ansible for %s: %w", lbCluster.ClusterInfo.Name, err)
+	}
+
 	return nil
 }
 
