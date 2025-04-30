@@ -80,11 +80,6 @@ type (
 		LoadBalancer string
 		Role         string
 	}
-
-	EnvoyDynamicConfigTemplateParams struct {
-		Role        *spec.Role
-		TargetNodes []*spec.Node
-	}
 )
 
 // GenerateLBBaseFiles generates the files like Ansible inventory file and SSH keys to be used by Ansible.

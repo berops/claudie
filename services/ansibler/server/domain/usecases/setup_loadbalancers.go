@@ -241,7 +241,7 @@ func setupEnvoyProxyViaDocker(
 			return fmt.Errorf("error while loading envoy config template for %s: %w", lbCluster.ClusterInfo.Id(), err)
 		}
 
-		err = tpl.Generate(dynClusters, envoyCDS, utils.EnvoyDynamicConfigTemplateParams{
+		err = tpl.Generate(dynClusters, envoyCDS, utils.LBClusterRolesInfo{
 			Role:        tg.Role,
 			TargetNodes: tg.TargetNodes,
 		})
@@ -249,7 +249,7 @@ func setupEnvoyProxyViaDocker(
 			return fmt.Errorf("error while generating envoy dynamic clusters config for %s: %w", lbCluster.ClusterInfo.Id(), err)
 		}
 
-		err = tpl.Generate(dynListeners, envoyLDS, utils.EnvoyDynamicConfigTemplateParams{
+		err = tpl.Generate(dynListeners, envoyLDS, utils.LBClusterRolesInfo{
 			Role:        tg.Role,
 			TargetNodes: tg.TargetNodes,
 		})
