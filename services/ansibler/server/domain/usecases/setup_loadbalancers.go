@@ -108,8 +108,10 @@ func setUpLoadbalancers(request *pb.SetUpLBRequest, logger zerolog.Logger, proce
 			return err
 		}
 
+		// TODO: remove.
 		// For older claudie version which deployed nginx as the loadbalancer uninstall the service.
 		// this is a one time update that will introduce a small downtime of the services while nginx is being replaced.
+		// subsequent execution of the playbook will error out, but the error will be ignored.
 		if err := uninstallNginx(lbCluster, clusterDirectory, processLimit); err != nil {
 			return err
 		}
