@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/berops/claudie/internal/api/manifest"
 	"github.com/berops/claudie/internal/hash"
-	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/internal/spectesting"
 	"github.com/berops/claudie/proto/pb/spec"

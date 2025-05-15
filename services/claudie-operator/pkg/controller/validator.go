@@ -4,8 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/berops/claudie/internal/manifest"
-	v1beta "github.com/berops/claudie/services/claudie-operator/pkg/api/v1beta1"
+	v1beta "github.com/berops/claudie/internal/api/crd/inputmanifest/v1beta1"
+	v1beta1setting "github.com/berops/claudie/internal/api/crd/settings/v1beta1"
+	"github.com/berops/claudie/internal/api/manifest"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 	wbhk "sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -17,16 +20,29 @@ import (
 // InputManifestValidator validates InputManifest containing the input-manifest
 type InputManifestValidator struct {
 	Logger logr.Logger
+	kc     client.Client
 }
 
 // NewWebhook returns a new validation webhook for InputManifest resource
-func NewWebhook(scheme *runtime.Scheme, port int, dir, path string, log logr.Logger) wbhk.Server {
+func NewWebhook(
+	kc client.Client,
+	scheme *runtime.Scheme,
+	port int,
+	dir,
+	path string,
+	log logr.Logger,
+) wbhk.Server {
 	hookServer := wbhk.NewServer(wbhk.Options{
 		Port:    port,
 		CertDir: dir,
 	})
 
-	hookServer.Register(path, admission.WithCustomValidator(scheme, &v1beta.InputManifest{}, &InputManifestValidator{log}))
+	hookServer.Register(path, admission.WithCustomValidator(
+		scheme,
+		&v1beta.InputManifest{},
+		&InputManifestValidator{log, kc},
+	))
+
 	return hookServer
 }
 
@@ -41,6 +57,35 @@ func (v *InputManifestValidator) validate(ctx context.Context, obj runtime.Objec
 	}
 
 	log.Info("Validating InputManifest")
+
+	for _, role := range inputManifest.Spec.LoadBalancer.Roles {
+		if role.SettingsRef == nil {
+			continue
+		}
+
+		key := client.ObjectKey{
+			Namespace: role.SettingsRef.Namespace,
+			Name:      role.SettingsRef.Name,
+		}
+
+		out := v1beta1setting.Setting{}
+		if err := v.kc.Get(ctx, key, &out); err != nil {
+			if apierrors.IsNotFound(err) {
+				return fmt.Errorf("failed to find setting %q in namespace %q referenced by role %q inside the loadbalancer section",
+					role.SettingsRef.Name,
+					role.SettingsRef.Namespace,
+					role.Name,
+				)
+			}
+			return fmt.Errorf("failed to retrieve settings %q from namespace %q for role %q: %w",
+				role.SettingsRef.Name,
+				role.SettingsRef.Namespace,
+				role.Name,
+				err,
+			)
+		}
+	}
+
 	if err := validateInputManifest(inputManifest); err != nil {
 		log.Error(err, "error validating InputManifest")
 		return err
@@ -101,10 +146,19 @@ func validateInputManifest(im *v1beta.InputManifest) error {
 		rawManifest.NodePools.Static = append(rawManifest.NodePools.Static, manifest.StaticNodePool{Name: n.Name})
 	}
 
+	// Omit Envoy override as they're fetched during controller reconciliation.
+	roles := make([]manifest.Role, 0, len(im.Spec.LoadBalancer.Roles))
+	for _, r := range im.Spec.LoadBalancer.Roles {
+		roles = append(roles, r.IntoManifestRole())
+	}
+
 	rawManifest.Name = im.GetNamespacedName()
 	rawManifest.NodePools.Dynamic = im.Spec.NodePools.Dynamic
 	rawManifest.Kubernetes = im.Spec.Kubernetes
-	rawManifest.LoadBalancer = im.Spec.LoadBalancer
+	rawManifest.LoadBalancer = manifest.LoadBalancer{
+		Roles:    roles,
+		Clusters: im.Spec.LoadBalancer.Clusters,
+	}
 
 	// Run the validation of all field except the Provider Fields.
 	// Providers will be validated separatly in the controller, after

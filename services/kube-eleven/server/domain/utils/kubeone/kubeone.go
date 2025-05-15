@@ -12,7 +12,7 @@ import (
 )
 
 // maxRetryCount is max number of retries for kubeone apply.
-const maxRetryCount = 2
+const maxRetryCount = 1
 
 type Kubeone struct {
 	// ConfigDirectory is the directory where the generated kubeone.yaml will be located.

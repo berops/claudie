@@ -223,14 +223,23 @@ func setupEnvoyProxyViaDocker(
 		if err := fileutils.CreateDirectory(dir); err != nil {
 			return fmt.Errorf("failed to create directory for envoy config for role %s for cluster %s: %w", tg.Role.Name, lbCluster.ClusterInfo.Id(), err)
 		}
-		tpl := templateUtils.Templates{Directory: dir}
 
-		dynClusters, err := templateUtils.LoadTemplate(templates.EnvoyDynamicClusters)
+		cds := templates.EnvoyDynamicClusters
+		if tg.Role.Settings.EnvoyCds != "" {
+			cds = tg.Role.Settings.EnvoyCds
+		}
+
+		lds := templates.EnvoyDynamicListeners
+		if tg.Role.Settings.EnvoyLds != "" {
+			lds = tg.Role.Settings.EnvoyLds
+		}
+
+		dynClusters, err := templateUtils.LoadTemplate(cds)
 		if err != nil {
 			return fmt.Errorf("error while loading dynamic clusters config template for %s: %w", lbCluster.ClusterInfo.Id(), err)
 		}
 
-		dynListeners, err := templateUtils.LoadTemplate(templates.EnvoyDynamicListeners)
+		dynListeners, err := templateUtils.LoadTemplate(lds)
 		if err != nil {
 			return fmt.Errorf("error while loading dynamic listeners config template for %s: %w", lbCluster.ClusterInfo.Id(), err)
 		}
@@ -240,6 +249,7 @@ func setupEnvoyProxyViaDocker(
 			return fmt.Errorf("error while loading envoy config template for %s: %w", lbCluster.ClusterInfo.Id(), err)
 		}
 
+		tpl := templateUtils.Templates{Directory: dir}
 		err = tpl.Generate(dynClusters, envoyCDS, utils.LBClusterRolesInfo{
 			Role:        tg.Role,
 			TargetNodes: tg.TargetNodes,

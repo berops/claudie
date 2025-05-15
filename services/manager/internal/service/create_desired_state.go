@@ -11,9 +11,9 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/berops/claudie/internal/api/manifest"
 	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/hash"
-	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/manager/internal/store"
@@ -290,6 +290,10 @@ func getRolesAttachedToLBCluster(roles []manifest.Role, roleNames []string) []*s
 					}
 				}
 
+				if role.EnvoyProxy == nil {
+					role.EnvoyProxy = &manifest.EnvoyProxy{}
+				}
+
 				newRole := &spec.Role{
 					Name:        role.Name,
 					Protocol:    strings.ToLower(role.Protocol),
@@ -300,6 +304,8 @@ func getRolesAttachedToLBCluster(roles []manifest.Role, roleNames []string) []*s
 					Settings: &spec.Role_Settings{
 						ProxyProtocol:  role.Settings.ProxyProtocol,
 						StickySessions: role.Settings.StickySessions,
+						EnvoyCds:       role.EnvoyProxy.Cds,
+						EnvoyLds:       role.EnvoyProxy.Lds,
 					},
 				}
 				matchingRoles = append(matchingRoles, newRole)

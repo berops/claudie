@@ -256,12 +256,17 @@ type RoleSettings struct {
 	StickySessions bool `yaml:"stickySessions" json:"stickySessions"`
 }
 
+// Override templates for envoy proxy for a single role.
+type EnvoyProxy struct {
+	Cds string `json:"cds"`
+	Lds string `json:"lds"`
+}
+
 // Role defines a concrete loadbalancer configuration. Single loadbalancer can have multiple roles.
 type Role struct {
 	// Name of the role. Used as a reference in clusters.
 	Name string `validate:"required" yaml:"name" json:"name"`
 	// Protocol of the rule. Allowed values are: tcp, udp.
-	// +kubebuilder:validation:Enum=tcp;udp;
 	Protocol string `validate:"required,oneof=tcp udp" yaml:"protocol" json:"protocol"`
 	// Port of the incoming traffic on the loadbalancer.
 	Port int32 `validate:"min=0,max=65535" yaml:"port" json:"port"`
@@ -270,8 +275,10 @@ type Role struct {
 	// Defines nodepools of the targeted K8s cluster, from which nodes will be used for loadbalancing.
 	TargetPools []string `validate:"required,min=1" yaml:"targetPools" json:"targetPools"`
 	// Additional settings for a role.
-	// +optional
 	Settings *RoleSettings `yaml:"settings,omitempty" json:"settings,omitempty"`
+	// Optional override templates for envoy proxy that will replace
+	// the default.
+	EnvoyProxy *EnvoyProxy `yaml:"envoyProxy,omitempty" json:"envoyProxy,omitempty"`
 }
 
 // Collection of data used to define a loadbalancer cluster. Defines loadbalancer clusters.

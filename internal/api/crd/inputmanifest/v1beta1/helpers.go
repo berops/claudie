@@ -3,6 +3,8 @@ package v1beta1
 import (
 	"fmt"
 	"unicode/utf8"
+
+	"github.com/berops/claudie/internal/api/manifest"
 )
 
 const (
@@ -66,4 +68,21 @@ func (im *InputManifest) SetUpdateResourceStatus(newStatus InputManifestStatus) 
 
 func (im *InputManifest) SetDeletingStatus() {
 	im.Status.State = STATUS_SCHEDULED_FOR_DELETION
+}
+
+// Translates the CRD role to the Manifest Role.
+func (r *Role) IntoManifestRole() manifest.Role {
+	// This function is placed in this module to avoid import cycles.
+	return manifest.Role{
+		Name:        r.Name,
+		Protocol:    r.Protocol,
+		Port:        r.Port,
+		TargetPort:  r.TargetPort,
+		TargetPools: r.TargetPools,
+		Settings:    r.Settings,
+		// EnvoyProxy cannot be set as it is
+		// fetch by the controller when the
+		// InputManifest is created.
+		EnvoyProxy: &manifest.EnvoyProxy{},
+	}
 }
