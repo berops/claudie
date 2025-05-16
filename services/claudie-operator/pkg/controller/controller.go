@@ -43,7 +43,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 		out := &v1beta1setting.Setting{}
 		if err := r.kc.Get(ctx, key, out); err != nil {
-			return ctrl.Result{}, client.IgnoreNotFound(err)
+			return ctrl.Result{}, err
 		}
 		fetchedRoleSettings[key] = out
 	}
