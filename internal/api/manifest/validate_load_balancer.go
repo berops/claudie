@@ -15,7 +15,7 @@ const (
 	// Additional reserved ports needed by claudie starting from
 	// range [MaxRolesPerLoadBalancer, ReservedPortRangeEnd)
 	//
-	// - Node exporter on LoadBalancer node, index: MaxRolesPerLoadBalancer
+	// - Node exporter on LoadBalancer node, index: ReservedPortRangeEnd - 1
 	// - Remaining ports are reserved for future use.
 	AdditionalReservedPorts = 4
 
@@ -53,7 +53,7 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 	)
 
 	if len(l.Roles) > MaxRolesPerLoadBalancer {
-		return fmt.Errorf("A single loadbalancer cannot have more than %v roles assigned", MaxRolesPerLoadBalancer)
+		return fmt.Errorf("a single loadbalancer cannot have more than %v roles assigned", MaxRolesPerLoadBalancer)
 	}
 
 	for _, role := range l.Roles {

@@ -141,9 +141,8 @@ func setUpLoadbalancers(request *pb.SetUpLBRequest, logger zerolog.Logger, proce
 func setUpNodeExporter(lbCluster *spec.LBcluster, clusterDirectory string, processLimit *semaphore.Weighted) error {
 	playbookParameters := utils.NodeExporterTamplateParams{
 		LoadBalancer: lbCluster.ClusterInfo.Name,
-		// first port after the ports for envoy admin
-		// servers will go to the node exporter.
-		NodeExporterPort: manifest.ReservedPortRangeStart + manifest.MaxRolesPerLoadBalancer,
+		// last reserved port will be used by node-exporter.
+		NodeExporterPort: manifest.ReservedPortRangeEnd - 1,
 	}
 
 	template, err := templateUtils.LoadTemplate(templates.NodeExporterPlaybookTemplate)
