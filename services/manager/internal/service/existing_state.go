@@ -297,6 +297,44 @@ func fillDynamicNodes(clusterID string, current, desired *spec.NodePool) {
 	desired.Nodes = nodes
 }
 
+func generateClaudieReservedPorts() []int {
+	size := manifest.ReservedPortRangeEnd - manifest.ReservedPortRangeStart
+	p := make([]int, size)
+	for i := range size {
+		p[i] = manifest.ReservedPortRangeStart + i
+	}
+	return p
+}
+
+func fillMissingEnvoyAdminPorts(desired *spec.Clusters) {
+	for _, lb := range desired.GetLoadBalancers().GetClusters() {
+		used := make(map[int]struct{})
+		for _, r := range lb.Roles {
+			if r.Settings.EnvoyAdminPort >= 0 {
+				used[int(r.Settings.EnvoyAdminPort)] = struct{}{}
+			}
+		}
+
+		// The number of roles is limited to manifest.MaxRolesPerLoadBalancer,
+		// thus we will never consume all of the ports.
+		freePorts := generateClaudieReservedPorts()[:manifest.MaxRolesPerLoadBalancer]
+		if len(used) > 0 {
+			freePorts = slices.DeleteFunc(freePorts, func(port int) bool {
+				_, ok := used[port]
+				return ok
+			})
+		}
+
+		for _, r := range lb.Roles {
+			if r.Settings.EnvoyAdminPort < 0 {
+				p := freePorts[len(freePorts)-1]
+				freePorts = freePorts[:len(freePorts)-1]
+				r.Settings.EnvoyAdminPort = int32(p)
+			}
+		}
+	}
+}
+
 // uniqueNodeName returns new node name, which is guaranteed to be unique, based on the provided existing names.
 func uniqueNodeName(nodepoolID string, existingNames map[string]struct{}) string {
 	index := uint8(1)
@@ -357,12 +395,26 @@ func transferExistingLBState(current, desired *spec.LoadBalancers) error {
 				return err
 			}
 
+			transferExistingRoles(current.Roles, desired.Roles)
 			desired.UsedApiEndpoint = current.UsedApiEndpoint
 			break
 		}
 	}
 
 	return nil
+}
+
+func transferExistingRoles(current, desired []*spec.Role) {
+	currentRoles := make(map[string]*spec.Role) // role names are unique
+	for _, r := range current {
+		currentRoles[r.Name] = r
+	}
+
+	for _, r := range desired {
+		if prev, ok := currentRoles[r.Name]; ok {
+			r.Settings.EnvoyAdminPort = prev.Settings.EnvoyAdminPort
+		}
+	}
 }
 
 func transferExistingDns(current, desired *spec.LoadBalancers) {

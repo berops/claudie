@@ -64,7 +64,8 @@ type (
 	}
 
 	NodeExporterTamplateParams struct {
-		LoadBalancer string
+		LoadBalancer     string
+		NodeExporterPort int
 	}
 
 	UninstallNginxParams struct {
@@ -77,8 +78,9 @@ type (
 	}
 
 	EnvoyTemplateParams struct {
-		LoadBalancer string
-		Role         string
+		LoadBalancer   string
+		Role           string
+		EnvoyAdminPort int32
 	}
 )
 

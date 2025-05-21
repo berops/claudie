@@ -40,7 +40,7 @@
           [Service]
           Type=simple
           User=root
-          ExecStart=/usr/local/bin/node_exporter --web.listen-address=0.0.0.0:9100 --web.telemetry-path=/metrics
+          ExecStart=/usr/local/bin/node_exporter --web.listen-address={{ "{{" }} private_ip {{ "}}" }}:{{ .NodeExporterPort }} --web.telemetry-path=/metrics
           SyslogIdentifier=node_exporter
           Restart=always
           RestartSec=1

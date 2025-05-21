@@ -122,6 +122,12 @@
         dest: /var/lib/envoy/{{ $self.Name }}
         remote_src: false
 
+    - name: Replace placeholder for wireguard IP for role {{ $self.Name }}
+      ansible.builtin.replace:
+        path: /var/lib/envoy/{{ $self.Name }}/envoy_temp.yml
+        regexp: 'wireguard_private_ip_replace_me'
+        replace: '{{ "{{" }} private_ip {{ "}}" }}'
+
     - name: move uploaded dynamic config files for role {{ $self.Name }}
       shell: |
         mv /var/lib/envoy/{{ $self.Name }}/envoy_temp.yml /var/lib/envoy/{{ $self.Name }}/envoy.yml

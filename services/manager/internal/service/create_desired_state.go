@@ -76,19 +76,30 @@ func createDesiredState(pending *store.Config) error {
 	if err := transferExistingState(grpcRepr); err != nil {
 		return fmt.Errorf("failed to reuse current state date for desired state for %q: %w", m.Name, err)
 	}
+
 	// after transferring existing state fill remaining data.
+	// 1. generate dynamic nodes
 	for _, state := range grpcRepr.Clusters {
 		fillMissingDynamicNodes(state.Desired)
 	}
 
-	// We generate the CIDR for individual nodepools at this step, as
-	// we need contextual information about the current state so that
-	// we do not generate the same cidr for the same Provider/Region pair
-	// multiple times, avoiding conflicts.
+	// 2. generate the CIDR for individual nodepools at this step, as
+	// we need information about the current state so that we do not
+	// generate the same cidr for the same Provider/Region pair multiple
+	// times, avoiding conflicts.
 	for _, state := range grpcRepr.Clusters {
 		if err := fillMissingCIDR(state); err != nil {
 			return fmt.Errorf("failed to generate cidrs for nodepools: %w", err)
 		}
+	}
+
+	// 3. generate missing envoy admin ports.
+	for _, state := range grpcRepr.Clusters {
+		// validation of the Manifest assures that the number of
+		// roles is limited and that we will always be able to
+		// generate the required number of ports for the envoy
+		// admin interface.
+		fillMissingEnvoyAdminPorts(state.Desired)
 	}
 
 	modified, err := store.ConvertFromGRPC(grpcRepr)
@@ -187,6 +198,7 @@ func createLBClustersFromManifest(from *manifest.Manifest, into *store.Config) e
 			return fmt.Errorf("error while building desired state for LB %s : %w", lbCluster.Name, err)
 		}
 
+		// NOTE: we do not populate roles.Settings.EnvoyAdminPort at this stage.
 		attachedRoles := getRolesAttachedToLBCluster(from.LoadBalancer.Roles, lbCluster.Roles)
 
 		newLbCluster := &spec.LBcluster{
@@ -306,6 +318,10 @@ func getRolesAttachedToLBCluster(roles []manifest.Role, roleNames []string) []*s
 						StickySessions: role.Settings.StickySessions,
 						EnvoyCds:       role.EnvoyProxy.Cds,
 						EnvoyLds:       role.EnvoyProxy.Lds,
+						// initially set as an invalid port, must be updated
+						// later, when merging with the existing state to avoid
+						// port duplication.
+						EnvoyAdminPort: -1,
 					},
 				}
 				matchingRoles = append(matchingRoles, newRole)

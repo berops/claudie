@@ -2,6 +2,12 @@ node:
   cluster: {{ .LoadBalancer }}
   id: {{ .Role }}
 
+admin:
+  address:
+    socket_address:
+      address: wireguard_private_ip_replace_me
+      port_value: {{ .EnvoyAdminPort }}
+
 overload_manager:
   resource_monitors:
     - name: envoy.resource_monitors.global_downstream_max_connections

@@ -739,3 +739,51 @@ func Test_fillDynamicNodes(t *testing.T) {
 	assert.True(t, strings.HasPrefix(desired.Nodes[len(desired.Nodes)-2].Name, "id1"))
 	assert.False(t, strings.HasPrefix(desired.Nodes[len(desired.Nodes)-3].Name, "id1"))
 }
+
+func Test_transferExistingRole(t *testing.T) {
+	current := []*spec.Role{
+		{
+			Name:     "1",
+			Settings: &spec.Role_Settings{EnvoyAdminPort: 2048},
+		},
+		{
+			Name:     "2",
+			Settings: &spec.Role_Settings{EnvoyAdminPort: 32100},
+		},
+		{
+			Name:     "3",
+			Settings: &spec.Role_Settings{EnvoyAdminPort: 45000},
+		},
+		{
+			Name:     "4",
+			Settings: &spec.Role_Settings{EnvoyAdminPort: 1024},
+		},
+	}
+
+	desired := []*spec.Role{
+		{
+			Name:     "1",
+			Settings: &spec.Role_Settings{EnvoyAdminPort: -1},
+		},
+		{
+			Name:     "7",
+			Settings: &spec.Role_Settings{EnvoyAdminPort: -1},
+		},
+		{
+			Name:     "5",
+			Settings: &spec.Role_Settings{EnvoyAdminPort: -1},
+		},
+		{
+			Name:     "4",
+			Settings: &spec.Role_Settings{EnvoyAdminPort: -1},
+		},
+	}
+
+	transferExistingRoles(current, desired)
+
+	assert.Equal(t, int32(2048), desired[0].Settings.EnvoyAdminPort)
+	assert.Equal(t, int32(1024), desired[3].Settings.EnvoyAdminPort)
+
+	assert.Equal(t, int32(-1), desired[1].Settings.EnvoyAdminPort)
+	assert.Equal(t, int32(-1), desired[2].Settings.EnvoyAdminPort)
+}

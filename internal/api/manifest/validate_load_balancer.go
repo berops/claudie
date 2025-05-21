@@ -2,13 +2,33 @@ package manifest
 
 import (
 	"fmt"
+	"math"
 	"slices"
 
 	"github.com/go-playground/validator/v10"
 )
 
-// APIServerPort is the port on which the ApiServer listens.
-const APIServerPort = 6443
+const (
+	// APIServerPort is the port on which the ApiServer listens.
+	APIServerPort = 6443
+
+	// Additional reserved ports needed by claudie starting from
+	// range [MaxRolesPerLoadBalancer, ReservedPortRangeEnd)
+	//
+	// - Node exporter on LoadBalancer node, index: MaxRolesPerLoadBalancer
+	// - Remaining ports are reserved for future use.
+	AdditionalReservedPorts = 4
+
+	// Maximum number of allowed roles to be assigned to a single loadbalancer.
+	// [ReservedPortRangeStart + MaxRolesPerLoadBalancer)
+	MaxRolesPerLoadBalancer = 999
+
+	// The last port that is reserved for claudie related usecases.
+	ReservedPortRangeEnd = math.MaxUint16 + 1
+
+	// The first port that is reserved for claudie related usecases.
+	ReservedPortRangeStart = ReservedPortRangeEnd - (MaxRolesPerLoadBalancer + AdditionalReservedPorts)
+)
 
 // Validate validates the parsed data inside the LoadBalancer section of the manifest.
 // It checks for missing/invalid filled out values defined in the LoadBalancer section
@@ -32,6 +52,10 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 		apiServerRole Role
 	)
 
+	if len(l.Roles) > MaxRolesPerLoadBalancer {
+		return fmt.Errorf("A single loadbalancer cannot have more than %v roles assigned", MaxRolesPerLoadBalancer)
+	}
+
 	for _, role := range l.Roles {
 		if err := role.Validate(); err != nil {
 			return fmt.Errorf("failed to validate role %q: %w", role.Name, err)
@@ -46,8 +70,11 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 			return fmt.Errorf("name %q is used across multiple roles, must be unique", role.Name)
 		}
 
-		targetPoolsDuplicates := make(map[string]bool)
+		if role.Port >= ReservedPortRangeStart && role.Port < ReservedPortRangeEnd {
+			return fmt.Errorf("role %q uses port %v which is from a reserved port range [%v, %v)", role.Name, role.Port, ReservedPortRangeStart, ReservedPortRangeEnd)
+		}
 
+		targetPoolsDuplicates := make(map[string]bool) // [NodepoolName]bool
 		for _, np := range role.TargetPools {
 			if ok, _ := m.nodePoolDefined(np); !ok {
 				return fmt.Errorf("role %q targets undefined nodepool %q", role.Name, np)

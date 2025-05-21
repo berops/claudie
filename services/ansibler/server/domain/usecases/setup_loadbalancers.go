@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/berops/claudie/internal/api/manifest"
 	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/concurrent"
 	"github.com/berops/claudie/internal/fileutils"
@@ -140,6 +141,9 @@ func setUpLoadbalancers(request *pb.SetUpLBRequest, logger zerolog.Logger, proce
 func setUpNodeExporter(lbCluster *spec.LBcluster, clusterDirectory string, processLimit *semaphore.Weighted) error {
 	playbookParameters := utils.NodeExporterTamplateParams{
 		LoadBalancer: lbCluster.ClusterInfo.Name,
+		// first port after the ports for envoy admin
+		// servers will go to the node exporter.
+		NodeExporterPort: manifest.ReservedPortRangeStart + manifest.MaxRolesPerLoadBalancer,
 	}
 
 	template, err := templateUtils.LoadTemplate(templates.NodeExporterPlaybookTemplate)
@@ -267,8 +271,9 @@ func setupEnvoyProxyViaDocker(
 		}
 
 		err = tpl.Generate(envoy, envoyConfig, utils.EnvoyTemplateParams{
-			LoadBalancer: lbCluster.ClusterInfo.Name,
-			Role:         tg.Role.Name,
+			LoadBalancer:   lbCluster.ClusterInfo.Name,
+			Role:           tg.Role.Name,
+			EnvoyAdminPort: tg.Role.Settings.EnvoyAdminPort,
 		})
 		if err != nil {
 			return fmt.Errorf("error while generatingf envoy config for %s: %w", lbCluster.ClusterInfo.Id(), err)

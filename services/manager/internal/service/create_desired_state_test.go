@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"math"
 	"math/rand/v2"
 	"slices"
 	"testing"
@@ -65,6 +66,9 @@ func Test_getRolesAttachedToLBCluster(t *testing.T) {
 					Settings: &spec.Role_Settings{
 						ProxyProtocol:  true,
 						StickySessions: true,
+						EnvoyCds:       "",
+						EnvoyLds:       "",
+						EnvoyAdminPort: -1,
 					},
 				},
 			},
@@ -1167,4 +1171,135 @@ func Test_generateMissingDynamicNode(t *testing.T) {
 	assert.Equal(t, "testing-2-02", np.Nodes[0].Name)
 	assert.Equal(t, "testing-2-01", np.Nodes[1].Name)
 	assert.Equal(t, "testing-2-03", np.Nodes[2].Name)
+}
+
+func Test_generateClaudieReservedPorts(t *testing.T) {
+	ports := generateClaudieReservedPorts()
+	fmt.Printf("%v\n", ports)
+	assert.True(t, len(ports) == manifest.MaxRolesPerLoadBalancer+manifest.AdditionalReservedPorts)
+	beg, end := manifest.ReservedPortRangeStart, manifest.ReservedPortRangeEnd
+	for beg < end {
+		assert.Equal(t, beg, ports[beg-manifest.ReservedPortRangeStart])
+		beg++
+	}
+	assert.Equal(t, int(math.MaxUint16), ports[len(ports)-1])
+}
+
+func Test_FillMissingEnvoyAdminPorts(t *testing.T) {
+	const lbcount = 3
+
+	var lbs []*spec.LBcluster
+	for range lbcount {
+		k8s := spectesting.GenerateFakeK8SCluster(true)
+		lb := spectesting.GenerateFakeLBCluster(false, k8s.ClusterInfo)
+		lbs = append(lbs, lb)
+	}
+
+	fillMissingEnvoyAdminPorts(&spec.Clusters{
+		LoadBalancers: &spec.LoadBalancers{
+			Clusters: lbs,
+		},
+	})
+
+	// assert no duplicates
+	for _, lb := range lbs {
+		seen := make(map[int32]struct{})
+		assert.True(t, len(lb.Roles) > 1)
+		for _, r := range lb.Roles {
+			_, ok := seen[r.Settings.EnvoyAdminPort]
+			assert.True(t, r.Settings.EnvoyAdminPort >= 0)
+			assert.False(t, ok)
+			seen[r.Settings.EnvoyAdminPort] = struct{}{}
+		}
+	}
+
+	// test limits
+	size := manifest.MaxRolesPerLoadBalancer
+	roles := make([]*spec.Role, size)
+	for i := range roles {
+		roles[i] = &spec.Role{
+			Name: fmt.Sprint(i),
+			Settings: &spec.Role_Settings{
+				EnvoyAdminPort: -1,
+			},
+		}
+		assert.True(t, roles[i].Settings.EnvoyAdminPort == -1)
+	}
+
+	// 3 loadbalancers each with the maximum amount of allowed roles
+	lbs = lbs[:0]
+	for range lbcount {
+		roles := slices.Clone(roles)
+		lbs = append(lbs, &spec.LBcluster{
+			Roles: roles,
+		})
+	}
+
+	fillMissingEnvoyAdminPorts(&spec.Clusters{
+		LoadBalancers: &spec.LoadBalancers{
+			Clusters: lbs,
+		},
+	})
+
+	// assert no duplicates
+	for _, lb := range lbs {
+		seen := make(map[int32]struct{})
+		assert.True(t, len(lb.Roles) > 1)
+		for _, r := range lb.Roles {
+			_, ok := seen[r.Settings.EnvoyAdminPort]
+			assert.True(t, r.Settings.EnvoyAdminPort >= 0)
+			assert.False(t, ok)
+			seen[r.Settings.EnvoyAdminPort] = struct{}{}
+		}
+	}
+
+	size = manifest.MaxRolesPerLoadBalancer
+	roles = make([]*spec.Role, size)
+	used := make(map[int32]struct{})
+	for i := range roles {
+		roles[i] = &spec.Role{
+			Name: fmt.Sprint(i),
+			Settings: &spec.Role_Settings{
+				EnvoyAdminPort: -1,
+			},
+		}
+		if rand.Int()%2 == 0 {
+			for {
+				next := int32(rand.IntN(math.MaxUint16))
+				if _, ok := used[next]; ok {
+					continue
+				}
+				used[next] = struct{}{}
+				roles[i].Settings.EnvoyAdminPort = next
+				break
+			}
+		}
+	}
+
+	// 3 loadbalancers each with the maximum amount of allowed roles
+	lbs = lbs[:0]
+	for range lbcount {
+		roles := slices.Clone(roles)
+		lbs = append(lbs, &spec.LBcluster{
+			Roles: roles,
+		})
+	}
+
+	fillMissingEnvoyAdminPorts(&spec.Clusters{
+		LoadBalancers: &spec.LoadBalancers{
+			Clusters: lbs,
+		},
+	})
+
+	// assert no duplicates
+	for _, lb := range lbs {
+		seen := make(map[int32]struct{})
+		assert.True(t, len(lb.Roles) > 1)
+		for _, r := range lb.Roles {
+			_, ok := seen[r.Settings.EnvoyAdminPort]
+			assert.True(t, r.Settings.EnvoyAdminPort >= 0)
+			assert.False(t, ok)
+			seen[r.Settings.EnvoyAdminPort] = struct{}{}
+		}
+	}
 }
