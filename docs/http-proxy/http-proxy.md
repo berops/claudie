@@ -50,4 +50,22 @@ kubernetes:
             endpoint: http://<my-endpoint-domain-name>:<my-endpoint-port>
 ```
 
-By default, `endpoint` value is set to `http://proxy.claudie.io:8880`. In case your HTTP proxy runs on `myproxy.com` and is exposed on port `3128` the `endpoint` has to be set to `http://myproxy.com:3128`. This means you always have to specify the whole URL with the protocol (HTTP or HTTPS), domain name, and port. 
+By default, `endpoint` value is set to `http://proxy.claudie.io:8880`. In case your HTTP proxy runs on `myproxy.com` and is exposed on port `3128` the `endpoint` has to be set to `http://myproxy.com:3128`. This means you always have to specify the whole URL with the protocol (HTTP or HTTPS), domain name, and port.
+
+ The Claudie proxy strictly limits the endpoints it allows. By default, it only allows endpoints for commonly used package and container registries, in order to prevent HTTP 403 errors when setting up a cluster with nodes that may have misused IP addresses assigned.
+ This may not suit your needs if you use/need private repositories for your deployments, however. There is an additional field called `noProxy` that allows you to specify any endpoints that should not be routed through the proxy. The most common scenario would be downloading container images from private registries.
+
+ The below example allows to bypass the Proxy for any endpoint ending with `.suse.com`.
+
+```
+kubernetes:
+    clusters:
+      - name: proxy-example
+        version: "1.30.0"
+        network: 192.168.2.0/24
+        installationProxy:
+            mode: "on"
+            noProxy: ".suse.com"
+```
+
+!!! note "We gradually expand the default NoProxy list, if you think there is a repository or container registry that should be added you can always let us know"
