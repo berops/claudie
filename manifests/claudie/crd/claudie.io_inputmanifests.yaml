@@ -78,7 +78,7 @@ spec:
                                 type: string
                               noProxy:
                                 description:
-                                  NoProxy is a comma-separated list of values that will be added to the default list of NoProxies used by Claudie.
+                                  NoProxy is a comma-separated list of values that will be added to the default NoProxy list used by Claudie.
                                   Any values specified will be appended to the end of the default NoProxy list.
                                   This field only has an effect if the Proxy is turned on.
                                 type: string

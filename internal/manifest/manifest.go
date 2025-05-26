@@ -248,7 +248,7 @@ type InstallationProxy struct {
 	Mode string `validate:"required,proxyMode" default:"default" yaml:"mode" json:"mode"`
 	// Endpoint defines the proxy endpoint. If undefined, the default value is http://proxy.claudie.io:8880.
 	Endpoint string `yaml:"endpoint,omitempty" json:"endpoint,omitempty"`
-	// NoProxy is a comma-separated list of values that will be added to the default list of NoProxies used by Claudie.
+	// NoProxy is a comma-separated list of values that will be added to the default NoProxy list used by Claudie.
 	//
 	// The default no proxy list is: 127.0.0.1/8,localhost,cluster.local,10.244.0.0/16,10.96.0.0/12"
 	// Any values specified will be appended to the end of the default NoProxy list.
