@@ -16,7 +16,7 @@ spec:
     singular: setting
   scope: Namespaced
   versions:
-  - name: v1beta1
+  - name: v1alpha1
     schema:
       openAPIV3Schema:
         description: Settings used for customization of deployed clusters via the
