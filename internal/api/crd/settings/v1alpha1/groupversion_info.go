@@ -15,7 +15,7 @@
 // Package v1beta1 contains API Schema definitions for the  v1beta1 API group
 // +kubebuilder:object:generate=true
 // +groupName=claudie.io
-package v1beta1
+package v1alpha1
 
 import (
 	"k8s.io/apimachinery/pkg/runtime/schema"

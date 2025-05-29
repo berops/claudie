@@ -22,7 +22,7 @@ import (
 	"unicode/utf8"
 
 	v1beta1manifest "github.com/berops/claudie/internal/api/crd/inputmanifest/v1beta1"
-	v1beta1settings "github.com/berops/claudie/internal/api/crd/settings/v1beta1"
+	v1alpha1settings "github.com/berops/claudie/internal/api/crd/settings/v1alpha1"
 	"github.com/berops/claudie/internal/api/manifest"
 	"github.com/berops/claudie/internal/generics"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -34,7 +34,7 @@ func constructInputManifest(
 	crd v1beta1manifest.InputManifest,
 	providersWithSecret []v1beta1manifest.ProviderWithData,
 	staticNodesWithSecret map[string][]v1beta1manifest.StaticNodeWithData,
-	fetchedRoleSettings map[client.ObjectKey]*v1beta1settings.Setting,
+	fetchedRoleSettings map[client.ObjectKey]*v1alpha1settings.Setting,
 ) (manifest.Manifest, error) {
 	var providers manifest.Provider
 

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	v1beta "github.com/berops/claudie/internal/api/crd/inputmanifest/v1beta1"
-	v1beta1setting "github.com/berops/claudie/internal/api/crd/settings/v1beta1"
+	v1alpha1settings "github.com/berops/claudie/internal/api/crd/settings/v1alpha1"
 	"github.com/berops/claudie/internal/api/manifest"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -68,7 +68,7 @@ func (v *InputManifestValidator) validate(ctx context.Context, obj runtime.Objec
 			Name:      role.SettingsRef.Name,
 		}
 
-		out := v1beta1setting.Setting{}
+		out := v1alpha1settings.Setting{}
 		if err := v.kc.Get(ctx, key, &out); err != nil {
 			if apierrors.IsNotFound(err) {
 				return fmt.Errorf("failed to find setting %q in namespace %q referenced by role %q inside the loadbalancer section",

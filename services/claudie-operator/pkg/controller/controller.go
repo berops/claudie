@@ -13,7 +13,7 @@ import (
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	v1beta1manifest "github.com/berops/claudie/internal/api/crd/inputmanifest/v1beta1"
-	v1beta1setting "github.com/berops/claudie/internal/api/crd/settings/v1beta1"
+	v1alpha1settings "github.com/berops/claudie/internal/api/crd/settings/v1alpha1"
 	"github.com/berops/claudie/internal/api/manifest"
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -30,7 +30,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	fetchedRoleSettings := make(map[client.ObjectKey]*v1beta1setting.Setting)
+	fetchedRoleSettings := make(map[client.ObjectKey]*v1alpha1settings.Setting)
 	for _, role := range inputManifest.Spec.LoadBalancer.Roles {
 		if role.SettingsRef == nil {
 			continue
@@ -41,7 +41,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			Name:      role.SettingsRef.Name,
 		}
 
-		out := &v1beta1setting.Setting{}
+		out := &v1alpha1settings.Setting{}
 		if err := r.kc.Get(ctx, key, out); err != nil {
 			return ctrl.Result{}, err
 		}
