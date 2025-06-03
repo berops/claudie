@@ -28,7 +28,7 @@ type K8Scluster struct {
 	// the terraform templates.
 	ExportPort6443 bool
 
-	// SpawnProcessLimit limits the number of spawned terraform processes.
+	// SpawnProcessLimit limits the number of spawned tofu processes.
 	SpawnProcessLimit *semaphore.Weighted
 }
 
