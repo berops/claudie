@@ -3,16 +3,14 @@
   ansible.builtin.apt:
     pkg:
       - wireguard
-      - pipx
       - net-tools
     state: present
     update_cache: true
-  retries: 10
+  retries: 2
   delay: 10
   register: res
   until: res is not failed
-
-- name: Install wireguard via pipx
-  community.general.pipx:
-    name: wireguard
-...
+  # wireguard packages are few hundred Kibs in size
+  # having a timeout of 8 mins with 2 retries is generous.
+  async: 480
+  poll: 5
