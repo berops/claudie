@@ -52,6 +52,14 @@
         name: aptitude
         state: latest
         update_cache: true
+      retries: 2
+      delay: 10
+      register: task_aptitude
+      until: task_aptitude is not failed
+      # aptitude packages are 3-5Mb in size
+      # have a timeout of 12 mins with 2 retries.
+      async: 720
+      poll: 5
 
     - name: Install required system packages
       apt:
@@ -60,6 +68,14 @@
           - curl
         state: latest
         update_cache: true
+      retries: 2
+      delay: 10
+      register: task_req_packages
+      until: task_req_packages is not failed
+      # these packages are around a MB in size
+      # have a timeout of 8 mins with 2 retries.
+      async: 500
+      poll: 5
 
     - name: Ensure required directories exist
       file:
@@ -89,6 +105,15 @@
             - docker-compose-plugin
         state: latest
         update_cache: true
+      retries: 2
+      delay: 10
+      register: task_install_docker
+      until: task_install_docker is not failed
+      # these packages are ~100MB in size
+      # have a timeout of 25 mins with 2 retries.
+      async: 1500
+      poll: 5
+
 
     - name: Make docker start at boot
       ansible.builtin.systemd:

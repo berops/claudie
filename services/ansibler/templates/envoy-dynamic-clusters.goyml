@@ -7,7 +7,7 @@ resources:
     {{ else -}}
     lb_policy: ROUND_ROBIN
     {{ end -}}
-    connect_timeout: 10s
+    connect_timeout: 5s
     {{ if and (and $.Role.Settings.ProxyProtocol (ne $.Role.TargetPort 6443)) (eq $.Role.Protocol "tcp") -}}
     {{- /* Proxy Protocol works only with TCP traffic, for UDP traffic the proxy protocol would not work or generally */ -}}
     {{- /* replacing the source IP with the original client IP for UDP would not work, as the traffic would be forward to the service */ -}}

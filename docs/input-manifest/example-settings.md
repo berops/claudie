@@ -7,7 +7,7 @@ A Setting is a separate [Custom Resource Definition](https://kubernetes.io/docs/
 The following is an example replacing the configuration for envoy proxy which is deployed on the load balancers nodes.
 
 ```yaml
-apiVersion: claudie.io/v1beta1
+apiVersion: claudie.io/v1alpha1
 kind: Setting
 metadata:
   name: custom-envoy

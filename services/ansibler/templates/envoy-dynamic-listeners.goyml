@@ -30,7 +30,7 @@ resources:
               "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
               stat_prefix: "{{ $.Role.Name }}"
               cluster: "{{ $.Role.Name }}"
-              max_connect_attempts: 5
+              max_connect_attempts: 3
               {{ if and $.Role.Settings.StickySessions (ne $.Role.TargetPort 6443) -}}
               hash_policy:
                 - source_ip: {}
