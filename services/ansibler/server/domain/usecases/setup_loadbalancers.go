@@ -139,7 +139,7 @@ func setUpLoadbalancers(request *pb.SetUpLBRequest, logger zerolog.Logger, proce
 // setUpNodeExporter sets up node-exporter on each node of the LB cluster.
 // Returns error if not successful, nil otherwise.
 func setUpNodeExporter(lbCluster *spec.LBcluster, clusterDirectory string, processLimit *semaphore.Weighted) error {
-	playbookParameters := utils.NodeExporterTamplateParams{
+	playbookParameters := utils.NodeExporterTemplateParams{
 		LoadBalancer: lbCluster.ClusterInfo.Name,
 		// last reserved port will be used by node-exporter.
 		NodeExporterPort: manifest.ReservedPortRangeEnd - 1,

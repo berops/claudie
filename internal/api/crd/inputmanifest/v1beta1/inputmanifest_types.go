@@ -129,11 +129,13 @@ type StaticNode struct {
 type SettingsRef struct {
 	// Name of the custom resource.
 	// +kubebuilder:validation:MinLength=1
-	Name string `json:"name,omitempty"`
+	// +kubebuilder:validation:Required
+	Name string `json:"name"`
 
 	// Namespace where to locate the custom resource.
 	// +kubebuilder:validation:MinLength=1
-	Namespace string `json:"namespace,omitempty"`
+	// +kubebuilder:validation:Required
+	Namespace string `json:"namespace"`
 }
 
 // Role defines a concrete loadbalancer configuration. A Single loadbalancer can have multiple roles.

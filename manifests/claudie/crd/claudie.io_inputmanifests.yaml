@@ -230,6 +230,9 @@ spec:
                               description: Namespace where to locate the custom resource.
                               minLength: 1
                               type: string
+                          required:
+                          - name
+                          - namespace
                           type: object
                         targetPools:
                           description: Defines nodepools of the targeted K8s cluster,

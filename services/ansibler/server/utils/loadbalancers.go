@@ -63,7 +63,7 @@ type (
 		TargetNodes []*spec.Node
 	}
 
-	NodeExporterTamplateParams struct {
+	NodeExporterTemplateParams struct {
 		LoadBalancer     string
 		NodeExporterPort int
 	}
