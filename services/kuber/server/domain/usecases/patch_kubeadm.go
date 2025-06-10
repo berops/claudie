@@ -3,6 +3,8 @@ package usecases
 import (
 	"context"
 	"fmt"
+	"math/rand/v2"
+	"time"
 
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/loggerutils"
@@ -11,6 +13,10 @@ import (
 
 	"gopkg.in/yaml.v3"
 )
+
+// Number of retries to perform to try to unmarshal the kubeadm config map
+// before giving up.
+const ReadKubeadmConfigRetries = 3
 
 func (u *Usecases) PatchKubeadmConfigMap(ctx context.Context, request *pb.PatchKubeadmConfigMapRequest) (*pb.PatchKubeadmConfigMapResponse, error) {
 	logger := loggerutils.WithClusterName(request.DesiredCluster.ClusterInfo.Id())
@@ -31,20 +37,43 @@ func (u *Usecases) PatchKubeadmConfigMap(ctx context.Context, request *pb.PatchK
 	// https://github.com/berops/claudie/issues/1597
 
 	k := kubectl.Kubectl{
-		Kubeconfig: request.DesiredCluster.Kubeconfig,
+		Kubeconfig:        request.DesiredCluster.Kubeconfig,
+		MaxKubectlRetries: 3,
 	}
 
-	configMap, err := k.KubectlGet("cm kubeadm-config", "-oyaml", "-n kube-system")
-	if err != nil {
-		return nil, err
-	}
-	if configMap == nil {
-		return &pb.PatchKubeadmConfigMapResponse{}, nil
-	}
-
+	var err error
+	var configMap []byte
 	var rawKubeadmConfigMap map[string]any
-	if err := yaml.Unmarshal(configMap, &rawKubeadmConfigMap); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal kubeadm-config cluster map, malformed yaml: %w", err)
+
+	for i := range ReadKubeadmConfigRetries {
+		if i > 0 {
+			wait := time.Duration(150+rand.IntN(300)) * time.Millisecond
+			logger.Warn().Msgf("reading kubeadm-config failed err: %v, retrying again in %s ms [%v/%v]",
+				err,
+				wait,
+				i+1,
+				ReadKubeadmConfigRetries,
+			)
+			time.Sleep(wait)
+		}
+
+		configMap, err = k.KubectlGet("cm kubeadm-config", "-oyaml", "-n kube-system")
+		if err != nil || len(configMap) == 0 {
+			continue
+		}
+		if err = yaml.Unmarshal(configMap, &rawKubeadmConfigMap); err != nil {
+			continue
+		}
+		break
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve kubeadm-config map after %v retries: %w", ReadKubeadmConfigRetries, err)
+	}
+
+	if len(configMap) == 0 {
+		logger.Warn().Msgf("kubeadm-config config map was not found, skip patching kubeadm-config map")
+		return &pb.PatchKubeadmConfigMapResponse{}, nil
 	}
 
 	data, ok := rawKubeadmConfigMap["data"].(map[string]any)
