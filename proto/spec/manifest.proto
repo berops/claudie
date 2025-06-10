@@ -144,6 +144,12 @@ message InstallationProxy {
   string mode = 1;
   // Proxy endpoint used to access the proxy.
   string endpoint = 2;
+  // NoProxy is a comma-separated list of values that will be added to the default list of NoProxies used by Claudie.
+  //
+  // The default no proxy list is: 127.0.0.1/8,localhost,cluster.local,10.244.0.0/16,10.96.0.0/12"
+  // Any values specified will be appended to the end of the default NoProxy list.
+  // This field only has an effect if the Proxy is turned on.
+  string noProxy = 3;
 }
 
 enum ProxyOp {
