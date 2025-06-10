@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
@@ -83,7 +84,7 @@ func (s *S3Adapter) Healthcheck() error {
 	return nil
 }
 
-// DeleteStateFile deletes terraform state file (related to the given cluster), from S3 bucket.
+// DeleteStateFile deletes tofu state file (related to the given cluster), from S3 bucket.
 func (s *S3Adapter) DeleteStateFile(ctx context.Context, projectName, clusterId string, keyFormat string) error {
 	key := fmt.Sprintf(keyFormat, projectName, clusterId)
 	_, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{

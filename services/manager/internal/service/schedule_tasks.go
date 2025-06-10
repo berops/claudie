@@ -338,7 +338,11 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 		desiredProxySettings = desired.InstallationProxy
 	}
 
-	if currProxySettings.Mode != desiredProxySettings.Mode || currProxySettings.Endpoint != desiredProxySettings.Endpoint {
+	proxyChanged := currProxySettings.Mode != desiredProxySettings.Mode
+	proxyChanged = proxyChanged || currProxySettings.Endpoint != desiredProxySettings.Endpoint
+	proxyChanged = proxyChanged || currProxySettings.NoProxy != desiredProxySettings.NoProxy
+
+	if proxyChanged {
 		// Proxy settings have been set or changed.
 		events = append(events, &spec.TaskEvent{
 			Id:          uuid.New().String(),
@@ -354,6 +358,7 @@ func Diff(current, desired *spec.K8Scluster, currentLbs, desiredLbs []*spec.LBcl
 						InstallationProxy: &spec.InstallationProxy{
 							Mode:     desired.InstallationProxy.Mode,
 							Endpoint: desired.InstallationProxy.Endpoint,
+							NoProxy:  desired.InstallationProxy.NoProxy,
 						},
 					},
 					Lbs: &spec.LoadBalancers{Clusters: currentLbs},
