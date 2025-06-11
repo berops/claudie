@@ -44,8 +44,10 @@ type: Opaque
     }
     EOF
     ```
+    !!! warning "To create custom roles, your organization needs Microsoft Entra ID Premium P1 or P2." 
+        If you do not have Premium P1 or P2 activated, you can use the built-in role **Kubernetes Agent Subscription Level Operator** instead, which includes the required resource group permissions.
 
-3. Create a role based on the policy document:
+3. Create a role based on the policy document. Skip this step if using build in role **Kubernetes Agent Subscription Level Operator**:
     ```bash
     az role definition create --role-definition policy.json
     ```
@@ -71,6 +73,8 @@ type: Opaque
       az role assignment create --assignee claudie-sp --role "Resource Group Management"
     }
     ```
+    !!! warning "Use built-in role as alternative to custom role"
+        If you're not using the custom **Resource Group Management** role, assign the built-in role **Kubernetes Agent Subscription Level Operator**.
 
 ## DNS requirements
 If you wish to use Azure as your DNS provider where Claudie creates DNS records pointing to Claudie managed clusters, you will need to create a **public DNS zone** by following [this guide](https://learn.microsoft.com/en-us/azure/dns/dns-getstarted-portal#prerequisites).
