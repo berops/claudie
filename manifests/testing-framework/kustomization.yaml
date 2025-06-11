@@ -2,92 +2,92 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: claudie
 resources:
-  - testing-framework.yaml
+- testing-framework.yaml
 
 secretGenerator:
-  - files:
-      - test-sets/test-set1/1.yaml
-      - test-sets/test-set1/2.yaml
-    name: test-set1
-  - files:
-      - test-sets/test-set2/1.yaml
-      - test-sets/test-set2/2.yaml
-      - test-sets/test-set2/3.yaml
-    name: test-set2
-  - files:
-      - test-sets/test-set3/1.yaml
-      - test-sets/test-set3/2.yaml
-      - test-sets/test-set3/3.yaml
-      - test-sets/test-set3/4.yaml
-    name: test-set3
-  - files:
-      - test-sets/test-set4/1.yaml
-      - test-sets/test-set4/2.yaml
-      - test-sets/test-set4/3.yaml
-    name: test-set4
-  - files:
-      - test-sets/test-set5/1.yaml
-      - test-sets/test-set5/2.yaml
-      - test-sets/test-set5/3.yaml
-    name: test-set5
-  - files:
-      - test-sets/rolling-update/1.yaml
-      - test-sets/rolling-update/2.yaml
-    name: rolling-update
-  - files:
-      - test-sets/rolling-update-2/1.yaml
-      - test-sets/rolling-update-2/2.yaml
-    name: rolling-update-2
-  - files:
-      - test-sets/autoscaling-1/1.yaml
-      - test-sets/autoscaling-1/2.yaml
-      - test-sets/autoscaling-1/3.yaml
-    name: autoscaling-1
-  - files:
-      - test-sets/autoscaling-2/1.yaml
-      - test-sets/autoscaling-2/2.yaml
-    name: autoscaling-2
-  - files:
-      - test-sets/proxy-with-hetzner/1.yaml
-      - test-sets/proxy-with-hetzner/2.yaml
-      - test-sets/proxy-with-hetzner/3.yaml
-      - test-sets/proxy-with-hetzner/4.yaml
-      - test-sets/proxy-with-hetzner/5.yaml
-      - test-sets/proxy-with-hetzner/6.yaml
-      - test-sets/proxy-with-hetzner/7.yaml
-      - test-sets/proxy-with-hetzner/8.yaml
-    name: proxy-with-hetzner
-  - files:
-      - test-sets/proxy-without-hetzner/1.yaml
-      - test-sets/proxy-without-hetzner/2.yaml
-      - test-sets/proxy-without-hetzner/3.yaml
-      - test-sets/proxy-without-hetzner/4.yaml
-      - test-sets/proxy-without-hetzner/5.yaml
-      - test-sets/proxy-without-hetzner/6.yaml
-      - test-sets/proxy-without-hetzner/7.yaml
-      - test-sets/proxy-without-hetzner/8.yaml
-      - test-sets/proxy-without-hetzner/9.yaml
-      - test-sets/proxy-without-hetzner/10.yaml
-    name: proxy-without-hetzner
-  - files:
-      - test-sets/succeeds-on-last-1/1.yaml
-      - test-sets/succeeds-on-last-1/2.yaml
-    name: succeeds-on-last-1
-  - files:
-      - test-sets/succeeds-on-last-2/1.yaml
-      - test-sets/succeeds-on-last-2/2.yaml
-      - test-sets/succeeds-on-last-2/3.yaml
-    name: succeeds-on-last-2
-  - files:
-      - test-sets/succeeds-on-last-3/1.yaml
-      - test-sets/succeeds-on-last-3/2.yaml
-    name: succeeds-on-last-3
-  - files:
-      - test-sets/succeeds-on-last-4/1.yaml
-      - test-sets/succeeds-on-last-4/2.yaml
-      - test-sets/succeeds-on-last-4/3.yaml
-    name: succeeds-on-last-4
+- files:
+  - test-sets/test-set1/1.yaml
+  - test-sets/test-set1/2.yaml
+  name: test-set1
+- files:
+  - test-sets/test-set2/1.yaml
+  - test-sets/test-set2/2.yaml
+  - test-sets/test-set2/3.yaml
+  name: test-set2
+- files:
+  - test-sets/test-set3/1.yaml
+  - test-sets/test-set3/2.yaml
+  - test-sets/test-set3/3.yaml
+  - test-sets/test-set3/4.yaml
+  name: test-set3
+- files:
+  - test-sets/test-set4/1.yaml
+  - test-sets/test-set4/2.yaml
+  - test-sets/test-set4/3.yaml
+  name: test-set4
+- files:
+  - test-sets/test-set5/1.yaml
+  - test-sets/test-set5/2.yaml
+  - test-sets/test-set5/3.yaml
+  name: test-set5
+- files:
+  - test-sets/rolling-update/1.yaml
+  - test-sets/rolling-update/2.yaml
+  name: rolling-update
+- files:
+  - test-sets/rolling-update-2/1.yaml
+  - test-sets/rolling-update-2/2.yaml
+  name: rolling-update-2
+- files:
+  - test-sets/autoscaling-1/1.yaml
+  - test-sets/autoscaling-1/2.yaml
+  - test-sets/autoscaling-1/3.yaml
+  name: autoscaling-1
+- files:
+  - test-sets/autoscaling-2/1.yaml
+  - test-sets/autoscaling-2/2.yaml
+  name: autoscaling-2
+- files:
+  - test-sets/proxy-with-hetzner/1.yaml
+  - test-sets/proxy-with-hetzner/2.yaml
+  - test-sets/proxy-with-hetzner/3.yaml
+  - test-sets/proxy-with-hetzner/4.yaml
+  - test-sets/proxy-with-hetzner/5.yaml
+  - test-sets/proxy-with-hetzner/6.yaml
+  - test-sets/proxy-with-hetzner/7.yaml
+  - test-sets/proxy-with-hetzner/8.yaml
+  name: proxy-with-hetzner
+- files:
+  - test-sets/proxy-without-hetzner/1.yaml
+  - test-sets/proxy-without-hetzner/2.yaml
+  - test-sets/proxy-without-hetzner/3.yaml
+  - test-sets/proxy-without-hetzner/4.yaml
+  - test-sets/proxy-without-hetzner/5.yaml
+  - test-sets/proxy-without-hetzner/6.yaml
+  - test-sets/proxy-without-hetzner/7.yaml
+  - test-sets/proxy-without-hetzner/8.yaml
+  - test-sets/proxy-without-hetzner/9.yaml
+  - test-sets/proxy-without-hetzner/10.yaml
+  name: proxy-without-hetzner
+- files:
+  - test-sets/succeeds-on-last-1/1.yaml
+  - test-sets/succeeds-on-last-1/2.yaml
+  name: succeeds-on-last-1
+- files:
+  - test-sets/succeeds-on-last-2/1.yaml
+  - test-sets/succeeds-on-last-2/2.yaml
+  - test-sets/succeeds-on-last-2/3.yaml
+  name: succeeds-on-last-2
+- files:
+  - test-sets/succeeds-on-last-3/1.yaml
+  - test-sets/succeeds-on-last-3/2.yaml
+  name: succeeds-on-last-3
+- files:
+  - test-sets/succeeds-on-last-4/1.yaml
+  - test-sets/succeeds-on-last-4/2.yaml
+  - test-sets/succeeds-on-last-4/3.yaml
+  name: succeeds-on-last-4
 
 images:
-  - name: ghcr.io/berops/claudie/testing-framework
-    newTag: bd9d39a-3402
+- name: ghcr.io/berops/claudie/testing-framework
+  newTag: 4fcd35d-3413
