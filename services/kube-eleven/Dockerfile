@@ -1,10 +1,10 @@
-FROM docker.io/library/golang:1.24.1 AS build
+FROM docker.io/library/golang:1.24.3 AS build
 
 ARG TARGETARCH
 
 # download and unzip kube-one binary
 RUN apt-get -qq update && apt-get -qq install unzip
-RUN KUBEONE_V=1.9.0 && \
+RUN KUBEONE_V=1.10.0 && \
     wget -q https://github.com/kubermatic/kubeone/releases/download/v${KUBEONE_V}/kubeone_${KUBEONE_V}_linux_$TARGETARCH.zip && \
     unzip -qq kubeone_${KUBEONE_V}_linux_$TARGETARCH.zip -d kubeone_dir
 

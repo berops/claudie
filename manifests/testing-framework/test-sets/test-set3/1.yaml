@@ -72,7 +72,6 @@ spec:
           cpuCount: 2
           # use 8 gb of memory.
           memory: 8
-        # ubuntu minimal
         # https://docs.oracle.com/en-us/iaas/images/ubuntu-2404/canonical-ubuntu-24-04-2024-08-28-0.htm
         image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaa7hxwyz4qiasffo7n7s4ep5lywpzwgkc2am65frqrqinoyitmxxla
         storageDiskSize: 50
@@ -105,7 +104,7 @@ spec:
           zone: europe-west2-c
         count: 1
         serverType: e2-medium
-        image: ubuntu-minimal-2404-noble-amd64-v20241116
+        image: ubuntu-2404-noble-amd64-v20250313
         storageDiskSize: 50
       - name: gcp-cmpt-nodes
         providerSpec:
@@ -114,7 +113,7 @@ spec:
           zone: europe-west1-b
         count: 2
         serverType: e2-small
-        image: ubuntu-minimal-2404-noble-amd64-v20241116
+        image: ubuntu-2404-noble-amd64-v20250313
         storageDiskSize: 50
 
       #-----------LB nodepools----------
@@ -125,13 +124,13 @@ spec:
           zone: europe-west1-c
         count: 1
         serverType: e2-small
-        image: ubuntu-minimal-2404-noble-amd64-v20241116
+        image: ubuntu-2404-noble-amd64-v20250313
         storageDiskSize: 50
 
   kubernetes:
     clusters:
       - name: ts3-c-1-cluster-test-set-no3
-        version: 1.29.0
+        version: 1.30.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -139,7 +138,7 @@ spec:
           compute:
             - htz-cmpt-nodes
       - name: ts3-c-2-cluster-test-set-no3
-        version: 1.29.0
+        version: 1.30.0
         network: 192.168.2.0/24
         installationProxy:
           mode: "on"

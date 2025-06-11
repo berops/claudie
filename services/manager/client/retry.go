@@ -27,7 +27,7 @@ func Retry(logger *zerolog.Logger, description string, fn func() error) error {
 		retries++
 		if i > 0 {
 			wait := time.Duration(50+rand.IntN(300)) * time.Millisecond
-			logger.Debug().Msgf("retry[%v/%v] %q failed due to dirty write: %v, retrying again in %s ms", i, TolerateDirtyWrites, description, err, wait)
+			logger.Debug().Msgf("retry [%v/%v] %q failed due to dirty write: %v, retrying again in %s ms", i, TolerateDirtyWrites, description, err, wait)
 			time.Sleep(wait)
 		}
 

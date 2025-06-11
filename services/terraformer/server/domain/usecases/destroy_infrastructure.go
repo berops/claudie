@@ -48,7 +48,7 @@ func (u *Usecases) DestroyInfrastructure(ctx context.Context, request *pb.Destro
 		})
 	}
 
-	// Concurrently destroy the infrastructure, Terraform state and state-lock files for each cluster
+	// Concurrently destroy the infrastructure, tofu state and state-lock files for each cluster
 	err := concurrent.Exec(clusters, func(_ int, cluster Cluster) error {
 		logger := loggerutils.WithProjectAndCluster(request.ProjectName, cluster.Id())
 		err := u.StateStorage.Stat(ctx, request.ProjectName, cluster.Id(), keyFormatStateFile)
@@ -68,15 +68,14 @@ func (u *Usecases) DestroyInfrastructure(ctx context.Context, request *pb.Destro
 		}
 		logger.Info().Msgf("Infrastructure was successfully destroyed")
 
-		// After the infrastructure is destroyed, we need to delete the Terraform state file from MinIO
-		// and Terraform state-lock file from DynamoDB.
+		// After the infrastructure is destroyed, we need to delete the tofu state file from MinIO and tofu state-lock file from DynamoDB.
 		if err := u.DynamoDB.DeleteLockFile(ctx, request.ProjectName, cluster.Id(), keyFormatLockFile); err != nil {
 			logger.Warn().Msgf("Failed to delete lock file for %q, assumming it was deleted/not created", cluster.Id())
 		}
 		if err := u.StateStorage.DeleteStateFile(ctx, request.ProjectName, cluster.Id(), keyFormatStateFile); err != nil {
 			logger.Warn().Msgf("Failed to delete state file for %q, assumming it was deleted/not created", cluster.Id())
 		}
-		logger.Info().Msgf("Successfully deleted Terraform state and state-lock files for %q", cluster.Id())
+		logger.Info().Msgf("Successfully deleted tofu state and state-lock files for %q", cluster.Id())
 
 		if err := os.RemoveAll(filepath.Join(cluster_builder.TemplatesRootDir, cluster.Id())); err != nil {
 			return fmt.Errorf("failed to delete templates for cluster %q: %w", cluster.Id(), err)
@@ -84,7 +83,7 @@ func (u *Usecases) DestroyInfrastructure(ctx context.Context, request *pb.Destro
 		logger.Info().Msgf("Successfully deleted Templates files for cluster %q", cluster.Id())
 
 		// In case of LoadBalancer type cluster,
-		// there are additional DNS related Terraform state and state-lock files.
+		// there are additional DNS related tofu state and state-lock files.
 		if _, ok := cluster.(*loadbalancer.LBcluster); ok {
 			if err := u.DynamoDB.DeleteLockFile(ctx, request.ProjectName, cluster.Id(), dnsKeyFormatLockFile); err != nil {
 				logger.Warn().Msgf("Failed to delete lock file for %q-dns, assumming it was deleted/not created", cluster.Id())
@@ -92,7 +91,7 @@ func (u *Usecases) DestroyInfrastructure(ctx context.Context, request *pb.Destro
 			if err := u.StateStorage.DeleteStateFile(ctx, request.ProjectName, cluster.Id(), dnsKeyFormatStateFile); err != nil {
 				logger.Warn().Msgf("Failed to delete state file for %q-dns, assumming it was deleted/not created", cluster.Id())
 			}
-			logger.Info().Msg("Successfully deleted DNS related Terraform state and state-lock files")
+			logger.Info().Msg("Successfully deleted DNS related tofu state and state-lock files")
 
 			if err := os.RemoveAll(filepath.Join(loadbalancer.TemplatesRootDir, fmt.Sprintf("%s-dns", cluster.Id()))); err != nil {
 				return fmt.Errorf("failed to delete dns templates for cluster %q: %w", cluster.Id(), err)

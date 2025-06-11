@@ -44,7 +44,7 @@ spec:
           zone: europe-west1-b
         count: 1
         serverType: e2-small
-        image: ubuntu-minimal-2404-noble-amd64-v20241116
+        image: ubuntu-2404-noble-amd64-v20250313
         storageDiskSize: 50
         labels:
           test-set: proxy-with-hetzner

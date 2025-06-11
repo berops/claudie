@@ -125,6 +125,9 @@ func createK8sClustersFromManifest(from *manifest.Manifest, into *store.Config) 
 		if cluster.InstallationProxy != nil {
 			useInstallationProxy.Mode = cluster.InstallationProxy.Mode
 			useInstallationProxy.Endpoint = cluster.InstallationProxy.Endpoint
+
+			useInstallationProxy.NoProxy = strings.TrimSpace(cluster.InstallationProxy.NoProxy)
+			useInstallationProxy.NoProxy = strings.Trim(useInstallationProxy.NoProxy, ",")
 		}
 
 		newCluster := &spec.K8Scluster{

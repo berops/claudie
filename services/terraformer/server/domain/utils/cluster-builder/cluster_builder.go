@@ -16,7 +16,7 @@ import (
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates"
-	"github.com/berops/claudie/services/terraformer/server/domain/utils/terraform"
+	"github.com/berops/claudie/services/terraformer/server/domain/utils/tofu"
 	"github.com/rs/zerolog/log"
 
 	"golang.org/x/sync/semaphore"
@@ -47,7 +47,7 @@ type ClusterBuilder struct {
 	K8sInfo K8sInfo
 	// LBInfo contains additional data for when building loadbalancer clusters.
 	LBInfo LBInfo
-	// SpawnProcessLimit limits the number of spawned terraform processes.
+	// SpawnProcessLimit limits the number of spawned tofu processes.
 	SpawnProcessLimit *semaphore.Weighted
 }
 
@@ -57,7 +57,7 @@ func (c ClusterBuilder) CreateNodepools() error {
 	clusterDir := filepath.Join(Output, clusterID)
 
 	defer func() {
-		// Clean after terraform
+		// Clean after tofu
 		if err := os.RemoveAll(clusterDir); err != nil {
 			log.Err(err).Msgf("error while deleting files in %s : %v", clusterDir, err)
 		}
@@ -67,30 +67,30 @@ func (c ClusterBuilder) CreateNodepools() error {
 		return fmt.Errorf("failed to generate files: %w", err)
 	}
 
-	terraform := terraform.Terraform{
+	tofu := tofu.Terraform{
 		Directory:         clusterDir,
 		SpawnProcessLimit: c.SpawnProcessLimit,
 	}
 
-	terraform.Stdout = comm.GetStdOut(clusterID)
-	terraform.Stderr = comm.GetStdErr(clusterID)
+	tofu.Stdout = comm.GetStdOut(clusterID)
+	tofu.Stderr = comm.GetStdErr(clusterID)
 
-	if err := terraform.Init(); err != nil {
-		return fmt.Errorf("error while running terraform init in %s : %w", clusterID, err)
+	if err := tofu.Init(); err != nil {
+		return fmt.Errorf("error while running tofu init in %s : %w", clusterID, err)
 	}
 
 	var currentState []string
 	if c.CurrentClusterInfo != nil {
 		var err error
-		if currentState, err = terraform.StateList(); err != nil {
-			return fmt.Errorf("error while running terraform state list in %s : %w", clusterID, err)
+		if currentState, err = tofu.StateList(); err != nil {
+			return fmt.Errorf("error while running tofu state list, before applying changes in %s : %w", clusterID, err)
 		}
 	}
 
-	if err := terraform.Apply(); err != nil {
-		updatedState, errList := terraform.StateList()
+	if err := tofu.Apply(); err != nil {
+		updatedState, errList := tofu.StateList()
 		if errList != nil {
-			return errors.Join(err, fmt.Errorf("%w: error while running terraform state list in %s : %w", err, clusterID, errList))
+			return errors.Join(err, fmt.Errorf("%w: error while running tofu state list, after applying changes in %s : %w", err, clusterID, errList))
 		}
 
 		var toDelete []string
@@ -100,7 +100,7 @@ func (c ClusterBuilder) CreateNodepools() error {
 			}
 		}
 
-		if errDestroy := terraform.DestroyTarget(toDelete); errDestroy != nil {
+		if errDestroy := tofu.DestroyTarget(toDelete); errDestroy != nil {
 			return fmt.Errorf("%w: failed to destroy partially create state: %w", err, errDestroy)
 		}
 
@@ -112,13 +112,13 @@ func (c ClusterBuilder) CreateNodepools() error {
 		f := hash.Digest128(filepath.Join(d.Provider.SpecName, d.Provider.Templates.MustExtractTargetPath()))
 		k := fmt.Sprintf("%s_%s_%s", nodepool.Name, d.Provider.SpecName, hex.EncodeToString(f))
 
-		output, err := terraform.Output(k)
+		output, err := tofu.Output(k)
 		if err != nil {
-			return fmt.Errorf("error while getting output from terraform for %s : %w", nodepool.Name, err)
+			return fmt.Errorf("error while getting output from tofu for %s : %w", nodepool.Name, err)
 		}
 		out, err := readIPs(output)
 		if err != nil {
-			return fmt.Errorf("error while reading the terraform output for %s : %w", nodepool.Name, err)
+			return fmt.Errorf("error while reading the tofu output for %s : %w", nodepool.Name, err)
 		}
 		for _, n := range nodepool.Nodes {
 			var found bool
@@ -131,7 +131,7 @@ func (c ClusterBuilder) CreateNodepools() error {
 				break
 			}
 			if !found {
-				return fmt.Errorf("node %s from nodepool %s was missing from the terraform output, possibly the VM was not properly created", n.Name, nodepool.Name)
+				return fmt.Errorf("node %s from nodepool %s was missing from the tofu output, possibly the VM was not properly created", n.Name, nodepool.Name)
 			}
 		}
 	}
@@ -154,26 +154,26 @@ func (c ClusterBuilder) DestroyNodepools() error {
 		return fmt.Errorf("failed to generate files: %w", err)
 	}
 
-	terraform := terraform.Terraform{
+	tofu := tofu.Terraform{
 		Directory:         clusterDir,
 		SpawnProcessLimit: c.SpawnProcessLimit,
 	}
 
-	terraform.Stdout = comm.GetStdOut(clusterID)
-	terraform.Stderr = comm.GetStdErr(clusterID)
+	tofu.Stdout = comm.GetStdOut(clusterID)
+	tofu.Stderr = comm.GetStdErr(clusterID)
 
-	if err := terraform.Init(); err != nil {
-		return fmt.Errorf("error while running terraform init in %s : %w", clusterID, err)
+	if err := tofu.Init(); err != nil {
+		return fmt.Errorf("error while running tofu init in %s : %w", clusterID, err)
 	}
 
-	if err := terraform.Destroy(); err != nil {
-		return fmt.Errorf("error while running terraform apply in %s : %w", clusterID, err)
+	if err := tofu.Destroy(); err != nil {
+		return fmt.Errorf("error while running tofu apply in %s : %w", clusterID, err)
 	}
 
 	return nil
 }
 
-// generateFiles creates all the necessary terraform files used to create/destroy node pools.
+// generateFiles creates all the necessary tofu files used to create/destroy node pools.
 func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 	backend := templates.Backend{
 		ProjectName: c.ProjectName,
@@ -185,7 +185,7 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 		return err
 	}
 
-	// generate Providers terraform configuration
+	// generate Providers tofu configuration
 	usedProviders := templates.UsedProviders{
 		ProjectName: c.ProjectName,
 		ClusterName: clusterID,
@@ -279,7 +279,7 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 	return nil
 }
 
-// readIPs reads json output format from terraform and unmarshal it into map[string]map[string]string readable by Go.
+// readIPs reads json output format from tofu and unmarshal it into map[string]map[string]string readable by Go.
 func readIPs(data string) (templates.NodepoolIPs, error) {
 	var result templates.NodepoolIPs
 	// Unmarshal or Decode the JSON to the interface.
@@ -287,7 +287,7 @@ func readIPs(data string) (templates.NodepoolIPs, error) {
 	return result, err
 }
 
-// generateProviderTemplates generates only the `provider.tpl` templates so terraform can destroy the infra if needed.
+// generateProviderTemplates generates only the `provider.tpl` templates so tofu can destroy the infra if needed.
 func (c *ClusterBuilder) generateProviderTemplates(current, desired *spec.ClusterInfo, clusterID, directory string, clusterData templates.ClusterData) error {
 	nps := slices.AppendSeq(
 		slices.Collect(slices.Values(current.GetNodePools())),

@@ -12,7 +12,7 @@ const (
 )
 
 func HttpProxyUrlAndNoProxyList(k8s *spec.K8Scluster, lbs []*spec.LBcluster, hasHetznerNodeFlag bool) (string, string) {
-	var httpProxyUrl, noProxyList = "", ""
+	httpProxyUrl, noProxyList := "", ""
 
 	if k8s.InstallationProxy.Mode == "on" || (k8s.InstallationProxy.Mode == "default" && hasHetznerNodeFlag) {
 		// The installation proxy is either turned on or in default mode with at least one Hetzner node in the k8s cluster.
@@ -21,14 +21,17 @@ func HttpProxyUrlAndNoProxyList(k8s *spec.K8Scluster, lbs []*spec.LBcluster, has
 		} else {
 			httpProxyUrl = k8s.InstallationProxy.Endpoint
 		}
-		noProxyList = createNoProxyList(k8s.ClusterInfo.NodePools, lbs)
+		noProxyList = createNoProxyList(k8s.InstallationProxy.NoProxy, k8s.ClusterInfo.NodePools, lbs)
 	}
 
 	return httpProxyUrl, noProxyList
 }
 
-func createNoProxyList(nodePools []*spec.NodePool, lbs []*spec.LBcluster) string {
+func createNoProxyList(userNoProxy string, nodePools []*spec.NodePool, lbs []*spec.LBcluster) string {
 	noProxyList := noProxyDefault
+	if userNoProxy != "" {
+		noProxyList = fmt.Sprintf("%v,%v", noProxyList, userNoProxy)
+	}
 
 	for _, np := range nodePools {
 		for _, node := range np.Nodes {

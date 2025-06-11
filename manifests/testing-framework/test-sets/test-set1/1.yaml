@@ -104,7 +104,7 @@ spec:
           zone: europe-west2-c
         count: 3
         serverType: e2-medium
-        image: ubuntu-minimal-2404-noble-amd64-v20241116
+        image: ubuntu-2404-noble-amd64-v20250313
         labels:
           test-set: test-set1
       - name: gcp-cmpt-nodes
@@ -114,7 +114,7 @@ spec:
           zone: europe-west1-b
         count: 3
         serverType: e2-small
-        image: ubuntu-minimal-2404-noble-amd64-v20241116
+        image: ubuntu-2404-noble-amd64-v20250313
         storageDiskSize: 50
         labels:
           test-set: test-set1
@@ -129,7 +129,6 @@ spec:
           zone: hsVQ:EU-FRANKFURT-1-AD-1
         count: 3
         serverType: VM.Standard2.1
-        # ubuntu minimal
         # https://docs.oracle.com/en-us/iaas/images/ubuntu-2404/canonical-ubuntu-24-04-2024-08-28-0.htm
         image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaa7hxwyz4qiasffo7n7s4ep5lywpzwgkc2am65frqrqinoyitmxxla
         taints:
@@ -142,7 +141,6 @@ spec:
           zone: hsVQ:EU-FRANKFURT-1-AD-1
         count: 3
         serverType: VM.Standard1.1
-        # ubuntu minimal
         # https://docs.oracle.com/en-us/iaas/images/ubuntu-2404/canonical-ubuntu-24-04-2024-08-28-0.htm
         image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaa7hxwyz4qiasffo7n7s4ep5lywpzwgkc2am65frqrqinoyitmxxla
         storageDiskSize: 50
@@ -206,7 +204,7 @@ spec:
   kubernetes:
     clusters:
       - name: ts1-htz-cluster-test-set-no1
-        version: 1.29.0
+        version: 1.30.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -214,7 +212,7 @@ spec:
           compute:
             - htz-cmpt-nodes
       - name: ts1-gcp-cluster-test-set-no1
-        version: 1.29.0
+        version: 1.30.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -222,7 +220,7 @@ spec:
           compute:
             - gcp-cmpt-nodes
       - name: ts1-oci-cluster-test-set-no1
-        version: 1.29.0
+        version: 1.30.0
         network: 192.168.2.0/24
         installationProxy:
           mode: "on"
@@ -232,7 +230,7 @@ spec:
           compute:
             - oci-cmpt-nodes
       - name: ts1-aws-cluster-test-set-no1
-        version: 1.29.0
+        version: 1.30.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -240,7 +238,7 @@ spec:
           compute:
             - aws-cmpt-nodes
       - name: ts1-azr-cluster-test-set-no1
-        version: 1.29.0
+        version: 1.30.0
         network: 192.168.2.0/24
         pools:
           control:

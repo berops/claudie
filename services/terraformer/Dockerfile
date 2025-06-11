@@ -1,12 +1,12 @@
-FROM docker.io/library/golang:1.24.1 AS build
+FROM docker.io/library/golang:1.24.3 AS build
 
 ARG TARGETARCH
 
 # download and unzip kube-one binary
 RUN apt-get -qq update && apt-get -qq install unzip
-RUN VERSION=1.5.7 && \
-    wget -q https://releases.hashicorp.com/terraform/${VERSION}/terraform_${VERSION}_linux_$TARGETARCH.zip && \
-    unzip -qq terraform_${VERSION}_linux_$TARGETARCH.zip -d terraform
+RUN VERSION=1.6.2 && \
+    wget -q https://github.com/opentofu/opentofu/releases/download/v${VERSION}/tofu_${VERSION}_linux_$TARGETARCH.zip && \
+    unzip -qq tofu_${VERSION}_linux_$TARGETARCH.zip -d tofu
 
 #Unset the GOPATH
 ENV GOPATH=
@@ -36,7 +36,7 @@ LABEL org.opencontainers.image.base.name "docker.io/library/alpine"
 LABEL org.opencontainers.image.description "Image for Terraformer from Claudie"
 
 #Copy the binaries to empty base image
-COPY --from=build /go/terraform/terraform /usr/local/bin
+COPY --from=build /go/tofu/tofu /usr/local/bin
 
 COPY --from=build /go/services/terraformer/server/server /bin/services/terraformer/server/server
 

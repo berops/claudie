@@ -40,7 +40,6 @@ spec:
           zone: hsVQ:EU-FRANKFURT-1-AD-1
         count: 1
         serverType: VM.Standard1.1
-        # ubuntu minimal
         # https://docs.oracle.com/en-us/iaas/images/ubuntu-2404/canonical-ubuntu-24-04-2024-08-28-0.htm
         image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaa7hxwyz4qiasffo7n7s4ep5lywpzwgkc2am65frqrqinoyitmxxla
         storageDiskSize: 50
@@ -52,13 +51,13 @@ spec:
           zone: europe-west2-c
         count: 1
         serverType: e2-medium
-        image: ubuntu-minimal-2404-noble-amd64-v20241116
+        image: ubuntu-2404-noble-amd64-v20250313
         storageDiskSize: 50
 
   kubernetes:
     clusters:
       - name: ts4-c-1-cluster-test-set-no4
-        version: 1.29.0
+        version: 1.30.0
         network: 192.168.2.0/24
         installationProxy:
           mode: "on"
