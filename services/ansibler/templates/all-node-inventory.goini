@@ -2,7 +2,7 @@
 {{- range $nodepoolInfo := .NodepoolsInfo }}
     {{- range $nodepool := $nodepoolInfo.Nodepools.Dynamic }}
         {{- range $node :=  $nodepool.Nodes }}
-{{ trimPrefix (printf "%s-" $nodepoolInfo.ClusterID) $node.Name }} ansible_user=root ansible_host={{ $node.Public }} private_ip={{ $node.Private }} netmask={{ extractNetmaskFromCIDR $nodepoolInfo.ClusterNetwork }} ansible_ssh_private_key_file={{ $nodepool.Name }}.pem ansible_ssh_extra_args="-o IdentitiesOnly=no"
+{{ trimPrefix (printf "%s-" $nodepoolInfo.ClusterID) $node.Name }} ansible_user=root ansible_host={{ $node.Public }} private_ip={{ $node.Private }} netmask={{ extractNetmaskFromCIDR $nodepoolInfo.ClusterNetwork }} ansible_ssh_private_key_file={{ $nodepool.Name }}.pem ansible_ssh_extra_args="-o IdentitiesOnly=yes"
         {{- end }}
     {{- end }}
 {{- end }}
