@@ -68,9 +68,9 @@ type: Opaque
 5. Assign required roles for the service principal:
     ```bash
     {
-      az role assignment create --assignee claudie-sp --role "Virtual Machine Contributor"
-      az role assignment create --assignee claudie-sp --role "Network Contributor"
-      az role assignment create --assignee claudie-sp --role "Resource Group Management"
+      az role assignment create --assignee claudie-sp --role "Virtual Machine Contributor" --scope /subscriptions/<subsvription_id>
+      az role assignment create --assignee claudie-sp --role "Network Contributor" --scope --scope /subscriptions/<subsvription_id>
+      az role assignment create --assignee claudie-sp --role "Resource Group Management" --scope --scope /subscriptions/<subsvription_id>
     }
     ```
     !!! warning "Use built-in role as alternative to custom role"
