@@ -1835,12 +1835,10 @@
 <span class="s">   &quot;AssignableScopes&quot;:[&quot;/&quot;]</span>
 <span class="s">}</span>
 <span class="s">EOF</span>
-</code></pre></div>
-    !!! warning "To create custom roles, your organization needs Microsoft Entra ID Premium P1 or P2." 
-        If you do not have Premium P1 or P2 activated, you can use the built-in role <strong>Kubernetes Agent Subscription Level Operator</strong> instead, which includes the required resource group permissions.</p>
+</code></pre></div></p>
 </li>
 <li>
-<p>Create a role based on the policy document. Skip this step if using build in role <strong>Kubernetes Agent Subscription Level Operator</strong>:
+<p>Create a role based on the policy document:
     <div class="highlight"><pre><span></span><code>az<span class="w"> </span>role<span class="w"> </span>definition<span class="w"> </span>create<span class="w"> </span>--role-definition<span class="w"> </span>policy.json
 </code></pre></div></p>
 </li>
@@ -1859,13 +1857,11 @@
 <li>
 <p>Assign required roles for the service principal:
     <div class="highlight"><pre><span></span><code><span class="o">{</span>
-<span class="w">  </span>az<span class="w"> </span>role<span class="w"> </span>assignment<span class="w"> </span>create<span class="w"> </span>--assignee<span class="w"> </span>claudie-sp<span class="w"> </span>--role<span class="w"> </span><span class="s2">&quot;Virtual Machine Contributor&quot;</span><span class="w"> </span>--scope<span class="w"> </span>/subscriptions/&lt;subscription_id&gt;
-<span class="w">  </span>az<span class="w"> </span>role<span class="w"> </span>assignment<span class="w"> </span>create<span class="w"> </span>--assignee<span class="w"> </span>claudie-sp<span class="w"> </span>--role<span class="w"> </span><span class="s2">&quot;Network Contributor&quot;</span><span class="w"> </span>--scope<span class="w"> </span>--scope<span class="w"> </span>/subscriptions/&lt;subscription_id&gt;
-<span class="w">  </span>az<span class="w"> </span>role<span class="w"> </span>assignment<span class="w"> </span>create<span class="w"> </span>--assignee<span class="w"> </span>claudie-sp<span class="w"> </span>--role<span class="w"> </span><span class="s2">&quot;Resource Group Management&quot;</span><span class="w"> </span>--scope<span class="w"> </span>--scope<span class="w"> </span>/subscriptions/&lt;subscription_id&gt;
+<span class="w">  </span>az<span class="w"> </span>role<span class="w"> </span>assignment<span class="w"> </span>create<span class="w"> </span>--assignee<span class="w"> </span>claudie-sp<span class="w"> </span>--role<span class="w"> </span><span class="s2">&quot;Virtual Machine Contributor&quot;</span>
+<span class="w">  </span>az<span class="w"> </span>role<span class="w"> </span>assignment<span class="w"> </span>create<span class="w"> </span>--assignee<span class="w"> </span>claudie-sp<span class="w"> </span>--role<span class="w"> </span><span class="s2">&quot;Network Contributor&quot;</span>
+<span class="w">  </span>az<span class="w"> </span>role<span class="w"> </span>assignment<span class="w"> </span>create<span class="w"> </span>--assignee<span class="w"> </span>claudie-sp<span class="w"> </span>--role<span class="w"> </span><span class="s2">&quot;Resource Group Management&quot;</span>
 <span class="o">}</span>
-</code></pre></div>
-    !!! warning "Use built-in role as alternative to custom role"
-        If you're not using the custom <strong>Resource Group Management</strong> role, assign the built-in role <strong>Kubernetes Agent Subscription Level Operator</strong>.</p>
+</code></pre></div></p>
 </li>
 </ol>
 <h2 id="dns-requirements">DNS requirements<a class="headerlink" href="#dns-requirements" title="Permanent link">&para;</a></h2>
@@ -1942,7 +1938,7 @@
 <span class="w">  </span><span class="nt">kubernetes</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">clusters</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">azure-cluster</span>
-<span class="w">        </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.31.0</span>
+<span class="w">        </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.27.0</span>
 <span class="w">        </span><span class="nt">network</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.2.0/24</span>
 <span class="w">        </span><span class="nt">pools</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">control</span><span class="p">:</span>
@@ -2039,7 +2035,7 @@ kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="
 <span class="w">  </span><span class="nt">kubernetes</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">clusters</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">azure-cluster</span>
-<span class="w">        </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.31.0</span>
+<span class="w">        </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.27.0</span>
 <span class="w">        </span><span class="nt">network</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.2.0/24</span>
 <span class="w">        </span><span class="nt">pools</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">control</span><span class="p">:</span>
