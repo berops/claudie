@@ -14,7 +14,7 @@ in the Input Manifest of the already build cluster.
 kubernetes:
   clusters:
     - name: claudie-cluster
-      version: v1.27.0
+      version: v1.30.0
       network: 192.168.2.0/24
       pools:
         ...
@@ -26,7 +26,7 @@ kubernetes:
 kubernetes:
   clusters:
     - name: claudie-cluster
-      version: 1.28.0
+      version: 1.31.0
       network: 192.168.2.0/24
       pools:
         ...

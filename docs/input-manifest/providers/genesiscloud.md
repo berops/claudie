@@ -66,7 +66,7 @@ spec:
   kubernetes:
     clusters:
       - name: genesiscloud-cluster
-        version: v1.27.0
+        version: v1.31.0
         network: 172.16.2.0/24
         pools:
           control:
