@@ -1,9 +1,9 @@
 .PHONY: proto manager builder terraformer ansibler kubeEleven test database minio containerimgs crd crd-apply controller-gen kind-load-images
 
-# Enforce same version of protoc 
+# Enforce same version of protoc
 PROTOC_VERSION = "29.3"
 CURRENT_VERSION = $$(protoc --version | awk '{print $$2}')
-# Generate all .proto files 
+# Generate all .proto files
 proto:
 	@if [ "$(CURRENT_VERSION)" = "$(PROTOC_VERSION)" ]; then \
 		protoc --proto_path=proto --go_out=paths=source_relative:proto/pb --go-grpc_out=paths=source_relative:proto/pb proto/*.proto proto/spec/*.proto ;\
@@ -46,7 +46,7 @@ mongo:
 
 # Start minio backend for state files used in terraform
 minio:
-# mkdir will simulate the automatic bucket creation 
+# mkdir will simulate the automatic bucket creation
 	mkdir -p ~/minio/data/claudie-tf-state-files
 	docker run --name minio -d --rm -p 9000:9000 -p 9001:9001 --name minio -v ~/minio/data:/data quay.io/minio/minio server /data --console-address ":9001"
 
@@ -74,7 +74,7 @@ datastoreStop:
 	docker stop minio
 	docker stop dynamodb
 
-# DynamoDB utilities 
+# DynamoDB utilities
 dynamodb-create-table:
 	aws dynamodb create-table --attribute-definitions AttributeName=LockID,AttributeType=S --table-name claudie --key-schema AttributeName=LockID,KeyType=HASH --provisioned-throughput ReadCapacityUnits=1,WriteCapacityUnits=1  --output json --endpoint-url http://localhost:8000 --debug --region local
 
@@ -101,30 +101,9 @@ kind-load-images:
 		kind load docker-image ghcr.io/berops/claudie/$$service:$(REV); \
 	done
 
-# Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
-ifeq (,$(shell go env GOBIN))
-GOBIN=$(shell go env GOPATH)/bin
-else
-GOBIN=$(shell go env GOBIN)
-endif
-
-## Location to install dependencies to
-LOCALBIN ?= $(shell pwd)/bin
-$(LOCALBIN):
-	mkdir -p $(LOCALBIN)
-
-## Tool Binaries
-CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
-CONTROLLER_TOOLS_VERSION ?= v0.15.0
-
 # Generate CustomResourceDefinition objects.
-crd: controller-gen 
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./..." output:crd:artifacts:config=manifests/claudie/crd
+crd:
+	go tool controller-gen rbac:roleName=manager-role crd paths="./..." output:crd:artifacts:config=manifests/claudie/crd
 
-crd-apply: controller-gen 
-	$(CONTROLLER_GEN) crd paths="./..." output:crd:artifacts:config=manifests/claudie/crd && kubectl apply -k ./manifests/claudie/crd/
-
-controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary. If wrong version is installed, it will be overwritten.
-$(CONTROLLER_GEN): $(LOCALBIN)
-	test -s $(LOCALBIN)/controller-gen && $(LOCALBIN)/controller-gen --version | grep -q $(CONTROLLER_TOOLS_VERSION) || \
-	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION)
+crd-apply:
+	go tool controller-gen crd paths="./..." output:crd:artifacts:config=manifests/claudie/crd && kubectl apply -k ./manifests/claudie/crd/

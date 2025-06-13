@@ -1,8 +1,11 @@
 package manifest
 
 import (
+	"math/rand/v2"
 	"testing"
 
+	"github.com/berops/claudie/internal/generics"
+	"github.com/berops/claudie/internal/spectesting"
 	"github.com/stretchr/testify/require"
 	k8sV1 "k8s.io/api/core/v1"
 )
@@ -213,6 +216,51 @@ var (
 
 func newIntP(a int32) *int32 {
 	return &a
+}
+
+func TestLoadBalancerRoles(t *testing.T) {
+	ci := spectesting.GenerateFakeK8SClusterInfo(true, "192.168.0.0/16", "10.1.0.0/16")
+	roles := spectesting.GenerateFakeRoles(false, ci)
+	loadbalancer := &LoadBalancer{}
+
+	for _, r := range roles {
+		loadbalancer.Roles = append(loadbalancer.Roles, Role{
+			Name:        r.Name,
+			Protocol:    r.Protocol,
+			Port:        int32(rand.IntN(ReservedPortRangeStart)),
+			TargetPort:  r.TargetPort,
+			TargetPools: generics.RemoveDuplicates(r.TargetPools),
+			Settings: &RoleSettings{
+				ProxyProtocol:  r.Settings.ProxyProtocol,
+				StickySessions: r.Settings.StickySessions,
+			},
+			EnvoyProxy: &EnvoyProxy{
+				Cds: r.Settings.EnvoyCds,
+				Lds: r.Settings.EnvoyLds,
+			},
+		})
+	}
+
+	m := Manifest{}
+	for _, n := range ci.NodePools {
+		m.NodePools.Dynamic = append(m.NodePools.Dynamic, DynamicNodePool{
+			Name: n.Name,
+		})
+	}
+
+	err := loadbalancer.Validate(&m)
+	require.NoError(t, err)
+
+	loadbalancer.Roles[0].Port = ReservedPortRangeStart
+	for {
+		err = loadbalancer.Validate(&m)
+		require.Error(t, err)
+
+		loadbalancer.Roles[0].Port += 1
+		if loadbalancer.Roles[0].Port == ReservedPortRangeEnd {
+			break
+		}
+	}
 }
 
 // TestDomain tests the domain which will be formed from node name

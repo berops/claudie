@@ -6,8 +6,8 @@ import (
 	"slices"
 	"sync"
 
+	"github.com/berops/claudie/internal/api/manifest"
 	"github.com/berops/claudie/internal/hash"
-	"github.com/berops/claudie/internal/manifest"
 )
 
 var _ Store = (*InMemoryStore)(nil)

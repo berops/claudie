@@ -24,6 +24,7 @@ type SCData struct {
 
 type LBcluster struct {
 	NodePools *NodePools
+	Roles     []*spec.Role
 }
 
 type NodePools struct {
@@ -97,10 +98,13 @@ func (sc *ScrapeConfig) RemoveLBScrapeConfig() error {
 func (sc *ScrapeConfig) getData() SCData {
 	lbs := make([]*LBcluster, 0, len(sc.LBClusters))
 	for _, l := range sc.LBClusters {
-		lbs = append(lbs, &LBcluster{NodePools: &NodePools{
-			Dynamic: nodepools.Dynamic(l.ClusterInfo.NodePools),
-			Static:  nodepools.Static(l.ClusterInfo.NodePools),
-		}})
+		lbs = append(lbs, &LBcluster{
+			NodePools: &NodePools{
+				Dynamic: nodepools.Dynamic(l.ClusterInfo.NodePools),
+				Static:  nodepools.Static(l.ClusterInfo.NodePools),
+			},
+			Roles: l.Roles,
+		})
 	}
 	return SCData{LBClusters: lbs}
 }

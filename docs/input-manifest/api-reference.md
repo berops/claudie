@@ -1,3 +1,41 @@
+# Settings API reference
+
+Settings are definitions that allow you to replace the defaults used by Claudie when creating a cluster, as defined in the [InputManifest](#inputmanifest-api-reference).
+
+These settings can be applied to pre-defined places in the InputManifest and are identified by the `settingsRef` field.
+
+Settings are parsed using [Go templates](https://pkg.go.dev/text/template). During this process, the types, that are parsed from the InputManifest, are also passed in, allowing you to reference them within the templates.
+
+## Spec
+
+ Specification of the desired setting/s that should be applied when building the cluster.
+
+ -  `envoy` [Envoy](#envoy)
+
+    Optional override of the envoy configurations used on the loadbalancer nodes.
+
+
+## Envoy
+
+ This allows you to replace the listener and cluster configurations used when deploying Envoy proxies on load balancer nodes attached to Kubernetes clusters.
+
+ The mechanism used to replace the default configurations used by Claudie is as described in the [dynamic configuration documentation](https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/configuration-dynamic-filesystem)
+
+ To write your own configurations you can follow the official [envoy documentation]( https://www.envoyproxy.io/docs/envoy/latest/)
+
+!!! note "The default configurations used by claudie implement the [settings](#role) options from the Role definition. If you provide your own configuration these may break if you do not consider them."
+
+ When Claudie parses the provided configurations, the context of the [role](#role) is available and can be referenced within them.
+
+ - `lds`
+
+    Replaces the listener configuration of the envoy proxy.
+
+ - `cds`
+
+    Replaces the cluster configuration of the envoy proxy.
+
+
 # InputManifest API reference
 
 InputManifest is a definition of the user's infrastructure. It contains cloud provider specification, nodepool specification, Kubernetes and loadbalancer clusters.
@@ -471,6 +509,16 @@ Role defines a concrete loadbalancer configuration. Single loadbalancer can have
     - `stickySessions`: Default value: `false`
 
         Specifies whether incoming traffic should be sent to the same node each time, rather than load balancing between available nodes. A hash of the IP is used to determine which node the traffic is routed to. <br>
+
+- `settingsRef`
+  Optional reference to custom configurations that override the defaults used
+  by claudie when deploying loadbalancers.
+
+    - `name`
+    name of the resource that is of type `settings.claudie.io`
+
+    - `namespace`
+    namespace where to find the resource.
 
 ## Cluster-lb
 

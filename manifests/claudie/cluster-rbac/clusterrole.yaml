@@ -9,33 +9,33 @@ rules:
   - apiGroups: [""]
     resources: ["secrets"]
     verbs:
-    - get
-    - list
-    - watch
+      - get
+      - list
+      - watch
   - apiGroups: [""]
     resources: ["events"]
     verbs:
-    - create
-    - list
-    - watch   
-    - patch 
+      - create
+      - list
+      - watch
+      - patch
   - apiGroups: ["claudie.io"]
-    resources: ["inputmanifests"]
+    resources: ["inputmanifests", "settings"]
     verbs:
-    - create
-    - delete
-    - get
-    - list
-    - patch
-    - update
-    - watch
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
   - apiGroups: ["claudie.io"]
     resources: ["inputmanifests/finalizers"]
     verbs:
-    - update
+      - update
   - apiGroups: ["claudie.io"]
     resources: ["inputmanifests/status"]
     verbs:
-    - get
-    - patch
-    - update
+      - get
+      - patch
+      - update

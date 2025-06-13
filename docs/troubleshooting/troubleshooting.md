@@ -47,7 +47,7 @@ Claudie relies on all services to be interconnected. If any of these services fa
           }
         },
         "state": "IN_PROGRESS"
-      }    
+      }
     ```
 
 3. Examine claudie-operator service logs. The claudie-operator service logs will provide insights into any issues during cluster bootstrap and identify the problematic service. If cluster creation fails despite all Claudie pods being scheduled, it may suggest lack of permissions for Claudie providers' credentials. In this case, operator logs will point to Terrafomer service, and Terraformer service logs will provide detailed error output.
@@ -95,7 +95,7 @@ First of all you have to get into the directory in the `terraformer` pod, where 
 Once you are in the directory with all TF files, run the following command:
 
 ```
-terraform force-unlock <lock-id>
+tofu force-unlock <lock-id>
 ```
 
 The `lock-id` is generally shown in the error message.

@@ -11,8 +11,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/berops/claudie/internal/api/manifest"
 	"github.com/berops/claudie/internal/hash"
-	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/manager/internal/store"
 	"github.com/rs/zerolog/log"

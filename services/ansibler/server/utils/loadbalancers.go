@@ -58,17 +58,29 @@ type (
 		ClusterID string
 	}
 
-	LBPlaybookParameters struct {
-		Loadbalancer string
-	}
-
 	LBClusterRolesInfo struct {
 		Role        *spec.Role
 		TargetNodes []*spec.Node
 	}
 
-	NginxConfigTemplateParameters struct {
-		Roles []LBClusterRolesInfo
+	NodeExporterTemplateParams struct {
+		LoadBalancer     string
+		NodeExporterPort int
+	}
+
+	UninstallNginxParams struct {
+		LoadBalancer string
+	}
+
+	EnvoyConfigTemplateParams struct {
+		LoadBalancer string
+		Roles        []LBClusterRolesInfo
+	}
+
+	EnvoyTemplateParams struct {
+		LoadBalancer   string
+		Role           string
+		EnvoyAdminPort int32
 	}
 )
 
