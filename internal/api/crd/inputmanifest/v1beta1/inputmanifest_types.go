@@ -23,7 +23,7 @@ import (
 )
 
 // ProviderType type of a provider.
-// A list of available providers can be found at https://docs.claudie.io/v0.9.10/input-manifest/providers/aws/
+// A list of available providers can be found at https://docs.claudie.io/latest/input-manifest/providers/aws/
 type ProviderType string
 
 const (
