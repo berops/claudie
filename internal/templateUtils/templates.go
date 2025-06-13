@@ -9,6 +9,8 @@ import (
 	"reflect"
 	"strings"
 	"text/template"
+
+	"github.com/Masterminds/sprig/v3"
 )
 
 // directory - output directory
@@ -50,12 +52,21 @@ func (t Templates) GenerateToString(tpl *template.Template, d interface{}) (stri
 
 // LoadTemplate creates template instance with auxiliary functions from specified template.
 func LoadTemplate(tplFile string) (*template.Template, error) {
-	tpl, err := template.New("").Funcs(template.FuncMap{
-		"replaceAll":             strings.ReplaceAll,
-		"trimPrefix":             strings.TrimPrefix,
-		"extractNetmaskFromCIDR": ExtractNetmaskFromCIDR,
-		"hasExtension":           HasExtension,
-	}).Parse(tplFile)
+	funcMap := sprig.TxtFuncMap()
+
+	// Remove environmnent functions.
+	delete(funcMap, "env")
+	delete(funcMap, "expandenv")
+
+	// Remove network functions.
+	delete(funcMap, "getHostByName")
+
+	// Add custom functions.
+	funcMap["replaceAll"] = strings.ReplaceAll
+	funcMap["extractNetmaskFromCIDR"] = ExtractNetmaskFromCIDR
+	funcMap["hasExtension"] = HasExtension
+
+	tpl, err := template.New("").Funcs(funcMap).Parse(tplFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse the template file : %w", err)
 	}
