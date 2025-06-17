@@ -1,179 +1,203 @@
 package usecases
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/proto/pb/spec"
 	builder "github.com/berops/claudie/services/builder/internal"
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 )
 
-func (u *Usecases) patchConfigMapsWithNewApiEndpoint(ctx *builder.Context) error {
-	if err := u.callPatchClusterInfoConfigMap(ctx); err != nil {
-		return err
-	}
-	return u.Kuber.PatchKubeProxyConfigMap(ctx, u.Kuber.GetClient())
+func (u *Usecases) patchConfigMapsWithNewApiEndpoint(ctx context.Context, work *builder.Context, logger *zerolog.Logger) error {
+	return u.processTasks(ctx, work, logger, []Task{
+		{
+			do: func(_ context.Context, bx *builder.Context, _ *zerolog.Logger) error {
+				return u.Kuber.PatchClusterInfoConfigMap(bx, u.Kuber.GetClient())
+			},
+			stage:       spec.Workflow_KUBER,
+			description: "patching cluster-info config map",
+		},
+		{
+			do: func(_ context.Context, bx *builder.Context, _ *zerolog.Logger) error {
+				return u.Kuber.PatchKubeProxyConfigMap(work, u.Kuber.GetClient())
+			},
+			stage:       spec.Workflow_KUBER,
+			description: "patching kube-proxy config map",
+		},
+	})
 }
 
-func (u *Usecases) patchKubeadmAndUpdateCilium(ctx *builder.Context) error {
-	var lbApiEndpoint string
-	if ep := clusters.FindAssignedLbApiEndpoint(ctx.DesiredLoadbalancers); ep != nil {
-		lbApiEndpoint = ep.Dns.Endpoint
-	}
-
-	if err := u.Kuber.PatchKubeadmConfigMap(ctx, lbApiEndpoint, u.Kuber.GetClient()); err != nil {
-		return err
-	}
-
-	return u.Kuber.CiliumRolloutRestart(ctx.DesiredCluster, u.Kuber.GetClient())
+func (u *Usecases) patchKubeadmAndUpdateCilium(ctx context.Context, work *builder.Context, logger *zerolog.Logger) error {
+	return u.processTasks(ctx, work, logger, []Task{
+		{
+			do: func(_ context.Context, bx *builder.Context, _ *zerolog.Logger) error {
+				var lbApiEndpoint string
+				if ep := clusters.FindAssignedLbApiEndpoint(work.DesiredLoadbalancers); ep != nil {
+					lbApiEndpoint = ep.Dns.Endpoint
+				}
+				return u.Kuber.PatchKubeadmConfigMap(work, lbApiEndpoint, u.Kuber.GetClient())
+			},
+			stage:       spec.Workflow_KUBER,
+			description: "patching kubeadm config map",
+		},
+		{
+			do: func(_ context.Context, bx *builder.Context, _ *zerolog.Logger) error {
+				return u.Kuber.CiliumRolloutRestart(work.DesiredCluster, u.Kuber.GetClient())
+			},
+			stage:       spec.Workflow_KUBER,
+			description: "restarting cilium daemon set",
+		},
+	})
 }
 
 // reconcileK8sConfiguration reconciles desired k8s cluster configuration via kuber.
-func (u *Usecases) reconcileK8sConfiguration(ctx *builder.Context) error {
-	logger := loggerutils.WithProjectAndCluster(ctx.ProjectName, ctx.Id())
-	kuberClient := u.Kuber.GetClient()
+func (u *Usecases) reconcileK8sConfiguration(ctx context.Context, work *builder.Context, logger *zerolog.Logger) error {
+	var tasks []Task
 
-	// Set workflow state.
-	description := ctx.Workflow.Description
-	u.updateTaskWithDescription(ctx, spec.Workflow_KUBER, fmt.Sprintf("%s processing kuber commands", description))
-
-	// Only patch ConfigMaps if kubeconfig changed.
-	if ctx.CurrentCluster != nil && (ctx.CurrentCluster.Kubeconfig != ctx.DesiredCluster.Kubeconfig) {
-		if err := u.patchConfigMapsWithNewApiEndpoint(ctx); err != nil {
-			return err
-		}
+	if work.CurrentCluster != nil && (work.CurrentCluster.Kubeconfig != work.DesiredCluster.Kubeconfig) {
+		// Only patch ConfigMaps if kubeconfig changed.
+		tasks = append(tasks, Task{
+			do:          u.patchConfigMapsWithNewApiEndpoint,
+			stage:       spec.Workflow_KUBER,
+			description: "patching configs maps with new k8s api endpoint",
+		})
 	}
 
-	if err := u.patchKubeadmAndUpdateCilium(ctx); err != nil {
-		return err
-	}
+	tasks = append(tasks, Task{
+		do:          u.patchKubeadmAndUpdateCilium,
+		stage:       spec.Workflow_KUBER,
+		description: "patching kubeamd and restating cilium",
+	})
 
-	// If previous cluster had loadbalancers, and the new one does not, the old scrape config will be removed.
-	if len(ctx.DesiredLoadbalancers) == 0 && len(ctx.CurrentLoadbalancers) > 0 {
-		u.updateTaskWithDescription(ctx, spec.Workflow_KUBER, fmt.Sprintf("%s removing Loadbalancer scrape config", description))
-		logger.Info().Msg("Calling RemoveScrapeConfig on Kuber")
-		if err := u.Kuber.RemoveLBScrapeConfig(ctx, kuberClient); err != nil {
-			return err
-		}
-		logger.Info().Msg("RemoveScrapeConfig on Kuber finished successfully")
+	if len(work.DesiredLoadbalancers) == 0 && len(work.CurrentLoadbalancers) > 0 {
+		// If previous cluster had loadbalancers, and the new one does not, the old scrape config will be removed.
+		tasks = append(tasks, Task{
+			do: func(_ context.Context, bx *builder.Context, _ *zerolog.Logger) error {
+				return u.Kuber.RemoveLBScrapeConfig(work, u.Kuber.GetClient())
+			},
+			stage:       spec.Workflow_KUBER,
+			description: "removing loadbalancer scrabe config",
+		})
 	}
 
 	// Create a scrape-config if there are loadbalancers in the new/updated cluster.
-	if len(ctx.DesiredLoadbalancers) > 0 {
-		u.updateTaskWithDescription(ctx, spec.Workflow_KUBER, fmt.Sprintf("%s storing Loadbalancer scrape config", description))
-		logger.Info().Msg("Calling StoreLBScrapeConfig on Kuber")
-		if err := u.Kuber.StoreLBScrapeConfig(ctx, kuberClient); err != nil {
-			return err
-		}
-		logger.Info().Msg("StoreLBScrapeConfig on Kuber finished successfully")
+	if len(work.DesiredLoadbalancers) > 0 {
+		tasks = append(tasks, Task{
+			do: func(_ context.Context, bx *builder.Context, _ *zerolog.Logger) error {
+				return u.Kuber.StoreLBScrapeConfig(work, u.Kuber.GetClient())
+			},
+			stage:       spec.Workflow_KUBER,
+			description: "storing loadbalancer scrabe config",
+		})
 	}
 
-	u.updateTaskWithDescription(ctx, spec.Workflow_KUBER, fmt.Sprintf("%s setting up storage", description))
+	tasks = append(tasks, []Task{
+		{
+			do: func(_ context.Context, bx *builder.Context, _ *zerolog.Logger) error {
+				resStorage, err := u.Kuber.SetUpStorage(work, u.Kuber.GetClient())
+				if err != nil {
+					return err
+				}
+				work.DesiredCluster = resStorage.DesiredCluster
+				return nil
+			},
+			stage:       spec.Workflow_KUBER,
+			description: "setting up longhorn for storage",
+		},
+		{
+			do: func(_ context.Context, bx *builder.Context, _ *zerolog.Logger) error {
+				return u.Kuber.StoreKubeconfig(work, u.Kuber.GetClient())
+			},
+			stage:       spec.Workflow_KUBER,
+			description: "creating kubeconfig secret",
+		},
+		{
+			do: func(_ context.Context, bx *builder.Context, _ *zerolog.Logger) error {
+				return u.Kuber.StoreClusterMetadata(work, u.Kuber.GetClient())
+			},
+			stage:       spec.Workflow_KUBER,
+			description: "creating cluster metadata secret",
+		},
+		{
+			do: func(_ context.Context, bx *builder.Context, _ *zerolog.Logger) error {
+				return u.Kuber.PatchNodes(work, u.Kuber.GetClient())
+			},
+			stage:       spec.Workflow_KUBER,
+			description: "patching k8s nodes",
+		},
+	}...)
 
-	log.Info().Msg("Calling SetUpStorage on Kuber for cluster")
-	resStorage, err := u.Kuber.SetUpStorage(ctx, kuberClient)
-	if err != nil {
-		return err
-	}
-	logger.Info().Msg("SetUpStorage on Kuber finished successfully")
-
-	ctx.DesiredCluster = resStorage.DesiredCluster
-	u.updateTaskWithDescription(ctx, spec.Workflow_KUBER, fmt.Sprintf("%s creating kubeconfig secret", description))
-
-	logger.Info().Msg("Calling StoreKubeconfig on kuber")
-	if err := u.Kuber.StoreKubeconfig(ctx, kuberClient); err != nil {
-		return err
-	}
-	logger.Info().Msg("StoreKubeconfig on Kuber finished successfully")
-
-	u.updateTaskWithDescription(ctx, spec.Workflow_KUBER, fmt.Sprintf("%s creating cluster metadata secret", description))
-
-	logger.Info().Msg("Calling StoreNodeMetadata on kuber")
-	if err := u.Kuber.StoreClusterMetadata(ctx, kuberClient); err != nil {
-		return err
-	}
-	logger.Info().Msg("StoreNodeMetadata on Kuber finished successfully")
-
-	u.updateTaskWithDescription(ctx, spec.Workflow_KUBER, fmt.Sprintf("%s patching k8s nodes", description))
-
-	logger.Info().Msg("Calling PatchNodes on kuber")
-	if err := u.Kuber.PatchNodes(ctx, kuberClient); err != nil {
-		return err
-	}
-
-	if ctx.DesiredCluster.AnyAutoscaledNodePools() {
+	if work.DesiredCluster.AnyAutoscaledNodePools() {
 		// Set up Autoscaler if desired state is autoscaled.
-		u.updateTaskWithDescription(ctx, spec.Workflow_KUBER, fmt.Sprintf("%s deploying Cluster Autoscaler", description))
-		logger.Info().Msg("Calling SetUpClusterAutoscaler on kuber")
-		if err := u.Kuber.SetUpClusterAutoscaler(ctx, kuberClient); err != nil {
-			return err
-		}
-	} else if ctx.CurrentCluster.AnyAutoscaledNodePools() {
+		tasks = append(tasks, Task{
+			do: func(_ context.Context, bx *builder.Context, _ *zerolog.Logger) error {
+				return u.Kuber.SetUpClusterAutoscaler(work, u.Kuber.GetClient())
+			},
+			stage:       spec.Workflow_KUBER,
+			description: "deploying cluster autoscaler",
+		})
+	} else if work.CurrentCluster.AnyAutoscaledNodePools() {
 		// Destroy Autoscaler if current state is autoscaled, but desired is not.
-		u.updateTaskWithDescription(ctx, spec.Workflow_KUBER, fmt.Sprintf("%s deleting Cluster Autoscaler", description))
-		logger.Info().Msg("Calling DestroyClusterAutoscaler on kuber")
-		if err := u.Kuber.DestroyClusterAutoscaler(ctx, kuberClient); err != nil {
-			return err
+		tasks = append(tasks, Task{
+			do: func(_ context.Context, bx *builder.Context, _ *zerolog.Logger) error {
+				return u.Kuber.DestroyClusterAutoscaler(work, u.Kuber.GetClient())
+			},
+			stage:       spec.Workflow_KUBER,
+			description: "deleting cluster autoscaler",
+		})
+	}
+
+	for _, t := range tasks {
+		if err := u.tryProcessTask(ctx, work, logger, t); err != nil {
+			return fmt.Errorf("failed to process task: %s: %w", work.Workflow.Description, err)
 		}
 	}
 
-	u.updateTaskWithDescription(ctx, spec.Workflow_KUBER, description)
-	return nil
-}
-
-// callPatchClusterInfoConfigMap patches cluster-info ConfigMap via kuber.
-func (u *Usecases) callPatchClusterInfoConfigMap(ctx *builder.Context) error {
-	logger := loggerutils.WithProjectAndCluster(ctx.ProjectName, ctx.Id())
-
-	description := ctx.Workflow.Description
-
-	u.updateTaskWithDescription(ctx, spec.Workflow_KUBER, fmt.Sprintf("%s patching cluster info config map", description))
-
-	logger.Info().Msg("Calling PatchClusterInfoConfigMap on kuber for cluster")
-	if err := u.Kuber.PatchClusterInfoConfigMap(ctx, u.Kuber.GetClient()); err != nil {
-		return err
-	}
-	logger.Info().Msg("PatchClusterInfoConfigMap on Kuber for cluster finished successfully")
-
-	u.updateTaskWithDescription(ctx, spec.Workflow_KUBER, description)
 	return nil
 }
 
 // deleteClusterData deletes the kubeconfig, cluster metadata and cluster autoscaler from management cluster.
-func (u *Usecases) deleteClusterData(ctx *builder.Context) error {
-	if ctx.CurrentCluster == nil {
+func (u *Usecases) deleteClusterData(ctx context.Context, work *builder.Context, logger *zerolog.Logger) error {
+	if work.CurrentCluster == nil {
 		return nil
 	}
-	description := ctx.Workflow.Description
-	kuberClient := u.Kuber.GetClient()
-	logger := loggerutils.WithProjectAndCluster(ctx.ProjectName, ctx.Id())
 
-	u.updateTaskWithDescription(ctx, spec.Workflow_DESTROY_KUBER, fmt.Sprintf("%s deleting kubeconfig secret", description))
-
-	logger.Info().Msgf("Calling DeleteKubeconfig on Kuber")
-	if err := u.Kuber.DeleteKubeconfig(ctx, kuberClient); err != nil {
-		return fmt.Errorf("error while deleting kubeconfig for cluster %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
+	tasks := []Task{
+		{
+			do: func(_ context.Context, bx *builder.Context, _ *zerolog.Logger) error {
+				return u.Kuber.DeleteKubeconfig(work, u.Kuber.GetClient())
+			},
+			stage:       spec.Workflow_KUBER,
+			description: "deleting kubeconfig secret",
+		},
+		{
+			do: func(_ context.Context, bx *builder.Context, _ *zerolog.Logger) error {
+				return u.Kuber.DeleteClusterMetadata(work, u.Kuber.GetClient())
+			},
+			stage:       spec.Workflow_KUBER,
+			description: "deleting cluster metadata secret",
+		},
 	}
 
-	u.updateTaskWithDescription(ctx, spec.Workflow_DESTROY_KUBER, fmt.Sprintf("%s deleting cluster metadata secret", description))
-
-	logger.Info().Msg("Calling DeleteClusterMetadata on kuber")
-	if err := u.Kuber.DeleteClusterMetadata(ctx, kuberClient); err != nil {
-		return fmt.Errorf("error while deleting metadata for cluster %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
+	if work.CurrentCluster.AnyAutoscaledNodePools() {
+		tasks = append(tasks, Task{
+			do: func(ctx context.Context, bx *builder.Context, _ *zerolog.Logger) error {
+				return u.Kuber.DestroyClusterAutoscaler(work, u.Kuber.GetClient())
+			},
+			stage:       spec.Workflow_KUBER,
+			description: "deleting cluster autoscaler",
+		})
 	}
-	logger.Info().Msg("DeleteKubeconfig on Kuber finished successfully")
 
-	if ctx.CurrentCluster.AnyAutoscaledNodePools() {
-		u.updateTaskWithDescription(ctx, spec.Workflow_DESTROY_KUBER, fmt.Sprintf("%s deleting Cluster Autoscaler", description))
-		logger.Info().Msg("Calling DestroyClusterAutoscaler on kuber")
-		if err := u.Kuber.DestroyClusterAutoscaler(ctx, kuberClient); err != nil {
-			return err
+	for _, t := range tasks {
+		if err := u.tryProcessTask(ctx, work, logger, t); err != nil {
+			return fmt.Errorf("failed to process task: %s: %w", work.Workflow.Description, err)
 		}
 	}
 
-	u.updateTaskWithDescription(ctx, spec.Workflow_KUBER, description)
 	return nil
 }
 

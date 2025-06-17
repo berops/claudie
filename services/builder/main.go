@@ -113,7 +113,11 @@ func main() {
 	// Listen for SIGTERM or context cancellation.
 	group.Go(func() error {
 		ch := make(chan os.Signal, 1)
-		signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
+		// TODO: remove the additional signals here.
+		// What we need to do is to pass this context down the task processing functions
+		// but only check for context cancellation on each new task instead of passing
+		// it to the network calls.
+		signal.Notify(ch, os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGKILL)
 		defer signal.Stop(ch)
 
 		// wait for either the received signal or
@@ -161,7 +165,7 @@ func main() {
 					return nil
 				}
 
-				return usecases.TaskProcessor(&wg)
+				return usecases.TaskProcessor(ctx, &wg)
 			},
 			worker.ErrorLogger,
 		).Run()
