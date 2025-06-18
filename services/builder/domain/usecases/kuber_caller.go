@@ -71,7 +71,7 @@ func (u *Usecases) reconcileK8sConfiguration(ctx context.Context, work *builder.
 		{
 			do:          u.patchKubeadmAndUpdateCilium,
 			stage:       spec.Workflow_KUBER,
-			description: "patching kubeamd and restating cilium",
+			description: "patching kubeadm and restarting cilium",
 		},
 		{
 			do: func(_ context.Context, work *builder.Context, _ *zerolog.Logger) error {
