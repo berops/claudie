@@ -26,6 +26,10 @@ func WithProjectAndCluster(project, cluster string) zerolog.Logger {
 	return logger.With().Str("project", project).Str("cluster", cluster).Logger()
 }
 
+func WithTaskContext(project, cluster, id string) zerolog.Logger {
+	return logger.With().Str("project", project).Str("cluster", cluster).Str("task", id).Logger()
+}
+
 const defaultLogLevel = zerolog.InfoLevel
 
 var (

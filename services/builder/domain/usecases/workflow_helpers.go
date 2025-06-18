@@ -75,7 +75,7 @@ func (u *Usecases) buildCluster(ctx context.Context, work *builder.Context, logg
 		}).Add(-float64(c))
 	}(max(0, work.DesiredCluster.NodeCount()-work.CurrentCluster.NodeCount()))
 
-	return u.processTasks(ctx, work, logger, []Task{
+	tasks := []Task{
 		{
 			do:          u.reconcileInfrastructure,
 			stage:       spec.Workflow_TERRAFORMER,
@@ -96,47 +96,49 @@ func (u *Usecases) buildCluster(ctx context.Context, work *builder.Context, logg
 			stage:       spec.Workflow_KUBER,
 			description: "reconciling cluster configuration",
 		},
-	})
+	}
+
+	return u.processTasks(ctx, work, logger, tasks)
 }
 
 // destroyCluster destroys existing clusters infrastructure for a config and cleans up management cluster from any of the cluster data.
-func (u *Usecases) destroyCluster(ctx context.Context, bctx *builder.Context, logger *zerolog.Logger) error {
+func (u *Usecases) destroyCluster(ctx context.Context, work *builder.Context, logger *zerolog.Logger) error {
 	// K8s delete nodes prometheus metric.
 	metrics.K8sDeletingNodesInProgress.With(prometheus.Labels{
-		metrics.K8sClusterLabel:    bctx.GetClusterName(),
-		metrics.InputManifestLabel: bctx.ProjectName,
-	}).Add(float64(bctx.CurrentCluster.NodeCount()))
+		metrics.K8sClusterLabel:    work.GetClusterName(),
+		metrics.InputManifestLabel: work.ProjectName,
+	}).Add(float64(work.CurrentCluster.NodeCount()))
 
 	defer func(c int) {
 		metrics.K8sDeletingNodesInProgress.With(prometheus.Labels{
-			metrics.K8sClusterLabel:    bctx.GetClusterName(),
-			metrics.InputManifestLabel: bctx.ProjectName,
+			metrics.K8sClusterLabel:    work.GetClusterName(),
+			metrics.InputManifestLabel: work.ProjectName,
 		}).Add(-float64(c))
-	}(bctx.CurrentCluster.NodeCount())
+	}(work.CurrentCluster.NodeCount())
 
 	// LB delete nodes prometheus metrics.
-	for _, lb := range bctx.CurrentLoadbalancers {
+	for _, lb := range work.CurrentLoadbalancers {
 		metrics.LbDeletingNodesInProgress.With(prometheus.Labels{
 			metrics.K8sClusterLabel:    lb.TargetedK8S,
 			metrics.LBClusterLabel:     lb.ClusterInfo.Name,
-			metrics.InputManifestLabel: bctx.ProjectName,
+			metrics.InputManifestLabel: work.ProjectName,
 		}).Add(float64(lb.NodeCount()))
 
 		defer func(k8s, lb string, c int) {
 			metrics.LbDeletingNodesInProgress.With(prometheus.Labels{
 				metrics.K8sClusterLabel:    k8s,
 				metrics.LBClusterLabel:     lb,
-				metrics.InputManifestLabel: bctx.ProjectName,
+				metrics.InputManifestLabel: work.ProjectName,
 			}).Add(-float64(c))
 		}(lb.TargetedK8S, lb.ClusterInfo.Name, lb.NodeCount())
 	}
 
-	metrics.LBClustersInDeletion.Add(float64(len(bctx.CurrentLoadbalancers)))
-	defer func(c int) { metrics.LBClustersInDeletion.Add(-float64(c)) }(len(bctx.CurrentLoadbalancers))
+	metrics.LBClustersInDeletion.Add(float64(len(work.CurrentLoadbalancers)))
+	defer func(c int) { metrics.LBClustersInDeletion.Add(-float64(c)) }(len(work.CurrentLoadbalancers))
 
 	var tasks []Task
 
-	if s := nodepools.Static(bctx.CurrentCluster.GetClusterInfo().GetNodePools()); len(s) > 0 {
+	if s := nodepools.Static(work.CurrentCluster.GetClusterInfo().GetNodePools()); len(s) > 0 {
 		tasks = append(tasks,
 			Task{
 				do:              u.destroyK8sCluster,
@@ -166,13 +168,11 @@ func (u *Usecases) destroyCluster(ctx context.Context, bctx *builder.Context, lo
 		},
 	)
 
-	for _, t := range tasks {
-		if err := u.tryProcessTask(ctx, bctx, logger, t); err != nil {
-			return fmt.Errorf("failed to process task: %s: %w", bctx.Workflow.Description, err)
-		}
+	if err := u.processTasks(ctx, work, logger, tasks); err != nil {
+		return err
 	}
 
-	metrics.LBClustersDeleted.Add(float64(len(bctx.CurrentLoadbalancers)))
+	metrics.LBClustersDeleted.Add(float64(len(work.CurrentLoadbalancers)))
 	return nil
 }
 
@@ -201,12 +201,16 @@ func (u *Usecases) updateTaskWithDescription(ctx *builder.Context, stage spec.Wo
 // Task processes parts or all of the infrastructure as specified in the passed in builder.Context.
 // Any partial state change that the task does should be reflected in the passed in builder.Context.
 type Task struct {
-	do              func(ctx context.Context, bx *builder.Context, logger *zerolog.Logger) error
+	do              DoFn
 	stage           spec.Workflow_Stage
 	description     string
 	continueOnError bool
 	condition       func(work *builder.Context) bool
 }
+
+// Do function is what the above define tasks understands and will execute.
+// This type may itself define tasks which may be scheduled for execution.
+type DoFn func(ctx context.Context, work *builder.Context, logger *zerolog.Logger) error
 
 // Tries to execute the given task, if the context is cancelled the builder context is returned along with the
 // error form the context, otherwise the passed in task is processed.
@@ -220,19 +224,19 @@ func (u *Usecases) tryProcessTask(
 
 	// skip updating the task description on errors, to keep the stage where the task failed.
 	u.updateTaskWithDescription(work, t.stage, fmt.Sprintf("%s:%s", description, t.description))
-	logger.Info().Msgf("Processing task: %s", work.Workflow.Description)
+	logger.Info().Msgf("Working on %q", work.Workflow.Description)
 
 	select {
 	case <-ctx.Done():
 		err := ctx.Err()
-		logger.Err(err).Msgf("Not able to process task: %s", work.Workflow.Description)
+		logger.Err(err).Msgf("No work done on %q", work.Workflow.Description)
 		return err
 	default:
 		// continue
 	}
 
 	if t.condition != nil && !t.condition(work) {
-		logger.Info().Msgf("Skipping task: %s, due to the condition not being satisfied", work.Workflow.Description)
+		logger.Info().Msgf("Skip %q, as cluster does not meet condition", work.Workflow.Description)
 		u.updateTaskWithDescription(work, t.stage, description)
 		return nil
 	}
@@ -240,14 +244,14 @@ func (u *Usecases) tryProcessTask(
 	err := t.do(ctx, work, logger)
 	if err != nil {
 		if t.continueOnError {
-			logger.Warn().Msgf("Task: %s, failed with error %v, ignoring", work.Workflow.Description, err)
+			logger.Warn().Err(err).Msgf("Work: %q failed, ignoring", work.Workflow.Description)
 			u.updateTaskWithDescription(work, t.stage, description)
 			return nil
 		}
 		return err
 	}
 
-	logger.Info().Msgf("Task: %s, finished successfully", work.Workflow.Description)
+	logger.Info().Msgf("Work %q, finished successfully", work.Workflow.Description)
 	u.updateTaskWithDescription(work, t.stage, description)
 	return nil
 }

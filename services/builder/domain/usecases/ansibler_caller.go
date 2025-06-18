@@ -2,7 +2,6 @@ package usecases
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/berops/claudie/proto/pb/spec"
 	builder "github.com/berops/claudie/services/builder/internal"
@@ -65,7 +64,8 @@ func (u *Usecases) configureInfrastructure(ctx context.Context, work *builder.Co
 	work.ProxyEnvs = &spec.ProxyEnvs{
 		Op: builder.DetermineProxyOperation(work),
 	}
-	return u.processTasks(ctx, work, logger, []Task{
+
+	tasks := []Task{
 		{
 			// update environemnt variables for donwloading packages.
 			do:          u.updateProxyEnvsOnNodes,
@@ -100,35 +100,38 @@ func (u *Usecases) configureInfrastructure(ctx context.Context, work *builder.Co
 			stage:       spec.Workflow_ANSIBLER,
 			description: "updating proxy environment variables for kuberentes services",
 		},
-	})
-}
-
-func (u *Usecases) determineApiEndpointChange(ctx *builder.Context, cid, did string, stt spec.ApiEndpointChangeState) error {
-	description := ctx.Workflow.Description
-	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s determining if API endpoint of the cluster should change based on the changes to the loadbalancers infrastructure", description))
-
-	resp, err := u.Ansibler.DetermineApiEndpointChange(ctx, cid, did, stt, u.Ansibler.GetClient())
-	if err != nil {
-		return err
 	}
 
-	ctx.CurrentCluster = resp.Current
-	ctx.CurrentLoadbalancers = resp.CurrentLbs
-	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, description)
-	return nil
+	return u.processTasks(ctx, work, logger, tasks)
 }
 
-// callUpdateAPIEndpoint updates k8s API endpoint via ansibler.
-func (u *Usecases) callUpdateAPIEndpoint(ctx *builder.Context, nodepool, node string) error {
-	description := ctx.Workflow.Description
-	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, fmt.Sprintf("%s changing api endpoint to a new control plane node", description))
-
-	resp, err := u.Ansibler.UpdateAPIEndpoint(ctx, nodepool, node, u.Ansibler.GetClient())
-	if err != nil {
-		return err
+func (u *Usecases) determineApiEndpointChange(cid, did string, stt spec.ApiEndpointChangeState) Task {
+	return Task{
+		do: func(_ context.Context, work *builder.Context, _ *zerolog.Logger) error {
+			resp, err := u.Ansibler.DetermineApiEndpointChange(work, cid, did, stt, u.Ansibler.GetClient())
+			if err != nil {
+				return err
+			}
+			work.CurrentCluster = resp.Current
+			work.CurrentLoadbalancers = resp.CurrentLbs
+			return nil
+		},
+		stage:       spec.Workflow_ANSIBLER,
+		description: "determining if API endpoint of the kubernetes cluster should change based on the new loadbalancer infrastructure",
 	}
+}
 
-	ctx.CurrentCluster = resp.Current
-	u.updateTaskWithDescription(ctx, spec.Workflow_ANSIBLER, description)
-	return nil
+func (u *Usecases) updateControlPlaneApiEndpoint(nodepool, node string) Task {
+	return Task{
+		do: func(ctx context.Context, work *builder.Context, logger *zerolog.Logger) error {
+			resp, err := u.Ansibler.UpdateAPIEndpoint(work, nodepool, node, u.Ansibler.GetClient())
+			if err != nil {
+				return err
+			}
+			work.CurrentCluster = resp.Current
+			return nil
+		},
+		stage:       spec.Workflow_ANSIBLER,
+		description: "changing api endpoint to a new control plane node",
+	}
 }
