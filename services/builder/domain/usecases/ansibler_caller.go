@@ -67,7 +67,7 @@ func (u *Usecases) configureInfrastructure(ctx context.Context, work *builder.Co
 
 	tasks := []Task{
 		{
-			// update environemnt variables for donwloading packages.
+			// update environment variables for downloading packages.
 			do:          u.updateProxyEnvsOnNodes,
 			stage:       spec.Workflow_ANSIBLER,
 			description: "updating proxy environment variables",

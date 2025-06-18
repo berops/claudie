@@ -419,7 +419,7 @@ func (u *Usecases) deleteK8sNodes(ctx context.Context, te *managerclient.NextTas
 			stage:       spec.Workflow_TERRAFORMER,
 			description: "reconciling dynamic nodepools infrastructure, after deletion",
 			condition: func(_ *builder.Context) bool {
-				// reconcile the dynamic nodes only if we actaully deleted dynamic nodes.
+				// reconcile the dynamic nodes only if we actually deleted dynamic nodes.
 				return dynamicCount != 0
 			},
 		},
