@@ -199,7 +199,7 @@ func (u *Usecases) updateTaskWithDescription(ctx *builder.Context, stage spec.Wo
 }
 
 // Task processes parts or all of the infrastructure as specified in the passed in builder.Context.
-// Any partial state change that the task does should be reflected in the passed in builder.Context.
+// Any partial state change that the task does, should be reflected in the passed in builder.Context.
 type Task struct {
 	do              DoFn
 	stage           spec.Workflow_Stage
@@ -208,12 +208,13 @@ type Task struct {
 	condition       func(work *builder.Context) bool
 }
 
-// Do function is what the above define tasks understands and will execute.
-// This type may itself define tasks which may be scheduled for execution.
+// Do function is what the above defined Task understands and will execute.
+// This type may itself run tasks which may be scheduled for execution.
 type DoFn func(ctx context.Context, work *builder.Context, logger *zerolog.Logger) error
 
-// Tries to execute the given task, if the context is cancelled the builder context is returned along with the
-// error form the context, otherwise the passed in task is processed.
+// Tries to execute the given task, if the context is cancelled the error form the context is returned
+// and any partial changes done will be reflected in the passed in builder.Context, otherwise the passed
+// in task is processed.
 func (u *Usecases) tryProcessTask(
 	ctx context.Context,
 	work *builder.Context,
