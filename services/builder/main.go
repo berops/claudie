@@ -161,7 +161,7 @@ func main() {
 					return nil
 				}
 
-				return usecases.TaskProcessor(&wg)
+				return usecases.TaskProcessor(ctx, &wg)
 			},
 			worker.ErrorLogger,
 		).Run()
