@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"slices"
@@ -259,14 +261,25 @@ func (d *DNS) generateFiles(dnsID, dnsDir string, dns *spec.DNS, nodeIPs []strin
 		Fingerprint:       hex.EncodeToString(hash.Digest128(filepath.Join(dns.Provider.SpecName, path))),
 	}
 
+	var cloudflareSubscription bool
+	if dns.Provider.GetCloudProviderName() == "cloudflare" {
+		var err error
+		cloudflareSubscription, err = getCloudflareSubscription(dns.Provider.GetCloudflare().GetToken(), dns.GetHostname())
+		if err != nil {
+			return fmt.Errorf("Error while checking cloudflare Load Balancing subscription %w", err)
+		}
+	}
+
+	// string AccountId = dns.Provider.GetCloudflare().GetAccountId()
 	data := templates.DNS{
-		DNSZone:     dns.DnsZone,
-		Hostname:    dns.Hostname,
-		ClusterName: d.ClusterName,
-		ClusterHash: d.ClusterHash,
-		RecordData:  templates.RecordData{IP: templateIPData(nodeIPs)},
-		Provider:    dns.Provider,
-		Role:        d.Role,
+		DNSZone:                dns.DnsZone,
+		Hostname:               dns.Hostname,
+		ClusterName:            d.ClusterName,
+		ClusterHash:            d.ClusterHash,
+		RecordData:             templates.RecordData{IP: templateIPData(nodeIPs)},
+		Provider:               dns.Provider,
+		Role:                   d.Role,
+		CloudflareSubscription: cloudflareSubscription,
 
 		AlternativeNamesExtension: new(templates.AlternativeNamesExtension),
 	}
@@ -284,6 +297,68 @@ func (d *DNS) generateFiles(dnsID, dnsDir string, dns *spec.DNS, nodeIPs []strin
 	}
 
 	return nil
+}
+
+func getCloudflareSubscription(apiToken string, zoneName string) (bool, error) {
+
+	var accountID string
+
+	var subscriptions struct {
+		Result []struct {
+			ID      string `json:"id"`
+			Product struct {
+				Name string `json:"name"`
+			} `json:"product"`
+		} `json:"result"`
+		Success bool `json:"success"`
+	}
+
+	urlSubscriptions := fmt.Sprintf("https://api.cloudflare.com/client/v4/accounts")
+
+	responseSubscriptions, err := getCloudflareAPIResponse(urlSubscriptions, apiToken)
+
+	if err != nil {
+		return false, fmt.Errorf("error while getting cloudflare api response for %s: %w", urlSubscriptions, err)
+	}
+
+	if err := json.Unmarshal(responseSubscriptions, &subscriptions); err != nil {
+		return false, fmt.Errorf("Failed to parse JSON: %v", err)
+	}
+
+	for _, subscription := range subscriptions.Result {
+		if subscription.Product.Name == "prod_load_balancing" && subscriptions.Success == true {
+			fmt.Errorf("Found subscription for %s\n", subscription.Product.Name)
+			return true, nil
+		}
+	}
+	return false, fmt.Errorf("Subscription for Load Balancing not found")
+}
+
+func getCloudflareAPIResponse(url string, apiToken string) ([]byte, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("Could not create request: %s", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+apiToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		return nil, fmt.Errorf("Error making http request: %s", err)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("Error reading response body: %s", err)
+	}
+
+	defer resp.Body.Close()
+
+	return body, nil
+
 }
 
 // validateDomain validates the domain does not start with ".".

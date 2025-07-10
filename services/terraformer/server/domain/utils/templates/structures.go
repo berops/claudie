@@ -166,6 +166,8 @@ type (
 		Provider *spec.Provider
 		// Role holds port number, which will be used to create health checks for the DNS records.
 		Role *spec.Role
+		// Subscription is the subscription paid to use DNS load balancing features in cloudflare
+		CloudflareSubscription bool
 	}
 
 	// AlternativeNamesExtension adds additional data to be passed to the template that can then be used.
