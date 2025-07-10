@@ -164,6 +164,8 @@ type (
 		// Provider hold the information (credentials, external templates etc.)
 		// that were passed by the user in the InputManifest.
 		Provider *spec.Provider
+		// Role holds port number, which will be used to create health checks for the DNS records.
+		Role *spec.Role
 	}
 
 	// AlternativeNamesExtension adds additional data to be passed to the template that can then be used.
