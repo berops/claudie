@@ -9,7 +9,7 @@ terraform {
     {{- if .Gcp }}
     google = {
       source  = "hashicorp/google"
-      version = "4.59.0"
+      version = "6.42.0"
     }
     {{- end }}
     {{- if .Aws }}
