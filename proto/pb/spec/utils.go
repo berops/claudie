@@ -1,10 +1,15 @@
 package spec
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"net/url"
 	"path/filepath"
 	"slices"
+
+	"github.com/rs/zerolog"
 )
 
 const (
@@ -213,4 +218,66 @@ func (r *Role) MergeTargetPools(o *Role) {
 			r.TargetPools = append(r.TargetPools, o)
 		}
 	}
+}
+
+// GetCloudflareSubscription checks if the Cloudflare account has a Load Balancing subscription.
+func (x *CloudflareProvider) GetCloudflareSubscription(logger zerolog.Logger, accountID string, apiToken string) (bool, error) {
+	sublogger := logger.With().Str("subscription", "cloudflare").Logger()
+
+	var subscriptions struct {
+		Result []struct {
+			ID      string `json:"id"`
+			Product struct {
+				Name string `json:"name"`
+			} `json:"product"`
+		} `json:"result"`
+		Success bool `json:"success"`
+	}
+
+	escapedAccountID := url.PathEscape(accountID)
+	urlSubscriptions := fmt.Sprintf("https://api.cloudflare.com/client/v4/accounts/%s/subscriptions", escapedAccountID)
+
+	responseSubscriptions, err := getCloudflareAPIResponse(urlSubscriptions, apiToken)
+
+	if err != nil {
+		return false, fmt.Errorf("error while getting cloudflare api response for %s: %w", urlSubscriptions, err)
+	}
+
+	if err := json.Unmarshal(responseSubscriptions, &subscriptions); err != nil {
+		return false, fmt.Errorf("Failed to parse JSON: %w", err)
+	}
+
+	for _, subscription := range subscriptions.Result {
+		if subscription.Product.Name == "prod_load_balancing" && subscriptions.Success == true {
+			sublogger.Info().Msgf("Found subscription for %s", subscription.Product.Name)
+			return true, nil
+		}
+	}
+	return false, fmt.Errorf("Subscription for Load Balancing not found")
+}
+
+func getCloudflareAPIResponse(url string, apiToken string) ([]byte, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("Could not create request: %w", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+apiToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		return nil, fmt.Errorf("Error making http request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("Error reading response body: %w", err)
+	}
+
+	return body, nil
 }

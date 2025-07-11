@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"slices"
@@ -74,12 +72,12 @@ func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 			return fmt.Errorf("error while generating providers tf files for %s: %w", dnsID, err)
 		}
 		// destroy current state.
-		if err := d.generateFiles(dnsID, dnsDir, d.CurrentDNS, d.CurrentNodeIPs); err != nil {
+		if err := d.generateFiles(logger, dnsID, dnsDir, d.CurrentDNS, d.CurrentNodeIPs); err != nil {
 			return fmt.Errorf("error while creating current state dns.tf files for %s : %w", dnsID, err)
 		}
 		// In case of a re-execution of a task which would fail, if we do not
 		// delete also the desired state, which might have been created.
-		if err := d.generateFiles(dnsID, dnsDir, d.DesiredDNS, d.DesiredNodeIPs); err != nil {
+		if err := d.generateFiles(logger, dnsID, dnsDir, d.DesiredDNS, d.DesiredNodeIPs); err != nil {
 			return fmt.Errorf("error while creating desired state dns.tf files for %s : %w", dnsID, err)
 		}
 		if err := tofu.Init(); err != nil {
@@ -108,7 +106,7 @@ func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 		return fmt.Errorf("error while generating providers tf files for %s: %w", dnsID, err)
 	}
 
-	if err := d.generateFiles(dnsID, dnsDir, d.DesiredDNS, d.DesiredNodeIPs); err != nil {
+	if err := d.generateFiles(logger, dnsID, dnsDir, d.DesiredDNS, d.DesiredNodeIPs); err != nil {
 		return fmt.Errorf("error while creating dns .tf files for %s : %w", dnsID, err)
 	}
 
@@ -199,7 +197,7 @@ func (d *DNS) DestroyDNSRecords(logger zerolog.Logger) error {
 		return fmt.Errorf("error while generating providers tf files for %s: %w", dnsID, err)
 	}
 
-	if err := d.generateFiles(dnsID, dnsDir, d.CurrentDNS, d.CurrentNodeIPs); err != nil {
+	if err := d.generateFiles(logger, dnsID, dnsDir, d.CurrentDNS, d.CurrentNodeIPs); err != nil {
 		return fmt.Errorf("error while creating dns records for %s : %w", dnsID, err)
 	}
 
@@ -245,7 +243,7 @@ func (d *DNS) generateProvider(dnsID, dnsDir string, current, desired *spec.DNS)
 }
 
 // generateFiles creates all the necessary terraform files used to create/destroy DNS.
-func (d *DNS) generateFiles(dnsID, dnsDir string, dns *spec.DNS, nodeIPs []string) error {
+func (d *DNS) generateFiles(logger zerolog.Logger, dnsID, dnsDir string, dns *spec.DNS, nodeIPs []string) error {
 	templateDir := filepath.Join(TemplatesRootDir, dnsID, dns.GetProvider().GetSpecName())
 	if err := templates.DownloadProvider(templateDir, dns.GetProvider()); err != nil {
 		return fmt.Errorf("failed to download templates for DNS %q: %w", dnsID, err)
@@ -264,13 +262,13 @@ func (d *DNS) generateFiles(dnsID, dnsDir string, dns *spec.DNS, nodeIPs []strin
 	var cloudflareSubscription bool
 	if dns.Provider.GetCloudProviderName() == "cloudflare" {
 		var err error
-		cloudflareSubscription, err = getCloudflareSubscription(dns.Provider.GetCloudflare().GetToken(), dns.GetHostname())
+		cloudflareSubscription, err = dns.Provider.GetCloudflare().GetCloudflareSubscription(
+			logger, dns.Provider.GetCloudflare().GetAccountID(), dns.Provider.GetCloudflare().GetToken())
 		if err != nil {
-			return fmt.Errorf("Error while checking cloudflare Load Balancing subscription %w", err)
+			return fmt.Errorf("Error while checking cloudflare Load Balancing subscription %w:", err)
 		}
 	}
 
-	// string AccountId = dns.Provider.GetCloudflare().GetAccountId()
 	data := templates.DNS{
 		DNSZone:                dns.DnsZone,
 		Hostname:               dns.Hostname,
@@ -297,68 +295,6 @@ func (d *DNS) generateFiles(dnsID, dnsDir string, dns *spec.DNS, nodeIPs []strin
 	}
 
 	return nil
-}
-
-func getCloudflareSubscription(apiToken string, zoneName string) (bool, error) {
-
-	var accountID string
-
-	var subscriptions struct {
-		Result []struct {
-			ID      string `json:"id"`
-			Product struct {
-				Name string `json:"name"`
-			} `json:"product"`
-		} `json:"result"`
-		Success bool `json:"success"`
-	}
-
-	urlSubscriptions := fmt.Sprintf("https://api.cloudflare.com/client/v4/accounts")
-
-	responseSubscriptions, err := getCloudflareAPIResponse(urlSubscriptions, apiToken)
-
-	if err != nil {
-		return false, fmt.Errorf("error while getting cloudflare api response for %s: %w", urlSubscriptions, err)
-	}
-
-	if err := json.Unmarshal(responseSubscriptions, &subscriptions); err != nil {
-		return false, fmt.Errorf("Failed to parse JSON: %v", err)
-	}
-
-	for _, subscription := range subscriptions.Result {
-		if subscription.Product.Name == "prod_load_balancing" && subscriptions.Success == true {
-			fmt.Errorf("Found subscription for %s\n", subscription.Product.Name)
-			return true, nil
-		}
-	}
-	return false, fmt.Errorf("Subscription for Load Balancing not found")
-}
-
-func getCloudflareAPIResponse(url string, apiToken string) ([]byte, error) {
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("Could not create request: %s", err)
-	}
-
-	req.Header.Set("Authorization", "Bearer "+apiToken)
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-
-	resp, err := client.Do(req)
-
-	if err != nil {
-		return nil, fmt.Errorf("Error making http request: %s", err)
-	}
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("Error reading response body: %s", err)
-	}
-
-	defer resp.Body.Close()
-
-	return body, nil
-
 }
 
 // validateDomain validates the domain does not start with ".".

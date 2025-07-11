@@ -39,6 +39,7 @@ type HetznerDNS struct {
 type Cloudflare struct {
 	Name      string              `validate:"required,max=15" yaml:"name"`
 	ApiToken  string              `validate:"required" yaml:"apiToken"`
+	AccountID string              `validate:"required" yaml:"accountId"`
 	Templates *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
 }
 
