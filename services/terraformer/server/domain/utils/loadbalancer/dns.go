@@ -40,8 +40,6 @@ type DNS struct {
 
 	// SpawnProcessLimit limits the number of spawned tofu processes.
 	SpawnProcessLimit *semaphore.Weighted
-	// Role holds port number and protocol, which will be used to create health checks for the DNS records.
-	Role *spec.Role
 }
 
 // CreateDNSRecords creates DNS records for the Loadbalancer cluster.
@@ -276,7 +274,6 @@ func (d *DNS) generateFiles(logger zerolog.Logger, dnsID, dnsDir string, dns *sp
 		ClusterHash:            d.ClusterHash,
 		RecordData:             templates.RecordData{IP: templateIPData(nodeIPs)},
 		Provider:               dns.Provider,
-		Role:                   d.Role,
 		CloudflareSubscription: cloudflareSubscription,
 
 		AlternativeNamesExtension: new(templates.AlternativeNamesExtension),

@@ -76,7 +76,6 @@ func (l *LBcluster) Build(logger zerolog.Logger) error {
 		DesiredDNS:        l.DesiredState.Dns,
 		ProjectName:       l.ProjectName,
 		SpawnProcessLimit: l.SpawnProcessLimit,
-		Role:              l.DesiredState.Roles[0], // Assuming the first role is the primary one
 	}
 
 	if err := dns.CreateDNSRecords(logger); err != nil {
@@ -112,7 +111,6 @@ func (l *LBcluster) Destroy(logger zerolog.Logger) error {
 			CurrentDNS:        l.CurrentState.Dns,
 			ProjectName:       l.ProjectName,
 			SpawnProcessLimit: l.SpawnProcessLimit,
-			Role:              l.CurrentState.Roles[0], // Assuming the first role is the primary one
 		}
 		return dns.DestroyDNSRecords(logger)
 	})
