@@ -257,30 +257,28 @@ func (d *DNS) generateFiles(logger zerolog.Logger, dnsID, dnsDir string, dns *sp
 		Fingerprint:       hex.EncodeToString(hash.Digest128(filepath.Join(dns.Provider.SpecName, path))),
 	}
 
-	var cloudflareSubscription bool
-	if dns.Provider.GetCloudProviderName() == "cloudflare" {
-		var err error
-		cloudflareSubscription, err = dns.Provider.GetCloudflare().GetCloudflareSubscription(
-			logger, dns.Provider.GetCloudflare().GetAccountID(), dns.Provider.GetCloudflare().GetToken())
-		if err != nil {
-			return fmt.Errorf("Error while checking cloudflare Load Balancing subscription %w:", err)
-		}
-	}
-
 	data := templates.DNS{
-		DNSZone:                dns.DnsZone,
-		Hostname:               dns.Hostname,
-		ClusterName:            d.ClusterName,
-		ClusterHash:            d.ClusterHash,
-		RecordData:             templates.RecordData{IP: templateIPData(nodeIPs)},
-		Provider:               dns.Provider,
-		CloudflareSubscription: cloudflareSubscription,
+		DNSZone:     dns.DnsZone,
+		Hostname:    dns.Hostname,
+		ClusterName: d.ClusterName,
+		ClusterHash: d.ClusterHash,
+		RecordData:  templates.RecordData{IP: templateIPData(nodeIPs)},
+		Provider:    dns.Provider,
 
 		AlternativeNamesExtension: new(templates.AlternativeNamesExtension),
+		ProviderExtrasExtension:   new(templates.ProviderExtrasExtension),
 	}
 
 	for _, n := range dns.AlternativeNames {
 		data.AlternativeNamesExtension.Names = append(data.AlternativeNamesExtension.Names, n.Hostname)
+	}
+
+	if cloudflare := dns.Provider.GetCloudflare(); cloudflare != nil {
+		var err error
+		data.ProviderExtrasExtension.SubscriptionAllowsHA, err = cloudflare.GetSubscription(logger, cloudflare.AccountID, cloudflare.Token)
+		if err != nil {
+			return fmt.Errorf("error while checking cloudflare load balancing subscription: %w", err)
+		}
 	}
 
 	if err := g.GenerateDNS(&data); err != nil {

@@ -1,6 +1,7 @@
 package spec
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -8,6 +9,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"slices"
+	"time"
 
 	"github.com/rs/zerolog"
 )
@@ -220,8 +222,8 @@ func (r *Role) MergeTargetPools(o *Role) {
 	}
 }
 
-// GetCloudflareSubscription checks if the Cloudflare account has a Load Balancing subscription.
-func (x *CloudflareProvider) GetCloudflareSubscription(logger zerolog.Logger, accountID string, apiToken string) (bool, error) {
+// GetSubscription checks if the Cloudflare account has a Load Balancing subscription.
+func (x *CloudflareProvider) GetSubscription(logger zerolog.Logger, accountID string, apiToken string) (bool, error) {
 	sublogger := logger.With().Str("subscription", "cloudflare").Logger()
 
 	var subscriptions struct {
@@ -236,7 +238,6 @@ func (x *CloudflareProvider) GetCloudflareSubscription(logger zerolog.Logger, ac
 
 	escapedAccountID := url.PathEscape(accountID)
 	urlSubscriptions := fmt.Sprintf("https://api.cloudflare.com/client/v4/accounts/%s/subscriptions", escapedAccountID)
-
 	responseSubscriptions, err := getCloudflareAPIResponse(urlSubscriptions, apiToken)
 
 	if err != nil {
@@ -244,39 +245,44 @@ func (x *CloudflareProvider) GetCloudflareSubscription(logger zerolog.Logger, ac
 	}
 
 	if err := json.Unmarshal(responseSubscriptions, &subscriptions); err != nil {
-		return false, fmt.Errorf("Failed to parse JSON: %w", err)
+		return false, fmt.Errorf("failed to parse JSON: %w", err)
 	}
 
 	for _, subscription := range subscriptions.Result {
 		if subscription.Product.Name == "prod_load_balancing" && subscriptions.Success == true {
-			sublogger.Info().Msgf("Found subscription for %s", subscription.Product.Name)
+			sublogger.Info().Msgf("found subscription for %s", subscription.Product.Name)
 			return true, nil
 		}
 	}
-	return false, fmt.Errorf("Subscription for Load Balancing not found")
+	return false, fmt.Errorf("subscription for Load Balancing not found")
 }
 
 func getCloudflareAPIResponse(url string, apiToken string) ([]byte, error) {
-	req, err := http.NewRequest("GET", url, nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return nil, fmt.Errorf("Could not create request: %w", err)
+		return nil, fmt.Errorf("could not create request: %w", err)
 	}
 
 	req.Header.Set("Authorization", "Bearer "+apiToken)
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
-
-	resp, err := client.Do(req)
-
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("Error making http request: %w", err)
+		return nil, fmt.Errorf("error making http request: %w", err)
 	}
 	defer resp.Body.Close()
 
+	// nolint
+	if !(resp.StatusCode >= 200 && resp.StatusCode < 300) {
+		return nil, fmt.Errorf("response with status code %v: %v", resp.StatusCode, resp.Status)
+	}
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("Error reading response body: %w", err)
+		return nil, fmt.Errorf("error reading response body: %w", err)
 	}
 
 	return body, nil
