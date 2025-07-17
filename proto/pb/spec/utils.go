@@ -249,7 +249,7 @@ func (x *CloudflareProvider) GetSubscription(logger zerolog.Logger, accountID st
 	}
 
 	for _, subscription := range subscriptions.Result {
-		if subscription.Product.Name == "prod_load_balancing" && subscriptions.Success == true {
+		if subscription.Product.Name == "prod_load_balancing" && subscriptions.Success {
 			sublogger.Info().Msgf("found subscription for %s", subscription.Product.Name)
 			return true, nil
 		}
