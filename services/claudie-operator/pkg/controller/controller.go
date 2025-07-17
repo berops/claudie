@@ -13,7 +13,6 @@ import (
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	v1beta1manifest "github.com/berops/claudie/internal/api/crd/inputmanifest/v1beta1"
-	v1alpha1settings "github.com/berops/claudie/internal/api/crd/settings/v1alpha1"
 	"github.com/berops/claudie/internal/api/manifest"
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -28,24 +27,6 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	inputManifest := &v1beta1manifest.InputManifest{}
 	if err := r.kc.Get(ctx, req.NamespacedName, inputManifest); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
-	}
-
-	fetchedRoleSettings := make(map[client.ObjectKey]*v1alpha1settings.Setting)
-	for _, role := range inputManifest.Spec.LoadBalancer.Roles {
-		if role.SettingsRef == nil {
-			continue
-		}
-
-		key := client.ObjectKey{
-			Namespace: role.SettingsRef.Namespace,
-			Name:      role.SettingsRef.Name,
-		}
-
-		out := &v1alpha1settings.Setting{}
-		if err := r.kc.Get(ctx, key, out); err != nil {
-			return ctrl.Result{}, err
-		}
-		fetchedRoleSettings[key] = out
 	}
 
 	// Prepare the manifest.Manifest type
@@ -97,7 +78,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	// Create a raw input manifest of manifest.Manifest and pull the referenced secrets into it
-	rawManifest, err := constructInputManifest(*inputManifest, providersSecrets, staticNodeSecrets, fetchedRoleSettings)
+	rawManifest, err := constructInputManifest(*inputManifest, providersSecrets, staticNodeSecrets)
 	if err != nil {
 		log.Error(err, "error while using referenced secrets", "will try again in", REQUEUE_AFTER_ERROR)
 		r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())

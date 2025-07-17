@@ -140,9 +140,8 @@ func setUpLoadbalancers(request *pb.SetUpLBRequest, logger zerolog.Logger, proce
 // Returns error if not successful, nil otherwise.
 func setUpNodeExporter(lbCluster *spec.LBcluster, clusterDirectory string, processLimit *semaphore.Weighted) error {
 	playbookParameters := utils.NodeExporterTemplateParams{
-		LoadBalancer: lbCluster.ClusterInfo.Name,
-		// last reserved port will be used by node-exporter.
-		NodeExporterPort: manifest.ReservedPortRangeEnd - 1,
+		LoadBalancer:     lbCluster.ClusterInfo.Name,
+		NodeExporterPort: manifest.NodeExporterPort,
 	}
 
 	template, err := templateUtils.LoadTemplate(templates.NodeExporterPlaybookTemplate)
@@ -228,14 +227,7 @@ func setupEnvoyProxyViaDocker(
 		}
 
 		cds := templates.EnvoyDynamicClusters
-		if tg.Role.Settings.EnvoyCds != "" {
-			cds = tg.Role.Settings.EnvoyCds
-		}
-
 		lds := templates.EnvoyDynamicListeners
-		if tg.Role.Settings.EnvoyLds != "" {
-			lds = tg.Role.Settings.EnvoyLds
-		}
 
 		dynClusters, err := templateUtils.LoadTemplate(cds)
 		if err != nil {

@@ -9,21 +9,32 @@ import (
 )
 
 const (
-	// APIServerPort is the port on which the ApiServer listens.
+	// APIServerPort is the port on which the ApiServer listens on the control nodes
+	// of the kubernetes cluster or on the loadbalancers attached to the cluster.
 	APIServerPort = 6443
 
-	// Additional reserved ports needed by claudie starting from
-	// range [MaxRolesPerLoadBalancer, ReservedPortRangeEnd)
+	// Additional reserved ports needed by claudie starting from range
+	// [[MaxRolesPerLoadBalancer], [ReservedPortRangeEnd])
 	//
-	// - Node exporter on LoadBalancer node, index: ReservedPortRangeEnd - 1
-	// - Remaining ports are reserved for future use.
-	AdditionalReservedPorts = 4
+	// Claudie will reserve a total of 6 ports for custom services to be run
+	// on the loadbalancer node itself. Currently only 3 out of 6 are used and
+	// the remaining are reserved for future use-cases.
+	AdditionalReservedPorts = 6
+
+	// NodeExporterPort is a reserved port for running node exporter on the load balancer nodes.
+	NodeExporterPort = ReservedPortRangeEnd - 1
+
+	// HealthcheckPort is a reserved port for exposing healthcheck capabilities for HA loadbalancers.
+	HealthcheckPort = NodeExporterPort - 1
+
+	// HealthcheckEnvoyPort is a reserved port for exponsing the envoy admin interface on the internal
+	// network to access the stats of the healthcheck envoy container.
+	HealthcheckEnvoyPort = HealthcheckPort - 1
 
 	// Maximum number of allowed roles to be assigned to a single loadbalancer.
-	// [ReservedPortRangeStart + MaxRolesPerLoadBalancer)
-	MaxRolesPerLoadBalancer = 999
+	MaxRolesPerLoadBalancer = 1018
 
-	// The last port that is reserved for claudie related usecases.
+	// The one pas the last port, that can be used for the roles assigned to loadbalancers.
 	ReservedPortRangeEnd = math.MaxUint16 + 1
 
 	// The first port that is reserved for claudie related usecases.
@@ -51,10 +62,6 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 		// check if the roles in the LB cluster has a role of ApiServer.
 		apiServerRole Role
 	)
-
-	if len(l.Roles) > MaxRolesPerLoadBalancer {
-		return fmt.Errorf("a single loadbalancer cannot have more than %v roles assigned", MaxRolesPerLoadBalancer)
-	}
 
 	for _, role := range l.Roles {
 		if err := role.Validate(); err != nil {
@@ -89,6 +96,10 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 
 	apiServerLBExists := make(map[string]bool) // [Targetk8sClusterName]bool
 	for _, cluster := range l.Clusters {
+		if len(cluster.Roles) > MaxRolesPerLoadBalancer {
+			return fmt.Errorf("a single loadbalancer cannot have more than %v roles assigned", MaxRolesPerLoadBalancer)
+		}
+
 		// check if the name used for the cluster is unique
 		if _, ok := clusters[cluster.Name]; ok {
 			return fmt.Errorf("name %q is used across multiple clusters, must be unique", cluster.Name)

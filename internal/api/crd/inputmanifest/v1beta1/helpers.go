@@ -80,9 +80,5 @@ func (r *Role) IntoManifestRole() manifest.Role {
 		TargetPort:  r.TargetPort,
 		TargetPools: r.TargetPools,
 		Settings:    r.Settings,
-		// EnvoyProxy cannot be set as it is
-		// fetch by the controller when the
-		// InputManifest is created.
-		EnvoyProxy: &manifest.EnvoyProxy{},
 	}
 }

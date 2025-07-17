@@ -5,9 +5,7 @@ import (
 	"fmt"
 
 	v1beta "github.com/berops/claudie/internal/api/crd/inputmanifest/v1beta1"
-	v1alpha1settings "github.com/berops/claudie/internal/api/crd/settings/v1alpha1"
 	"github.com/berops/claudie/internal/api/manifest"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 	wbhk "sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -57,34 +55,6 @@ func (v *InputManifestValidator) validate(ctx context.Context, obj runtime.Objec
 	}
 
 	log.Info("Validating InputManifest")
-
-	for _, role := range inputManifest.Spec.LoadBalancer.Roles {
-		if role.SettingsRef == nil {
-			continue
-		}
-
-		key := client.ObjectKey{
-			Namespace: role.SettingsRef.Namespace,
-			Name:      role.SettingsRef.Name,
-		}
-
-		out := v1alpha1settings.Setting{}
-		if err := v.kc.Get(ctx, key, &out); err != nil {
-			if apierrors.IsNotFound(err) {
-				return fmt.Errorf("failed to find setting %q in namespace %q referenced by role %q inside the loadbalancer section",
-					role.SettingsRef.Name,
-					role.SettingsRef.Namespace,
-					role.Name,
-				)
-			}
-			return fmt.Errorf("failed to retrieve settings %q from namespace %q for role %q: %w",
-				role.SettingsRef.Name,
-				role.SettingsRef.Namespace,
-				role.Name,
-				err,
-			)
-		}
-	}
 
 	if err := validateInputManifest(inputManifest); err != nil {
 		log.Error(err, "error validating InputManifest")

@@ -297,6 +297,9 @@ func fillDynamicNodes(clusterID string, current, desired *spec.NodePool) {
 	desired.Nodes = nodes
 }
 
+// Generates the entire range of reserved ports, including the ports for static services
+// like NodeExporter and Healthcheck. To exclude these ports you can re-slice the result
+// using [manifest.MaxRolesPerLoadBalancer]
 func generateClaudieReservedPorts() []int {
 	size := manifest.ReservedPortRangeEnd - manifest.ReservedPortRangeStart
 	p := make([]int, size)
@@ -315,7 +318,7 @@ func fillMissingEnvoyAdminPorts(desired *spec.Clusters) {
 			}
 		}
 
-		// The number of roles is limited to manifest.MaxRolesPerLoadBalancer,
+		// The number of roles is limited to [manifest.MaxRolesPerLoadBalancer],
 		// thus we will never consume all of the ports.
 		freePorts := generateClaudieReservedPorts()[:manifest.MaxRolesPerLoadBalancer]
 		if len(used) > 0 {
@@ -332,6 +335,41 @@ func fillMissingEnvoyAdminPorts(desired *spec.Clusters) {
 				r.Settings.EnvoyAdminPort = int32(p)
 			}
 		}
+	}
+}
+
+func fillDefaultHealthcheckRole(desired *spec.Clusters) {
+	for _, lb := range desired.GetLoadBalancers().GetClusters() {
+		// as this function is called after merging the current state to the desired
+		// state, existing clusters already could have the healthcheck created.
+		healthcheck := func(r *spec.Role) bool { return r.Port == manifest.HealthcheckPort }
+		if slices.ContainsFunc(lb.Roles, healthcheck) {
+			continue
+		}
+
+		healthcheckRole := &spec.Role{
+			Name:     "internal.claudie.healthcheck",
+			Protocol: "tcp",
+			Port:     manifest.HealthcheckPort,
+			// This is not a valid target port number. The healthcheck role
+			// is only used for TCP healthchecks using the 3-way handshake
+			// on the loadbalancers. Thus settings the TargetPort to an
+			// invalid number leaving the TargetPools empty will result
+			// in the opening of the [manifest.HealthcheckPort] on the firewall
+			// which will be forwarded to the loadbalancer nodes, but thats
+			// where the packets will end as no further forwarding will be
+			// done.
+			TargetPort:  -1,
+			TargetPools: []string{},
+			RoleType:    spec.RoleType_Ingress,
+			Settings: &spec.Role_Settings{
+				ProxyProtocol:  false,
+				StickySessions: false,
+				EnvoyAdminPort: manifest.HealthcheckEnvoyPort,
+			},
+		}
+
+		lb.Roles = append(lb.Roles, healthcheckRole)
 	}
 }
 

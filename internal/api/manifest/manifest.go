@@ -262,12 +262,6 @@ type RoleSettings struct {
 	StickySessions bool `yaml:"stickySessions" json:"stickySessions"`
 }
 
-// Override templates for envoy proxy for a single role.
-type EnvoyProxy struct {
-	Cds string `json:"cds"`
-	Lds string `json:"lds"`
-}
-
 // Role defines a concrete loadbalancer configuration. Single loadbalancer can have multiple roles.
 type Role struct {
 	// Name of the role. Used as a reference in clusters.
@@ -282,9 +276,6 @@ type Role struct {
 	TargetPools []string `validate:"required,min=1" yaml:"targetPools" json:"targetPools"`
 	// Additional settings for a role.
 	Settings *RoleSettings `yaml:"settings,omitempty" json:"settings,omitempty"`
-	// Optional override templates for envoy proxy that will replace
-	// the default.
-	EnvoyProxy *EnvoyProxy `yaml:"envoyProxy,omitempty" json:"envoyProxy,omitempty"`
 }
 
 // Collection of data used to define a loadbalancer cluster. Defines loadbalancer clusters.

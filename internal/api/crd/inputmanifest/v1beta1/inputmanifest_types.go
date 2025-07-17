@@ -125,19 +125,6 @@ type StaticNode struct {
 	Username string `json:"username,omitempty"`
 }
 
-// Reference to a claudie setting custom resource.
-type SettingsRef struct {
-	// Name of the custom resource.
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:Required
-	Name string `json:"name"`
-
-	// Namespace where to locate the custom resource.
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:Required
-	Namespace string `json:"namespace"`
-}
-
 // Role defines a concrete loadbalancer configuration. A Single loadbalancer can have multiple roles.
 type Role struct {
 	// Name of the role. Used as a reference in clusters.
@@ -165,10 +152,6 @@ type Role struct {
 	// Additional settings for a role.
 	// +optional
 	Settings *manifest.RoleSettings `yaml:"settings,omitempty" json:"settings,omitempty"`
-
-	// Allows to override the templates for the deployed envoy proxy for this role.
-	// +optional
-	SettingsRef *SettingsRef `yaml:"settingsRef,omitempty" json:"settingsRef,omitempty"`
 }
 
 type LoadBalancer struct {

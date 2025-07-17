@@ -22,10 +22,8 @@ import (
 	"unicode/utf8"
 
 	v1beta1manifest "github.com/berops/claudie/internal/api/crd/inputmanifest/v1beta1"
-	v1alpha1settings "github.com/berops/claudie/internal/api/crd/settings/v1alpha1"
 	"github.com/berops/claudie/internal/api/manifest"
 	"github.com/berops/claudie/internal/generics"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // constructInputManifest takes the v1beta.InputManifest and providersWithSecret and returns a claudie type raw manifest.Manifest type.
@@ -34,7 +32,6 @@ func constructInputManifest(
 	crd v1beta1manifest.InputManifest,
 	providersWithSecret []v1beta1manifest.ProviderWithData,
 	staticNodesWithSecret map[string][]v1beta1manifest.StaticNodeWithData,
-	fetchedRoleSettings map[client.ObjectKey]*v1alpha1settings.Setting,
 ) (manifest.Manifest, error) {
 	var providers manifest.Provider
 
@@ -210,16 +207,7 @@ func constructInputManifest(
 
 	manifestRoles := make([]manifest.Role, 0, len(crd.Spec.LoadBalancer.Roles))
 	for _, role := range crd.Spec.LoadBalancer.Roles {
-		r := role.IntoManifestRole()
-		if role.SettingsRef != nil {
-			setting := fetchedRoleSettings[client.ObjectKey{
-				Namespace: role.SettingsRef.Namespace,
-				Name:      role.SettingsRef.Name,
-			}]
-			r.EnvoyProxy.Cds = setting.Spec.Envoy.Cds
-			r.EnvoyProxy.Lds = setting.Spec.Envoy.Lds
-		}
-		manifestRoles = append(manifestRoles, r)
+		manifestRoles = append(manifestRoles, role.IntoManifestRole())
 	}
 
 	return manifest.Manifest{

@@ -234,10 +234,6 @@ func TestLoadBalancerRoles(t *testing.T) {
 				ProxyProtocol:  r.Settings.ProxyProtocol,
 				StickySessions: r.Settings.StickySessions,
 			},
-			EnvoyProxy: &EnvoyProxy{
-				Cds: r.Settings.EnvoyCds,
-				Lds: r.Settings.EnvoyLds,
-			},
 		})
 	}
 

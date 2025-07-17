@@ -534,8 +534,6 @@ func GenerateFakeRoles(willHaveLbApiEndpoint bool, k8s *spec.ClusterInfo) []*spe
 			Settings: &spec.Role_Settings{
 				ProxyProtocol:  false,
 				StickySessions: false,
-				EnvoyCds:       "",
-				EnvoyLds:       "",
 				EnvoyAdminPort: -1,
 			},
 		})

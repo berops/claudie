@@ -10,7 +10,7 @@ services:
 {{- range $role := .Roles }}
   {{- $self := $role.Role }}
   {{ $self.Name }}:
-    image: envoyproxy/envoy:distroless-v1.34.1
+    image: envoyproxy/envoy:distroless-v1.34.2
     network_mode: "host"
     restart: always
     user: root

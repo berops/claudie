@@ -66,8 +66,6 @@ func Test_getRolesAttachedToLBCluster(t *testing.T) {
 					Settings: &spec.Role_Settings{
 						ProxyProtocol:  true,
 						StickySessions: true,
-						EnvoyCds:       "",
-						EnvoyLds:       "",
 						EnvoyAdminPort: -1,
 					},
 				},
@@ -1175,8 +1173,7 @@ func Test_generateMissingDynamicNode(t *testing.T) {
 
 func Test_generateClaudieReservedPorts(t *testing.T) {
 	ports := generateClaudieReservedPorts()
-	fmt.Printf("%v\n", ports)
-	assert.True(t, len(ports) == manifest.MaxRolesPerLoadBalancer+manifest.AdditionalReservedPorts)
+	assert.True(t, len(ports) == (manifest.MaxRolesPerLoadBalancer+manifest.AdditionalReservedPorts))
 	beg, end := manifest.ReservedPortRangeStart, manifest.ReservedPortRangeEnd
 	for beg < end {
 		assert.Equal(t, beg, ports[beg-manifest.ReservedPortRangeStart])

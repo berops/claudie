@@ -71,6 +71,14 @@ spec:
                               description: Mode defines if the proxy mode (on/off/default).
                                 If undefined, the default mode is used.
                               type: string
+                            noProxy:
+                              description: |-
+                                NoProxy is a comma-separated list of values that will be added to the default NoProxy list used by Claudie.
+
+                                The default no proxy list is: 127.0.0.1/8,localhost,cluster.local,10.244.0.0/16,10.96.0.0/12"
+                                Any values specified will be appended to the end of the default NoProxy list.
+                                This field only has an effect if the Proxy is turned on.
+                              type: string
                           required:
                           - mode
                           type: object
@@ -217,22 +225,6 @@ spec:
                           required:
                           - proxyProtocol
                           - stickySessions
-                          type: object
-                        settingsRef:
-                          description: Allows to override the templates for the deployed
-                            envoy proxy for this role.
-                          properties:
-                            name:
-                              description: Name of the custom resource.
-                              minLength: 1
-                              type: string
-                            namespace:
-                              description: Namespace where to locate the custom resource.
-                              minLength: 1
-                              type: string
-                          required:
-                          - name
-                          - namespace
                           type: object
                         targetPools:
                           description: Defines nodepools of the targeted K8s cluster,
@@ -439,12 +431,6 @@ spec:
                                 description: Username with root access. Used in SSH
                                   connection also.
                                 type: string
-                              noProxy:
-                                description:
-                                  NoProxy is a comma-separated list of values that will be added to the default NoProxy list used by Claudie.
-                                  Any values specified will be appended to the end of the default NoProxy list.
-                                  This field only has an effect if the Proxy is turned on.
-                                type: string
                             required:
                             - endpoint
                             - secretRef
@@ -505,7 +491,7 @@ spec:
                     providerType:
                       description: |-
                         ProviderType type of a provider.
-                        A list of available providers can be found at https://docs.claudie.io/v0.9.10/input-manifest/providers/aws/
+                        A list of available providers can be found at https://docs.claudie.io/latest/input-manifest/providers/aws/
                       enum:
                       - gcp
                       - hetzner

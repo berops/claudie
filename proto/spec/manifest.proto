@@ -179,15 +179,9 @@ message Role {
     bool proxyProtocol = 1;
     bool stickySessions = 2;
 
-    // optional templates that will be used for the
-    // envoy proxy deployment for this role, instead of
-    // using the default templates.
-    string envoy_cds = 3;
-    string envoy_lds = 4;
-
     // required port for the envoy admin interface,
     // on change will issue restart of the envoy proxy.
-    int32  envoy_admin_port = 5;
+    int32  envoy_admin_port = 3;
   }
   // Name of the role.
   string name = 1;

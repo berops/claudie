@@ -93,13 +93,17 @@ func createDesiredState(pending *store.Config) error {
 		}
 	}
 
-	// 3. generate missing envoy admin ports.
+	// 3. generate missing envoy admin ports and add the default role for the healthcheck.
 	for _, state := range grpcRepr.Clusters {
 		// validation of the Manifest assures that the number of
 		// roles is limited and that we will always be able to
 		// generate the required number of ports for the envoy
 		// admin interface.
 		fillMissingEnvoyAdminPorts(state.Desired)
+
+		// To each loadbalancer cluster we add a default healthcheck role
+		// that can then be used for the HA loadbalancing.
+		fillDefaultHealthcheckRole(state.Desired)
 	}
 
 	modified, err := store.ConvertFromGRPC(grpcRepr)
@@ -305,10 +309,6 @@ func getRolesAttachedToLBCluster(roles []manifest.Role, roleNames []string) []*s
 					}
 				}
 
-				if role.EnvoyProxy == nil {
-					role.EnvoyProxy = &manifest.EnvoyProxy{}
-				}
-
 				newRole := &spec.Role{
 					Name:        role.Name,
 					Protocol:    strings.ToLower(role.Protocol),
@@ -319,8 +319,6 @@ func getRolesAttachedToLBCluster(roles []manifest.Role, roleNames []string) []*s
 					Settings: &spec.Role_Settings{
 						ProxyProtocol:  role.Settings.ProxyProtocol,
 						StickySessions: role.Settings.StickySessions,
-						EnvoyCds:       role.EnvoyProxy.Cds,
-						EnvoyLds:       role.EnvoyProxy.Lds,
 						// initially set as an invalid port, must be updated
 						// later, when merging with the existing state to avoid
 						// port duplication.
