@@ -1,10 +1,17 @@
 package spec
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"net/url"
 	"path/filepath"
 	"slices"
+	"time"
+
+	"github.com/rs/zerolog"
 )
 
 const (
@@ -213,4 +220,69 @@ func (r *Role) MergeTargetPools(o *Role) {
 			r.TargetPools = append(r.TargetPools, o)
 		}
 	}
+}
+
+// GetSubscription checks if the Cloudflare account has a Load Balancing subscription.
+func (x *CloudflareProvider) GetSubscription(logger zerolog.Logger, accountID string, apiToken string) (bool, error) {
+	sublogger := logger.With().Str("subscription", "cloudflare").Logger()
+
+	var subscriptions struct {
+		Result []struct {
+			ID      string `json:"id"`
+			Product struct {
+				Name string `json:"name"`
+			} `json:"product"`
+		} `json:"result"`
+		Success bool `json:"success"`
+	}
+
+	escapedAccountID := url.PathEscape(accountID)
+	urlSubscriptions := fmt.Sprintf("https://api.cloudflare.com/client/v4/accounts/%s/subscriptions", escapedAccountID)
+	responseSubscriptions, err := getCloudflareAPIResponse(urlSubscriptions, apiToken)
+	if err != nil {
+		return false, fmt.Errorf("error while getting cloudflare api response for %s: %w", urlSubscriptions, err)
+	}
+
+	if err := json.Unmarshal(responseSubscriptions, &subscriptions); err != nil {
+		return false, fmt.Errorf("failed to parse JSON: %w", err)
+	}
+
+	for _, subscription := range subscriptions.Result {
+		if subscription.Product.Name == "prod_load_balancing" && subscriptions.Success {
+			sublogger.Info().Msgf("found subscription for %s", subscription.Product.Name)
+			return true, nil
+		}
+	}
+	return false, fmt.Errorf("subscription for Load Balancing not found")
+}
+
+func getCloudflareAPIResponse(url string, apiToken string) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("could not create request: %w", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+apiToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error making http request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// nolint
+	if !(resp.StatusCode >= 200 && resp.StatusCode < 300) {
+		return nil, fmt.Errorf("response with status code %v: %v", resp.StatusCode, resp.Status)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading response body: %w", err)
+	}
+
+	return body, nil
 }

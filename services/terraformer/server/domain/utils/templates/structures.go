@@ -150,7 +150,7 @@ type (
 	// infrastructure as specified in the InputManifest.
 	DNS struct {
 		AlternativeNamesExtension *AlternativeNamesExtension
-
+		ProviderExtrasExtension   *ProviderExtrasExtension
 		// ClusterName is the name of the Loadbalancer cluster the DNS is to be created for.
 		ClusterName string
 		// ClusterHash is the hash of the Loadbalancer cluster the DNS is to be created for.
@@ -177,6 +177,21 @@ type (
 		// Names are additional A records that will be created in addition to the hostname.
 		// The use case is for a single load balancer to handle traffic from M domains instead of just 1.
 		Names []string
+	}
+
+	// ProviderExtrasExtension adds additional data to be passed to the template that can then be used.
+	// To check for the presence of the extension within the templates the `hasExtension` function can
+	// be used for the check.
+	//
+	// {{- if hasExtension .Data "ProviderExtrasExtension"}}
+	// ... access .ProviderExtrasExtension
+	// {{- end }}
+	ProviderExtrasExtension struct {
+		// SubscriptionAllowsHA reports whether the subscription associated with the passed in credentials
+		// allow High Available Load Balancing to be used for the created A-records for both the [DNS.Hostname]
+		// and [DNS.AlternativeNamesExtension]. Currently this is only needed for Cloudflare, more providers
+		// may be added in the future.
+		SubscriptionAllowsHA bool
 	}
 )
 
