@@ -1,6 +1,7 @@
 package usecases
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -12,18 +13,19 @@ import (
 	"github.com/berops/claudie/services/builder/domain/usecases/metrics"
 	builder "github.com/berops/claudie/services/builder/internal"
 	managerclient "github.com/berops/claudie/services/manager/client"
-	"github.com/docker/distribution/context"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
-// buildCluster performs whole Claudie workflow on the given cluster.
-func (u *Usecases) buildCluster(ctx *builder.Context) (*builder.Context, error) {
+// Builds and configures the kuberentes and loadbalancer clusters as specified in the passed in builder.Context.
+// If an error occurs during the processing, any partial changes will be stored in the passed in builder.Context.
+func (u *Usecases) buildCluster(ctx context.Context, work *builder.Context, logger *zerolog.Logger) error {
 	// LB add nodes prometheus metrics.
-	for _, lb := range ctx.DesiredLoadbalancers {
+	for _, lb := range work.DesiredLoadbalancers {
 		var currNodes int
-		if idx := clusters.IndexLoadbalancerById(lb.ClusterInfo.Id(), ctx.CurrentLoadbalancers); idx >= 0 {
-			currNodes = ctx.CurrentLoadbalancers[idx].NodeCount()
+		if idx := clusters.IndexLoadbalancerById(lb.ClusterInfo.Id(), work.CurrentLoadbalancers); idx >= 0 {
+			currNodes = work.CurrentLoadbalancers[idx].NodeCount()
 		}
 
 		adding := max(0, lb.NodeCount()-currNodes)
@@ -31,14 +33,14 @@ func (u *Usecases) buildCluster(ctx *builder.Context) (*builder.Context, error) 
 		metrics.LbAddingNodesInProgress.With(prometheus.Labels{
 			metrics.LBClusterLabel:     lb.ClusterInfo.Name,
 			metrics.K8sClusterLabel:    lb.TargetedK8S,
-			metrics.InputManifestLabel: ctx.ProjectName,
+			metrics.InputManifestLabel: work.ProjectName,
 		}).Add(float64(adding))
 
 		defer func(k8s, lb string, c int) {
 			metrics.LbAddingNodesInProgress.With(prometheus.Labels{
 				metrics.LBClusterLabel:     lb,
 				metrics.K8sClusterLabel:    k8s,
-				metrics.InputManifestLabel: ctx.ProjectName,
+				metrics.InputManifestLabel: work.ProjectName,
 			}).Add(-float64(c))
 		}(lb.TargetedK8S, lb.ClusterInfo.Name, adding)
 
@@ -47,112 +49,130 @@ func (u *Usecases) buildCluster(ctx *builder.Context) (*builder.Context, error) 
 		metrics.LbDeletingNodesInProgress.With(prometheus.Labels{
 			metrics.K8sClusterLabel:    lb.TargetedK8S,
 			metrics.LBClusterLabel:     lb.ClusterInfo.Name,
-			metrics.InputManifestLabel: ctx.ProjectName,
+			metrics.InputManifestLabel: work.ProjectName,
 		}).Add(float64(deleting))
 
 		defer func(k8s, lb string, c int) {
 			metrics.LbDeletingNodesInProgress.With(prometheus.Labels{
 				metrics.K8sClusterLabel:    k8s,
 				metrics.LBClusterLabel:     lb,
-				metrics.InputManifestLabel: ctx.ProjectName,
+				metrics.InputManifestLabel: work.ProjectName,
 			}).Add(-float64(c))
 		}(lb.TargetedK8S, lb.ClusterInfo.Name, deleting)
 	}
 
 	metrics.K8sAddingNodesInProgress.With(prometheus.Labels{
-		metrics.K8sClusterLabel:    ctx.GetClusterName(),
-		metrics.InputManifestLabel: ctx.ProjectName,
+		metrics.K8sClusterLabel:    work.GetClusterName(),
+		metrics.InputManifestLabel: work.ProjectName,
 	}).Add(float64(
-		max(0, ctx.DesiredCluster.NodeCount()-ctx.CurrentCluster.NodeCount()),
+		max(0, work.DesiredCluster.NodeCount()-work.CurrentCluster.NodeCount()),
 	))
 
 	defer func(c int) {
 		metrics.K8sAddingNodesInProgress.With(prometheus.Labels{
-			metrics.K8sClusterLabel:    ctx.GetClusterName(),
-			metrics.InputManifestLabel: ctx.ProjectName,
+			metrics.K8sClusterLabel:    work.GetClusterName(),
+			metrics.InputManifestLabel: work.ProjectName,
 		}).Add(-float64(c))
-	}(max(0, ctx.DesiredCluster.NodeCount()-ctx.CurrentCluster.NodeCount()))
+	}(max(0, work.DesiredCluster.NodeCount()-work.CurrentCluster.NodeCount()))
 
-	// Reconcile infrastructure via terraformer.
-	if err := u.reconcileInfrastructure(ctx); err != nil {
-		return ctx, fmt.Errorf("error in Terraformer for cluster %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
+	tasks := []Task{
+		{
+			do:          u.reconcileInfrastructure,
+			stage:       spec.Workflow_TERRAFORMER,
+			description: "reconciling infrastructure",
+		},
+		{
+			do:          u.configureInfrastructure,
+			stage:       spec.Workflow_ANSIBLER,
+			description: "configuring infrastructure",
+		},
+		{
+			do:          u.reconcileK8sCluster,
+			stage:       spec.Workflow_KUBE_ELEVEN,
+			description: "reconciling cluster",
+		},
+		{
+			do:          u.reconcileK8sConfiguration,
+			stage:       spec.Workflow_KUBER,
+			description: "reconciling cluster configuration",
+		},
 	}
 
-	// Configure infrastructure via Ansibler.
-	if err := u.configureInfrastructure(ctx); err != nil {
-		return ctx, fmt.Errorf("error in Ansibler for cluster %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
-	}
-
-	// Build k8s cluster via Kube-eleven.
-	if err := u.reconcileK8sCluster(ctx); err != nil {
-		return ctx, fmt.Errorf("error in Kube-eleven for cluster %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
-	}
-
-	// Reconcile k8s configuration via Kuber.
-	if err := u.reconcileK8sConfiguration(ctx); err != nil {
-		return ctx, fmt.Errorf("error in Kuber for cluster %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
-	}
-
-	return ctx, nil
+	return u.processTasks(ctx, work, logger, tasks)
 }
 
 // destroyCluster destroys existing clusters infrastructure for a config and cleans up management cluster from any of the cluster data.
-func (u *Usecases) destroyCluster(ctx *builder.Context) error {
+func (u *Usecases) destroyCluster(ctx context.Context, work *builder.Context, logger *zerolog.Logger) error {
 	// K8s delete nodes prometheus metric.
 	metrics.K8sDeletingNodesInProgress.With(prometheus.Labels{
-		metrics.K8sClusterLabel:    ctx.GetClusterName(),
-		metrics.InputManifestLabel: ctx.ProjectName,
-	}).Add(float64(ctx.CurrentCluster.NodeCount()))
+		metrics.K8sClusterLabel:    work.GetClusterName(),
+		metrics.InputManifestLabel: work.ProjectName,
+	}).Add(float64(work.CurrentCluster.NodeCount()))
 
 	defer func(c int) {
 		metrics.K8sDeletingNodesInProgress.With(prometheus.Labels{
-			metrics.K8sClusterLabel:    ctx.GetClusterName(),
-			metrics.InputManifestLabel: ctx.ProjectName,
+			metrics.K8sClusterLabel:    work.GetClusterName(),
+			metrics.InputManifestLabel: work.ProjectName,
 		}).Add(-float64(c))
-	}(ctx.CurrentCluster.NodeCount())
+	}(work.CurrentCluster.NodeCount())
 
 	// LB delete nodes prometheus metrics.
-	for _, lb := range ctx.CurrentLoadbalancers {
+	for _, lb := range work.CurrentLoadbalancers {
 		metrics.LbDeletingNodesInProgress.With(prometheus.Labels{
 			metrics.K8sClusterLabel:    lb.TargetedK8S,
 			metrics.LBClusterLabel:     lb.ClusterInfo.Name,
-			metrics.InputManifestLabel: ctx.ProjectName,
+			metrics.InputManifestLabel: work.ProjectName,
 		}).Add(float64(lb.NodeCount()))
 
 		defer func(k8s, lb string, c int) {
 			metrics.LbDeletingNodesInProgress.With(prometheus.Labels{
 				metrics.K8sClusterLabel:    k8s,
 				metrics.LBClusterLabel:     lb,
-				metrics.InputManifestLabel: ctx.ProjectName,
+				metrics.InputManifestLabel: work.ProjectName,
 			}).Add(-float64(c))
 		}(lb.TargetedK8S, lb.ClusterInfo.Name, lb.NodeCount())
 	}
 
-	metrics.LBClustersInDeletion.Add(float64(len(ctx.CurrentLoadbalancers)))
-	defer func(c int) { metrics.LBClustersInDeletion.Add(-float64(c)) }(len(ctx.CurrentLoadbalancers))
+	metrics.LBClustersInDeletion.Add(float64(len(work.CurrentLoadbalancers)))
+	defer func(c int) { metrics.LBClustersInDeletion.Add(-float64(c)) }(len(work.CurrentLoadbalancers))
 
-	if s := nodepools.Static(ctx.CurrentCluster.GetClusterInfo().GetNodePools()); len(s) > 0 {
-		if err := u.destroyK8sCluster(ctx); err != nil {
-			log.Error().Msgf("error in destroy Kube-Eleven for config %s project %s : %v", ctx.GetClusterName(), ctx.ProjectName, err)
-		}
+	var tasks []Task
 
-		if err := u.removeClaudieUtilities(ctx); err != nil {
-			log.Error().Msgf("error while removing claudie installed utilities for config %s project %s: %v", ctx.GetClusterName(), ctx.ProjectName, err)
-		}
+	if s := nodepools.Static(work.CurrentCluster.GetClusterInfo().GetNodePools()); len(s) > 0 {
+		tasks = append(tasks,
+			Task{
+				do:              u.destroyK8sCluster,
+				stage:           spec.Workflow_KUBE_ELEVEN,
+				description:     "destroying kuberentes cluster and uninstall binaries",
+				continueOnError: true,
+			},
+			Task{
+				do:              u.removeClaudieUtilities,
+				stage:           spec.Workflow_ANSIBLER,
+				description:     "removing claudie installed utilities",
+				continueOnError: true,
+			},
+		)
 	}
 
-	// Destroy infrastructure for the given cluster.
-	if err := u.destroyInfrastructure(ctx); err != nil {
-		return fmt.Errorf("error in destroy config Terraformer for config %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
+	tasks = append(tasks,
+		Task{
+			do:          u.destroyInfrastructure,
+			stage:       spec.Workflow_TERRAFORMER,
+			description: "destroying infrastructure",
+		},
+		Task{
+			do:          u.deleteClusterData,
+			stage:       spec.Workflow_KUBER,
+			description: "cleanup cluster resources",
+		},
+	)
+
+	if err := u.processTasks(ctx, work, logger, tasks); err != nil {
+		return err
 	}
 
-	// Delete Cluster data from management cluster.
-	if err := u.deleteClusterData(ctx); err != nil {
-		return fmt.Errorf("error in delete kubeconfig for config %s project %s : %w", ctx.GetClusterName(), ctx.ProjectName, err)
-	}
-
-	metrics.LBClustersDeleted.Add(float64(len(ctx.CurrentLoadbalancers)))
-
+	metrics.LBClustersDeleted.Add(float64(len(work.CurrentLoadbalancers)))
 	return nil
 }
 
@@ -176,4 +196,72 @@ func (u *Usecases) updateTaskWithDescription(ctx *builder.Context, stage spec.Wo
 		}
 		return err
 	})
+}
+
+// Task processes parts or all of the infrastructure as specified in the passed in builder.Context.
+// Any partial state change that the task does, should be reflected in the passed in builder.Context.
+type Task struct {
+	do              DoFn
+	stage           spec.Workflow_Stage
+	description     string
+	continueOnError bool
+	condition       func(work *builder.Context) bool
+}
+
+// Do function is what the above defined Task understands and will execute.
+// This type may itself run tasks which may be scheduled for execution.
+type DoFn func(ctx context.Context, work *builder.Context, logger *zerolog.Logger) error
+
+// Tries to execute the given task, if the context is cancelled the error form the context is returned
+// and any partial changes done will be reflected in the passed in builder.Context, otherwise the passed
+// in task is processed.
+func (u *Usecases) tryProcessTask(
+	ctx context.Context,
+	work *builder.Context,
+	logger *zerolog.Logger,
+	t Task,
+) error {
+	description := work.Workflow.Description
+
+	// skip updating the task description on errors, to keep the stage where the task failed.
+	u.updateTaskWithDescription(work, t.stage, fmt.Sprintf("%s:%s", description, t.description))
+	logger.Info().Msgf("Working on %q", work.Workflow.Description)
+
+	select {
+	case <-ctx.Done():
+		err := ctx.Err()
+		logger.Err(err).Msgf("No work done on %q", work.Workflow.Description)
+		return err
+	default:
+		// continue
+	}
+
+	if t.condition != nil && !t.condition(work) {
+		logger.Info().Msgf("Skip %q, as cluster does not meet condition", work.Workflow.Description)
+		u.updateTaskWithDescription(work, t.stage, description)
+		return nil
+	}
+
+	err := t.do(ctx, work, logger)
+	if err != nil {
+		if t.continueOnError {
+			logger.Warn().Err(err).Msgf("Work: %q failed, ignoring", work.Workflow.Description)
+			u.updateTaskWithDescription(work, t.stage, description)
+			return nil
+		}
+		return err
+	}
+
+	logger.Info().Msgf("Work %q, finished successfully", work.Workflow.Description)
+	u.updateTaskWithDescription(work, t.stage, description)
+	return nil
+}
+
+func (u *Usecases) processTasks(ctx context.Context, work *builder.Context, logger *zerolog.Logger, tasks []Task) error {
+	for _, t := range tasks {
+		if err := u.tryProcessTask(ctx, work, logger, t); err != nil {
+			return err
+		}
+	}
+	return nil
 }

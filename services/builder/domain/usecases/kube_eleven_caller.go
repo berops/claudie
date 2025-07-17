@@ -1,62 +1,41 @@
 package usecases
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/berops/claudie/internal/clusters"
-	"github.com/berops/claudie/internal/loggerutils"
-	"github.com/berops/claudie/proto/pb/spec"
 	builder "github.com/berops/claudie/services/builder/internal"
+	"github.com/rs/zerolog"
 )
 
 // reconcileK8sCluster reconciles desired k8s cluster via kube-eleven.
-func (u *Usecases) reconcileK8sCluster(ctx *builder.Context) error {
-	logger := loggerutils.WithProjectAndCluster(ctx.ProjectName, ctx.Id())
-
-	// Set workflow state.
-	description := ctx.Workflow.Description
-	u.updateTaskWithDescription(ctx, spec.Workflow_KUBE_ELEVEN, fmt.Sprintf("%s building kubernetes cluster", description))
-
+func (u *Usecases) reconcileK8sCluster(_ context.Context, work *builder.Context, _ *zerolog.Logger) error {
 	var lbApiEndpoint string
-	if ep := clusters.FindAssignedLbApiEndpoint(ctx.DesiredLoadbalancers); ep != nil {
+	if ep := clusters.FindAssignedLbApiEndpoint(work.DesiredLoadbalancers); ep != nil {
 		lbApiEndpoint = ep.Dns.Endpoint
 	}
 
-	logger.Info().Msgf("Calling BuildCluster on Kube-eleven")
-	res, err := u.KubeEleven.BuildCluster(ctx, lbApiEndpoint, u.KubeEleven.GetClient())
+	res, err := u.KubeEleven.BuildCluster(work, lbApiEndpoint, u.KubeEleven.GetClient())
 	if err != nil {
-		return fmt.Errorf("error while building kubernetes cluster %s project %s : %w", ctx.Id(), ctx.ProjectName, err)
+		return fmt.Errorf("error while building kubernetes cluster %s project %s : %w", work.Id(), work.ProjectName, err)
 	}
-	logger.Info().Msgf("BuildCluster on Kube-eleven finished successfully")
 
-	// Update desired state with returned data.
-	ctx.DesiredCluster = res.Desired
-	// Set description to original string.
-	u.updateTaskWithDescription(ctx, spec.Workflow_KUBE_ELEVEN, description)
+	work.DesiredCluster = res.Desired
 	return nil
 }
 
-func (u *Usecases) destroyK8sCluster(ctx *builder.Context) error {
-	logger := loggerutils.WithProjectAndCluster(ctx.ProjectName, ctx.Id())
-
-	description := ctx.Workflow.Description
-	u.updateTaskWithDescription(ctx, spec.Workflow_KUBE_ELEVEN, fmt.Sprintf("%s destroying kubernetes cluster", description))
-
+func (u *Usecases) destroyK8sCluster(_ context.Context, work *builder.Context, _ *zerolog.Logger) error {
 	var lbApiEndpoint string
-	if ep := clusters.FindAssignedLbApiEndpoint(ctx.CurrentLoadbalancers); ep != nil && ep.Dns != nil {
+	if ep := clusters.FindAssignedLbApiEndpoint(work.CurrentLoadbalancers); ep != nil && ep.Dns != nil {
 		lbApiEndpoint = ep.Dns.Endpoint
 	}
 
-	logger.Info().Msgf("Calling DestroyCluster on Kube-eleven")
-	res, err := u.KubeEleven.DestroyCluster(ctx, lbApiEndpoint, u.KubeEleven.GetClient())
+	res, err := u.KubeEleven.DestroyCluster(work, lbApiEndpoint, u.KubeEleven.GetClient())
 	if err != nil {
-		return fmt.Errorf("error while destroying kubernetes cluster %s project %s: %w", ctx.Id(), ctx.ProjectName, err)
+		return fmt.Errorf("error while destroying kubernetes cluster %s project %s: %w", work.Id(), work.ProjectName, err)
 	}
 
-	logger.Info().Msgf("DestroyCluster on Kube-eleven finished successfully")
-
-	ctx.CurrentCluster = res.Current
-
-	u.updateTaskWithDescription(ctx, spec.Workflow_KUBE_ELEVEN, description)
+	work.CurrentCluster = res.Current
 	return nil
 }
