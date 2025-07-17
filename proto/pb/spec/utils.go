@@ -239,7 +239,6 @@ func (x *CloudflareProvider) GetSubscription(logger zerolog.Logger, accountID st
 	escapedAccountID := url.PathEscape(accountID)
 	urlSubscriptions := fmt.Sprintf("https://api.cloudflare.com/client/v4/accounts/%s/subscriptions", escapedAccountID)
 	responseSubscriptions, err := getCloudflareAPIResponse(urlSubscriptions, apiToken)
-
 	if err != nil {
 		return false, fmt.Errorf("error while getting cloudflare api response for %s: %w", urlSubscriptions, err)
 	}
