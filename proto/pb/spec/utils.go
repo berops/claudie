@@ -244,7 +244,7 @@ func (x *CloudflareProvider) GetSubscription() (bool, error) {
 		if errors.Is(err, ErrCloudflareAPIForbidden) {
 			return false, nil
 		}
-		return false, fmt.Errorf("error while getting cloudflare api response for %s: %w", urlSubscriptions, err)
+		return false, fmt.Errorf("error while getting cloudflare api response for 'accounts/subscriptions': %w", err)
 	}
 
 	if err := json.Unmarshal(responseSubscriptions, &subscriptions); err != nil {
