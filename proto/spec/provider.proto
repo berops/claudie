@@ -37,6 +37,7 @@ message AzureProvider {
 
 message CloudflareProvider {
   string token = 1;
+  string accountID = 2;
 }
 
 message GenesisCloudProvider {

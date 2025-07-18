@@ -168,7 +168,8 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 				SpecName: providerSpecName,
 				ProviderType: &spec.Provider_Cloudflare{
 					Cloudflare: &spec.CloudflareProvider{
-						Token: cloudflareConf.ApiToken,
+						Token:     cloudflareConf.ApiToken,
+						AccountID: cloudflareConf.AccountID,
 					},
 				},
 				CloudProviderName: "cloudflare",
