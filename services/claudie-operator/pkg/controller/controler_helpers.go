@@ -158,9 +158,15 @@ func constructInputManifest(
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
+			accountId, err := p.GetSecretField(v1beta1manifest.CF_ACCOUNT_ID)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+
 			providers.Cloudflare = append(providers.Cloudflare, manifest.Cloudflare{
 				Name:      p.ProviderName,
 				ApiToken:  strings.TrimSpace(cfApiToken),
+				AccountID: accountId,
 				Templates: p.Templates,
 			})
 

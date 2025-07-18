@@ -47,6 +47,7 @@ const (
 	AZURE_TENANT_ID       SecretField = "tenantid"
 	AZURE_CLIENT_ID       SecretField = "clientid"
 	CF_API_TOKEN          SecretField = "apitoken"
+	CF_ACCOUNT_ID         SecretField = "accountid"
 	GCP_CREDENTIALS       SecretField = "credentials"
 	GCP_GCP_PROJECT       SecretField = "gcpproject"
 	HETZNER_CREDENTIALS   SecretField = "credentials"
