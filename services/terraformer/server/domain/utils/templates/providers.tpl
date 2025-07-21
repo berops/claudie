@@ -3,37 +3,37 @@ terraform {
     {{- if .Hetzner }}
     hcloud = {
       source  = "hetznercloud/hcloud"
-      version = "1.38.1"
+      version = "1.51.0"
     }
     {{- end }}
     {{- if .Gcp }}
     google = {
       source  = "hashicorp/google"
-      version = "6.42.0"
+      version = "6.44.0"
     }
     {{- end }}
     {{- if .Aws }}
     aws = {
       source  = "hashicorp/aws"
-      version = "4.61.0"
+      version = "6.4.0"
     }
     {{- end }}
     {{- if .Oci }}
     oci = {
       source  = "oracle/oci"
-      version = "4.114.0"
+      version = "7.10.0"
     }
     {{- end }}
     {{- if .Azure }}
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "3.50.0"
+      version = "4.37.0"
     }
     {{- end }}
     {{- if .Cloudflare }}
     cloudflare = {
       source  = "cloudflare/cloudflare"
-      version = "4.2.0"
+      version = "5.7.1"
     }
     {{- end }}
     {{- if .HetznerDNS }}
@@ -45,7 +45,7 @@ terraform {
     {{- if .GenesisCloud }}
     genesiscloud = {
         source = "genesiscloud/genesiscloud"
-        version = "1.1.12"
+        version = "1.1.14"
     }
     {{- end }}
   }
