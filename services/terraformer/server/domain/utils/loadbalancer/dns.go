@@ -275,9 +275,14 @@ func (d *DNS) generateFiles(logger zerolog.Logger, dnsID, dnsDir string, dns *sp
 
 	if cloudflare := dns.Provider.GetCloudflare(); cloudflare != nil {
 		var err error
-		data.ProviderExtrasExtension.SubscriptionAllowsHA, err = cloudflare.GetSubscription(logger, cloudflare.AccountID, cloudflare.Token)
+		data.ProviderExtrasExtension.SubscriptionAllowsHA, err = cloudflare.GetSubscription()
 		if err != nil {
 			return fmt.Errorf("error while checking cloudflare load balancing subscription: %w", err)
+		}
+		if !data.ProviderExtrasExtension.SubscriptionAllowsHA {
+			logger.Warn().Msgf("The token/account pair provided to the cloudflare provider %q does not have access to the necessary API endpoints to determine if HA loadbalancing can be used, defaulting to false", dns.Provider.SpecName)
+		} else {
+			logger.Info().Msgf("Found subscription for HA load balancing for cloudflare provider %q", dns.Provider.SpecName)
 		}
 	}
 

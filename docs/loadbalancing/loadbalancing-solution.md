@@ -2,17 +2,17 @@
 
 ## Loadbalancer
 
-To create a highly available kubernetes cluster, Claudie creates load balancers for the `kubeAPI` server. These load balancers use Nginx to load balance the traffic among the cluster nodes. Claudie also supports definition of custom load balancers for the applications running inside the cluster.
+To create a highly available kubernetes cluster, Claudie has the option to create load balancers that utilize [envoy](https://www.envoyproxy.io/docs/envoy/latest/) to load balance the traffic among the cluster nodes.
 
 ## Concept
 
 - The load balancer machines will join the Wireguard private network of Claudie clusters relevant to it.
     - This is necessary so that the LB machines can send traffic to the cluster machines over the `wireguard VPN`.
-  
+
 - DNS A records will be created and managed by Claudie on 1 or more cloud providers.
     - There will be a DNS A record for the public IP of each LB machine that is currently passing the health checks.
 
-- The LB machines will run an `Nginx` to carry out the actual load balancing.
+- The LB machines will deploy a docker container running [envoy](https://www.envoyproxy.io/docs/envoy/latest/) for each role the loadbalancer uses, to carry out the actual load balancing.
     - There will be a DNS A record for the public IP of each LB machine that is currently passing the health checks.
     - Therefore, there will be actually 2 layers of load balancing.
         1. DNS-based load balancing to determine the LB machine to be used.
