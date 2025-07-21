@@ -3,6 +3,7 @@ package spec
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,9 +11,11 @@ import (
 	"path/filepath"
 	"slices"
 	"time"
-
-	"github.com/rs/zerolog"
 )
+
+// ErrCloudflareAPIForbidden is returned when the response to the endpoint of cloudflare returns code 403,
+// which means that the endpoint cannot be reached with the current account-id/token pair.
+var ErrCloudflareAPIForbidden = errors.New("token/account-id pair with the cloudflare provider does not have acces for the necessary API")
 
 const (
 	// ForceExportPort6443OnControlPlane Forces to export the port 6443 on
@@ -223,9 +226,7 @@ func (r *Role) MergeTargetPools(o *Role) {
 }
 
 // GetSubscription checks if the Cloudflare account has a Load Balancing subscription.
-func (x *CloudflareProvider) GetSubscription(logger zerolog.Logger, accountID string, apiToken string) (bool, error) {
-	sublogger := logger.With().Str("subscription", "cloudflare").Logger()
-
+func (x *CloudflareProvider) GetSubscription() (bool, error) {
 	var subscriptions struct {
 		Result []struct {
 			ID      string `json:"id"`
@@ -236,11 +237,14 @@ func (x *CloudflareProvider) GetSubscription(logger zerolog.Logger, accountID st
 		Success bool `json:"success"`
 	}
 
-	escapedAccountID := url.PathEscape(accountID)
+	escapedAccountID := url.PathEscape(x.AccountID)
 	urlSubscriptions := fmt.Sprintf("https://api.cloudflare.com/client/v4/accounts/%s/subscriptions", escapedAccountID)
-	responseSubscriptions, err := getCloudflareAPIResponse(urlSubscriptions, apiToken)
+	responseSubscriptions, err := getCloudflareAPIResponse(urlSubscriptions, x.Token)
 	if err != nil {
-		return false, fmt.Errorf("error while getting cloudflare api response for %s: %w", urlSubscriptions, err)
+		if errors.Is(err, ErrCloudflareAPIForbidden) {
+			return false, nil
+		}
+		return false, fmt.Errorf("error while getting cloudflare api response for 'accounts/subscriptions': %w", err)
 	}
 
 	if err := json.Unmarshal(responseSubscriptions, &subscriptions); err != nil {
@@ -249,7 +253,6 @@ func (x *CloudflareProvider) GetSubscription(logger zerolog.Logger, accountID st
 
 	for _, subscription := range subscriptions.Result {
 		if subscription.Product.Name == "prod_load_balancing" && subscriptions.Success {
-			sublogger.Info().Msgf("found subscription for %s", subscription.Product.Name)
 			return true, nil
 		}
 	}
@@ -273,6 +276,10 @@ func getCloudflareAPIResponse(url string, apiToken string) ([]byte, error) {
 		return nil, fmt.Errorf("error making http request: %w", err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusForbidden {
+		return nil, ErrCloudflareAPIForbidden
+	}
 
 	// nolint
 	if !(resp.StatusCode >= 200 && resp.StatusCode < 300) {

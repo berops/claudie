@@ -1,0 +1,173 @@
+---
+- hosts: {{ .LoadBalancer }}
+  gather_facts: yes
+  become: yes
+  vars:
+    # for node-limits tasks
+    nofile_soft: 65535
+    nofile_hard: 65535
+    file_max: 2097152
+    max_user_watches: 2097152
+    max_user_instances: 65535
+    max_queued_events: 65535
+  tasks:
+    - name: update node limits
+      include_tasks: ../../../ansible-playbooks/node-limits.yml
+
+    - name: Get dpkg architecture
+      command: dpkg --print-architecture
+      register: dpkg_arch
+      changed_when: false
+
+    # take the os codename from ansible and if not present than read it from the /etc/os-release
+    - name: Set fallback variables for OS codename and id
+      set_fact:
+        os_codename: "{{ "{{" }} (ansible_facts['distribution_release'] | default('')) | lower {{ "}}" }}"
+        os_id: "{{ "{{" }} (ansible_facts['distribution'] | default('')) | lower {{ "}}" }}"
+
+    # if we do not have the OS codename and ID fail the playbook
+    - name: Fail if OS codename or ID is empty
+      fail:
+        msg: "The required variables 'codename' or 'id' are not found or are empty."
+      when: (os_codename | length == 0) or (os_id | length == 0)
+
+    - debug:
+        var: os_codename
+
+    - debug:
+        var: os_id
+
+      # https://download.docker.com/linux/
+      # the os_id should be just ascii chars.
+    - name: Assert os_id contains only ASCII characters
+      assert:
+          that:
+          - os_id is string
+          - os_id is match("^[a-z]+$")
+          fail_msg: "os_id contains non-ASCII characters"
+          success_msg: "os_id contains only ASCII characters"
+
+    - name: Install aptitude
+      apt:
+        name: aptitude
+        state: latest
+        update_cache: true
+      retries: 2
+      delay: 10
+      register: task_aptitude
+      until: task_aptitude is not failed
+      # aptitude packages are 3-5Mb in size
+      # have a timeout of 12 mins with 2 retries.
+      async: 720
+      poll: 5
+
+    - name: Install required system packages
+      apt:
+        pkg:
+          - ca-certificates
+          - curl
+        state: latest
+        update_cache: true
+      retries: 2
+      delay: 10
+      register: task_req_packages
+      until: task_req_packages is not failed
+      # these packages are around a MB in size
+      # have a timeout of 8 mins with 2 retries.
+      async: 500
+      poll: 5
+
+    - name: Ensure required directories exist
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Download Docker GPG key
+      get_url:
+        url: https://download.docker.com/linux/{{ "{{" }} os_id {{ "}}" }}/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: '0644'
+
+    - name: Add repository into sources list
+      apt_repository:
+        repo: deb [arch={{ "{{" }} dpkg_arch.stdout {{ "}}" }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/{{ "{{" }} os_id {{ "}}" }} {{ "{{" }} os_codename {{ "}}" }} stable
+        state: present
+        filename: docker
+
+    - name: Update apt and install docker
+      apt:
+        name:
+            - docker-ce
+            - docker-ce-cli
+            - containerd.io
+            - docker-buildx-plugin
+            - docker-compose-plugin
+        state: latest
+        update_cache: true
+      retries: 2
+      delay: 10
+      register: task_install_docker
+      until: task_install_docker is not failed
+      # these packages are ~100MB in size
+      # have a timeout of 25 mins with 2 retries.
+      async: 1500
+      poll: 5
+
+
+    - name: Make docker start at boot
+      ansible.builtin.systemd:
+        name: docker.service
+        enabled: yes
+        state: started
+
+    - name: Make containerd start at boot
+      ansible.builtin.systemd:
+        name: containerd.service
+        enabled: yes
+        state: started
+
+    - name: Create directory '/var/lib/envoy' if it does not exist
+      ansible.builtin.file:
+          path: /var/lib/envoy
+          state: directory
+          mode: '0755'
+
+    - name: copy envoy docker-compose
+      ansible.builtin.copy:
+        src: envoy-docker-compose.yml
+        dest: /var/lib/envoy/docker-compose.yml
+        remote_src: false
+
+{{- range $role := .Roles }}
+    {{ $self := $role.Role }}
+    - name: copy envoy config files for role {{ $self.Name }} to be used within the container
+      ansible.builtin.copy:
+        src: ./{{ $self.Name }}/
+        dest: /var/lib/envoy/{{ $self.Name }}
+        remote_src: false
+
+    - name: Replace placeholder for wireguard IP for role {{ $self.Name }}
+      ansible.builtin.replace:
+        path: /var/lib/envoy/{{ $self.Name }}/envoy_temp.yml
+        regexp: 'wireguard_private_ip_replace_me'
+        replace: '{{ "{{" }} private_ip {{ "}}" }}'
+
+    - name: move uploaded dynamic config files for role {{ $self.Name }}
+      shell: |
+        mv /var/lib/envoy/{{ $self.Name }}/envoy_temp.yml /var/lib/envoy/{{ $self.Name }}/envoy.yml
+        mv /var/lib/envoy/{{ $self.Name }}/cds_temp.yml /var/lib/envoy/{{ $self.Name }}/cds.yml
+        mv /var/lib/envoy/{{ $self.Name }}/lds_temp.yml /var/lib/envoy/{{ $self.Name }}/lds.yml
+{{- end }}
+
+    - name: run docker compose
+      community.docker.docker_compose_v2:
+        project_src: /var/lib/envoy
+        state: present
+        # removes unused containers, which stay orphaned after the removal of a role in the loadbalancer.
+        remove_orphans: true
+      register: compose_out
+
+    - name: Show compose results
+      ansible.builtin.debug:
+        var: compose_out

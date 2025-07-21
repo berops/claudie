@@ -178,6 +178,10 @@ message Role {
   message Settings {
     bool proxyProtocol = 1;
     bool stickySessions = 2;
+
+    // required port for the envoy admin interface,
+    // on change will issue restart of the envoy proxy.
+    int32  envoy_admin_port = 3;
   }
   // Name of the role.
   string name = 1;

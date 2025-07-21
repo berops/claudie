@@ -11,9 +11,9 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/berops/claudie/internal/api/manifest"
 	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/hash"
-	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/manager/internal/store"
@@ -76,19 +76,34 @@ func createDesiredState(pending *store.Config) error {
 	if err := transferExistingState(grpcRepr); err != nil {
 		return fmt.Errorf("failed to reuse current state date for desired state for %q: %w", m.Name, err)
 	}
+
 	// after transferring existing state fill remaining data.
+	// 1. generate dynamic nodes
 	for _, state := range grpcRepr.Clusters {
 		fillMissingDynamicNodes(state.Desired)
 	}
 
-	// We generate the CIDR for individual nodepools at this step, as
-	// we need contextual information about the current state so that
-	// we do not generate the same cidr for the same Provider/Region pair
-	// multiple times, avoiding conflicts.
+	// 2. generate the CIDR for individual nodepools at this step, as
+	// we need information about the current state so that we do not
+	// generate the same cidr for the same Provider/Region pair multiple
+	// times, avoiding conflicts.
 	for _, state := range grpcRepr.Clusters {
 		if err := fillMissingCIDR(state); err != nil {
 			return fmt.Errorf("failed to generate cidrs for nodepools: %w", err)
 		}
+	}
+
+	// 3. generate missing envoy admin ports and add the default role for the healthcheck.
+	for _, state := range grpcRepr.Clusters {
+		// validation of the Manifest assures that the number of
+		// roles is limited and that we will always be able to
+		// generate the required number of ports for the envoy
+		// admin interface.
+		fillMissingEnvoyAdminPorts(state.Desired)
+
+		// To each loadbalancer cluster we add a default healthcheck role
+		// that can then be used for the HA loadbalancing.
+		fillDefaultHealthcheckRole(state.Desired)
 	}
 
 	modified, err := store.ConvertFromGRPC(grpcRepr)
@@ -190,6 +205,7 @@ func createLBClustersFromManifest(from *manifest.Manifest, into *store.Config) e
 			return fmt.Errorf("error while building desired state for LB %s : %w", lbCluster.Name, err)
 		}
 
+		// NOTE: we do not populate roles.Settings.EnvoyAdminPort at this stage.
 		attachedRoles := getRolesAttachedToLBCluster(from.LoadBalancer.Roles, lbCluster.Roles)
 
 		newLbCluster := &spec.LBcluster{
@@ -295,7 +311,7 @@ func getRolesAttachedToLBCluster(roles []manifest.Role, roleNames []string) []*s
 
 				newRole := &spec.Role{
 					Name:        role.Name,
-					Protocol:    role.Protocol,
+					Protocol:    strings.ToLower(role.Protocol),
 					Port:        role.Port,
 					TargetPort:  role.TargetPort,
 					TargetPools: role.TargetPools,
@@ -303,6 +319,10 @@ func getRolesAttachedToLBCluster(roles []manifest.Role, roleNames []string) []*s
 					Settings: &spec.Role_Settings{
 						ProxyProtocol:  role.Settings.ProxyProtocol,
 						StickySessions: role.Settings.StickySessions,
+						// initially set as an invalid port, must be updated
+						// later, when merging with the existing state to avoid
+						// port duplication.
+						EnvoyAdminPort: -1,
 					},
 				}
 				matchingRoles = append(matchingRoles, newRole)

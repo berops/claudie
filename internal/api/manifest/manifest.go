@@ -268,7 +268,6 @@ type Role struct {
 	// Name of the role. Used as a reference in clusters.
 	Name string `validate:"required" yaml:"name" json:"name"`
 	// Protocol of the rule. Allowed values are: tcp, udp.
-	// +kubebuilder:validation:Enum=tcp;udp;
 	Protocol string `validate:"required,oneof=tcp udp" yaml:"protocol" json:"protocol"`
 	// Port of the incoming traffic on the loadbalancer.
 	Port int32 `validate:"min=0,max=65535" yaml:"port" json:"port"`
@@ -277,7 +276,6 @@ type Role struct {
 	// Defines nodepools of the targeted K8s cluster, from which nodes will be used for loadbalancing.
 	TargetPools []string `validate:"required,min=1" yaml:"targetPools" json:"targetPools"`
 	// Additional settings for a role.
-	// +optional
 	Settings *RoleSettings `yaml:"settings,omitempty" json:"settings,omitempty"`
 }
 

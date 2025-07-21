@@ -1,5 +1,5 @@
 /*
-Copyright 2023 berops.com.
+Copyright 2025 berops.com.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	v1beta "github.com/berops/claudie/services/claudie-operator/pkg/api/v1beta1"
+	v1betamanifest "github.com/berops/claudie/internal/api/crd/inputmanifest/v1beta1"
 	"github.com/berops/claudie/services/claudie-operator/server/domain/usecases"
 	"github.com/go-logr/logr"
 )
@@ -60,9 +60,11 @@ func New(kclient client.Client,
 	scheme *runtime.Scheme,
 	logger logr.Logger,
 	recorder record.EventRecorder,
-	usecase usecases.Usecases) *InputManifestReconciler {
+	usecase usecases.Usecases,
+) *InputManifestReconciler {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(v1beta.AddToScheme(scheme))
+	utilruntime.Must(v1betamanifest.AddToScheme(scheme))
+
 	return &InputManifestReconciler{
 		kc:       kclient,
 		Scheme:   scheme,
@@ -75,7 +77,7 @@ func New(kclient client.Client,
 // SetupWithManager sets up the controller with the Manager.
 func (r *InputManifestReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1beta.InputManifest{}).
+		For(&v1betamanifest.InputManifest{}).
 		WatchesRawSource(source.Channel(r.Usecases.SaveAutoscalerEvent, &handler.EnqueueRequestForObject{})).
 		Complete(r)
 }
