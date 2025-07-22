@@ -4,11 +4,14 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
+	"net/http/pprof"
 	"os"
 
 	"github.com/berops/claudie/internal/grpcutils"
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/services/autoscaler-adapter/claudie_provider"
+	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
 
 	"google.golang.org/grpc"
@@ -30,6 +33,24 @@ func main() {
 	server := grpcutils.NewGRPCServer(
 		grpc.ChainUnaryInterceptor(grpcutils.PeerInfoInterceptor(&log.Logger)),
 	)
+
+	go func() {
+		pprofMux := mux.NewRouter()
+
+		pprofMux.HandleFunc("/debug/pprof/", pprof.Index).Methods(http.MethodGet)
+		pprofMux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline).Methods(http.MethodGet)
+		pprofMux.HandleFunc("/debug/pprof/profile", pprof.Profile).Methods(http.MethodGet)
+		pprofMux.HandleFunc("/debug/pprof/symbol", pprof.Symbol).Methods(http.MethodGet)
+		pprofMux.HandleFunc("/debug/pprof/trace", pprof.Trace).Methods(http.MethodGet)
+		pprofMux.Handle("/debug/pprof/goroutine", pprof.Handler("goroutine")).Methods(http.MethodGet)
+		pprofMux.Handle("/debug/pprof/heap", pprof.Handler("heap")).Methods(http.MethodGet)
+		pprofMux.Handle("/debug/pprof/threadcreate", pprof.Handler("threadcreate")).Methods(http.MethodGet)
+		pprofMux.Handle("/debug/pprof/block", pprof.Handler("block")).Methods(http.MethodGet)
+		pprofMux.Handle("/debug/pprof/allocs", pprof.Handler("allocs")).Methods(http.MethodGet)
+		pprofMux.Handle("/debug/pprof/mutex", pprof.Handler("mutex")).Methods(http.MethodGet)
+
+		http.ListenAndServe("127.0.0.1:"+"18000", pprofMux)
+	}()
 
 	// Listen
 	serviceAddr := net.JoinHostPort("0.0.0.0", port)
