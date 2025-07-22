@@ -49,7 +49,7 @@ func main() {
 		pprofMux.Handle("/debug/pprof/allocs", pprof.Handler("allocs")).Methods(http.MethodGet)
 		pprofMux.Handle("/debug/pprof/mutex", pprof.Handler("mutex")).Methods(http.MethodGet)
 
-		http.ListenAndServe("127.0.0.1:"+"18000", pprofMux)
+		http.ListenAndServe("0.0.0.0:"+"18000", pprofMux)
 	}()
 
 	// Listen
