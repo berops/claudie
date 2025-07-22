@@ -1,6 +1,9 @@
 # Cloudflare
-Cloudflare provider requires `apitoken` token field in string format.
+Cloudflare provider requires `apitoken` token and `accountid` id field in string format.
 
+!!! warning "Cloudflare DNS Load Balancing" 
+    Claudie creates A DNS records with loadbalancing and healtcheck functionality. To enable this feature, you must have the **Load Balancing** add-on enabled in your [Cloudflare plan](https://www.cloudflare.com/plans/). Without this add-on, Claudie will still create the DNS A records, but they won't be monitored for availability.
+    
 ## DNS example
 ```yaml
 apiVersion: v1
@@ -9,6 +12,7 @@ metadata:
   name: cloudflare-secret
 data:
   apitoken: a3NsSVNBODc4YTZldFlBZlhZY2c1aVl5ckZHTmxDeGM=
+  accountid: 8554a23rt6u86dc4asd158764w24b254
 type: Opaque
 ```
 
@@ -20,6 +24,15 @@ Zone:Read
 DNS:Read
 DNS:Edit
 ```
+
+If Claudie will be creating load-balanced DNS records, the following additional permissions are required:
+
+```bash
+Load Balancing:Monitors And Pools:Edit
+Billing:Read
+```
+
+The Billing: Read permission is necessary to verify that the Load Balancing feature is enabled and active in your Cloudflare account.
 
 ## DNS setup
 If you wish to use Cloudflare as your DNS provider where Claudie creates DNS records pointing to Claudie managed clusters, you will need to create a **public DNS zone** by following [this guide](https://developers.cloudflare.com/dns/zone-setups/).

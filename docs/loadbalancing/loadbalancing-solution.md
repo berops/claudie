@@ -4,6 +4,8 @@
 
 To create a highly available kubernetes cluster, Claudie creates load balancers for the `kubeAPI` server. These load balancers use Nginx to load balance the traffic among the cluster nodes. Claudie also supports definition of custom load balancers for the applications running inside the cluster.
 
+The DNS load balancing functionality, including health checks, is provided by supported cloud providers such as AWS, Azure, Google Cloud, Cloudflare, and OCI. Health checks monitor TCP port 65534. If a node fails to respond on this port, its corresponding DNS record is temporarily removed. Once the endpoint becomes healthy again, the DNS record is automatically restored.
+
 ## Concept
 
 - The load balancer machines will join the Wireguard private network of Claudie clusters relevant to it.
