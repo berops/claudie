@@ -519,7 +519,7 @@ func GenerateFakeRoles(willHaveLbApiEndpoint bool, k8s *spec.ClusterInfo) []*spe
 		}
 
 		var targetPool []string
-		for range rng.Uint64() % 20 {
+		for range 1 + rng.Uint64()%20 {
 			np := k8s.GetNodePools()[int(uint32(rng.Uint64()))%len(k8s.GetNodePools())]
 			targetPool = append(targetPool, np.GetName())
 		}
@@ -531,6 +531,11 @@ func GenerateFakeRoles(willHaveLbApiEndpoint bool, k8s *spec.ClusterInfo) []*spe
 			TargetPort:  int32(rng.Uint64() % math.MaxUint16),
 			TargetPools: targetPool,
 			RoleType:    spec.RoleType_Ingress,
+			Settings: &spec.Role_Settings{
+				ProxyProtocol:  false,
+				StickySessions: false,
+				EnvoyAdminPort: -1,
+			},
 		})
 	}
 

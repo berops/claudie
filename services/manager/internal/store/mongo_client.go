@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/berops/claudie/internal/api/manifest"
 	"github.com/berops/claudie/internal/hash"
-	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/internal/sanitise"
 	"github.com/rs/zerolog/log"
 

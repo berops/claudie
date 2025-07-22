@@ -1,11 +1,21 @@
 package spec
 
 import (
+	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"net/url"
 	"path/filepath"
 	"slices"
+	"time"
 )
+
+// ErrCloudflareAPIForbidden is returned when the response to the endpoint of cloudflare returns code 403,
+// which means that the endpoint cannot be reached with the current account-id/token pair.
+var ErrCloudflareAPIForbidden = errors.New("token/account-id pair with the cloudflare provider does not have acces for the necessary API")
 
 const (
 	// ForceExportPort6443OnControlPlane Forces to export the port 6443 on
@@ -213,4 +223,73 @@ func (r *Role) MergeTargetPools(o *Role) {
 			r.TargetPools = append(r.TargetPools, o)
 		}
 	}
+}
+
+// GetSubscription checks if the Cloudflare account has a Load Balancing subscription.
+func (x *CloudflareProvider) GetSubscription() (bool, error) {
+	var subscriptions struct {
+		Result []struct {
+			ID      string `json:"id"`
+			Product struct {
+				Name string `json:"name"`
+			} `json:"product"`
+		} `json:"result"`
+		Success bool `json:"success"`
+	}
+
+	escapedAccountID := url.PathEscape(x.AccountID)
+	urlSubscriptions := fmt.Sprintf("https://api.cloudflare.com/client/v4/accounts/%s/subscriptions", escapedAccountID)
+	responseSubscriptions, err := getCloudflareAPIResponse(urlSubscriptions, x.Token)
+	if err != nil {
+		if errors.Is(err, ErrCloudflareAPIForbidden) {
+			return false, nil
+		}
+		return false, fmt.Errorf("error while getting cloudflare api response for 'accounts/subscriptions': %w", err)
+	}
+
+	if err := json.Unmarshal(responseSubscriptions, &subscriptions); err != nil {
+		return false, fmt.Errorf("failed to parse JSON: %w", err)
+	}
+
+	for _, subscription := range subscriptions.Result {
+		if subscription.Product.Name == "prod_load_balancing" && subscriptions.Success {
+			return true, nil
+		}
+	}
+	return false, fmt.Errorf("subscription for Load Balancing not found")
+}
+
+func getCloudflareAPIResponse(url string, apiToken string) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("could not create request: %w", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+apiToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error making http request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusForbidden {
+		return nil, ErrCloudflareAPIForbidden
+	}
+
+	// nolint
+	if !(resp.StatusCode >= 200 && resp.StatusCode < 300) {
+		return nil, fmt.Errorf("response with status code %v: %v", resp.StatusCode, resp.Status)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading response body: %w", err)
+	}
+
+	return body, nil
 }

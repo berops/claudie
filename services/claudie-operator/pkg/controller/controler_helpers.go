@@ -1,5 +1,5 @@
 /*
-Copyright 2023 berops.com.
+Copyright 2025 berops.com.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,25 +21,29 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	v1beta1manifest "github.com/berops/claudie/internal/api/crd/inputmanifest/v1beta1"
+	"github.com/berops/claudie/internal/api/manifest"
 	"github.com/berops/claudie/internal/generics"
-	"github.com/berops/claudie/internal/manifest"
-	v1beta "github.com/berops/claudie/services/claudie-operator/pkg/api/v1beta1"
 )
 
-// mergeInputManifestWithSecrets takes the v1beta.InputManifest and providersWithSecret and returns a claudie type raw manifest.Manifest type.
+// constructInputManifest takes the v1beta.InputManifest and providersWithSecret and returns a claudie type raw manifest.Manifest type.
 // It will combine the manifest.Manifest name as object "Namespace/Name".
-func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret []v1beta.ProviderWithData, staticNodesWithSecret map[string][]v1beta.StaticNodeWithData) (manifest.Manifest, error) {
+func constructInputManifest(
+	crd v1beta1manifest.InputManifest,
+	providersWithSecret []v1beta1manifest.ProviderWithData,
+	staticNodesWithSecret map[string][]v1beta1manifest.StaticNodeWithData,
+) (manifest.Manifest, error) {
 	var providers manifest.Provider
 
 	for _, p := range providersWithSecret {
 		secretNamespaceName := p.Secret.Namespace + "/" + p.Secret.Name
 		switch p.ProviderType {
-		case v1beta.GCP:
-			gcpCredentials, err := p.GetSecretField(v1beta.GCP_CREDENTIALS)
+		case v1beta1manifest.GCP:
+			gcpCredentials, err := p.GetSecretField(v1beta1manifest.GCP_CREDENTIALS)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
-			gcpProject, err := p.GetSecretField(v1beta.GCP_GCP_PROJECT)
+			gcpProject, err := p.GetSecretField(v1beta1manifest.GCP_GCP_PROJECT)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
@@ -51,12 +55,12 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 				Templates:   p.Templates,
 			})
 
-		case v1beta.AWS:
-			awsAccesskey, err := p.GetSecretField(v1beta.AWS_ACCESS_KEY)
+		case v1beta1manifest.AWS:
+			awsAccesskey, err := p.GetSecretField(v1beta1manifest.AWS_ACCESS_KEY)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
-			awsSecretkey, err := p.GetSecretField(v1beta.AWS_SECRET_KEY)
+			awsSecretkey, err := p.GetSecretField(v1beta1manifest.AWS_SECRET_KEY)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
@@ -67,8 +71,8 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 				SecretKey: strings.TrimSpace(awsSecretkey),
 				Templates: p.Templates,
 			})
-		case v1beta.GENESIS_CLOUD:
-			gcToken, err := p.GetSecretField(v1beta.GEN_C_API_TOKEN)
+		case v1beta1manifest.GENESIS_CLOUD:
+			gcToken, err := p.GetSecretField(v1beta1manifest.GEN_C_API_TOKEN)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
@@ -78,8 +82,8 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 				Templates: p.Templates,
 			}
 			providers.GenesisCloud = append(providers.GenesisCloud, genCloud)
-		case v1beta.HETZNER:
-			hetzner_key, err := p.GetSecretField(v1beta.HETZNER_CREDENTIALS)
+		case v1beta1manifest.HETZNER:
+			hetzner_key, err := p.GetSecretField(v1beta1manifest.HETZNER_CREDENTIALS)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
@@ -89,24 +93,24 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 				Templates:   p.Templates,
 			}
 			providers.Hetzner = append(providers.Hetzner, hetzner)
-		case v1beta.OCI:
-			ociTenant, err := p.GetSecretField(v1beta.OCI_TENANCT_OCID)
+		case v1beta1manifest.OCI:
+			ociTenant, err := p.GetSecretField(v1beta1manifest.OCI_TENANCT_OCID)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
-			ociCompartmentOcid, err := p.GetSecretField(v1beta.OCI_COMPARTMENT_OCID)
+			ociCompartmentOcid, err := p.GetSecretField(v1beta1manifest.OCI_COMPARTMENT_OCID)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
-			ociFingerPrint, err := p.GetSecretField(v1beta.OCI_KEY_FINGERPRINT)
+			ociFingerPrint, err := p.GetSecretField(v1beta1manifest.OCI_KEY_FINGERPRINT)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
-			ociPrivateKey, err := p.GetSecretField(v1beta.OCI_PRIVATE_KEY)
+			ociPrivateKey, err := p.GetSecretField(v1beta1manifest.OCI_PRIVATE_KEY)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
-			ociUserOcid, err := p.GetSecretField(v1beta.OCI_USER_OCID)
+			ociUserOcid, err := p.GetSecretField(v1beta1manifest.OCI_USER_OCID)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
@@ -120,23 +124,23 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 				UserOCID:       strings.TrimSpace(ociUserOcid),
 				Templates:      p.Templates,
 			})
-		case v1beta.AZURE:
-			azureClientId, err := p.GetSecretField(v1beta.AZURE_CLIENT_ID)
+		case v1beta1manifest.AZURE:
+			azureClientId, err := p.GetSecretField(v1beta1manifest.AZURE_CLIENT_ID)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
 
-			azureClientSecret, err := p.GetSecretField(v1beta.AZURE_CLIENT_SECRET)
+			azureClientSecret, err := p.GetSecretField(v1beta1manifest.AZURE_CLIENT_SECRET)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
 
-			azureSubscriptionId, err := p.GetSecretField(v1beta.AZURE_SUBSCRIPTION_ID)
+			azureSubscriptionId, err := p.GetSecretField(v1beta1manifest.AZURE_SUBSCRIPTION_ID)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
 
-			azureTenantId, err := p.GetSecretField(v1beta.AZURE_TENANT_ID)
+			azureTenantId, err := p.GetSecretField(v1beta1manifest.AZURE_TENANT_ID)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
@@ -149,19 +153,25 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 				ClientSecret:   strings.TrimSpace(azureClientSecret),
 				Templates:      p.Templates,
 			})
-		case v1beta.CLOUDFLARE:
-			cfApiToken, err := p.GetSecretField(v1beta.CF_API_TOKEN)
+		case v1beta1manifest.CLOUDFLARE:
+			cfApiToken, err := p.GetSecretField(v1beta1manifest.CF_API_TOKEN)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
+			accountId, err := p.GetSecretField(v1beta1manifest.CF_ACCOUNT_ID)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+
 			providers.Cloudflare = append(providers.Cloudflare, manifest.Cloudflare{
 				Name:      p.ProviderName,
 				ApiToken:  strings.TrimSpace(cfApiToken),
+				AccountID: accountId,
 				Templates: p.Templates,
 			})
 
-		case v1beta.HETZNER_DNS:
-			hetznerDNSCredentials, err := p.GetSecretField(v1beta.HETZNER_DNS_API_TOKEN)
+		case v1beta1manifest.HETZNER_DNS:
+			hetznerDNSCredentials, err := p.GetSecretField(v1beta1manifest.HETZNER_DNS_API_TOKEN)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
@@ -180,15 +190,15 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 	for nodepool, withSecret := range generics.IterateMapInOrder(staticNodesWithSecret) {
 		nodes := make([]manifest.Node, 0, len(withSecret))
 		for _, n := range withSecret {
-			if key, ok := n.Secret.Data[string(v1beta.PRIVATE_KEY)]; ok {
+			if key, ok := n.Secret.Data[string(v1beta1manifest.PRIVATE_KEY)]; ok {
 				if !utf8.ValidString(string(key)) {
 					secretNamespaceName := n.Secret.Namespace + "/" + n.Secret.Name
-					return manifest.Manifest{}, buildSecretError(secretNamespaceName, fmt.Errorf("field %s is not a valid UTF-8 string", v1beta.PRIVATE_KEY))
+					return manifest.Manifest{}, buildSecretError(secretNamespaceName, fmt.Errorf("field %s is not a valid UTF-8 string", v1beta1manifest.PRIVATE_KEY))
 				}
 				nodes = append(nodes, manifest.Node{Endpoint: n.Endpoint, Username: n.Username, Key: string(key)})
 			} else {
 				secretNamespaceName := n.Secret.Namespace + "/" + n.Secret.Name
-				return manifest.Manifest{}, buildSecretError(secretNamespaceName, fmt.Errorf("field %s not found", v1beta.PRIVATE_KEY))
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, fmt.Errorf("field %s not found", v1beta1manifest.PRIVATE_KEY))
 			}
 		}
 		np := getStaticNodePool(nodepool, crd.Spec.NodePools.Static)
@@ -201,12 +211,20 @@ func mergeInputManifestWithSecrets(crd v1beta.InputManifest, providersWithSecret
 		})
 	}
 
+	manifestRoles := make([]manifest.Role, 0, len(crd.Spec.LoadBalancer.Roles))
+	for _, role := range crd.Spec.LoadBalancer.Roles {
+		manifestRoles = append(manifestRoles, role.IntoManifestRole())
+	}
+
 	return manifest.Manifest{
-		Name:         crd.GetNamespacedNameDashed(),
-		Providers:    providers,
-		NodePools:    nodePools,
-		Kubernetes:   crd.Spec.Kubernetes,
-		LoadBalancer: crd.Spec.LoadBalancer,
+		Name:       crd.GetNamespacedNameDashed(),
+		Providers:  providers,
+		NodePools:  nodePools,
+		Kubernetes: crd.Spec.Kubernetes,
+		LoadBalancer: manifest.LoadBalancer{
+			Roles:    manifestRoles,
+			Clusters: crd.Spec.LoadBalancer.Clusters,
+		},
 	}, nil
 }
 
@@ -217,17 +235,17 @@ func buildSecretError(secret string, err error) error {
 }
 
 // buildProvisioningError builds a string containing errors from a single inputManifest
-func buildProvisioningError(state v1beta.InputManifestStatus) error {
+func buildProvisioningError(state v1beta1manifest.InputManifestStatus) error {
 	var msg string
 	for name, cluster := range state.Clusters {
-		if cluster.State == v1beta.STATUS_ERROR {
+		if cluster.State == v1beta1manifest.STATUS_ERROR {
 			msg = msg + "For cluster: " + name + " Message: " + cluster.Message + "; "
 		}
 	}
 	return fmt.Errorf("%v", msg)
 }
 
-func getStaticNodePool(name string, nps []v1beta.StaticNodePool) *v1beta.StaticNodePool {
+func getStaticNodePool(name string, nps []v1beta1manifest.StaticNodePool) *v1beta1manifest.StaticNodePool {
 	for _, v := range nps {
 		if v.Name == name {
 			return &v

@@ -4,7 +4,6 @@
 
   scrape_interval: 30s
   scrape_timeout: 10s
-  metrics_path: /metrics
   follow_redirects: true
 
   static_configs:
@@ -12,21 +11,45 @@
     {{- range $lbNodepool := $lbCluster.NodePools.Dynamic }}
         {{- range $lbNode :=  $lbNodepool.Nodes }}
     - targets:
-        - {{ $lbNode.Private }}:9100
+        - {{ $lbNode.Private }}:65535
       labels:
+        __metrics_path__: /metrics
         instance: {{ $lbNode.Name }}
         component: claudie
-        service: loadbalancer        
+        service: loadbalancer
+        {{- range $role := $lbCluster.Roles }}
+    - targets:
+        - {{ $lbNode.Private }}:{{ $role.Settings.EnvoyAdminPort }}
+      labels:
+        __metrics_path__: /stats/prometheus
+        instance: {{ $lbNode.Name }}
+        component: claudie
+        service: loadbalancer-envoy-{{ $role.Name }}
+        {{- end }}
         {{- end }}
     {{- end }}
     {{- range $lbNodepool := $lbCluster.NodePools.Static }}
         {{- range $lbNode :=  $lbNodepool.Nodes }}
     - targets:
-        - {{ $lbNode.Private }}:9100
+        - {{ $lbNode.Private }}:65535
       labels:
+        __metrics_path__: /metrics
         instance: {{ $lbNode.Name }}
         component: claudie
         service: loadbalancer
+        {{- range $role := $lbCluster.Roles }}
+    - targets:
+        - {{ $lbNode.Private }}:{{ $role.Settings.EnvoyAdminPort }}
+      labels:
+        __metrics_path__: /stats/prometheus
+        instance: {{ $lbNode.Name }}
+        component: claudie
+        service: loadbalancer-envoy-{{ $role.Name }}
         {{- end }}
-    {{- end }}        
+        {{- end }}
+    {{- end }}
 {{- end }}
+
+  relabel_configs:
+    - source_labels: [__metrics_path__]
+      target_label: __metrics_path__

@@ -70,12 +70,12 @@ func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 			return fmt.Errorf("error while generating providers tf files for %s: %w", dnsID, err)
 		}
 		// destroy current state.
-		if err := d.generateFiles(dnsID, dnsDir, d.CurrentDNS, d.CurrentNodeIPs); err != nil {
+		if err := d.generateFiles(logger, dnsID, dnsDir, d.CurrentDNS, d.CurrentNodeIPs); err != nil {
 			return fmt.Errorf("error while creating current state dns.tf files for %s : %w", dnsID, err)
 		}
 		// In case of a re-execution of a task which would fail, if we do not
 		// delete also the desired state, which might have been created.
-		if err := d.generateFiles(dnsID, dnsDir, d.DesiredDNS, d.DesiredNodeIPs); err != nil {
+		if err := d.generateFiles(logger, dnsID, dnsDir, d.DesiredDNS, d.DesiredNodeIPs); err != nil {
 			return fmt.Errorf("error while creating desired state dns.tf files for %s : %w", dnsID, err)
 		}
 		if err := tofu.Init(); err != nil {
@@ -104,7 +104,7 @@ func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 		return fmt.Errorf("error while generating providers tf files for %s: %w", dnsID, err)
 	}
 
-	if err := d.generateFiles(dnsID, dnsDir, d.DesiredDNS, d.DesiredNodeIPs); err != nil {
+	if err := d.generateFiles(logger, dnsID, dnsDir, d.DesiredDNS, d.DesiredNodeIPs); err != nil {
 		return fmt.Errorf("error while creating dns .tf files for %s : %w", dnsID, err)
 	}
 
@@ -195,7 +195,7 @@ func (d *DNS) DestroyDNSRecords(logger zerolog.Logger) error {
 		return fmt.Errorf("error while generating providers tf files for %s: %w", dnsID, err)
 	}
 
-	if err := d.generateFiles(dnsID, dnsDir, d.CurrentDNS, d.CurrentNodeIPs); err != nil {
+	if err := d.generateFiles(logger, dnsID, dnsDir, d.CurrentDNS, d.CurrentNodeIPs); err != nil {
 		return fmt.Errorf("error while creating dns records for %s : %w", dnsID, err)
 	}
 
@@ -241,7 +241,7 @@ func (d *DNS) generateProvider(dnsID, dnsDir string, current, desired *spec.DNS)
 }
 
 // generateFiles creates all the necessary terraform files used to create/destroy DNS.
-func (d *DNS) generateFiles(dnsID, dnsDir string, dns *spec.DNS, nodeIPs []string) error {
+func (d *DNS) generateFiles(logger zerolog.Logger, dnsID, dnsDir string, dns *spec.DNS, nodeIPs []string) error {
 	templateDir := filepath.Join(TemplatesRootDir, dnsID, dns.GetProvider().GetSpecName())
 	if err := templates.DownloadProvider(templateDir, dns.GetProvider()); err != nil {
 		return fmt.Errorf("failed to download templates for DNS %q: %w", dnsID, err)
@@ -266,10 +266,24 @@ func (d *DNS) generateFiles(dnsID, dnsDir string, dns *spec.DNS, nodeIPs []strin
 		Provider:    dns.Provider,
 
 		AlternativeNamesExtension: new(templates.AlternativeNamesExtension),
+		ProviderExtrasExtension:   new(templates.ProviderExtrasExtension),
 	}
 
 	for _, n := range dns.AlternativeNames {
 		data.AlternativeNamesExtension.Names = append(data.AlternativeNamesExtension.Names, n.Hostname)
+	}
+
+	if cloudflare := dns.Provider.GetCloudflare(); cloudflare != nil {
+		var err error
+		data.ProviderExtrasExtension.SubscriptionAllowsHA, err = cloudflare.GetSubscription()
+		if err != nil {
+			return fmt.Errorf("error while checking cloudflare load balancing subscription: %w", err)
+		}
+		if !data.ProviderExtrasExtension.SubscriptionAllowsHA {
+			logger.Warn().Msgf("The token/account pair provided to the cloudflare provider %q does not have access to the necessary API endpoints to determine if HA loadbalancing can be used, defaulting to false", dns.Provider.SpecName)
+		} else {
+			logger.Info().Msgf("Found subscription for HA load balancing for cloudflare provider %q", dns.Provider.SpecName)
+		}
 	}
 
 	if err := g.GenerateDNS(&data); err != nil {

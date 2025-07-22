@@ -1,5 +1,5 @@
 ---
-- hosts: {{ .Loadbalancer }}
+- hosts: {{ .LoadBalancer }}
   gather_facts: no
   become: yes
   tasks:
@@ -32,20 +32,20 @@
 
     - name: Copy the node_exporter systemd service file
       copy:
-        content: | 
+        content: |
           [Unit]
           Description=Node Exporter
           After=network-online.target
-          
+
           [Service]
           Type=simple
           User=root
-          ExecStart=/usr/local/bin/node_exporter --web.listen-address=0.0.0.0:9100 --web.telemetry-path=/metrics
+          ExecStart=/usr/local/bin/node_exporter --web.listen-address={{ "{{" }} private_ip {{ "}}" }}:{{ .NodeExporterPort }} --web.telemetry-path=/metrics
           SyslogIdentifier=node_exporter
           Restart=always
           RestartSec=1
           StartLimitInterval=0
-          
+
           [Install]
           WantedBy=multi-user.target
         dest: /etc/systemd/system/node_exporter.service
@@ -53,7 +53,7 @@
         group: root
         mode: 0755
       notify: restart node_exporter
-  
+
   handlers:
     - name: restart node_exporter
       systemd:

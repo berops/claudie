@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/berops/claudie/internal/api/manifest"
 	"github.com/berops/claudie/internal/hash"
-	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/rs/zerolog/log"
@@ -297,6 +297,82 @@ func fillDynamicNodes(clusterID string, current, desired *spec.NodePool) {
 	desired.Nodes = nodes
 }
 
+// Generates the entire range of reserved ports, including the ports for static services
+// like NodeExporter and Healthcheck. To exclude these ports you can re-slice the result
+// using [manifest.MaxRolesPerLoadBalancer]
+func generateClaudieReservedPorts() []int {
+	size := manifest.ReservedPortRangeEnd - manifest.ReservedPortRangeStart
+	p := make([]int, size)
+	for i := range size {
+		p[i] = manifest.ReservedPortRangeStart + i
+	}
+	return p
+}
+
+func fillMissingEnvoyAdminPorts(desired *spec.Clusters) {
+	for _, lb := range desired.GetLoadBalancers().GetClusters() {
+		used := make(map[int]struct{})
+		for _, r := range lb.Roles {
+			if r.Settings.EnvoyAdminPort >= 0 {
+				used[int(r.Settings.EnvoyAdminPort)] = struct{}{}
+			}
+		}
+
+		// The number of roles is limited to [manifest.MaxRolesPerLoadBalancer],
+		// thus we will never consume all of the ports.
+		freePorts := generateClaudieReservedPorts()[:manifest.MaxRolesPerLoadBalancer]
+		if len(used) > 0 {
+			freePorts = slices.DeleteFunc(freePorts, func(port int) bool {
+				_, ok := used[port]
+				return ok
+			})
+		}
+
+		for _, r := range lb.Roles {
+			if r.Settings.EnvoyAdminPort < 0 {
+				p := freePorts[len(freePorts)-1]
+				freePorts = freePorts[:len(freePorts)-1]
+				r.Settings.EnvoyAdminPort = int32(p)
+			}
+		}
+	}
+}
+
+func fillDefaultHealthcheckRole(desired *spec.Clusters) {
+	for _, lb := range desired.GetLoadBalancers().GetClusters() {
+		// as this function is called after merging the current state to the desired
+		// state, existing clusters already could have the healthcheck created.
+		healthcheck := func(r *spec.Role) bool { return r.Port == manifest.HealthcheckPort }
+		if slices.ContainsFunc(lb.Roles, healthcheck) {
+			continue
+		}
+
+		healthcheckRole := &spec.Role{
+			Name:     "internal.claudie.healthcheck",
+			Protocol: "tcp",
+			Port:     manifest.HealthcheckPort,
+			// This is not a valid target port number. The healthcheck role
+			// is only used for TCP healthchecks using the 3-way handshake
+			// on the loadbalancers. Thus settings the TargetPort to an
+			// invalid number leaving the TargetPools empty will result
+			// in the opening of the [manifest.HealthcheckPort] on the firewall
+			// which will be forwarded to the loadbalancer nodes, but thats
+			// where the packets will end as no further forwarding will be
+			// done.
+			TargetPort:  -1,
+			TargetPools: []string{},
+			RoleType:    spec.RoleType_Ingress,
+			Settings: &spec.Role_Settings{
+				ProxyProtocol:  false,
+				StickySessions: false,
+				EnvoyAdminPort: manifest.HealthcheckEnvoyPort,
+			},
+		}
+
+		lb.Roles = append(lb.Roles, healthcheckRole)
+	}
+}
+
 // uniqueNodeName returns new node name, which is guaranteed to be unique, based on the provided existing names.
 func uniqueNodeName(nodepoolID string, existingNames map[string]struct{}) string {
 	index := uint8(1)
@@ -357,12 +433,26 @@ func transferExistingLBState(current, desired *spec.LoadBalancers) error {
 				return err
 			}
 
+			transferExistingRoles(current.Roles, desired.Roles)
 			desired.UsedApiEndpoint = current.UsedApiEndpoint
 			break
 		}
 	}
 
 	return nil
+}
+
+func transferExistingRoles(current, desired []*spec.Role) {
+	currentRoles := make(map[string]*spec.Role) // role names are unique
+	for _, r := range current {
+		currentRoles[r.Name] = r
+	}
+
+	for _, r := range desired {
+		if prev, ok := currentRoles[r.Name]; ok {
+			r.Settings.EnvoyAdminPort = prev.Settings.EnvoyAdminPort
+		}
+	}
 }
 
 func transferExistingDns(current, desired *spec.LoadBalancers) {

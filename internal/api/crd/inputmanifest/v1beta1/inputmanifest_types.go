@@ -1,5 +1,5 @@
 /*
-Copyright 2023 berops.com.
+Copyright 2025 berops.com.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,13 +17,13 @@ limitations under the License.
 package v1beta1
 
 import (
-	"github.com/berops/claudie/internal/manifest"
+	"github.com/berops/claudie/internal/api/manifest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ProviderType type of a provider.
-// A list of available providers can be found at https://docs.claudie.io/v0.9.7/input-manifest/providers/aws/
+// A list of available providers can be found at https://docs.claudie.io/latest/input-manifest/providers/aws/
 type ProviderType string
 
 const (
@@ -47,6 +47,7 @@ const (
 	AZURE_TENANT_ID       SecretField = "tenantid"
 	AZURE_CLIENT_ID       SecretField = "clientid"
 	CF_API_TOKEN          SecretField = "apitoken"
+	CF_ACCOUNT_ID         SecretField = "accountid"
 	GCP_CREDENTIALS       SecretField = "credentials"
 	GCP_GCP_PROJECT       SecretField = "gcpproject"
 	HETZNER_CREDENTIALS   SecretField = "credentials"
@@ -125,6 +126,44 @@ type StaticNode struct {
 	Username string `json:"username,omitempty"`
 }
 
+// Role defines a concrete loadbalancer configuration. A Single loadbalancer can have multiple roles.
+type Role struct {
+	// Name of the role. Used as a reference in clusters.
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name"`
+
+	// Protocol of the rule. Allowed values are: tcp, udp.
+	// +kubebuilder:validation:Enum=tcp;udp;
+	Protocol string `json:"protocol"`
+
+	// Port of the incoming traffic on the loadbalancer.
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=65535
+	Port int32 `json:"port"`
+
+	// Port where loadbalancer forwards the traffic.
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=65535
+	TargetPort int32 `json:"targetPort"`
+
+	// Defines nodepools of the targeted K8s cluster, from which nodes will be used for loadbalancing.
+	// +kubebuilder:validation:MinItems=1
+	TargetPools []string `json:"targetPools"`
+
+	// Additional settings for a role.
+	// +optional
+	Settings *manifest.RoleSettings `yaml:"settings,omitempty" json:"settings,omitempty"`
+}
+
+type LoadBalancer struct {
+	// List of roles loadbalancers use to forward the traffic. Single role can be used in multiple loadbalancer clusters.
+	// +optional
+	Roles []Role `yaml:"roles" json:"roles"`
+	// A list of load balancers clusters.
+	// +optional
+	Clusters []manifest.LoadBalancerCluster `yaml:"clusters" json:"clusters"`
+}
+
 // Specification of the desired behaviour of the InputManifest
 type InputManifestSpec struct {
 	// Providers list of defined cloud provider configuration
@@ -132,11 +171,11 @@ type InputManifestSpec struct {
 	// +optional
 	Providers []Provider `json:"providers,omitempty"`
 	// +optional
-	NodePools NodePool `json:"nodePools,omitempty"`
+	NodePools NodePool `json:"nodePools,omitzero"`
 	// +optional
-	Kubernetes manifest.Kubernetes `json:"kubernetes,omitempty"`
+	Kubernetes manifest.Kubernetes `json:"kubernetes,omitzero"`
 	// +optional
-	LoadBalancer manifest.LoadBalancer `json:"loadBalancers,omitempty"`
+	LoadBalancer LoadBalancer `json:"loadBalancers,omitzero"`
 }
 
 // Most recently observed status of the InputManifest
@@ -151,10 +190,10 @@ type ClustersStatus struct {
 	Message string `json:"message,omitempty"`
 }
 
-//+kubebuilder:object:root=true
-//+kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.state",description="Status of the input manifest"
-//+kubebuilder:subresource:status
-
+// +kubebuilder:object:root=true
+// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.state",description="Status of the input manifest"
+// +kubebuilder:subresource:status
+// +kubebuilder:metadata:labels=app.kubernetes.io/part-of=claudie
 // InputManifest is a definition of the user's infrastructure.
 // It contains cloud provider specification,
 // nodepool specification, Kubernetes and loadbalancer clusters.

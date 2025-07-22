@@ -12,10 +12,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
+	v1beta1manifest "github.com/berops/claudie/internal/api/crd/inputmanifest/v1beta1"
+	"github.com/berops/claudie/internal/api/manifest"
 	"github.com/berops/claudie/internal/hash"
-	"github.com/berops/claudie/internal/manifest"
 	"github.com/berops/claudie/proto/pb/spec"
-	v1beta "github.com/berops/claudie/services/claudie-operator/pkg/api/v1beta1"
 	managerclient "github.com/berops/claudie/services/manager/client"
 )
 
@@ -23,19 +23,18 @@ import (
 // move the current state of the cluster closer to the desired state.
 func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := crlog.FromContext(ctx)
-	inputManifest := &v1beta.InputManifest{}
 
-	// Get the inputManifest resource
+	inputManifest := &v1beta1manifest.InputManifest{}
 	if err := r.kc.Get(ctx, req.NamespacedName, inputManifest); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
 	// Prepare the manifest.Manifest type
 	// Refresh the inputManifest object Secret Reference
-	providersSecrets := make([]v1beta.ProviderWithData, 0, len(inputManifest.Spec.Providers))
+	providersSecrets := make([]v1beta1manifest.ProviderWithData, 0, len(inputManifest.Spec.Providers))
 	// Range over Provider objects and request the secret for each provider
 	for _, p := range inputManifest.Spec.Providers {
-		pwd := v1beta.ProviderWithData{
+		pwd := v1beta1manifest.ProviderWithData{
 			ProviderName: p.ProviderName,
 			ProviderType: p.ProviderType,
 			Templates:    p.Templates,
@@ -55,12 +54,12 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	// Approximate size of the map to 5 nodes per nodepool
-	staticNodeSecrets := make(map[string][]v1beta.StaticNodeWithData, len(inputManifest.Spec.NodePools.Static))
+	staticNodeSecrets := make(map[string][]v1beta1manifest.StaticNodeWithData, len(inputManifest.Spec.NodePools.Static))
 	// Range over static nodepools an get secret for each static node
 	for _, s := range inputManifest.Spec.NodePools.Static {
-		nodes := make([]v1beta.StaticNodeWithData, 0, len(s.Nodes))
+		nodes := make([]v1beta1manifest.StaticNodeWithData, 0, len(s.Nodes))
 		for _, n := range s.Nodes {
-			var snwd v1beta.StaticNodeWithData
+			var snwd v1beta1manifest.StaticNodeWithData
 			if err := r.kc.Get(ctx, client.ObjectKey{Name: n.SecretRef.Name, Namespace: n.SecretRef.Namespace}, &snwd.Secret); err != nil {
 				r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())
 				log.Error(err, "secret not found", "will try again in", REQUEUE_AFTER_ERROR, "name", n.SecretRef.Name, "namespace", n.SecretRef.Namespace)
@@ -79,7 +78,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	// Create a raw input manifest of manifest.Manifest and pull the referenced secrets into it
-	rawManifest, err := mergeInputManifestWithSecrets(*inputManifest, providersSecrets, staticNodeSecrets)
+	rawManifest, err := constructInputManifest(*inputManifest, providersSecrets, staticNodeSecrets)
 	if err != nil {
 		log.Error(err, "error while using referenced secrets", "will try again in", REQUEUE_AFTER_ERROR)
 		r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())
@@ -96,8 +95,8 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	if err := rawManifest.Providers.Validate(); err != nil {
 		log.Error(err, "error while validating referenced secrets", "will try again in", REQUEUE_AFTER_ERROR)
 		r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())
-		inputManifest.SetUpdateResourceStatus(v1beta.InputManifestStatus{
-			State: v1beta.STATUS_ERROR,
+		inputManifest.SetUpdateResourceStatus(v1beta1manifest.InputManifestStatus{
+			State: v1beta1manifest.STATUS_ERROR,
 		})
 		if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
@@ -113,7 +112,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	// Build the actual state of inputManifest.
 	// Based on this, reconcile loop will decide
 	// what to do next.
-	currentState := v1beta.InputManifestStatus{Clusters: make(map[string]v1beta.ClustersStatus)}
+	currentState := v1beta1manifest.InputManifestStatus{Clusters: make(map[string]v1beta1manifest.ClustersStatus)}
 
 	var deleted bool
 	var previousChecksum []byte
@@ -142,8 +141,8 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 					log.Error(err, "immutability check for dynamic nodepools failed", "will try again in", REQUEUE_AFTER_ERROR)
 					// nodepool exists and user changed the immutable specs
 					r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())
-					inputManifest.SetUpdateResourceStatus(v1beta.InputManifestStatus{
-						State: v1beta.STATUS_ERROR,
+					inputManifest.SetUpdateResourceStatus(v1beta1manifest.InputManifestStatus{
+						State: v1beta1manifest.STATUS_ERROR,
 					})
 					if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 						return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
@@ -158,7 +157,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			if state.Current == nil && state.Desired == nil {
 				deletedCount++
 			}
-			currentState.Clusters[cluster] = v1beta.ClustersStatus{
+			currentState.Clusters[cluster] = v1beta1manifest.ClustersStatus{
 				State:   state.State.GetStatus().String(),
 				Phase:   state.State.GetStage().String(),
 				Message: state.State.GetDescription(),
@@ -179,13 +178,13 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	switch {
 	case configState == spec.Manifest_Pending:
-		currentState.State = v1beta.STATUS_NEW
+		currentState.State = v1beta1manifest.STATUS_NEW
 	case configState == spec.Manifest_Scheduled || manifestRescheduled:
-		currentState.State = v1beta.STATUS_IN_PROGRESS
+		currentState.State = v1beta1manifest.STATUS_IN_PROGRESS
 	case configState == spec.Manifest_Done:
-		currentState.State = v1beta.STATUS_DONE
+		currentState.State = v1beta1manifest.STATUS_DONE
 	case configState == spec.Manifest_Error:
-		currentState.State = v1beta.STATUS_ERROR
+		currentState.State = v1beta1manifest.STATUS_ERROR
 	}
 
 	// DELETE && FINALIZER LOGIC
@@ -221,7 +220,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 		if controllerutil.ContainsFinalizer(inputManifest, finalizerName) {
 			// Prevent calling deleteConfig repeatedly
-			if inputManifest.Status.State == v1beta.STATUS_SCHEDULED_FOR_DELETION || deleted {
+			if inputManifest.Status.State == v1beta1manifest.STATUS_SCHEDULED_FOR_DELETION || deleted {
 				return ctrl.Result{RequeueAfter: REQUEUE_NEW}, nil
 			}
 			// schedule deletion of manifest
@@ -246,7 +245,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		if !configExists {
 			// Prevent calling createConfig, when the inputManifest
 			// won't make it yet to DB
-			if inputManifest.Status.State == v1beta.STATUS_NEW {
+			if inputManifest.Status.State == v1beta1manifest.STATUS_NEW {
 				return ctrl.Result{RequeueAfter: REQUEUE_NEW}, nil
 			}
 			inputManifest.SetNewResourceStatus()
