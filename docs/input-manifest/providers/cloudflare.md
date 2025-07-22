@@ -12,7 +12,7 @@ metadata:
   name: cloudflare-secret
 data:
   apitoken: a3NsSVNBODc4YTZldFlBZlhZY2c1aVl5ckZHTmxDeGM=
-  accountid: 8554a23rt6u86dc4asd158764w24b254
+  accountid: ODU1NGEyM3J0NnU4NmRjNGFzZDE1ODc2NHcyNGIyNTQK
 type: Opaque
 ```
 
