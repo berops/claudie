@@ -48,9 +48,9 @@ If you wish to use Cloudflare as your DNS provider where Claudie creates DNS rec
     To make this example functional, you need to specify control plane and node pools. This current showcase will produce an error if used as is.
 
 ### Create a secret for Cloudflare and AWS providers
-The secret for an Cloudflare provider must include the following mandatory fields: `apitoken`.
+The secret for an Cloudflare provider must include the following mandatory fields: `apitoken` and `accountid` 
 ```bash
-kubectl create secret generic cloudflare-secret-1 --namespace=mynamespace --from-literal=apitoken='kslISA878a6etYAfXYcg5iYyrFGNlCxc'
+kubectl create secret generic cloudflare-secret-1 --namespace=mynamespace --from-literal=apitoken='kslISA878a6etYAfXYcg5iYyrFGNlCxc' --from-literal=accountid='8554a23rt6u86dc4asd158764w24b254'
 ```
 
 The secret for an AWS provider must include the following mandatory fields: `accesskey` and `secretkey`.

@@ -115,7 +115,7 @@ If you wish to use OCI as your DNS provider where Claudie creates DNS records po
 "Allow group <GROUP_NAME> to manage dns-records in compartment <COMPARTMENT_NAME>",
 "Allow group <GROUP_NAME> to manage dns-steering-policies in compartment <COMPARTMENT_NAME>",
 "Allow group <GROUP_NAME> to manage dns-steering-policy-attachments in compartment <COMPARTMENT_NAME>",
-"Allow group <GROUP_NAME> to manage health-check-monitor in compartment <COMPARTMENT_NAME>",
+"Allow group <GROUP_NAME> to manage health-check-monitor in compartment <COMPARTMENT_NAME>"
 ```
 
 ## Input manifest examples
