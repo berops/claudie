@@ -263,6 +263,8 @@ func (c *ClaudieCloudProvider) sendAutoscalerEvent() error {
 	if cc, err = grpcutils.GrpcDialWithRetryAndBackoff("claudie-operator", operatorURL); err != nil {
 		return fmt.Errorf("failed to dial claudie-operator at %s : %w", envs.OperatorURL, err)
 	}
+	defer cc.Close()
+
 	client := pb.NewOperatorServiceClient(cc)
 	if err := cOperator.SendAutoscalerEvent(client, &pb.SendAutoscalerEventRequest{
 		InputManifestName:      c.resourceName,
