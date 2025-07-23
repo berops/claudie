@@ -177,6 +177,11 @@ func (c *ClaudieCloudProvider) updateNodepool(ctx context.Context, nodepool *spe
 	if err != nil {
 		return fmt.Errorf("failed to connect to manager: %w", err)
 	}
+	defer func() {
+		if err := manager.Close(); err != nil {
+			log.Err(err).Msgf("Failed to close manager connection")
+		}
+	}()
 
 	resp, err := manager.GetConfig(ctx, &managerclient.GetConfigRequest{Name: c.projectName})
 	if err != nil {
