@@ -782,6 +782,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../../input-manifest/example-settings.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Custom Settings example
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../input-manifest/external-templates/" class="md-nav__link">
         
   
@@ -1816,7 +1839,7 @@
 
 <h1 id="claudie-load-balancing-solution">Claudie load balancing solution<a class="headerlink" href="#claudie-load-balancing-solution" title="Permanent link">&para;</a></h1>
 <h2 id="loadbalancer">Loadbalancer<a class="headerlink" href="#loadbalancer" title="Permanent link">&para;</a></h2>
-<p>To create a highly available kubernetes cluster, Claudie creates load balancers for the <code>kubeAPI</code> server. These load balancers use Nginx to load balance the traffic among the cluster nodes. Claudie also supports definition of custom load balancers for the applications running inside the cluster.</p>
+<p>To create a highly available kubernetes cluster, Claudie has the option to create load balancers that utilize <a href="https://www.envoyproxy.io/docs/envoy/latest/">envoy</a> to load balance the traffic among the cluster nodes.</p>
 <h2 id="concept">Concept<a class="headerlink" href="#concept" title="Permanent link">&para;</a></h2>
 <ul>
 <li>
@@ -1832,7 +1855,7 @@
 </ul>
 </li>
 <li>
-<p>The LB machines will run an <code>Nginx</code> to carry out the actual load balancing.</p>
+<p>The LB machines will deploy a docker container running <a href="https://www.envoyproxy.io/docs/envoy/latest/">envoy</a> for each role the loadbalancer uses, to carry out the actual load balancing.</p>
 <ul>
 <li>There will be a DNS A record for the public IP of each LB machine that is currently passing the health checks.</li>
 <li>Therefore, there will be actually 2 layers of load balancing.<ol>
@@ -1954,8 +1977,8 @@ It needs to be set up to use <code>nodeport</code> with the ports configured und
       <div class="md-copyright">
   
     <div class="md-copyright__highlight">
-      For enterprise support reach out via 
-<a 
+      For enterprise support reach out via
+<a
   href="mailto:claudie@berops,com"
   onmouseover="this.href=this.href.replace(',', '.')">
   claudie@berops.com
