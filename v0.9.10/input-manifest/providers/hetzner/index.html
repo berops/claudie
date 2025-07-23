@@ -1853,6 +1853,10 @@
 <span class="w">  </span><span class="nt">apitoken</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">a1V0UmcxcGdqQ1JhYXBQbWQ3cEFJalZnaHVyWG8xY24=</span>
 <span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Opaque</span>
 </code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">No Load-Balanced DNS Support on Hetzner</p>
+<p>Hetzner does not support load-balanced DNS records with health checks. In the event of a virtual machine failure, the corresponding DNS A record will remain active and will not be automatically removed from the DNS database.</p>
+</div>
 <h2 id="create-hetzner-api-credentials">Create Hetzner API credentials<a class="headerlink" href="#create-hetzner-api-credentials" title="Permanent link">&para;</a></h2>
 <p>You can create Hetzner API credentials by following <a href="https://docs.hetzner.com/cloud/api/getting-started/generating-api-token/">this guide</a>. The required permissions for the zone you want to use are:</p>
 <div class="highlight"><pre><span></span><code>Read<span class="w"> </span><span class="p">&amp;</span><span class="w"> </span>Write

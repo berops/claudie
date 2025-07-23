@@ -1738,7 +1738,11 @@
 
 
 <h1 id="cloudflare">Cloudflare<a class="headerlink" href="#cloudflare" title="Permanent link">&para;</a></h1>
-<p>Cloudflare provider requires <code>apitoken</code> token field in string format.</p>
+<p>Cloudflare provider requires <code>apitoken</code> token and <code>accountid</code> id field in string format.</p>
+<div class="admonition warning">
+<p class="admonition-title">Cloudflare DNS Load Balancing</p>
+<p>Claudie creates A DNS records with loadbalancing and healtcheck functionality. To enable this feature, you must have the <strong>Load Balancing</strong> add-on enabled in your <a href="https://www.cloudflare.com/plans/">Cloudflare plan</a>. Without this add-on, Claudie will still create the DNS A records, but they won't be monitored for availability.</p>
+</div>
 <h2 id="dns-example">DNS example<a class="headerlink" href="#dns-example" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Secret</span>
@@ -1746,6 +1750,7 @@
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cloudflare-secret</span>
 <span class="nt">data</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">apitoken</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">a3NsSVNBODc4YTZldFlBZlhZY2c1aVl5ckZHTmxDeGM=</span>
+<span class="w">  </span><span class="nt">accountid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ODU1NGEyM3J0NnU4NmRjNGFzZDE1ODc2NHcyNGIyNTQK</span>
 <span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Opaque</span>
 </code></pre></div>
 <h2 id="create-cloudflare-credentials">Create Cloudflare credentials<a class="headerlink" href="#create-cloudflare-credentials" title="Permanent link">&para;</a></h2>
@@ -1754,6 +1759,11 @@
 DNS:Read
 DNS:Edit
 </code></pre></div>
+<p>If Claudie will be creating load-balanced DNS records, the following additional permissions are required:</p>
+<div class="highlight"><pre><span></span><code>Load<span class="w"> </span>Balancing:Monitors<span class="w"> </span>And<span class="w"> </span>Pools:Edit
+Billing:Read
+</code></pre></div>
+<p>The Billing: Read permission is necessary to verify that the Load Balancing feature is enabled and active in your Cloudflare account.</p>
 <h2 id="dns-setup">DNS setup<a class="headerlink" href="#dns-setup" title="Permanent link">&para;</a></h2>
 <p>If you wish to use Cloudflare as your DNS provider where Claudie creates DNS records pointing to Claudie managed clusters, you will need to create a <strong>public DNS zone</strong> by following <a href="https://developers.cloudflare.com/dns/zone-setups/">this guide</a>.</p>
 <div class="admonition warning">
@@ -1767,8 +1777,8 @@ DNS:Edit
 <p>To make this example functional, you need to specify control plane and node pools. This current showcase will produce an error if used as is.</p>
 </div>
 <h3 id="create-a-secret-for-cloudflare-and-aws-providers">Create a secret for Cloudflare and AWS providers<a class="headerlink" href="#create-a-secret-for-cloudflare-and-aws-providers" title="Permanent link">&para;</a></h3>
-<p>The secret for an Cloudflare provider must include the following mandatory fields: <code>apitoken</code>.
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>cloudflare-secret-1<span class="w"> </span>--namespace<span class="o">=</span>mynamespace<span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">apitoken</span><span class="o">=</span><span class="s1">&#39;kslISA878a6etYAfXYcg5iYyrFGNlCxc&#39;</span>
+<p>The secret for an Cloudflare provider must include the following mandatory fields: <code>apitoken</code> and <code>accountid</code> 
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>cloudflare-secret-1<span class="w"> </span>--namespace<span class="o">=</span>mynamespace<span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">apitoken</span><span class="o">=</span><span class="s1">&#39;kslISA878a6etYAfXYcg5iYyrFGNlCxc&#39;</span><span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">accountid</span><span class="o">=</span><span class="s1">&#39;8554a23rt6u86dc4asd158764w24b254&#39;</span>
 </code></pre></div></p>
 <p>The secret for an AWS provider must include the following mandatory fields: <code>accesskey</code> and <code>secretkey</code>.
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>aws-secret-1<span class="w"> </span>--namespace<span class="o">=</span>mynamespace<span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">accesskey</span><span class="o">=</span><span class="s1">&#39;SLDUTKSHFDMSJKDIALASSD&#39;</span><span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">secretkey</span><span class="o">=</span><span class="s1">&#39;iuhbOIJN+oin/olikDSadsnoiSVSDsacoinOUSHD&#39;</span>

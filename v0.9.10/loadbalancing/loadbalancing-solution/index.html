@@ -1840,6 +1840,7 @@
 <h1 id="claudie-load-balancing-solution">Claudie load balancing solution<a class="headerlink" href="#claudie-load-balancing-solution" title="Permanent link">&para;</a></h1>
 <h2 id="loadbalancer">Loadbalancer<a class="headerlink" href="#loadbalancer" title="Permanent link">&para;</a></h2>
 <p>To create a highly available kubernetes cluster, Claudie has the option to create load balancers that utilize <a href="https://www.envoyproxy.io/docs/envoy/latest/">envoy</a> to load balance the traffic among the cluster nodes.</p>
+<p>The DNS load balancing functionality, including health checks, is provided by supported cloud providers such as AWS, Azure, Google Cloud, Cloudflare, and OCI. Health checks monitor TCP port 65534. If a node fails to respond on this port, its corresponding DNS record is temporarily removed. Once the endpoint becomes healthy again, the DNS record is automatically restored.</p>
 <h2 id="concept">Concept<a class="headerlink" href="#concept" title="Permanent link">&para;</a></h2>
 <ul>
 <li>
