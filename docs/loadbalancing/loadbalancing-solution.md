@@ -4,6 +4,8 @@
 
 To create a highly available kubernetes cluster, Claudie has the option to create load balancers that utilize [envoy](https://www.envoyproxy.io/docs/envoy/latest/) to load balance the traffic among the cluster nodes.
 
+The DNS load balancing functionality, including health checks, is provided by supported cloud providers such as AWS, Azure, Google Cloud, Cloudflare, and OCI. Health checks monitor TCP port 65534. If a node fails to respond on this port, its corresponding DNS record is temporarily removed. Once the endpoint becomes healthy again, the DNS record is automatically restored.
+
 ## Concept
 
 - The load balancer machines will join the Wireguard private network of Claudie clusters relevant to it.

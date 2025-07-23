@@ -24,6 +24,9 @@ data:
 type: Opaque
 ```
 
+!!! warning "No Load-Balanced DNS Support on Hetzner" 
+    Hetzner does not support load-balanced DNS records with health checks. In the event of a virtual machine failure, the corresponding DNS A record will remain active and will not be automatically removed from the DNS database.
+
 ## Create Hetzner API credentials
 You can create Hetzner API credentials by following [this guide](https://docs.hetzner.com/cloud/api/getting-started/generating-api-token/). The required permissions for the zone you want to use are:
 
