@@ -137,6 +137,12 @@ func (k *KuberConnector) CiliumRolloutRestart(cluster *spec.K8Scluster, kuberGrp
 		})
 }
 
+func (K *KuberConnector) GpuOperatorRolloutRestart(cluster *spec.K8Scluster, kuberGrpcClient pb.KuberServiceClient) error {
+	return kuber.GpuOperatorRolloutRestart(kuberGrpcClient, &pb.GpuOperatorRolloutRestartRequest{
+		Cluster: cluster,
+	})
+}
+
 func (k *KuberConnector) PatchKubeProxyConfigMap(builderCtx *builder.Context, kuberGrpcClient pb.KuberServiceClient) error {
 	return kuber.PatchKubeProxyConfigMap(kuberGrpcClient, &pb.PatchKubeProxyConfigMapRequest{
 		DesiredCluster: builderCtx.DesiredCluster,

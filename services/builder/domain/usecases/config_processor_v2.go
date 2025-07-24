@@ -14,6 +14,7 @@ import (
 	"github.com/berops/claudie/services/builder/domain/usecases/metrics"
 	builder "github.com/berops/claudie/services/builder/internal"
 	managerclient "github.com/berops/claudie/services/manager/client"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	"google.golang.org/protobuf/proto"
@@ -211,6 +212,14 @@ func (u *Usecases) executeUpdateTask(ctx context.Context, te *managerclient.Next
 				do:          u.patchKubeadmAndUpdateCilium,
 				stage:       spec.Workflow_KUBER,
 				description: "reconciling cluster configuration after API endpoint change",
+			},
+			{
+				do: func(ctx context.Context, work *builder.Context, logger *zerolog.Logger) error {
+					return u.Kuber.GpuOperatorRolloutRestart(work.DesiredCluster, u.Kuber.GetClient())
+				},
+				stage:           spec.Workflow_KUBER,
+				description:     "performing rollout of NVIDIA container toolkit, if present",
+				continueOnError: true,
 			},
 		}
 
@@ -436,6 +445,8 @@ func (u *Usecases) deleteK8sNodes(ctx context.Context, te *managerclient.NextTas
 			stage:       spec.Workflow_KUBER,
 			description: "reconciling cluster configuration after node deletion",
 		},
+		// The daemonset for the NVIDIA toolkit does not need to be restarted here as kube_eleven
+		// is not run.
 	}
 
 	if err := u.processTasks(ctx, work, &logger, tasks); err != nil {
