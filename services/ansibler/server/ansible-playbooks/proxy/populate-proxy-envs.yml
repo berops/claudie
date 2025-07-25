@@ -34,7 +34,7 @@
     - name: Delete HTTP,HTTPS,NO_PROXY from /etc/environmennt
       ansible.builtin.lineinfile:
         path: /etc/environment
-        regexp: "^{{ item.key }}=.*$"
+        regexp: "^{{ item.key }}="
         state: absent
       loop:
         - { key: "HTTP_PROXY" }
@@ -47,7 +47,7 @@
     - name: Add HTTP,HTTPS,NO_PROXY into /etc/environmennt
       ansible.builtin.lineinfile:
         path: /etc/environment
-        regexp: "^{{ item.key }}=.*$"
+        regexp: "^{{ item.key }}="
         line: "{{ item.key }}={{ item.value }}"
       loop:
         - { key: "HTTP_PROXY", value: "{{ http_proxy_url }}" }
