@@ -61,7 +61,7 @@ images:
 - name: ghcr.io/berops/claudie/autoscaler-adapter
   newTag: ae0563d-3461
 - name: ghcr.io/berops/claudie/builder
-  newTag: 5833293-3466
+  newTag: 56edeab-3468
 - name: ghcr.io/berops/claudie/claudie-operator
   newTag: 6223444-3450
 - name: ghcr.io/berops/claudie/kube-eleven
