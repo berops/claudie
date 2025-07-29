@@ -41,7 +41,7 @@ require (
 	k8s.io/apimachinery v0.34.0-alpha.1
 	k8s.io/autoscaler/cluster-autoscaler v0.0.0-20250613073258-1959f5f61f6c
 	k8s.io/client-go v0.33.3
-	sigs.k8s.io/controller-runtime v0.20.4
+	sigs.k8s.io/controller-runtime v0.21.0
 )
 
 require (
