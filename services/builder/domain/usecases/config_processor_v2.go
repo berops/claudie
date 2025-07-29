@@ -450,7 +450,10 @@ func (u *Usecases) deleteK8sNodes(ctx context.Context, te *managerclient.NextTas
 	}
 
 	if err := u.processTasks(ctx, work, &logger, tasks); err != nil {
-		return te.Current.K8S, te.Current.GetLoadBalancers().GetClusters(), fmt.Errorf("error while configuring infrastructure after node deletion from %s: %w", te.Current.K8S.ClusterInfo.Id(), err)
+		// At this point we can't return the current state k8s cluster as nodes have been deleted from the cluster itself
+		// and potentionally also from the terraform state (i.e the public IPs were de-allocated) thus we also need to communicate
+		// back any partial state that was applied for the k8s cluster.
+		return work.DesiredCluster, te.Current.GetLoadBalancers().GetClusters(), fmt.Errorf("error while configuring infrastructure after node deletion from %s: %w", te.Current.K8S.ClusterInfo.Id(), err)
 	}
 
 	u.updateTaskWithDescription(work, spec.Workflow_KUBER, fmt.Sprintf("finished deleting nodes from cluster static: %v,dynamic: %v", staticCount, dynamicCount))
