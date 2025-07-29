@@ -33,7 +33,7 @@ terraform {
     {{- if .Cloudflare }}
     cloudflare = {
       source  = "cloudflare/cloudflare"
-      version = "5.7.1"
+      version = "4.52.1"
     }
     {{- end }}
     {{- if .HetznerDNS }}
