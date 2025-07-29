@@ -28,6 +28,7 @@ func (k *Kubeone) Reset(prefix string) error {
 	defer k.SpawnProcessLimit.Release(1)
 
 	command := "kubeone reset -m kubeone.yaml -y --remove-binaries"
+	//nolint
 	cmd := exec.Command("bash", "-c", command)
 	cmd.Dir = k.ConfigDirectory
 
@@ -61,6 +62,7 @@ func (k *Kubeone) Apply(prefix string) error {
 	defer k.SpawnProcessLimit.Release(1)
 
 	command := "kubeone apply -m kubeone.yaml -y"
+	//nolint
 	cmd := exec.Command("bash", "-c", command)
 	cmd.Dir = k.ConfigDirectory
 

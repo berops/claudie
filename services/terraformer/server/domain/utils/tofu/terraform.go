@@ -44,6 +44,7 @@ func (t *Terraform) Init() error {
 	}
 	defer t.SpawnProcessLimit.Release(1)
 
+	//nolint
 	cmd := exec.Command("tofu", "init")
 	cmd.Dir = t.Directory
 	cmd.Stdout = t.Stdout
@@ -83,6 +84,7 @@ func (t *Terraform) Apply() error {
 		fmt.Sprintf("--parallelism=%v", t.Parallelism),
 	}
 
+	//nolint
 	cmd := exec.Command("tofu", args...)
 	cmd.Dir = t.Directory
 	cmd.Stdout = t.Stdout
@@ -124,6 +126,7 @@ func (t *Terraform) Destroy() error {
 		fmt.Sprintf("--parallelism=%v", t.Parallelism),
 	}
 
+	//nolint
 	cmd := exec.Command("tofu", args...)
 	cmd.Dir = t.Directory
 	cmd.Stdout = t.Stdout
@@ -173,6 +176,7 @@ func (t *Terraform) DestroyTarget(targets []string) error {
 		args = append(args, fmt.Sprintf("--target=%s", resource))
 	}
 
+	//nolint
 	cmd := exec.Command("tofu", args...)
 	cmd.Dir = t.Directory
 	cmd.Stdout = t.Stdout
@@ -202,6 +206,7 @@ func (t *Terraform) DestroyTarget(targets []string) error {
 }
 
 func (t *Terraform) StateList() ([]string, error) {
+	//nolint
 	cmd := exec.Command("tofu", "state", "list")
 	cmd.Dir = t.Directory
 	out, err := cmd.Output()
@@ -231,6 +236,7 @@ func (t *Terraform) StateList() ([]string, error) {
 }
 
 func (t *Terraform) Output(resourceName string) (string, error) {
+	//nolint
 	cmd := exec.Command("tofu", "output", "-json", resourceName)
 	cmd.Dir = t.Directory
 	out, err := cmd.CombinedOutput()

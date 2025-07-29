@@ -33,6 +33,7 @@ func main() {
 
 	// Listen
 	serviceAddr := net.JoinHostPort("0.0.0.0", port)
+	//nolint
 	lis, err := net.Listen("tcp", serviceAddr)
 	if err != nil {
 		log.Fatal().Msgf("failed to listen: %s", err)

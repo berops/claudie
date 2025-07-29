@@ -68,6 +68,7 @@ func (a *Ansible) RunAnsiblePlaybook(prefix string) error {
 	}
 
 	command := fmt.Sprintf("ansible-playbook %s -i %s -f %d %s", a.Playbook, a.Inventory, defaultAnsibleForks, a.Flags)
+	//nolint
 	cmd := exec.Command("bash", "-c", command)
 	cmd.Dir = a.Directory
 

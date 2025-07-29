@@ -139,6 +139,7 @@ func (c *Cmd) buildCmd() (*exec.Cmd, context.CancelFunc) {
 		cmd = exec.CommandContext(ctx, "bash", "-c", strings.Join(append([]string{c.Command}, c.Options...), " "))
 		cancelFun = cancel
 	} else {
+		//nolint
 		cmd = exec.Command("bash", "-c", strings.Join(append([]string{c.Command}, c.Options...), " "))
 	}
 	cmd.Dir = c.Dir

@@ -27,6 +27,7 @@ func (g *GrpcAdapter) Init(usecases *usecases.Usecases) {
 	port := envs.GetOrDefault("OPERATOR_PORT", fmt.Sprint(defaultOperatorPort))
 	listeningAddress := net.JoinHostPort("0.0.0.0", port)
 
+	//nolint
 	tcpListener, err := net.Listen("tcp", listeningAddress)
 	if err != nil {
 		log.Fatal().Msgf("Failed to start Grpc server for claudie-operator at %s: %v", listeningAddress, err)

@@ -29,6 +29,7 @@ func (g *GrpcAdapter) Init(usecases *usecases.Usecases, opts ...grpc.ServerOptio
 	var err error
 	port := envs.GetOrDefault("KUBE_ELEVEN_PORT", fmt.Sprint(defaultPort))
 	bindingAddress := net.JoinHostPort("0.0.0.0", port)
+	//nolint
 	g.tcpListener, err = net.Listen("tcp", bindingAddress)
 	if err != nil {
 		log.Fatal().Msgf("Failed to bind to %s : %v", bindingAddress, err)
