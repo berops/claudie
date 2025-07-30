@@ -247,16 +247,14 @@ func (x *CloudflareProvider) GetSubscription() (bool, error) {
 	var response []byte
 	var err error
 
-	// The api seems to fail sometimes, add more checks with a exponentional backoff before giving up.
+	// The api seems to fail sometimes, add more checks with a exponential backoff before giving up.
 	for i := range retries {
 		response, err = getCloudflareAPIResponse(urlSubscriptions, x.Token)
 		if err != nil {
 			if errors.Is(err, ErrCloudflareAPIForbidden) {
 				return false, nil
 			}
-			if errors.Is(err, context.DeadlineExceeded) {
-				time.Sleep((1 << i) * time.Second)
-			}
+			time.Sleep((1 << i) * time.Second)
 			continue
 		}
 		break
