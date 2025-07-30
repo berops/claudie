@@ -29,6 +29,7 @@ type GrpcAdapter struct {
 func CreateGrpcAdapter(usecases *usecases.Usecases, opts ...grpc.ServerOption) *GrpcAdapter {
 	port := envs.GetOrDefault("ANSIBLER_PORT", fmt.Sprint(defaultPort))
 	tcpBindingAddress := net.JoinHostPort("0.0.0.0", port)
+	//nolint
 	listener, err := net.Listen("tcp", tcpBindingAddress)
 	if err != nil {
 		log.Fatal().Msgf("Failed to listen on %s : %v", tcpBindingAddress, err)

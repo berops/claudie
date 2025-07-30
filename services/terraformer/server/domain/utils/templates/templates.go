@@ -69,6 +69,7 @@ func (r *Repository) Download(repository *spec.TemplateRepository) error {
 
 		if ref.Hash().String() == repository.CommitHash {
 			logs := new(bytes.Buffer)
+			//nolint
 			sparseCheckout := exec.Command("git", "sparse-checkout", "set", strings.Trim(repository.Path, "/"))
 			sparseCheckout.Dir = gitDirectory
 			sparseCheckout.Stdout = logs
@@ -83,6 +84,7 @@ func (r *Repository) Download(repository *spec.TemplateRepository) error {
 			if repository.Tag != nil {
 				args = append(args, *repository.Tag)
 			}
+			//nolint
 			checkout := exec.Command("git", args...)
 			checkout.Dir = gitDirectory
 			checkout.Stdout = logs
@@ -107,6 +109,7 @@ func (r *Repository) Download(repository *spec.TemplateRepository) error {
 	}
 
 	logs := new(bytes.Buffer)
+	//nolint
 	clone := exec.Command("git", "clone", "--no-checkout", repository.Repository, repository.CommitHash)
 	clone.Dir = cloneDirectory
 	clone.Stdout = logs
@@ -117,6 +120,7 @@ func (r *Repository) Download(repository *spec.TemplateRepository) error {
 	}
 
 	logs.Reset()
+	//nolint
 	sparseCheckout := exec.Command("git", "sparse-checkout", "set", strings.Trim(repository.Path, "/"))
 	sparseCheckout.Dir = gitDirectory
 	sparseCheckout.Stdout = logs
@@ -128,6 +132,7 @@ func (r *Repository) Download(repository *spec.TemplateRepository) error {
 
 	logs.Reset()
 
+	//nolint
 	checkout := exec.Command("git", "checkout", repository.CommitHash)
 	checkout.Dir = gitDirectory
 	checkout.Stdout = logs
