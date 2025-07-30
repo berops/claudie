@@ -27,7 +27,7 @@ terraform {
     {{- if .Azure }}
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "4.37.0"
+      version = "3.107.0"
     }
     {{- end }}
     {{- if .Cloudflare }}
