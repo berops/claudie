@@ -255,8 +255,7 @@ func (x *CloudflareProvider) GetSubscription() (bool, error) {
 				return false, nil
 			}
 			if errors.Is(err, context.DeadlineExceeded) {
-				sleep := time.Duration(1 << i)
-				time.Sleep(sleep * time.Second)
+				time.Sleep((1 << i) * time.Second)
 			}
 			continue
 		}
