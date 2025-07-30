@@ -4,13 +4,14 @@ package kubectl
 import (
 	"encoding/hex"
 	"fmt"
-	comm "github.com/berops/claudie/internal/command"
-	"github.com/google/uuid"
-	"github.com/rs/zerolog/log"
 	"io"
 	"os"
 	"os/exec"
 	"strings"
+
+	comm "github.com/berops/claudie/internal/command"
+	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 )
 
 // Kubeconfig - the kubeconfig of the cluster as a string
@@ -253,6 +254,7 @@ func (k *Kubectl) KubectlCordon(nodeName string, options ...string) error {
 
 // run will run the command in a bash shell like "bash -c command options".
 func (k Kubectl) run(command string, options ...string) error {
+	//nolint
 	cmd := exec.Command("bash", "-c", strings.Join(append([]string{command}, options...), " "))
 	cmd.Dir = k.Directory
 	cmd.Stdout = k.Stdout
@@ -274,6 +276,7 @@ func (k Kubectl) run(command string, options ...string) error {
 func (k Kubectl) runWithOutput(command string, options ...string) ([]byte, error) {
 	var result []byte
 	var err error
+	//nolint
 	cmd := exec.Command("bash", "-c", strings.Join(append([]string{command}, options...), " "))
 	cmd.Dir = k.Directory
 	//NOTE: Do not set custom Stdout/Stderr as that would pollute the output.

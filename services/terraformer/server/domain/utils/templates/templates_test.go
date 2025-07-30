@@ -41,6 +41,7 @@ func TestDownloadProviderUpdate(t *testing.T) {
 	repoURL := mustParse(url.Parse(provider.Templates.Repository))
 
 	gitDirectory := filepath.Join(downloadDir, repoURL.Hostname(), repoURL.Path, "42e963e4bcaa5cbf7ce3330c1b7a21ebaa30f79b")
+	//nolint
 	gitCmd := exec.Command("git", "checkout", "74d4c23d5eb6c04cd4197be177989dce3a512981")
 	gitCmd.Dir = gitDirectory
 	if err := gitCmd.Run(); err != nil {

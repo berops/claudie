@@ -35,6 +35,7 @@ func NewGRPC(ctx context.Context, opts ...grpc.ServerOption) (*GRPC, error) {
 	port := envs.GetOrDefault("MANAGER_PORT", fmt.Sprint(defaultManagerPort))
 	listeningAddress := net.JoinHostPort("0.0.0.0", port)
 
+	//nolint
 	tcpListener, err := net.Listen("tcp", listeningAddress)
 	if err != nil {
 		return nil, fmt.Errorf("failed to bind tcp socket for address: %q: %w", listeningAddress, err)

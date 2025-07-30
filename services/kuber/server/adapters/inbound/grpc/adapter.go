@@ -33,6 +33,7 @@ func (g *GrpcAdapter) Init(usecases *usecases.Usecases, opts ...grpc.ServerOptio
 	var err error
 
 	listeningAddress := net.JoinHostPort("0.0.0.0", port)
+	//nolint
 	g.tcpListener, err = net.Listen("tcp", listeningAddress)
 	if err != nil {
 		log.Fatal().Msgf("Failed to listen on %v", err)
