@@ -1,6 +1,8 @@
 package usecases
 
-import "net"
+import (
+	"net"
+)
 
 const (
 	outputDir = "services/kuber/server/clusters"

@@ -227,6 +227,10 @@ func (r *Role) MergeTargetPools(o *Role) {
 
 // GetSubscription checks if the Cloudflare account has a Load Balancing subscription.
 func (x *CloudflareProvider) GetSubscription() (bool, error) {
+	// the number of retries before returning an error on trying to
+	// communicate with the cloudflare API.
+	const retries = 3
+
 	var subscriptions struct {
 		Result []struct {
 			ID      string `json:"id"`
@@ -239,15 +243,28 @@ func (x *CloudflareProvider) GetSubscription() (bool, error) {
 
 	escapedAccountID := url.PathEscape(x.AccountID)
 	urlSubscriptions := fmt.Sprintf("https://api.cloudflare.com/client/v4/accounts/%s/subscriptions", escapedAccountID)
-	responseSubscriptions, err := getCloudflareAPIResponse(urlSubscriptions, x.Token)
-	if err != nil {
-		if errors.Is(err, ErrCloudflareAPIForbidden) {
-			return false, nil
+
+	var response []byte
+	var err error
+
+	// The api seems to fail sometimes, add more checks with a exponential backoff before giving up.
+	for i := range retries {
+		response, err = getCloudflareAPIResponse(urlSubscriptions, x.Token)
+		if err != nil {
+			if errors.Is(err, ErrCloudflareAPIForbidden) {
+				return false, nil
+			}
+			time.Sleep((1 << i) * time.Second)
+			continue
 		}
-		return false, fmt.Errorf("error while getting cloudflare api response for 'accounts/subscriptions': %w", err)
+		break
 	}
 
-	if err := json.Unmarshal(responseSubscriptions, &subscriptions); err != nil {
+	if err != nil {
+		return false, fmt.Errorf("error while getting cloudflare api response for 'accounts/subscriptions', after %v retries: %w", retries, err)
+	}
+
+	if err := json.Unmarshal(response, &subscriptions); err != nil {
 		return false, fmt.Errorf("failed to parse JSON: %w", err)
 	}
 
