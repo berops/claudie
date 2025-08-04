@@ -268,7 +268,7 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 ## v0.9.11
 
 ## What's Changed
-**READ ME: A lot of changes are made in this release, before upgrading make sure you have working backups**
+**READ ME: A lot of core changes are made in this release, before updating an already deployed Claudie instance, make sure you have working backups of kuberentes cluster**
 
 - InputManifest was extended to also include a NoProxy list in the proxy settings to bypass the proxy for the listed endpoints, if used. [#1745](https://github.com/berops/claudie/pull/1745)
 ```
@@ -285,7 +285,7 @@ kubernetes:
 - Update kubeone to 1.10 [#1749](https://github.com/berops/claudie/pull/1749)
 - Migrate to OpenTofu `v1.6.2` from terraform `v1.5.7` [#1755](https://github.com/berops/claudie/pull/1755)
 
-  **READ ME: OpenTofu 1.6.2 is compatible with the previosly used Terraform version 1.5.7, while claudie will take care of the update, make sure you have working backups if you are updating an already deployed Claudie instance**
+  **READ ME: OpenTofu 1.6.2 is compatible with the previosly used Terraform version 1.5.7, while claudie will take care of the update, make sure you have working backups if you are updating an already deployed Claudie instance, in case of a disaster scenario**
 
 - Add `sprig` to all templates used within claudie [#1768](https://github.com/berops/claudie/pull/1768)
 - Builder will now support faster termination and wait only on the current task being processed instead of the whole workflow [#1770](https://github.com/berops/claudie/pull/1770)
@@ -309,4 +309,4 @@ kubernetes:
 ## Bug fixes
 - Return partially updated state instead of always defaulting to current state after error in deletion [#1793](https://github.com/berops/claudie/pull/1793)
 - Restarting SSH session after updating environmnet variables, is now part of the ansible workflow, which previosly caused issue in which the updated environment variables were not reflected in a re-used SSH connection [#1792](https://github.com/berops/claudie/pull/1792)
-- Fixed a memory leak by in the autoscaler service. [#1787](https://github.com/berops/claudie/pull/1787)
+- Fixed a memory leak in the autoscaler service. [#1787](https://github.com/berops/claudie/pull/1787)
