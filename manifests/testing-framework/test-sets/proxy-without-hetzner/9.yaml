@@ -8,7 +8,7 @@ spec:
       providerType: gcp
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.8
+        tag: v0.9.11
         path: "templates/terraformer/gcp"
       secretRef:
         name: gcp-secret
