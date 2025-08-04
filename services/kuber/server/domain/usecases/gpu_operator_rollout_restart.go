@@ -25,7 +25,7 @@ func (u *Usecases) GpuOperatorRolloutRestart(ctx context.Context, req *pb.GpuOpe
 	// To add/remove nodes in the cluster where the GPU operator is deployed we make the rollout restart as part of the
 	// workflow.
 	if err := kc.RolloutRestart("daemonset", "nvidia-container-toolkit-daemonset", "-n gpu-operator"); err != nil {
-		logger.Warn().Msgf("Failed to rollout restart NVIDIA toolkit daemon set: %v, assuming the GPU operator is not deplyed, continuing", err)
+		logger.Warn().Msgf("Failed to rollout restart NVIDIA toolkit daemon set: %v, assuming the GPU operator is not deployed, continuing", err)
 	}
 
 	return &pb.GpuOperatorRolloutRestartResponse{}, nil
