@@ -268,7 +268,7 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 ## v0.9.11
 
 ## What's Changed
-**READ ME: A lot of core changes are made in this release, before updating an already deployed Claudie instance, make sure you have working backups of kuberentes cluster**
+**READ ME: A lot of core changes are made in this release, before updating an already deployed Claudie instance, make sure you have working backups of your kuberentes clusters**
 
 - InputManifest was extended to also include a NoProxy list in the proxy settings to bypass the proxy for the listed endpoints, if used. [#1745](https://github.com/berops/claudie/pull/1745)
 ```
