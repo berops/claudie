@@ -265,4 +265,48 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 - Fix multiple HTTP proxy environment variables present in `/etc/environment` [#1727](https://github.com/berops/claudie/pull/1727)
 - Fix partial DNS apply, which would left part of the infrastructure untracked [#1728](https://github.com/berops/claudie/pull/1728)
 
+## v0.9.11
 
+## What's Changed
+**READ ME: A lot of core changes are made in this release, before updating an already deployed Claudie instance, make sure you have working backups of your kuberentes clusters**
+
+- InputManifest was extended to also include a NoProxy list in the proxy settings to bypass the proxy for the listed endpoints, if used. [#1745](https://github.com/berops/claudie/pull/1745)
+```
+kubernetes:
+    clusters:
+      - name: proxy-example
+        version: "1.30.0"
+        network: 192.168.2.0/24
+        installationProxy:
+            mode: "on"
+            noProxy: ".suse.com"
+```
+
+- Update kubeone to 1.10 [#1749](https://github.com/berops/claudie/pull/1749)
+- Migrate to OpenTofu `v1.6.2` from terraform `v1.5.7` [#1755](https://github.com/berops/claudie/pull/1755)
+
+  **READ ME: OpenTofu 1.6.2 is compatible with the previosly used Terraform version 1.5.7, while claudie will take care of the update, make sure you have working backups if you are updating an already deployed Claudie instance, in case of a disaster scenario**
+
+- Add `sprig` to all templates used within claudie [#1768](https://github.com/berops/claudie/pull/1768)
+- Builder will now support faster termination and wait only on the current task being processed instead of the whole workflow [#1770](https://github.com/berops/claudie/pull/1770)
+
+- Claudie will now support proper HA DNS Loadbalancing #[1777](https://github.com/berops/claudie/pull/1777)
+  
+  **This feature will be available with the latest claudie templates [`v0.9.11`](https://github.com/berops/claudie-config/releases/tag/v0.9.11)**
+  
+  **READ ME: for already deployed Claudie instances, if you used Cloudflare as a provider you will need to update your secret to also include the [Accound ID](https://docs.claudie.io/v0.9.11/input-manifest/providers/cloudflare/) the token was created for.**
+  
+- NGINX was replaced by Envoy on Loadbalancers. https://github.com/berops/claudie/pull/1735
+  
+  **READ ME: If you update an already deployed Claudie instance, this is a one time update that will introduce a small downtime of the services while NGINX is being replaced with Envoy.**
+  
+- Upgraded all terraform providers to the latest possible version that still supports the claudie templates version `v0.9.8` [#1782](https://github.com/berops/claudie/pull/1782)
+
+
+
+- Claudie will now perform a rollout restart for the NVIDIA GPU operator daemonset as part of the workflow, which overwrites the `/etc/containerd/config.yml`. [#1790](https://github.com/berops/claudie/pull/1790)
+
+## Bug fixes
+- Return partially updated state instead of always defaulting to current state after error in deletion [#1793](https://github.com/berops/claudie/pull/1793)
+- Restarting SSH session after updating environmnet variables, is now part of the ansible workflow, which previosly caused issue in which the updated environment variables were not reflected in a re-used SSH connection [#1792](https://github.com/berops/claudie/pull/1792)
+- Fixed a memory leak in the autoscaler service. [#1787](https://github.com/berops/claudie/pull/1787)
