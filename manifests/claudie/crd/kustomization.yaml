@@ -3,4 +3,4 @@ metadata:
   name: crd
 resources:
   - claudie.io_inputmanifests.yaml
-  - claudie.io_settings.yaml
+  - claudie.io_templategitreferences.yaml

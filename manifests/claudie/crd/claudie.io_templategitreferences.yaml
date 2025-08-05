@@ -1,0 +1,147 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.18.0
+  labels:
+    app.kubernetes.io/part-of: claudie
+  name: templategitreferences.claudie.io
+spec:
+  group: claudie.io
+  names:
+    kind: TemplateGitReference
+    listKind: TemplateGitReferenceList
+    plural: templategitreferences
+    singular: templategitreference
+  scope: Namespaced
+  versions:
+  - name: v1beta1
+    schema:
+      openAPIV3Schema:
+        description: TemplateGitReference used for injecting templates used within
+          Claudie to build kuberentes clusters.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            properties:
+              auth:
+                description: Authentication needed for accessing the git repository
+                  hosted at [Spec.Endpoint].
+                properties:
+                  secretRef:
+                    description: |-
+                      Reference to the secret containing authentication for the git repository
+                      under [Spec.Endpoint].
+                    properties:
+                      name:
+                        description: name is unique within a namespace to reference
+                          a secret resource.
+                        type: string
+                      namespace:
+                        description: namespace defines the space within which the
+                          secret name must be unique.
+                        type: string
+                    type: object
+                    x-kubernetes-map-type: atomic
+                required:
+                - secretRef
+                type: object
+              commit:
+                description: Commit to checkout to for the provided git repository
+                  [Spec.Endpoint]
+                minLength: 1
+                type: string
+              endpoint:
+                description: |-
+                  Endpoint specifies the URL to the git repository on which the templates to be downloaded
+                  are being hosted.
+                properties:
+                  protocol:
+                    description: The protocol to be used with the provided URL.
+                    minLength: 1
+                    type: string
+                  url:
+                    description: The URL, without the protocol, for the templates.
+                    minLength: 1
+                    type: string
+                required:
+                - protocol
+                - url
+                type: object
+              rootDir:
+                description: Root directory of Claudie templates within the repository
+                  itself.
+                minLength: 1
+                type: string
+              subPaths:
+                description: |-
+                  Invididual sub paths starting from [Sepc.RootDir] for different stages
+                  for building the kuberentes cluster within Claudie.
+                properties:
+                  k8sConfig:
+                    description: |-
+                      Path to the root directory of the kubernetes configuration that will be used
+                      to create/reconcile the kuberenetes cluster on the provisioned infrastructure.
+                    minLength: 1
+                    type: string
+                  lbConfig:
+                    description: |-
+                      Path to the root directory of the envoy configuration to be used on the
+                      loadbalancer nodes created by claudie.
+                    minLength: 1
+                    type: string
+                  manifests:
+                    description: |-
+                      Path to the root directory of the custom manifests to be applied on the created/reconciled
+                      kuberentes cluster.
+                    minLength: 1
+                    type: string
+                  playbooks:
+                    description: |-
+                      Path to the root directory of the ansible-playbooks to be used after
+                      the creation/update of the infrastructure to configure the invididual
+                      nodes of the cluster.
+                    minLength: 1
+                    type: string
+                  terraformer:
+                    description: |-
+                      Path to the root directory of the templates to be used for spawning
+                      the infrastructure in Terraform.
+                    minLength: 1
+                    type: string
+                required:
+                - k8sConfig
+                - lbConfig
+                - manifests
+                - playbooks
+                - terraformer
+                type: object
+            required:
+            - commit
+            - endpoint
+            - rootDir
+            - subPaths
+            type: object
+        required:
+        - metadata
+        - spec
+        type: object
+    served: true
+    storage: true
