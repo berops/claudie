@@ -23,6 +23,11 @@ const (
 	// the terraformer stage. This setting applies to the BuildInfrastructure RPC
 	// in terraformer.
 	ForceExportPort6443OnControlPlane = 1 << iota
+
+	// K8sOnlyRefresh gives a hint to the processing of the task that the task
+	// is related only to the k8s cluster infrastructure, thus unrelated infrastructure
+	// should be skipped.
+	K8sOnlyReresh
 )
 
 func OptionIsSet(options uint64, option uint64) bool { return options&option != 0 }

@@ -17,7 +17,7 @@ const (
 	// File name for the ansible inventory.
 	InventoryFileName = "inventory.ini"
 	// defaultAnsibleForks defines how many forks ansible uses (on how many nodes can ansible perform a task at the same time).
-	defaultAnsibleForks = 15
+	defaultAnsibleForks = 32
 	// maxAnsibleRetries defines how many times should be playbook retried before returning error.
 	maxAnsibleRetries = 5
 )

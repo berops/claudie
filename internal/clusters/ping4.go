@@ -22,7 +22,7 @@ const (
 	// How long to wait before considering the ping packet to be lost.
 	pingTimeout = 3 * time.Second
 	// How many goroutines will be used to ping nodes of a cluster.
-	pingConcurrentWorkers = 4
+	pingConcurrentWorkers = 8
 	// PingRetryCount is the number of times the ping will be retried
 	// to determine if the node is healthy of not.
 	PingRetryCount = 5
