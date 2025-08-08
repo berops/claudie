@@ -9,7 +9,7 @@ import (
 
 const (
 	// SpawnProcessLimit is the number of processes concurrently executing tofu.
-	SpawnProcessLimit = 5
+	SpawnProcessLimit = 8
 )
 
 type Usecases struct {
