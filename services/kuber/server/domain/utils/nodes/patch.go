@@ -35,33 +35,32 @@ type MetadataAnnotations struct {
 }
 
 type Patcher struct {
+	kBase     kubectl.Kubectl
 	clusterID string
-	kc        kubectl.Kubectl
 	logger    zerolog.Logger
 
-	errChan chan error
-	wg      sync.WaitGroup
-	err     error
+	errChan       chan error
+	aggregateDone chan struct{}
+	err           error
+
+	wg sync.WaitGroup
 }
 
 func NewPatcher(cluster *spec.K8Scluster, logger zerolog.Logger) *Patcher {
-	kc := kubectl.Kubectl{Kubeconfig: cluster.Kubeconfig, MaxKubectlRetries: 3}
-
-	clusterID := cluster.ClusterInfo.Id()
-	kc.Stdout = comm.GetStdOut(clusterID)
-	kc.Stderr = comm.GetStdErr(clusterID)
-
 	p := &Patcher{
-		kc:        kc,
-		clusterID: clusterID,
+		kBase: kubectl.Kubectl{
+			Kubeconfig:        cluster.Kubeconfig,
+			MaxKubectlRetries: 3,
+		},
+		clusterID: cluster.ClusterInfo.Id(),
 		logger:    logger,
 
-		errChan: make(chan error),
-		wg:      sync.WaitGroup{},
-		err:     nil,
+		errChan:       make(chan error),
+		aggregateDone: make(chan struct{}),
 	}
 
 	go func() {
+		defer close(p.aggregateDone)
 		for err := range p.errChan {
 			p.err = errors.Join(p.err, err)
 		}
@@ -81,8 +80,8 @@ func NewPatcher(cluster *spec.K8Scluster, logger zerolog.Logger) *Patcher {
 
 func (p *Patcher) Wait() error {
 	p.wg.Wait()
-	// all tasks finished by now so there is no processing anymore close reader.
 	close(p.errChan)
+	<-p.aggregateDone
 	return p.err
 }
 
@@ -91,10 +90,14 @@ func (p *Patcher) patchProviderID(np *spec.NodePool) {
 		nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", p.clusterID))
 		patchPath := fmt.Sprintf(patchProviderIDPathFormat, fmt.Sprintf(ProviderIdFormat, nodeName))
 
+		kc := p.kBase
+		kc.Stdout = comm.GetStdOut(p.clusterID)
+		kc.Stderr = comm.GetStdErr(p.clusterID)
+
 		p.wg.Add(1)
 		go func() {
 			defer p.wg.Done()
-			if err := p.kc.KubectlPatch("node", nodeName, patchPath); err != nil {
+			if err := kc.KubectlPatch("node", nodeName, patchPath); err != nil {
 				p.logger.Err(err).Str("node", nodeName).Msgf("Error while patching node with patch %s", patchPath)
 				p.errChan <- fmt.Errorf("error while patching one or more nodes with providerID")
 				return
@@ -116,6 +119,11 @@ func (p *Patcher) labelNodePool(np *spec.NodePool) {
 func (p *Patcher) label(labels map[string]string, nodes []*spec.Node) {
 	for _, node := range nodes {
 		nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", p.clusterID))
+
+		kc := p.kBase
+		kc.Stdout = comm.GetStdOut(p.clusterID)
+		kc.Stderr = comm.GetStdErr(p.clusterID)
+
 		p.wg.Add(1)
 		go func() {
 			defer p.wg.Done()
@@ -126,7 +134,7 @@ func (p *Patcher) label(labels map[string]string, nodes []*spec.Node) {
 					p.errChan <- fmt.Errorf("failed to create label %s patch path for node %s : %w", key, nodeName, err)
 					continue
 				}
-				if err := p.kc.KubectlPatch("node", nodeName, patchPath, "--type", "json"); err != nil {
+				if err := kc.KubectlPatch("node", nodeName, patchPath, "--type", "json"); err != nil {
 					p.logger.Err(err).Str("node", nodeName).Msgf("Failed to patch labels on node with path %s", patchPath)
 					p.errChan <- fmt.Errorf("error while patching one or more nodes with labels")
 					continue
@@ -195,10 +203,15 @@ func (p *Patcher) annotateNodePool(np *spec.NodePool) {
 func (p *Patcher) annotate(patch string, nodes []*spec.Node) {
 	for _, node := range nodes {
 		nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", p.clusterID))
+
+		kc := p.kBase
+		kc.Stdout = comm.GetStdOut(p.clusterID)
+		kc.Stderr = comm.GetStdErr(p.clusterID)
+
 		p.wg.Add(1)
 		go func() {
 			defer p.wg.Done()
-			if err := p.kc.KubectlPatch("node", nodeName, patch, "--type", "merge"); err != nil {
+			if err := kc.KubectlPatch("node", nodeName, patch, "--type", "merge"); err != nil {
 				p.logger.Err(err).Str("node", nodeName).Msgf("Failed to patch annotations on node %s", nodeName)
 				p.errChan <- fmt.Errorf("error while applying annotations %v for node %s: %w", patch, nodeName, err)
 				return
@@ -223,10 +236,15 @@ func (p *Patcher) taintNodePool(np *spec.NodePool) {
 func (p *Patcher) taint(patchPath string, nodes []*spec.Node) {
 	for _, node := range nodes {
 		nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", p.clusterID))
+
+		kc := p.kBase
+		kc.Stdout = comm.GetStdOut(p.clusterID)
+		kc.Stderr = comm.GetStdErr(p.clusterID)
+
 		p.wg.Add(1)
 		go func() {
 			defer p.wg.Done()
-			err := p.kc.KubectlPatch("node", nodeName, patchPath, "--type", "json")
+			err := kc.KubectlPatch("node", nodeName, patchPath, "--type", "json")
 			if err != nil {
 				p.logger.Err(err).Str("node", nodeName).Msgf("Failed to patch taints on node with path %s", patchPath)
 				p.errChan <- fmt.Errorf("error while patching one or more nodes with taints")

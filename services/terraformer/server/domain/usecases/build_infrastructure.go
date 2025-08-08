@@ -45,7 +45,7 @@ func (u *Usecases) BuildInfrastructure(request *pb.BuildInfrastructureRequest) (
 	k8sCluster.UpdateCurrentState()
 	k8slogger.Info().Msgf("Infrastructure successfully created for cluster")
 
-	if spec.OptionIsSet(request.Options, spec.K8sOnlyReresh) {
+	if spec.OptionIsSet(request.Options, spec.K8sOnlyRefresh) {
 		// Processing an event that only targets the nodepools used within the k8s
 		// clusters, thus we do not need to update/refresh the loadbalancer and dns
 		// infrastructure here.
