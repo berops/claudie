@@ -12,19 +12,19 @@ func TestCmd(t *testing.T) {
 	cmd1 := Cmd{"sleep 2 && ls", nil, "", nil, nil, 1}
 	err := cmd1.RetryCommand(1)
 	require.Error(t, err)
-	_, err = cmd1.RetryCommandWithOutput(1)
+	_, err = cmd1.RetryCommandWithCombinedOutput(1)
 	require.Error(t, err)
 	//high commandTimeout - pass
 	cmd2 := Cmd{"sleep 2 && ls", nil, "", nil, nil, 3}
 	err = cmd2.RetryCommand(1)
 	require.NoError(t, err)
-	_, err = cmd2.RetryCommandWithOutput(1)
+	_, err = cmd2.RetryCommandWithCombinedOutput(1)
 	require.NoError(t, err)
 	//no commandTimeout - pass
 	cmd3 := Cmd{"sleep 2 && ls", nil, "", nil, nil, 0}
 	err = cmd3.RetryCommand(1)
 	require.NoError(t, err)
-	_, err = cmd3.RetryCommandWithOutput(1)
+	_, err = cmd3.RetryCommandWithCombinedOutput(1)
 	require.NoError(t, err)
 }
 
