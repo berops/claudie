@@ -239,7 +239,7 @@ func (t *Terraform) Output(resourceName string) (string, error) {
 	//nolint
 	cmd := exec.Command("tofu", "output", "-json", resourceName)
 	cmd.Dir = t.Directory
-	out, err := cmd.CombinedOutput()
+	out, err := cmd.Output()
 	if err != nil {
 		log.Warn().Msgf("Error encountered while executing %s from %s: %v", cmd, t.Directory, err)
 		cmd := fmt.Sprintf("tofu output -json %s", resourceName)
@@ -248,7 +248,7 @@ func (t *Terraform) Output(resourceName string) (string, error) {
 			Dir:     t.Directory,
 		}
 
-		out, err = retryCmd.RetryCommandWithCombinedOutput(maxTfCommandRetryCount)
+		out, err = retryCmd.RetryCommandWithOutput(maxTfCommandRetryCount)
 		if err != nil {
 			return "", fmt.Errorf("failed to execute cmd: %s: %w", retryCmd.Command, err)
 		}
