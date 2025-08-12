@@ -4,7 +4,7 @@ import "golang.org/x/sync/semaphore"
 
 const (
 	// SpawnProcessLimit is the number of processes concurrently executing kubeone.
-	SpawnProcessLimit = 5
+	SpawnProcessLimit = 7
 )
 
 type Usecases struct {

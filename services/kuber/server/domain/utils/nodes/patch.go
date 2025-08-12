@@ -107,16 +107,25 @@ func (p *Patcher) patchProviderID(np *spec.NodePool) {
 }
 
 func (p *Patcher) labelNodePool(np *spec.NodePool) {
+	name := np.Name
 	nodeLabels, err := nodes.GetAllLabels(np, nil)
 	if err != nil {
-		p.errChan <- fmt.Errorf("failed to create labels for %s : %w", np.Name, err)
+		p.errChan <- fmt.Errorf("failed to create labels for %s : %w", name, err)
 		return
 	}
 
-	p.label(nodeLabels, np.Nodes)
+	for key, value := range nodeLabels {
+		patchPath, err := buildJSONPatchString("replace", "/metadata/labels/"+key, value)
+		if err != nil {
+			p.errChan <- fmt.Errorf("failed to create label %s patch path for nodepool %s: %w", key, name, err)
+			continue
+		}
+
+		p.label(patchPath, np.Nodes)
+	}
 }
 
-func (p *Patcher) label(labels map[string]string, nodes []*spec.Node) {
+func (p *Patcher) label(patch string, nodes []*spec.Node) {
 	for _, node := range nodes {
 		nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", p.clusterID))
 
@@ -127,18 +136,10 @@ func (p *Patcher) label(labels map[string]string, nodes []*spec.Node) {
 		p.wg.Add(1)
 		go func() {
 			defer p.wg.Done()
-			for key, value := range labels {
-				patchPath, err := buildJSONPatchString("replace", "/metadata/labels/"+key, value)
-				if err != nil {
-					p.logger.Err(err).Str("node", nodeName).Msgf("Error while creating label %s json patch for node %s", key, nodeName)
-					p.errChan <- fmt.Errorf("failed to create label %s patch path for node %s : %w", key, nodeName, err)
-					continue
-				}
-				if err := kc.KubectlPatch("node", nodeName, patchPath, "--type", "json"); err != nil {
-					p.logger.Err(err).Str("node", nodeName).Msgf("Failed to patch labels on node with path %s", patchPath)
-					p.errChan <- fmt.Errorf("error while patching one or more nodes with labels")
-					continue
-				}
+			if err := kc.KubectlPatch("node", nodeName, patch, "--type", "json"); err != nil {
+				p.logger.Err(err).Str("node", nodeName).Msgf("Failed to patch labels on node with path %s", patch)
+				p.errChan <- fmt.Errorf("error while patching one or more nodes with labels")
+				return
 			}
 		}()
 	}
