@@ -71,7 +71,33 @@ func (c *Cmd) RetryCommand(numOfRetries int) error {
 }
 
 // RetryCommandWithOutput retries the given command, with exponential backoff, maxing at 5 min, for numOfRetries times.
-// returns (nil, error) if all retries fail, (output, nil) otherwise.
+func (c *Cmd) RetryCommandWithCombinedOutput(numOfRetries int) ([]byte, error) {
+	var err error
+	var out []byte
+
+	// Have a cmd that is safe for printing.
+	printSafeCmd := c.sanitisedCmd()
+
+	for i := 1; i <= numOfRetries; i++ {
+		backoff := getNewBackoff(i)
+		log.Info().Msgf("Next retry in %ds...", backoff)
+		time.Sleep(time.Duration(backoff) * time.Second)
+
+		if out, err = c.executeWithCombinedOutput(i, numOfRetries); err == nil {
+			log.Info().Msgf("The %s was successful after %d retry", printSafeCmd, i)
+
+			return out, nil
+		}
+
+		log.Warn().Msgf("Error encountered while executing %s : %v", printSafeCmd, err)
+	}
+
+	log.Error().Msgf("Command %s was not successful after %d retries", printSafeCmd, numOfRetries)
+
+	return out, err
+}
+
+// RetryCommandWithOutput retries the given command, with exponential backoff, maxing at 5 min, for numOfRetries times.
 func (c *Cmd) RetryCommandWithOutput(numOfRetries int) ([]byte, error) {
 	var err error
 	var out []byte
@@ -114,9 +140,8 @@ func (c *Cmd) execute(i, numOfRetries int) error {
 	return cmd.Run()
 }
 
-// executeWithOutput executes the cmd with context canceled after commandTimeout seconds.
-// Returns error, nil if unsuccessful, nil, output otherwise.
-func (c *Cmd) executeWithOutput(i, numOfRetries int) ([]byte, error) {
+// executeWithCombinedOutput executes the cmd with context canceled after commandTimeout seconds.
+func (c *Cmd) executeWithCombinedOutput(i, numOfRetries int) ([]byte, error) {
 	cmd, cancel := c.buildCmd()
 	if cancel != nil {
 		defer cancel()
@@ -128,6 +153,21 @@ func (c *Cmd) executeWithOutput(i, numOfRetries int) ([]byte, error) {
 	log.Warn().Msgf("Retrying command %s... (%d/%d)", printSafeCmd, i, numOfRetries)
 
 	return cmd.CombinedOutput()
+}
+
+// executeWithOutput executes the cmd with context canceled after commandTimeout seconds.
+func (c *Cmd) executeWithOutput(i, numOfRetries int) ([]byte, error) {
+	cmd, cancel := c.buildCmd()
+	if cancel != nil {
+		defer cancel()
+	}
+
+	// Have a cmd that is safe for printing.
+	printSafeCmd := c.sanitisedCmd()
+
+	log.Warn().Msgf("Retrying command %s... (%d/%d)", printSafeCmd, i, numOfRetries)
+
+	return cmd.Output()
 }
 
 // buildCmd prepares a exec.Cmd datastructure with context.
