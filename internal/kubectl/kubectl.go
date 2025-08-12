@@ -287,7 +287,7 @@ func (k Kubectl) runWithOutput(command string, options ...string) ([]byte, error
 			retryCount = defaultMaxKubectlRetries
 		}
 		cmd := comm.Cmd{Command: command, Options: options, Dir: k.Directory, CommandTimeout: kubectlTimeout}
-		result, err = cmd.RetryCommandWithOutput(retryCount)
+		result, err = cmd.RetryCommandWithCombinedOutput(retryCount)
 		if err != nil {
 			return result, err
 		}
