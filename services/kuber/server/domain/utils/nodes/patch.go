@@ -103,7 +103,7 @@ func (p *Patcher) patchProviderID(np *spec.NodePool) {
 			if err := kc.KubectlPatch("node", nodeName, patchPath); err != nil {
 				p.logger.Err(err).Str("node", nodeName).Msgf("Error while patching node with patch %s", patchPath)
 				p.errChan <- fmt.Errorf("error while patching one or more nodes with providerID")
-				return err
+				// fallthrough
 			}
 			return nil
 		})
@@ -141,7 +141,7 @@ func (p *Patcher) label(patch string, nodes []*spec.Node) {
 			if err := kc.KubectlPatch("node", nodeName, patch, "--type", "json"); err != nil {
 				p.logger.Err(err).Str("node", nodeName).Msgf("Failed to patch labels on node with path %s", patch)
 				p.errChan <- fmt.Errorf("error while patching one or more nodes with labels")
-				return err
+				// fallthrough
 			}
 			return nil
 		})
@@ -216,7 +216,7 @@ func (p *Patcher) annotate(patch string, nodes []*spec.Node) {
 			if err := kc.KubectlPatch("node", nodeName, patch, "--type", "merge"); err != nil {
 				p.logger.Err(err).Str("node", nodeName).Msgf("Failed to patch annotations on node %s", nodeName)
 				p.errChan <- fmt.Errorf("error while applying annotations %v for node %s: %w", patch, nodeName, err)
-				return err
+				// fallthrough
 			}
 			return nil
 		})
@@ -248,7 +248,7 @@ func (p *Patcher) taint(patchPath string, nodes []*spec.Node) {
 			if err := kc.KubectlPatch("node", nodeName, patchPath, "--type", "json"); err != nil {
 				p.logger.Err(err).Str("node", nodeName).Msgf("Failed to patch taints on node with path %s", patchPath)
 				p.errChan <- fmt.Errorf("error while patching one or more nodes with taints")
-				return err
+				// fallthrough
 			}
 			return nil
 		})
