@@ -195,10 +195,6 @@ func (p *Patcher) annotateNodePool(np *spec.NodePool) {
 		annotations[k] = string(b)
 	}
 
-	if len(annotations) == 0 {
-		return
-	}
-
 	patch, err := buildJSONAnnotationPatch(annotations)
 	if err != nil {
 		p.errChan <- fmt.Errorf("failed to create annotation for nodepool %s: %w", name, err)
@@ -230,10 +226,6 @@ func (p *Patcher) annotate(patch string, nodes []*spec.Node) {
 func (p *Patcher) taintNodePool(np *spec.NodePool) {
 	name := np.Name
 	taints := nodes.GetAllTaints(np)
-
-	if len(taints) == 0 {
-		return
-	}
 
 	patchPath, err := buildJSONPatchString("replace", "/spec/taints", taints)
 	if err != nil {
