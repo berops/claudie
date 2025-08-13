@@ -20,7 +20,7 @@ const (
 	patchProviderIDPathFormat = "{\"spec\":{\"providerID\":\"%s\"}}"
 
 	// number of concurrent workers patching nodes.
-	workersLimit = 80
+	workersLimit = 60
 )
 
 type patchJson struct {
