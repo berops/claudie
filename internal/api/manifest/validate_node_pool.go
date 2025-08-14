@@ -163,6 +163,16 @@ func checkTaints(taints []k8sV1.Taint) error {
 		if !(t.Effect == k8sV1.TaintEffectNoSchedule || t.Effect == k8sV1.TaintEffectNoExecute || t.Effect == k8sV1.TaintEffectPreferNoSchedule) {
 			return fmt.Errorf("taint effect \"%s\" is not supported", t.Effect)
 		}
+
+		// taints are validated similarly to labels
+		// https://github.com/kubernetes/kubectl/blob/8185d35b7a2cd69d364f0f09648ecdd94c9fb5b7/pkg/cmd/taint/utils.go#L101
+		// https://github.com/kubernetes/kubectl/blob/8185d35b7a2cd69d364f0f09648ecdd94c9fb5b7/pkg/cmd/taint/utils.go#L109
+		if errs := validation.IsQualifiedName(t.Key); len(errs) > 0 {
+			return fmt.Errorf("invalid taint key %v: %v", t.Key, errs)
+		}
+		if errs := validation.IsValidLabelValue(t.Value); len(errs) > 0 {
+			return fmt.Errorf("value %v is not valid: %v", t.Value, errs)
+		}
 	}
 	return nil
 }

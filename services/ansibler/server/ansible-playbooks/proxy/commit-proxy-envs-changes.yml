@@ -1,5 +1,5 @@
 - hosts: control
-  gather_facts: true
+  gather_facts: false
   become: true
   tasks:
     - name: Reset ssh connection to allow changes to environment to affect 'current login user'

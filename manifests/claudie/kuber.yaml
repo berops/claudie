@@ -50,9 +50,9 @@ spec:
           resources:
             requests:
               cpu: 100m
-              memory: 100Mi
+              memory: 150Mi
             limits:
-              memory: 250Mi
+              memory: 625Mi
           env:
             - name: KUBER_PORT
               valueFrom:

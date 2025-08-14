@@ -1,5 +1,5 @@
 - hosts: all
-  gather_facts: true
+  gather_facts: false
   become: true
   tasks:
     - name: Verifying if /etc/apt/apt.conf.d/ exists

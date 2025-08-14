@@ -1,6 +1,6 @@
 ---
 - hosts: control
-  gather_facts: true
+  gather_facts: false
   become: true
   tasks:
     - name: stop kubelet
