@@ -8,7 +8,7 @@ spec:
       providerType: aws
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.11
+        tag: v0.9.12
         path: "templates/terraformer/aws"
       secretRef:
         name: aws-secret
@@ -17,7 +17,7 @@ spec:
       providerType: cloudflare
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.11
+        tag: v0.9.12
         path: "templates/terraformer/cloudflare"
       secretRef:
         name: cloudflare-secret
