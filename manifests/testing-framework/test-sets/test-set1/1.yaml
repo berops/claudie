@@ -176,7 +176,7 @@ spec:
           zone: "1"
         count: 2
         serverType: Standard_B2s
-        image: Canonical:ubuntu-24_04-lts:server:latest
+        image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
         taints:
           - key: test
             value: test
@@ -193,7 +193,7 @@ spec:
           zone: "1"
         count: 2
         serverType: Standard_B2s
-        image: Canonical:ubuntu-24_04-lts:server:latest
+        image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
         storageDiskSize: 50
         labels:
           test-set: test-set1
