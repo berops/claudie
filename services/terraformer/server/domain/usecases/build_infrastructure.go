@@ -45,6 +45,24 @@ func (u *Usecases) BuildInfrastructure(request *pb.BuildInfrastructureRequest) (
 	k8sCluster.UpdateCurrentState()
 	k8slogger.Info().Msgf("Infrastructure successfully created for cluster")
 
+	if spec.OptionIsSet(request.Options, spec.K8sOnlyRefresh) {
+		// Processing an event that only targets the nodepools used within the k8s
+		// clusters, thus we do not need to update/refresh the loadbalancer and dns
+		// infrastructure here.
+		//
+		// This is only done here for the purpose of shaving off a few minutes from
+		// the build process.
+		resp := &pb.BuildInfrastructureResponse{
+			Response: &pb.BuildInfrastructureResponse_Ok{
+				Ok: &pb.BuildInfrastructureResponse_InfrastructureData{
+					Desired:    request.Desired,
+					DesiredLbs: request.CurrentLbs, // keep as current state.
+				},
+			},
+		}
+		return resp, nil
+	}
+
 	var lbClusters []*loadbalancer.LBcluster
 	for _, desiredLBCluster := range request.DesiredLbs {
 		var current *spec.LBcluster
