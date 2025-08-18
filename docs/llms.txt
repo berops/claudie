@@ -1,0 +1,42 @@
+# Claudie
+
+> Claudie is a platform for managing multi-cloud and hybrid-cloud Kubernetes clusters. These Kubernetes clusters can mix and match nodepools from various cloud providers. Claudie simplifies the process of building and operating Kubernetes infrastructure across multiple environments. On top of that Claudie supports Cluster Autoscaler on the managed clusters.
+
+- [What is Claudie](https://docs.claudie.io/latest/) Claudie is a platform for managing multi-cloud and hybrid-cloud Kubernetes clusters.
+- [Vision](https://docs.claudie.io/latest/#vision) It aims to build clusters that leverage features and costs across multiple cloud vendors and on-prem datacenters
+- [Use cases](https://docs.claudie.io/latest/#use-cases)
+- [Features](https://docs.claudie.io/latest/#features)
+- [Getting started](https://docs.claudie.io/latest/getting-started/get-started-using-claudie/) Fast Setup Guide
+- [Detailed guide](https://docs.claudie.io/latest/getting-started/detailed-guide/) Overview of Claudie's features, installation instructions, customization options, and its role in provisioning and managing clusters.
+
+- [AWS](https://docs.claudie.io/latest/input-manifest/providers/aws/) Step-by-Step guide to configure AWS credentials and input manifests
+- [Azure](https://docs.claudie.io/latest/input-manifest/providers/azure/) Step-by-Step guide to configure Azure credentials and input manifests
+- [Cloudflare](https://docs.claudie.io/latest/input-manifest/providers/cloudflare/) Step-by-Step guide to configure Cloudflare credentials and input manifests
+- [GCP](https://docs.claudie.io/latest/input-manifest/providers/gcp/) Step-by-Step guide to configure GCP credentials and input manifests
+- [Genesis](https://docs.claudie.io/latest/input-manifest/providers/genesiscloud/) Guide to using Genesis Cloud API token and input manifest.
+- [Hetzner](https://docs.claudie.io/latest/input-manifest/providers/hetzner/) Step-by-Step guide to configure Hetzner credentials and input manifests
+- [OCI](https://docs.claudie.io/latest/input-manifest/providers/oci/) Step-by-Step guide to configure Oracle credentials and input manifests
+- [On Premise](https://docs.claudie.io/latest/input-manifest/providers/on-prem/) Step-by-Step guide to configure on premise hardware and input manifests
+- [Example yaml file](https://docs.claudie.io/latest/input-manifest/example/) 
+- [GPUs example](https://docs.claudie.io/latest/input-manifest/gpu-example/) Guide from Nvidia to deploy the gpu-operator into a claudie build kubernetes cluster
+- [Custom Settings example](https://docs.claudie.io/latest/input-manifest/example-settings.md) 
+- [External Templates](https://docs.claudie.io/latest/input-manifest/external-templates/) Examples to plug in your own templates for spawning the infrastructure
+- [API reference](https://docs.claudie.io/latest/input-manifest/api-reference/)
+- [Claudie Workflow](https://docs.claudie.io/latest/claudie-workflow/claudie-workflow/)
+- [Claudie Storage solution](https://docs.claudie.io/latest/storage/storage-solution/)
+- [Loadbalancing in Claudie](https://docs.claudie.io/latest/loadbalancing/loadbalancing-solution/)
+- [Autoscaling in Claudie](https://docs.claudie.io/latest/autoscaling/autoscaling/)
+- [Claudie Use Cases](https://docs.claudie.io/latest/use-cases/use-cases/)
+- [FAQ](https://docs.claudie.io/latest/faq/FAQ/)
+- [Roadmap for Claudie](https://docs.claudie.io/latest/roadmap/roadmap/)
+- [Contributing](https://docs.claudie.io/latest/contributing/contributing/)
+- [Latency limitations](https://docs.claudie.io/latest/latency-limitations/latency-limitations/)
+- [Troubleshooting](https://docs.claudie.io/latest/troubleshooting/troubleshooting/)
+- [Creating Claudie Backup](https://docs.claudie.io/latest/creating-claudie-backup/creating-claudie-backup/)
+- [Claudie Hardening](https://docs.claudie.io/latest/hardening/hardening/)
+- [Prometheus Monitoring](https://docs.claudie.io/latest/monitoring/grafana/)
+- [Updating Claudie](https://docs.claudie.io/latest/update/update/)
+- [Command Cheat Sheet](https://docs.claudie.io/latest/commands/commands/)
+- [Version Matrix](https://docs.claudie.io/latest/version-matrix/version-matrix/)
+- [HTTP Proxy](https://docs.claudie.io/latest/http-proxy/http-proxy/)
+
