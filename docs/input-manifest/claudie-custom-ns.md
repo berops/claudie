@@ -1,8 +1,8 @@
-# Deploying Claudie in custom namespace
+# Deploying Claudie in a custom namespace
 
-By default, when following the [Getting Started](../getting-started/get-started-using-claudie.md#install-claudie) guide, Claudie is deployed in the claudie namespace. However, you may want to deploy it into a custom namespace for reasons such as organizational structure, environment isolation or others.
+By default, when following the [Getting Started](../getting-started/get-started-using-claudie.md#install-claudie) guide, Claudie is deployed in the `claudie` namespace. However, you may want to deploy it into a custom namespace for reasons such as organizational structure, environment isolation or others.
 
-## Modifiing claudie.yaml bundle
+## Modifiyng claudie.yaml bundle
 
 1. Download the latest claudie.yaml 
     ```bash
@@ -38,9 +38,14 @@ By default, when following the [Getting Started](../getting-started/get-started-
     ```bash
     sed -i 's/cert-manager\.io\/inject-ca-from: claudie\//cert-manager.io\/inject-ca-from: new-namespace\//g' claudie.yaml
     ```
-     2.4. Once you’ve updated claudie.yaml, create your custom namespace and apply the manifest. Make sure Cert Manager is already deployed in your cluster
+     2.4. To restrict the namespaces monitored by the Claudie operator (as defined in `claudie.yaml`), add the `CLAUDIE_NAMESPACES` environment variable to the claudie-operator deployment.
+     ```yaml
+     env:
+        - name: CLAUDIE_NAMESPACES
+          value: "new-namespace"
+     ```
+     2.5. Once you’ve created claudie.yaml, create your custom namespace and apply the manifest. Make sure Cert Manager is already deployed in your cluster
     ```bash
     kubectl create namespace new-namespace
-    kubectl apply -f https://github.com/berops/claudie/releases/latest/download/claudie.yaml
-    kubectl apply -f claudie.yaml
+    kubectl apply -f claudie.yaml -n brando
     ```
