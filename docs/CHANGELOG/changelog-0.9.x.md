@@ -314,6 +314,6 @@ kubernetes:
 ## v0.9.12
 
 ## What's Changed
-- Retries were added to the reading of the output from tofu, which could occasionally fail. [#1824](https://github.com/berops/claudie/pull/1824)
-- Increased concurrency limits to decrease the build time of larger clusters, this change also affected the required memory limits for claudie which should fit within 8GB [#1819](https://github.com/berops/claudie/pull/1819)
-- For autoscaled events terraformer will now skip refreshing the Load-balancers and DNS infrastructure, if any [#1830](https://github.com/berops/claudie/pull/1830)
+- Retries were added to reading the output from OpenTofu, which could occasionally fail. [#1824](https://github.com/berops/claudie/pull/1824)
+- Increased concurrency limits to decrease the build time of larger clusters. This change also affects Claudie's memory requirements, which should fit within 8 GB. [#1819](https://github.com/berops/claudie/pull/1819)
+- For autoscaled events, Terraformer will now skip refreshing the LoadBalancers and DNS infrastructure, if present. [#1830](https://github.com/berops/claudie/pull/1830)
