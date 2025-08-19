@@ -89,7 +89,7 @@ nav:
       - Custom Settings example: input-manifest/example-settings.md
       - External Templates: input-manifest/external-templates.md
       - API reference: input-manifest/api-reference.md
-      - Claudie custom namespace: input-manifest/claudie-custom-ns.md
+      - Claudie in custom namespace: input-manifest/claudie-custom-ns.md
   - How Claudie works:
       - Claudie Workflow: claudie-workflow/claudie-workflow.md
       - Claudie Storage solution: storage/storage-solution.md

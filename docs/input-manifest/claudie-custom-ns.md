@@ -26,7 +26,7 @@ By default, when following the [Getting Started](../getting-started/get-started-
    ```
    Using linux terminal you can use sed utility:
    ```bash
-   sed -i 's/\(claudie-operator\)\.claudie/\1.new-namespace/g'
+   sed -i 's/\(claudie-operator\)\.claudie/\1.new-namespace/g' claudie.yaml
    ```
    2.3. Replace annotations `cert-manager.io/inject-ca-from: claudie/claudie-webhook-certificate` in ValidatingWebhookConfiguration resource, `kind: ValidatingWebhookConfiguration`, so that is contains name of your new namespace
     ```yaml
