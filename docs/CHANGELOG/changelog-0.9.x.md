@@ -310,3 +310,10 @@ kubernetes:
 - Return partially updated state instead of always defaulting to current state after error in deletion [#1793](https://github.com/berops/claudie/pull/1793)
 - Restarting SSH session after updating environmnet variables, is now part of the ansible workflow, which previosly caused issue in which the updated environment variables were not reflected in a re-used SSH connection [#1792](https://github.com/berops/claudie/pull/1792)
 - Fixed a memory leak in the autoscaler service. [#1787](https://github.com/berops/claudie/pull/1787)
+
+## v0.9.12
+
+## What's Changed
+- Retries were added to reading the output from OpenTofu, which could occasionally fail. [#1824](https://github.com/berops/claudie/pull/1824)
+- Increased concurrency limits to decrease the build time of larger clusters. This change also affects Claudie's memory requirements, which should fit within 8 GB. [#1819](https://github.com/berops/claudie/pull/1819)
+- For autoscaled events, Terraformer will now skip refreshing the LoadBalancers and DNS infrastructure, if present. [#1830](https://github.com/berops/claudie/pull/1830)
