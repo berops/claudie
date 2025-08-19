@@ -52,7 +52,7 @@ spec:
               cpu: 200m
               memory: 1200Mi
             limits:
-              memory: 1900Mi
+              memory: 2000Mi
           env:
             - name: TERRAFORMER_PORT
               valueFrom:
