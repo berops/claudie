@@ -44,7 +44,14 @@ By default, when following the [Getting Started](../getting-started/get-started-
         - name: CLAUDIE_NAMESPACES
           value: "new-namespace"
      ```
-     2.5. Once you’ve created claudie.yaml, create your custom namespace and apply the manifest. Make sure Cert Manager is already deployed in your cluster
+     2.5. To ensure the `ClusterRoleBinding` is correctly applied to the specified `ServiceAccount`, make sure the `ClusterRoleBinding` has a unique name. Modify the name of the `ClusterRoleBinding` resource in the `claudie.yaml`.
+     
+     Using linux terminal you can use sed utility:
+
+     ```bash
+     sed -i 's/claudie-operator-role-binding/claudie-operator-role-binding-new-namespace/g' claudie.yaml
+     ```
+     2.6. Once you’ve created claudie.yaml, create your custom namespace and apply the manifest. Make sure Cert Manager is already deployed in your cluster
     ```bash
     kubectl create namespace new-namespace
     kubectl apply -f claudie.yaml -n brando
