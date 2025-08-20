@@ -1694,8 +1694,13 @@ sed<span class="w"> </span>-i<span class="w"> </span><span class="s1">&#39;s/cla
  <div class="highlight"><pre><span></span><code><span class="nt">env</span><span class="p">:</span>
 <span class="w">   </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CLAUDIE_NAMESPACES</span>
 <span class="w">     </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;new-namespace&quot;</span>
-</code></pre></div>
- 2.5. To ensure the <code>ClusterRoleBinding</code> is correctly applied to the specified <code>ServiceAccount</code>, make sure the <code>ClusterRoleBinding</code> has a unique name. Modify the name of the <code>ClusterRoleBinding</code> resource in the <code>claudie.yaml</code>.</p>
+</code></pre></div></p>
+<div class="admonition danger">
+<p class="admonition-title">Updating CLAUDIE_NAMESPACES variable</p>
+<p>If there already exist Claudie cluster, make sure to also update the deployment of the existing Claudie operator to reflect the correct namespace.</p>
+<p>If the <code>CLAUDIE_NAMESPACE</code> environment variable is not set in the operator, multiple Claudie instances may pick up the same InputManifests, which can lead to the cluster being unintentionally rebuilt. This can result in unexpected behavior and potentially break your Kubernetes cluster.</p>
+</div>
+<p>2.5. To ensure the <code>ClusterRoleBinding</code> is correctly applied to the specified <code>ServiceAccount</code>, make sure the <code>ClusterRoleBinding</code> has a unique name. Modify the name of the <code>ClusterRoleBinding</code> resource in the <code>claudie.yaml</code>.</p>
 <p>Using linux terminal you can use sed utility:</p>
 <p><div class="highlight"><pre><span></span><code>sed<span class="w"> </span>-i<span class="w"> </span><span class="s1">&#39;s/claudie-operator-role-binding/claudie-operator-role-binding-new-namespace/g&#39;</span><span class="w"> </span>claudie.yaml
 </code></pre></div>
