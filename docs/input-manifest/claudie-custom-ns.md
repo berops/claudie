@@ -57,5 +57,5 @@ By default, when following the [Getting Started](../getting-started/get-started-
      2.6. Once you’ve created claudie.yaml, create your custom namespace and apply the manifest. Make sure Cert Manager is already deployed in your cluster
     ```bash
     kubectl create namespace new-namespace
-    kubectl apply -f claudie.yaml -n brando
+    kubectl apply -f claudie.yaml -n new-namespace
     ```
