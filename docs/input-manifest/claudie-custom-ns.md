@@ -48,9 +48,9 @@ By default, when following the [Getting Started](../getting-started/get-started-
           value: "new-namespace"
      ```
     !!! danger "Updating CLAUDIE_NAMESPACES variable"
-        If there already exist Claudie cluster, make sure to also update the deployment of the existing Claudie operator to reflect the correct namespace.
+        If there already exists a Claudie cluster, make sure to also update the deployment of the existing Claudie operator to reflect the correct namespace.
 
-        If the `CLAUDIE_NAMESPACE` environment variable is not set in the operator, multiple Claudie instances may pick up the same InputManifests, which can lead to the cluster being unintentionally rebuilt. This can result in unexpected behavior and potentially break your Kubernetes cluster.
+        If the `CLAUDIE_NAMESPACES` environment variable is not set in the operator, multiple Claudie instances may pick up the same InputManifests, which can lead to the cluster being unintentionally rebuilt. This can result in unexpected behavior and potentially break your Kubernetes cluster.
 
      2.5. To ensure the `ClusterRoleBinding` is correctly applied to the specified `ServiceAccount`, make sure the `ClusterRoleBinding` has a unique name. Modify the name of the `ClusterRoleBinding` resource in the `claudie.yaml`.
      
