@@ -12,7 +12,7 @@ const (
 	// outputDirectory is directory used to generate ansible playbooks/inventories.
 	outputDirectory = "clusters"
 	// SpawnProcessLimit is the number of processes concurrently executing ansible.
-	SpawnProcessLimit = 5
+	SpawnProcessLimit = 8
 )
 
 type Usecases struct {

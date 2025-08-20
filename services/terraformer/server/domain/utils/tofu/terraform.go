@@ -21,7 +21,7 @@ const (
 	maxTfCommandRetryCount = 3
 
 	// Parallelism is the number of resource to be work on in parallel during the apply/destroy commands.
-	Parallelism = 8
+	Parallelism = 40
 )
 
 type Terraform struct {
@@ -215,13 +215,13 @@ func (t *Terraform) StateList() ([]string, error) {
 		retryCmd := comm.Cmd{
 			Command: "tofu state list",
 			Dir:     t.Directory,
-			Stdout:  cmd.Stdout,
-			Stderr:  cmd.Stderr,
 		}
-		if err := retryCmd.RetryCommand(maxTfCommandRetryCount); err != nil {
+
+		out, err = retryCmd.RetryCommandWithOutput(maxTfCommandRetryCount)
+		if err != nil {
 			return nil, fmt.Errorf("failed to execute cmd: %s: %w", retryCmd.Command, err)
 		}
-		return nil, err
+		// fallthrough
 	}
 
 	r := bytes.Split(out, []byte("\n"))
@@ -239,6 +239,20 @@ func (t *Terraform) Output(resourceName string) (string, error) {
 	//nolint
 	cmd := exec.Command("tofu", "output", "-json", resourceName)
 	cmd.Dir = t.Directory
-	out, err := cmd.CombinedOutput()
-	return string(out), err
+	out, err := cmd.Output()
+	if err != nil {
+		log.Warn().Msgf("Error encountered while executing %s from %s: %v", cmd, t.Directory, err)
+		cmd := fmt.Sprintf("tofu output -json %s", resourceName)
+		retryCmd := comm.Cmd{
+			Command: cmd,
+			Dir:     t.Directory,
+		}
+
+		out, err = retryCmd.RetryCommandWithOutput(maxTfCommandRetryCount)
+		if err != nil {
+			return "", fmt.Errorf("failed to execute cmd: %s: %w", retryCmd.Command, err)
+		}
+		// fallthrough
+	}
+	return string(out), nil
 }
