@@ -28,15 +28,18 @@ By default, when following the [Getting Started](../getting-started/get-started-
    ```bash
    sed -i 's/\(claudie-operator\)\.claudie/\1.new-namespace/g' claudie.yaml
    ```
-   2.3. Replace annotations `cert-manager.io/inject-ca-from: claudie/claudie-webhook-certificate` in ValidatingWebhookConfiguration resource, `kind: ValidatingWebhookConfiguration`, so that is contains name of your new namespace
+   2.3. Replace annotations `cert-manager.io/inject-ca-from: claudie/claudie-webhook-certificate` and name `name: claudie-webhook` in ValidatingWebhookConfiguration resource, `kind: ValidatingWebhookConfiguration`, so that is contains name of your new namespace
     ```yaml
     annotations:
         cert-manager.io/inject-ca-from: new-namespace/claudie-webhook-certificate
+    ...
+    name: claudie-webhook-new-namespace
     ```
     Using linux terminal you can use sed utility:
 
     ```bash
     sed -i 's/cert-manager\.io\/inject-ca-from: claudie\//cert-manager.io\/inject-ca-from: new-namespace\//g' claudie.yaml
+    sed -i 's/claudie-webhook$/claudie-webhook-new-namespace/g' claudie.yaml
     ```
      2.4. To restrict the namespaces monitored by the Claudie operator (as defined in `claudie.yaml`), add the `CLAUDIE_NAMESPACES` environment variable to the claudie-operator deployment.
      ```yaml
