@@ -2,6 +2,7 @@ package templates
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"net/url"
@@ -14,41 +15,52 @@ import (
 	"github.com/go-git/go-git/v5"
 )
 
-// ErrEmptyRepository is returned when no repository is to be cloned.
-var ErrEmptyRepository = errors.New("no repository to clone")
+var (
+	// ErrValidationFailed is returned when the passed in [Repository] fails
+	// to be validated.
+	ErrValidationFailed = errors.New("invalid repository")
+)
 
 type Repository struct {
 	// URL of the git repository to download.
 	Repository string
+	// parsed repository as [url.URL].
+	url *url.URL
 	// RootDir within within the git repository.
 	Path string
-	// Commit to checkout
-	Commit     string
+	// Full commit hash
 	CommitHash string
 }
 
-func Download(into string, repository Repository) error {
-	if err := download(into, repository); err != nil {
-		if errors.Is(err, ErrEmptyRepository) {
-			msg := fmt.Sprintf("%q not found", repository.Repository)
-			return fmt.Errorf("%s: %w", msg, err)
-		}
-		return err
+func (r *Repository) validate() error {
+	if r.Repository == "" {
+		return fmt.Errorf("%w: empty repository url", ErrValidationFailed)
 	}
+
+	u, err := url.Parse(r.Repository)
+	if err != nil {
+		return fmt.Errorf("%w: %s is not a valid url", ErrValidationFailed, r.Repository)
+	}
+	r.url = u
+
+	if r.Path == "" {
+		return fmt.Errorf("%w: empty path", ErrValidationFailed)
+	}
+	if r.CommitHash == "" {
+		return fmt.Errorf("%w: empty commit hash", ErrValidationFailed)
+	}
+
 	return nil
 }
 
-func download(dir string, repository Repository) error {
-	if repository.Repository == "" {
-		return ErrEmptyRepository
+// Downloads the git repository [Repository.Repository] using a sparse-checkout rooted at [Repository.Path]
+// with the reference commit [Repository.CommitHash].
+func Download(ctx context.Context, dir string, repository Repository) error {
+	if err := repository.validate(); err != nil {
+		return err
 	}
 
-	u, err := url.Parse(repository.Repository)
-	if err != nil {
-		return fmt.Errorf("%s is not a valid url: %w", repository.Repository, err)
-	}
-
-	cloneDirectory := filepath.Join(dir, u.Hostname(), u.Path)
+	cloneDirectory := filepath.Join(dir, repository.url.Hostname(), repository.url.Path)
 	gitDirectory := filepath.Join(cloneDirectory, repository.CommitHash)
 
 	if fileutils.DirectoryExists(gitDirectory) {
@@ -65,8 +77,7 @@ func download(dir string, repository Repository) error {
 		if ref.Hash().String() == repository.CommitHash {
 			logs := new(bytes.Buffer)
 
-			//nolint
-			sparseCheckout := exec.Command("git", "sparse-checkout", "set", strings.Trim(repository.Path, "/"))
+			sparseCheckout := exec.CommandContext(ctx, "git", "sparse-checkout", "set", strings.Trim(repository.Path, "/"))
 			sparseCheckout.Dir = gitDirectory
 			sparseCheckout.Stdout = logs
 			sparseCheckout.Stderr = logs
@@ -77,11 +88,9 @@ func download(dir string, repository Repository) error {
 
 			logs.Reset()
 
-			// TODO: will we allow this to be empty ?
-			args := []string{"checkout", repository.Commit}
+			args := []string{"checkout", repository.CommitHash}
 
-			//nolint
-			checkout := exec.Command("git", args...)
+			checkout := exec.CommandContext(ctx, "git", args...)
 			checkout.Dir = gitDirectory
 			checkout.Stdout = logs
 			checkout.Stderr = logs
@@ -105,8 +114,8 @@ func download(dir string, repository Repository) error {
 	}
 
 	logs := new(bytes.Buffer)
-	//nolint
-	clone := exec.Command("git", "clone", "--no-checkout", repository.Repository, repository.CommitHash)
+
+	clone := exec.CommandContext(ctx, "git", "clone", "--no-checkout", repository.Repository, repository.CommitHash)
 	clone.Dir = cloneDirectory
 	clone.Stdout = logs
 	clone.Stderr = logs
@@ -116,8 +125,8 @@ func download(dir string, repository Repository) error {
 	}
 
 	logs.Reset()
-	//nolint
-	sparseCheckout := exec.Command("git", "sparse-checkout", "set", strings.Trim(repository.Path, "/"))
+
+	sparseCheckout := exec.CommandContext(ctx, "git", "sparse-checkout", "set", strings.Trim(repository.Path, "/"))
 	sparseCheckout.Dir = gitDirectory
 	sparseCheckout.Stdout = logs
 	sparseCheckout.Stderr = logs
@@ -128,8 +137,7 @@ func download(dir string, repository Repository) error {
 
 	logs.Reset()
 
-	//nolint
-	checkout := exec.Command("git", "checkout", repository.CommitHash)
+	checkout := exec.CommandContext(ctx, "git", "checkout", repository.CommitHash)
 	checkout.Dir = gitDirectory
 	checkout.Stdout = logs
 	checkout.Stderr = logs

@@ -54,7 +54,7 @@ type Spec struct {
 	// +kubebuilder:validation:MinLength=1
 	RootDir string `json:"rootDir"`
 
-	// Invididual sub paths starting from [Sepc.RootDir] for different stages
+	// Invididual sub paths starting from [Spec.RootDir] for different stages
 	// for building the kuberentes cluster within Claudie.
 	//
 	// +kubebuilder:validation:Required
@@ -118,6 +118,7 @@ type Endpoint struct {
 	//
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:Enum=https
 	Protocol string `json:"protocol"`
 }
 
