@@ -19,7 +19,6 @@
 - [On Premise](https://docs.claudie.io/latest/input-manifest/providers/on-prem/) Step-by-Step guide to configure on premise hardware and input manifests.
 - [Example yaml file](https://docs.claudie.io/latest/input-manifest/example/) Full example of input manifest.
 - [GPUs example](https://docs.claudie.io/latest/input-manifest/gpu-example/) Guide from Nvidia to deploy the gpu-operator into a claudie build kubernetes cluster.
-- [Custom Settings example](https://docs.claudie.io/latest/input-manifest/example-settings.md) 
 - [External Templates](https://docs.claudie.io/latest/input-manifest/external-templates/) Examples to plug in your own templates for spawning the infrastructure.
 - [API reference](https://docs.claudie.io/latest/input-manifest/api-reference/)
 - [Deploying Claudie in a custom namespace](https://docs.claudie.io/latest/input-manifest/claudie-custom-ns/) Step-by-step guide to deploying Claudie in custom namespace.
