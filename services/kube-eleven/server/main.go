@@ -34,7 +34,7 @@ func main() {
 	loggerutils.Init("kube-eleven")
 
 	usecases := &usecases.Usecases{
-		SpawnProcessLimit: semaphore.NewWeighted(usecases.SpawnProcessLimit),
+		SpawnProcessLimit: semaphore.NewWeighted(int64(usecases.SpawnProcessLimit)),
 	}
 	grpcAdapter := grpc.GrpcAdapter{}
 	grpcAdapter.Init(

@@ -7,6 +7,7 @@ import (
 	"os/exec"
 
 	comm "github.com/berops/claudie/internal/command"
+	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/rs/zerolog/log"
 
@@ -16,11 +17,12 @@ import (
 const (
 	// File name for the ansible inventory.
 	InventoryFileName = "inventory.ini"
-	// defaultAnsibleForks defines how many forks ansible uses (on how many nodes can ansible perform a task at the same time).
-	defaultAnsibleForks = 32
 	// maxAnsibleRetries defines how many times should be playbook retried before returning error.
 	maxAnsibleRetries = 5
 )
+
+// defaultAnsibleForks defines how many forks ansible uses (on how many nodes can ansible perform a task at the same time).
+var defaultAnsibleForks = envs.GetOrDefaultInt("ANSIBLER_FORKS", 32)
 
 // GenerateInventoryFile generates an Ansible inventory file that defines
 // the hosts and groups of hosts that Ansible can manage.

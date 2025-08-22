@@ -50,6 +50,16 @@ spec:
             limits:
               memory: 2250Mi
           env:
+            - name: ANSIBLER_CONCURRENT_CLUSTERS
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: ANSIBLER_CONCURRENT_CLUSTERS
+            - name: ANSIBLER_FORKS
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: ANSIBLER_FORKS
             - name: ANSIBLER_PORT
               valueFrom:
                 configMapKeyRef:

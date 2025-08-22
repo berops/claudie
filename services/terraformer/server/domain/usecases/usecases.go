@@ -1,16 +1,15 @@
 package usecases
 
 import (
+	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/services/terraformer/server/domain/ports"
 	"github.com/rs/zerolog"
 
 	"golang.org/x/sync/semaphore"
 )
 
-const (
-	// SpawnProcessLimit is the number of processes concurrently executing tofu.
-	SpawnProcessLimit = 7
-)
+// SpawnProcessLimit is the number of processes concurrently executing tofu.
+var SpawnProcessLimit = envs.GetOrDefaultInt("TERRAFORMER_CONCURRENT_CLUSTERS", 7)
 
 type Usecases struct {
 	// DynamoDB connector.

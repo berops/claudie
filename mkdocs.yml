@@ -118,6 +118,7 @@ nav:
   - Command Cheat Sheet: commands/commands.md
   - Version Matrix: version-matrix/version-matrix.md
   - HTTP Proxy: http-proxy/http-proxy.md
+  - Configurable Environment Variables: environment-settings/environment.md
 
 extra:
   version:

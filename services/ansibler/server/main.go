@@ -35,7 +35,7 @@ func main() {
 
 	grpcAdapter := grpc.CreateGrpcAdapter(
 		&usecases.Usecases{
-			SpawnProcessLimit: semaphore.NewWeighted(usecases.SpawnProcessLimit),
+			SpawnProcessLimit: semaphore.NewWeighted(int64(usecases.SpawnProcessLimit)),
 		},
 		grpc2.ChainUnaryInterceptor(
 			metrics.MetricsMiddleware,
