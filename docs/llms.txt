@@ -24,9 +24,9 @@
 - [API reference](https://docs.claudie.io/latest/input-manifest/api-reference/)
 - [Deploying Claudie in a custom namespace](https://docs.claudie.io/latest/input-manifest/claudie-custom-ns/) Step-by-step guide to deploying Claudie in custom namespace.
 - [Claudie Workflow](https://docs.claudie.io/latest/claudie-workflow/claudie-workflow/) Describe components of Claudie and how a Claudie cluster works.
-- [Claudie Storage solution](https://docs.claudie.io/latest/storage/storage-solution/) Describe Longhron storage solution integration with Claudie.
-- [Loadbalancing in Claudie](https://docs.claudie.io/latest/loadbalancing/loadbalancing-solution/) Describe loadbalancing solution and concept used in Claudie cluster.
-- [Autoscaling in Claudie](https://docs.claudie.io/latest/autoscaling/autoscaling/) Describe autoscaling solution and atchitecture of cluster autoscaler in Claudie.
+- [Claudie Storage solution](https://docs.claudie.io/latest/storage/storage-solution/) Describe Longhorn storage solution integration with Claudie.
+- [Loadbalancing in Claudie](https://docs.claudie.io/latest/loadbalancing/loadbalancing-solution/) Describe the load balancing solution and concepts used in a Claudie cluster.
+- [Autoscaling in Claudie](https://docs.claudie.io/latest/autoscaling/autoscaling/) Describe the autoscaling solution and architecture of Cluster Autoscaler in Claudie.
 - [Claudie Use Cases](https://docs.claudie.io/latest/use-cases/use-cases/) Provide examples demonstrating how the Claudie product can be used.
 - [FAQ](https://docs.claudie.io/latest/faq/FAQ/)
 - [Roadmap for Claudie](https://docs.claudie.io/latest/roadmap/roadmap/)
