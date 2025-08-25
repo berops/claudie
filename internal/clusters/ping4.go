@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/rs/zerolog"
 
@@ -21,12 +22,13 @@ import (
 const (
 	// How long to wait before considering the ping packet to be lost.
 	pingTimeout = 3 * time.Second
-	// How many goroutines will be used to ping nodes of a cluster.
-	pingConcurrentWorkers = 20
 	// PingRetryCount is the number of times the ping will be retried
 	// to determine if the node is healthy of not.
 	PingRetryCount = 5
 )
+
+// How many goroutines will be used to ping nodes of a cluster.
+var pingConcurrentWorkers = envs.GetOrDefaultInt("PING_CONCURRENT_WORKERS", 20)
 
 // ErrEchoTimeout is returned when the reply is not received within the requested timeout.
 var ErrEchoTimeout = errors.New("icmp request timeout")

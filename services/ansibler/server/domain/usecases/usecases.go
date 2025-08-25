@@ -1,6 +1,7 @@
 package usecases
 
 import (
+	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/services/ansibler/server/utils"
 
 	"golang.org/x/sync/semaphore"
@@ -11,9 +12,10 @@ const (
 	baseDirectory = "services/ansibler/server"
 	// outputDirectory is directory used to generate ansible playbooks/inventories.
 	outputDirectory = "clusters"
-	// SpawnProcessLimit is the number of processes concurrently executing ansible.
-	SpawnProcessLimit = 8
 )
+
+// SpawnProcessLimit is the number of processes concurrently executing ansible.
+var SpawnProcessLimit = envs.GetOrDefaultInt("ANSIBLER_CONCURRENT_CLUSTERS", 8)
 
 type Usecases struct {
 	// SpawnProcessLimit limits the number of spawned ansible processes.
