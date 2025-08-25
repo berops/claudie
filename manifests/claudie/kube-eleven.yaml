@@ -46,6 +46,11 @@ spec:
             limits:
               memory: 200Mi
           env:
+            - name: KUBE_ELEVEN_CONCURRENT_CLUSTERS
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: KUBE_ELEVEN_CONCURRENT_CLUSTERS
             - name: KUBE_ELEVEN_PORT
               valueFrom:
                 configMapKeyRef:

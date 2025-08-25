@@ -54,6 +54,11 @@ spec:
             limits:
               memory: 700Mi
           env:
+            - name: KUBER_WORKERS
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: KUBER_WORKERS
             - name: KUBER_PORT
               valueFrom:
                 configMapKeyRef:
