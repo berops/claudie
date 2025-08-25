@@ -1,6 +1,6 @@
 Some Claudie aspects can be configured via environment variables read from a ConfigMap in the namespace where Claudie is deployed.
 
-These values allow you to customize endpoints for individual services, log levels, and concurrency limits. The default ConfigMap that is
+These values let you to customize service endpoints, log levels, and concurrency limits. The default ConfigMap that is
 deployed with Claudie can be found in the [Claudie GitHub repository](https://github.com/berops/claudie/blob/master/manifests/claudie/.env).
 
 The full list of environment variables is as follows:
@@ -42,7 +42,7 @@ DYNAMO_URL=http://dynamo:8000
 DYNAMO_TABLE_NAME=claudie
 AWS_REGION=local
 
-# Defines from which namespace InputManifests should be watched for by Claudie, default is all namespaces, if env is not set.
+# Defines from which namespace InputManifests should be watched for by Claudie.
 # Default is all namespaces
 CLAUDIE_NAMESPACES="dev"
 
