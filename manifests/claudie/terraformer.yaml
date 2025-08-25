@@ -54,6 +54,16 @@ spec:
             limits:
               memory: 2000Mi
           env:
+            - name: TERRAFORMER_TOFU_PARALLELISM
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: TERRAFORMER_TOFU_PARALLELISM
+            - name: TERRAFORMER_CONCURRENT_CLUSTERS
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: TERRAFORMER_CONCURRENT_CLUSTERS
             - name: TERRAFORMER_PORT
               valueFrom:
                 configMapKeyRef:
