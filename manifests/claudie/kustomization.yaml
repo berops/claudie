@@ -1,74 +1,74 @@
 namespace: claudie
 resources:
-- crd
-- ns.yaml
-- operator.yaml
-- builder.yaml
-- terraformer.yaml
-- ansibler.yaml
-- kube-eleven.yaml
-- kuber.yaml
-- manager.yaml
-- cluster-rbac
-- mongo
-- minio
-- dynamo
+  - crd
+  - ns.yaml
+  - operator.yaml
+  - builder.yaml
+  - terraformer.yaml
+  - ansibler.yaml
+  - kube-eleven.yaml
+  - kuber.yaml
+  - manager.yaml
+  - cluster-rbac
+  - mongo
+  - minio
+  - dynamo
 
 # Alter ValidatingWebhookConfiguration and Certificate fields, so they will match the generated namespace
 replacements:
-- source:
-    fieldPath: metadata.name
-    kind: Namespace
-  targets:
-  - fieldPaths:
-    - webhooks.*.namespaceSelector.matchLabels.kubernetes\.io/metadata\.name
-    - webhooks.*.clientConfig.service.namespace
-    select:
-      kind: ValidatingWebhookConfiguration
-      name: claudie-webhook
-- source:
-    fieldPath: metadata.name
-    kind: Namespace
-  targets:
-  - fieldPaths:
-    - metadata.annotations.cert-manager\.io/inject-ca-from
-    options:
-      delimiter: /
-    select:
-      kind: ValidatingWebhookConfiguration
-      name: claudie-webhook
-  - fieldPaths:
-    - spec.dnsNames.*
-    options:
-      delimiter: .
-      index: 1
-    select:
-      kind: Certificate
-      name: claudie-webhook-certificate
+  - source:
+      fieldPath: metadata.name
+      kind: Namespace
+    targets:
+      - fieldPaths:
+          - webhooks.*.namespaceSelector.matchLabels.kubernetes\.io/metadata\.name
+          - webhooks.*.clientConfig.service.namespace
+        select:
+          kind: ValidatingWebhookConfiguration
+          name: claudie-webhook
+  - source:
+      fieldPath: metadata.name
+      kind: Namespace
+    targets:
+      - fieldPaths:
+          - metadata.annotations.cert-manager\.io/inject-ca-from
+        options:
+          delimiter: /
+        select:
+          kind: ValidatingWebhookConfiguration
+          name: claudie-webhook
+      - fieldPaths:
+          - spec.dnsNames.*
+        options:
+          delimiter: .
+          index: 1
+        select:
+          kind: Certificate
+          name: claudie-webhook-certificate
 
 configMapGenerator:
-- envs:
-  - .env
-  name: env
-  options:
-    labels:
-      app.kubernetes.io/part-of: claudie
+  - envs:
+      - .env
+    name: env
+    options:
+      labels:
+        app.kubernetes.io/part-of: claudie
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
-- name: ghcr.io/berops/claudie/ansibler
-  newTag: b5f4975-3555
-- name: ghcr.io/berops/claudie/autoscaler-adapter
-  newTag: b5f4975-3555
-- name: ghcr.io/berops/claudie/builder
-  newTag: 0b45cbc-3558
-- name: ghcr.io/berops/claudie/claudie-operator
-  newTag: b5f4975-3555
-- name: ghcr.io/berops/claudie/kube-eleven
-  newTag: b5f4975-3555
-- name: ghcr.io/berops/claudie/kuber
-  newTag: b5f4975-3555
-- name: ghcr.io/berops/claudie/manager
-  newTag: b5f4975-3555
-- name: ghcr.io/berops/claudie/terraformer
-  newTag: b5f4975-3555
+  - name: ghcr.io/berops/claudie/ansibler
+    newTag: a667fe1-3560
+  - name: ghcr.io/berops/claudie/autoscaler-adapter
+    newTag: a667fe1-3560
+  - name: ghcr.io/berops/claudie/builder
+    newTag: a667fe1-3560
+  - name: ghcr.io/berops/claudie/claudie-operator
+    newTag: a667fe1-3560
+  - name: ghcr.io/berops/claudie/kube-eleven
+    newTag: a667fe1-3560
+  - name: ghcr.io/berops/claudie/kuber
+    newTag: a667fe1-3560
+  - name: ghcr.io/berops/claudie/manager
+    newTag: a667fe1-3560
+  - name: ghcr.io/berops/claudie/terraformer
+    newTag: a667fe1-3560
