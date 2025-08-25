@@ -60,6 +60,14 @@ func (u *Usecases) patchKubeadmAndUpdateCilium(ctx context.Context, work *builde
 func (u *Usecases) reconcileK8sConfiguration(ctx context.Context, work *builder.Context, logger *zerolog.Logger) error {
 	tasks := []Task{
 		{
+			do: func(_ context.Context, work *builder.Context, _ *zerolog.Logger) error {
+				return u.Kuber.StoreClusterMetadata(work, u.Kuber.GetClient())
+			},
+			stage:           spec.Workflow_KUBER,
+			description:     "creating cluster metadata secret",
+			continueOnError: true,
+		},
+		{
 			do:          u.patchConfigMapsWithNewApiEndpoint,
 			stage:       spec.Workflow_KUBER,
 			description: "patching config maps with new k8s api endpoint",
@@ -121,13 +129,6 @@ func (u *Usecases) reconcileK8sConfiguration(ctx context.Context, work *builder.
 			},
 			stage:       spec.Workflow_KUBER,
 			description: "creating kubeconfig secret",
-		},
-		{
-			do: func(_ context.Context, work *builder.Context, _ *zerolog.Logger) error {
-				return u.Kuber.StoreClusterMetadata(work, u.Kuber.GetClient())
-			},
-			stage:       spec.Workflow_KUBER,
-			description: "creating cluster metadata secret",
 		},
 		{
 			do: func(_ context.Context, work *builder.Context, _ *zerolog.Logger) error {

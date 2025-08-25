@@ -225,7 +225,7 @@ func (u *Usecases) tryProcessTask(
 
 	// skip updating the task description on errors, to keep the stage where the task failed.
 	u.updateTaskWithDescription(work, t.stage, fmt.Sprintf("%s:%s", description, t.description))
-	logger.Info().Msgf("Working on %q", work.Workflow.Description)
+	logger.Info().Str("stage", t.stage.String()).Msgf("Working on %q", work.Workflow.Description)
 
 	select {
 	case <-ctx.Done():
@@ -237,7 +237,7 @@ func (u *Usecases) tryProcessTask(
 	}
 
 	if t.condition != nil && !t.condition(work) {
-		logger.Info().Msgf("Skip %q, as cluster does not meet condition", work.Workflow.Description)
+		logger.Info().Str("stage", t.stage.String()).Msgf("Skip %q, as cluster does not meet condition", work.Workflow.Description)
 		u.updateTaskWithDescription(work, t.stage, description)
 		return nil
 	}
@@ -245,14 +245,14 @@ func (u *Usecases) tryProcessTask(
 	err := t.do(ctx, work, logger)
 	if err != nil {
 		if t.continueOnError {
-			logger.Warn().Err(err).Msgf("Work: %q failed, ignoring", work.Workflow.Description)
+			logger.Warn().Err(err).Str("stage", t.stage.String()).Msgf("Work: %q failed, ignoring", work.Workflow.Description)
 			u.updateTaskWithDescription(work, t.stage, description)
 			return nil
 		}
 		return err
 	}
 
-	logger.Info().Msgf("Work %q, finished successfully", work.Workflow.Description)
+	logger.Info().Str("stage", t.stage.String()).Msgf("Work %q, finished successfully", work.Workflow.Description)
 	u.updateTaskWithDescription(work, t.stage, description)
 	return nil
 }
