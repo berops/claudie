@@ -9,20 +9,19 @@ import (
 	"strings"
 
 	comm "github.com/berops/claudie/internal/command"
+	"github.com/berops/claudie/internal/envs"
 	"github.com/rs/zerolog/log"
 
 	"golang.org/x/sync/semaphore"
 )
 
-const (
-	// maxTfCommandRetryCount is the maximum amount a Tofu command can be repeated until
-	// it succeeds. If after "maxTfCommandRetryCount" retries the commands still fails an error should be
-	// returned containing the reason.
-	maxTfCommandRetryCount = 3
+// maxTfCommandRetryCount is the maximum amount a Tofu command can be repeated until
+// it succeeds. If after "maxTfCommandRetryCount" retries the commands still fails an error should be
+// returned containing the reason.
+const maxTfCommandRetryCount = 3
 
-	// Parallelism is the number of resource to be work on in parallel during the apply/destroy commands.
-	Parallelism = 40
-)
+// Parallelism is the number of resource to be work on in parallel during the apply/destroy commands.
+var parallelism = envs.GetOrDefaultInt("TERRAFORMER_TOFU_PARALLELISM", 40)
 
 type Terraform struct {
 	// Directory represents the directory of .tf files
@@ -75,7 +74,7 @@ func (t *Terraform) Apply() error {
 	defer t.SpawnProcessLimit.Release(1)
 
 	if t.Parallelism <= 0 {
-		t.Parallelism = Parallelism
+		t.Parallelism = parallelism
 	}
 
 	args := []string{
@@ -117,7 +116,7 @@ func (t *Terraform) Destroy() error {
 	defer t.SpawnProcessLimit.Release(1)
 
 	if t.Parallelism <= 0 {
-		t.Parallelism = Parallelism
+		t.Parallelism = parallelism
 	}
 
 	args := []string{
@@ -163,7 +162,7 @@ func (t *Terraform) DestroyTarget(targets []string) error {
 	defer t.SpawnProcessLimit.Release(1)
 
 	if t.Parallelism <= 0 {
-		t.Parallelism = Parallelism
+		t.Parallelism = parallelism
 	}
 
 	args := []string{

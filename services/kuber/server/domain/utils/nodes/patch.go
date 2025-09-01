@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	comm "github.com/berops/claudie/internal/command"
+	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/nodes"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -18,10 +19,10 @@ import (
 const (
 	ProviderIdFormat          = "claudie://%s"
 	patchProviderIDPathFormat = "{\"spec\":{\"providerID\":\"%s\"}}"
-
-	// number of concurrent workers patching nodes.
-	workersLimit = 30
 )
+
+// number of concurrent workers patching nodes.
+var workersLimit = envs.GetOrDefaultInt("KUBER_WORKERS", 30)
 
 type patchJson struct {
 	Op    string `json:"op"`

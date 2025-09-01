@@ -424,9 +424,17 @@ func (u *Usecases) deleteK8sNodes(ctx context.Context, te *managerclient.NextTas
 
 	tasks := []Task{
 		{
+			do: func(_ context.Context, work *builder.Context, _ *zerolog.Logger) error {
+				return u.Kuber.StoreClusterMetadata(work, u.Kuber.GetClient())
+			},
+			stage:           spec.Workflow_KUBER,
+			description:     "updating cluster metadata secret, after node deletion",
+			continueOnError: true,
+		},
+		{
 			do:          u.reconcileInfrastructure,
 			stage:       spec.Workflow_TERRAFORMER,
-			description: "reconciling dynamic nodepools infrastructure, after deletion",
+			description: "reconciling dynamic nodepools infrastructure, after node deletion",
 			condition: func(_ *builder.Context) bool {
 				// reconcile the dynamic nodes only if we actually deleted dynamic nodes.
 				return dynamicCount != 0
@@ -443,7 +451,7 @@ func (u *Usecases) deleteK8sNodes(ctx context.Context, te *managerclient.NextTas
 		{
 			do:          u.patchKubeadmAndUpdateCilium,
 			stage:       spec.Workflow_KUBER,
-			description: "reconciling cluster configuration after node deletion",
+			description: "reconciling cluster configuration, after node deletion",
 		},
 		// The daemonset for the NVIDIA toolkit does not need to be restarted here as kube_eleven
 		// is not run.

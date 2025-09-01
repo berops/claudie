@@ -41,7 +41,7 @@ func main() {
 	usecases := &usecases.Usecases{
 		DynamoDB:          dynamoDBAdapter,
 		StateStorage:      stateAdapter,
-		SpawnProcessLimit: semaphore.NewWeighted(usecases.SpawnProcessLimit),
+		SpawnProcessLimit: semaphore.NewWeighted(int64(usecases.SpawnProcessLimit)),
 	}
 
 	metricsServer := &http.Server{Addr: fmt.Sprintf(":%s", envs.GetOrDefault("PROMETHEUS_PORT", defaultPrometheusPort))}

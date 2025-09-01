@@ -121,7 +121,7 @@ func (d *DynamicNodePool) Validate(m *Manifest) error {
 		return fmt.Errorf("storageDiskSize size must be either 0 or >= 50")
 	}
 
-	if d.Count >= math.MaxUint8 {
+	if d.Count > math.MaxUint8 {
 		return fmt.Errorf("max available count for a nodepool is 255")
 	}
 
