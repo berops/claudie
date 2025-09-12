@@ -8,13 +8,11 @@
       
       
       
-        <link rel="canonical" href="https://docs.claudie.io/v0.9.12/storage/storage-solution/">
+        <link rel="canonical" href="https://docs.claudie.io/v0.9.12/environment-settings/environment/">
       
       
-        <link rel="prev" href="../../claudie-workflow/claudie-workflow/">
+        <link rel="prev" href="../../http-proxy/http-proxy/">
       
-      
-        <link rel="next" href="../../loadbalancing/loadbalancing-solution/">
       
       
       <link rel="icon" href="../../hexagon_blue.png">
@@ -22,7 +20,7 @@
     
     
       
-        <title>Claudie Storage solution - Claudie Docs</title>
+        <title>Configurable Environment Variables - Claudie Docs</title>
       
     
     
@@ -135,11 +133,6 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
-        
-        <a href="#claudie-storage-solution" class="md-skip">
-          Skip to content
-        </a>
-      
     </div>
     <div data-md-component="announce">
       
@@ -176,7 +169,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Claudie Storage solution
+              Configurable Environment Variables
             
           </span>
         </div>
@@ -878,20 +871,18 @@
       
   
   
-    
   
   
-  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
           <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
@@ -907,7 +898,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             How Claudie works
@@ -941,32 +932,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    Claudie Storage solution
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../storage/storage-solution/" class="md-nav__link">
         
   
   
@@ -977,53 +946,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#concept" class="md-nav__link">
-    <span class="md-ellipsis">
-      Concept
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#longhorn" class="md-nav__link">
-    <span class="md-ellipsis">
-      Longhorn
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#example" class="md-nav__link">
-    <span class="md-ellipsis">
-      Example
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1624,10 +1546,17 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../environment-settings/environment/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1638,6 +1567,7 @@
   
 
       </a>
+      
     </li>
   
 
@@ -1659,43 +1589,6 @@
   
   
   
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#concept" class="md-nav__link">
-    <span class="md-ellipsis">
-      Concept
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#longhorn" class="md-nav__link">
-    <span class="md-ellipsis">
-      Longhorn
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#example" class="md-nav__link">
-    <span class="md-ellipsis">
-      Example
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
   
 </nav>
                   </div>
@@ -1714,132 +1607,81 @@
   
 
 
-<h1 id="claudie-storage-solution">Claudie storage solution<a class="headerlink" href="#claudie-storage-solution" title="Permanent link">&para;</a></h1>
-<h2 id="concept">Concept<a class="headerlink" href="#concept" title="Permanent link">&para;</a></h2>
-<p>Running stateful workloads is a complex task, even more so when considering the multi-cloud environment. Claudie therefore needs to be able to accommodate stateful workloads, regardless of the underlying infrastructure providers.</p>
-<p>Claudie orchestrates storage on the kubernetes cluster nodes by creating one "storage cluster" across multiple providers. This "storage cluster" has a series of <code>zones</code>, one for each cloud provider instance. Each <code>zone</code> then stores its own persistent volume data.</p>
-<p>This concept is translated into longhorn implementation, where each <code>zone</code> is represented by a Storage Class which is backed up by the nodes defined under the same cloud provider instance. Furthermore, each node uses separate disk to the one, where OS is installed, to assure clear data separation. The size of the storage disk can be configured in <code>storageDiskSize</code> field of the nodepool specification.</p>
-<h2 id="longhorn">Longhorn<a class="headerlink" href="#longhorn" title="Permanent link">&para;</a></h2>
-<p>A Claudie-created cluster comes with the <code>longhorn</code> deployment preinstalled and ready to be used. By default, only <strong>worker</strong> nodes are used to store data.</p>
-<p>Longhorn installed in the cluster is set up in a way that it provides one default <code>StorageClass</code> called <code>longhorn</code>, which, if used, creates a volume that is then replicated across random nodes in the cluster.</p>
-<p>Besides the default storage class, Claudie can also create custom storage classes, which force persistent volumes to be created on specific nodes based on the provider instance they have. In other words, you can use a specific provider instance to provision nodes for your storage needs, while using another provider instance for computing tasks.</p>
-<h2 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h2>
-<p>To follow along, have a look at the example of <code>InputManifest</code> below.</p>
-<div class="highlight"><span class="filename">storage-classes-example.yaml</span><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claudie.io/v1beta1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">InputManifest</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">storageclass-example-manifest</span>
-<span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">app.kubernetes.io/part-of</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claudie</span>
-<span class="nt">spec</span><span class="p">:</span>
+  <h1>Configurable Environment Variables</h1>
 
-<span class="w">  </span><span class="nt">providers</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">storage-provider</span>
-<span class="w">      </span><span class="nt">providerType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner</span>
-<span class="w">      </span><span class="nt">secretRef</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">storage-provider-secrets</span>
-<span class="w">        </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claudie-secrets</span>
+<p>Some Claudie aspects can be configured via environment variables read from a ConfigMap in the namespace where Claudie is deployed.</p>
+<p>These values let you to customize service endpoints, log levels, and concurrency limits. The default ConfigMap that is
+deployed with Claudie can be found in the <a href="https://github.com/berops/claudie/blob/master/manifests/claudie/.env">Claudie GitHub repository</a>.</p>
+<p>The full list of environment variables is as follows:</p>
+<div class="highlight"><pre><span></span><code># Log level for each individual service, can be info|debug|warn|error
+GOLANG_LOG=info
 
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-provider</span>
-<span class="w">      </span><span class="nt">providerType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner</span>
-<span class="w">      </span><span class="nt">secretRef</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">storage-provider-secrets</span>
-<span class="w">        </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claudie-secrets</span>
+# Endpoint configuration for terraformer service
+TERRAFORMER_HOSTNAME=terraformer
+TERRAFORMER_PORT=50052
 
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dns-provider</span>
-<span class="w">      </span><span class="nt">providerType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cloudflare</span>
-<span class="w">      </span><span class="nt">secretRef</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dns-provider-secret</span>
-<span class="w">        </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claudie-secrets</span>
+# Endpoint configuration for ansibler service
+ANSIBLER_HOSTNAME=ansibler
+ANSIBLER_PORT=50053
 
-<span class="w">  </span><span class="nt">nodePools</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">dynamic</span><span class="p">:</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control</span>
-<span class="w">          </span><span class="nt">providerSpec</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-provider</span>
-<span class="w">            </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hel1</span>
-<span class="w">            </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hel1-dc2</span>
-<span class="w">          </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
-<span class="w">          </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cpx21</span>
-<span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-22.04</span>
+# Endpoint configuration for kube eleven service
+KUBE_ELEVEN_HOSTNAME=kube-eleven
+KUBE_ELEVEN_PORT=50054
 
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">datastore</span>
-<span class="w">          </span><span class="nt">providerSpec</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">storage-provider</span>
-<span class="w">            </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hel1</span>
-<span class="w">            </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hel1-dc2</span>
-<span class="w">          </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
-<span class="w">          </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cpx21</span>
-<span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-22.04</span>
-<span class="w">          </span><span class="nt">storageDiskSize</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">800</span>
-<span class="w">          </span><span class="nt">taints</span><span class="p">:</span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">node-type</span>
-<span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">datastore</span>
-<span class="w">              </span><span class="nt">effect</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NoSchedule</span>
+# Endpoint configuration for manager service
+MANAGER_HOSTNAME=manager
+MANAGER_PORT=50055
 
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute</span>
-<span class="w">          </span><span class="nt">providerSpec</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-provider</span>
-<span class="w">            </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hel1</span>
-<span class="w">            </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hel1-dc2</span>
-<span class="w">          </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
-<span class="w">          </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cpx41</span>
-<span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-22.04</span>
-<span class="w">          </span><span class="nt">taints</span><span class="p">:</span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">node-type</span>
-<span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute</span>
-<span class="w">              </span><span class="nt">effect</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NoSchedule</span>
+# Endpoint configuration for kuber service
+KUBER_HOSTNAME=kuber
+KUBER_PORT=50057
 
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">loadbalancer</span>
-<span class="w">          </span><span class="nt">providerSpec</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-provider</span>
-<span class="w">            </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hel1</span>
-<span class="w">            </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hel1-dc2</span>
-<span class="w">          </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
-<span class="w">          </span><span class="nt">serverType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cpx21</span>
-<span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-22.04</span>
+# Endpoint configuration for claudie-operator service
+OPERATOR_HOSTNAME=claudie-operator
+OPERATOR_PORT=50058
 
-<span class="w">  </span><span class="nt">kubernetes</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">clusters</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-awesome-claudie-cluster</span>
-<span class="w">        </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.27.0</span>
-<span class="w">        </span><span class="nt">network</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.2.0/24</span>
-<span class="w">        </span><span class="nt">pools</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">control</span><span class="p">:</span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control</span>
-<span class="w">          </span><span class="nt">compute</span><span class="p">:</span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">datastore</span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute</span>
+# Endpoint configuration for MinIO deployment.
+BUCKET_URL=http://minio:9000
+BUCKET_NAME=claudie-tf-state-files
 
-<span class="w">  </span><span class="nt">loadBalancers</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">roles</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apiserver</span>
-<span class="w">        </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tcp</span>
-<span class="w">        </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6443</span>
-<span class="w">        </span><span class="nt">targetPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6443</span>
-<span class="w">        </span><span class="nt">targetPools</span><span class="p">:</span><span class="w"> </span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control</span>
+# Endpoint configuration for DynamoDB deployment.
+DYNAMO_URL=http://dynamo:8000
+DYNAMO_TABLE_NAME=claudie
+AWS_REGION=local
 
-<span class="w">    </span><span class="nt">clusters</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apiserver-lb</span>
-<span class="w">        </span><span class="nt">roles</span><span class="p">:</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apiserver</span>
-<span class="w">        </span><span class="nt">dns</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">dnsZone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dns-zone</span>
-<span class="w">          </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dns-provider</span>
-<span class="w">        </span><span class="nt">targetedK8s</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-awesome-claudie-cluster</span>
-<span class="w">        </span><span class="nt">pools</span><span class="p">:</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">loadbalancer</span>
+# Defines from which namespace InputManifests should be watched for by Claudie.
+# Default is all namespaces
+CLAUDIE_NAMESPACES=&quot;dev&quot;
+
+# Defines how many concurrent workers will ping nodes of the currently built cluster. Only applicable to Kuber and Manager services.
+# Default is 20
+PING_CONCURRENT_WORKERS=20
+
+# Defines how many clusters ansibler will work on concurrently.
+# Default is 8
+ANSIBLER_CONCURRENT_CLUSTERS=8
+
+# Defines with how many forks each ansible playbook will be spawned.
+# Default is 32
+ANSIBLER_FORKS=32
+
+# Defines how many clusters kube-eleven will work on concurrently.
+# Default is 7
+KUBE_ELEVEN_CONCURRENT_CLUSTERS=7
+
+# Defines how many nodes will be patched concurrently.
+# Default is 30
+KUBER_WORKERS=30
+
+# Defines how many clusters terraformer will work on concurrently.
+# Default is 7
+TERRAFORMER_CONCURRENT_CLUSTERS=7
+
+# Defines how many resources will be worked on in parallel by tofu.
+# Default is 40
+TERRAFORMER_TOFU_PARALLELISM=40
 </code></pre></div>
-<p>When Claudie applies this input manifest, the following storage classes are installed:</p>
-<ul>
-<li><code>longhorn</code> - the default storage class, which stores data on random nodes</li>
-<li><code>longhorn-storage-provider-zone</code> - storage class, which stores data only on nodes of the <code>storage-provider</code> provider instance.</li>
-<li><code>longhorn-compute-provider-zone</code> - storage class, which stores data only on nodes of the <code>compute-provider</code> provider instance.</li>
-</ul>
-<p>Now all you have to do is specify correct storage class when defining your PVCs.</p>
-<p>In case you are interested in using different cloud provider for <code>datastore-nodepool</code> or <code>compute-nodepool</code> of this <code>InputManifest</code> example, see the <a href="../../getting-started/detailed-guide/#supported-providers">list of supported providers instance</a></p>
-<p>For more information on how Longhorn works you can check out <a href="https://longhorn.io/docs/1.4.0/what-is-longhorn/">Longhorn's official documentation</a>.</p>
+<p>Changes to the ConfigMap are reflected after the respective services are restarted.</p>
 
 
 
