@@ -16,7 +16,7 @@ import (
 const (
 	// TaskTTL is the minimum number of ticks (every ~10sec) within which a given task must be completed
 	// before being rescheduled again.
-	TaskTTL = 750 // ~2 hour
+	TaskTTL = 15000 // (((15_000 * 10) / 60) / 60) = ~42 hours
 
 	// Tick represents the interval at which each manifest state is checked.
 	Tick = 10 * time.Second
