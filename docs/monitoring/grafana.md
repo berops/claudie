@@ -13,6 +13,9 @@ You can find [Claudie dashboard](https://grafana.com/grafana/dashboards/20064-cl
 ## Configure scraping metrics
 We recommend using the [Prometheus Operator](https://github.com/prometheus-operator/kube-prometheus) for managing Prometheus deployments efficiently.
 
+!!! note "If you are not able to access the Prometheus metrics exported by Claudie, double check you network policies"
+
+
 1. Create `RBAC` that allows Prometheus to scrape metrics from Claudie’s pods:
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
