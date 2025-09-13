@@ -8,19 +8,18 @@ import (
 	"time"
 
 	"github.com/berops/claudie/internal/api/manifest"
+	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/manager/internal/store"
 )
 
-const (
-	// TaskTTL is the minimum number of ticks (every ~10sec) within which a given task must be completed
-	// before being rescheduled again.
-	TaskTTL = 15000 // (((15_000 * 10) / 60) / 60) = ~42 hours
+// TaskTTL is the minimum number of ticks (every ~10sec) within which a given task must be completed
+// before being rescheduled again.
+var TaskTTL = int32(envs.GetOrDefaultInt("BUILDER_TTL", 750 /* Default (750 * 10)/60/60 ~= 2hours */))
 
-	// Tick represents the interval at which each manifest state is checked.
-	Tick = 10 * time.Second
-)
+// Tick represents the interval at which each manifest state is checked.
+const Tick = 10 * time.Second
 
 func (g *GRPC) WatchForScheduledDocuments(ctx context.Context) error {
 	cfgs, err := g.Store.ListConfigs(ctx, &store.ListFilter{ManifestState: []string{manifest.Scheduled.String()}})
