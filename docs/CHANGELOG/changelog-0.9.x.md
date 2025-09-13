@@ -324,7 +324,7 @@ kubernetes:
 - Concurrency limits are now configurable [#1838](https://github.com/berops/claudie/pull/1838)
 - Autoscaled nodepools are now limited to 256 nodes [#1839](https://github.com/berops/claudie/pull/1839)
 - Metadata secret will now be updated after node deletion [#1841](https://github.com/berops/claudie/pull/1841)
-- Builder TTL has been increased to 42 hours, as 2 hours is a small amount of time to react to issues [#1850](https://github.com/berops/claudie/pull/1850)
+- Builder TTL has been made configurable via the `BUILDER_TTL` env, with a default value of 2 hours [#1850](https://github.com/berops/claudie/pull/1850)
 
 ## Bug fixes
 - Prometheus metric for currently deleted nodes has been fixed [#1849](https://github.com/berops/claudie/pull/1849)
