@@ -256,3 +256,55 @@ func StaticGenerateKeys(nodepools []*spec.NodePool, outputDir string) error {
 	// If empty, returns nil
 	return errors.Join(errs...)
 }
+
+type LabelsTaintsAnnotationsData struct {
+	LabelKeys      map[string][]string
+	AnnotationKeys map[string][]string
+	TaintKeys      map[string][]string
+}
+
+func LabelsTaintsAnnotationsDiff(current, desired []*spec.NodePool) LabelsTaintsAnnotationsData {
+	out := LabelsTaintsAnnotationsData{
+		LabelKeys:      map[string][]string{},
+		AnnotationKeys: map[string][]string{},
+		TaintKeys:      map[string][]string{},
+	}
+
+	// No modifications are done just a comparison of missing annotations/labels/taints.
+	cnp := make(map[string]*spec.NodePool)
+	for _, np := range current {
+		cnp[np.Name] = np
+	}
+
+	for _, desired := range desired {
+		current, ok := cnp[desired.Name]
+		if !ok {
+			continue
+		}
+		// No need to check if the nodepool in current is missing from desired, because if thats
+		// the case then we don't need to remove the labels/annotations/taints as all of the nodes
+		// are to be removed anyways. We only look for keys that are missing in desired, new or
+		// existing one will be created/updated.
+
+		for k := range current.Labels {
+			if _, ok := desired.Labels[k]; !ok {
+				out.LabelKeys[desired.Name] = append(out.LabelKeys[desired.Name], k)
+			}
+		}
+
+		for k := range current.Annotations {
+			if _, ok := desired.Annotations[k]; !ok {
+				out.AnnotationKeys[desired.Name] = append(out.AnnotationKeys[desired.Name], k)
+			}
+		}
+
+		for _, t := range current.Taints {
+			matchTaint := func(other *spec.Taint) bool { return other.Key == t.Key }
+			if ok := slices.ContainsFunc(desired.Taints, matchTaint); !ok {
+				out.TaintKeys[desired.Name] = append(out.TaintKeys[desired.Name], t.Key)
+			}
+		}
+	}
+
+	return out
+}

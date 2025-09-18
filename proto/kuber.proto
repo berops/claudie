@@ -49,7 +49,24 @@ message DeleteClusterMetadataRequest {spec.K8scluster cluster = 1;}
 
 message DeleteClusterMetadataResponse {}
 
-message PatchNodesRequest {spec.K8scluster cluster = 1;}
+message PatchNodesRequest {
+    message ListOfTaintKeys {
+        repeated string taints = 1;
+    }
+    message ListOfLabelKeys {
+        repeated string labels = 1;
+    }
+    message ListOfAnnotationKeys {
+        repeated string annotations = 1;
+    }
+    message LabelsTaintsAnnotationsToRemove {
+        map<string, ListOfLabelKeys> labels = 1;
+        map<string, ListOfAnnotationKeys> annotations = 2;
+        map<string, ListOfTaintKeys> taints = 3;
+    }
+    spec.K8scluster cluster = 1;
+    LabelsTaintsAnnotationsToRemove toRemove = 2;
+}
 
 message PatchNodesResponse {}
 

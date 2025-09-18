@@ -11,6 +11,7 @@ import (
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/nodes"
+	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/rs/zerolog"
 	"golang.org/x/sync/errgroup"
@@ -27,7 +28,7 @@ var workersLimit = envs.GetOrDefaultInt("KUBER_WORKERS", 30)
 type patchJson struct {
 	Op    string `json:"op"`
 	Path  string `json:"path"`
-	Value any    `json:"value"`
+	Value any    `json:"value,omitempty"`
 }
 
 type PatchAnnotations struct {
@@ -50,7 +51,11 @@ type Patcher struct {
 	wg errgroup.Group
 }
 
-func NewPatcher(cluster *spec.K8Scluster, logger zerolog.Logger) *Patcher {
+func NewPatcher(
+	cluster *spec.K8Scluster,
+	toRemove *pb.PatchNodesRequest_LabelsTaintsAnnotationsToRemove,
+	logger zerolog.Logger,
+) *Patcher {
 	p := &Patcher{
 		kBase: kubectl.Kubectl{
 			Kubeconfig:        cluster.Kubeconfig,
@@ -75,6 +80,15 @@ func NewPatcher(cluster *spec.K8Scluster, logger zerolog.Logger) *Patcher {
 	// No changes are made to the nodepools, or the nodes
 	// thus all the patching can be done concurrently.
 	for _, np := range cluster.ClusterInfo.NodePools {
+		if v := toRemove.Labels[np.Name]; len(v.GetLabels()) > 0 {
+			p.removeLabels(np, v.GetLabels())
+		}
+		if v := toRemove.Annotations[np.Name]; len(v.GetAnnotations()) > 0 {
+			p.removeAnnotations(np, v.GetAnnotations())
+		}
+		if v := toRemove.Taints[np.Name]; len(v.GetTaints()) > 0 {
+			p.removeTaints(np, v.GetTaints())
+		}
 		p.patchProviderID(np)
 		p.annotateNodePool(np)
 		p.labelNodePool(np)
@@ -108,6 +122,34 @@ func (p *Patcher) patchProviderID(np *spec.NodePool) {
 			}
 			return nil
 		})
+	}
+}
+
+func (p *Patcher) removeLabels(np *spec.NodePool, labels []string) {
+	name := np.Name
+	for _, key := range labels {
+		escapedKey := strings.ReplaceAll(key, "/", "~1")
+		patchPath, err := buildJSONPatchString("remove", "/metadata/labels/"+escapedKey, nil)
+		if err != nil {
+			p.errChan <- fmt.Errorf("failed to create remove label %s patch path for nodepool %s: %w", key, name, err)
+			continue
+		}
+		for _, node := range np.Nodes {
+			nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", p.clusterID))
+
+			kc := p.kBase
+			kc.Stdout = comm.GetStdOut(p.clusterID)
+			kc.Stderr = comm.GetStdErr(p.clusterID)
+
+			p.wg.Go(func() error {
+				if err := kc.KubectlPatch("node", nodeName, patchPath, "--type", "json"); err != nil {
+					p.logger.Err(err).Str("node", nodeName).Msgf("Failed to patch labels on node with path %s", patchPath)
+					// ignore error, as we want to continue.
+					// fallthrough
+				}
+				return nil
+			})
+		}
 	}
 }
 
@@ -146,6 +188,35 @@ func (p *Patcher) label(patch string, nodes []*spec.Node) {
 			}
 			return nil
 		})
+	}
+}
+
+func (p *Patcher) removeAnnotations(np *spec.NodePool, annotations []string) {
+	name := np.Name
+	for _, key := range annotations {
+		escapedKey := strings.ReplaceAll(key, "/", "~1")
+		patchPath, err := buildJSONPatchString("remove", "/metadata/annotations/"+escapedKey, nil)
+		if err != nil {
+			p.errChan <- fmt.Errorf("failed to create remove label %s patch path for nodepool %s: %w", key, name, err)
+			continue
+		}
+
+		for _, node := range np.Nodes {
+			nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", p.clusterID))
+
+			kc := p.kBase
+			kc.Stdout = comm.GetStdOut(p.clusterID)
+			kc.Stderr = comm.GetStdErr(p.clusterID)
+
+			p.wg.Go(func() error {
+				if err := kc.KubectlPatch("node", nodeName, patchPath, "--type", "json"); err != nil {
+					p.logger.Err(err).Str("node", nodeName).Msgf("Failed to patch annotations on node %s", nodeName)
+					// ignore error, as we want to continue.
+					// fallthrough
+				}
+				return nil
+			})
+		}
 	}
 }
 
@@ -221,6 +292,27 @@ func (p *Patcher) annotate(patch string, nodes []*spec.Node) {
 			}
 			return nil
 		})
+	}
+}
+
+func (p *Patcher) removeTaints(np *spec.NodePool, taints []string) {
+	for _, taint := range taints {
+		for _, node := range np.Nodes {
+			nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", p.clusterID))
+
+			kc := p.kBase
+			kc.Stdout = comm.GetStdOut(p.clusterID)
+			kc.Stderr = comm.GetStdErr(p.clusterID)
+
+			p.wg.Go(func() error {
+				if err := kc.KubectlTaintRemove(nodeName, taint); err != nil {
+					p.logger.Err(err).Str("node", nodeName).Msgf("Failed to remove taint %s on node %s", taint, nodeName)
+					// ignore error, as we want to continue.
+					// fallthrough
+				}
+				return nil
+			})
+		}
 	}
 }
 
