@@ -260,14 +260,14 @@ func StaticGenerateKeys(nodepools []*spec.NodePool, outputDir string) error {
 type LabelsTaintsAnnotationsData struct {
 	LabelKeys      map[string][]string
 	AnnotationKeys map[string][]string
-	TaintKeys      map[string][]string
+	TaintKeys      map[string][]*spec.Taint
 }
 
 func LabelsTaintsAnnotationsDiff(current, desired []*spec.NodePool) LabelsTaintsAnnotationsData {
 	out := LabelsTaintsAnnotationsData{
 		LabelKeys:      map[string][]string{},
 		AnnotationKeys: map[string][]string{},
-		TaintKeys:      map[string][]string{},
+		TaintKeys:      map[string][]*spec.Taint{},
 	}
 
 	// No modifications are done just a comparison of missing annotations/labels/taints.
@@ -299,9 +299,15 @@ func LabelsTaintsAnnotationsDiff(current, desired []*spec.NodePool) LabelsTaints
 		}
 
 		for _, t := range current.Taints {
-			matchTaint := func(other *spec.Taint) bool { return other.Key == t.Key }
+			matchTaint := func(other *spec.Taint) bool {
+				return other.Key == t.Key && other.Value == t.Value && other.Effect == t.Effect
+			}
 			if ok := slices.ContainsFunc(desired.Taints, matchTaint); !ok {
-				out.TaintKeys[desired.Name] = append(out.TaintKeys[desired.Name], t.Key)
+				out.TaintKeys[desired.Name] = append(out.TaintKeys[desired.Name], &spec.Taint{
+					Key:    t.Key,
+					Value:  t.Value,
+					Effect: t.Effect,
+				})
 			}
 		}
 	}

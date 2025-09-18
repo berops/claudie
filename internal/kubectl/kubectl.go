@@ -119,14 +119,14 @@ func (k *Kubectl) KubectlTaintNodeShutdown(nodeName string) error {
 }
 
 // KubectlTaintRemove removes the requested taint from the node.
-func (k *Kubectl) KubectlTaintRemove(nodeName string, key string) error {
+func (k *Kubectl) KubectlTaintRemove(nodeName string, key, value, effect string) error {
 	arg, cleanup, err := k.getKubeconfig()
 	if err != nil {
 		return err
 	}
 	defer cleanup()
 
-	command := fmt.Sprintf("kubectl taint nodes %s %s- %s", nodeName, key, arg)
+	command := fmt.Sprintf("kubectl taint nodes %s %s=%s:%s- %s", nodeName, key, value, effect, arg)
 	return k.run(command)
 }
 

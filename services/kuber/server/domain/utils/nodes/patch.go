@@ -80,13 +80,13 @@ func NewPatcher(
 	// No changes are made to the nodepools, or the nodes
 	// thus all the patching can be done concurrently.
 	for _, np := range cluster.ClusterInfo.NodePools {
-		if v := toRemove.Labels[np.Name]; len(v.GetLabels()) > 0 {
+		if v := toRemove.GetLabels()[np.Name]; len(v.GetLabels()) > 0 {
 			p.removeLabels(np, v.GetLabels())
 		}
-		if v := toRemove.Annotations[np.Name]; len(v.GetAnnotations()) > 0 {
+		if v := toRemove.GetAnnotations()[np.Name]; len(v.GetAnnotations()) > 0 {
 			p.removeAnnotations(np, v.GetAnnotations())
 		}
-		if v := toRemove.Taints[np.Name]; len(v.GetTaints()) > 0 {
+		if v := toRemove.GetTaints()[np.Name]; len(v.GetTaints()) > 0 {
 			p.removeTaints(np, v.GetTaints())
 		}
 		p.patchProviderID(np)
@@ -295,8 +295,11 @@ func (p *Patcher) annotate(patch string, nodes []*spec.Node) {
 	}
 }
 
-func (p *Patcher) removeTaints(np *spec.NodePool, taints []string) {
+func (p *Patcher) removeTaints(np *spec.NodePool, taints []*spec.Taint) {
 	for _, taint := range taints {
+		key := taint.Key
+		value := taint.Value
+		effect := taint.Effect
 		for _, node := range np.Nodes {
 			nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", p.clusterID))
 
@@ -305,7 +308,7 @@ func (p *Patcher) removeTaints(np *spec.NodePool, taints []string) {
 			kc.Stderr = comm.GetStdErr(p.clusterID)
 
 			p.wg.Go(func() error {
-				if err := kc.KubectlTaintRemove(nodeName, taint); err != nil {
+				if err := kc.KubectlTaintRemove(nodeName, key, value, effect); err != nil {
 					p.logger.Err(err).Str("node", nodeName).Msgf("Failed to remove taint %s on node %s", taint, nodeName)
 					// ignore error, as we want to continue.
 					// fallthrough

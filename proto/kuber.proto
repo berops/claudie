@@ -2,6 +2,7 @@ syntax = "proto3";
 package claudie;
 
 import "spec/manifest.proto";
+import "spec/nodepool.proto";
 
 option go_package = "proto/pb";
 
@@ -51,7 +52,7 @@ message DeleteClusterMetadataResponse {}
 
 message PatchNodesRequest {
     message ListOfTaintKeys {
-        repeated string taints = 1;
+        repeated spec.Taint taints = 1;
     }
     message ListOfLabelKeys {
         repeated string labels = 1;

@@ -27,7 +27,7 @@ func TestLabelsTaintsAnnotationsToRemove(t *testing.T) {
 			Want: LabelsTaintsAnnotationsData{
 				LabelKeys:      map[string][]string{},
 				AnnotationKeys: map[string][]string{},
-				TaintKeys:      map[string][]string{},
+				TaintKeys:      map[string][]*spec.Taint{},
 			},
 		},
 		{
@@ -91,7 +91,7 @@ func TestLabelsTaintsAnnotationsToRemove(t *testing.T) {
 					},
 				},
 				AnnotationKeys: map[string][]string{},
-				TaintKeys:      map[string][]string{},
+				TaintKeys:      map[string][]*spec.Taint{},
 			},
 		},
 		{
@@ -187,7 +187,7 @@ func TestLabelsTaintsAnnotationsToRemove(t *testing.T) {
 						"test-annotations-3",
 					},
 				},
-				TaintKeys: map[string][]string{},
+				TaintKeys: map[string][]*spec.Taint{},
 			},
 		},
 		{
@@ -280,10 +280,29 @@ func TestLabelsTaintsAnnotationsToRemove(t *testing.T) {
 			Want: LabelsTaintsAnnotationsData{
 				LabelKeys:      map[string][]string{},
 				AnnotationKeys: map[string][]string{},
-				TaintKeys: map[string][]string{
-					"np1": {"Taint-2"},
-					"np2": {"Taint-3"},
-					"np3": {"Taint-2", "Taint-4"},
+				TaintKeys: map[string][]*spec.Taint{
+					"np1": {{
+						Key:    "Taint-2",
+						Value:  "2",
+						Effect: "NoSchedule",
+					}},
+					"np2": {{
+						Key:    "Taint-3",
+						Value:  "3",
+						Effect: "NoSchedule",
+					}},
+					"np3": {
+						{
+							Key:    "Taint-2",
+							Value:  "2",
+							Effect: "NoSchedule",
+						},
+						{
+							Key:    "Taint-4",
+							Value:  "4",
+							Effect: "NoSchedule",
+						},
+					},
 				},
 			},
 		},
