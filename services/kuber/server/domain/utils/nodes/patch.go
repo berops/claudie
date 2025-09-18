@@ -197,7 +197,7 @@ func (p *Patcher) removeAnnotations(np *spec.NodePool, annotations []string) {
 		escapedKey := strings.ReplaceAll(key, "/", "~1")
 		patchPath, err := buildJSONPatchString("remove", "/metadata/annotations/"+escapedKey, nil)
 		if err != nil {
-			p.errChan <- fmt.Errorf("failed to create remove label %s patch path for nodepool %s: %w", key, name, err)
+			p.errChan <- fmt.Errorf("failed to create remove annotation %s patch path for nodepool %s: %w", key, name, err)
 			continue
 		}
 
