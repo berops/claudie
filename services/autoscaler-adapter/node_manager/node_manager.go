@@ -63,23 +63,36 @@ func (nm *NodeManager) Refresh(nodepools []*spec.NodePool) error {
 
 // GetCapacity returns a theoretical capacity for a new node from specified nodepool.
 func (nm *NodeManager) GetCapacity(np *spec.NodePool) k8sV1.ResourceList {
-	typeInfo := nm.getTypeInfo(np.GetDynamicNodePool().Provider.CloudProviderName, np.GetDynamicNodePool())
-	if typeInfo != nil {
-		var disk int64
-		// Check if disk is define for the instance.
-		if typeInfo.disk > 0 {
-			disk = typeInfo.disk
-		} else {
-			disk = int64(np.GetDynamicNodePool().StorageDiskSize) * 1024 * 1024 * 1024 // Convert to bytes
-		}
-		rl := k8sV1.ResourceList{}
-		rl[k8sV1.ResourcePods] = *resource.NewQuantity(defaultPodAmountsLimit, resource.DecimalSI)
-		rl[k8sV1.ResourceCPU] = *resource.NewQuantity(typeInfo.cpu, resource.DecimalSI)
-		rl[k8sV1.ResourceMemory] = *resource.NewQuantity(typeInfo.memory, resource.DecimalSI)
-		rl[k8sV1.ResourceStorage] = *resource.NewQuantity(disk, resource.DecimalSI)
-		return rl
+	dnp := np.GetDynamicNodePool()
+	if dnp == nil {
+		return nil
 	}
-	return nil
+
+	typeInfo := nm.getTypeInfo(dnp.Provider.CloudProviderName, dnp)
+	if typeInfo == nil {
+		return nil
+	}
+
+	var disk int64
+	// Check if disk is define for the instance.
+	if typeInfo.disk > 0 {
+		disk = typeInfo.disk
+	} else {
+		disk = int64(np.GetDynamicNodePool().StorageDiskSize) * 1024 * 1024 * 1024 // Convert to bytes
+	}
+
+	rl := k8sV1.ResourceList{}
+	rl[k8sV1.ResourcePods] = *resource.NewQuantity(defaultPodAmountsLimit, resource.DecimalSI)
+	rl[k8sV1.ResourceCPU] = *resource.NewQuantity(typeInfo.cpu, resource.DecimalSI)
+	rl[k8sV1.ResourceMemory] = *resource.NewQuantity(typeInfo.memory, resource.DecimalSI)
+	rl[k8sV1.ResourceStorage] = *resource.NewQuantity(disk, resource.DecimalSI)
+
+	// If the machine spec contains a valid number of NvidiaGPUs, prefer that value over the cached
+	// one from [typeInfo].
+	if dnp.MachineSpec != nil && dnp.MachineSpec.NvidiaGpu > 0 {
+		rl["nvidia.com/gpu"] = *resource.NewQuantity(int64(dnp.MachineSpec.NvidiaGpu), resource.DecimalSI)
+	}
+	return rl
 }
 
 // Arch returns the architecture for the dynamic nodepool.

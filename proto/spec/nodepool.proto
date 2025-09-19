@@ -91,6 +91,7 @@ message DynamicNodePool {
 message MachineSpec {
   int32 cpuCount = 1;
   int32 memory = 2;
+  int32 nvidiaGpu = 3;
 }
 
 // Autoscaler configuration on per node pool basis.

@@ -290,8 +290,9 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.Nod
 			var machineSpec *spec.MachineSpec
 			if nodePool.MachineSpec != nil {
 				machineSpec = &spec.MachineSpec{
-					CpuCount: int32(nodePool.MachineSpec.CpuCount),
-					Memory:   int32(nodePool.MachineSpec.Memory),
+					CpuCount:  int32(nodePool.MachineSpec.CpuCount),
+					Memory:    int32(nodePool.MachineSpec.Memory),
+					NvidiaGpu: int32(nodePool.MachineSpec.NvidiaGpu),
 				}
 			}
 
