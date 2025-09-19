@@ -558,6 +558,7 @@ type MachineSpec struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	CpuCount      int32                  `protobuf:"varint,1,opt,name=cpuCount,proto3" json:"cpuCount,omitempty"`
 	Memory        int32                  `protobuf:"varint,2,opt,name=memory,proto3" json:"memory,omitempty"`
+	NvidiaGpu     int32                  `protobuf:"varint,3,opt,name=nvidiaGpu,proto3" json:"nvidiaGpu,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -602,6 +603,13 @@ func (x *MachineSpec) GetCpuCount() int32 {
 func (x *MachineSpec) GetMemory() int32 {
 	if x != nil {
 		return x.Memory
+	}
+	return 0
+}
+
+func (x *MachineSpec) GetNvidiaGpu() int32 {
+	if x != nil {
+		return x.NvidiaGpu
 	}
 	return 0
 }
@@ -756,10 +764,11 @@ const file_spec_nodepool_proto_rawDesc = "" +
 	"\n" +
 	"privateKey\x18\f \x01(\tR\n" +
 	"privateKey\x12\x12\n" +
-	"\x04cidr\x18\x0e \x01(\tR\x04cidr\"A\n" +
+	"\x04cidr\x18\x0e \x01(\tR\x04cidr\"_\n" +
 	"\vMachineSpec\x12\x1a\n" +
 	"\bcpuCount\x18\x01 \x01(\x05R\bcpuCount\x12\x16\n" +
-	"\x06memory\x18\x02 \x01(\x05R\x06memory\"4\n" +
+	"\x06memory\x18\x02 \x01(\x05R\x06memory\x12\x1c\n" +
+	"\tnvidiaGpu\x18\x03 \x01(\x05R\tnvidiaGpu\"4\n" +
 	"\x0eAutoscalerConf\x12\x10\n" +
 	"\x03min\x18\x01 \x01(\x05R\x03min\x12\x10\n" +
 	"\x03max\x18\x02 \x01(\x05R\x03max\"\x8d\x01\n" +
