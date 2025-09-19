@@ -259,8 +259,9 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
   Further describes the selected server type, if available by the cloud provider.
 
-  - `cpuCount`: specifies the number of cpu to be used by the `serverType`
-  - `memory`: specifies the memory in GB to be used by the `serverType`
+  - `cpuCount`: specifies the number of cpus used by the `serverType`
+  - `memory`: specifies the memory in GBs used by the `serverType`
+  - `nvidiaGpu`: specifies the number of nvidia GPUs used by the `serverType`
 
 - `image`
 
