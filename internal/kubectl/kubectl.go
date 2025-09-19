@@ -118,6 +118,18 @@ func (k *Kubectl) KubectlTaintNodeShutdown(nodeName string) error {
 	return k.run(command)
 }
 
+// KubectlTaintRemove removes the requested taint from the node.
+func (k *Kubectl) KubectlTaintRemove(nodeName string, key, value, effect string) error {
+	arg, cleanup, err := k.getKubeconfig()
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+
+	command := fmt.Sprintf("kubectl taint nodes %s %s=%s:%s- %s", nodeName, key, value, effect, arg)
+	return k.run(command)
+}
+
 // KubectlDrain runs kubectl drain in k.Directory, on a specified node with flags --ignore-daemonsets --delete-emptydir-data
 // example: kubectl drain node1 -> k.KubectlDrain("node1")
 func (k *Kubectl) KubectlDrain(nodeName string) error {
