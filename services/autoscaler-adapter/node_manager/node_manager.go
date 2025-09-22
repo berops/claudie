@@ -36,6 +36,8 @@ type typeInfo struct {
 	memory int64
 	// Size in bytes
 	disk int64
+	// Number of NVIDIA gpus
+	nvidiaGpus int64
 }
 
 // NewNodeManager returns a NodeManager pointer with initialised caches about nodes.
@@ -86,6 +88,10 @@ func (nm *NodeManager) GetCapacity(np *spec.NodePool) k8sV1.ResourceList {
 	rl[k8sV1.ResourceCPU] = *resource.NewQuantity(typeInfo.cpu, resource.DecimalSI)
 	rl[k8sV1.ResourceMemory] = *resource.NewQuantity(typeInfo.memory, resource.DecimalSI)
 	rl[k8sV1.ResourceStorage] = *resource.NewQuantity(disk, resource.DecimalSI)
+
+	if typeInfo.nvidiaGpus > 0 {
+		rl["nvidia.com/gpu"] = *resource.NewQuantity(int64(typeInfo.nvidiaGpus), resource.DecimalSI)
+	}
 
 	// If the machine spec contains a valid number of NvidiaGPUs, prefer that value over the cached
 	// one from [typeInfo].
