@@ -1,6 +1,7 @@
 package nodepools
 
 import (
+	"sort"
 	"testing"
 
 	"github.com/berops/claudie/proto/pb/spec"
@@ -311,6 +312,19 @@ func TestLabelsTaintsAnnotationsToRemove(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
 			got := LabelsTaintsAnnotationsDiff(tt.Args.current, tt.Args.desired)
+
+			// sort the output to be same every call.
+
+			for _, v := range got.LabelKeys {
+				sort.Strings(v)
+			}
+			for _, v := range got.AnnotationKeys {
+				sort.Strings(v)
+			}
+			for _, v := range got.TaintKeys {
+				sort.Slice(v, func(i, j int) bool { return v[i].Key < v[j].Key })
+			}
+
 			if diff := cmp.Diff(got, tt.Want, protocmp.Transform()); diff != "" {
 				t.Fatalf("labelsTaintsAnnotationsToRemove(%s) = %s", tt.Name, diff)
 			}
