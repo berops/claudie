@@ -720,11 +720,13 @@ func NodePoolNodes(cluster *spec.K8Scluster) (map[string][]string, map[string][]
 
 	for _, nodePool := range cluster.GetClusterInfo().GetNodePools() {
 		if nodePool.GetDynamicNodePool() != nil {
+			dynamic[nodePool.Name] = []string{} // the nodepool could have 0 nodes, i.e. autoscaling to 0.
 			for _, node := range nodePool.Nodes {
 				dynamic[nodePool.Name] = append(dynamic[nodePool.Name], node.Name)
 			}
 		}
 		if nodePool.GetStaticNodePool() != nil {
+			static[nodePool.Name] = []string{} // the nodepool could have 0 nodes.
 			for _, node := range nodePool.Nodes {
 				static[nodePool.Name] = append(static[nodePool.Name], node.Name)
 			}
