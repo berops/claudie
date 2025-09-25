@@ -103,7 +103,7 @@ type Openstack struct {
 	ProjectId                   string              `validate:"required" yaml:"projectId"`
 	ApplicationCredentialId     string              `validate:"required" yaml:"applicationCredentialId"`
 	ApplicationCredentialSecret string              `validate:"required" yaml:"applicationCredentialSecret"`
-	Region                      string              `validate:"omitempty,dive,required" yaml:"regions" default:"RegionOne"`
+	Region                      string              `validate:"omitempty,required" yaml:"region" default:"RegionOne"`
 	Templates                   *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
 }
 

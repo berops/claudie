@@ -90,7 +90,7 @@ type Provider struct {
 	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:MinLength=1
 	ProviderName string `json:"name"`
-	// +kubebuilder:validation:Enum=gcp;hetzner;aws;oci;azure;cloudflare;hetznerdns;genesiscloud;
+	// +kubebuilder:validation:Enum=gcp;hetzner;aws;oci;azure;cloudflare;hetznerdns;genesiscloud;openstack;
 	ProviderType ProviderType           `json:"providerType"`
 	SecretRef    corev1.SecretReference `json:"secretRef"`
 	// External templates for building the cluster infrastructure.

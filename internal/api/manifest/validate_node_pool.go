@@ -117,7 +117,7 @@ func IsReferenced(name string, m *Manifest) bool {
 
 func (d *DynamicNodePool) Validate(m *Manifest) error {
 	//nolint
-	if (d.StorageDiskSize != nil) && !(*d.StorageDiskSize == 0 || *d.StorageDiskSize >= 5) {
+	if (d.StorageDiskSize != nil) && !(*d.StorageDiskSize == 0 || *d.StorageDiskSize >= 50) {
 		return fmt.Errorf("storageDiskSize size must be either 0 or >= 50")
 	}
 
