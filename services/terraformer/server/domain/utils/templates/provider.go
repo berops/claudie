@@ -27,6 +27,7 @@ type usedProvidersTemplateData struct {
 	Cloudflare   bool
 	HetznerDNS   bool
 	GenesisCloud bool
+	Openstack    bool
 }
 
 // CreateUsedProviderDNS creates provider file used for DNS management.
@@ -89,6 +90,9 @@ func getProvidersUsed(nodepools []*spec.DynamicNodePool, data *usedProvidersTemp
 		}
 		if nodepool.Provider.CloudProviderName == "genesiscloud" {
 			data.GenesisCloud = true
+		}
+		if nodepool.Provider.CloudProviderName == "openstack" {
+			data.Openstack = true
 		}
 	}
 }

@@ -85,6 +85,11 @@ type (
 		Regions []string
 	}
 
+	RegionNetwork struct {
+		Region          string
+		ExternalNetwork string
+	}
+
 	// Networking wraps all data related to generating terraform files for a Provider
 	// to set up a common networking infrastructure to be used by all Nodepools from the same Provider.
 	// This structure is used when generating template files inside the networking directory
@@ -121,6 +126,48 @@ type (
 		//        storageDiskSize: 50
 		// Regions: ["europe-west2", "europe-west1"].
 		Regions []string
+		// RegionNetwork holds all the regions with their corresponding external network names. It holds unique
+		// combinations of region and external network names.
+		// Example:
+		// If you specify multiple nodepools from the same provider but in different regions and with different
+		// external network names and use those nodepool in the same cluster (either K8s or LB) this field will
+		// contain those used regions with their corresponding external network names.
+		//       - name: openstack-1
+		//        providerSpec:
+		//          name: openstack-1
+		//          region: regionOne
+		//          zone: nova
+		//          externalNetwork: ext-net-1
+		//        count: 1
+		//        serverType: s1.small
+		//        image: ubuntu-22.04
+		//
+		//      - name: openstack-2
+		//        providerSpec:
+		//          name: openstack-1
+		//          region: regionOne
+		//          zone: nova
+		//          externalNetwork: ext-net-2
+		//        count: 1
+		//        serverType: s1.small
+		//        image: ubuntu-22.04
+		//
+		//      - name: openstack-3
+		//        providerSpec:
+		//          name: openstack-1
+		//          region: regionTwo
+		//          zone: nova
+		//          externalNetwork: ext-net-1
+		//        count: 1
+		//        serverType: s1.small
+		//        image: ubuntu-22.04
+		//
+		// RegionNetwork: [
+		//   {Region: "regionOne", ExternalNetwork: "ext-net-1"},
+		//   {Region: "regionOne", ExternalNetwork: "ext-net-2"},
+		//   {Region: "regionTwo", ExternalNetwork: "ext-net-1"},
+		// ].
+		RegionNetwork []RegionNetwork
 		// K8sData contains some additional information that may be needed during the generation of the
 		// terraform templates. Such as if A load balancer is attached to the K8s cluster with the ApiServer port.
 		// This data will be set if the ClusterType within ClusterData of this object is of type "K8s".

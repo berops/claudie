@@ -223,6 +223,32 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 			}, nil
 		}
 	}
+	for _, os := range ds.Providers.Openstack {
+		if os.Name == providerSpecName {
+			t := &spec.TemplateRepository{
+				Repository: os.Templates.Repository,
+				Tag:        os.Templates.Tag,
+				Path:       os.Templates.Path,
+			}
+			if err := FetchCommitHash(t); err != nil {
+				return nil, err
+			}
+			return &spec.Provider{
+				SpecName: providerSpecName,
+				ProviderType: &spec.Provider_Openstack{
+					Openstack: &spec.OpenstackProvider{
+						AuthURL:                     os.AuthURL,
+						DomainID:                    os.DomainId,
+						ProjectID:                   os.ProjectId,
+						ApplicationCredentialID:     os.ApplicationCredentialId,
+						ApplicationCredentialSecret: os.ApplicationCredentialSecret,
+					},
+				},
+				CloudProviderName: "openstack",
+				Templates:         t,
+			}, nil
+		}
+	}
 
 	return nil, fmt.Errorf("failed to find provider with name: %s", providerSpecName)
 }
@@ -305,15 +331,16 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.Nod
 				// as the nodepool hashes are not known yet.
 				Type: &spec.NodePool_DynamicNodePool{
 					DynamicNodePool: &spec.DynamicNodePool{
-						Region:           nodePool.ProviderSpec.Region,
-						Zone:             nodePool.ProviderSpec.Zone,
-						ServerType:       nodePool.ServerType,
-						Image:            nodePool.Image,
-						StorageDiskSize:  *nodePool.StorageDiskSize,
-						Count:            count,
-						Provider:         provider,
-						AutoscalerConfig: autoscalerConf,
-						MachineSpec:      machineSpec,
+						Region:              nodePool.ProviderSpec.Region,
+						Zone:                nodePool.ProviderSpec.Zone,
+						ServerType:          nodePool.ServerType,
+						Image:               nodePool.Image,
+						ExternalNetworkName: nodePool.ProviderSpec.ExternalNetworkName,
+						StorageDiskSize:     *nodePool.StorageDiskSize,
+						Count:               count,
+						Provider:            provider,
+						AutoscalerConfig:    autoscalerConf,
+						MachineSpec:         machineSpec,
 					},
 				},
 			})
@@ -495,6 +522,11 @@ func (ds *Manifest) ForEachProvider(do func(name, typ string, tmpls **TemplateRe
 
 	for i, c := range ds.Providers.HetznerDNS {
 		if !do(c.Name, "hetznerdns", &ds.Providers.HetznerDNS[i].Templates) {
+			return
+		}
+	}
+	for i, c := range ds.Providers.Openstack {
+		if !do(c.Name, "openstack", &ds.Providers.Openstack[i].Templates) {
 			return
 		}
 	}

@@ -257,9 +257,10 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 			}
 
 			if err := g.GenerateNetworking(&templates.Networking{
-				ClusterData: clusterData,
-				Provider:    p,
-				Regions:     nodepools.ExtractRegions(nodepools.ExtractDynamic(pools)),
+				ClusterData:   clusterData,
+				Provider:      p,
+				Regions:       nodepools.ExtractRegions(nodepools.ExtractDynamic(pools)),
+				RegionNetwork: nodepools.ExtractRegionNetwork(nodepools.ExtractDynamic(pools)),
 				K8sData: templates.K8sData{
 					HasAPIServer: c.K8sInfo.ExportPort6443,
 				},

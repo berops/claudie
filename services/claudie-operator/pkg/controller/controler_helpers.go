@@ -180,6 +180,42 @@ func constructInputManifest(
 				ApiToken:  strings.TrimSpace(hetznerDNSCredentials),
 				Templates: p.Templates,
 			})
+		case v1beta1manifest.OPENSTACK:
+			osAuthURL, err := p.GetSecretField(v1beta1manifest.OS_AUTH_URL)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+			osDomainID, err := p.GetSecretField(v1beta1manifest.OS_DOMAIN_ID)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+			osProjectID, err := p.GetSecretField(v1beta1manifest.OS_PROJECT_ID)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+			osAppCredID, err := p.GetSecretField(v1beta1manifest.OS_APPLICATION_CREDENTIAL_ID)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+			osAppCredSecret, err := p.GetSecretField(v1beta1manifest.OS_APPLICATION_CREDENTIAL_SECRET)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+			osRegion, err := p.GetSecretField(v1beta1manifest.OS_REGION)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+
+			providers.Openstack = append(providers.Openstack, manifest.Openstack{
+				Name:                        p.ProviderName,
+				AuthURL:                     strings.TrimSpace(osAuthURL),
+				DomainId:                    strings.TrimSpace(osDomainID),
+				ProjectId:                   strings.TrimSpace(osProjectID),
+				ApplicationCredentialId:     strings.TrimSpace(osAppCredID),
+				ApplicationCredentialSecret: strings.TrimSpace(osAppCredSecret),
+				Region:                      strings.TrimSpace(osRegion),
+				Templates:                   p.Templates,
+			})
 		}
 	}
 

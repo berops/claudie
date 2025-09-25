@@ -44,6 +44,15 @@ message GenesisCloudProvider {
   string token = 1;
 }
 
+message OpenstackProvider {
+  string authURL = 1;
+  string domainID = 2;
+  string projectID = 3;
+  string applicationCredentialID = 4;
+  string applicationCredentialSecret = 5;
+}
+
+
 message Provider {
   string specName = 1;
   string cloudProviderName = 2;
@@ -57,6 +66,7 @@ message Provider {
     AzureProvider azure = 8;
     CloudflareProvider cloudflare = 9;
     GenesisCloudProvider genesiscloud = 10;
+    OpenstackProvider openstack = 11;
   }
 
   TemplateRepository templates = 13;

@@ -117,7 +117,7 @@ func IsReferenced(name string, m *Manifest) bool {
 
 func (d *DynamicNodePool) Validate(m *Manifest) error {
 	//nolint
-	if (d.StorageDiskSize != nil) && !(*d.StorageDiskSize == 0 || *d.StorageDiskSize >= 50) {
+	if (d.StorageDiskSize != nil) && !(*d.StorageDiskSize == 0 || *d.StorageDiskSize >= 5) {
 		return fmt.Errorf("storageDiskSize size must be either 0 or >= 50")
 	}
 
@@ -140,6 +140,10 @@ func (d *DynamicNodePool) Validate(m *Manifest) error {
 			sl.ReportError(dnp.ProviderSpec.Zone, "Zone", "Zone", "required", "")
 		}
 	}, DynamicNodePool{})
+
+	if err := validate.RegisterValidation("external_net", validateExternalNet); err != nil {
+		return err
+	}
 
 	if err := validate.Struct(d); err != nil {
 		return prettyPrintValidationError(err)
@@ -202,4 +206,12 @@ func checkAnnotations(annotations map[string]string) error {
 		return fmt.Errorf("annotations size %d is larger than limit %d", totalSize, TotalAnnotationSizeLimitB)
 	}
 	return nil
+}
+
+func validateExternalNet(fl validator.FieldLevel) bool {
+	providerSpec := fl.Parent().Interface().(ProviderSpec)
+	if providerSpec.Name == "openstack" {
+		return providerSpec.ExternalNetworkName != ""
+	}
+	return true
 }
