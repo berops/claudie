@@ -21,7 +21,7 @@ You can create Openstack API credentials by following [this guide](https://docs.
 
 
 The application credentials must have permissions to create, modify, and delete the following resources:
-```
+```text
 Instances (servers)
 Volumes
 Networks and subnets
@@ -56,7 +56,7 @@ openstack application credential create --role administrator claudie
 
 ### Single provider OVHcloud, multi region cluster example
 #### Create a secret for Openstack provider
-The secret for an Hetzner provider must include the following mandatory fields: `authURL`, `domainId`, `projectId`, `applicationCredentialId` and `applicationCredentialSecret`.
+The secret for an Openstack provider must include the following mandatory fields: `authURL`, `domainId`, `projectId`, `applicationCredentialId` and `applicationCredentialSecret`.
 
 ```bash
 kubectl create secret generic openstack-secret-1 \
