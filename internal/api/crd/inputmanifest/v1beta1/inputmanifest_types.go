@@ -60,11 +60,11 @@ const (
 	OCI_COMPARTMENT_OCID             SecretField = "compartmentocid"
 	PRIVATE_KEY                      SecretField = "privatekey"
 	GEN_C_API_TOKEN                  SecretField = "apitoken"
-	OS_AUTH_URL                      SecretField = "auth_url"
-	OS_DOMAIN_ID                     SecretField = "domain_id"
-	OS_PROJECT_ID                    SecretField = "project_id"
-	OS_APPLICATION_CREDENTIAL_ID     SecretField = "application_credential_id"
-	OS_APPLICATION_CREDENTIAL_SECRET SecretField = "application_credential_secret"
+	OS_AUTH_URL                      SecretField = "authurl"
+	OS_DOMAIN_ID                     SecretField = "domainid"
+	OS_PROJECT_ID                    SecretField = "projectid"
+	OS_APPLICATION_CREDENTIAL_ID     SecretField = "applicationcredentialid"
+	OS_APPLICATION_CREDENTIAL_SECRET SecretField = "applicationcredentialsecret"
 )
 
 // ProviderWithData helper type that assist in conversion

@@ -1,5 +1,5 @@
 # Openstack
-Openstack cloud provider requires you to input this authentication details: `authURL`, `domainId`, `projectId`, `applicationCredentialId` and `applicationCredentialSecret`.
+Openstack cloud provider requires you to input this authentication details: `authurl`, `domainid`, `projectid`, `applicationcredentialid` and `applicationcredentialsecret`.
 
 ## Compute
 ```yaml
@@ -8,11 +8,11 @@ kind: Secret
 metadata:
   name: openstack-secret
 data:
-  authURL: U0xEVVRLU0hGRE1TSktESUFMQVNTRA==
-  domainId: ZGVmYXVsdAo=
-  projectId: OGM1MDZmZjBhNmQzNGVkNzkyNTBkZWQ4OGRhNzBmNmEK
-  applicationCredentialId: YmFhMDkxYTYyNWJkNGKyNjlmNzA5Mzc5ODg4YTQ5YzMQ
-  applicationCredentialSecret: YndNRUVLMmNPdE5oSDlJbXIzRmRlVEVPTG9odU1HcUQzVUxSTzgzWjZaTXh0U3hSSXNVLWNkTHlN==
+  authurl: U0xEVVRLU0hGRE1TSktESUFMQVNTRA==
+  domainid: ZGVmYXVsdAo=
+  projectid: OGM1MDZmZjBhNmQzNGVkNzkyNTBkZWQ4OGRhNzBmNmEK
+  applicationcredentialid: YmFhMDkxYTYyNWJkNGKyNjlmNzA5Mzc5ODg4YTQ5YzMQ
+  applicationcredentialsecret: YndNRUVLMmNPdE5oSDlJbXIzRmRlVEVPTG9odU1HcUQzVUxSTzgzWjZaTXh0U3hSSXNVLWNkTHlN==
 type: Opaque
 ```
 
@@ -56,16 +56,16 @@ openstack application credential create --role administrator claudie
 
 ### Single provider OVHcloud, multi region cluster example
 #### Create a secret for Openstack provider
-The secret for an Openstack provider must include the following mandatory fields: `authURL`, `domainId`, `projectId`, `applicationCredentialId` and `applicationCredentialSecret`.
+The secret for an Openstack provider must include the following mandatory fields: `authurl`, `domainid`, `projectid`, `applicationcredentialid` and `applicationcredentialsecret`.
 
 ```bash
 kubectl create secret generic openstack-secret-1 \
 --namespace=mynamespace \
---from-literal=authURL='https://auth.cloud.ovh.net' \
---from-literal=domainId='default' \
---from-literal=projectId='8c506ff0a6d34ed79250ded88da70f6a' \
---from-literal=applicationCredentialId='5533f69597734911921a7ee3f30c6464' \
---from-literal=applicationCredentialSecret='IdtoVmeRC_O-SClReHX9mzo4PRYvyVwQqWNBmWg2XIDGEA_CvhlVaObMEo2-BoH7GgpZZGhY_aqFgHh63NrMKw'
+--from-literal=authurl='https://auth.cloud.ovh.net' \
+--from-literal=domainid='default' \
+--from-literal=projectid='8c506ff0a6d34ed79250ded88da70f6a' \
+--from-literal=applicationcredentialid='5533f69597734911921a7ee3f30c6464' \
+--from-literal=applicationcredentialsecret='IdtoVmeRC_O-SClReHX9mzo4PRYvyVwQqWNBmWg2XIDGEA_CvhlVaObMEo2-BoH7GgpZZGhY_aqFgHh63NrMKw'
 ```
 
 ```yaml
