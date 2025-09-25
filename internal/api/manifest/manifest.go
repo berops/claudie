@@ -103,7 +103,6 @@ type Openstack struct {
 	ProjectId                   string              `validate:"required" yaml:"projectId"`
 	ApplicationCredentialId     string              `validate:"required" yaml:"applicationCredentialId"`
 	ApplicationCredentialSecret string              `validate:"required" yaml:"applicationCredentialSecret"`
-	Region                      string              `validate:"omitempty,required" yaml:"region" default:"RegionOne"`
 	Templates                   *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
 }
 
@@ -200,7 +199,7 @@ type ProviderSpec struct {
 	// +optional
 	Zone string `yaml:"zone" json:"zone"`
 	// Name of the external provider network to which the nodes will be connected to. Currently only required for OpenStack.
-	ExternalNetworkName string `validate:"external_net" yaml:"externalNetworkName" json:"externalNetworkName,omitempty"`
+	ExternalNetworkName string `validate:"external_net" yaml:"externalNetworkName" json:"externalNetworkName"`
 }
 
 // StaticNodePool List of static nodepools of already existing machines, not created by Claudie, used for Kubernetes or loadbalancer clusters.

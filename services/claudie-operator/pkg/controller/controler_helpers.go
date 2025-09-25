@@ -201,10 +201,6 @@ func constructInputManifest(
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
-			osRegion, err := p.GetSecretField(v1beta1manifest.OS_REGION)
-			if err != nil {
-				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
-			}
 
 			providers.Openstack = append(providers.Openstack, manifest.Openstack{
 				Name:                        p.ProviderName,
@@ -213,7 +209,6 @@ func constructInputManifest(
 				ProjectId:                   strings.TrimSpace(osProjectID),
 				ApplicationCredentialId:     strings.TrimSpace(osAppCredID),
 				ApplicationCredentialSecret: strings.TrimSpace(osAppCredSecret),
-				Region:                      strings.TrimSpace(osRegion),
 				Templates:                   p.Templates,
 			})
 		}

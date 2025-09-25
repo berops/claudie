@@ -65,7 +65,6 @@ const (
 	OS_PROJECT_ID                    SecretField = "project_id"
 	OS_APPLICATION_CREDENTIAL_ID     SecretField = "application_credential_id"
 	OS_APPLICATION_CREDENTIAL_SECRET SecretField = "application_credential_secret"
-	OS_REGION                        SecretField = "region"
 )
 
 // ProviderWithData helper type that assist in conversion
