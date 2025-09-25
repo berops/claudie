@@ -59,12 +59,12 @@ openstack application credential create --role administrator claudie
 The secret for an Hetzner provider must include the following mandatory fields: `authURL`, `domainId`, `projectId`, `applicationCredentialId` and `applicationCredentialSecret`.
 
 ```bash
-kubectl create secret generic openstack-secret-1\
---namespace=mynamespace\
---from-literal=authURL='https://auth.cloud.ovh.net'\
---from-literal=domainId='default'\
---from-literal=projectId='8c506ff0a6d34ed79250ded88da70f6a'\
---from-literal=applicationCredentialId='5533f69597734911921a7ee3f30c6464'\
+kubectl create secret generic openstack-secret-1 \
+--namespace=mynamespace \
+--from-literal=authURL='https://auth.cloud.ovh.net' \
+--from-literal=domainId='default' \
+--from-literal=projectId='8c506ff0a6d34ed79250ded88da70f6a' \
+--from-literal=applicationCredentialId='5533f69597734911921a7ee3f30c6464' \
 --from-literal=applicationCredentialSecret='IdtoVmeRC_O-SClReHX9mzo4PRYvyVwQqWNBmWg2XIDGEA_CvhlVaObMEo2-BoH7GgpZZGhY_aqFgHh63NrMKw'
 ```
 
@@ -82,67 +82,67 @@ spec:
       secretRef:
         name: openstack-secret-1
         namespace: mynamespace
-nodePools:
-  dynamic:
-    - name: control-os
-      providerSpec:
-        # Name of the provider instance.
-        name: openstack-1
-        # Region of the nodepool.
-        region: WAW1
-        # Zone of the region.
-        zone: nova
-        # External network name within zone.
-        externalNetworkName: Ext-Net
-      count: 1
-      # Machine type name.
-      serverType: c3-4-flex
-      # OS image name.
-      image: fa62ad8e-5df1-4f35-8329-0ba96a5426ed
-    - name: compute-1-os
-      providerSpec:
-        # Name of the provider instance.
-        name: openstack-1
-        # Region of the nodepool.
-        region: GRA9
-        # Zone of the region.
-        zone: nova
-        # External network name within zone.
-        externalNetworkName: Ext-Net
-      count: 1
-      # Machine type name.
-      serverType: c3-4-flex
-      # OS image name.
-      image: 2053eb45-d392-460a-bcb1-abc9af4f3924
-      storageDiskSize: 50
-    - name: compute-2-os
-      providerSpec:
-        # Name of the provider instance
-        name: openstack-1
-        # Region of the nodepool.
-        region: RBX-A
-        # Zone of the region.
-        zone: nova
-        # External network name within zone.
-        externalNetworkName: Ext-Net
-      count: 1
-      # Machine type name.
-      serverType: c3-4-flex
-      # OS image name.
-      image: fde01fb6-68e9-4b81-8299-c2caad6ff915
-      storageDiskSize: 50
-kubernetes:
-  clusters:
-    - name: brando-test
-      version: "v1.31.0"
-      network: 192.168.2.0/24
-      installationProxy:
-        mode: "on"
-        endpoint: http://proxy.claudie.io:8880
-        noProxy: ".suse.com"
-      pools:
-        control:
-          - control-os
-        compute:
-          - compute-os
+    nodePools:
+    dynamic:
+        - name: control-os
+        providerSpec:
+            # Name of the provider instance.
+            name: openstack-1
+            # Region of the nodepool.
+            region: WAW1
+            # Zone of the region.
+            zone: nova
+            # External network name within zone.
+            externalNetworkName: Ext-Net
+        count: 1
+        # Machine type name.
+        serverType: c3-4-flex
+        # OS image name.
+        image: fa62ad8e-5df1-4f35-8329-0ba96a5426ed
+        - name: compute-1-os
+        providerSpec:
+            # Name of the provider instance.
+            name: openstack-1
+            # Region of the nodepool.
+            region: GRA9
+            # Zone of the region.
+            zone: nova
+            # External network name within zone.
+            externalNetworkName: Ext-Net
+        count: 1
+        # Machine type name.
+        serverType: c3-4-flex
+        # OS image name.
+        image: 2053eb45-d392-460a-bcb1-abc9af4f3924
+        storageDiskSize: 50
+        - name: compute-2-os
+        providerSpec:
+            # Name of the provider instance
+            name: openstack-1
+            # Region of the nodepool.
+            region: RBX-A
+            # Zone of the region.
+            zone: nova
+            # External network name within zone.
+            externalNetworkName: Ext-Net
+        count: 1
+        # Machine type name.
+        serverType: c3-4-flex
+        # OS image name.
+        image: fde01fb6-68e9-4b81-8299-c2caad6ff915
+        storageDiskSize: 50
+    kubernetes:
+    clusters:
+        - name: brando-test
+        version: "v1.31.0"
+        network: 192.168.2.0/24
+        installationProxy:
+            mode: "on"
+            endpoint: http://proxy.claudie.io:8880
+            noProxy: ".suse.com"
+        pools:
+            control:
+            - control-os
+            compute:
+            - compute-os
 ```
