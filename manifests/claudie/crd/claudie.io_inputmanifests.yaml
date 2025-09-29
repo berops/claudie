@@ -320,6 +320,11 @@ spec:
                           description: Collection of provider data to be used while
                             creating the nodepool.
                           properties:
+                            externalNetworkName:
+                              description: Name of the external provider network to
+                                which the nodes will be connected to. Currently only
+                                required for OpenStack.
+                              type: string
                             name:
                               description: Name of the provider instance specified
                                 in providers
@@ -331,6 +336,7 @@ spec:
                               description: Zone of the nodepool.
                               type: string
                           required:
+                          - externalNetworkName
                           - name
                           - region
                           type: object
@@ -501,6 +507,7 @@ spec:
                       - cloudflare
                       - hetznerdns
                       - genesiscloud
+                      - openstack
                       type: string
                     secretRef:
                       description: |-
