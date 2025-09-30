@@ -1119,7 +1119,10 @@ func Test_scheduleTasksRetry(t *testing.T) {
 							}}},
 						},
 					},
-					Ttl:        510,
+					Lease: &spec.Lease{
+						RemainingTicksForRefresh:    50,
+						RemainingMissedRefreshCount: 2,
+					},
 					Autoscaled: false,
 				},
 				State: &spec.Workflow{
@@ -1144,12 +1147,12 @@ func Test_scheduleTasksRetry(t *testing.T) {
 	assert.Equal(t, got.Clusters["test-01"].State.Stage, spec.Workflow_NONE)
 	assert.Equal(t, got.Clusters["test-01"].State.Status, spec.Workflow_DONE)
 	assert.Empty(t, got.Clusters["test-01"].State.Description)
-	assert.Empty(t, got.Clusters["test-01"].Events.Ttl)
+	assert.True(t, proto.Equal(got.Clusters["test-01"].Events.Lease, &spec.Lease{}))
 
 	repeat.Clusters["test-01"].State.Stage = spec.Workflow_NONE
 	repeat.Clusters["test-01"].State.Status = spec.Workflow_DONE
 	repeat.Clusters["test-01"].State.Description = ""
-	repeat.Clusters["test-01"].Events.Ttl = 0
+	repeat.Clusters["test-01"].Events.Lease = &spec.Lease{}
 
 	for k := range repeat.Clusters {
 		for i := range repeat.Clusters[k].Events.Events {
@@ -1186,7 +1189,10 @@ func Test_scheduleTasksRetry(t *testing.T) {
 							}}},
 						},
 					},
-					Ttl:        510,
+					Lease: &spec.Lease{
+						RemainingTicksForRefresh:    50,
+						RemainingMissedRefreshCount: 1,
+					},
 					Autoscaled: false,
 				},
 				State: &spec.Workflow{
@@ -1211,13 +1217,13 @@ func Test_scheduleTasksRetry(t *testing.T) {
 	assert.Equal(t, got.Clusters["test-01"].State.Stage, spec.Workflow_NONE)
 	assert.Equal(t, got.Clusters["test-01"].State.Status, spec.Workflow_DONE)
 	assert.Empty(t, got.Clusters["test-01"].State.Description)
-	assert.Empty(t, got.Clusters["test-01"].Events.Ttl)
+	assert.True(t, proto.Equal(got.Clusters["test-01"].Events.Lease, &spec.Lease{}))
 	assert.Empty(t, got.Clusters["test-01"].Events.Events[0].OnError.Do)
 
 	repeat.Clusters["test-01"].State.Stage = spec.Workflow_NONE
 	repeat.Clusters["test-01"].State.Status = spec.Workflow_DONE
 	repeat.Clusters["test-01"].State.Description = ""
-	repeat.Clusters["test-01"].Events.Ttl = 0
+	repeat.Clusters["test-01"].Events.Lease = &spec.Lease{}
 	repeat.Clusters["test-01"].Events.Events[0].OnError.Do = nil
 
 	for k := range repeat.Clusters {
@@ -1255,7 +1261,10 @@ func Test_scheduleTasksRetry(t *testing.T) {
 							}}},
 						},
 					},
-					Ttl:        510,
+					Lease: &spec.Lease{
+						RemainingTicksForRefresh:    510,
+						RemainingMissedRefreshCount: 1,
+					},
 					Autoscaled: false,
 				},
 				State: &spec.Workflow{
@@ -1280,12 +1289,12 @@ func Test_scheduleTasksRetry(t *testing.T) {
 	assert.Equal(t, got.Clusters["test-01"].State.Stage, spec.Workflow_NONE)
 	assert.Equal(t, got.Clusters["test-01"].State.Status, spec.Workflow_DONE)
 	assert.Empty(t, got.Clusters["test-01"].State.Description)
-	assert.Empty(t, got.Clusters["test-01"].Events.Ttl)
+	assert.True(t, proto.Equal(got.Clusters["test-01"].Events.Lease, &spec.Lease{}))
 
 	repeat.Clusters["test-01"].State.Stage = spec.Workflow_NONE
 	repeat.Clusters["test-01"].State.Status = spec.Workflow_DONE
 	repeat.Clusters["test-01"].State.Description = ""
-	repeat.Clusters["test-01"].Events.Ttl = 0
+	repeat.Clusters["test-01"].Events.Lease = &spec.Lease{}
 	repeat.Clusters["test-01"].Events.Events[0].OnError.Do.(*spec.Retry_Repeat_).Repeat.CurrentTick = 2
 	repeat.Clusters["test-01"].Events.Events[0].OnError.Do.(*spec.Retry_Repeat_).Repeat.RetryAfter = 2
 
@@ -1325,7 +1334,10 @@ func Test_scheduleTasksRetry(t *testing.T) {
 							}}},
 						},
 					},
-					Ttl:        510,
+					Lease: &spec.Lease{
+						RemainingTicksForRefresh:    10,
+						RemainingMissedRefreshCount: 2,
+					},
 					Autoscaled: false,
 				},
 				State: &spec.Workflow{
@@ -1350,10 +1362,10 @@ func Test_scheduleTasksRetry(t *testing.T) {
 	assert.Equal(t, spec.Workflow_ANSIBLER, got.Clusters["test-01"].State.Stage)
 	assert.Equal(t, spec.Workflow_ERROR, got.Clusters["test-01"].State.Status)
 	assert.Equal(t, "randomly failed", got.Clusters["test-01"].State.Description)
-	assert.Equal(t, int32(0), got.Clusters["test-01"].Events.Ttl)
+	assert.True(t, proto.Equal(got.Clusters["test-01"].Events.Lease, &spec.Lease{}))
 
 	repeat.Clusters["test-01"].Events.Events[0].OnError.Do.(*spec.Retry_Repeat_).Repeat.RetryAfter = 1
-	repeat.Clusters["test-01"].Events.Ttl = 0
+	repeat.Clusters["test-01"].Events.Lease = &spec.Lease{}
 
 	for k := range repeat.Clusters {
 		for i := range repeat.Clusters[k].Events.Events {
@@ -1361,6 +1373,7 @@ func Test_scheduleTasksRetry(t *testing.T) {
 			got.Clusters[k].Events.Events[i].Timestamp = nil
 		}
 	}
+
 	if !proto.Equal(got, repeat) {
 		diff := cmp.Diff(got, repeat, opts)
 		t.Fatalf("schedule tasks (repeat) failed: %s", diff)
@@ -1412,7 +1425,10 @@ func Test_scheduleTasksRollback(t *testing.T) {
 							}}},
 						},
 					},
-					Ttl:        510,
+					Lease: &spec.Lease{
+						RemainingTicksForRefresh:    510,
+						RemainingMissedRefreshCount: 2,
+					},
 					Autoscaled: false,
 				},
 				State: &spec.Workflow{
@@ -1437,12 +1453,12 @@ func Test_scheduleTasksRollback(t *testing.T) {
 	assert.Equal(t, got.Clusters["test-01"].State.Stage, spec.Workflow_NONE)
 	assert.Equal(t, got.Clusters["test-01"].State.Status, spec.Workflow_DONE)
 	assert.Empty(t, got.Clusters["test-01"].State.Description)
-	assert.Empty(t, got.Clusters["test-01"].Events.Ttl)
+	assert.True(t, proto.Equal(got.Clusters["test-01"].Events.Lease, &spec.Lease{}))
 
 	rollback.Clusters["test-01"].State.Stage = spec.Workflow_NONE
 	rollback.Clusters["test-01"].State.Status = spec.Workflow_DONE
 	rollback.Clusters["test-01"].State.Description = ""
-	rollback.Clusters["test-01"].Events.Ttl = 0
+	rollback.Clusters["test-01"].Events.Lease = &spec.Lease{}
 
 	assert.Equal(t, 1, len(got.Clusters["test-01"].Events.Events))
 

@@ -42,7 +42,9 @@ func (g *GRPC) NextTask(ctx context.Context, _ *pb.NextTaskRequest) (*pb.NextTas
 		Stage:  spec.Workflow_NONE,
 	}
 
-	cluster.Events.Ttl = TaskTTL
+	// Set the Lease for the next task.
+	cluster.Events.Lease.RemainingMissedRefreshCount = AllowedMissedLeaseRefresh
+	cluster.Events.Lease.RemainingTicksForRefresh = TaskLeaseTime
 
 	if cluster.Current != nil {
 		log.Debug().Str("cluster", cluster.Current.K8S.ClusterInfo.Id()).Msgf("transferring existing state into %s task %q", outgoingTask.Event.String(), outgoingTask.Id)
@@ -67,10 +69,12 @@ func (g *GRPC) NextTask(ctx context.Context, _ *pb.NextTaskRequest) (*pb.NextTas
 		State:   cluster.State,
 		Current: nil,
 		Event:   outgoingTask,
-		Ttl:     TaskTTL,
 		Cluster: clusterName,
 		Version: newConfig.Version,
 		Name:    newConfig.Name,
+		Lease: &pb.Lease{
+			TaskLeaseTime: TaskLeaseTime,
+		},
 	}
 
 	if cluster.Current != nil {
@@ -90,7 +94,11 @@ func (g *GRPC) NextTask(ctx context.Context, _ *pb.NextTaskRequest) (*pb.NextTas
 func nextTask(cfgs []*store.Config) (*store.Config, string) {
 	for _, cfg := range cfgs {
 		for c, s := range cfg.Clusters {
-			if s.Events.TTL == 0 && len(s.Events.TaskEvents) > 0 && s.State.Status != spec.Workflow_ERROR.String() {
+			canSchedule := s.Events.Lease.RemainingMissedRefreshCount == 0
+			canSchedule = canSchedule && s.Events.Lease.RemainingTicksForRefresh == 0
+			canSchedule = canSchedule && len(s.Events.TaskEvents) > 0
+			canSchedule = canSchedule && s.State.Status != spec.Workflow_ERROR.String()
+			if canSchedule {
 				return cfg, c
 			}
 		}

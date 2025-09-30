@@ -386,6 +386,130 @@ func TestGRPC_WatchForScheduledDocuments(t *testing.T) {
 		validate func(t *testing.T, db store.Store)
 	}{
 		{
+			name: "test-config-task-failed-to-finish",
+			fields: fields{
+				Store: func() store.Store {
+					db := store.NewInMemoryStore()
+					_ = db.CreateConfig(context.Background(), &store.Config{
+						Version:  0,
+						Name:     "test-set-1",
+						K8SCtx:   store.KubernetesContext{},
+						Manifest: store.Manifest{},
+						Clusters: map[string]*store.ClusterState{
+							"test-cluster-1": {
+								Current: store.Clusters{},
+								Desired: store.Clusters{},
+								Events: store.Events{TaskEvents: []store.TaskEvent{
+									{Id: "3", Timestamp: time.Now().UTC().Format(time.RFC3339)},
+									{Id: "4", Timestamp: time.Now().UTC().Format(time.RFC3339)},
+								},
+									Lease: store.Lease{
+										RemainingTicksForRefresh:    0,
+										RemainingMissedRefreshCount: 0,
+									},
+								},
+								State: store.Workflow{Status: spec.Workflow_ERROR.String()},
+							},
+							"test-cluster-2": {
+								Current: store.Clusters{},
+								Desired: store.Clusters{},
+								Events: store.Events{
+									TaskEvents: []store.TaskEvent{
+										{Id: "1", Timestamp: time.Now().UTC().Format(time.RFC3339)},
+										{Id: "2", Timestamp: time.Now().UTC().Format(time.RFC3339)},
+									},
+									Lease: store.Lease{
+										RemainingTicksForRefresh:    1,
+										RemainingMissedRefreshCount: 1,
+									},
+								},
+								State: store.Workflow{Status: spec.Workflow_DONE.String()},
+							},
+						},
+					})
+					cfg, _ := db.GetConfig(context.Background(), "test-set-1")
+					cfg.Manifest.State = manifest.Scheduled.String()
+					_ = db.UpdateConfig(context.Background(), cfg)
+					return db
+				}(),
+			},
+			args: args{ctx: context.Background()},
+			validate: func(t *testing.T, db store.Store) {
+				cfg, _ := db.GetConfig(context.Background(), "test-set-1")
+				assert.Equal(t, manifest.Scheduled.String(), cfg.Manifest.State, "Should  be still scheduled even if one of the cluster ended in an error.")
+				assert.Equal(t, uint64(2), cfg.Version)
+				assert.Equal(t, int32(0), cfg.Clusters["test-cluster-2"].Events.Lease.RemainingMissedRefreshCount)
+				assert.Equal(t, int32(0), cfg.Clusters["test-cluster-2"].Events.Lease.RemainingTicksForRefresh)
+
+				// The `test-cluster-1` is in error so no change should be done here.
+				assert.Equal(t, int32(0), cfg.Clusters["test-cluster-1"].Events.Lease.RemainingMissedRefreshCount)
+				assert.Equal(t, int32(0), cfg.Clusters["test-cluster-1"].Events.Lease.RemainingTicksForRefresh)
+			},
+			wantErr: false,
+		},
+		{
+			name: "test-config-all-tasks-finished",
+			fields: fields{
+				Store: func() store.Store {
+					db := store.NewInMemoryStore()
+					_ = db.CreateConfig(context.Background(), &store.Config{
+						Version:  0,
+						Name:     "test-set-1",
+						K8SCtx:   store.KubernetesContext{},
+						Manifest: store.Manifest{},
+						Clusters: map[string]*store.ClusterState{
+							"test-cluster-1": {
+								Current: store.Clusters{},
+								Desired: store.Clusters{},
+								Events: store.Events{
+									TaskEvents: []store.TaskEvent{
+										{Id: "3", Timestamp: time.Now().UTC().Format(time.RFC3339)},
+										{Id: "4", Timestamp: time.Now().UTC().Format(time.RFC3339)},
+									},
+									Lease: store.Lease{
+										RemainingTicksForRefresh:    0,
+										RemainingMissedRefreshCount: 0,
+									},
+								},
+								State: store.Workflow{Status: spec.Workflow_ERROR.String()},
+							},
+							"test-cluster-2": {
+								Current: store.Clusters{},
+								Desired: store.Clusters{},
+								Events: store.Events{TaskEvents: []store.TaskEvent{
+									{Id: "1", Timestamp: time.Now().UTC().Format(time.RFC3339)},
+									{Id: "2", Timestamp: time.Now().UTC().Format(time.RFC3339)},
+								},
+									Lease: store.Lease{
+										RemainingTicksForRefresh:    0,
+										RemainingMissedRefreshCount: 0,
+									},
+								},
+								State: store.Workflow{Status: spec.Workflow_DONE.String()},
+							},
+						},
+					})
+					cfg, _ := db.GetConfig(context.Background(), "test-set-1")
+					cfg.Manifest.State = manifest.Scheduled.String()
+					_ = db.UpdateConfig(context.Background(), cfg)
+					return db
+				}(),
+			},
+			args: args{ctx: context.Background()},
+			validate: func(t *testing.T, db store.Store) {
+				cfg, _ := db.GetConfig(context.Background(), "test-set-1")
+				assert.Equal(t, manifest.Scheduled.String(), cfg.Manifest.State, "Should  be still scheduled even if one of the cluster ended in an error.")
+				assert.Equal(t, uint64(1), cfg.Version, "The config shouldn't be updated here at all the time for processing the tasks finished, but there are still tasks to be be processed.")
+				assert.Equal(t, int32(0), cfg.Clusters["test-cluster-2"].Events.Lease.RemainingMissedRefreshCount)
+				assert.Equal(t, int32(0), cfg.Clusters["test-cluster-2"].Events.Lease.RemainingTicksForRefresh)
+
+				// The `test-cluster-1` is in error so no change should be done here.
+				assert.Equal(t, int32(0), cfg.Clusters["test-cluster-1"].Events.Lease.RemainingMissedRefreshCount)
+				assert.Equal(t, int32(0), cfg.Clusters["test-cluster-1"].Events.Lease.RemainingTicksForRefresh)
+			},
+			wantErr: false,
+		},
+		{
 			name: "test-config-ends-in-scheduled",
 			fields: fields{
 				Store: func() store.Store {
@@ -402,7 +526,12 @@ func TestGRPC_WatchForScheduledDocuments(t *testing.T) {
 								Events: store.Events{TaskEvents: []store.TaskEvent{
 									{Id: "3", Timestamp: time.Now().UTC().Format(time.RFC3339)},
 									{Id: "4", Timestamp: time.Now().UTC().Format(time.RFC3339)},
-								}, TTL: 40},
+								},
+									Lease: store.Lease{
+										RemainingTicksForRefresh:    40,
+										RemainingMissedRefreshCount: 1,
+									},
+								},
 								State: store.Workflow{Status: spec.Workflow_ERROR.String()},
 							},
 							"test-cluster-2": {
@@ -411,7 +540,12 @@ func TestGRPC_WatchForScheduledDocuments(t *testing.T) {
 								Events: store.Events{TaskEvents: []store.TaskEvent{
 									{Id: "1", Timestamp: time.Now().UTC().Format(time.RFC3339)},
 									{Id: "2", Timestamp: time.Now().UTC().Format(time.RFC3339)},
-								}, TTL: 10},
+								},
+									Lease: store.Lease{
+										RemainingTicksForRefresh:    10,
+										RemainingMissedRefreshCount: 2,
+									},
+								},
 								State: store.Workflow{Status: spec.Workflow_DONE.String()},
 							},
 						},
@@ -427,8 +561,12 @@ func TestGRPC_WatchForScheduledDocuments(t *testing.T) {
 				cfg, _ := db.GetConfig(context.Background(), "test-set-1")
 				assert.Equal(t, manifest.Scheduled.String(), cfg.Manifest.State)
 				assert.Equal(t, uint64(2), cfg.Version)
-				assert.Equal(t, int32(9), cfg.Clusters["test-cluster-2"].Events.TTL)
-				assert.Equal(t, int32(40), cfg.Clusters["test-cluster-1"].Events.TTL)
+				assert.Equal(t, int32(2), cfg.Clusters["test-cluster-2"].Events.Lease.RemainingMissedRefreshCount)
+				assert.Equal(t, int32(9), cfg.Clusters["test-cluster-2"].Events.Lease.RemainingTicksForRefresh)
+
+				// The `test-cluster-1` is in error so no change should be done here.
+				assert.Equal(t, int32(1), cfg.Clusters["test-cluster-1"].Events.Lease.RemainingMissedRefreshCount)
+				assert.Equal(t, int32(40), cfg.Clusters["test-cluster-1"].Events.Lease.RemainingTicksForRefresh)
 			},
 			wantErr: false,
 		},
@@ -449,7 +587,12 @@ func TestGRPC_WatchForScheduledDocuments(t *testing.T) {
 								Events: store.Events{TaskEvents: []store.TaskEvent{
 									{Id: "3", Timestamp: time.Now().UTC().Format(time.RFC3339)},
 									{Id: "4", Timestamp: time.Now().UTC().Format(time.RFC3339)},
-								}, TTL: 40},
+								},
+									Lease: store.Lease{
+										RemainingTicksForRefresh:    40,
+										RemainingMissedRefreshCount: 1,
+									},
+								},
 								State: store.Workflow{Status: spec.Workflow_ERROR.String()},
 							},
 							"test-cluster-2": {
@@ -458,7 +601,12 @@ func TestGRPC_WatchForScheduledDocuments(t *testing.T) {
 								Events: store.Events{TaskEvents: []store.TaskEvent{
 									{Id: "1", Timestamp: time.Now().UTC().Format(time.RFC3339)},
 									{Id: "2", Timestamp: time.Now().UTC().Format(time.RFC3339)},
-								}, TTL: 10},
+								},
+									Lease: store.Lease{
+										RemainingTicksForRefresh:    10,
+										RemainingMissedRefreshCount: 2,
+									},
+								},
 								State: store.Workflow{Status: spec.Workflow_ERROR.String()},
 							},
 						},
@@ -474,8 +622,13 @@ func TestGRPC_WatchForScheduledDocuments(t *testing.T) {
 				cfg, _ := db.GetConfig(context.Background(), "test-set-1")
 				assert.Equal(t, manifest.Error.String(), cfg.Manifest.State)
 				assert.Equal(t, uint64(2), cfg.Version)
-				assert.Equal(t, int32(10), cfg.Clusters["test-cluster-2"].Events.TTL)
-				assert.Equal(t, int32(40), cfg.Clusters["test-cluster-1"].Events.TTL)
+
+				// Both are in error.
+				assert.Equal(t, int32(10), cfg.Clusters["test-cluster-2"].Events.Lease.RemainingTicksForRefresh)
+				assert.Equal(t, int32(2), cfg.Clusters["test-cluster-2"].Events.Lease.RemainingMissedRefreshCount)
+
+				assert.Equal(t, int32(40), cfg.Clusters["test-cluster-1"].Events.Lease.RemainingTicksForRefresh)
+				assert.Equal(t, int32(1), cfg.Clusters["test-cluster-1"].Events.Lease.RemainingMissedRefreshCount)
 			},
 			wantErr: false,
 		},
@@ -493,13 +646,13 @@ func TestGRPC_WatchForScheduledDocuments(t *testing.T) {
 							"test-cluster-1": {
 								Current: store.Clusters{},
 								Desired: store.Clusters{},
-								Events:  store.Events{TaskEvents: []store.TaskEvent{}, TTL: 0},
+								Events:  store.Events{TaskEvents: []store.TaskEvent{}, Lease: store.Lease{}},
 								State:   store.Workflow{Status: spec.Workflow_DONE.String()},
 							},
 							"test-cluster-2": {
 								Current: store.Clusters{},
 								Desired: store.Clusters{},
-								Events:  store.Events{TaskEvents: []store.TaskEvent{}, TTL: 0},
+								Events:  store.Events{TaskEvents: []store.TaskEvent{}, Lease: store.Lease{}},
 								State:   store.Workflow{Status: spec.Workflow_DONE.String()},
 							},
 						},
@@ -515,8 +668,8 @@ func TestGRPC_WatchForScheduledDocuments(t *testing.T) {
 				cfg, _ := db.GetConfig(context.Background(), "test-set-1")
 				assert.Equal(t, manifest.Done.String(), cfg.Manifest.State)
 				assert.Equal(t, uint64(2), cfg.Version)
-				assert.Equal(t, int32(0), cfg.Clusters["test-cluster-2"].Events.TTL)
-				assert.Equal(t, int32(0), cfg.Clusters["test-cluster-1"].Events.TTL)
+				assert.Equal(t, store.Lease{}, cfg.Clusters["test-cluster-2"].Events.Lease)
+				assert.Equal(t, store.Lease{}, cfg.Clusters["test-cluster-1"].Events.Lease)
 			},
 			wantErr: false,
 		},

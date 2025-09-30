@@ -3,8 +3,10 @@ package managerclient
 import (
 	"errors"
 	"io"
+	"time"
 
 	"github.com/berops/claudie/internal/healthcheck"
+	"github.com/berops/claudie/services/manager/internal/service"
 )
 
 var (
@@ -15,6 +17,9 @@ var (
 	// ErrNotFound is returned when the requested resource, i.e. Config, cluster, task etc. is not found.
 	ErrNotFound = errors.New("not found")
 )
+
+// TickInterval Represents the interval at which the Manager service checks/updates each Manifest.
+const TickInterval time.Duration = service.Tick
 
 // ClientAPI wraps all manager apis into a single interface.
 type ClientAPI interface {

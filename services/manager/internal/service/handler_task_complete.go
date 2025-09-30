@@ -60,15 +60,20 @@ func (g *GRPC) TaskComplete(ctx context.Context, req *pb.TaskCompleteRequest) (*
 		return nil, status.Errorf(codes.NotFound, "cannot update task %q, as this task is not being currently worked on", req.TaskId)
 	}
 
+	// On both a successfull and un-successfull task we zero out the [Events.Lease] to indicate
+	// that it has finished processing. See handler_next_task.go:[nextTask] function to see why we zero out
+	// the [Events.Lease]
 	cluster.State = req.Workflow
 	switch req.Workflow.Status {
 	case spec.Workflow_DONE:
-		cluster.Events.Ttl = 0
+		cluster.Events.Lease.RemainingMissedRefreshCount = 0
+		cluster.Events.Lease.RemainingTicksForRefresh = 0
 		cluster.Events.Events = cluster.Events.Events[1:]
 		TasksFinishedOk.Inc()
 		log.Debug().Msgf("Completing task %q from Config: %q Cluster: %q Version: %v, Finished successfully", req.TaskId, req.Name, req.Cluster, req.Version)
 	case spec.Workflow_ERROR:
-		cluster.Events.Ttl = 0
+		cluster.Events.Lease.RemainingMissedRefreshCount = 0
+		cluster.Events.Lease.RemainingTicksForRefresh = 0
 		TasksFinishedErr.Inc()
 		log.Debug().Msgf("Completing task %q from Config: %q Cluster: %q Version: %v, Errored", req.TaskId, req.Name, req.Cluster, req.Version)
 	}

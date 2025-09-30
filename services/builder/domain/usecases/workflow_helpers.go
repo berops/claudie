@@ -176,6 +176,29 @@ func (u *Usecases) destroyCluster(ctx context.Context, work *builder.Context, lo
 	return nil
 }
 
+func (u *Usecases) refreshTask(projectName, clusterName, taskId string) {
+	logger := loggerutils.WithProjectName(projectName)
+
+	// ignore error, this is not a fatal error due to which we can't continue.
+	_ = managerclient.Retry(&logger, "TaskUpdate Refresh", func() error {
+		logger.Debug().Msgf("refreshing task %q for cluster %q for config %q", taskId, clusterName, projectName)
+		err := u.Manager.TaskUpdate(context.Background(), &managerclient.TaskUpdateRequest{
+			Config:  projectName,
+			Cluster: clusterName,
+			TaskId:  taskId,
+			Action: managerclient.TaskUpdateOneOfAction{
+				Refresh: new(struct{}),
+			},
+		})
+		if errors.Is(err, managerclient.ErrNotFound) {
+			logger.Warn().Msgf("can't update config %q cluster %q task %q: %v", projectName, clusterName, taskId, err)
+			return nil // nothing to retry
+		}
+		return err
+	})
+
+}
+
 func (u *Usecases) updateTaskWithDescription(ctx *builder.Context, stage spec.Workflow_Stage, description string) {
 	logger := loggerutils.WithProjectName(ctx.ProjectName)
 	ctx.Workflow.Stage = stage
@@ -188,7 +211,9 @@ func (u *Usecases) updateTaskWithDescription(ctx *builder.Context, stage spec.Wo
 			Config:  ctx.ProjectName,
 			Cluster: ctx.GetClusterName(),
 			TaskId:  ctx.TaskId,
-			State:   ctx.Workflow,
+			Action: managerclient.TaskUpdateOneOfAction{
+				State: ctx.Workflow,
+			},
 		})
 		if errors.Is(err, managerclient.ErrNotFound) {
 			log.Warn().Msgf("can't update config %q cluster %q task %q: %v", ctx.ProjectName, ctx.GetClusterName(), ctx.TaskId, err)

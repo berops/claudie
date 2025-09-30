@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"slices"
 	"sync"
+	"time"
 
 	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/loggerutils"
@@ -37,6 +38,29 @@ func (u *Usecases) TaskProcessor(ctx context.Context, wg *sync.WaitGroup) error 
 	go func() {
 		defer wg.Done()
 
+		cancelLeaseRefresh := make(chan struct{})
+		leaseRefreshExited := make(chan struct{})
+		go func() {
+			// we don't need to wg.Add(1) here as we wait for the closure of this go-routine.
+			defer close(leaseRefreshExited)
+
+			// try to refresh atleast 3x during the lease.
+			refreshInterval := time.Duration(task.Lease.TaskLeaseTime/4) * managerclient.TickInterval
+			config, cluster, taskId := task.Config, task.Cluster, task.Event.Id
+
+			log.Debug().Msgf("Lease Refresh interval set to %s", refreshInterval)
+
+			for {
+				select {
+				case <-time.After(refreshInterval):
+					log.Info().Msgf("refreshing lease on task %q for cluster %q for config %q", taskId, cluster, config)
+					u.refreshTask(config, cluster, taskId)
+				case <-cancelLeaseRefresh:
+					return
+				}
+			}
+		}()
+
 		updatedState, err := u.processTaskEvent(ctx, task)
 		if err != nil {
 			metrics.TasksProcessedErrCounter.Inc()
@@ -52,6 +76,12 @@ func (u *Usecases) TaskProcessor(ctx context.Context, wg *sync.WaitGroup) error 
 			task.State.Description = "Finished successfully"
 			// fallthrough
 		}
+
+		// We have finished processing the task we cancel the refreshing of the task and then proceed with
+		// updating the task with either Done or Error. Either way if the TaskComplete fails the manager will
+		// still have the task in the queue and when the Lease expires it will be rescheduled.
+		close(cancelLeaseRefresh)
+		<-leaseRefreshExited
 
 		err = managerclient.Retry(&log.Logger, fmt.Sprintf("Completing task %q", task.Event.Id), func() error {
 			log.Debug().Msgf("completing task %q for cluster %q for config %q with status: %s", task.Event.Id, task.Cluster, task.Config, task.State.Status.String())

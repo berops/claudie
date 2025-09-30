@@ -34,17 +34,26 @@ type TaskAPI interface {
 type NextTaskResponse struct {
 	Config  string
 	Cluster string
-	TTL     int32
 	Current *spec.Clusters
 	Event   *spec.TaskEvent
 	State   *spec.Workflow
+	Lease   Lease
+}
+
+type Lease struct {
+	TaskLeaseTime int32
 }
 
 type TaskUpdateRequest struct {
 	Config  string
 	Cluster string
 	TaskId  string
+	Action  TaskUpdateOneOfAction
+}
+
+type TaskUpdateOneOfAction struct {
 	State   *spec.Workflow
+	Refresh *struct{}
 }
 
 type TaskCompleteRequest struct {
@@ -54,3 +63,6 @@ type TaskCompleteRequest struct {
 	Workflow *spec.Workflow
 	State    *spec.Clusters
 }
+
+// Represents a NOOP action for the [TaskUpdateRequest] payload.
+var taskUpdateNoAction = TaskUpdateOneOfAction{}

@@ -224,8 +224,13 @@ enum Event {
 
 message Events {
   repeated TaskEvent events = 1;
-  int32 ttl = 2;
   bool autoscaled = 3;
+  Lease lease = 4;
+}
+
+message Lease {
+  int32 remainingTicksForRefresh = 1;
+  int32 remainingMissedRefreshCount = 2;
 }
 
 message TaskEvent {

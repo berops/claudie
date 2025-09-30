@@ -14,9 +14,16 @@ import (
 	"github.com/berops/claudie/services/manager/internal/store"
 )
 
-// TaskTTL is the minimum number of ticks (every ~10sec) within which a given task must be completed
-// before being rescheduled again.
-var TaskTTL = int32(envs.GetOrDefaultInt("BUILDER_TTL", 750 /* Default (750 * 10)/60/60 ~= 2hours */))
+var (
+	// TaskLeaseTime is the upper time limit during which if the lease is not refreshed the task is
+	// considered to be lost. If the lease failes to be refresh [AllowedMissedLeaseRefresh] times
+	// the task will be rescheduled.
+	TaskLeaseTime = int32(envs.GetOrDefaultInt("BUILDER_LEASE_TIME", 90 /* (90 * 10)/60 ~= 15mins */))
+
+	// AllowedMissedLeaseRefresh is the number of times the [TaskLeaseTime] is allowed to be
+	// expired before considering the task lost and rescheduling it.
+	AllowedMissedLeaseRefresh = int32(envs.GetOrDefaultInt("BUILDER_ALLOWED_MISSED_LEASE_REFRESH", 3))
+)
 
 // Tick represents the interval at which each manifest state is checked.
 const Tick = 10 * time.Second
@@ -34,7 +41,9 @@ func (g *GRPC) WatchForScheduledDocuments(ctx context.Context) error {
 		var clustersDone int
 		var anyError bool
 
-		for cluster, state := range scheduled.Clusters {
+		var anyTaskInProgress bool
+
+		for _, state := range scheduled.Clusters {
 			if len(state.Events.TaskEvents) == 0 {
 				clustersDone++
 				continue
@@ -48,19 +57,31 @@ func (g *GRPC) WatchForScheduledDocuments(ctx context.Context) error {
 				continue
 			}
 
-			nextTask := state.Events.TaskEvents[0]
+			if state.Events.Lease.RemainingMissedRefreshCount > 0 {
+				anyTaskInProgress = true
 
-			if state.Events.TTL > 0 {
-				state.Events.TTL -= 1
-				logger.Debug().Msgf("Decreasing TTL for task %q cluster %q", nextTask.Id, cluster)
-				if err := g.Store.UpdateConfig(ctx, scheduled); err != nil {
-					if errors.Is(err, store.ErrNotFoundOrDirty) {
-						logger.Debug().Msgf("Failed to decrement task TTL (%v) for cluster %q, dirty write", nextTask.Id, cluster)
-						break
+				state.Events.Lease.RemainingTicksForRefresh -= 1
+				state.Events.Lease.RemainingTicksForRefresh = max(0, state.Events.Lease.RemainingTicksForRefresh)
+
+				if state.Events.Lease.RemainingTicksForRefresh == 0 {
+					state.Events.Lease.RemainingMissedRefreshCount -= 1
+					state.Events.Lease.RemainingMissedRefreshCount = max(0, state.Events.Lease.RemainingMissedRefreshCount)
+
+					if state.Events.Lease.RemainingMissedRefreshCount != 0 {
+						state.Events.Lease.RemainingTicksForRefresh = TaskLeaseTime // Reset the Lease
 					}
-					logger.Err(err).Msgf("Failed to decrement task TTL (%v) for cluster %q", nextTask.Id, cluster)
 				}
-				break
+			}
+		}
+
+		if anyTaskInProgress {
+			if err := g.Store.UpdateConfig(ctx, scheduled); err != nil {
+				if errors.Is(err, store.ErrNotFoundOrDirty) {
+					logger.Debug().Msgf("Failed to update Leases for manifest %q, dirty write", scheduled.Name)
+				} else {
+					logger.Err(err).Msgf("Failed to update Leases for manifest %q", scheduled.Name)
+				}
+				continue // with next manifest.
 			}
 		}
 

@@ -50,9 +50,13 @@ func (t *Client) NextTask(ctx context.Context) (*NextTaskResponse, error) {
 			State:   resp.State,
 			Config:  resp.Name,
 			Cluster: resp.Cluster,
-			TTL:     resp.Ttl,
 			Current: resp.Current,
 			Event:   resp.Event,
+			Lease: Lease{
+				// The Lease structure will always be present
+				// see handler_next_task.go:[pb.ManagerServiceServer.NextTask] function.
+				TaskLeaseTime: resp.Lease.TaskLeaseTime,
+			},
 		}, nil
 	}
 
@@ -143,15 +147,35 @@ func (t *Client) GetConfig(ctx context.Context, request *GetConfigRequest) (*Get
 }
 
 func (t *Client) TaskUpdate(ctx context.Context, req *TaskUpdateRequest) error {
+	if req.Action.Refresh != nil && req.Action.State != nil {
+		return fmt.Errorf("only one action at a time can be specified")
+	}
+	if req.Action == taskUpdateNoAction {
+		return fmt.Errorf("no action specified, required one of Refresh or State Update")
+	}
+
 	current, err := t.client.GetConfig(ctx, &pb.GetConfigRequest{Name: req.Config})
 	if err == nil {
-		_, err := t.client.TaskUpdate(ctx, &pb.TaskUpdateRequest{
+		payload := &pb.TaskUpdateRequest{
 			Name:    req.Config,
 			Cluster: req.Cluster,
 			TaskId:  req.TaskId,
 			Version: current.Config.Version,
-			State:   req.State,
-		})
+			Action:  nil,
+		}
+
+		if req.Action.Refresh != nil {
+			payload.Action = &pb.TaskUpdateRequest_Refresh_{Refresh: new(pb.TaskUpdateRequest_Refresh)}
+		}
+		if req.Action.State != nil {
+			payload.Action = &pb.TaskUpdateRequest_State{State: req.Action.State}
+		}
+
+		if payload.Action == nil {
+			return fmt.Errorf("no action specified, required one of Refresh or State Update")
+		}
+
+		_, err := t.client.TaskUpdate(ctx, payload)
 		if err == nil {
 			return nil
 		}

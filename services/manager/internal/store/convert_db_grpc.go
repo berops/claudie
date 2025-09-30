@@ -22,7 +22,16 @@ func ConvertToGRPCEvents(w Events) (*spec.Events, error) {
 		te = append(te, g)
 	}
 
-	return &spec.Events{Events: te, Ttl: w.TTL, Autoscaled: w.Autoscaled}, nil
+	ev := &spec.Events{
+		Events:     te,
+		Autoscaled: w.Autoscaled,
+		Lease: &spec.Lease{
+			RemainingTicksForRefresh:    w.Lease.RemainingTicksForRefresh,
+			RemainingMissedRefreshCount: w.Lease.RemainingMissedRefreshCount,
+		},
+	}
+
+	return ev, nil
 }
 
 // ConvertFromGRPCEvents converts the events data from GRPC to the database representation.
@@ -49,7 +58,18 @@ func ConvertFromGRPCEvents(w *spec.Events) (Events, error) {
 		})
 	}
 
-	return Events{TaskEvents: te, TTL: w.Ttl, Autoscaled: w.Autoscaled}, nil
+	ev := Events{
+		TaskEvents: te,
+		Lease: Lease{
+			// If the Lease does not exists, this will result in zero values, meaning
+			// the task, if any, will be immediately scheduled.
+			RemainingTicksForRefresh:    w.GetLease().GetRemainingTicksForRefresh(),
+			RemainingMissedRefreshCount: w.GetLease().GetRemainingMissedRefreshCount(),
+		},
+		Autoscaled: w.Autoscaled,
+	}
+
+	return ev, nil
 }
 
 func ConvertToGRPCTaskEvent(te TaskEvent) (*spec.TaskEvent, error) {

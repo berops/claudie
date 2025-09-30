@@ -23,11 +23,19 @@ func (g *GRPC) TaskUpdate(ctx context.Context, req *pb.TaskUpdateRequest) (*pb.T
 	if req.TaskId == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "missing task id")
 	}
-	if req.State.Status == spec.Workflow_DONE || req.State.Status == spec.Workflow_ERROR {
-		return nil, status.Errorf(codes.InvalidArgument, "to complete a task, use the TaskComplete RPC")
-	}
 
-	log.Debug().Msgf("Updating Config: %q Cluster: %q Version: %v Task: %q with status: %q", req.Name, req.Cluster, req.Version, req.TaskId, req.State.Status.String())
+	switch action := req.Action.(type) {
+	case *pb.TaskUpdateRequest_State:
+		if action.State.Status == spec.Workflow_DONE || action.State.Status == spec.Workflow_ERROR {
+			return nil, status.Errorf(codes.InvalidArgument, "to complete a task, use the TaskComplete RPC")
+		}
+		log.Debug().Msgf("Updating Config: %q Cluster: %q Version: %v Task: %q with status: %q", req.Name, req.Cluster, req.Version, req.TaskId, action.State.Status.String())
+	case *pb.TaskUpdateRequest_Refresh_:
+		log.Debug().Msgf("Refreshing Lease for Task: %q for Cluster: %q Version: %v for Config: %q", req.TaskId, req.Cluster, req.Version, req.Name)
+		// do nothing.
+	default:
+		return nil, status.Errorf(codes.InvalidArgument, "undefined action %T", action)
+	}
 
 	cfg, err := g.Store.GetConfig(ctx, req.Name)
 	if err != nil {
@@ -55,7 +63,17 @@ func (g *GRPC) TaskUpdate(ctx context.Context, req *pb.TaskUpdateRequest) (*pb.T
 		return nil, status.Errorf(codes.NotFound, "cannot update task %q, as this task is not being currently worked on", req.TaskId)
 	}
 
-	cluster.State = store.ConvertFromGRPCWorkflow(req.State)
+	// Reset the Timer for the Lease in all actions.
+	switch action := req.Action.(type) {
+	case *pb.TaskUpdateRequest_State:
+		cluster.State = store.ConvertFromGRPCWorkflow(action.State)
+
+		cluster.Events.Lease.RemainingMissedRefreshCount = AllowedMissedLeaseRefresh
+		cluster.Events.Lease.RemainingTicksForRefresh = TaskLeaseTime
+	case *pb.TaskUpdateRequest_Refresh_:
+		cluster.Events.Lease.RemainingMissedRefreshCount = AllowedMissedLeaseRefresh
+		cluster.Events.Lease.RemainingTicksForRefresh = TaskLeaseTime
+	}
 
 	if err := g.Store.UpdateConfig(ctx, cfg); err != nil {
 		if errors.Is(err, store.ErrNotFoundOrDirty) {

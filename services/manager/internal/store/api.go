@@ -89,8 +89,13 @@ type Clusters struct {
 
 type Events struct {
 	TaskEvents []TaskEvent `bson:"taskEvents"`
-	TTL        int32       `bson:"ttl"`
+	Lease      Lease       `bson:"lease"`
 	Autoscaled bool        `bson:"autoscaled"`
+}
+
+type Lease struct {
+	RemainingTicksForRefresh    int32 `bson:"remainingTicksForRefresh"`
+	RemainingMissedRefreshCount int32 `bson:"remainingMissedRefreshCount"`
 }
 
 type TaskEvent struct {
