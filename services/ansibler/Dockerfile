@@ -1,4 +1,4 @@
-FROM docker.io/library/golang:1.24.5 AS go_builder
+FROM docker.io/library/golang:1.25.1 AS go_builder
 
 ARG TARGETARCH
 
@@ -21,7 +21,7 @@ WORKDIR /go/services/ansibler/server
 RUN CGO_ENABLED=0 go build
 
 # Ansible installation: https://github.com/cytopia/docker-ansible/blob/master/Dockerfiles/Dockerfile-base
-FROM docker.io/library/alpine:3.16 AS ansible_builder
+FROM docker.io/library/alpine:3.22 AS ansible_builder
 
 # Install required packages, including Python3 and Ansible
 RUN apk add --no-cache \
@@ -34,7 +34,7 @@ RUN apk add --no-cache \
     && ln -s /usr/bin/python3 /usr/bin/python \
     && pip3 install --no-cache-dir ansible==10.1.0
 
-FROM alpine:3.16
+FROM alpine:3.22
 #Add repository label
 LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
 #Add image name as a label
