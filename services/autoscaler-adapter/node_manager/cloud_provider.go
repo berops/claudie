@@ -18,6 +18,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/berops/claudie/internal/generics"
 	"github.com/berops/claudie/proto/pb/spec"
+	"github.com/gophercloud/gophercloud/v2"
+	"github.com/gophercloud/gophercloud/v2/openstack"
+	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/flavors"
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"github.com/oracle/oci-go-sdk/v65/common"
 	"github.com/oracle/oci-go-sdk/v65/core"
@@ -185,5 +188,41 @@ func (nm *NodeManager) cacheAzure(np *spec.DynamicNodePool) error {
 		nm.azureVMs = generics.MergeMaps(getTypeInfoAzure(nextResult.Value), nm.azureVMs)
 	}
 
+	return nil
+}
+
+func (nm *NodeManager) cacheOpenstack(np *spec.DynamicNodePool) error {
+	authOpts := gophercloud.AuthOptions{
+		IdentityEndpoint:            np.Provider.GetOpenstack().AuthURL,
+		ApplicationCredentialID:     np.Provider.GetOpenstack().ApplicationCredentialID,
+		ApplicationCredentialSecret: np.Provider.GetOpenstack().ApplicationCredentialSecret,
+	}
+
+	authClient, err := openstack.AuthenticatedClient(context.Background(), authOpts)
+	if err != nil {
+		return fmt.Errorf("openstack authentication got error : %w", err)
+	}
+
+	computeClient, err := openstack.NewComputeV2(authClient, gophercloud.EndpointOpts{
+		Region: np.Region,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create compute client: %w", err)
+	}
+
+	listOpts := flavors.ListOpts{
+		AccessType: flavors.PublicAccess,
+	}
+
+	allPages, err := flavors.ListDetail(computeClient, listOpts).AllPages(context.Background())
+	if err != nil {
+		return fmt.Errorf("openstack client got error : %w", err)
+	}
+
+	allFlavors, err := flavors.ExtractFlavors(allPages)
+	if err != nil {
+		return fmt.Errorf("openstack client got error : %w", err)
+	}
+	nm.openstackVMs = getTypeInfoOpenstack(allFlavors)
 	return nil
 }

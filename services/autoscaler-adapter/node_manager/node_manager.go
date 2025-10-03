@@ -24,6 +24,7 @@ type NodeManager struct {
 	awsVMs          map[string]*typeInfo
 	azureVMs        map[string]*typeInfo
 	ociVMs          map[string]*typeInfo
+	openstackVMs    map[string]*typeInfo
 	// Provider-region-zone cache
 	cacheProviderMap map[string]struct{}
 	resolver         *nodes.DynamicNodePoolResolver
@@ -114,6 +115,10 @@ func (nm *NodeManager) getTypeInfo(provider string, np *spec.DynamicNodePool) *t
 		if ti, ok := nm.genesisCloudVMs[np.ServerType]; ok {
 			return ti
 		}
+	case "openstack":
+		if ti, ok := nm.openstackVMs[np.ServerType]; ok {
+			return ti
+		}
 	}
 	return nil
 }
@@ -155,6 +160,10 @@ func (nm *NodeManager) refreshCache(nps []*spec.NodePool) error {
 					}
 				case "genesiscloud":
 					if err := nm.cacheGenesisCloud(np); err != nil {
+						return err
+					}
+				case "openstack":
+					if err := nm.cacheOpenstack(np); err != nil {
 						return err
 					}
 				}

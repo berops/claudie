@@ -8,6 +8,7 @@ import (
 	"cloud.google.com/go/compute/apiv1/computepb"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/flavors"
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"github.com/oracle/oci-go-sdk/v65/core"
 )
@@ -229,6 +230,17 @@ func getTypeInfoAzure(rawInfo []*armcompute.VirtualMachineSize) map[string]*type
 		m[*vm.Name] = &typeInfo{
 			cpu:    int64(*vm.NumberOfCores),
 			memory: int64(*vm.MemoryInMB) * 1024 * 1024, // Convert to bytes
+		}
+	}
+	return m
+}
+
+func getTypeInfoOpenstack(rawInfo []flavors.Flavor) map[string]*typeInfo {
+	m := make(map[string]*typeInfo, len(rawInfo))
+	for _, flavor := range rawInfo {
+		m[flavor.Name] = &typeInfo{
+			cpu:    int64(flavor.VCPUs),
+			memory: int64(flavor.RAM) * 1024 * 1024, // Convert to bytes
 		}
 	}
 	return m

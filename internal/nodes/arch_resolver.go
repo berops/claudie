@@ -94,9 +94,17 @@ func (r *DynamicNodePoolResolver) resolve(np *spec.DynamicNodePool) (Arch, error
 		return resolveAzure(np)
 	case "genesiscloud":
 		return resolveGenesisCloud(np)
+	case "openstack":
+		return resolveOpenstack(np)
 	default:
 		return "", fmt.Errorf("%q not supported", np.GetProvider().GetCloudProviderName())
 	}
+}
+
+func resolveOpenstack(np *spec.DynamicNodePool) (Arch, error) {
+	// As of October 3, 2025, there is no way to determine the OpenStack
+	// architecture resolution based on the image or server type/flavor.
+	return Amd64, nil
 }
 
 func resolveGenesisCloud(np *spec.DynamicNodePool) (Arch, error) {
