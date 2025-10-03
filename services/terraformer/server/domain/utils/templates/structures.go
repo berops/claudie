@@ -1,6 +1,9 @@
 package templates
 
-import "github.com/berops/claudie/proto/pb/spec"
+import (
+	"github.com/berops/claudie/internal/nodepools"
+	"github.com/berops/claudie/proto/pb/spec"
+)
 
 // All the following types grouped are "Helper" types to group related data into a single context.
 type (
@@ -84,12 +87,6 @@ type (
 		// Regions: ["europe-west2", "europe-west1"].
 		Regions []string
 	}
-
-	RegionNetwork struct {
-		Region          string
-		ExternalNetwork string
-	}
-
 	// Networking wraps all data related to generating terraform files for a Provider
 	// to set up a common networking infrastructure to be used by all Nodepools from the same Provider.
 	// This structure is used when generating template files inside the networking directory
@@ -167,7 +164,7 @@ type (
 		//   {Region: "regionOne", ExternalNetwork: "ext-net-2"},
 		//   {Region: "regionTwo", ExternalNetwork: "ext-net-1"},
 		// ].
-		RegionNetwork []RegionNetwork
+		RegionNetwork []nodepools.RegionNetwork
 		// K8sData contains some additional information that may be needed during the generation of the
 		// terraform templates. Such as if A load balancer is attached to the K8s cluster with the ApiServer port.
 		// This data will be set if the ClusterType within ClusterData of this object is of type "K8s".

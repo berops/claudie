@@ -10,8 +10,12 @@ import (
 	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates"
 )
+
+type RegionNetwork struct {
+	Region          string
+	ExternalNetwork string
+}
 
 func DeleteByName(nodepools []*spec.NodePool, name string) []*spec.NodePool {
 	for i, np := range nodepools {
@@ -83,10 +87,10 @@ func ExtractRegions(nodepools []*spec.DynamicNodePool) []string {
 }
 
 // ExtractRegionNetwork will return a unique list of all regions with networks used in list of nodepools
-func ExtractRegionNetwork(nodepools []*spec.DynamicNodePool) []templates.RegionNetwork {
-	set := make(map[templates.RegionNetwork]struct{})
+func ExtractRegionNetwork(nodepools []*spec.DynamicNodePool) []RegionNetwork {
+	set := make(map[RegionNetwork]struct{})
 	for _, nodepool := range nodepools {
-		key := templates.RegionNetwork{
+		key := RegionNetwork{
 			Region:          nodepool.Region,
 			ExternalNetwork: nodepool.ExternalNetworkName,
 		}
