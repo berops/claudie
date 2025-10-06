@@ -210,11 +210,7 @@ func (nm *NodeManager) cacheOpenstack(np *spec.DynamicNodePool) error {
 		return fmt.Errorf("failed to create compute client: %w", err)
 	}
 
-	listOpts := flavors.ListOpts{
-		AccessType: flavors.PublicAccess,
-	}
-
-	allPages, err := flavors.ListDetail(computeClient, listOpts).AllPages(context.Background())
+	allPages, err := flavors.ListDetail(computeClient, flavors.ListOpts{}).AllPages(context.Background())
 	if err != nil {
 		return fmt.Errorf("openstack client got error : %w", err)
 	}
