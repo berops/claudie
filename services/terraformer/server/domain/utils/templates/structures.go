@@ -134,7 +134,7 @@ type (
 		//          name: openstack-1
 		//          region: regionOne
 		//          zone: nova
-		//          externalNetwork: ext-net-1
+		//          externalNetworkName: ext-net-1
 		//        count: 1
 		//        serverType: s1.small
 		//        image: ubuntu-22.04
@@ -144,7 +144,7 @@ type (
 		//          name: openstack-1
 		//          region: regionOne
 		//          zone: nova
-		//          externalNetwork: ext-net-2
+		//          externalNetworkName: ext-net-2
 		//        count: 1
 		//        serverType: s1.small
 		//        image: ubuntu-22.04
@@ -154,15 +154,15 @@ type (
 		//          name: openstack-1
 		//          region: regionTwo
 		//          zone: nova
-		//          externalNetwork: ext-net-1
+		//          externalNetworkName: ext-net-1
 		//        count: 1
 		//        serverType: s1.small
 		//        image: ubuntu-22.04
 		//
 		// RegionNetwork: [
-		//   {Region: "regionOne", ExternalNetwork: "ext-net-1"},
-		//   {Region: "regionOne", ExternalNetwork: "ext-net-2"},
-		//   {Region: "regionTwo", ExternalNetwork: "ext-net-1"},
+		//   {Region: "regionOne", externalNetworkName: "ext-net-1"},
+		//   {Region: "regionOne", externalNetworkName: "ext-net-2"},
+		//   {Region: "regionTwo", externalNetworkName: "ext-net-1"},
 		// ].
 		RegionNetwork []nodepools.RegionNetwork
 		// K8sData contains some additional information that may be needed during the generation of the
