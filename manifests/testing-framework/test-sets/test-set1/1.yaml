@@ -8,7 +8,7 @@ spec:
       providerType: gcp
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.12
+        tag: v0.9.14
         path: "templates/terraformer/gcp"
       secretRef:
         name: gcp-secret
@@ -17,7 +17,7 @@ spec:
       providerType: hetzner
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.12
+        tag: v0.9.14
         path: "templates/terraformer/hetzner"
       secretRef:
         name: hetzner-secret
@@ -26,7 +26,7 @@ spec:
       providerType: oci
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.12
+        tag: v0.9.14
         path: "templates/terraformer/oci"
       secretRef:
         name: oci-secret
@@ -35,7 +35,7 @@ spec:
       providerType: aws
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.12
+        tag: v0.9.14
         path: "templates/terraformer/aws"
       secretRef:
         name: aws-secret
@@ -44,7 +44,7 @@ spec:
       providerType: aws
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.12
+        tag: v0.9.14
         path: "templates/terraformer/aws"
       secretRef:
         name: aws-secret
@@ -53,7 +53,7 @@ spec:
       providerType: azure
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.12
+        tag: v0.9.14
         path: "templates/terraformer/azure"
       secretRef:
         name: azure-sponsorship-secret
@@ -62,10 +62,19 @@ spec:
       providerType: azure
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.12
+        tag: v0.9.14
         path: "templates/terraformer/azure"
       secretRef:
         name: azure-sponsorship-secret
+        namespace: e2e-secrets
+    - name: ovh-1
+      providerType: openstack
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.9.14
+        path: "templates/terraformer/openstack"
+      secretRef:
+        name: ovh-secret
         namespace: e2e-secrets
   nodePools:
     dynamic:
@@ -200,7 +209,39 @@ spec:
         annotations:
           claudie.io/example-annotation: >
             ["test-set1"]
-
+      - name: ovh-ctrl-nodes
+        providerSpec:
+          name: ovh-1
+          region: DE1
+          zone: nova
+          externalNetworkName: Ext-Net
+        count: 1
+        serverType: c3-4-flex
+        image: 050a1509-2f01-48e9-96e6-5eccada84344
+        taints:
+          - key: test
+            value: test
+            effect: NoSchedule
+        labels:
+          test-set: test-set1
+        annotations:
+          claudie.io/example-annotation: >
+            ["test-set1"]
+      - name: ovh-cmpt-nodes
+        providerSpec:
+          name: ovh-1
+          region: RBX-A
+          zone: nova
+          externalNetworkName: Ext-Net
+        count: 1
+        serverType: c3-4-flex
+        image: fde01fb6-68e9-4b81-8299-c2caad6ff915
+        storageDiskSize: 50
+        labels:
+          test-set: test-set1
+        annotations:
+          claudie.io/example-annotation: >
+            ["test-set1"]
   kubernetes:
     clusters:
       - name: ts1-htz-cluster-test-set-no1
@@ -245,3 +286,12 @@ spec:
             - azr-ctrl-nodes
           compute:
             - azr-cmpt-nodes
+      - name: ts1-ovh-cluster-test-set-no1
+        version: 1.30.0
+        network: 192.168.2.0/24
+        pools:
+          control:
+            - ovh-ctrl-nodes
+          compute:
+            - ovh-cmpt-nodes
+
