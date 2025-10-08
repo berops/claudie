@@ -95,7 +95,6 @@ func ExtractRegionNetwork(nodepools []*spec.DynamicNodePool) []RegionNetwork {
 			ExternalNetwork: nodepool.ExternalNetworkName,
 		}
 		set[key] = struct{}{}
-
 	}
 	return slices.Collect(maps.Keys(set))
 }
