@@ -7,12 +7,11 @@
 package spec
 
 import (
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
-
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -756,7 +755,7 @@ const file_spec_nodepool_proto_rawDesc = "" +
 	"\aprivate\x18\x02 \x01(\tR\aprivate\x12\x16\n" +
 	"\x06public\x18\x03 \x01(\tR\x06public\x12*\n" +
 	"\bnodeType\x18\x04 \x01(\x0e2\x0e.spec.NodeTypeR\bnodeType\x12\x1a\n" +
-	"\busername\x18\x05 \x01(\tR\busername\"\xa8\x03\n" +
+	"\busername\x18\x05 \x01(\tR\busername\"\xda\x03\n" +
 	"\x0fDynamicNodePool\x12\x1e\n" +
 	"\n" +
 	"serverType\x18\x01 \x01(\tR\n" +
@@ -774,7 +773,8 @@ const file_spec_nodepool_proto_rawDesc = "" +
 	"\n" +
 	"privateKey\x18\f \x01(\tR\n" +
 	"privateKey\x12\x12\n" +
-	"\x04cidr\x18\x0e \x01(\tR\x04cidr\"_\n" +
+	"\x04cidr\x18\x0e \x01(\tR\x04cidr\x120\n" +
+	"\x13externalNetworkName\x18\x0f \x01(\tR\x13externalNetworkName\"_\n" +
 	"\vMachineSpec\x12\x1a\n" +
 	"\bcpuCount\x18\x01 \x01(\x05R\bcpuCount\x12\x16\n" +
 	"\x06memory\x18\x02 \x01(\x05R\x06memory\x12\x1c\n" +

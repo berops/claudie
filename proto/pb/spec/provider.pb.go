@@ -7,12 +7,11 @@
 package spec
 
 import (
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
-
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -455,15 +454,14 @@ func (x *GenesisCloudProvider) GetToken() string {
 }
 
 type OpenstackProvider struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	AuthURL                     string `protobuf:"bytes,1,opt,name=authURL,proto3" json:"authURL,omitempty"`
-	DomainID                    string `protobuf:"bytes,2,opt,name=domainID,proto3" json:"domainID,omitempty"`
-	ProjectID                   string `protobuf:"bytes,3,opt,name=projectID,proto3" json:"projectID,omitempty"`
-	ApplicationCredentialID     string `protobuf:"bytes,4,opt,name=applicationCredentialID,proto3" json:"applicationCredentialID,omitempty"`
-	ApplicationCredentialSecret string `protobuf:"bytes,5,opt,name=applicationCredentialSecret,proto3" json:"applicationCredentialSecret,omitempty"`
+	state                       protoimpl.MessageState `protogen:"open.v1"`
+	AuthURL                     string                 `protobuf:"bytes,1,opt,name=authURL,proto3" json:"authURL,omitempty"`
+	DomainID                    string                 `protobuf:"bytes,2,opt,name=domainID,proto3" json:"domainID,omitempty"`
+	ProjectID                   string                 `protobuf:"bytes,3,opt,name=projectID,proto3" json:"projectID,omitempty"`
+	ApplicationCredentialID     string                 `protobuf:"bytes,4,opt,name=applicationCredentialID,proto3" json:"applicationCredentialID,omitempty"`
+	ApplicationCredentialSecret string                 `protobuf:"bytes,5,opt,name=applicationCredentialSecret,proto3" json:"applicationCredentialSecret,omitempty"`
+	unknownFields               protoimpl.UnknownFields
+	sizeCache                   protoimpl.SizeCache
 }
 
 func (x *OpenstackProvider) Reset() {
@@ -676,8 +674,10 @@ func (x *Provider) GetGenesiscloud() *GenesisCloudProvider {
 }
 
 func (x *Provider) GetOpenstack() *OpenstackProvider {
-	if x, ok := x.GetProviderType().(*Provider_Openstack); ok {
-		return x.Openstack
+	if x != nil {
+		if x, ok := x.ProviderType.(*Provider_Openstack); ok {
+			return x.Openstack
+		}
 	}
 	return nil
 }
@@ -847,7 +847,13 @@ const file_spec_provider_proto_rawDesc = "" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12\x1c\n" +
 	"\taccountID\x18\x02 \x01(\tR\taccountID\",\n" +
 	"\x14GenesisCloudProvider\x12\x14\n" +
-	"\x05token\x18\x01 \x01(\tR\x05token\"\xab\x04\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\"\xe3\x01\n" +
+	"\x11OpenstackProvider\x12\x18\n" +
+	"\aauthURL\x18\x01 \x01(\tR\aauthURL\x12\x1a\n" +
+	"\bdomainID\x18\x02 \x01(\tR\bdomainID\x12\x1c\n" +
+	"\tprojectID\x18\x03 \x01(\tR\tprojectID\x128\n" +
+	"\x17applicationCredentialID\x18\x04 \x01(\tR\x17applicationCredentialID\x12@\n" +
+	"\x1bapplicationCredentialSecret\x18\x05 \x01(\tR\x1bapplicationCredentialSecret\"\xe4\x04\n" +
 	"\bProvider\x12\x1a\n" +
 	"\bspecName\x18\x01 \x01(\tR\bspecName\x12,\n" +
 	"\x11cloudProviderName\x18\x02 \x01(\tR\x11cloudProviderName\x12%\n" +
@@ -863,7 +869,8 @@ const file_spec_provider_proto_rawDesc = "" +
 	"cloudflare\x18\t \x01(\v2\x18.spec.CloudflareProviderH\x00R\n" +
 	"cloudflare\x12@\n" +
 	"\fgenesiscloud\x18\n" +
-	" \x01(\v2\x1a.spec.GenesisCloudProviderH\x00R\fgenesiscloud\x126\n" +
+	" \x01(\v2\x1a.spec.GenesisCloudProviderH\x00R\fgenesiscloud\x127\n" +
+	"\topenstack\x18\v \x01(\v2\x17.spec.OpenstackProviderH\x00R\topenstack\x126\n" +
 	"\ttemplates\x18\r \x01(\v2\x18.spec.TemplateRepositoryR\ttemplatesB\x0e\n" +
 	"\fProviderType\"\x87\x01\n" +
 	"\x12TemplateRepository\x12\x1e\n" +
