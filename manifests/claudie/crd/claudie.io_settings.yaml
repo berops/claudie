@@ -16,69 +16,70 @@ spec:
     singular: setting
   scope: Namespaced
   versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        description: Settings used for customization of deployed clusters via the
-          InputManifest.
-        properties:
-          apiVersion:
-            description: |-
-              APIVersion defines the versioned schema of this representation of an object.
-              Servers should convert recognized schemas to the latest internal value, and
-              may reject unrecognized values.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-            type: string
-          kind:
-            description: |-
-              Kind is a string value representing the REST resource this object represents.
-              Servers may infer this from the endpoint the client submits requests to.
-              Cannot be updated.
-              In CamelCase.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-            type: string
-          metadata:
-            type: object
-          spec:
-            properties:
-              envoy:
-                description: |-
-                  Envoy configuration to be referenced by a Role
-                  in a LoadBalancer cluster in the InputManifest.
-                properties:
-                  cds:
-                    description: |-
-                      Specifies the cluster dynamic configuration which will replace
-                      the default claudie provided configuration.
+    - name: v1alpha1
+      schema:
+        openAPIV3Schema:
+          description:
+            Settings used for customization of deployed clusters via the
+            InputManifest.
+          properties:
+            apiVersion:
+              description: |-
+                APIVersion defines the versioned schema of this representation of an object.
+                Servers should convert recognized schemas to the latest internal value, and
+                may reject unrecognized values.
+                More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+              type: string
+            kind:
+              description: |-
+                Kind is a string value representing the REST resource this object represents.
+                Servers may infer this from the endpoint the client submits requests to.
+                Cannot be updated.
+                In CamelCase.
+                More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+              type: string
+            metadata:
+              type: object
+            spec:
+              properties:
+                envoy:
+                  description: |-
+                    Envoy configuration to be referenced by a Role
+                    in a LoadBalancer cluster in the InputManifest.
+                  properties:
+                    cds:
+                      description: |-
+                        Specifies the cluster dynamic configuration which will replace
+                        the default claudie provided configuration.
 
-                      Be careful when replacing the default configuration as you may break
-                      the 'settings' configurable options for the role definition in the
-                      InputManifest.
+                        Be careful when replacing the default configuration as you may break
+                        the 'settings' configurable options for the role definition in the
+                        InputManifest.
 
-                      If you need to change the default behaviour, it is advisable to start
-                      with the default configuration provided by claudie, which matches the
-                      configurable options in the InputManifest, and then make your own changes
-                      from there.
-                    type: string
-                  lds:
-                    description: |-
-                      Specifies the dynamic listener configuration that will replace the
-                      default configuration provided by claudie.
+                        If you need to change the default behaviour, it is advisable to start
+                        with the default configuration provided by claudie, which matches the
+                        configurable options in the InputManifest, and then make your own changes
+                        from there.
+                      type: string
+                    lds:
+                      description: |-
+                        Specifies the dynamic listener configuration that will replace the
+                        default configuration provided by claudie.
 
-                      Be careful when replacing the default configuration as you may break
-                      the 'settings' configurable options for the role definition in the
-                      InputManifest.
+                        Be careful when replacing the default configuration as you may break
+                        the 'settings' configurable options for the role definition in the
+                        InputManifest.
 
-                      If you need to change the default behaviour, it is advisable to start
-                      with the default configuration provided by claudie, which matches the
-                      configurable options in the InputManifest, and then make your own changes
-                      from there.
-                    type: string
-                type: object
-            type: object
-        required:
-        - metadata
-        - spec
-        type: object
-    served: true
-    storage: true
+                        If you need to change the default behaviour, it is advisable to start
+                        with the default configuration provided by claudie, which matches the
+                        configurable options in the InputManifest, and then make your own changes
+                        from there.
+                      type: string
+                  type: object
+              type: object
+          required:
+            - metadata
+            - spec
+          type: object
+      served: true
+      storage: true

@@ -30,3 +30,25 @@ As stated earlier, Claudie deploys Cluster Autoscaler and Autoscaler Adapter for
 ## Considerations
 
 As Claudie just extends Cluster Autoscaler, it is important that you follow their [best practices](https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/FAQ.md#what-are-the-key-best-practices-for-running-cluster-autoscaler). Furthermore, as number of nodes in autoscaled node pools can be volatile, you should carefully plan out how you will use the storage on such node pools. Longhorn support of Cluster Autoscaler is still in experimental phase ([longhorn documentation](https://longhorn.io/docs/1.4.0/high-availability/k8s-cluster-autoscaler/)).
+
+## GPUs
+
+The custom Claudie-Provider for the [Cluster-Autoscaler](https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler) does not automatically determine whether the provided instance types have GPU capabilities. If you want autoscaling for a nodepool with GPUs, you must explicitly specify how many GPUs each node in the nodepool has.
+
+```
+- name: autoscaled
+  providerSpec:
+   name: aws
+   region: eu-central-1
+   zone: eu-central-1a
+  autoscaler:
+    min: 0
+    max: 20
+  # GPU machine type name.
+  serverType: g4dn.xlarge
+  machineSpec:
+    # explicitly specify how many GPU's the instance type provides.
+    nvidiaGpu: 1
+  # OS image name
+  image: ami-07eef52105e8a2059
+  ```
