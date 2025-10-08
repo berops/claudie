@@ -204,6 +204,7 @@ type ProviderSpec struct {
 	// +optional
 	Zone string `yaml:"zone" json:"zone"`
 	// Name of the external provider network to which the nodes will be connected to. Currently only required for OpenStack.
+	// +optional
 	ExternalNetworkName string `validate:"external_net" yaml:"externalNetworkName" json:"externalNetworkName"`
 }
 

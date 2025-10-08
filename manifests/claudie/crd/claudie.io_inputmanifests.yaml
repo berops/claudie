@@ -339,7 +339,6 @@ spec:
                               description: Zone of the nodepool.
                               type: string
                           required:
-                          - externalNetworkName
                           - name
                           - region
                           type: object
