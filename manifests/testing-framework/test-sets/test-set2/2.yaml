@@ -155,12 +155,12 @@ spec:
       - name: ovh-ldbl-nodes
         providerSpec:
           name: ovh-1
-          region: RBX-A
+          region: WAW1
           zone: nova
           externalNetworkName: Ext-Net
         count: 2
         serverType: c3-4-flex
-        image: 44592480-925e-4485-9675-91e211ea22c0
+        image: ed4ac2cf-f5d6-48ec-8cdf-fe2432763f22
         storageDiskSize: 50
 
   kubernetes:
