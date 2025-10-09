@@ -151,7 +151,7 @@ spec:
           externalNetworkName: Ext-Net
         count: 1
         serverType: c3-4-flex
-        image: fde01fb6-68e9-4b81-8299-c2caad6ff915
+        image: 44592480-925e-4485-9675-91e211ea22c0
         storageDiskSize: 50
   kubernetes:
     clusters:

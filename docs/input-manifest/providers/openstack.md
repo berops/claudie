@@ -99,7 +99,7 @@ spec:
       # Machine type name.
       serverType: c3-4-flex
       # OS image name.
-      image: fa62ad8e-5df1-4f35-8329-0ba96a5426ed
+      image: ed4ac2cf-f5d6-48ec-8cdf-fe2432763f22
 
     - name: compute-1-os
       providerSpec:
@@ -115,7 +115,7 @@ spec:
       # Machine type name.
       serverType: c3-4-flex
       # OS image name.
-      image: 2053eb45-d392-460a-bcb1-abc9af4f3924
+      image: 13272f19-7645-426c-b96e-e438932dd27e
       storageDiskSize: 50
 
     - name: compute-2-os
@@ -132,7 +132,7 @@ spec:
       # Machine type name.
       serverType: c3-4-flex
       # OS image name.
-      image: fde01fb6-68e9-4b81-8299-c2caad6ff915
+      image: 44592480-925e-4485-9675-91e211ea22c0
       storageDiskSize: 50
 
   kubernetes:
