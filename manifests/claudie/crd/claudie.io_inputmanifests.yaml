@@ -303,13 +303,16 @@ spec:
                           properties:
                             cpuCount:
                               description: CpuCount specifies the number of CPU cores
-                                to be used.
+                                the provided instance type will have.
                               type: integer
                             memory:
+                              description: Memory specifies the memory the provided
+                                instance type will have.
                               type: integer
-                          required:
-                          - cpuCount
-                          - memory
+                            nvidiaGpu:
+                              description: Nvidia specifies the number of NVIDIA GPUs
+                                the provided instance type will have.
+                              type: integer
                           type: object
                         name:
                           description: Name of the nodepool. Each nodepool will have

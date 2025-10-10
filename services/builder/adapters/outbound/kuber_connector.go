@@ -3,6 +3,7 @@ package outbound
 import (
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/grpcutils"
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
 	builder "github.com/berops/claudie/services/builder/internal"
@@ -114,10 +115,31 @@ func (k *KuberConnector) PatchClusterInfoConfigMap(builderCtx *builder.Context, 
 }
 
 // PatchNodes updates k8s cluster node metadata.
-func (k *KuberConnector) PatchNodes(builderCtx *builder.Context, kuberGrpcClient pb.KuberServiceClient) error {
+func (k *KuberConnector) PatchNodes(builderCtx *builder.Context, toRemove nodepools.LabelsTaintsAnnotationsData, kuberGrpcClient pb.KuberServiceClient) error {
+	var (
+		labels      = make(map[string]*pb.PatchNodesRequest_ListOfLabelKeys)
+		annotations = make(map[string]*pb.PatchNodesRequest_ListOfAnnotationKeys)
+		taints      = make(map[string]*pb.PatchNodesRequest_ListOfTaintKeys)
+	)
+
+	for k, v := range toRemove.LabelKeys {
+		labels[k] = &pb.PatchNodesRequest_ListOfLabelKeys{Labels: v}
+	}
+	for k, v := range toRemove.AnnotationKeys {
+		annotations[k] = &pb.PatchNodesRequest_ListOfAnnotationKeys{Annotations: v}
+	}
+	for k, v := range toRemove.TaintKeys {
+		taints[k] = &pb.PatchNodesRequest_ListOfTaintKeys{Taints: v}
+	}
+
 	return kuber.PatchNodes(kuberGrpcClient,
 		&pb.PatchNodesRequest{
 			Cluster: builderCtx.DesiredCluster,
+			ToRemove: &pb.PatchNodesRequest_LabelsTaintsAnnotationsToRemove{
+				Labels:      labels,
+				Annotations: annotations,
+				Taints:      taints,
+			},
 		})
 }
 

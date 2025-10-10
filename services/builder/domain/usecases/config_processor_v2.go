@@ -14,6 +14,7 @@ import (
 	"github.com/berops/claudie/services/builder/domain/usecases/metrics"
 	builder "github.com/berops/claudie/services/builder/internal"
 	managerclient "github.com/berops/claudie/services/manager/client"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
@@ -366,6 +367,19 @@ func (u *Usecases) deleteK8sNodes(ctx context.Context, te *managerclient.NextTas
 		Workflow:       te.State,
 		Options:        te.Event.Task.Options,
 	}
+
+	metrics.K8sDeletingNodesInProgress.With(prometheus.Labels{
+		metrics.K8sClusterLabel:    deleteWork.GetClusterName(),
+		metrics.InputManifestLabel: deleteWork.ProjectName,
+	}).Add(float64(staticCount + dynamicCount))
+
+	defer func(c int) {
+		metrics.K8sDeletingNodesInProgress.With(prometheus.Labels{
+			metrics.K8sClusterLabel:    deleteWork.GetClusterName(),
+			metrics.InputManifestLabel: deleteWork.ProjectName,
+		}).Sub(float64(c))
+	}(staticCount + dynamicCount)
+
 	logger := loggerutils.WithTaskContext(deleteWork.ProjectName, deleteWork.Id(), deleteWork.TaskId)
 	err := u.tryProcessTask(ctx, deleteWork, &logger, u.deleteNodesFromCurrentState(te.Event.Task.DeleteState.K8S.Nodepools, staticCount, dynamicCount))
 	if err != nil {

@@ -14,7 +14,7 @@ func (u *Usecases) PatchNodes(ctx context.Context, request *pb.PatchNodesRequest
 	clusterID := request.Cluster.ClusterInfo.Id()
 	logger := loggerutils.WithClusterName(clusterID)
 
-	patcher := nodes.NewPatcher(request.Cluster, logger)
+	patcher := nodes.NewPatcher(request.Cluster, request.ToRemove, logger)
 
 	if err := patcher.Wait(); err != nil {
 		logger.Err(err).Msgf("Error while patching nodes")

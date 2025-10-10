@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/berops/claudie/internal/clusters"
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	builder "github.com/berops/claudie/services/builder/internal"
 	"github.com/rs/zerolog"
@@ -132,7 +133,11 @@ func (u *Usecases) reconcileK8sConfiguration(ctx context.Context, work *builder.
 		},
 		{
 			do: func(_ context.Context, work *builder.Context, _ *zerolog.Logger) error {
-				return u.Kuber.PatchNodes(work, u.Kuber.GetClient())
+				toRemove := nodepools.LabelsTaintsAnnotationsDiff(
+					work.CurrentCluster.GetClusterInfo().GetNodePools(),
+					work.DesiredCluster.GetClusterInfo().GetNodePools(),
+				)
+				return u.Kuber.PatchNodes(work, toRemove, u.Kuber.GetClient())
 			},
 			stage:       spec.Workflow_KUBER,
 			description: "patching k8s nodes",

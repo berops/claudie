@@ -317,3 +317,14 @@ kubernetes:
 - Retries were added to reading the output from OpenTofu, which could occasionally fail. [#1824](https://github.com/berops/claudie/pull/1824)
 - Increased concurrency limits to decrease the build time of larger clusters. This change also affects Claudie's memory requirements, which should fit within 8 GB. [#1819](https://github.com/berops/claudie/pull/1819)
 - For autoscaled events, Terraformer will now skip refreshing the LoadBalancers and DNS infrastructure, if present. [#1830](https://github.com/berops/claudie/pull/1830)
+
+## v0.9.13
+
+## What's Changed
+- Concurrency limits are now configurable [#1838](https://github.com/berops/claudie/pull/1838)
+- Autoscaled nodepools are now limited to 256 nodes [#1839](https://github.com/berops/claudie/pull/1839)
+- Metadata secret will now be updated after node deletion [#1841](https://github.com/berops/claudie/pull/1841)
+- Builder TTL has been made configurable via the `BUILDER_TTL` env, with a default value of 2 hours [#1850](https://github.com/berops/claudie/pull/1850)
+
+## Bug fixes
+- Prometheus metric for currently deleted nodes has been fixed [#1849](https://github.com/berops/claudie/pull/1849)
