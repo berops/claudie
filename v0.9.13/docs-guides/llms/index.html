@@ -8,13 +8,9 @@
       
       
       
-        <link rel="canonical" href="https://docs.claudie.io/v0.9.13/autoscaling/autoscaling/">
+        <link rel="canonical" href="https://docs.claudie.io/v0.9.13/docs-guides/llms/">
       
       
-        <link rel="prev" href="../../loadbalancing/loadbalancing-solution/">
-      
-      
-        <link rel="next" href="../../use-cases/use-cases/">
       
       
       <link rel="icon" href="../../hexagon_blue.png">
@@ -22,7 +18,7 @@
     
     
       
-        <title>Autoscaling in Claudie - Claudie Docs</title>
+        <title>LLMs File Overview - Claudie Docs</title>
       
     
     
@@ -136,7 +132,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#autoscaling-in-claudie" class="md-skip">
+        <a href="#llms-file-overview" class="md-skip">
           Skip to content
         </a>
       
@@ -176,7 +172,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Autoscaling in Claudie
+              LLMs File Overview
             
           </span>
         </div>
@@ -878,20 +874,18 @@
       
   
   
-    
   
   
-  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
           <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
@@ -907,7 +901,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             How Claudie works
@@ -987,32 +981,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    Autoscaling in Claudie
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../autoscaling/autoscaling/" class="md-nav__link">
         
   
   
@@ -1023,71 +995,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#what-triggers-a-scale-up" class="md-nav__link">
-    <span class="md-ellipsis">
-      What triggers a scale up
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#what-triggers-a-scale-down" class="md-nav__link">
-    <span class="md-ellipsis">
-      What triggers a scale down
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#architecture" class="md-nav__link">
-    <span class="md-ellipsis">
-      Architecture
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#considerations" class="md-nav__link">
-    <span class="md-ellipsis">
-      Considerations
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#gpus" class="md-nav__link">
-    <span class="md-ellipsis">
-      GPUs
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1687,45 +1594,9 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-triggers-a-scale-up" class="md-nav__link">
+  <a href="#generating-llms-files" class="md-nav__link">
     <span class="md-ellipsis">
-      What triggers a scale up
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#what-triggers-a-scale-down" class="md-nav__link">
-    <span class="md-ellipsis">
-      What triggers a scale down
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#architecture" class="md-nav__link">
-    <span class="md-ellipsis">
-      Architecture
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#considerations" class="md-nav__link">
-    <span class="md-ellipsis">
-      Considerations
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#gpus" class="md-nav__link">
-    <span class="md-ellipsis">
-      GPUs
+      Generating LLMs Files
     </span>
   </a>
   
@@ -1750,45 +1621,19 @@
   
 
 
-<h1 id="autoscaling-in-claudie">Autoscaling in Claudie<a class="headerlink" href="#autoscaling-in-claudie" title="Permanent link">&para;</a></h1>
-<p>Claudie supports autoscaling by installing <a href="https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler">Cluster Autoscaler</a> for Claudie-made clusters, with a custom implementation of <code>external gRPC cloud provider</code>, in Claudie context called <code>autoscaler-adapter</code>. This, together with Cluster Autoscaler is automatically managed by Claudie, for any clusters, which have at least one node pool defined with <code>autoscaler</code> field. Whats more, you can change the node pool specification freely from autoscaler configuration to static count or vice versa. Claudie will seamlessly configure Cluster Autoscaler, or even remove it when it is no longer needed.</p>
-<h2 id="what-triggers-a-scale-up">What triggers a scale up<a class="headerlink" href="#what-triggers-a-scale-up" title="Permanent link">&para;</a></h2>
-<p>The scale up is triggered if there are pods in the cluster, which are unschedulable and</p>
+<h1 id="llms-file-overview">LLMs File Overview<a class="headerlink" href="#llms-file-overview" title="Permanent link">&para;</a></h1>
+<p>The LLMs files are located in the root directory of the page. We generate two files:</p>
 <ul>
-<li>could be scheduled, if any of the node pools with autoscaling enabled would accommodate them if they would grow in size</li>
-<li>the node pools, which could accommodate them, are not yet at maximum size</li>
+<li><strong>`llms.txt`</strong> - contains a short description of each relevant page.  </li>
+<li><strong>`llms-full.txt`</strong> - aggregates all relevant content from the entire website into a single Markdown file.</li>
 </ul>
-<p>However, if pods' resource requests are larger than any new node would offer, the scale up will not be triggered. The cluster is scanned every 10 seconds for these pods, to assure quick response to the cluster needs. For more information, please have a look at <a href="https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/FAQ.md#how-does-scale-up-work">official Cluster Autoscaler documentation</a>.</p>
-<h2 id="what-triggers-a-scale-down">What triggers a scale down<a class="headerlink" href="#what-triggers-a-scale-down" title="Permanent link">&para;</a></h2>
-<p>The scale down is triggered, if all following conditions are met</p>
-<ul>
-<li>the sum of CPU and memory requests of all pods running on node considered for scale down is below 50% (Claudie by default excludes DaemonSet pods and Mirror pods)</li>
-<li>all pods running on the node (except those that run on all nodes by default, like manifest-run pods or pods created by DaemonSets) considered for scale down,  can be scheduled to other nodes</li>
-<li>the node considered for scale down does not have <a href="https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/FAQ.md#how-can-i-prevent-cluster-autoscaler-from-scaling-down-a-particular-node">scale-down disabled annotation</a></li>
-</ul>
-<p>For more information, please have a look at <a href="https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/FAQ.md#how-does-scale-down-work">official Cluster Autoscaler documentation</a>.</p>
-<h2 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h2>
-<p>As stated earlier, Claudie deploys Cluster Autoscaler and Autoscaler Adapter for every Claudie-made cluster which enables it. These components are deployed within the same cluster as Claudie.</p>
-<p><a class="glightbox" href="../autoscaling.png" data-type="image" data-width="100%" data-height="auto" data-desc-position="bottom"><img alt="autoscaling-architecture" src="../autoscaling.png" /></a></p>
-<h2 id="considerations">Considerations<a class="headerlink" href="#considerations" title="Permanent link">&para;</a></h2>
-<p>As Claudie just extends Cluster Autoscaler, it is important that you follow their <a href="https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/FAQ.md#what-are-the-key-best-practices-for-running-cluster-autoscaler">best practices</a>. Furthermore, as number of nodes in autoscaled node pools can be volatile, you should carefully plan out how you will use the storage on such node pools. Longhorn support of Cluster Autoscaler is still in experimental phase (<a href="https://longhorn.io/docs/1.4.0/high-availability/k8s-cluster-autoscaler/">longhorn documentation</a>).</p>
-<h2 id="gpus">GPUs<a class="headerlink" href="#gpus" title="Permanent link">&para;</a></h2>
-<p>The custom Claudie-Provider for the <a href="https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler">Cluster-Autoscaler</a> does not automatically determine whether the provided instance types have GPU capabilities. If you want autoscaling for a nodepool with GPUs, you must explicitly specify how many GPUs each node in the nodepool has.</p>
-<p><code>- name: autoscaled
-  providerSpec:
-   name: aws
-   region: eu-central-1
-   zone: eu-central-1a
-  autoscaler:
-    min: 0
-    max: 20
-  # GPU machine type name.
-  serverType: g4dn.xlarge
-  machineSpec:
-    # explicitly specify how many GPU's the instance type provides.
-    nvidiaGpu: 1
-  # OS image name
-  image: ami-07eef52105e8a2059</code></p>
+<h2 id="generating-llms-files">Generating LLMs Files<a class="headerlink" href="#generating-llms-files" title="Permanent link">&para;</a></h2>
+<p>To generate <code>llms.txt</code>, you can use any online metadata generator - or simply write your own short descriptions for each webpage/link manually.
+For generating content you can use tools like <a href="https://www.firecrawl.dev/">Firecrawl</a>.  </p>
+<blockquote>
+<p><strong>Tip:</strong> To sign up for Firecrawl without using your main email, you can use a temporary email service like <a href="https://10minutemail.com/">10MinuteMail</a>.</p>
+</blockquote>
+<p>When you are finished with documantation of you feature don't forget to modify <code>llms-full.txt</code> file. You just add content of your created/modified .md file into <code>llms-full.txt</code>.</p>
 
 
 
