@@ -28,6 +28,7 @@ type Provider struct {
 	Cloudflare   []Cloudflare   `yaml:"cloudflare"`
 	HetznerDNS   []HetznerDNS   `yaml:"hetznerdns"`
 	GenesisCloud []GenesisCloud `yaml:"genesiscloud"`
+	Openstack    []Openstack    `yaml:"openstack"`
 }
 
 type HetznerDNS struct {
@@ -93,6 +94,16 @@ type Azure struct {
 	ClientId       string              `validate:"required" yaml:"clientId"`
 	ClientSecret   string              `validate:"required" yaml:"clientSecret"`
 	Templates      *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
+}
+
+type Openstack struct {
+	Name                        string              `validate:"required,max=15" yaml:"name"`
+	AuthURL                     string              `validate:"required,url" yaml:"authURL"`
+	DomainId                    string              `validate:"required" yaml:"domainId" default:"default"`
+	ProjectId                   string              `validate:"required" yaml:"projectId"`
+	ApplicationCredentialId     string              `validate:"required" yaml:"applicationCredentialId"`
+	ApplicationCredentialSecret string              `validate:"required" yaml:"applicationCredentialSecret"`
+	Templates                   *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
 }
 
 // NodePools describes nodepools used for either kubernetes clusters
@@ -192,6 +203,9 @@ type ProviderSpec struct {
 	// Zone of the nodepool.
 	// +optional
 	Zone string `yaml:"zone" json:"zone"`
+	// Name of the external provider network to which the nodes will be connected to. Currently only required for OpenStack.
+	// +optional
+	ExternalNetworkName string `validate:"external_net" yaml:"externalNetworkName" json:"externalNetworkName"`
 }
 
 // StaticNodePool List of static nodepools of already existing machines, not created by Claudie, used for Kubernetes or loadbalancer clusters.

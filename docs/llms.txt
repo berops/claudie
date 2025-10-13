@@ -1,0 +1,41 @@
+# Claudie
+
+> Claudie is a platform for managing multi-cloud and hybrid-cloud Kubernetes clusters. These Kubernetes clusters can mix and match CPU/GPU nodepools from various cloud providers. Claudie simplifies the process of building and operating Kubernetes infrastructure across multiple environments. On top of that Claudie supports Cluster Autoscaler on the managed clusters.
+
+- [What is Claudie](https://docs.claudie.io/latest/) Claudie is a platform for managing multi-cloud and hybrid-cloud Kubernetes clusters.
+- [Vision](https://docs.claudie.io/latest/#vision) It aims to build clusters that leverage features and costs across multiple cloud vendors and on-prem datacenters.
+- [Use cases](https://docs.claudie.io/latest/#use-cases)
+- [Features](https://docs.claudie.io/latest/#features)
+- [Getting started](https://docs.claudie.io/latest/getting-started/get-started-using-claudie/) Fast Setup Guide.
+- [Detailed guide](https://docs.claudie.io/latest/getting-started/detailed-guide/) Overview of Claudie's features, installation instructions, customization options, and its role in provisioning and managing clusters.
+
+- [AWS](https://docs.claudie.io/latest/input-manifest/providers/aws/) Step-by-step guide to configure AWS credentials and input manifests.
+- [Azure](https://docs.claudie.io/latest/input-manifest/providers/azure/) Step-by-step guide to configure Azure credentials and input manifests.
+- [Cloudflare](https://docs.claudie.io/latest/input-manifest/providers/cloudflare/) Step-by-step guide to configure Cloudflare credentials and input manifests.
+- [GCP](https://docs.claudie.io/latest/input-manifest/providers/gcp/) Step-by-step guide to configure GCP credentials and input manifests.
+- [Genesis](https://docs.claudie.io/latest/input-manifest/providers/genesiscloud/) Guide to using Genesis Cloud API token and input manifest.
+- [Hetzner](https://docs.claudie.io/latest/input-manifest/providers/hetzner/) Step-by-step guide to configure Hetzner credentials and input manifests.
+- [OCI](https://docs.claudie.io/latest/input-manifest/providers/oci/) Step-by-step guide to configure Oracle credentials and input manifests.
+- [On Premise](https://docs.claudie.io/latest/input-manifest/providers/on-prem/) Step-by-step guide to configure on premise hardware and input manifests.
+- [Example yaml file](https://docs.claudie.io/latest/input-manifest/example/) Full example of input manifest.
+- [GPUs example](https://docs.claudie.io/latest/input-manifest/gpu-example/) Guide from NVIDIA to deploy the GPU operator into a Claudie build kubernetes cluster.
+- [External Templates](https://docs.claudie.io/latest/input-manifest/external-templates/) Examples to plug in your own templates for spawning the infrastructure.
+- [API reference](https://docs.claudie.io/latest/input-manifest/api-reference/)
+- [Deploying Claudie in a custom namespace](https://docs.claudie.io/latest/input-manifest/claudie-custom-ns/) Step-by-step guide to deploying Claudie in a custom namespace.
+- [Claudie Workflow](https://docs.claudie.io/latest/claudie-workflow/claudie-workflow/) Describe components of Claudie and how a Claudie cluster works.
+- [Claudie Storage solution](https://docs.claudie.io/latest/storage/storage-solution/) Describe Longhorn storage solution integration with Claudie.
+- [Loadbalancing in Claudie](https://docs.claudie.io/latest/loadbalancing/loadbalancing-solution/) Describe the load balancing solution and concepts used in a Claudie cluster.
+- [Autoscaling in Claudie](https://docs.claudie.io/latest/autoscaling/autoscaling/) Describe the autoscaling solution and architecture of Cluster Autoscaler in Claudie.
+- [Claudie Use Cases](https://docs.claudie.io/latest/use-cases/use-cases/) Provide examples demonstrating how the Claudie product can be used.
+- [FAQ](https://docs.claudie.io/latest/faq/FAQ/)
+- [Roadmap for Claudie](https://docs.claudie.io/latest/roadmap/roadmap/)
+- [Contributing](https://docs.claudie.io/latest/contributing/contributing/)
+- [Latency limitations](https://docs.claudie.io/latest/latency-limitations/latency-limitations/) Describe network latency limitations of Claudie.
+- [Troubleshooting](https://docs.claudie.io/latest/troubleshooting/troubleshooting/) Troubleshooting Claudie issues.
+- [Creating Claudie Backup](https://docs.claudie.io/latest/creating-claudie-backup/creating-claudie-backup/) Overview of Claudie backup solution.
+- [Claudie Hardening](https://docs.claudie.io/latest/hardening/hardening/) Describe best practices when deploying Claudie cluster.
+- [Prometheus Monitoring](https://docs.claudie.io/latest/monitoring/grafana/)
+- [Updating Claudie](https://docs.claudie.io/latest/update/update/) Describe how to update resources that Claudie creates based on changes in the manifest.
+- [Command Cheat Sheet](https://docs.claudie.io/latest/commands/commands/) Describe kubectl commands to interact with Claudie.
+- [Version Matrix](https://docs.claudie.io/latest/version-matrix/version-matrix/) Supported Kubernetes and OS versions for the latest Claudie versions.
+- [HTTP Proxy](https://docs.claudie.io/latest/http-proxy/http-proxy/) Describe the default HTTP proxy setup and its the further customization.

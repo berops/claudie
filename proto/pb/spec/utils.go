@@ -172,6 +172,8 @@ func (pr *Provider) Credentials() string {
 		return p.Cloudflare.Token
 	case *Provider_Genesiscloud:
 		return p.Genesiscloud.Token
+	case *Provider_Openstack:
+		return p.Openstack.ApplicationCredentialSecret
 	default:
 		panic(fmt.Sprintf("unexpected type %T", pr.ProviderType))
 	}

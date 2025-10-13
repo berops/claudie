@@ -12,6 +12,11 @@ import (
 	"github.com/berops/claudie/proto/pb/spec"
 )
 
+type RegionNetwork struct {
+	Region          string
+	ExternalNetwork string
+}
+
 func DeleteByName(nodepools []*spec.NodePool, name string) []*spec.NodePool {
 	for i, np := range nodepools {
 		if np.Name == name {
@@ -77,6 +82,19 @@ func ExtractRegions(nodepools []*spec.DynamicNodePool) []string {
 	set := make(map[string]struct{})
 	for _, nodepool := range nodepools {
 		set[nodepool.Region] = struct{}{}
+	}
+	return slices.Collect(maps.Keys(set))
+}
+
+// ExtractRegionNetwork will return a unique list of all regions with networks used in list of nodepools
+func ExtractRegionNetwork(nodepools []*spec.DynamicNodePool) []RegionNetwork {
+	set := make(map[RegionNetwork]struct{})
+	for _, nodepool := range nodepools {
+		key := RegionNetwork{
+			Region:          nodepool.Region,
+			ExternalNetwork: nodepool.ExternalNetworkName,
+		}
+		set[key] = struct{}{}
 	}
 	return slices.Collect(maps.Keys(set))
 }

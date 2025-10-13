@@ -83,6 +83,7 @@ nav:
           - Genesis: input-manifest/providers/genesiscloud.md
           - Hetzner: input-manifest/providers/hetzner.md
           - OCI: input-manifest/providers/oci.md
+          - Openstack: input-manifest/providers/openstack.md
           - On Premise: input-manifest/providers/on-prem.md
       - Example yaml file: input-manifest/example.md
       - GPUs example: input-manifest/gpu-example.md
