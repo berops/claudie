@@ -8,7 +8,7 @@ spec:
       providerType: hetzner
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.11"
+        tag: "v0.9.12"
         path: "templates/terraformer/hetzner"
       secretRef:
         name: hetzner-secret
@@ -17,7 +17,7 @@ spec:
       providerType: oci
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.11"
+        tag: "v0.9.12"
         path: "templates/terraformer/oci"
       secretRef:
         name: oci-secret
@@ -26,7 +26,7 @@ spec:
       providerType: aws
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.11"
+        tag: "v0.9.12"
         path: "templates/terraformer/aws"
       secretRef:
         name: aws-secret
@@ -35,7 +35,7 @@ spec:
       providerType: azure
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.11"
+        tag: "v0.9.12"
         path: "templates/terraformer/azure"
       secretRef:
         name: azure-secret
@@ -44,7 +44,7 @@ spec:
       providerType: azure
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.11"
+        tag: "v0.9.12"
         path: "templates/terraformer/azure"
       secretRef:
         name: azure-sponsorship-secret
