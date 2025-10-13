@@ -8,7 +8,7 @@ spec:
       providerType: gcp
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.12
+        tag: v0.9.14
         path: "templates/terraformer/gcp"
       secretRef:
         name: gcp-secret
@@ -17,7 +17,7 @@ spec:
       providerType: hetzner
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.12
+        tag: v0.9.14
         path: "templates/terraformer/hetzner"
       secretRef:
         name: hetzner-secret
@@ -26,7 +26,7 @@ spec:
       providerType: oci
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.12
+        tag: v0.9.14
         path: "templates/terraformer/oci"
       secretRef:
         name: oci-secret
@@ -35,7 +35,7 @@ spec:
       providerType: oci
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.12
+        tag: v0.9.14
         path: "templates/terraformer/oci"
       secretRef:
         name: oci-secret
@@ -44,7 +44,7 @@ spec:
       providerType: aws
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.12
+        tag: v0.9.14
         path: "templates/terraformer/aws"
       secretRef:
         name: aws-secret
@@ -53,10 +53,19 @@ spec:
       providerType: azure
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.12
+        tag: v0.9.14
         path: "templates/terraformer/azure"
       secretRef:
         name: azure-sponsorship-secret
+        namespace: e2e-secrets
+    - name: ovh-1
+      providerType: openstack
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.9.14
+        path: "templates/terraformer/openstack"
+      secretRef:
+        name: ovh-secret
         namespace: e2e-secrets
   nodePools:
     dynamic:
@@ -133,7 +142,18 @@ spec:
         serverType: Standard_B2s
         image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
         storageDiskSize: 50
-
+      
+      - name: ovh-ldbl-nodes
+        providerSpec:
+          name: ovh-1
+          region: WAW1
+          zone: nova
+          externalNetworkName: Ext-Net
+        count: 1
+        serverType: c3-4-flex
+        image: ed4ac2cf-f5d6-48ec-8cdf-fe2432763f22
+        storageDiskSize: 50
+        
   kubernetes:
     clusters:
       - name: ts2-htz-cluster-test-set-no2
@@ -183,6 +203,7 @@ spec:
           - oci-ldbl-nodes
           - aws-ldbl-nodes
           - azr-ldbl-nodes
+          - ovh-ldbl-nodes
       - name: ts2-lb2-cluster-test-set-no2
         roles:
           - apiserver-lb-oci
@@ -196,3 +217,4 @@ spec:
           - oci-ldbl-nodes
           - aws-ldbl-nodes
           - azr-ldbl-nodes
+          - ovh-ldbl-nodes

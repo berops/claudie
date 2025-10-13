@@ -141,6 +141,10 @@ func (d *DynamicNodePool) Validate(m *Manifest) error {
 		}
 	}, DynamicNodePool{})
 
+	if err := validate.RegisterValidation("external_net", validateExternalNet); err != nil {
+		return err
+	}
+
 	if err := validate.Struct(d); err != nil {
 		return prettyPrintValidationError(err)
 	}
@@ -202,4 +206,12 @@ func checkAnnotations(annotations map[string]string) error {
 		return fmt.Errorf("annotations size %d is larger than limit %d", totalSize, TotalAnnotationSizeLimitB)
 	}
 	return nil
+}
+
+func validateExternalNet(fl validator.FieldLevel) bool {
+	providerSpec := fl.Parent().Interface().(ProviderSpec)
+	if providerSpec.Name == "openstack" {
+		return providerSpec.ExternalNetworkName != ""
+	}
+	return true
 }

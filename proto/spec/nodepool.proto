@@ -85,6 +85,8 @@ message DynamicNodePool {
   // Cidr initially empty, will be set once the exising state
   // is transferred.
   string cidr = 14;
+  // Network Name with public IPs (required for Openstack)
+  string externalNetworkName = 15;
 }
 
 // MachineSpec further specifies the requested server type.

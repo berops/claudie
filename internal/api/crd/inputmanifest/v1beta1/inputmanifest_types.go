@@ -35,30 +35,36 @@ const (
 	HETZNER       ProviderType = "hetzner"
 	HETZNER_DNS   ProviderType = "hetznerdns"
 	OCI           ProviderType = "oci"
+	OPENSTACK     ProviderType = "openstack"
 )
 
 type SecretField string
 
 const (
-	AWS_ACCESS_KEY        SecretField = "accesskey"
-	AWS_SECRET_KEY        SecretField = "secretkey"
-	AZURE_CLIENT_SECRET   SecretField = "clientsecret"
-	AZURE_SUBSCRIPTION_ID SecretField = "subscriptionid"
-	AZURE_TENANT_ID       SecretField = "tenantid"
-	AZURE_CLIENT_ID       SecretField = "clientid"
-	CF_API_TOKEN          SecretField = "apitoken"
-	CF_ACCOUNT_ID         SecretField = "accountid"
-	GCP_CREDENTIALS       SecretField = "credentials"
-	GCP_GCP_PROJECT       SecretField = "gcpproject"
-	HETZNER_CREDENTIALS   SecretField = "credentials"
-	HETZNER_DNS_API_TOKEN SecretField = "apitoken"
-	OCI_PRIVATE_KEY       SecretField = "privatekey"
-	OCI_KEY_FINGERPRINT   SecretField = "keyfingerprint"
-	OCI_TENANCT_OCID      SecretField = "tenancyocid"
-	OCI_USER_OCID         SecretField = "userocid"
-	OCI_COMPARTMENT_OCID  SecretField = "compartmentocid"
-	PRIVATE_KEY           SecretField = "privatekey"
-	GEN_C_API_TOKEN       SecretField = "apitoken"
+	AWS_ACCESS_KEY                   SecretField = "accesskey"
+	AWS_SECRET_KEY                   SecretField = "secretkey"
+	AZURE_CLIENT_SECRET              SecretField = "clientsecret"
+	AZURE_SUBSCRIPTION_ID            SecretField = "subscriptionid"
+	AZURE_TENANT_ID                  SecretField = "tenantid"
+	AZURE_CLIENT_ID                  SecretField = "clientid"
+	CF_API_TOKEN                     SecretField = "apitoken"
+	CF_ACCOUNT_ID                    SecretField = "accountid"
+	GCP_CREDENTIALS                  SecretField = "credentials"
+	GCP_GCP_PROJECT                  SecretField = "gcpproject"
+	HETZNER_CREDENTIALS              SecretField = "credentials"
+	HETZNER_DNS_API_TOKEN            SecretField = "apitoken"
+	OCI_PRIVATE_KEY                  SecretField = "privatekey"
+	OCI_KEY_FINGERPRINT              SecretField = "keyfingerprint"
+	OCI_TENANCT_OCID                 SecretField = "tenancyocid"
+	OCI_USER_OCID                    SecretField = "userocid"
+	OCI_COMPARTMENT_OCID             SecretField = "compartmentocid"
+	PRIVATE_KEY                      SecretField = "privatekey"
+	GEN_C_API_TOKEN                  SecretField = "apitoken"
+	OS_AUTH_URL                      SecretField = "authurl"
+	OS_DOMAIN_ID                     SecretField = "domainid"
+	OS_PROJECT_ID                    SecretField = "projectid"
+	OS_APPLICATION_CREDENTIAL_ID     SecretField = "applicationcredentialid"
+	OS_APPLICATION_CREDENTIAL_SECRET SecretField = "applicationcredentialsecret"
 )
 
 // ProviderWithData helper type that assist in conversion
@@ -83,7 +89,7 @@ type Provider struct {
 	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:MinLength=1
 	ProviderName string `json:"name"`
-	// +kubebuilder:validation:Enum=gcp;hetzner;aws;oci;azure;cloudflare;hetznerdns;genesiscloud;
+	// +kubebuilder:validation:Enum=gcp;hetzner;aws;oci;azure;cloudflare;hetznerdns;genesiscloud;openstack;
 	ProviderType ProviderType           `json:"providerType"`
 	SecretRef    corev1.SecretReference `json:"secretRef"`
 	// External templates for building the cluster infrastructure.

@@ -108,6 +108,8 @@ func validateInputManifest(im *v1beta.InputManifest) error {
 			rawManifest.Providers.Cloudflare = append(rawManifest.Providers.Cloudflare, manifest.Cloudflare{Name: p.ProviderName})
 		case v1beta.HETZNER_DNS:
 			rawManifest.Providers.HetznerDNS = append(rawManifest.Providers.HetznerDNS, manifest.HetznerDNS{Name: p.ProviderName})
+		case v1beta.OPENSTACK:
+			rawManifest.Providers.Openstack = append(rawManifest.Providers.Openstack, manifest.Openstack{Name: p.ProviderName})
 		}
 	}
 
