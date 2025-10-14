@@ -76,7 +76,7 @@ spec:
           zone: "1"
         count: 2
         serverType: Standard_B2s
-        image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
+        image: Canonical:ubuntu-24_04-lts:server:24.04.202510010
         labels:
           test-set: rolling-update-test
         annotations:
