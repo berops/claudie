@@ -4,7 +4,7 @@ ARG TARGETARCH
 
 # download and unzip kube-one binary
 RUN apt-get -qq update && apt-get -qq install unzip
-RUN VERSION=1.10.6 && \
+RUN VERSION=1.6.2 && \
     wget -q https://github.com/opentofu/opentofu/releases/download/v${VERSION}/tofu_${VERSION}_linux_$TARGETARCH.zip && \
     unzip -qq tofu_${VERSION}_linux_$TARGETARCH.zip -d tofu
 
