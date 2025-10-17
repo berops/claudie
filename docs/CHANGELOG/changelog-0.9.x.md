@@ -328,3 +328,43 @@ kubernetes:
 
 ## Bug fixes
 - Prometheus metric for currently deleted nodes has been fixed [#1849](https://github.com/berops/claudie/pull/1849)
+
+## v0.9.14
+
+## What's Changed
+- Correctly remove taints,annotations,labels [#1852](https://github.com/berops/claudie/pull/1852)
+- In some cases unnecessary tasks were spawned which would prolong the building of the cluster without any side-effect, these have been removed [#1856](https://github.com/berops/claudie/pull/1856)
+- Expand machine spec to contain number of GPUs [#1854](https://github.com/berops/claudie/pull/1854)
+  Inside the NodePool specification it is now possible to specify the number of GPUs the instance has
+  which is made use of when autoscaling based on GPU workload.
+```
+- name: autoscaled
+  providerSpec:
+   name: aws
+   region: eu-central-1
+   zone: eu-central-1a
+  autoscaler:
+    min: 0
+    max: 20
+  # GPU machine type name.
+  serverType: g4dn.xlarge
+  machineSpec:
+    # explicitly specify how many GPU's the instance type provides.
+    nvidiaGpu: 1
+  image: ami-07eef52105e8a2059
+```
+
+- Add support for OpenStack provider, with the main aim of supporting the openstack offering from [OVH](https://www.ovhcloud.com/en/) [#1857](https://github.com/berops/claudie/pull/1857)
+  It is now possible to use an openstack provider within the InputManifest.
+  The support for openstack has been added in the `v0.9.14` version of the claudie templates.
+```
+    - name: ovh-1
+      providerType: openstack
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.9.14
+        path: "templates/terraformer/openstack"
+      secretRef:
+        name: ovh-secret
+        namespace: e2e-secrets
+```
