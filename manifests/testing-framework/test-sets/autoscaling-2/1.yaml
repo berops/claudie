@@ -7,7 +7,7 @@ spec:
     - name: aws-1
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.11"
+        tag: "v0.9.12"
         path: "templates/terraformer/aws"
       providerType: aws
       secretRef:
@@ -16,7 +16,7 @@ spec:
     - name: aws-2
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.11"
+        tag: "v0.9.12"
         path: "templates/terraformer/aws"
       providerType: aws
       secretRef:

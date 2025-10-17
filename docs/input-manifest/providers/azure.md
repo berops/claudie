@@ -44,8 +44,8 @@ type: Opaque
     }
     EOF
     ```
-    
-!!! warning "To create custom roles, your organization needs Microsoft Entra ID Premium P1 or P2." 
+
+!!! warning "To create custom roles, your organization needs Microsoft Entra ID Premium P1 or P2."
     If you do not have Premium P1 or P2 activated, you can use the built-in role **Kubernetes Agent Subscription Level Operator** instead, which includes the required resource group permissions.
 
 3. Create a role based on the policy document. Skip this step if using build in role **Kubernetes Agent Subscription Level Operator**:
@@ -122,7 +122,7 @@ spec:
         # VM size name.
         serverType: Standard_B2s
         # URN of the image.
-        image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
+        image: Canonical:ubuntu-24_04-lts:server:24.04.202510010
 
       - name: compute-1-az
         providerSpec:
@@ -136,7 +136,7 @@ spec:
         # VM size name.
         serverType: Standard_B2s
         # URN of the image.
-        image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
+        image: Canonical:ubuntu-24_04-lts:server:24.04.202510010
         storageDiskSize: 50
 
       - name: compute-2-az
@@ -151,7 +151,7 @@ spec:
         # VM size name.
         serverType: Standard_B2s
         # URN of the image.
-        image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
+        image: Canonical:ubuntu-24_04-lts:server:24.04.202510010
         storageDiskSize: 50
 
   kubernetes:
@@ -210,7 +210,7 @@ spec:
         # VM size name.
         serverType: Standard_B2s
         # URN of the image.
-        image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
+        image: Canonical:ubuntu-24_04-lts:server:24.04.202510010
 
       - name: control-az-2
         providerSpec:
@@ -224,7 +224,7 @@ spec:
         # VM size name.
         serverType: Standard_B2s
         # URN of the image.
-        image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
+        image: Canonical:ubuntu-24_04-lts:server:24.04.202510010
 
       - name: compute-az-1
         providerSpec:
@@ -238,7 +238,7 @@ spec:
         # VM size name.
         serverType: Standard_B2s
         # URN of the image.
-        image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
+        image: Canonical:ubuntu-24_04-lts:server:24.04.202510010
         storageDiskSize: 50
 
       - name: compute-az-2
@@ -253,7 +253,7 @@ spec:
         # VM size name.
         serverType: Standard_B2s
         # URN of the image.
-        image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
+        image: Canonical:ubuntu-24_04-lts:server:24.04.202510010
         storageDiskSize: 50
 
   kubernetes:
