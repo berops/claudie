@@ -112,7 +112,7 @@ spec:
           zone: europe-west2-c
         count: 2
         serverType: e2-medium
-        image: ubuntu-2404-noble-amd64-v20250313
+        image: ubuntu-2404-noble-amd64-v20251001
         labels:
           test-set: test-set1-new
         annotations:
@@ -125,7 +125,7 @@ spec:
           zone: europe-west1-b
         count: 4
         serverType: e2-small
-        image: ubuntu-2404-noble-amd64-v20250313
+        image: ubuntu-2404-noble-amd64-v20251001
         storageDiskSize: 50
         labels:
           test-set: test-set1-new
@@ -184,7 +184,7 @@ spec:
           zone: "1"
         count: 2
         serverType: Standard_B2s
-        image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
+        image: Canonical:ubuntu-24_04-lts:server:24.04.202510010
         taints:
           - key: test-new
             value: test
@@ -201,7 +201,7 @@ spec:
           zone: "1"
         count: 3
         serverType: Standard_B2s
-        image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
+        image: Canonical:ubuntu-24_04-lts:server:24.04.202510010
         storageDiskSize: 50
         labels:
           test-set: test-set1-new

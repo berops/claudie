@@ -8,7 +8,7 @@ spec:
       providerType: hetzner
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.12
+        tag: v0.9.14
         path: "templates/terraformer/hetzner"
       secretRef:
         name: hetzner-secret
@@ -44,7 +44,7 @@ spec:
           zone: europe-west1-b
         count: 1
         serverType: e2-small
-        image: ubuntu-2404-noble-amd64-v20250313
+        image: ubuntu-2404-noble-amd64-v20251001
         storageDiskSize: 50
         labels:
           test-set: proxy-with-hetzner
