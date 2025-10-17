@@ -35,7 +35,7 @@ spec:
       providerType: azure
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.14"
+        tag: "v0.9.12"
         path: "templates/terraformer/azure"
       secretRef:
         name: azure-secret
@@ -44,7 +44,7 @@ spec:
       providerType: azure
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.12"
+        tag: "v0.9.14"
         path: "templates/terraformer/azure"
       secretRef:
         name: azure-sponsorship-secret
