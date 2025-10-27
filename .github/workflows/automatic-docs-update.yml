@@ -61,3 +61,22 @@ jobs:
       # --push flag in the latest cmd is necessary, when you want to apply changes in gh-pages branch and also in GH Pages
       - name: Deploy new docs version
         run: mike deploy ${LATEST_VERSION} latest --update-aliases --push
+
+      # The llms files need to be located in the root path of a website 
+      - name: Copy llms files to root of gh-pages
+        run: |
+          set -e
+          git checkout gh-pages
+
+          cp latest/{llms-full.txt,llms.txt} .
+
+          git add llms-full.txt llms.txt
+
+          if git commit -m "Add llms files to root"; then
+            echo "Committed llms files to root"
+            git push origin gh-pages
+          else
+            echo "No changes to commit for llms files"
+          fi
+
+          git checkout -
