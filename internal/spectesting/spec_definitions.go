@@ -8,10 +8,28 @@ import (
 	"math/rand/v2"
 	"net/netip"
 	"slices"
+	"sync"
 
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 )
+
+type Rng struct {
+	l sync.Mutex
+	g *rand.ChaCha8
+}
+
+func (r *Rng) Read(b []byte) (n int, err error) {
+	r.l.Lock()
+	defer r.l.Unlock()
+	return r.g.Read(b)
+}
+
+func (r *Rng) Uint64() uint64 {
+	r.l.Lock()
+	defer r.l.Unlock()
+	return r.g.Uint64()
+}
 
 var (
 	KnownProviderTypes map[string]any
@@ -19,17 +37,20 @@ var (
 
 	PublicNetwork = must(netip.ParsePrefix("10.0.1.0/24"))
 
-	rng = rand.NewChaCha8([32]byte{
-		0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-		0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-		0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
-	})
+	rng = Rng{
+		l: sync.Mutex{},
+		g: rand.NewChaCha8([32]byte{
+			0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+			0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+			0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+		}),
+	}
 )
 
 func init() {
 	var seed [32]byte
 	must(crand.Read(seed[:]))
-	rng = rand.NewChaCha8(seed)
+	rng.g = rand.NewChaCha8(seed)
 
 	KnownProviderTypes = make(map[string]any)
 	ProviderTypeOption = make(map[string]func(any) FakeProviderOption)
@@ -597,12 +618,8 @@ func AddNodes(count int, ci *spec.ClusterInfo, typ NodeFilter) map[string][]stri
 	dyn := nodepools.Dynamic(ci.NodePools)
 	stat := nodepools.Static(ci.NodePools)
 
-	if len(dyn) == 0 {
-		panic("no dynamic nodepools")
-	}
-
-	if len(stat) == 0 {
-		panic("no static nodepools")
+	if len(dyn) == 0 || len(stat) == 0 {
+		return nil
 	}
 
 	for range count {
@@ -657,12 +674,21 @@ func AddNodes(count int, ci *spec.ClusterInfo, typ NodeFilter) map[string][]stri
 	return affected
 }
 
+// DeleteNodes tries to delete up to `count` number of nodes but may deleted less.
 func DeleteNodes(count int, ci *spec.ClusterInfo, typ NodeFilter) ([]*spec.NodePool, map[string][]string) {
 	affected := make(map[string]*spec.NodePool)
 	counts := make(map[string][]string)
 
 	for range count {
+		if len(ci.NodePools) == 0 {
+			continue
+		}
+
 		np := ci.NodePools[int(uint32(rng.Uint64()))%len(ci.NodePools)]
+		if len(np.Nodes) == 0 {
+			continue
+		}
+
 		switch typ {
 		case NodesDynamic:
 			if np.GetDynamicNodePool() == nil {
@@ -686,9 +712,32 @@ func DeleteNodes(count int, ci *spec.ClusterInfo, typ NodeFilter) ([]*spec.NodeP
 			}
 		}
 		node := np.Nodes[int(uint32(rng.Uint64()))%len(np.Nodes)]
-		nodepools.DeleteNodeByName(ci.NodePools, node.Name, nil)
+		ci.NodePools = nodepools.DeleteNodeByName(ci.NodePools, node.Name, nil)
 		affected[np.Name] = np
 		counts[np.Name] = append(counts[np.Name], node.Name)
+	}
+
+	return slices.Collect(maps.Values(affected)), counts
+}
+
+// DeleteNodePools tries to delete up to `count` number of nodepools but may delete less.
+func DeleteNodePools(count int, ci *spec.ClusterInfo) ([]*spec.NodePool, map[string][]string) {
+	affected := make(map[string]*spec.NodePool)
+	counts := make(map[string][]string)
+
+	for range count {
+		if len(ci.NodePools) == 0 {
+			continue
+		}
+
+		nodepool := ci.NodePools[int(uint32(rng.Uint64()))%len(ci.NodePools)]
+		var nodes []string
+		for _, node := range nodepool.Nodes {
+			nodes = append(nodes, node.Name)
+		}
+		affected[nodepool.Name] = nodepool
+		counts[nodepool.Name] = nodes
+		ci.NodePools = nodepools.DeleteByName(ci.NodePools, nodepool.Name)
 	}
 
 	return slices.Collect(maps.Values(affected)), counts

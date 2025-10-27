@@ -1,0 +1,277 @@
+syntax = "proto3";
+package spec;
+option go_package = "github.com/berops/claudie/proto/pb/spec";
+
+import "google/protobuf/timestamp.proto";
+import "spec/nodepool.proto";
+import "spec/dns.proto";
+
+// Config holds data for a single manifest.
+message ConfigV2 {
+  // version of the config.
+  uint64 version = 1;
+  // Config name - same as input manifest name.
+  string name = 2;
+  // Information related within a k8s context.
+  KubernetesContextV2 k8sCtx = 3;
+  // Client defined manifest.
+  ManifestV2 manifest = 4;
+  // Clusters parsed from the supplied manifest.
+  map<string, ClusterStateV2> clusters = 5;
+}
+
+message ManifestV2 {
+  enum State {
+    Pending = 0;
+    Scheduled = 1;
+    Done = 2;
+    Error = 3;
+  }
+
+  string raw = 1;
+  bytes checksum = 2;
+  bytes lastAppliedChecksum = 3;
+  State state = 4;
+}
+
+message ClusterStateV2 {
+  ClustersV2 current = 1;
+  WorkflowV2 state = 4;
+  TaskEventV2 task = 5;
+}
+
+message ClustersV2 {
+  K8sclusterV2 k8s = 1;
+  LoadBalancersV2 loadBalancers = 2;
+}
+
+message LoadBalancersV2 {
+  repeated LBclusterV2 clusters = 1;
+}
+
+message KubernetesContextV2 {
+  // name represents the input manifest resource name in Kubernetes
+  string name = 1;
+  // namespace represents the input manifest resource namespace in Kubernetes
+  string namespace = 2;
+}
+
+message WorkflowV2 {
+  enum Status {
+    // DONE indicates that the workflow has finished.
+    DONE = 0;
+    // ERROR indicates that an error occurred while building the cluster.
+    ERROR = 1;
+    // IN_PROGRESS indicates that the cluster is currently being build.
+    IN_PROGRESS = 2;
+    // WAIT_FOR_PICKUP indicates that new tasks were identified and are
+    // to be scheduled to be worked on.
+    WAIT_FOR_PICKUP = 3;
+  }
+
+  Status status = 2;
+  // additional information describing the state.
+  string description = 3;
+}
+
+// K8scluster represents a single kubernetes cluster specified in the manifest.
+message K8sclusterV2 {
+  // General info about the cluster.
+  ClusterInfoV2 clusterInfo = 1;
+  // Network range for the VPN.
+  string network = 2;
+  // Kubeconfig of the cluster.
+  string kubeconfig = 3;
+  // Kubernetes version.
+  string kubernetes = 4;
+  // General information about a proxy used to build a K8s cluster.
+  InstallationProxyV2 installationProxy = 5;
+}
+
+// LBcluster represents a single load balancer cluster specified in the
+// manifest.
+message LBclusterV2 {
+  // General info about the cluster.
+  ClusterInfoV2 clusterInfo = 1;
+  // Array of Load balancer roles.
+  repeated RoleV2 roles = 2;
+  // DNS information.
+  DNS dns = 3;
+  // Kubernetes cluster name of the cluster this load balancer is attached to.
+  string targetedK8s = 4;
+  // usedApiEndpoint signals which LB is actually used as the api endpoint.
+  // Claudie manifest validation does not allow for multiple API endpoints
+  // to be present, however. Internally claudie can deal with more loadbalancers
+  // that have the API role, this is due to the creation of intermediate representation
+  // which always add new infrastructure before making any further changes.
+  // To recognize which of them is actually used this field was added.
+  bool usedApiEndpoint = 5;
+}
+
+// ClusterInfo holds general information about the clusters.
+message ClusterInfoV2 {
+  // Name of the cluster.
+  string name = 1;
+  // Random hash of the cluster.
+  string hash = 2;
+  // Array of node pools this cluster is made of.
+  repeated NodePool nodePools = 5;
+}
+
+// InstallationProxy holds general information about a proxy used to build a K8s cluster.
+message InstallationProxyV2 {
+  // Proxy installation mode.
+  string mode = 1;
+  // Proxy endpoint used to access the proxy.
+  string endpoint = 2;
+  // NoProxy is a comma-separated list of values that will be added to the default list of NoProxies used by Claudie.
+  //
+  // The default no proxy list is: 127.0.0.1/8,localhost,cluster.local,10.244.0.0/16,10.96.0.0/12"
+  // Any values specified will be appended to the end of the default NoProxy list.
+  // This field only has an effect if the Proxy is turned on.
+  string noProxy = 3;
+}
+
+// Role represents a single loadbalancer role from the manifest.
+message RoleV2 {
+  message Settings {
+    bool proxyProtocol = 1;
+    bool stickySessions = 2;
+
+    // required port for the envoy admin interface,
+    // on change will issue restart of the envoy proxy.
+    int32  envoy_admin_port = 3;
+  }
+  // Name of the role.
+  string name = 1;
+  // Protocol that load balancer uses to forward traffic. ["tcp", "udp"]
+  string protocol = 2;
+  // Port that load balancer will forward from.
+  int32 port = 3;
+  // Port that load balancer will forward to.
+  int32 targetPort = 4;
+  // Targeted nodes in Kubernetes clusters.
+  repeated string targetPools = 7;
+  // Type of the role.
+  RoleTypeV2 roleType = 6;
+  // Additional settings for the role.
+  Settings settings = 8;
+}
+
+// RoleType specifies the type of the role.
+enum RoleTypeV2 {
+  // API server load balancer.
+  ApiServer_V2 = 0;
+  // Ingress load balancer.
+  Ingress_V2 = 1;
+}
+
+enum EventV2 {
+  UNKNOWN_V2 = 0;
+  CREATE_V2 = 1;
+  UPDATE_V2 = 2;
+  DELETE_V2 = 3;
+}
+
+message TaskEventV2 {
+    message Stage {
+        enum StageKind {
+            // UNKNOWN indicates an unknown stage.
+            UNKNOWN = 0;
+            // TERRAFORMER indicates that the cluster is currently being build in
+            // terraformer.
+            TERRAFORMER = 1;
+            // ANSIBLER indicates that the cluster is currently being build in ansibler.
+            ANSIBLER = 2;
+            // KUBE_ELEVEN indicates that the cluster is currently being build in kube
+            // eleven.
+            KUBE_ELEVEN = 3;
+            // KUBER indicates that the cluster is currently being build in kuber.
+            KUBER = 4;
+    }
+    enum ErrorLevel {
+        ErrorFatal = 0;
+        ErrorWarn = 1;
+    }
+    StageKind stage = 1;
+    string description = 2;
+    ErrorLevel errorLevel = 3;
+  }
+
+  string id = 1;
+  google.protobuf.Timestamp timestamp = 2;
+  EventV2 event = 3;
+  TaskV2 task = 4;
+  string description = 5;
+  RetryV2 onError = 7;
+
+  // Pipeline stages of the task through which it has to pass
+  // to be considered as done.
+  repeated Stage pipeline = 8;
+
+  // Index into the currently to be worked on pipeline stage.
+  uint32 currentStage = 9;
+}
+
+message RetryV2 {
+  message Repeat {
+    enum Kind {
+      ENDLESS = 0;
+      EXPONENTIAL = 1;
+    }
+    Kind kind = 1;
+    // currentTick specifies the current number of ticks.
+    // A tick is an regular interval at which manifests are being checked.
+    // to check the Tick timeout see: manager/internal/service/watchers.go
+    uint32 currentTick = 2;
+    // stopAfter specifies the maximum number of ticks, after reaching this value the manifest will be rescheduled
+    // for the last time before giving up.
+    uint32 stopAfter = 3;
+    // retryAfter specifies the number of ticks to wait before rescheduling the manifest again.
+    // this value will be set to the value of currentTick after it is updated.
+    uint32 retryAfter = 4;
+  }
+  message Rollback {
+    repeated TaskEventV2 tasks = 1;
+  }
+
+  oneof Do {
+    Repeat repeat = 3;
+    Rollback rollback = 4;
+  }
+}
+
+message CreateV2{
+    ClustersV2 clusters = 1;
+}
+
+message UpdateV2{}
+
+message DeleteV2{
+    message Clusters {
+        ClustersV2 clusters = 1;
+    }
+
+    oneof Op {
+        Clusters clusters = 1;
+    }
+}
+
+message TaskV2 {
+    oneof Do {
+        CreateV2 create = 1;
+        UpdateV2 update = 2;
+        DeleteV2 delete = 3;
+    }
+}
+
+message TaskResult {
+    // None specifies that nothing should be done as a result of
+    // processing a task other than acknowledging that the task
+    // was processed, and thus moving to next task, if any.
+    message None {}
+
+    oneof Result {
+        None none = 1;
+    }
+}

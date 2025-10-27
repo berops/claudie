@@ -2,7 +2,8 @@ package hash
 
 import (
 	"crypto/sha512"
-	"math/rand"
+	"math/rand/v2"
+	"sync"
 	"time"
 )
 
@@ -16,7 +17,20 @@ const (
 	Length = 7
 )
 
-var seededRand = rand.New(rand.NewSource(time.Now().UnixNano()))
+type generator struct {
+	l sync.Mutex
+	g *rand.Rand
+}
+
+func (g *generator) Intn(n int) int {
+	g.l.Lock()
+	defer g.l.Unlock()
+	return g.g.IntN(n)
+}
+
+var rng = generator{
+	g: rand.New(rand.NewPCG(uint64(time.Now().UnixNano()), uint64(time.Now().Unix()+1))),
+}
 
 func Digest(data string) []byte {
 	digest := sha512.Sum512_256([]byte(data))
@@ -25,10 +39,12 @@ func Digest(data string) []byte {
 
 func Digest128(data string) []byte { return Digest(data)[:16] }
 
+// Create uses a pseudo-random-generator that is not cryptographically safe for generating the requested hash length
+// using the specified [charset].
 func Create(length int) string {
 	b := make([]byte, length)
 	for i := range b {
-		b[i] = charset[seededRand.Intn(len(charset))]
+		b[i] = charset[rng.Intn(len(charset))]
 	}
 	return string(b)
 }

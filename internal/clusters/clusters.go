@@ -11,6 +11,15 @@ func IndexLoadbalancerById(target string, clusters []*spec.LBcluster) int {
 	return -1
 }
 
+func IndexLoadbalancerByIdV2(target string, clusters []*spec.LBclusterV2) int {
+	for i, cluster := range clusters {
+		if cluster.ClusterInfo.Id() == target {
+			return i
+		}
+	}
+	return -1
+}
+
 func DetermineLBApiEndpointChange(currentLbs, desiredLbs []*spec.LBcluster) (string, string, spec.ApiEndpointChangeState) {
 	var first *spec.LBcluster
 	desired := make(map[string]*spec.LBcluster)
