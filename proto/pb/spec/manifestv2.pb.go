@@ -9,6 +9,7 @@ package spec
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	anypb "google.golang.org/protobuf/types/known/anypb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
@@ -232,114 +233,6 @@ func (WorkflowV2_Status) EnumDescriptor() ([]byte, []int) {
 	return file_spec_manifestv2_proto_rawDescGZIP(), []int{6, 0}
 }
 
-type TaskEventV2_Stage_StageKind int32
-
-const (
-	// UNKNOWN indicates an unknown stage.
-	TaskEventV2_Stage_UNKNOWN TaskEventV2_Stage_StageKind = 0
-	// TERRAFORMER indicates that the cluster is currently being build in
-	// terraformer.
-	TaskEventV2_Stage_TERRAFORMER TaskEventV2_Stage_StageKind = 1
-	// ANSIBLER indicates that the cluster is currently being build in ansibler.
-	TaskEventV2_Stage_ANSIBLER TaskEventV2_Stage_StageKind = 2
-	// KUBE_ELEVEN indicates that the cluster is currently being build in kube
-	// eleven.
-	TaskEventV2_Stage_KUBE_ELEVEN TaskEventV2_Stage_StageKind = 3
-	// KUBER indicates that the cluster is currently being build in kuber.
-	TaskEventV2_Stage_KUBER TaskEventV2_Stage_StageKind = 4
-)
-
-// Enum value maps for TaskEventV2_Stage_StageKind.
-var (
-	TaskEventV2_Stage_StageKind_name = map[int32]string{
-		0: "UNKNOWN",
-		1: "TERRAFORMER",
-		2: "ANSIBLER",
-		3: "KUBE_ELEVEN",
-		4: "KUBER",
-	}
-	TaskEventV2_Stage_StageKind_value = map[string]int32{
-		"UNKNOWN":     0,
-		"TERRAFORMER": 1,
-		"ANSIBLER":    2,
-		"KUBE_ELEVEN": 3,
-		"KUBER":       4,
-	}
-)
-
-func (x TaskEventV2_Stage_StageKind) Enum() *TaskEventV2_Stage_StageKind {
-	p := new(TaskEventV2_Stage_StageKind)
-	*p = x
-	return p
-}
-
-func (x TaskEventV2_Stage_StageKind) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (TaskEventV2_Stage_StageKind) Descriptor() protoreflect.EnumDescriptor {
-	return file_spec_manifestv2_proto_enumTypes[4].Descriptor()
-}
-
-func (TaskEventV2_Stage_StageKind) Type() protoreflect.EnumType {
-	return &file_spec_manifestv2_proto_enumTypes[4]
-}
-
-func (x TaskEventV2_Stage_StageKind) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use TaskEventV2_Stage_StageKind.Descriptor instead.
-func (TaskEventV2_Stage_StageKind) EnumDescriptor() ([]byte, []int) {
-	return file_spec_manifestv2_proto_rawDescGZIP(), []int{12, 0, 0}
-}
-
-type TaskEventV2_Stage_ErrorLevel int32
-
-const (
-	TaskEventV2_Stage_ErrorFatal TaskEventV2_Stage_ErrorLevel = 0
-	TaskEventV2_Stage_ErrorWarn  TaskEventV2_Stage_ErrorLevel = 1
-)
-
-// Enum value maps for TaskEventV2_Stage_ErrorLevel.
-var (
-	TaskEventV2_Stage_ErrorLevel_name = map[int32]string{
-		0: "ErrorFatal",
-		1: "ErrorWarn",
-	}
-	TaskEventV2_Stage_ErrorLevel_value = map[string]int32{
-		"ErrorFatal": 0,
-		"ErrorWarn":  1,
-	}
-)
-
-func (x TaskEventV2_Stage_ErrorLevel) Enum() *TaskEventV2_Stage_ErrorLevel {
-	p := new(TaskEventV2_Stage_ErrorLevel)
-	*p = x
-	return p
-}
-
-func (x TaskEventV2_Stage_ErrorLevel) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (TaskEventV2_Stage_ErrorLevel) Descriptor() protoreflect.EnumDescriptor {
-	return file_spec_manifestv2_proto_enumTypes[5].Descriptor()
-}
-
-func (TaskEventV2_Stage_ErrorLevel) Type() protoreflect.EnumType {
-	return &file_spec_manifestv2_proto_enumTypes[5]
-}
-
-func (x TaskEventV2_Stage_ErrorLevel) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use TaskEventV2_Stage_ErrorLevel.Descriptor instead.
-func (TaskEventV2_Stage_ErrorLevel) EnumDescriptor() ([]byte, []int) {
-	return file_spec_manifestv2_proto_rawDescGZIP(), []int{12, 0, 1}
-}
-
 type RetryV2_Repeat_Kind int32
 
 const (
@@ -370,11 +263,11 @@ func (x RetryV2_Repeat_Kind) String() string {
 }
 
 func (RetryV2_Repeat_Kind) Descriptor() protoreflect.EnumDescriptor {
-	return file_spec_manifestv2_proto_enumTypes[6].Descriptor()
+	return file_spec_manifestv2_proto_enumTypes[4].Descriptor()
 }
 
 func (RetryV2_Repeat_Kind) Type() protoreflect.EnumType {
-	return &file_spec_manifestv2_proto_enumTypes[6]
+	return &file_spec_manifestv2_proto_enumTypes[4]
 }
 
 func (x RetryV2_Repeat_Kind) Number() protoreflect.EnumNumber {
@@ -1211,7 +1104,7 @@ type TaskEventV2 struct {
 	OnError     *RetryV2               `protobuf:"bytes,7,opt,name=onError,proto3" json:"onError,omitempty"`
 	// Pipeline stages of the task through which it has to pass
 	// to be considered as done.
-	Pipeline []*TaskEventV2_Stage `protobuf:"bytes,8,rep,name=pipeline,proto3" json:"pipeline,omitempty"`
+	Pipeline []*Stage `protobuf:"bytes,8,rep,name=pipeline,proto3" json:"pipeline,omitempty"`
 	// Index into the currently to be worked on pipeline stage.
 	CurrentStage  uint32 `protobuf:"varint,9,opt,name=currentStage,proto3" json:"currentStage,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -1290,7 +1183,7 @@ func (x *TaskEventV2) GetOnError() *RetryV2 {
 	return nil
 }
 
-func (x *TaskEventV2) GetPipeline() []*TaskEventV2_Stage {
+func (x *TaskEventV2) GetPipeline() []*Stage {
 	if x != nil {
 		return x.Pipeline
 	}
@@ -1630,6 +1523,61 @@ func (*TaskV2_Update) isTaskV2_Do() {}
 
 func (*TaskV2_Delete) isTaskV2_Do() {}
 
+// The message that is used for the Message Queue.
+type Work struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The task to be worked on.
+	Task *TaskV2 `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
+	// What exactly should be done with the task.
+	Passes        []*anypb.Any `protobuf:"bytes,2,rep,name=passes,proto3" json:"passes,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Work) Reset() {
+	*x = Work{}
+	mi := &file_spec_manifestv2_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Work) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Work) ProtoMessage() {}
+
+func (x *Work) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifestv2_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Work.ProtoReflect.Descriptor instead.
+func (*Work) Descriptor() ([]byte, []int) {
+	return file_spec_manifestv2_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *Work) GetTask() *TaskV2 {
+	if x != nil {
+		return x.Task
+	}
+	return nil
+}
+
+func (x *Work) GetPasses() []*anypb.Any {
+	if x != nil {
+		return x.Passes
+	}
+	return nil
+}
+
 type TaskResult struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Result:
@@ -1642,7 +1590,7 @@ type TaskResult struct {
 
 func (x *TaskResult) Reset() {
 	*x = TaskResult{}
-	mi := &file_spec_manifestv2_proto_msgTypes[18]
+	mi := &file_spec_manifestv2_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1654,7 +1602,7 @@ func (x *TaskResult) String() string {
 func (*TaskResult) ProtoMessage() {}
 
 func (x *TaskResult) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifestv2_proto_msgTypes[18]
+	mi := &file_spec_manifestv2_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1667,7 +1615,7 @@ func (x *TaskResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaskResult.ProtoReflect.Descriptor instead.
 func (*TaskResult) Descriptor() ([]byte, []int) {
-	return file_spec_manifestv2_proto_rawDescGZIP(), []int{18}
+	return file_spec_manifestv2_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *TaskResult) GetResult() isTaskResult_Result {
@@ -1709,7 +1657,7 @@ type RoleV2_Settings struct {
 
 func (x *RoleV2_Settings) Reset() {
 	*x = RoleV2_Settings{}
-	mi := &file_spec_manifestv2_proto_msgTypes[20]
+	mi := &file_spec_manifestv2_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1721,7 +1669,7 @@ func (x *RoleV2_Settings) String() string {
 func (*RoleV2_Settings) ProtoMessage() {}
 
 func (x *RoleV2_Settings) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifestv2_proto_msgTypes[20]
+	mi := &file_spec_manifestv2_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1756,66 +1704,6 @@ func (x *RoleV2_Settings) GetEnvoyAdminPort() int32 {
 		return x.EnvoyAdminPort
 	}
 	return 0
-}
-
-type TaskEventV2_Stage struct {
-	state         protoimpl.MessageState       `protogen:"open.v1"`
-	Stage         TaskEventV2_Stage_StageKind  `protobuf:"varint,1,opt,name=stage,proto3,enum=spec.TaskEventV2_Stage_StageKind" json:"stage,omitempty"`
-	Description   string                       `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
-	ErrorLevel    TaskEventV2_Stage_ErrorLevel `protobuf:"varint,3,opt,name=errorLevel,proto3,enum=spec.TaskEventV2_Stage_ErrorLevel" json:"errorLevel,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *TaskEventV2_Stage) Reset() {
-	*x = TaskEventV2_Stage{}
-	mi := &file_spec_manifestv2_proto_msgTypes[21]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *TaskEventV2_Stage) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*TaskEventV2_Stage) ProtoMessage() {}
-
-func (x *TaskEventV2_Stage) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifestv2_proto_msgTypes[21]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use TaskEventV2_Stage.ProtoReflect.Descriptor instead.
-func (*TaskEventV2_Stage) Descriptor() ([]byte, []int) {
-	return file_spec_manifestv2_proto_rawDescGZIP(), []int{12, 0}
-}
-
-func (x *TaskEventV2_Stage) GetStage() TaskEventV2_Stage_StageKind {
-	if x != nil {
-		return x.Stage
-	}
-	return TaskEventV2_Stage_UNKNOWN
-}
-
-func (x *TaskEventV2_Stage) GetDescription() string {
-	if x != nil {
-		return x.Description
-	}
-	return ""
-}
-
-func (x *TaskEventV2_Stage) GetErrorLevel() TaskEventV2_Stage_ErrorLevel {
-	if x != nil {
-		return x.ErrorLevel
-	}
-	return TaskEventV2_Stage_ErrorFatal
 }
 
 type RetryV2_Repeat struct {
@@ -2017,14 +1905,14 @@ func (x *TaskResult_None) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaskResult_None.ProtoReflect.Descriptor instead.
 func (*TaskResult_None) Descriptor() ([]byte, []int) {
-	return file_spec_manifestv2_proto_rawDescGZIP(), []int{18, 0}
+	return file_spec_manifestv2_proto_rawDescGZIP(), []int{19, 0}
 }
 
 var File_spec_manifestv2_proto protoreflect.FileDescriptor
 
 const file_spec_manifestv2_proto_rawDesc = "" +
 	"\n" +
-	"\x15spec/manifestv2.proto\x12\x04spec\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13spec/nodepool.proto\x1a\x0espec/dns.proto\"\xa6\x02\n" +
+	"\x15spec/manifestv2.proto\x12\x04spec\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x19google/protobuf/any.proto\x1a\x13spec/nodepool.proto\x1a\x0espec/dns.proto\x1a\x0fspec/pass.proto\"\xa6\x02\n" +
 	"\bConfigV2\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\x04R\aversion\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x121\n" +
@@ -2104,33 +1992,16 @@ const file_spec_manifestv2_proto_rawDesc = "" +
 	"\bSettings\x12$\n" +
 	"\rproxyProtocol\x18\x01 \x01(\bR\rproxyProtocol\x12&\n" +
 	"\x0estickySessions\x18\x02 \x01(\bR\x0estickySessions\x12(\n" +
-	"\x10envoy_admin_port\x18\x03 \x01(\x05R\x0eenvoyAdminPort\"\xed\x04\n" +
+	"\x10envoy_admin_port\x18\x03 \x01(\x05R\x0eenvoyAdminPort\"\xb6\x02\n" +
 	"\vTaskEventV2\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x128\n" +
 	"\ttimestamp\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x12#\n" +
 	"\x05event\x18\x03 \x01(\x0e2\r.spec.EventV2R\x05event\x12 \n" +
 	"\x04task\x18\x04 \x01(\v2\f.spec.TaskV2R\x04task\x12 \n" +
 	"\vdescription\x18\x05 \x01(\tR\vdescription\x12'\n" +
-	"\aonError\x18\a \x01(\v2\r.spec.RetryV2R\aonError\x123\n" +
-	"\bpipeline\x18\b \x03(\v2\x17.spec.TaskEventV2.StageR\bpipeline\x12\"\n" +
-	"\fcurrentStage\x18\t \x01(\rR\fcurrentStage\x1a\xa8\x02\n" +
-	"\x05Stage\x127\n" +
-	"\x05stage\x18\x01 \x01(\x0e2!.spec.TaskEventV2.Stage.StageKindR\x05stage\x12 \n" +
-	"\vdescription\x18\x02 \x01(\tR\vdescription\x12B\n" +
-	"\n" +
-	"errorLevel\x18\x03 \x01(\x0e2\".spec.TaskEventV2.Stage.ErrorLevelR\n" +
-	"errorLevel\"S\n" +
-	"\tStageKind\x12\v\n" +
-	"\aUNKNOWN\x10\x00\x12\x0f\n" +
-	"\vTERRAFORMER\x10\x01\x12\f\n" +
-	"\bANSIBLER\x10\x02\x12\x0f\n" +
-	"\vKUBE_ELEVEN\x10\x03\x12\t\n" +
-	"\x05KUBER\x10\x04\"+\n" +
-	"\n" +
-	"ErrorLevel\x12\x0e\n" +
-	"\n" +
-	"ErrorFatal\x10\x00\x12\r\n" +
-	"\tErrorWarn\x10\x01\"\xea\x02\n" +
+	"\aonError\x18\a \x01(\v2\r.spec.RetryV2R\aonError\x12'\n" +
+	"\bpipeline\x18\b \x03(\v2\v.spec.StageR\bpipeline\x12\"\n" +
+	"\fcurrentStage\x18\t \x01(\rR\fcurrentStage\"\xea\x02\n" +
 	"\aRetryV2\x12.\n" +
 	"\x06repeat\x18\x03 \x01(\v2\x14.spec.RetryV2.RepeatH\x00R\x06repeat\x124\n" +
 	"\brollback\x18\x04 \x01(\v2\x16.spec.RetryV2.RollbackH\x00R\brollback\x1a\xbd\x01\n" +
@@ -2160,7 +2031,10 @@ const file_spec_manifestv2_proto_rawDesc = "" +
 	"\x06create\x18\x01 \x01(\v2\x0e.spec.CreateV2H\x00R\x06create\x12(\n" +
 	"\x06update\x18\x02 \x01(\v2\x0e.spec.UpdateV2H\x00R\x06update\x12(\n" +
 	"\x06delete\x18\x03 \x01(\v2\x0e.spec.DeleteV2H\x00R\x06deleteB\x04\n" +
-	"\x02Do\"K\n" +
+	"\x02Do\"V\n" +
+	"\x04Work\x12 \n" +
+	"\x04task\x18\x01 \x01(\v2\f.spec.TaskV2R\x04task\x12,\n" +
+	"\x06passes\x18\x02 \x03(\v2\x14.google.protobuf.AnyR\x06passes\"K\n" +
 	"\n" +
 	"TaskResult\x12+\n" +
 	"\x04none\x18\x01 \x01(\v2\x15.spec.TaskResult.NoneH\x00R\x04none\x1a\x06\n" +
@@ -2190,85 +2064,85 @@ func file_spec_manifestv2_proto_rawDescGZIP() []byte {
 	return file_spec_manifestv2_proto_rawDescData
 }
 
-var file_spec_manifestv2_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
+var file_spec_manifestv2_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
 var file_spec_manifestv2_proto_msgTypes = make([]protoimpl.MessageInfo, 26)
 var file_spec_manifestv2_proto_goTypes = []any{
-	(RoleTypeV2)(0),                   // 0: spec.RoleTypeV2
-	(EventV2)(0),                      // 1: spec.EventV2
-	(ManifestV2_State)(0),             // 2: spec.ManifestV2.State
-	(WorkflowV2_Status)(0),            // 3: spec.WorkflowV2.Status
-	(TaskEventV2_Stage_StageKind)(0),  // 4: spec.TaskEventV2.Stage.StageKind
-	(TaskEventV2_Stage_ErrorLevel)(0), // 5: spec.TaskEventV2.Stage.ErrorLevel
-	(RetryV2_Repeat_Kind)(0),          // 6: spec.RetryV2.Repeat.Kind
-	(*ConfigV2)(nil),                  // 7: spec.ConfigV2
-	(*ManifestV2)(nil),                // 8: spec.ManifestV2
-	(*ClusterStateV2)(nil),            // 9: spec.ClusterStateV2
-	(*ClustersV2)(nil),                // 10: spec.ClustersV2
-	(*LoadBalancersV2)(nil),           // 11: spec.LoadBalancersV2
-	(*KubernetesContextV2)(nil),       // 12: spec.KubernetesContextV2
-	(*WorkflowV2)(nil),                // 13: spec.WorkflowV2
-	(*K8SclusterV2)(nil),              // 14: spec.K8sclusterV2
-	(*LBclusterV2)(nil),               // 15: spec.LBclusterV2
-	(*ClusterInfoV2)(nil),             // 16: spec.ClusterInfoV2
-	(*InstallationProxyV2)(nil),       // 17: spec.InstallationProxyV2
-	(*RoleV2)(nil),                    // 18: spec.RoleV2
-	(*TaskEventV2)(nil),               // 19: spec.TaskEventV2
-	(*RetryV2)(nil),                   // 20: spec.RetryV2
-	(*CreateV2)(nil),                  // 21: spec.CreateV2
-	(*UpdateV2)(nil),                  // 22: spec.UpdateV2
-	(*DeleteV2)(nil),                  // 23: spec.DeleteV2
-	(*TaskV2)(nil),                    // 24: spec.TaskV2
-	(*TaskResult)(nil),                // 25: spec.TaskResult
-	nil,                               // 26: spec.ConfigV2.ClustersEntry
-	(*RoleV2_Settings)(nil),           // 27: spec.RoleV2.Settings
-	(*TaskEventV2_Stage)(nil),         // 28: spec.TaskEventV2.Stage
-	(*RetryV2_Repeat)(nil),            // 29: spec.RetryV2.Repeat
-	(*RetryV2_Rollback)(nil),          // 30: spec.RetryV2.Rollback
-	(*DeleteV2_Clusters)(nil),         // 31: spec.DeleteV2.Clusters
-	(*TaskResult_None)(nil),           // 32: spec.TaskResult.None
-	(*DNS)(nil),                       // 33: spec.DNS
-	(*NodePool)(nil),                  // 34: spec.NodePool
-	(*timestamppb.Timestamp)(nil),     // 35: google.protobuf.Timestamp
+	(RoleTypeV2)(0),               // 0: spec.RoleTypeV2
+	(EventV2)(0),                  // 1: spec.EventV2
+	(ManifestV2_State)(0),         // 2: spec.ManifestV2.State
+	(WorkflowV2_Status)(0),        // 3: spec.WorkflowV2.Status
+	(RetryV2_Repeat_Kind)(0),      // 4: spec.RetryV2.Repeat.Kind
+	(*ConfigV2)(nil),              // 5: spec.ConfigV2
+	(*ManifestV2)(nil),            // 6: spec.ManifestV2
+	(*ClusterStateV2)(nil),        // 7: spec.ClusterStateV2
+	(*ClustersV2)(nil),            // 8: spec.ClustersV2
+	(*LoadBalancersV2)(nil),       // 9: spec.LoadBalancersV2
+	(*KubernetesContextV2)(nil),   // 10: spec.KubernetesContextV2
+	(*WorkflowV2)(nil),            // 11: spec.WorkflowV2
+	(*K8SclusterV2)(nil),          // 12: spec.K8sclusterV2
+	(*LBclusterV2)(nil),           // 13: spec.LBclusterV2
+	(*ClusterInfoV2)(nil),         // 14: spec.ClusterInfoV2
+	(*InstallationProxyV2)(nil),   // 15: spec.InstallationProxyV2
+	(*RoleV2)(nil),                // 16: spec.RoleV2
+	(*TaskEventV2)(nil),           // 17: spec.TaskEventV2
+	(*RetryV2)(nil),               // 18: spec.RetryV2
+	(*CreateV2)(nil),              // 19: spec.CreateV2
+	(*UpdateV2)(nil),              // 20: spec.UpdateV2
+	(*DeleteV2)(nil),              // 21: spec.DeleteV2
+	(*TaskV2)(nil),                // 22: spec.TaskV2
+	(*Work)(nil),                  // 23: spec.Work
+	(*TaskResult)(nil),            // 24: spec.TaskResult
+	nil,                           // 25: spec.ConfigV2.ClustersEntry
+	(*RoleV2_Settings)(nil),       // 26: spec.RoleV2.Settings
+	(*RetryV2_Repeat)(nil),        // 27: spec.RetryV2.Repeat
+	(*RetryV2_Rollback)(nil),      // 28: spec.RetryV2.Rollback
+	(*DeleteV2_Clusters)(nil),     // 29: spec.DeleteV2.Clusters
+	(*TaskResult_None)(nil),       // 30: spec.TaskResult.None
+	(*DNS)(nil),                   // 31: spec.DNS
+	(*NodePool)(nil),              // 32: spec.NodePool
+	(*timestamppb.Timestamp)(nil), // 33: google.protobuf.Timestamp
+	(*Stage)(nil),                 // 34: spec.Stage
+	(*anypb.Any)(nil),             // 35: google.protobuf.Any
 }
 var file_spec_manifestv2_proto_depIdxs = []int32{
-	12, // 0: spec.ConfigV2.k8sCtx:type_name -> spec.KubernetesContextV2
-	8,  // 1: spec.ConfigV2.manifest:type_name -> spec.ManifestV2
-	26, // 2: spec.ConfigV2.clusters:type_name -> spec.ConfigV2.ClustersEntry
+	10, // 0: spec.ConfigV2.k8sCtx:type_name -> spec.KubernetesContextV2
+	6,  // 1: spec.ConfigV2.manifest:type_name -> spec.ManifestV2
+	25, // 2: spec.ConfigV2.clusters:type_name -> spec.ConfigV2.ClustersEntry
 	2,  // 3: spec.ManifestV2.state:type_name -> spec.ManifestV2.State
-	10, // 4: spec.ClusterStateV2.current:type_name -> spec.ClustersV2
-	13, // 5: spec.ClusterStateV2.state:type_name -> spec.WorkflowV2
-	19, // 6: spec.ClusterStateV2.task:type_name -> spec.TaskEventV2
-	14, // 7: spec.ClustersV2.k8s:type_name -> spec.K8sclusterV2
-	11, // 8: spec.ClustersV2.loadBalancers:type_name -> spec.LoadBalancersV2
-	15, // 9: spec.LoadBalancersV2.clusters:type_name -> spec.LBclusterV2
+	8,  // 4: spec.ClusterStateV2.current:type_name -> spec.ClustersV2
+	11, // 5: spec.ClusterStateV2.state:type_name -> spec.WorkflowV2
+	17, // 6: spec.ClusterStateV2.task:type_name -> spec.TaskEventV2
+	12, // 7: spec.ClustersV2.k8s:type_name -> spec.K8sclusterV2
+	9,  // 8: spec.ClustersV2.loadBalancers:type_name -> spec.LoadBalancersV2
+	13, // 9: spec.LoadBalancersV2.clusters:type_name -> spec.LBclusterV2
 	3,  // 10: spec.WorkflowV2.status:type_name -> spec.WorkflowV2.Status
-	16, // 11: spec.K8sclusterV2.clusterInfo:type_name -> spec.ClusterInfoV2
-	17, // 12: spec.K8sclusterV2.installationProxy:type_name -> spec.InstallationProxyV2
-	16, // 13: spec.LBclusterV2.clusterInfo:type_name -> spec.ClusterInfoV2
-	18, // 14: spec.LBclusterV2.roles:type_name -> spec.RoleV2
-	33, // 15: spec.LBclusterV2.dns:type_name -> spec.DNS
-	34, // 16: spec.ClusterInfoV2.nodePools:type_name -> spec.NodePool
+	14, // 11: spec.K8sclusterV2.clusterInfo:type_name -> spec.ClusterInfoV2
+	15, // 12: spec.K8sclusterV2.installationProxy:type_name -> spec.InstallationProxyV2
+	14, // 13: spec.LBclusterV2.clusterInfo:type_name -> spec.ClusterInfoV2
+	16, // 14: spec.LBclusterV2.roles:type_name -> spec.RoleV2
+	31, // 15: spec.LBclusterV2.dns:type_name -> spec.DNS
+	32, // 16: spec.ClusterInfoV2.nodePools:type_name -> spec.NodePool
 	0,  // 17: spec.RoleV2.roleType:type_name -> spec.RoleTypeV2
-	27, // 18: spec.RoleV2.settings:type_name -> spec.RoleV2.Settings
-	35, // 19: spec.TaskEventV2.timestamp:type_name -> google.protobuf.Timestamp
+	26, // 18: spec.RoleV2.settings:type_name -> spec.RoleV2.Settings
+	33, // 19: spec.TaskEventV2.timestamp:type_name -> google.protobuf.Timestamp
 	1,  // 20: spec.TaskEventV2.event:type_name -> spec.EventV2
-	24, // 21: spec.TaskEventV2.task:type_name -> spec.TaskV2
-	20, // 22: spec.TaskEventV2.onError:type_name -> spec.RetryV2
-	28, // 23: spec.TaskEventV2.pipeline:type_name -> spec.TaskEventV2.Stage
-	29, // 24: spec.RetryV2.repeat:type_name -> spec.RetryV2.Repeat
-	30, // 25: spec.RetryV2.rollback:type_name -> spec.RetryV2.Rollback
-	10, // 26: spec.CreateV2.clusters:type_name -> spec.ClustersV2
-	31, // 27: spec.DeleteV2.clusters:type_name -> spec.DeleteV2.Clusters
-	21, // 28: spec.TaskV2.create:type_name -> spec.CreateV2
-	22, // 29: spec.TaskV2.update:type_name -> spec.UpdateV2
-	23, // 30: spec.TaskV2.delete:type_name -> spec.DeleteV2
-	32, // 31: spec.TaskResult.none:type_name -> spec.TaskResult.None
-	9,  // 32: spec.ConfigV2.ClustersEntry.value:type_name -> spec.ClusterStateV2
-	4,  // 33: spec.TaskEventV2.Stage.stage:type_name -> spec.TaskEventV2.Stage.StageKind
-	5,  // 34: spec.TaskEventV2.Stage.errorLevel:type_name -> spec.TaskEventV2.Stage.ErrorLevel
-	6,  // 35: spec.RetryV2.Repeat.kind:type_name -> spec.RetryV2.Repeat.Kind
-	19, // 36: spec.RetryV2.Rollback.tasks:type_name -> spec.TaskEventV2
-	10, // 37: spec.DeleteV2.Clusters.clusters:type_name -> spec.ClustersV2
+	22, // 21: spec.TaskEventV2.task:type_name -> spec.TaskV2
+	18, // 22: spec.TaskEventV2.onError:type_name -> spec.RetryV2
+	34, // 23: spec.TaskEventV2.pipeline:type_name -> spec.Stage
+	27, // 24: spec.RetryV2.repeat:type_name -> spec.RetryV2.Repeat
+	28, // 25: spec.RetryV2.rollback:type_name -> spec.RetryV2.Rollback
+	8,  // 26: spec.CreateV2.clusters:type_name -> spec.ClustersV2
+	29, // 27: spec.DeleteV2.clusters:type_name -> spec.DeleteV2.Clusters
+	19, // 28: spec.TaskV2.create:type_name -> spec.CreateV2
+	20, // 29: spec.TaskV2.update:type_name -> spec.UpdateV2
+	21, // 30: spec.TaskV2.delete:type_name -> spec.DeleteV2
+	22, // 31: spec.Work.task:type_name -> spec.TaskV2
+	35, // 32: spec.Work.passes:type_name -> google.protobuf.Any
+	30, // 33: spec.TaskResult.none:type_name -> spec.TaskResult.None
+	7,  // 34: spec.ConfigV2.ClustersEntry.value:type_name -> spec.ClusterStateV2
+	4,  // 35: spec.RetryV2.Repeat.kind:type_name -> spec.RetryV2.Repeat.Kind
+	17, // 36: spec.RetryV2.Rollback.tasks:type_name -> spec.TaskEventV2
+	8,  // 37: spec.DeleteV2.Clusters.clusters:type_name -> spec.ClustersV2
 	38, // [38:38] is the sub-list for method output_type
 	38, // [38:38] is the sub-list for method input_type
 	38, // [38:38] is the sub-list for extension type_name
@@ -2283,6 +2157,7 @@ func file_spec_manifestv2_proto_init() {
 	}
 	file_spec_nodepool_proto_init()
 	file_spec_dns_proto_init()
+	file_spec_pass_proto_init()
 	file_spec_manifestv2_proto_msgTypes[13].OneofWrappers = []any{
 		(*RetryV2_Repeat_)(nil),
 		(*RetryV2_Rollback_)(nil),
@@ -2295,7 +2170,7 @@ func file_spec_manifestv2_proto_init() {
 		(*TaskV2_Update)(nil),
 		(*TaskV2_Delete)(nil),
 	}
-	file_spec_manifestv2_proto_msgTypes[18].OneofWrappers = []any{
+	file_spec_manifestv2_proto_msgTypes[19].OneofWrappers = []any{
 		(*TaskResult_None_)(nil),
 	}
 	type x struct{}
@@ -2303,7 +2178,7 @@ func file_spec_manifestv2_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_spec_manifestv2_proto_rawDesc), len(file_spec_manifestv2_proto_rawDesc)),
-			NumEnums:      7,
+			NumEnums:      5,
 			NumMessages:   26,
 			NumExtensions: 0,
 			NumServices:   0,

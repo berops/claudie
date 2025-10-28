@@ -6,7 +6,12 @@ import (
 	"github.com/berops/claudie/proto/pb/spec"
 )
 
-func ProcessTask(ctx context.Context, task *spec.TaskV2) *spec.TaskResult {
+type Work struct {
+	Task   *spec.TaskV2
+	Passes []*spec.StageTerraformer_SubPass
+}
+
+func ProcessTask(ctx context.Context, task Work) *spec.TaskResult {
 	// TODO: implement the domain and move it here and consider processing as subpasses
 	// i.e the recieved message would have subpsasses which would be worked on
 	// individually and thus we could cancel them really easily on service kill.

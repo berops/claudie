@@ -89,6 +89,8 @@ func fillEntriesForNewClusters(
 }
 
 func createCluster(desired *spec.ClustersV2) *spec.TaskEventV2 {
+	// TODO: on error here we would issue a destruction of the cluster.
+	// and on the next reconciliation it would be rebuilt again.
 	// Choose initial api endpoint.
 	var ep bool
 	for _, lb := range desired.GetLoadBalancers().GetClusters() {
@@ -103,26 +105,55 @@ func createCluster(desired *spec.ClustersV2) *spec.TaskEventV2 {
 		nodepools.FirstControlNode(nps).NodeType = spec.NodeType_apiEndpoint
 	}
 
-	pipeline := []*spec.TaskEventV2_Stage{
+	pipeline := []*spec.Stage{
 		{
-			Stage:       spec.TaskEventV2_Stage_TERRAFORMER,
-			Description: "Creating infrastructure for the new cluster",
-			ErrorLevel:  spec.TaskEventV2_Stage_ErrorFatal,
+			StageKind: &spec.Stage_Terraformer{
+				Terraformer: &spec.StageTerraformer{
+					Description: &spec.StageDescription{
+						About:      "Creating infrastructure for the new cluster",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+					SubPasses: []*spec.StageTerraformer_SubPass{
+						{
+							Kind: spec.StageTerraformer_BUILD_INFRASTRUCTURE,
+							Description: &spec.StageDescription{
+								About:      "Building desired state infrastructure",
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+						},
+					},
+				},
+			},
 		},
 		{
-			Stage:       spec.TaskEventV2_Stage_ANSIBLER,
-			Description: "Configuring newly spawned cluster infrastructure",
-			ErrorLevel:  spec.TaskEventV2_Stage_ErrorFatal,
+			StageKind: &spec.Stage_Ansibler{
+				Ansibler: &spec.StageAnsibler{
+					Description: &spec.StageDescription{
+						About:      "Configuring newly spawned cluster infrastructure",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+				},
+			},
 		},
 		{
-			Stage:       spec.TaskEventV2_Stage_KUBE_ELEVEN,
-			Description: "Building kubernetes cluster out of the spawned infrastructure",
-			ErrorLevel:  spec.TaskEventV2_Stage_ErrorFatal,
+			StageKind: &spec.Stage_KubeEleven{
+				KubeEleven: &spec.StageKubeEleven{
+					Description: &spec.StageDescription{
+						About:      "Building kubernetes cluster out of the spawned infrastructure",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+				},
+			},
 		},
 		{
-			Stage:       spec.TaskEventV2_Stage_KUBER,
-			Description: "Finalizing cluster configuration",
-			ErrorLevel:  spec.TaskEventV2_Stage_ErrorFatal,
+			StageKind: &spec.Stage_Kuber{
+				Kuber: &spec.StageKuber{
+					Description: &spec.StageDescription{
+						About:      "Finalizing cluster configuration",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+				},
+			},
 		},
 	}
 
@@ -141,36 +172,72 @@ func createCluster(desired *spec.ClustersV2) *spec.TaskEventV2 {
 }
 
 func deleteCluster(current *spec.ClustersV2) *spec.TaskEventV2 {
-	var pipeline []*spec.TaskEventV2_Stage
+	var pipeline []*spec.Stage
 
 	if static := nodepools.Static(current.K8S.ClusterInfo.NodePools); len(static) > 0 {
-		// We want to continue during the destruction of these two stages even if the
+		// The idea is to continue during the destruction of these two stages even if the
 		// kube-eleven stage fails. The static nodes could already be unreachable, for
 		// example when credits on a provider expired and there is no way to reach those
 		// VMs anymore.
-		pipeline = append(pipeline, &spec.TaskEventV2_Stage{
-			Stage:       spec.TaskEventV2_Stage_KUBE_ELEVEN,
-			Description: "Destroying kubernetes cluster in related binaries",
-			ErrorLevel:  spec.TaskEventV2_Stage_ErrorWarn,
-		})
-		pipeline = append(pipeline, &spec.TaskEventV2_Stage{
-			Stage:       spec.TaskEventV2_Stage_ANSIBLER,
-			Description: "Removing claudie installed utilities on across the nodes",
-			ErrorLevel:  spec.TaskEventV2_Stage_ErrorWarn,
-		})
+		ke := &spec.Stage{
+			StageKind: &spec.Stage_KubeEleven{
+				KubeEleven: &spec.StageKubeEleven{
+					Description: &spec.StageDescription{
+						About:      "Destroying kubernetes cluster and related binaries",
+						ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+					},
+				},
+			},
+		}
+
+		ans := &spec.Stage{
+			StageKind: &spec.Stage_Ansibler{
+				Ansibler: &spec.StageAnsibler{
+					Description: &spec.StageDescription{
+						About:      "Removing claudie installed utilities across nodes",
+						ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+					},
+				},
+			},
+		}
+
+		pipeline = append(pipeline, ke)
+		pipeline = append(pipeline, ans)
 	}
 
-	pipeline = append(pipeline, &spec.TaskEventV2_Stage{
-		Stage:       spec.TaskEventV2_Stage_TERRAFORMER,
-		Description: "Destroying infrastructure of the cluster",
-		ErrorLevel:  spec.TaskEventV2_Stage_ErrorFatal,
-	})
+	tf := &spec.Stage{
+		StageKind: &spec.Stage_Terraformer{
+			Terraformer: &spec.StageTerraformer{
+				Description: &spec.StageDescription{
+					About:      "Destroying infrastructure of the cluster",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+				SubPasses: []*spec.StageTerraformer_SubPass{
+					{
+						Kind: spec.StageTerraformer_DESTROY_INFRASTRUCTURE,
+						Description: &spec.StageDescription{
+							About:      "Destroying current state",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+				},
+			},
+		},
+	}
 
-	pipeline = append(pipeline, &spec.TaskEventV2_Stage{
-		Stage:       spec.TaskEventV2_Stage_KUBER,
-		Description: "Cleanup cluster resources in the Claudie Management Cluster",
-		ErrorLevel:  spec.TaskEventV2_Stage_ErrorFatal,
-	})
+	kb := &spec.Stage{
+		StageKind: &spec.Stage_Kuber{
+			Kuber: &spec.StageKuber{
+				Description: &spec.StageDescription{
+					About:      "Cleanup cluster resources in the Claudie Management Cluster",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+			},
+		},
+	}
+
+	pipeline = append(pipeline, tf)
+	pipeline = append(pipeline, kb)
 
 	return &spec.TaskEventV2{
 		Id:        uuid.New().String(),

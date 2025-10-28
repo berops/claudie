@@ -16,6 +16,7 @@ import (
 
 	"golang.org/x/sync/semaphore"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 func (s *Service) Handler(msg jetstream.Msg) {
@@ -35,7 +36,6 @@ func handlerInner(
 	msg jetstream.Msg,
 ) {
 	var (
-		// TODO: store the replyMsgID in NATS header or ProtoBuf msg.
 		replyMsgID   = uuid.New().String()
 		msgID        = msg.Headers().Get(nats.MsgIdHdr)
 		replyChannel = msg.Headers().Get(natsutils.ReplyToHeader)
@@ -46,44 +46,43 @@ func handlerInner(
 		logger.Warn().Msg("Failed perform first Progress refresh")
 	}
 
-	var task spec.TaskV2
-	if err := proto.Unmarshal(msg.Data(), &task); err != nil {
+	var work spec.Work
+	if err := proto.Unmarshal(msg.Data(), &work); err != nil {
 		logger.Err(err).Msg("Failed to unmarshal received message")
-
 		reply := ReplyMsg{
-			ID:      replyMsgID,
-			Subject: replyChannel,
-			Result: &spec.TaskResult{
-				Result: &spec.TaskResult_None_{None: new(spec.TaskResult_None)},
-			},
+			ID:       replyMsgID,
+			SourceID: msgID,
+			Subject:  replyChannel,
 		}
-
-		logger := logger.With().
-			Str("reply-msg-id", replyMsgID).
-			Str(natsutils.ReplyToHeader, reply.Subject).Logger()
-
-		// Send a reply and wait for an ack within the next 10 seconds, which should be genereous enough.
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-
-		if err := replyTo(ctx, logger, js, reply); err != nil {
-			logger.Err(err).Msg("Failed to send reply message")
-
-			if err := msg.NakWithDelay(2 * time.Second); err != nil {
-				logger.
-					Err(err).
-					Msg("Failed to Nak message, exiting, will wait for Ack Wait to expire for the re-delivery")
-			}
-
-			// Failed to publish to the requested reply to channel, return here and wait for the re-delivery
-			return
-		}
-
-		if err := msg.DoubleAck(ctx); err != nil {
-			logger.Err(err).Msg("Failed to acknowledge message after sending NOOP reply")
-			// if this fails just fallthrough here, we will get a re-delivery of the message after the AckWait.
-		}
+		// Try to send a noop as we failed to unmarshal the received message
+		// if that fails we will get the same message re-delivered.
+		tryReplyNoop(logger, reply, js, msg)
 		return
+	}
+
+	var terraformWork Work
+	{
+		terraformWork.Task = work.Task
+		work.Task = nil
+
+		for _, pass := range work.Passes {
+			var stage spec.StageTerraformer_SubPass
+			if err := anypb.UnmarshalTo(pass, &stage, proto.UnmarshalOptions{}); err != nil {
+				logger.Err(err).Msg("Failed to unmarshal received stage for work")
+				reply := ReplyMsg{
+					ID:       replyMsgID,
+					SourceID: msgID,
+					Subject:  replyChannel,
+				}
+				// Try to send a noop as we failed to unmarshal the received message
+				// if that fails we will get the same message re-delivered.
+				tryReplyNoop(logger, reply, js, msg)
+				return
+			}
+			terraformWork.Passes = append(terraformWork.Passes, &stage)
+		}
+
+		work.Passes = nil
 	}
 
 	var (
@@ -117,7 +116,7 @@ func handlerInner(
 		}
 	}()
 
-	result := ProcessTask(ctx, &task)
+	result := ProcessTask(ctx, terraformWork)
 
 	close(processingDone)
 	<-ctx.Done()
@@ -126,9 +125,10 @@ func handlerInner(
 		err error
 
 		reply = ReplyMsg{
-			ID:      replyMsgID,
-			Subject: replyChannel,
-			Result:  result,
+			ID:       replyMsgID,
+			SourceID: msgID,
+			Subject:  replyChannel,
+			Result:   result,
 		}
 
 		retries  = 5
@@ -187,9 +187,21 @@ func handlerInner(
 }
 
 type ReplyMsg struct {
-	ID      string
+	// ID of the message that will be set as [nats.MsgIdHdr]
+	// This must be unique even on re-delivery of the same message
+	ID string
+
+	// SourceID is the ID from the picked up [nats.Msg], that was received
+	// via the [nats.MsgIdHdr]. This the actuall ID of the task that was scheduled
+	// and this information is given back to the reply channel in the header
+	// [natsutils.WorkID]
+	SourceID string
+
+	// To which subject should the reply be send to.
 	Subject string
-	Result  *spec.TaskResult
+
+	// Result of the processed task.
+	Result *spec.TaskResult
 }
 
 func replyTo(
@@ -210,6 +222,7 @@ func replyTo(
 
 	headers := nats.Header{}
 	headers.Set(nats.MsgIdHdr, result.ID)
+	headers.Set(natsutils.WorkID, result.SourceID)
 
 	msg := nats.Msg{
 		Subject: result.Subject,
@@ -227,4 +240,37 @@ func replyTo(
 	}
 
 	return nil
+}
+
+// acknowledges the passed in `msg` and replies a Noop to the targeted `replyChannel` channel.
+func tryReplyNoop(logger zerolog.Logger, reply ReplyMsg, js jetstream.JetStream, msg jetstream.Msg) {
+	reply.Result = &spec.TaskResult{
+		Result: &spec.TaskResult_None_{None: new(spec.TaskResult_None)},
+	}
+
+	logger = logger.With().
+		Str("reply-msg-id", reply.ID).
+		Str(natsutils.ReplyToHeader, reply.Subject).Logger()
+
+	// Send a reply and wait for an ack within the next 10 seconds, which should be genereous enough.
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := replyTo(ctx, logger, js, reply); err != nil {
+		logger.Err(err).Msg("Failed to send reply message")
+
+		if err := msg.NakWithDelay(2 * time.Second); err != nil {
+			logger.
+				Err(err).
+				Msg("Failed to Nak message, exiting, will wait for [AckWait] to expire for the re-delivery")
+		}
+
+		// Failed to publish to the requested reply to channel, return here and wait for the re-delivery
+		return
+	}
+
+	if err := msg.DoubleAck(ctx); err != nil {
+		logger.Err(err).Msg("Failed to acknowledge message after sending NOOP reply")
+		// if this fails just fallthrough here, we will get a re-delivery of the message after the [AckWait].
+	}
 }

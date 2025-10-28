@@ -692,12 +692,15 @@ func Test_deduplicateNodepoolNames(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			deduplicateNodepoolNames(tt.args.from, tt.args.state)
 		})
 	}
 }
 
 func Test_transferStaticNodes(t *testing.T) {
+	t.Parallel()
+
 	k8s := spectesting.GenerateFakeK8SCluster(false)
 	desired := nodepools.Static(k8s.ClusterInfo.NodePools)[0]
 	current := proto.Clone(desired).(*spec.NodePool)
@@ -718,6 +721,8 @@ func Test_transferStaticNodes(t *testing.T) {
 }
 
 func Test_fillDynamicNodes(t *testing.T) {
+	t.Parallel()
+
 	k8s := spectesting.GenerateFakeK8SCluster(false)
 	desired := slices.Collect(nodepools.Control(nodepools.Dynamic(k8s.ClusterInfo.NodePools)))[0]
 	current := proto.Clone(desired).(*spec.NodePool)
@@ -741,6 +746,8 @@ func Test_fillDynamicNodes(t *testing.T) {
 }
 
 func Test_transferExistingRole(t *testing.T) {
+	t.Parallel()
+
 	current := []*spec.Role{
 		{
 			Name:     "1",

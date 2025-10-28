@@ -776,6 +776,8 @@ func Test_calculateCIDR(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			if err := calculateCIDR(tt.args.baseCIDR, tt.args.key, tt.args.exits, tt.args.nodepools); (err != nil) != tt.wantErr {
 				t.Errorf("calculateCIDR() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -825,7 +827,7 @@ func TestGetCIDR(t *testing.T) {
 			position: 2,
 			existing: func() []string {
 				var m []string
-				for i := 0; i < 256; i++ {
+				for i := range 256 {
 					m = append(m, fmt.Sprintf("10.0.%d.0/24", i))
 				}
 				return m
@@ -841,15 +843,21 @@ func TestGetCIDR(t *testing.T) {
 		},
 	}
 	for _, test := range testDataFail {
-		if _, err := getCIDR(test.baseCIDR, test.position, test.existing); err == nil {
-			t.Error(test.desc, "test should have failed, but was successful")
-		} else {
-			t.Log(err)
-		}
+		t.Run(test.desc, func(t *testing.T) {
+			t.Parallel()
+
+			if _, err := getCIDR(test.baseCIDR, test.position, test.existing); err == nil {
+				t.Error(test.desc, "test should have failed, but was successful")
+			} else {
+				t.Log(err)
+			}
+		})
 	}
 }
 
 func Test_fillMissingCIDR2(t *testing.T) {
+	t.Parallel()
+
 	var (
 		k8s   = spectesting.GenerateFakeK8SCluster(true)
 		lbs1  = spectesting.GenerateFakeLBCluster(false, k8s.ClusterInfo)
@@ -1108,6 +1116,8 @@ func Test_fillMissingCIDR(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			if err := fillMissingCIDR(tt.args.c); (err != nil) != tt.wantErr {
 				t.Errorf("fillMissingCIDR() = %v want = %v", err, tt.wantErr)
 			}
@@ -1117,6 +1127,8 @@ func Test_fillMissingCIDR(t *testing.T) {
 }
 
 func Test_generateMissingDynamicNode(t *testing.T) {
+	t.Parallel()
+
 	// control nodepool
 	np := &spec.NodePool{
 		Nodes:     make([]*spec.Node, 2),
@@ -1172,6 +1184,8 @@ func Test_generateMissingDynamicNode(t *testing.T) {
 }
 
 func Test_generateClaudieReservedPorts(t *testing.T) {
+	t.Parallel()
+
 	ports := generateClaudieReservedPorts()
 	assert.True(t, len(ports) == (manifest.MaxRolesPerLoadBalancer+manifest.AdditionalReservedPorts))
 	beg, end := manifest.ReservedPortRangeStart, manifest.ReservedPortRangeEnd
@@ -1183,6 +1197,8 @@ func Test_generateClaudieReservedPorts(t *testing.T) {
 }
 
 func Test_FillMissingEnvoyAdminPorts(t *testing.T) {
+	t.Parallel()
+
 	const lbcount = 3
 
 	var lbs []*spec.LBcluster

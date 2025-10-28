@@ -9,6 +9,10 @@ const (
 	// If the [ReplyToHeader] is not set, the reply can be interpreted
 	// as [ReplyDiscard]
 	ReplyDiscard = ""
+
+	// The ID of the task/work that was picked up by the
+	// worker from the received message header's key [nats.MsgIdHdr].
+	WorkID = "claudie-internal-work-id"
 )
 
 // A list of default claudie related NATS subjects.

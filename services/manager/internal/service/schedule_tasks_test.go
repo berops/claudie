@@ -1027,6 +1027,7 @@ func TestDiff(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := Diff(tt.args.current, tt.args.desired, tt.args.currentLbs, tt.args.desiredLbs)
 			assert.Equal(t, len(tt.want), len(got))
 			for i := range tt.want {
@@ -1465,6 +1466,8 @@ func Test_scheduleTasksRollback(t *testing.T) {
 }
 
 func Test_tryReachK8sNodes(t *testing.T) {
+	t.Parallel()
+
 	k8s := spectesting.GenerateFakeK8SCluster(true)
 	lbs := spectesting.GenerateFakeLBCluster(true, k8s.ClusterInfo)
 	s := &spec.ClusterState{

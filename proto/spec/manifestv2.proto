@@ -3,8 +3,11 @@ package spec;
 option go_package = "github.com/berops/claudie/proto/pb/spec";
 
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/any.proto";
+
 import "spec/nodepool.proto";
 import "spec/dns.proto";
+import "spec/pass.proto";
 
 // Config holds data for a single manifest.
 message ConfigV2 {
@@ -174,30 +177,6 @@ enum EventV2 {
 }
 
 message TaskEventV2 {
-    message Stage {
-        enum StageKind {
-            // UNKNOWN indicates an unknown stage.
-            UNKNOWN = 0;
-            // TERRAFORMER indicates that the cluster is currently being build in
-            // terraformer.
-            TERRAFORMER = 1;
-            // ANSIBLER indicates that the cluster is currently being build in ansibler.
-            ANSIBLER = 2;
-            // KUBE_ELEVEN indicates that the cluster is currently being build in kube
-            // eleven.
-            KUBE_ELEVEN = 3;
-            // KUBER indicates that the cluster is currently being build in kuber.
-            KUBER = 4;
-    }
-    enum ErrorLevel {
-        ErrorFatal = 0;
-        ErrorWarn = 1;
-    }
-    StageKind stage = 1;
-    string description = 2;
-    ErrorLevel errorLevel = 3;
-  }
-
   string id = 1;
   google.protobuf.Timestamp timestamp = 2;
   EventV2 event = 3;
@@ -263,6 +242,15 @@ message TaskV2 {
         UpdateV2 update = 2;
         DeleteV2 delete = 3;
     }
+}
+
+// The message that is used for the Message Queue.
+message Work {
+    // The task to be worked on.
+    TaskV2 task = 1;
+
+    // What exactly should be done with the task.
+    repeated google.protobuf.Any passes = 2;
 }
 
 message TaskResult {

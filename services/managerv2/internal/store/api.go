@@ -86,19 +86,41 @@ type Clusters struct {
 	LoadBalancers []byte `bson:"loadBalancers"`
 }
 
+type StageKind string
+
+const (
+	Unknown     StageKind = ""
+	Terraformer StageKind = "TERRAFORMER"
+	Ansibler    StageKind = "ANSIBLER"
+	KubeEleven  StageKind = "KUBE_ELEVEN"
+	Kuber       StageKind = "KUBER"
+)
+
+type StageDescription struct {
+	About      string `bson:"about"`
+	ErrorLevel string `bson:"errorLevel"`
+}
+
+type SubPass struct {
+	Kind        string           `bson:"kind"`
+	Description StageDescription `bson:"description"`
+}
+
+type Stage struct {
+	Kind        StageKind        `bson:"kind"`
+	Description StageDescription `bson:"description"`
+	SubPasses   []SubPass        `bson:"subPasses"`
+}
+
 type TaskEvent struct {
-	Id          string `bson:"id"`
-	Timestamp   string `bson:"timestamp"`
-	Type        string `bson:"event"`
-	Task        []byte `bson:"task"`
-	Description string `bson:"description"`
-	OnError     []byte `bson:"onError"`
-	Pipeline    []struct {
-		StageKind   string
-		Description string
-		ErrorLevel  string
-	} `bson:"pipeline"`
-	CurrentStage uint32 `bson:"currentStage"`
+	Id           string  `bson:"id"`
+	Timestamp    string  `bson:"timestamp"`
+	Type         string  `bson:"event"`
+	Task         []byte  `bson:"task"`
+	Description  string  `bson:"description"`
+	OnError      []byte  `bson:"onError"`
+	Pipeline     []Stage `bson:"pipeline"`
+	CurrentStage uint32  `bson:"currentStage"`
 }
 
 type Workflow struct {

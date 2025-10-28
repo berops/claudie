@@ -334,6 +334,8 @@ func Test_transferTemplatesRepo(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			transferTemplatesRepo(tt.args.into, tt.args.from)
 			assert.Equal(t, len(tt.want), len(tt.args.into))
 			for i := range tt.want {

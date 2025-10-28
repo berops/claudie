@@ -1,0 +1,72 @@
+syntax = "proto3";
+package spec;
+option go_package = "github.com/berops/claudie/proto/pb/spec";
+
+enum ErrorLevel {
+    ERROR_FATAL = 0;
+    ERROR_WARN = 1;
+}
+
+message StageDescription {
+    string about = 1;
+    ErrorLevel errorLevel = 2;
+}
+
+message StageTerraformer {
+    enum SubPassKind {
+        BUILD_INFRASTRUCTURE = 0;
+        DESTROY_INFRASTRUCTURE = 1;
+    }
+    message SubPass {
+        SubPassKind kind = 1;
+        StageDescription description = 2;
+    }
+
+    StageDescription description = 1;
+    repeated SubPass subPasses = 2;
+}
+
+message StageAnsibler {
+    enum SubPassKind {
+        TODO = 0;
+    }
+    message SubPass {
+        SubPassKind kind = 1;
+        StageDescription description = 2;
+    }
+    StageDescription description = 1;
+    repeated SubPass subPasses = 2;
+}
+
+message StageKubeEleven {
+    enum SubPassKind {
+        TODO = 0;
+    }
+    message SubPass {
+        SubPassKind kind = 1;
+        StageDescription description = 2;
+    }
+    StageDescription description = 1;
+    repeated SubPass subPasses = 2;
+}
+
+message StageKuber {
+    enum SubPassKind {
+        TODO = 0;
+    }
+    message SubPass {
+        SubPassKind kind = 1;
+        StageDescription description = 2;
+    }
+    StageDescription description = 1;
+    repeated SubPass subPasses = 2;
+}
+
+message Stage {
+    oneof StageKind {
+        StageTerraformer terraformer = 1;
+        StageAnsibler ansibler = 2;
+        StageKubeEleven kubeEleven = 3;
+        StageKuber kuber = 4;
+    }
+}

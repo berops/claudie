@@ -12,6 +12,9 @@ import (
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/managerv2/internal/store"
 	"github.com/nats-io/nats.go"
+
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // Tick represents the interval at which each manifest state is checked.
@@ -33,7 +36,7 @@ func (s *Service) WatchForScheduledDocuments(ctx context.Context) error {
 		for cluster, state := range scheduled.Clusters {
 			if state.State.Status == spec.WorkflowV2_DONE.String() {
 				clustersDone++
-				continue
+				continue clusters
 			}
 
 			if state.State.Status == spec.WorkflowV2_ERROR.String() {
@@ -41,22 +44,26 @@ func (s *Service) WatchForScheduledDocuments(ctx context.Context) error {
 				// this cluster even though the state is in error.
 				clustersDone++
 				anyError = true
-				continue
+				continue clusters
 			}
 
 			event := state.Task
-			if event == nil {
-				logger.Debug().Msgf("Missing task to be worked on for cluster %q, considering as done", cluster)
-				// Task should not be nil here under normal working circumstances.
-				// But in case it is nil we consider the current cluster as done
-				state.State.Status = spec.WorkflowV2_DONE.String()
 
+			noWork := event == nil
+			noWork = noWork || len(event.Pipeline) < 1
+			noWork = noWork || (int(event.CurrentStage) > len(event.Pipeline))
+			if noWork {
+				logger.Debug().Msgf("Nothing to be worked on for cluster %q, considering as done", cluster)
+
+				state.Task = nil
+				state.State.Status = spec.WorkflowV2_DONE.String()
 				if err := s.store.UpdateConfig(ctx, scheduled); err != nil {
 					if errors.Is(err, store.ErrNotFoundOrDirty) {
 						logger.Debug().Msgf("Failed to move cluster %q with missing state to Done, dirty write", cluster)
-						break
+						break clusters
 					}
 					logger.Err(err).Msgf("Failed to move cluster %q with missing state to Done", cluster)
+					continue clusters
 				}
 
 				// We break here as the config version was updated thus subsequent changes
@@ -64,31 +71,27 @@ func (s *Service) WatchForScheduledDocuments(ctx context.Context) error {
 				break clusters
 			}
 
+			pipeline, err := store.ConvertToGRPCStages(event.Pipeline)
+			if err != nil {
+				logger.Err(err).Msgf("Failed to unmarshal the pipeline for task %q from cluster %q", event.Id, cluster)
+				continue clusters
+			}
+
 			switch state.State.Status {
 			case spec.WorkflowV2_WAIT_FOR_PICKUP.String():
-				nextStage := event.Pipeline[event.CurrentStage].StageKind
-				stage := spec.TaskEventV2_Stage_StageKind(spec.TaskEventV2_Stage_StageKind_value[nextStage])
-				request, reply, err := jetstreamFromPipelineStage(stage)
+				msg, err := messageForStage(event.Id, event.Task, pipeline[event.CurrentStage])
 				if err != nil {
-					// something unexpected but we don't crash the service just ignore and continue.
+					// unexpected but we don't crash the service just ignore and continue.
 					logger.Err(err).Msgf("ignoring event %q for cluster %q", event.Id, cluster)
 					continue clusters
 				}
 
-				headers := nats.Header{}
-				headers.Set(nats.MsgIdHdr, event.Id)        // to catch duplicates.
-				headers.Set(natsutils.ReplyToHeader, reply) // to which queue the reponse should be send to.
-
-				msg := nats.Msg{
-					Subject: request,
-					Header:  headers,
-					Data:    event.Task,
-				}
 				ack, err := s.nats.JetStream().PublishMsg(ctx, &msg)
 				if err != nil {
 					logger.Err(err).Msgf("failed to publish task for cluster %q", cluster)
-					// if we failed to publish the message to the queue, we don't know what
+					// failed to publish the message to the queue, unsure what
 					// exactly happened, but we can try with the next cluster.
+					//
 					// As the message may have been persisted just the response didn't arrive,
 					// on the next iteration of the Scheduled Documents we will republish the
 					// message and since we have a pretty generous timeout for catching duplicates
@@ -236,19 +239,85 @@ func (g *Service) WatchForDoneOrErrorDocuments(ctx context.Context) error {
 	return nil
 }
 
-func jetstreamFromPipelineStage(stage spec.TaskEventV2_Stage_StageKind) (string, string, error) {
-	switch stage {
-	case spec.TaskEventV2_Stage_ANSIBLER:
-		return natsutils.AnsiblerRequests, natsutils.AnsiblerResponse, nil
-	case spec.TaskEventV2_Stage_KUBER:
-		return natsutils.KuberRequests, natsutils.KuberResponse, nil
-	case spec.TaskEventV2_Stage_KUBE_ELEVEN:
-		return natsutils.KubeElevenRequest, natsutils.KubeElevenResponse, nil
-	case spec.TaskEventV2_Stage_TERRAFORMER:
-		return natsutils.TerraformerRequest, natsutils.TerraformerResponse, nil
-	case spec.TaskEventV2_Stage_UNKNOWN:
-		fallthrough
-	default:
-		return "", "", fmt.Errorf("no mapping exists for stage %#v", stage)
+func messageForStage(id string, marshalledTask []byte, stage *spec.Stage) (nats.Msg, error) {
+	var (
+		task         spec.TaskV2
+		work         spec.Work
+		subject      string
+		replySubject string
+	)
+
+	err := proto.Unmarshal(marshalledTask, &task)
+	if err != nil {
+		return nats.Msg{}, err
 	}
+
+	work.Task = &task
+
+	switch stage := stage.GetStageKind().(type) {
+	case *spec.Stage_Ansibler:
+		for _, pass := range stage.Ansibler.GetSubPasses() {
+			r, err := anypb.New(pass)
+			if err != nil {
+				return nats.Msg{}, err
+			}
+			work.Passes = append(work.Passes, r)
+		}
+
+		subject = natsutils.AnsiblerRequests
+		replySubject = natsutils.AnsiblerResponse
+	case *spec.Stage_KubeEleven:
+		for _, pass := range stage.KubeEleven.GetSubPasses() {
+			r, err := anypb.New(pass)
+			if err != nil {
+				return nats.Msg{}, err
+			}
+			work.Passes = append(work.Passes, r)
+		}
+		subject = natsutils.KubeElevenRequest
+		replySubject = natsutils.KubeElevenResponse
+	case *spec.Stage_Kuber:
+		for _, pass := range stage.Kuber.GetSubPasses() {
+			r, err := anypb.New(pass)
+			if err != nil {
+				return nats.Msg{}, err
+			}
+			work.Passes = append(work.Passes, r)
+		}
+		subject = natsutils.KuberRequests
+		replySubject = natsutils.KuberResponse
+	case *spec.Stage_Terraformer:
+		for _, pass := range stage.Terraformer.GetSubPasses() {
+			r, err := anypb.New(pass)
+			if err != nil {
+				return nats.Msg{}, err
+			}
+			work.Passes = append(work.Passes, r)
+		}
+		subject = natsutils.TerraformerRequest
+		replySubject = natsutils.TerraformerResponse
+	default:
+		return nats.Msg{}, fmt.Errorf("no mapping exists for stage %T", stage)
+	}
+
+	opts := proto.MarshalOptions{
+		Deterministic: true,
+	}
+
+	data, err := opts.Marshal(&work)
+	if err != nil {
+		return nats.Msg{}, err
+	}
+
+	headers := nats.Header{}
+	headers.Set(nats.MsgIdHdr, id)
+	headers.Set(natsutils.ReplyToHeader, replySubject)
+
+	msg := nats.Msg{
+		Subject: subject,
+		Header:  headers,
+		Data:    data,
+	}
+
+	return msg, nil
 }
