@@ -5,6 +5,7 @@ import (
 	"math/rand/v2"
 	"time"
 
+	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/natsutils"
 	"github.com/berops/claudie/internal/processlimit"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -20,7 +21,13 @@ import (
 )
 
 func (s *Service) Handler(msg jetstream.Msg) {
-	handler := func() { handlerInner(AckWait, s.spawnProcessLimit, s.done, s.consumer.natsclient.JetStream(), msg) }
+	handler := func() {
+		stores := Stores{
+			s3:     s.stateStorage,
+			dynamo: s.dynamoDB,
+		}
+		handlerInner(AckWait, s.spawnProcessLimit, s.done, s.consumer.natsclient.JetStream(), msg, stores)
+	}
 	s.consumer.inFlight.Go(handler)
 }
 
@@ -34,12 +41,18 @@ func handlerInner(
 	done chan struct{},
 	js jetstream.JetStream,
 	msg jetstream.Msg,
+	stores Stores,
 ) {
 	var (
-		replyMsgID   = uuid.New().String()
-		msgID        = msg.Headers().Get(nats.MsgIdHdr)
-		replyChannel = msg.Headers().Get(natsutils.ReplyToHeader)
-		logger       = log.With().Str(nats.MsgIdHdr, msgID).Logger()
+		replyMsgID        = uuid.New().String()
+		msgID             = msg.Headers().Get(nats.MsgIdHdr)
+		replyChannel      = msg.Headers().Get(natsutils.ReplyToHeader)
+		inputManifestName = msg.Headers().Get(natsutils.InputManifestName)
+
+		logger = log.With().
+			Str(natsutils.InputManifestName, inputManifestName).
+			Str(nats.MsgIdHdr, msgID).
+			Logger()
 	)
 
 	if err := msg.InProgress(); err != nil {
@@ -50,9 +63,10 @@ func handlerInner(
 	if err := proto.Unmarshal(msg.Data(), &work); err != nil {
 		logger.Err(err).Msg("Failed to unmarshal received message")
 		reply := ReplyMsg{
-			ID:       replyMsgID,
-			SourceID: msgID,
-			Subject:  replyChannel,
+			InputManifestName: inputManifestName,
+			ID:                replyMsgID,
+			SourceID:          msgID,
+			Subject:           replyChannel,
 		}
 		// Try to send a noop as we failed to unmarshal the received message
 		// if that fails we will get the same message re-delivered.
@@ -62,6 +76,8 @@ func handlerInner(
 
 	var terraformWork Work
 	{
+		terraformWork.InputManifestName = inputManifestName
+
 		terraformWork.Task = work.Task
 		work.Task = nil
 
@@ -70,9 +86,10 @@ func handlerInner(
 			if err := anypb.UnmarshalTo(pass, &stage, proto.UnmarshalOptions{}); err != nil {
 				logger.Err(err).Msg("Failed to unmarshal received stage for work")
 				reply := ReplyMsg{
-					ID:       replyMsgID,
-					SourceID: msgID,
-					Subject:  replyChannel,
+					InputManifestName: inputManifestName,
+					ID:                replyMsgID,
+					SourceID:          msgID,
+					Subject:           replyChannel,
 				}
 				// Try to send a noop as we failed to unmarshal the received message
 				// if that fails we will get the same message re-delivered.
@@ -94,6 +111,7 @@ func handlerInner(
 	)
 
 	ctx = processlimit.With(ctx, processLimit)
+	ctx = loggerutils.With(ctx, logger)
 
 	go func() {
 		// on both task finished and service being killed we cancel the context.
@@ -116,7 +134,7 @@ func handlerInner(
 		}
 	}()
 
-	result := ProcessTask(ctx, terraformWork)
+	result := ProcessTask(ctx, stores, terraformWork)
 
 	close(processingDone)
 	<-ctx.Done()
@@ -125,10 +143,11 @@ func handlerInner(
 		err error
 
 		reply = ReplyMsg{
-			ID:       replyMsgID,
-			SourceID: msgID,
-			Subject:  replyChannel,
-			Result:   result,
+			InputManifestName: inputManifestName,
+			ID:                replyMsgID,
+			SourceID:          msgID,
+			Subject:           replyChannel,
+			Result:            result,
 		}
 
 		retries  = 5
@@ -183,10 +202,13 @@ func handlerInner(
 		return
 	}
 
-	logger.Info().Msg("Successfully processed task")
+	logger.Info().Msg("Task processed")
 }
 
 type ReplyMsg struct {
+	// Name of the InputManifest for which the reply is targeted at.
+	InputManifestName string
+
 	// ID of the message that will be set as [nats.MsgIdHdr]
 	// This must be unique even on re-delivery of the same message
 	ID string
@@ -223,6 +245,7 @@ func replyTo(
 	headers := nats.Header{}
 	headers.Set(nats.MsgIdHdr, result.ID)
 	headers.Set(natsutils.WorkID, result.SourceID)
+	headers.Set(natsutils.InputManifestName, result.InputManifestName)
 
 	msg := nats.Msg{
 		Subject: result.Subject,
@@ -269,8 +292,12 @@ func tryReplyNoop(logger zerolog.Logger, reply ReplyMsg, js jetstream.JetStream,
 		return
 	}
 
+	logger.Debug().Msg("Successfully send noop reply")
+
 	if err := msg.DoubleAck(ctx); err != nil {
 		logger.Err(err).Msg("Failed to acknowledge message after sending NOOP reply")
 		// if this fails just fallthrough here, we will get a re-delivery of the message after the [AckWait].
 	}
+
+	logger.Debug().Msg("Successfully acknowledged msg")
 }

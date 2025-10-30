@@ -11,6 +11,9 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// TODO: set nats message max size  to some large value... since
+// we send current state and desired state.
+
 // Default options used in the [NewClientWithJetStream] func.
 var defaultOpts = [...]nats.Option{
 	nats.MaxReconnects(-1), // endless reconnect attempts.

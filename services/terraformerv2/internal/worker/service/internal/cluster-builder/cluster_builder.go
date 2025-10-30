@@ -15,8 +15,8 @@ import (
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/berops/claudie/services/terraformer/server/domain/utils/templates"
 	"github.com/berops/claudie/services/terraformer/server/domain/utils/tofu"
+	"github.com/berops/claudie/services/terraformerv2/internal/worker/service/internal/templates"
 	"github.com/rs/zerolog/log"
 
 	"golang.org/x/sync/semaphore"
@@ -28,16 +28,16 @@ const (
 )
 
 type K8sInfo struct{ ExportPort6443 bool }
-type LBInfo struct{ Roles []*spec.Role }
+type LBInfo struct{ Roles []*spec.RoleV2 }
 
 // ClusterBuilder wraps data needed for building a cluster.
 type ClusterBuilder struct {
 	// DesiredClusterInfo contains the information about the
 	// desired state of the cluster.
-	DesiredClusterInfo *spec.ClusterInfo
+	DesiredClusterInfo *spec.ClusterInfoV2
 	// CurrentClusterInfo contains the information about the
 	// current state of the cluster.
-	CurrentClusterInfo *spec.ClusterInfo
+	CurrentClusterInfo *spec.ClusterInfoV2
 	// ProjectName is the name of the manifest.
 	ProjectName string
 	// ClusterType is the type of the cluster being build
@@ -192,11 +192,11 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 		Directory:   clusterDir,
 	}
 
-	if err := usedProviders.CreateUsedProvider(c.CurrentClusterInfo, c.DesiredClusterInfo); err != nil {
+	if err := usedProviders.CreateUsedProviderV2(c.CurrentClusterInfo, c.DesiredClusterInfo); err != nil {
 		return err
 	}
 
-	var clusterInfo *spec.ClusterInfo
+	var clusterInfo *spec.ClusterInfoV2
 	if c.DesiredClusterInfo != nil {
 		clusterInfo = c.DesiredClusterInfo
 	} else if c.CurrentClusterInfo != nil {
@@ -289,7 +289,7 @@ func readIPs(data string) (templates.NodepoolIPs, error) {
 }
 
 // generateProviderTemplates generates only the `provider.tpl` templates so tofu can destroy the infra if needed.
-func (c *ClusterBuilder) generateProviderTemplates(current, desired *spec.ClusterInfo, clusterID, directory string, clusterData templates.ClusterData) error {
+func (c *ClusterBuilder) generateProviderTemplates(current, desired *spec.ClusterInfoV2, clusterID, directory string, clusterData templates.ClusterData) error {
 	nps := slices.AppendSeq(
 		slices.Collect(slices.Values(current.GetNodePools())),
 		slices.Values(desired.GetNodePools()),

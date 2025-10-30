@@ -13,6 +13,9 @@ const (
 	// The ID of the task/work that was picked up by the
 	// worker from the received message header's key [nats.MsgIdHdr].
 	WorkID = "claudie-internal-work-id"
+
+	// The name of the input manifest that the task is scheduled for.
+	InputManifestName = "claudie-internal-input-manifest-name"
 )
 
 // A list of default claudie related NATS subjects.

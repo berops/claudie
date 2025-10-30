@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/berops/claudie/proto/pb/spec"
-	cluster_builder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
+	cluster_builder "github.com/berops/claudie/services/terraformerv2/internal/worker/service/internal/cluster-builder"
 	"github.com/rs/zerolog"
 
 	"golang.org/x/sync/errgroup"
@@ -15,6 +15,7 @@ import (
 var (
 	// ErrCreateDNSRecord is returned when an error occurs during the creation of the DNS records
 	ErrCreateDNSRecord = errors.New("failed to create DNS record")
+
 	// ErrCreateNodePools is returned when an error occurs during the creation of the desired nodepools.
 	ErrCreateNodePools = errors.New("failed to create desired nodepools")
 )
@@ -22,8 +23,8 @@ var (
 type LBcluster struct {
 	ProjectName string
 
-	DesiredState *spec.LBcluster
-	CurrentState *spec.LBcluster
+	DesiredState *spec.LBclusterV2
+	CurrentState *spec.LBclusterV2
 
 	// SpawnProcessLimit  limits the number of spawned tofu processes.
 	SpawnProcessLimit *semaphore.Weighted
@@ -37,10 +38,13 @@ func (l *LBcluster) Id() string {
 	return state.ClusterInfo.Id()
 }
 
+func (l *LBcluster) HasCurrentState() bool { return l.CurrentState != nil }
+func (l *LBcluster) IsKubernetes() bool    { return false }
+
 func (l *LBcluster) Build(logger zerolog.Logger) error {
 	logger.Info().Msgf("Building LB Cluster %s and DNS", l.DesiredState.ClusterInfo.Name)
 
-	var currentClusterInfo *spec.ClusterInfo
+	var currentClusterInfo *spec.ClusterInfoV2
 	var currentDNS *spec.DNS
 	var currentNodeIPs []string
 

@@ -18,7 +18,7 @@ import (
 )
 
 // Tick represents the interval at which each manifest state is checked.
-const Tick = 10 * time.Second
+const Tick = 3 * time.Second
 
 func (s *Service) WatchForScheduledDocuments(ctx context.Context) error {
 	cfgs, err := s.store.ListConfigs(ctx, &store.ListFilter{ManifestState: []string{manifest.Scheduled.String()}})
@@ -79,7 +79,12 @@ func (s *Service) WatchForScheduledDocuments(ctx context.Context) error {
 
 			switch state.State.Status {
 			case spec.WorkflowV2_WAIT_FOR_PICKUP.String():
-				msg, err := messageForStage(event.Id, event.Task, pipeline[event.CurrentStage])
+				msg, err := messageForStage(
+					scheduled.Name,
+					event.Id,
+					event.Task,
+					pipeline[event.CurrentStage],
+				)
 				if err != nil {
 					// unexpected but we don't crash the service just ignore and continue.
 					logger.Err(err).Msgf("ignoring event %q for cluster %q", event.Id, cluster)
@@ -239,7 +244,11 @@ func (g *Service) WatchForDoneOrErrorDocuments(ctx context.Context) error {
 	return nil
 }
 
-func messageForStage(id string, marshalledTask []byte, stage *spec.Stage) (nats.Msg, error) {
+func messageForStage(
+	inputManifestName, id string,
+	marshalledTask []byte,
+	stage *spec.Stage,
+) (nats.Msg, error) {
 	var (
 		task         spec.TaskV2
 		work         spec.Work
@@ -312,6 +321,7 @@ func messageForStage(id string, marshalledTask []byte, stage *spec.Stage) (nats.
 	headers := nats.Header{}
 	headers.Set(nats.MsgIdHdr, id)
 	headers.Set(natsutils.ReplyToHeader, replySubject)
+	headers.Set(natsutils.InputManifestName, inputManifestName)
 
 	msg := nats.Msg{
 		Subject: subject,

@@ -55,7 +55,7 @@ func scheduleTasks(pending *spec.ConfigV2, desired map[string]*spec.ClustersV2) 
 			state.Task = deleteCluster(current)
 		// update
 		default:
-			panic("Implement update")
+			panic("todo: Implement update")
 		}
 
 		switch result {
@@ -163,7 +163,10 @@ func createCluster(desired *spec.ClustersV2) *spec.TaskEventV2 {
 		Event:     spec.EventV2_CREATE_V2,
 		Task: &spec.TaskV2{
 			Do: &spec.TaskV2_Create{
-				Create: &spec.CreateV2{Clusters: desired},
+				Create: &spec.CreateV2{
+					K8S:           desired.GetK8S(),
+					LoadBalancers: desired.GetLoadBalancers().GetClusters(),
+				},
 			},
 		},
 		Description: "creating cluster",
@@ -247,7 +250,10 @@ func deleteCluster(current *spec.ClustersV2) *spec.TaskEventV2 {
 			Do: &spec.TaskV2_Delete{
 				Delete: &spec.DeleteV2{
 					Op: &spec.DeleteV2_Clusters_{
-						Clusters: &spec.DeleteV2_Clusters{Clusters: current},
+						Clusters: &spec.DeleteV2_Clusters{
+							K8S:           current.GetK8S(),
+							LoadBalancers: current.LoadBalancers.GetClusters(),
+						},
 					},
 				},
 			},

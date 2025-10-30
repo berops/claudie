@@ -221,26 +221,85 @@ message RetryV2 {
 }
 
 message CreateV2{
-    ClustersV2 clusters = 1;
+    // The desired state of the kuberenetes cluster to create.
+    //
+    // This field is required to be present.
+    K8sclusterV2 k8s = 1;
+
+    // The desired state of the LoadBalancers attached to the
+    // kubernetes cluster to create.
+    //
+    // This field is optional, if the kuberentes cluster does not have
+    // any loadbalacners.
+    repeated LBclusterV2 loadBalancers = 2;
 }
 
-message UpdateV2{}
+message UpdateV2{
+    message K8sClusters {
+        K8sclusterV2 current = 1;
+        K8sclusterV2 desired = 2;
+    }
+    message LoadBalancers {
+        LBclusterV2 current = 1;
+        LBclusterV2 desired = 2;
+    }
+
+    message State {
+        // Update the current state of the kubernetes cluster to the desired state.
+        //
+        // For this message both states are required to be present.
+        K8sClusters k8s = 1;
+
+        // Update the current state of the loadbalancers to the desired state, that are
+        // attached to the passed in kubernetes cluster. This field depends on the above
+        // [k8s] field and is required if the kubernetes clsuter has any loadbalancers
+        // attached.
+        //
+        // For this message both states are required to be present.
+        repeated LoadBalancers loadBalancers = 2;
+    }
+
+    oneof Op {
+        State state = 1;
+    }
+}
 
 message DeleteV2{
     message Clusters {
-        ClustersV2 clusters = 1;
+        // The current state of the kuberentes cluster to delete.
+        //
+        // This field is required
+        K8sclusterV2 k8s = 1;
+
+        // The current state of the loadbalancers  to delete, that
+        // are attached to the kubernetes cluster.
+        //
+        // This field depends on the above [k8s] field and is required if
+        // the kuberentes cluster has any loadbalancers attached.
+        repeated LBclusterV2 loadBalancers = 2;
+    }
+
+    message LoadBalancers {
+        // The current state of the loadbalancers to delete.
+        //
+        // Optional, if none are specified none are deleted.
+        repeated LBclusterV2 loadBalancers = 1;
     }
 
     oneof Op {
         Clusters clusters = 1;
+        LoadBalancers loadbalancers = 2;
     }
 }
 
 message TaskV2 {
+    // Options to be considered when processing the task.
+    uint64 options = 1;
+
     oneof Do {
-        CreateV2 create = 1;
-        UpdateV2 update = 2;
-        DeleteV2 delete = 3;
+        CreateV2 create = 2;
+        UpdateV2 update = 3;
+        DeleteV2 delete = 4;
     }
 }
 
@@ -254,12 +313,52 @@ message Work {
 }
 
 message TaskResult {
+    message Error {
+        enum Kind {
+            FATAL = 0;
+            PARTIAL = 1;
+        }
+
+        Kind kind = 1;
+        string descriptions = 2;
+    }
+
     // None specifies that nothing should be done as a result of
     // processing a task other than acknowledging that the task
     // was processed, and thus moving to next task, if any.
     message None {}
 
+    // UpdateState specifies the current state should be updated
+    // as changes may have been done to it. All of the values
+    // are optionals and the receiving end should make sense of
+    // them.
+    // Any non-nil value signals an update that should be done.
+    message UpdateState{
+        optional K8sclusterV2 k8s = 1;
+        optional LoadBalancersV2 loadBalancers = 2;
+    }
+
+    // ClearState specifies cluster IDs which should be cleared as changes
+    // processed by a scheduled task destroyed the infrastructure.
+    // Any non-nil value signals an update that should be done.
+    message ClearState {
+        // If the kuberentes cluster is specified than all of its loadbalancers
+        // should be deleted even if they're not specified within this message.
+        optional string k8sID = 1;
+
+        // ID of the loadbalancers that should be cleared.
+        repeated string loadBalancersIDs = 2;
+    }
+
+    // If the Error.Kind is FATAL no useful
+    // information is stored in the result.
+    // Otherwise the result will contain valid
+    // data, if error is not set or PARTIAL.
+    optional Error error = 1;
+
     oneof Result {
-        None none = 1;
+        None none = 2;
+        UpdateState update = 3;
+        ClearState clear = 4;
     }
 }

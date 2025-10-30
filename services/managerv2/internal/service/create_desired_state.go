@@ -21,8 +21,6 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"google.golang.org/protobuf/proto"
-
 	"golang.org/x/crypto/ssh"
 )
 
@@ -65,20 +63,18 @@ func createDesiredState(pending *spec.ConfigV2, result *map[string]*spec.Cluster
 	}
 
 	// 2.1 Also consider to re-use existing data created in previous run if not first-run of the workflow for the manifest.
-	for _, state := range pending.Clusters {
-		current := state.Current
+	for cluster, desired := range desiredState {
 		// It is guaranteed by validation, that within a single InputManifest
 		// no two clusters (including LB) can share the same name.
-		desired := desiredState[current.K8S.ClusterInfo.Name]
+		current := pending.Clusters[cluster].GetCurrent()
 		deduplicateNodepoolNames(&m, current, desired)
 	}
 
-	backwardsCompatibility(pending)
+	backwardsCompatibility(pending) // uses only current state, so we can pass [pending].
 
-	for cluster, state := range pending.Clusters {
+	for cluster, desired := range desiredState {
 		log.Debug().Str("cluster", cluster).Msgf("reusing existing state")
-		current := state.Current
-		desired := desiredState[current.K8S.ClusterInfo.Name]
+		current := pending.Clusters[cluster].GetCurrent()
 		if err := transferExistingState(current, desired); err != nil {
 			return fmt.Errorf("failed to reuse current state for desired state for cluster: %q, config: %q: %w", cluster, m.Name, err)
 		}
@@ -88,9 +84,8 @@ func createDesiredState(pending *spec.ConfigV2, result *map[string]*spec.Cluster
 	// we need information about the current state so that we do not
 	// generate the same cidr for the same Provider/Region pair multiple
 	// times, avoiding conflicts.
-	for _, state := range pending.Clusters {
-		current := state.Current
-		desired := desiredState[current.K8S.ClusterInfo.Name]
+	for cluster, desired := range desiredState {
+		current := pending.Clusters[cluster].GetCurrent()
 		if err := fillMissingCIDR(current, desired); err != nil {
 			return fmt.Errorf("failed to generate cidrs for nodepools: %w", err)
 		}
@@ -482,15 +477,4 @@ func getCIDR(baseCIDR string, position int, existing []string) (string, error) {
 		}
 		return fmt.Sprintf("%s/%d", ip.String(), ones), nil
 	}
-}
-
-func cloneClusters(clusters map[string]*spec.ClusterStateV2) map[string]*spec.ClusterStateV2 {
-	out := make(map[string]*spec.ClusterStateV2, len(clusters))
-
-	for name, state := range clusters {
-		stateClone := proto.Clone(state).(*spec.ClusterStateV2)
-		out[name] = stateClone
-	}
-
-	return out
 }

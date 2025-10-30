@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/berops/claudie/proto/pb/spec"
-	cluster_builder "github.com/berops/claudie/services/terraformer/server/domain/utils/cluster-builder"
+	cluster_builder "github.com/berops/claudie/services/terraformerv2/internal/worker/service/internal/cluster-builder"
 	"github.com/rs/zerolog"
 
 	"golang.org/x/sync/semaphore"
@@ -19,8 +19,8 @@ var (
 type K8Scluster struct {
 	ProjectName string
 
-	DesiredState *spec.K8Scluster
-	CurrentState *spec.K8Scluster
+	DesiredState *spec.K8SclusterV2
+	CurrentState *spec.K8SclusterV2
 
 	// Signals whether to export port 6443 on the
 	// control plane nodes of the cluster.
@@ -40,10 +40,14 @@ func (k *K8Scluster) Id() string {
 	return state.ClusterInfo.Id()
 }
 
+func (k *K8Scluster) HasCurrentState() bool { return k.CurrentState != nil }
+func (k *K8Scluster) IsKubernetes() bool    { return true }
+
 func (k *K8Scluster) Build(logger zerolog.Logger) error {
 	logger.Info().Msgf("Building K8S Cluster %s", k.DesiredState.ClusterInfo.Name)
 
-	var currentClusterInfo *spec.ClusterInfo
+	var currentClusterInfo *spec.ClusterInfoV2
+
 	// Check if current cluster was defined, to avoid access of unreferenced memory
 	if k.CurrentState != nil {
 		currentClusterInfo = k.CurrentState.ClusterInfo

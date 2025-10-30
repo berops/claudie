@@ -8,7 +8,7 @@ import (
 // All the following types grouped are "Helper" types to group related data into a single context.
 type (
 	K8sData struct{ HasAPIServer bool }
-	LBData  struct{ Roles []*spec.Role }
+	LBData  struct{ Roles []*spec.RoleV2 }
 	IPData  struct{ V4 string }
 
 	// RecordData is a simple wrapper containing related data
