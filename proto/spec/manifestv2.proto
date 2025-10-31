@@ -320,7 +320,7 @@ message TaskResult {
         }
 
         Kind kind = 1;
-        string descriptions = 2;
+        string description = 2;
     }
 
     // None specifies that nothing should be done as a result of
@@ -344,7 +344,7 @@ message TaskResult {
     message ClearState {
         // If the kuberentes cluster is specified than all of its loadbalancers
         // should be deleted even if they're not specified within this message.
-        optional string k8sID = 1;
+        optional bool k8s = 1;
 
         // ID of the loadbalancers that should be cleared.
         repeated string loadBalancersIDs = 2;

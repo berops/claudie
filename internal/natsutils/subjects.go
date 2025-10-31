@@ -16,6 +16,14 @@ const (
 
 	// The name of the input manifest that the task is scheduled for.
 	InputManifestName = "claudie-internal-input-manifest-name"
+
+	// The name of the kubernetes cluster that the task is scheduled for.
+	//
+	// Note that this value is set even in the case if just loadbalancers
+	// are being worked on, as LoadBalancers do not exist without a kubernetes
+	// cluster, thus a kuberentes cluster name is used for the identification
+	// of all of the data related to that cluster.
+	ClusterName = "claudie-internal-cluster-name"
 )
 
 // A list of default claudie related NATS subjects.
@@ -44,6 +52,7 @@ const (
 	// Subject related to Terraformer service only response Messages.
 	TerraformerResponse = "claudie-internal-cluster-response-terraformer"
 
+	// TODO: do we need it ?
 	// Misc is a subject unrelated to any of the other above subjects.
 	Misc = "claudie-internal-misc"
 )

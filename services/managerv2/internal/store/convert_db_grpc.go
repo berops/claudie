@@ -296,14 +296,14 @@ func ConvertFromGRPC(cfg *spec.ConfigV2) (*Config, error) {
 	clusters := make(map[string]*ClusterState, len(cfg.GetClusters()))
 
 	for k8sName, cluster := range cfg.GetClusters() {
-		marshaller := proto.MarshalOptions{Deterministic: true}
-		currentK8s, err := marshaller.Marshal(cluster.GetCurrent().GetK8S())
+		currentK8s, err := ConvertFromGRPCCluster(cluster.GetCurrent().GetK8S())
 		if err != nil {
-			return nil, fmt.Errorf("failed to marshal current k8s cluster: %w", err)
+			return nil, err
 		}
-		currentLbs, err := marshaller.Marshal(cluster.GetCurrent().GetLoadBalancers())
+
+		currentLbs, err := ConvertFromGRPCLoadBalancers(cluster.GetCurrent().GetLoadBalancers())
 		if err != nil {
-			return nil, fmt.Errorf("failed to marshal current load balancer clusters: %w", err)
+			return nil, err
 		}
 
 		task, err := ConvertFromGRPCTask(cluster.GetTask())
@@ -363,7 +363,7 @@ func ConvertToGRPC(cfg *Config) (*spec.ConfigV2, error) {
 		// in the past and if we update the /spec directory by modifying fields
 		// or changing their order we need to consider these changes when reading it from
 		// the database aswell.
-		current, err := convertClusters(cluster.Current)
+		current, err := ConvertToGRPCClusters(cluster.Current)
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert db clusters back to grpc representation: %w", err)
 		}
@@ -387,24 +387,63 @@ func ConvertToGRPC(cfg *Config) (*spec.ConfigV2, error) {
 // representation will have a nil (essentially mimicking what the GRPC unmarshall does
 // if the respective value is not set) value as well when converted which simplifies
 // checking absence of a specific state (i.e. current, desired).
-func convertClusters(cluster Clusters) (*spec.ClustersV2, error) {
+func ConvertToGRPCClusters(cluster Clusters) (*spec.ClustersV2, error) {
 	var out *spec.ClustersV2
 
 	if len(cluster.K8s) > 0 {
-		var k8s spec.K8SclusterV2
-		if err := proto.Unmarshal(cluster.K8s, &k8s); err != nil {
-			return nil, fmt.Errorf("failed to unmarshall current k8s cluster: %w", err)
+		k8s, err := ConvertToGRPCCluster(cluster.K8s)
+		if err != nil {
+			return nil, err
 		}
-		out = &spec.ClustersV2{K8S: &k8s}
+
+		out = &spec.ClustersV2{K8S: k8s}
 
 		if len(cluster.LoadBalancers) > 0 {
-			var lbs spec.LoadBalancersV2
-			if err := proto.Unmarshal(cluster.LoadBalancers, &lbs); err != nil {
-				return nil, fmt.Errorf("failed to unmarshall current load balancers cluster: %w", err)
+			lbs, err := ConvertToGRPCLoadBalancers(cluster.LoadBalancers)
+			if err != nil {
+				return nil, err
 			}
-			out.LoadBalancers = &lbs
+			out.LoadBalancers = lbs
 		}
 	}
 
 	return out, nil
+}
+
+// ConvertToGRPCCluster converts the database representation to the GRPC representation.
+func ConvertToGRPCCluster(k8s []byte) (*spec.K8SclusterV2, error) {
+	var cluster spec.K8SclusterV2
+	if err := proto.Unmarshal(k8s, &cluster); err != nil {
+		return nil, fmt.Errorf("failed to unmarshall kuberentes cluster: %w", err)
+	}
+	return &cluster, nil
+}
+
+// ConvertToGRPCLoadBalancers converts the database representation to the GRPC representation.
+func ConvertToGRPCLoadBalancers(lbs []byte) (*spec.LoadBalancersV2, error) {
+	var loadbalancers spec.LoadBalancersV2
+	if err := proto.Unmarshal(lbs, &loadbalancers); err != nil {
+		return nil, fmt.Errorf("failed to unmarshall load balancer clusters: %w", err)
+	}
+	return &loadbalancers, nil
+}
+
+// ConvertFromGRPCLoadBalancers deterministically converts the grpc representation to the database representation.
+func ConvertFromGRPCLoadBalancers(lbs *spec.LoadBalancersV2) ([]byte, error) {
+	marshaller := proto.MarshalOptions{Deterministic: true}
+	b, err := marshaller.Marshal(lbs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal loadbalancer cluster: %w", err)
+	}
+	return b, nil
+}
+
+// ConvertFromGRPCCluster deterministically converts the grpc representation to the database representation.
+func ConvertFromGRPCCluster(k8s *spec.K8SclusterV2) ([]byte, error) {
+	marshaller := proto.MarshalOptions{Deterministic: true}
+	b, err := marshaller.Marshal(k8s)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal kubernetes cluster: %w", err)
+	}
+	return b, nil
 }

@@ -174,9 +174,9 @@ func (s *InFlightClearState) Replace() {
 	s.state = nil
 }
 
-func (s *InFlightClearState) TakeKuberentesCluster(id string) *InFlightClearState {
-	if id != "" {
-		s.state.K8SID = &id
+func (s *InFlightClearState) TakeKuberentesCluster(ok bool) *InFlightClearState {
+	if ok {
+		s.state.K8S = &ok
 	}
 	return s
 }

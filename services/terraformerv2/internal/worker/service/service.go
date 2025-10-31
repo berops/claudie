@@ -82,9 +82,9 @@ func New(ctx context.Context, opts ...grpc.ServerOption) (*Service, error) {
 	consumer, err := client.JSWorkQueueConsumer(
 		ctx,
 		DurableName,
-		natsutils.TerraformerRequest,
 		envs.NatsClusterJetstreamName,
 		AckWait,
+		natsutils.TerraformerRequest,
 	)
 	if err != nil {
 		listener.Close()

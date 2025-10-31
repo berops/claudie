@@ -45,13 +45,15 @@ func handlerInner(
 ) {
 	var (
 		replyMsgID        = uuid.New().String()
-		msgID             = msg.Headers().Get(nats.MsgIdHdr)
+		taskID            = msg.Headers().Get(nats.MsgIdHdr)
 		replyChannel      = msg.Headers().Get(natsutils.ReplyToHeader)
 		inputManifestName = msg.Headers().Get(natsutils.InputManifestName)
+		clusterName       = msg.Headers().Get(natsutils.ClusterName)
 
 		logger = log.With().
+			Str(natsutils.ClusterName, clusterName).
 			Str(natsutils.InputManifestName, inputManifestName).
-			Str(nats.MsgIdHdr, msgID).
+			Str(nats.MsgIdHdr, taskID).
 			Logger()
 	)
 
@@ -63,10 +65,11 @@ func handlerInner(
 	if err := proto.Unmarshal(msg.Data(), &work); err != nil {
 		logger.Err(err).Msg("Failed to unmarshal received message")
 		reply := ReplyMsg{
-			InputManifestName: inputManifestName,
-			ID:                replyMsgID,
-			SourceID:          msgID,
-			Subject:           replyChannel,
+			InputManifest: inputManifestName,
+			Cluster:       clusterName,
+			TaskID:        taskID,
+			ID:            replyMsgID,
+			Subject:       replyChannel,
 		}
 		// Try to send a noop as we failed to unmarshal the received message
 		// if that fails we will get the same message re-delivered.
@@ -86,10 +89,11 @@ func handlerInner(
 			if err := anypb.UnmarshalTo(pass, &stage, proto.UnmarshalOptions{}); err != nil {
 				logger.Err(err).Msg("Failed to unmarshal received stage for work")
 				reply := ReplyMsg{
-					InputManifestName: inputManifestName,
-					ID:                replyMsgID,
-					SourceID:          msgID,
-					Subject:           replyChannel,
+					InputManifest: inputManifestName,
+					Cluster:       clusterName,
+					TaskID:        taskID,
+					ID:            replyMsgID,
+					Subject:       replyChannel,
 				}
 				// Try to send a noop as we failed to unmarshal the received message
 				// if that fails we will get the same message re-delivered.
@@ -114,7 +118,7 @@ func handlerInner(
 	ctx = loggerutils.With(ctx, logger)
 
 	go func() {
-		// on both task finished and service being killed we cancel the context.
+		// on both task finished and service being killed, cancel the context.
 		defer cancel()
 
 		for {
@@ -143,11 +147,12 @@ func handlerInner(
 		err error
 
 		reply = ReplyMsg{
-			InputManifestName: inputManifestName,
-			ID:                replyMsgID,
-			SourceID:          msgID,
-			Subject:           replyChannel,
-			Result:            result,
+			InputManifest: inputManifestName,
+			Cluster:       clusterName,
+			TaskID:        taskID,
+			ID:            replyMsgID,
+			Subject:       replyChannel,
+			Result:        result,
 		}
 
 		retries  = 5
@@ -207,17 +212,21 @@ func handlerInner(
 
 type ReplyMsg struct {
 	// Name of the InputManifest for which the reply is targeted at.
-	InputManifestName string
+	InputManifest string
+
+	// Name of the cluster within the [ReplyMsg.InputManifest] for
+	// which the reply is targeted at.
+	Cluster string
+
+	// TaskID is the ID from the picked up [nats.Msg], that was received
+	// via the [nats.MsgIdHdr]. This is the actuall ID of the task that was
+	// scheduled and this information is given back to the reply channel in
+	// the header [natsutils.WorkID].
+	TaskID string
 
 	// ID of the message that will be set as [nats.MsgIdHdr]
 	// This must be unique even on re-delivery of the same message
 	ID string
-
-	// SourceID is the ID from the picked up [nats.Msg], that was received
-	// via the [nats.MsgIdHdr]. This the actuall ID of the task that was scheduled
-	// and this information is given back to the reply channel in the header
-	// [natsutils.WorkID]
-	SourceID string
 
 	// To which subject should the reply be send to.
 	Subject string
@@ -244,8 +253,9 @@ func replyTo(
 
 	headers := nats.Header{}
 	headers.Set(nats.MsgIdHdr, result.ID)
-	headers.Set(natsutils.WorkID, result.SourceID)
-	headers.Set(natsutils.InputManifestName, result.InputManifestName)
+	headers.Set(natsutils.WorkID, result.TaskID)
+	headers.Set(natsutils.InputManifestName, result.InputManifest)
+	headers.Set(natsutils.ClusterName, result.Cluster)
 
 	msg := nats.Msg{
 		Subject: result.Subject,

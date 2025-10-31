@@ -4,6 +4,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+// TODO: adjust metrics for the NATS queue also.
 var (
 	TasksScheduled = prometheus.NewCounter(prometheus.CounterOpts{
 		Name: "claudie_input_manifests_tasks_scheduled",

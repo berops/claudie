@@ -120,8 +120,8 @@ passes:
 
 	if len(diags) > 0 {
 		result.Error = &spec.TaskResult_Error{
-			Kind:         spec.TaskResult_Error_PARTIAL,
-			Descriptions: fmt.Sprint(diags),
+			Kind:        spec.TaskResult_Error_PARTIAL,
+			Description: fmt.Sprint(diags),
 		}
 	}
 
@@ -382,7 +382,7 @@ func destroy(
 	tracker.
 		Result.
 		ToClear().
-		TakeKuberentesCluster(k8s).
+		TakeKuberentesCluster(k8s != "").
 		TakeLoadBalancers(lbs...).
 		Replace()
 }

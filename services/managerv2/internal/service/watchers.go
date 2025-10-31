@@ -17,6 +17,9 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
+// TODO: populate workflow description of what is about
+// to be worked on when scheduled...
+
 // Tick represents the interval at which each manifest state is checked.
 const Tick = 3 * time.Second
 
@@ -57,6 +60,8 @@ func (s *Service) WatchForScheduledDocuments(ctx context.Context) error {
 
 				state.Task = nil
 				state.State.Status = spec.WorkflowV2_DONE.String()
+				state.State.Description = ""
+
 				if err := s.store.UpdateConfig(ctx, scheduled); err != nil {
 					if errors.Is(err, store.ErrNotFoundOrDirty) {
 						logger.Debug().Msgf("Failed to move cluster %q with missing state to Done, dirty write", cluster)
@@ -81,6 +86,7 @@ func (s *Service) WatchForScheduledDocuments(ctx context.Context) error {
 			case spec.WorkflowV2_WAIT_FOR_PICKUP.String():
 				msg, err := messageForStage(
 					scheduled.Name,
+					cluster,
 					event.Id,
 					event.Task,
 					pipeline[event.CurrentStage],
@@ -91,7 +97,7 @@ func (s *Service) WatchForScheduledDocuments(ctx context.Context) error {
 					continue clusters
 				}
 
-				ack, err := s.nats.JetStream().PublishMsg(ctx, &msg)
+				ack, err := s.nts.client.JetStream().PublishMsg(ctx, &msg)
 				if err != nil {
 					logger.Err(err).Msgf("failed to publish task for cluster %q", cluster)
 					// failed to publish the message to the queue, unsure what
@@ -245,7 +251,7 @@ func (g *Service) WatchForDoneOrErrorDocuments(ctx context.Context) error {
 }
 
 func messageForStage(
-	inputManifestName, id string,
+	inputManifestName, clusterName, natsMsgId string,
 	marshalledTask []byte,
 	stage *spec.Stage,
 ) (nats.Msg, error) {
@@ -319,9 +325,10 @@ func messageForStage(
 	}
 
 	headers := nats.Header{}
-	headers.Set(nats.MsgIdHdr, id)
+	headers.Set(nats.MsgIdHdr, natsMsgId)
 	headers.Set(natsutils.ReplyToHeader, replySubject)
 	headers.Set(natsutils.InputManifestName, inputManifestName)
+	headers.Set(natsutils.ClusterName, clusterName)
 
 	msg := nats.Msg{
 		Subject: subject,

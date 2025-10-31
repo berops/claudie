@@ -124,19 +124,26 @@ func (c *Client) JetStreamWorkQueue(ctx context.Context, name string, subjects .
 // Creates a Work Queue jetstream consumer with sensible default values.
 func (c *Client) JSWorkQueueConsumer(
 	ctx context.Context,
-	durableName, subject string,
+	durableName,
 	stream string,
 	ackWait time.Duration,
+	subjects ...string,
 ) (jetstream.Consumer, error) {
 	defaultConfig := jetstream.ConsumerConfig{
 		Durable:       durableName,
 		DeliverPolicy: jetstream.DeliverAllPolicy,  // required with work queue.
 		AckPolicy:     jetstream.AckExplicitPolicy, // explicit ack required for messages.
 		AckWait:       ackWait,
-		FilterSubject: subject,
 		ReplayPolicy:  jetstream.ReplayInstantPolicy, // resent messages instantly.
 		MaxWaiting:    512,                           // alllow to have a total of 512 waiting messages
 		MaxAckPending: 512,                           // allow to have a total of 512 unack messages pending
 	}
+
+	if len(subjects) == 1 {
+		defaultConfig.FilterSubject = subjects[0]
+	} else {
+		defaultConfig.FilterSubjects = subjects
+	}
+
 	return c.js.CreateOrUpdateConsumer(ctx, stream, defaultConfig)
 }

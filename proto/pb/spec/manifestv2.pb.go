@@ -2261,7 +2261,7 @@ func (x *DeleteV2_LoadBalancers) GetLoadBalancers() []*LBclusterV2 {
 type TaskResult_Error struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Kind          TaskResult_Error_Kind  `protobuf:"varint,1,opt,name=kind,proto3,enum=spec.TaskResult_Error_Kind" json:"kind,omitempty"`
-	Descriptions  string                 `protobuf:"bytes,2,opt,name=descriptions,proto3" json:"descriptions,omitempty"`
+	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2303,9 +2303,9 @@ func (x *TaskResult_Error) GetKind() TaskResult_Error_Kind {
 	return TaskResult_Error_FATAL
 }
 
-func (x *TaskResult_Error) GetDescriptions() string {
+func (x *TaskResult_Error) GetDescription() string {
 	if x != nil {
-		return x.Descriptions
+		return x.Description
 	}
 	return ""
 }
@@ -2413,7 +2413,7 @@ type TaskResult_ClearState struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// If the kuberentes cluster is specified than all of its loadbalancers
 	// should be deleted even if they're not specified within this message.
-	K8SID *string `protobuf:"bytes,1,opt,name=k8sID,proto3,oneof" json:"k8sID,omitempty"`
+	K8S *bool `protobuf:"varint,1,opt,name=k8s,proto3,oneof" json:"k8s,omitempty"`
 	// ID of the loadbalancers that should be cleared.
 	LoadBalancersIDs []string `protobuf:"bytes,2,rep,name=loadBalancersIDs,proto3" json:"loadBalancersIDs,omitempty"`
 	unknownFields    protoimpl.UnknownFields
@@ -2450,11 +2450,11 @@ func (*TaskResult_ClearState) Descriptor() ([]byte, []int) {
 	return file_spec_manifestv2_proto_rawDescGZIP(), []int{19, 3}
 }
 
-func (x *TaskResult_ClearState) GetK8SID() string {
-	if x != nil && x.K8SID != nil {
-		return *x.K8SID
+func (x *TaskResult_ClearState) GetK8S() bool {
+	if x != nil && x.K8S != nil {
+		return *x.K8S
 	}
-	return ""
+	return false
 }
 
 func (x *TaskResult_ClearState) GetLoadBalancersIDs() []string {
@@ -2606,16 +2606,16 @@ const file_spec_manifestv2_proto_rawDesc = "" +
 	"\x02Do\"V\n" +
 	"\x04Work\x12 \n" +
 	"\x04task\x18\x01 \x01(\v2\f.spec.TaskV2R\x04task\x12,\n" +
-	"\x06passes\x18\x02 \x03(\v2\x14.google.protobuf.AnyR\x06passes\"\xe9\x04\n" +
+	"\x06passes\x18\x02 \x03(\v2\x14.google.protobuf.AnyR\x06passes\"\xe1\x04\n" +
 	"\n" +
 	"TaskResult\x121\n" +
 	"\x05error\x18\x01 \x01(\v2\x16.spec.TaskResult.ErrorH\x01R\x05error\x88\x01\x01\x12+\n" +
 	"\x04none\x18\x02 \x01(\v2\x15.spec.TaskResult.NoneH\x00R\x04none\x126\n" +
 	"\x06update\x18\x03 \x01(\v2\x1c.spec.TaskResult.UpdateStateH\x00R\x06update\x123\n" +
-	"\x05clear\x18\x04 \x01(\v2\x1b.spec.TaskResult.ClearStateH\x00R\x05clear\x1a|\n" +
+	"\x05clear\x18\x04 \x01(\v2\x1b.spec.TaskResult.ClearStateH\x00R\x05clear\x1az\n" +
 	"\x05Error\x12/\n" +
-	"\x04kind\x18\x01 \x01(\x0e2\x1b.spec.TaskResult.Error.KindR\x04kind\x12\"\n" +
-	"\fdescriptions\x18\x02 \x01(\tR\fdescriptions\"\x1e\n" +
+	"\x04kind\x18\x01 \x01(\x0e2\x1b.spec.TaskResult.Error.KindR\x04kind\x12 \n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\"\x1e\n" +
 	"\x04Kind\x12\t\n" +
 	"\x05FATAL\x10\x00\x12\v\n" +
 	"\aPARTIAL\x10\x01\x1a\x06\n" +
@@ -2624,12 +2624,12 @@ const file_spec_manifestv2_proto_rawDesc = "" +
 	"\x03k8s\x18\x01 \x01(\v2\x12.spec.K8sclusterV2H\x00R\x03k8s\x88\x01\x01\x12@\n" +
 	"\rloadBalancers\x18\x02 \x01(\v2\x15.spec.LoadBalancersV2H\x01R\rloadBalancers\x88\x01\x01B\x06\n" +
 	"\x04_k8sB\x10\n" +
-	"\x0e_loadBalancers\x1a]\n" +
+	"\x0e_loadBalancers\x1aW\n" +
 	"\n" +
-	"ClearState\x12\x19\n" +
-	"\x05k8sID\x18\x01 \x01(\tH\x00R\x05k8sID\x88\x01\x01\x12*\n" +
-	"\x10loadBalancersIDs\x18\x02 \x03(\tR\x10loadBalancersIDsB\b\n" +
-	"\x06_k8sIDB\b\n" +
+	"ClearState\x12\x15\n" +
+	"\x03k8s\x18\x01 \x01(\bH\x00R\x03k8s\x88\x01\x01\x12*\n" +
+	"\x10loadBalancersIDs\x18\x02 \x03(\tR\x10loadBalancersIDsB\x06\n" +
+	"\x04_k8sB\b\n" +
 	"\x06ResultB\b\n" +
 	"\x06_error*.\n" +
 	"\n" +
