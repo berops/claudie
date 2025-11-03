@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
 
 	"github.com/berops/claudie/internal/loggerutils"
@@ -77,9 +78,9 @@ func ProcessTask(ctx context.Context, stores Stores, work Work) (acknowledge boo
 		return
 	}
 
-	advanceToNextStage(cluster)
+	advanceToNextStage(logger, cluster)
 
-	if err := propagateResultToCurrentState(logger, work.Result, cluster); err != nil {
+	if err := propagateResultToCurrentState(logger, work.Cluster, work.Result, cluster); err != nil {
 		// Since the function works with successfully loaded database data and
 		// also the successfully received work result data, there has to be some kind
 		// of malformed or corrupted data, thus we don't acknowledge the received message, halting
@@ -113,7 +114,11 @@ func processTaskWithError(
 	stores Stores,
 	work Work,
 ) (acknowledge bool) {
-	logger.Error().Msg("Task resulted in an error during the current state")
+	logger.
+		Error().
+		Msgf("Task resulted in an error during the current state: %s",
+			work.Result.Error.Description,
+		)
 
 	var (
 		cluster = im.Clusters[work.Cluster]
@@ -127,7 +132,7 @@ func processTaskWithError(
 	cluster.State.Description = work.Result.Error.Description
 
 	if isErrorPartial {
-		if err := propagateResultToCurrentState(logger, work.Result, cluster); err != nil {
+		if err := propagateResultToCurrentState(logger, work.Cluster, work.Result, cluster); err != nil {
 			// Since the function works with successfully loaded database data and
 			// also the successfully received work result data, there has to be some kind
 			// of malformed or corrupted data, thus we don't acknowledge the received message, halting
@@ -138,7 +143,7 @@ func processTaskWithError(
 	}
 
 	if isStageWarn {
-		advanceToNextStage(cluster)
+		advanceToNextStage(logger, cluster)
 	}
 
 	if err := stores.store.UpdateConfig(ctx, im); err != nil {
@@ -158,10 +163,73 @@ func processTaskWithError(
 
 func updateCluster(
 	logger zerolog.Logger,
+	clusterName string,
 	current *store.Clusters,
 	result *spec.TaskResult_Update,
 ) error {
-	panic("todo")
+	if k8s := result.Update.K8S; k8s != nil {
+		gotName := k8s.GetClusterInfo().GetName()
+		if gotName != clusterName {
+			// Under normal circumstances this should never happen, this signals either
+			// malformed/corrupted data and/or mistake in the scheduling of tasks.
+			// Thus return an error rather than continuing with the merge.
+			err := fmt.Errorf("Can't update cluster %q with received cluster %q", clusterName, gotName)
+			logger.
+				Err(err).
+				Msg("Unexpected mismatch in the name of the clusters from the received messagge and current state in the database")
+			return err
+		}
+
+		b, err := store.ConvertFromGRPCCluster(k8s)
+		if err != nil {
+			logger.Err(err).Msg("Unexpected marshal error for the received updated kubernetes cluster")
+			return err
+		}
+
+		current.K8s = b
+	}
+
+	dbLbs, err := store.ConvertToGRPCLoadBalancers(current.LoadBalancers)
+	if err != nil {
+		logger.Err(err).Msg("Unexpected unmarshal error for loadbalancers loaded from database")
+		return err
+	}
+
+	var toUpdate spec.LoadBalancersV2
+	for _, lb := range result.Update.GetLoadBalancers().GetClusters() {
+		toUpdate.Clusters = append(toUpdate.Clusters, lb)
+	}
+	toUpdate.Clusters = slices.DeleteFunc(toUpdate.Clusters, func(lb *spec.LBclusterV2) bool { return lb.TargetedK8S != clusterName })
+
+	// update existing ones.
+	for i := range dbLbs.Clusters {
+		db := dbLbs.Clusters[i].ClusterInfo.Id()
+		for j := range toUpdate.Clusters {
+			update := toUpdate.Clusters[j].ClusterInfo.Id()
+			if db == update {
+				dbLbs.Clusters[i] = toUpdate.Clusters[j]
+				break
+			}
+		}
+	}
+
+	// add new ones.
+	for i := range toUpdate.Clusters {
+		id := toUpdate.Clusters[i].ClusterInfo.Id()
+		filter := func(lb *spec.LBclusterV2) bool { return lb.ClusterInfo.Id() == id }
+		if !slices.ContainsFunc(dbLbs.Clusters, filter) {
+			dbLbs.Clusters = append(dbLbs.Clusters, toUpdate.Clusters[i])
+		}
+	}
+
+	b, err := store.ConvertFromGRPCLoadBalancers(dbLbs)
+	if err != nil {
+		logger.Err(err).Msg("Unexpected marshal error for loadbalancers loaded from database")
+		return err
+	}
+
+	current.LoadBalancers = b
+	return nil
 }
 
 func clearCluster(
@@ -193,24 +261,35 @@ func clearCluster(
 	return nil
 }
 
-func advanceToNextStage(state *store.ClusterState) {
+func advanceToNextStage(logger zerolog.Logger, state *store.ClusterState) {
 	state.Task.CurrentStage += 1
+
 	if int(state.Task.CurrentStage) >= len(state.Task.Pipeline) {
+		logger.Info().Msg("Task successfully finished moving to DONE")
 		state.Task = nil
 		state.State.Status = spec.WorkflowV2_DONE.String()
 		state.State.Description = ""
+	} else {
+		logger.
+			Info().
+			Msgf("Advancing task to the next stage %s",
+				state.Task.Pipeline[state.Task.CurrentStage].Kind,
+			)
+		state.State.Status = spec.WorkflowV2_WAIT_FOR_PICKUP.String()
+		state.State.Description = state.Task.Pipeline[state.Task.CurrentStage].Description.About
 	}
 }
 
 func propagateResultToCurrentState(
 	logger zerolog.Logger,
+	clusterName string,
 	result *spec.TaskResult,
 	state *store.ClusterState,
 ) error {
 	switch result := result.Result.(type) {
 	case *spec.TaskResult_Update:
 		logger.Debug().Msg("Received [Update] as a result for the task")
-		return updateCluster(logger, &state.Current, result)
+		return updateCluster(logger, clusterName, &state.Current, result)
 	case *spec.TaskResult_Clear:
 		logger.Debug().Msg("Received [Clear] as a result for the task")
 		return clearCluster(logger, &state.Current, result)

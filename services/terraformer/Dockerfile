@@ -22,7 +22,7 @@ RUN go mod download
 COPY . .
 
 #Change the directory
-WORKDIR /go/services/terraformer/server
+WORKDIR /go/services/terraformer/cmd/worker
 
 #Compile the golang code to /out, CGO_ENABLE=0 removes cross compile dependencies
 RUN CGO_ENABLED=0 go build

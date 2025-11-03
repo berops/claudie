@@ -179,14 +179,14 @@ func (ManifestV2_State) EnumDescriptor() ([]byte, []int) {
 type WorkflowV2_Status int32
 
 const (
-	// DONE indicates that the workflow has finished.
+	// DONE indicates that the workflow for a scheduled [Task] has finished.
 	WorkflowV2_DONE WorkflowV2_Status = 0
-	// ERROR indicates that an error occurred while building the cluster.
+	// ERROR indicates that an error occurred while processing the scheduled [Task]
 	WorkflowV2_ERROR WorkflowV2_Status = 1
-	// IN_PROGRESS indicates that the cluster is currently being build.
+	// IN_PROGRESS indicates that the [Task] is currently being worked on.
 	WorkflowV2_IN_PROGRESS WorkflowV2_Status = 2
-	// WAIT_FOR_PICKUP indicates that new tasks were identified and are
-	// to be scheduled to be worked on.
+	// WAIT_FOR_PICKUP indicates that new a new [Task] was created or moved to
+	// the next stage to be worked on.
 	WorkflowV2_WAIT_FOR_PICKUP WorkflowV2_Status = 3
 )
 
@@ -1699,8 +1699,8 @@ type TaskResult struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// If the Error.Kind is FATAL no useful
 	// information is stored in the result.
-	// Otherwise the result will contain valid
-	// data, if error is not set or PARTIAL.
+	// Otherwise, if error is not set or PARTIAL,
+	// the result will contain valid data,.
 	Error *TaskResult_Error `protobuf:"bytes,1,opt,name=error,proto3,oneof" json:"error,omitempty"`
 	// Types that are valid to be assigned to Result:
 	//
@@ -2353,11 +2353,19 @@ func (*TaskResult_None) Descriptor() ([]byte, []int) {
 // as changes may have been done to it. All of the values
 // are optionals and the receiving end should make sense of
 // them.
-// Any non-nil value signals an update that should be done.
+// Any non-nil value signals an update that should be handled.
 type TaskResult_UpdateState struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	K8S           *K8SclusterV2          `protobuf:"bytes,1,opt,name=k8s,proto3,oneof" json:"k8s,omitempty"`
-	LoadBalancers *LoadBalancersV2       `protobuf:"bytes,2,opt,name=loadBalancers,proto3,oneof" json:"loadBalancers,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// If the [k8s] field is set then its current state should be merged/replaced
+	// with the state in this message.
+	K8S *K8SclusterV2 `protobuf:"bytes,1,opt,name=k8s,proto3,oneof" json:"k8s,omitempty"`
+	// Updates the loadbalancers that are attached to the [k8s] cluster.
+	// The loadbalancers in this message should only update existing matching
+	// loadbalancers and or add newly created ones.
+	//
+	// If any loadbalancers are missing while they're present in the current state
+	// they should not be deleted, as for that there is an explicit task result [ClearState].
+	LoadBalancers *LoadBalancersV2 `protobuf:"bytes,2,opt,name=loadBalancers,proto3,oneof" json:"loadBalancers,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }

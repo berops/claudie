@@ -61,14 +61,17 @@ message KubernetesContextV2 {
 
 message WorkflowV2 {
   enum Status {
-    // DONE indicates that the workflow has finished.
+    // DONE indicates that the workflow for a scheduled [Task] has finished.
     DONE = 0;
-    // ERROR indicates that an error occurred while building the cluster.
+
+    // ERROR indicates that an error occurred while processing the scheduled [Task]
     ERROR = 1;
-    // IN_PROGRESS indicates that the cluster is currently being build.
+
+    // IN_PROGRESS indicates that the [Task] is currently being worked on.
     IN_PROGRESS = 2;
-    // WAIT_FOR_PICKUP indicates that new tasks were identified and are
-    // to be scheduled to be worked on.
+
+    // WAIT_FOR_PICKUP indicates that new a new [Task] was created or moved to
+    // the next stage to be worked on.
     WAIT_FOR_PICKUP = 3;
   }
 
@@ -332,9 +335,18 @@ message TaskResult {
     // as changes may have been done to it. All of the values
     // are optionals and the receiving end should make sense of
     // them.
-    // Any non-nil value signals an update that should be done.
+    // Any non-nil value signals an update that should be handled.
     message UpdateState{
+        // If the [k8s] field is set then its current state should be merged/replaced
+        // with the state in this message.
         optional K8sclusterV2 k8s = 1;
+
+        // Updates the loadbalancers that are attached to the [k8s] cluster.
+        // The loadbalancers in this message should only update existing matching
+        // loadbalancers and or add newly created ones.
+        //
+        // If any loadbalancers are missing while they're present in the current state
+        // they should not be deleted, as for that there is an explicit task result [ClearState].
         optional LoadBalancersV2 loadBalancers = 2;
     }
 
@@ -352,8 +364,8 @@ message TaskResult {
 
     // If the Error.Kind is FATAL no useful
     // information is stored in the result.
-    // Otherwise the result will contain valid
-    // data, if error is not set or PARTIAL.
+    // Otherwise, if error is not set or PARTIAL,
+    // the result will contain valid data,.
     optional Error error = 1;
 
     oneof Result {

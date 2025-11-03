@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/berops/claudie/internal/api/manifest"
@@ -16,9 +17,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 )
-
-// TODO: populate workflow description of what is about
-// to be worked on when scheduled...
 
 // Tick represents the interval at which each manifest state is checked.
 const Tick = 3 * time.Second
@@ -84,7 +82,7 @@ func (s *Service) WatchForScheduledDocuments(ctx context.Context) error {
 
 			switch state.State.Status {
 			case spec.WorkflowV2_WAIT_FOR_PICKUP.String():
-				msg, err := messageForStage(
+				msg, msgDescription, err := messageForStage(
 					scheduled.Name,
 					cluster,
 					event.Id,
@@ -96,6 +94,8 @@ func (s *Service) WatchForScheduledDocuments(ctx context.Context) error {
 					logger.Err(err).Msgf("ignoring event %q for cluster %q", event.Id, cluster)
 					continue clusters
 				}
+
+				logger.Debug().Msgf("Publishing msg %q to subject %q", event.Id, msg.Subject)
 
 				ack, err := s.nts.client.JetStream().PublishMsg(ctx, &msg)
 				if err != nil {
@@ -117,6 +117,8 @@ func (s *Service) WatchForScheduledDocuments(ctx context.Context) error {
 				}
 
 				state.State.Status = spec.WorkflowV2_IN_PROGRESS.String()
+				state.State.Description = fmt.Sprintf("%s: %s", event.Description, msgDescription)
+
 				logger.Debug().Msgf("Moving event %q cluster %q state to InProgress", event.Id, cluster)
 				if err := s.store.UpdateConfig(ctx, scheduled); err != nil {
 					if errors.Is(err, store.ErrNotFoundOrDirty) {
@@ -126,7 +128,7 @@ func (s *Service) WatchForScheduledDocuments(ctx context.Context) error {
 					logger.Err(err).Msgf("Failed to move event %q cluster %q state to InProgress", event.Id, cluster)
 				}
 
-				logger.Info().Msgf("Moved event %q for cluster %q into the work queue", event.Id, cluster)
+				logger.Info().Msgf("Moved event %q for cluster %q into the work queue %q", event.Id, cluster, msg.Subject)
 
 				// We break here as the config version was updated thus subsequent changes
 				// will error out anyways. On the run next changes will be worked on.
@@ -254,65 +256,93 @@ func messageForStage(
 	inputManifestName, clusterName, natsMsgId string,
 	marshalledTask []byte,
 	stage *spec.Stage,
-) (nats.Msg, error) {
+) (nats.Msg, string, error) {
 	var (
 		task         spec.TaskV2
 		work         spec.Work
 		subject      string
 		replySubject string
+		description  string
 	)
 
 	err := proto.Unmarshal(marshalledTask, &task)
 	if err != nil {
-		return nats.Msg{}, err
+		return nats.Msg{}, "", err
 	}
 
 	work.Task = &task
 
 	switch stage := stage.GetStageKind().(type) {
 	case *spec.Stage_Ansibler:
+		b := new(strings.Builder)
+		b.WriteString(stage.Ansibler.Description.About)
+
 		for _, pass := range stage.Ansibler.GetSubPasses() {
 			r, err := anypb.New(pass)
 			if err != nil {
-				return nats.Msg{}, err
+				return nats.Msg{}, "", err
 			}
 			work.Passes = append(work.Passes, r)
+			b.WriteByte('\n')
+			fmt.Fprintf(b, "\t- %s", pass.Description.About)
 		}
 
+		description = b.String()
 		subject = natsutils.AnsiblerRequests
 		replySubject = natsutils.AnsiblerResponse
 	case *spec.Stage_KubeEleven:
+		b := new(strings.Builder)
+		b.WriteString(stage.KubeEleven.Description.About)
+
 		for _, pass := range stage.KubeEleven.GetSubPasses() {
 			r, err := anypb.New(pass)
 			if err != nil {
-				return nats.Msg{}, err
+				return nats.Msg{}, "", err
 			}
 			work.Passes = append(work.Passes, r)
+			b.WriteByte('\n')
+			fmt.Fprintf(b, "\t- %s", pass.Description.About)
 		}
+
+		description = b.String()
 		subject = natsutils.KubeElevenRequest
 		replySubject = natsutils.KubeElevenResponse
 	case *spec.Stage_Kuber:
+		b := new(strings.Builder)
+		b.WriteString(stage.Kuber.Description.About)
+
 		for _, pass := range stage.Kuber.GetSubPasses() {
 			r, err := anypb.New(pass)
 			if err != nil {
-				return nats.Msg{}, err
+				return nats.Msg{}, "", err
 			}
 			work.Passes = append(work.Passes, r)
+			b.WriteByte('\n')
+			fmt.Fprintf(b, "\t- %s", pass.Description.About)
 		}
+
+		description = b.String()
 		subject = natsutils.KuberRequests
 		replySubject = natsutils.KuberResponse
 	case *spec.Stage_Terraformer:
+		b := new(strings.Builder)
+		b.WriteString(stage.Terraformer.Description.About)
+
 		for _, pass := range stage.Terraformer.GetSubPasses() {
 			r, err := anypb.New(pass)
 			if err != nil {
-				return nats.Msg{}, err
+				return nats.Msg{}, "", err
 			}
 			work.Passes = append(work.Passes, r)
+			b.WriteByte('\n')
+			fmt.Fprintf(b, "\t- %s", pass.Description.About)
 		}
+
+		description = b.String()
 		subject = natsutils.TerraformerRequest
 		replySubject = natsutils.TerraformerResponse
 	default:
-		return nats.Msg{}, fmt.Errorf("no mapping exists for stage %T", stage)
+		return nats.Msg{}, "", fmt.Errorf("no mapping exists for stage %T", stage)
 	}
 
 	opts := proto.MarshalOptions{
@@ -321,7 +351,7 @@ func messageForStage(
 
 	data, err := opts.Marshal(&work)
 	if err != nil {
-		return nats.Msg{}, err
+		return nats.Msg{}, "", err
 	}
 
 	headers := nats.Header{}
@@ -336,5 +366,5 @@ func messageForStage(
 		Data:    data,
 	}
 
-	return msg, nil
+	return msg, description, nil
 }
