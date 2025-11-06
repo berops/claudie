@@ -3,11 +3,9 @@ package loadbalancer
 import (
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
-	"slices"
 
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/fileutils"
@@ -18,25 +16,17 @@ import (
 	"github.com/berops/claudie/services/terraformer/internal/worker/service/internal/tofu"
 	"github.com/rs/zerolog"
 
-	"google.golang.org/protobuf/proto"
-
 	"golang.org/x/sync/semaphore"
 )
 
-const (
-	TemplatesRootDir = "services/terraformer/templates"
-)
+const TemplatesRootDir = "services/terraformer/templates"
 
 type DNS struct {
 	ProjectName string
 	ClusterName string
 	ClusterHash string
-
-	DesiredNodeIPs []string
-	CurrentNodeIPs []string
-
-	CurrentDNS *spec.DNS
-	DesiredDNS *spec.DNS
+	NodeIPs     []string
+	Dns         *spec.DNS
 
 	// SpawnProcessLimit limits the number of spawned tofu processes.
 	SpawnProcessLimit *semaphore.Weighted
@@ -44,16 +34,16 @@ type DNS struct {
 
 // CreateDNSRecords creates DNS records for the Loadbalancer cluster.
 func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
-	sublogger := logger.With().Str("endpoint", d.DesiredDNS.Endpoint).Logger()
-
-	clusterID := fmt.Sprintf("%s-%s", d.ClusterName, d.ClusterHash)
-	dnsID := fmt.Sprintf("%s-dns", clusterID)
-	dnsDir := filepath.Join(cluster_builder.Output, dnsID)
-
-	tofu := tofu.Terraform{
-		Directory:         dnsDir,
-		SpawnProcessLimit: d.SpawnProcessLimit,
-	}
+	var (
+		sublogger = logger.With().Str("endpoint", d.Dns.Endpoint).Logger()
+		clusterID = fmt.Sprintf("%s-%s", d.ClusterName, d.ClusterHash)
+		dnsID     = fmt.Sprintf("%s-dns", clusterID)
+		dnsDir    = filepath.Join(cluster_builder.Output, dnsID)
+		tofu      = tofu.Terraform{
+			Directory:         dnsDir,
+			SpawnProcessLimit: d.SpawnProcessLimit,
+		}
+	)
 
 	tofu.Stdout = comm.GetStdOut(clusterID)
 	tofu.Stderr = comm.GetStdErr(clusterID)
@@ -64,47 +54,13 @@ func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 		}
 	}()
 
-	if changedDNSProvider(d.CurrentDNS, d.DesiredDNS) {
-		sublogger.Info().Msg("Destroying old DNS records")
-		if err := d.generateProvider(dnsID, dnsDir, d.CurrentDNS, d.DesiredDNS); err != nil {
-			return fmt.Errorf("error while generating providers tf files for %s: %w", dnsID, err)
-		}
-		// destroy current state.
-		if err := d.generateFiles(logger, dnsID, dnsDir, d.CurrentDNS, d.CurrentNodeIPs); err != nil {
-			return fmt.Errorf("error while creating current state dns.tf files for %s : %w", dnsID, err)
-		}
-		// In case of a re-execution of a task which would fail, if we do not
-		// delete also the desired state, which might have been created.
-		if err := d.generateFiles(logger, dnsID, dnsDir, d.DesiredDNS, d.DesiredNodeIPs); err != nil {
-			return fmt.Errorf("error while creating desired state dns.tf files for %s : %w", dnsID, err)
-		}
-		if err := tofu.Init(); err != nil {
-			return err
-		}
-
-		stateFile, err := tofu.StateList()
-		if err != nil {
-			sublogger.Warn().Msgf("absent statefile for dns, assumming the previous state was not build correctly")
-		}
-
-		if err := tofu.DestroyTarget(stateFile); err != nil {
-			return fmt.Errorf("failed to destroy existing DNS state: %w", err)
-		}
-
-		if err := os.RemoveAll(dnsDir); err != nil {
-			return fmt.Errorf("error while removing files in dir %q: %w", dnsDir, err)
-		}
-
-		sublogger.Info().Msg("Old DNS records were destroyed")
-	}
-
 	sublogger.Info().Msg("Creating new DNS records")
 
-	if err := d.generateProvider(dnsID, dnsDir, nil, d.DesiredDNS); err != nil {
+	if err := d.generateProvider(dnsID, dnsDir, d.Dns); err != nil {
 		return fmt.Errorf("error while generating providers tf files for %s: %w", dnsID, err)
 	}
 
-	if err := d.generateFiles(logger, dnsID, dnsDir, d.DesiredDNS, d.DesiredNodeIPs); err != nil {
+	if err := d.generateFiles(logger, dnsID, dnsDir, d.Dns, d.NodeIPs); err != nil {
 		return fmt.Errorf("error while creating dns .tf files for %s : %w", dnsID, err)
 	}
 
@@ -112,35 +68,11 @@ func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 		return err
 	}
 
-	var currentState []string
-	if d.CurrentDNS != nil {
-		var err error
-		if currentState, err = tofu.StateList(); err != nil {
-			return fmt.Errorf("error while retreiving tofu state list, before applying changes in %s: %w", dnsID, err)
-		}
-	}
-
 	if err := tofu.Apply(); err != nil {
-		updatedState, errList := tofu.StateList()
-		if errList != nil {
-			return errors.Join(err, fmt.Errorf("%w: error while retrieving tofu state list after applying changes in %s: %w", err, dnsID, errList))
-		}
-
-		var toDelete []string
-		for _, resource := range updatedState {
-			if !slices.Contains(currentState, resource) {
-				toDelete = append(toDelete, resource)
-			}
-		}
-
-		if errDestroy := tofu.DestroyTarget(toDelete); errDestroy != nil {
-			return fmt.Errorf("%w: failed to destroy partially created state: %w", err, errDestroy)
-		}
-
 		return err
 	}
 
-	output, err := tofu.Output(endpoint(d.DesiredDNS, clusterID, ""))
+	output, err := tofu.Output(endpoint(d.Dns, clusterID, ""))
 	if err != nil {
 		return fmt.Errorf("error while getting output from tofu for %s : %w", dnsID, err)
 	}
@@ -153,12 +85,12 @@ func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 	outputID := fmt.Sprintf("%s-endpoint", clusterID)
 	sublogger.Info().Msg("DNS records were successfully set up")
 
-	d.DesiredDNS.Endpoint = validateDomain(out.Domain[outputID])
+	d.Dns.Endpoint = validateDomain(out.Domain[outputID])
 
-	for _, n := range d.DesiredDNS.AlternativeNames {
+	for _, n := range d.Dns.AlternativeNames {
 		sublogger.Info().Msgf("Detected alternative names extension, reading output for alternative name %s", n.Hostname)
 
-		if output, err = tofu.Output(endpoint(d.DesiredDNS, clusterID, n.Hostname)); err != nil {
+		if output, err = tofu.Output(endpoint(d.Dns, clusterID, n.Hostname)); err != nil {
 			// Since this is an extension to the original data
 			// we consider errors as not fatal.
 			sublogger.Warn().Msgf("error while retrieving output from tofu for %s alternative name %s: %v, templates may not support alternative names extension, skipping", clusterID, n.Hostname, err)
@@ -179,11 +111,13 @@ func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 
 // DestroyDNSRecords destroys DNS records for the Loadbalancer cluster.
 func (d *DNS) DestroyDNSRecords(logger zerolog.Logger) error {
-	sublogger := logger.With().Str("endpoint", d.CurrentDNS.Endpoint).Logger()
+	var (
+		sublogger = logger.With().Str("endpoint", d.Dns.Endpoint).Logger()
+		dnsID     = fmt.Sprintf("%s-%s-dns", d.ClusterName, d.ClusterHash)
+		dnsDir    = filepath.Join(cluster_builder.Output, dnsID)
+	)
 
 	sublogger.Info().Msg("Destroying DNS records")
-	dnsID := fmt.Sprintf("%s-%s-dns", d.ClusterName, d.ClusterHash)
-	dnsDir := filepath.Join(cluster_builder.Output, dnsID)
 
 	defer func() {
 		if err := os.RemoveAll(dnsDir); err != nil {
@@ -191,11 +125,11 @@ func (d *DNS) DestroyDNSRecords(logger zerolog.Logger) error {
 		}
 	}()
 
-	if err := d.generateProvider(dnsID, dnsDir, d.CurrentDNS, nil); err != nil {
+	if err := d.generateProvider(dnsID, dnsDir, d.Dns); err != nil {
 		return fmt.Errorf("error while generating providers tf files for %s: %w", dnsID, err)
 	}
 
-	if err := d.generateFiles(logger, dnsID, dnsDir, d.CurrentDNS, d.CurrentNodeIPs); err != nil {
+	if err := d.generateFiles(logger, dnsID, dnsDir, d.Dns, d.NodeIPs); err != nil {
 		return fmt.Errorf("error while creating dns records for %s : %w", dnsID, err)
 	}
 
@@ -216,11 +150,10 @@ func (d *DNS) DestroyDNSRecords(logger zerolog.Logger) error {
 	}
 
 	sublogger.Info().Msg("DNS records were successfully destroyed")
-
 	return nil
 }
 
-func (d *DNS) generateProvider(dnsID, dnsDir string, current, desired *spec.DNS) error {
+func (d *DNS) generateProvider(dnsID, dnsDir string, dns *spec.DNS) error {
 	backend := templates.Backend{
 		ProjectName: d.ProjectName,
 		ClusterName: dnsID,
@@ -237,7 +170,7 @@ func (d *DNS) generateProvider(dnsID, dnsDir string, current, desired *spec.DNS)
 		Directory:   dnsDir,
 	}
 
-	return usedProviders.CreateUsedProviderDNS(current, desired)
+	return usedProviders.CreateUsedProviderDNS(dns)
 }
 
 // generateFiles creates all the necessary terraform files used to create/destroy DNS.
@@ -312,20 +245,6 @@ func readDomain(data string) (templates.DNSDomain, error) {
 	return result, err
 }
 
-func changedDNSProvider(currentDNS, desiredDNS *spec.DNS) bool {
-	// DNS not yet created
-	if currentDNS == nil {
-		return false
-	}
-	// DNS provider are same
-	if currentDNS.Provider.SpecName == desiredDNS.Provider.SpecName {
-		if proto.Equal(currentDNS.Provider, desiredDNS.Provider) {
-			return false
-		}
-	}
-	return true
-}
-
 func templateIPData(ips []string) []templates.IPData {
 	out := make([]templates.IPData, 0, len(ips))
 
@@ -348,3 +267,52 @@ func endpoint(dns *spec.DNS, clusterID string, alternativeName string) string {
 	}
 	return fmt.Sprintf("%s_%s", resource, resourceSuffix)
 }
+
+// TODO: move to manager ?
+// if changedDNSProvider(d.CurrentDNS, d.DesiredDNS) {
+// 		sublogger.Info().Msg("Destroying old DNS records")
+// 		if err := d.generateProvider(dnsID, dnsDir, d.CurrentDNS, d.DesiredDNS); err != nil {
+// 			return fmt.Errorf("error while generating providers tf files for %s: %w", dnsID, err)
+// 		}
+// 		// destroy current state.
+// 		if err := d.generateFiles(logger, dnsID, dnsDir, d.CurrentDNS, d.CurrentNodeIPs); err != nil {
+// 			return fmt.Errorf("error while creating current state dns.tf files for %s : %w", dnsID, err)
+// 		}
+// 		// In case of a re-execution of a task which would fail, if we do not
+// 		// delete also the desired state, which might have been created.
+// 		if err := d.generateFiles(logger, dnsID, dnsDir, d.DesiredDNS, d.DesiredNodeIPs); err != nil {
+// 			return fmt.Errorf("error while creating desired state dns.tf files for %s : %w", dnsID, err)
+// 		}
+// 		if err := tofu.Init(); err != nil {
+// 			return err
+// 		}
+
+// 		stateFile, err := tofu.StateList()
+// 		if err != nil {
+// 			sublogger.Warn().Msgf("absent statefile for dns, assumming the previous state was not build correctly")
+// 		}
+
+// 		if err := tofu.DestroyTarget(stateFile); err != nil {
+// 			return fmt.Errorf("failed to destroy existing DNS state: %w", err)
+// 		}
+
+// 		if err := os.RemoveAll(dnsDir); err != nil {
+// 			return fmt.Errorf("error while removing files in dir %q: %w", dnsDir, err)
+// 		}
+
+// 		sublogger.Info().Msg("Old DNS records were destroyed")
+// 	}
+
+// func changedDNSProvider(currentDNS, desiredDNS *spec.DNS) bool {
+// 	// DNS not yet created
+// 	if currentDNS == nil {
+// 		return false
+// 	}
+// 	// DNS provider are same
+// 	if currentDNS.Provider.SpecName == desiredDNS.Provider.SpecName {
+// 		if proto.Equal(currentDNS.Provider, desiredDNS.Provider) {
+// 			return false
+// 		}
+// 	}
+// 	return true
+// }

@@ -3,11 +3,9 @@ package cluster_builder
 import (
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
-	"slices"
 
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/fileutils"
@@ -30,30 +28,30 @@ const (
 type K8sInfo struct{ ExportPort6443 bool }
 type LBInfo struct{ Roles []*spec.RoleV2 }
 
-// ClusterBuilder wraps data needed for building a cluster.
 type ClusterBuilder struct {
-	// DesiredClusterInfo contains the information about the
-	// desired state of the cluster.
-	DesiredClusterInfo *spec.ClusterInfoV2
-	// CurrentClusterInfo contains the information about the
-	// current state of the cluster.
-	CurrentClusterInfo *spec.ClusterInfoV2
+	// Cluster to be reconciled.
+	ClusterInfo *spec.ClusterInfoV2
+
 	// ProjectName is the name of the manifest.
 	ProjectName string
+
 	// ClusterType is the type of the cluster being build
 	// LoadBalancer or K8s.
 	ClusterType spec.ClusterType
+
 	// K8sInfo contains additional data for when building kubernetes clusters.
 	K8sInfo K8sInfo
+
 	// LBInfo contains additional data for when building loadbalancer clusters.
 	LBInfo LBInfo
+
 	// SpawnProcessLimit limits the number of spawned tofu processes.
 	SpawnProcessLimit *semaphore.Weighted
 }
 
 // CreateNodepools creates node pools for the cluster.
 func (c ClusterBuilder) CreateNodepools() error {
-	clusterID := c.DesiredClusterInfo.Id()
+	clusterID := c.ClusterInfo.Id()
 	clusterDir := filepath.Join(Output, clusterID)
 
 	defer func() {
@@ -79,35 +77,11 @@ func (c ClusterBuilder) CreateNodepools() error {
 		return fmt.Errorf("error while running tofu init in %s : %w", clusterID, err)
 	}
 
-	var currentState []string
-	if c.CurrentClusterInfo != nil {
-		var err error
-		if currentState, err = tofu.StateList(); err != nil {
-			return fmt.Errorf("error while running tofu state list, before applying changes in %s : %w", clusterID, err)
-		}
-	}
-
 	if err := tofu.Apply(); err != nil {
-		updatedState, errList := tofu.StateList()
-		if errList != nil {
-			return errors.Join(err, fmt.Errorf("%w: error while running tofu state list, after applying changes in %s : %w", err, clusterID, errList))
-		}
-
-		var toDelete []string
-		for _, resource := range updatedState {
-			if !slices.Contains(currentState, resource) {
-				toDelete = append(toDelete, resource)
-			}
-		}
-
-		if errDestroy := tofu.DestroyTarget(toDelete); errDestroy != nil {
-			return fmt.Errorf("%w: failed to destroy partially create state: %w", err, errDestroy)
-		}
-
 		return err
 	}
 
-	for _, nodepool := range nodepools.Dynamic(c.DesiredClusterInfo.NodePools) {
+	for _, nodepool := range nodepools.Dynamic(c.ClusterInfo.NodePools) {
 		d := nodepool.GetDynamicNodePool()
 		f := hash.Digest128(filepath.Join(d.Provider.SpecName, d.Provider.Templates.MustExtractTargetPath()))
 		k := fmt.Sprintf("%s_%s_%s", nodepool.Name, d.Provider.SpecName, hex.EncodeToString(f))
@@ -141,8 +115,17 @@ func (c ClusterBuilder) CreateNodepools() error {
 
 // DestroyNodepools destroys nodepools for the cluster.
 func (c ClusterBuilder) DestroyNodepools() error {
-	clusterID := c.CurrentClusterInfo.Id()
-	clusterDir := filepath.Join(Output, clusterID)
+	var (
+		clusterID  = c.ClusterInfo.Id()
+		clusterDir = filepath.Join(Output, clusterID)
+		tofu       = tofu.Terraform{
+			Directory:         clusterDir,
+			SpawnProcessLimit: c.SpawnProcessLimit,
+		}
+	)
+
+	tofu.Stdout = comm.GetStdOut(clusterID)
+	tofu.Stderr = comm.GetStdErr(clusterID)
 
 	defer func() {
 		if err := os.RemoveAll(clusterDir); err != nil {
@@ -153,14 +136,6 @@ func (c ClusterBuilder) DestroyNodepools() error {
 	if err := c.generateFiles(clusterID, clusterDir); err != nil {
 		return fmt.Errorf("failed to generate files: %w", err)
 	}
-
-	tofu := tofu.Terraform{
-		Directory:         clusterDir,
-		SpawnProcessLimit: c.SpawnProcessLimit,
-	}
-
-	tofu.Stdout = comm.GetStdOut(clusterID)
-	tofu.Stderr = comm.GetStdErr(clusterID)
 
 	if err := tofu.Init(); err != nil {
 		return fmt.Errorf("error while running tofu init in %s : %w", clusterID, err)
@@ -192,28 +167,21 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 		Directory:   clusterDir,
 	}
 
-	if err := usedProviders.CreateUsedProviderV2(c.CurrentClusterInfo, c.DesiredClusterInfo); err != nil {
+	if err := usedProviders.CreateUsedProvider(c.ClusterInfo); err != nil {
 		return err
 	}
 
-	var clusterInfo *spec.ClusterInfoV2
-	if c.DesiredClusterInfo != nil {
-		clusterInfo = c.DesiredClusterInfo
-	} else if c.CurrentClusterInfo != nil {
-		clusterInfo = c.CurrentClusterInfo
-	}
-
 	clusterData := templates.ClusterData{
-		ClusterName: clusterInfo.Name,
-		ClusterHash: clusterInfo.Hash,
+		ClusterName: c.ClusterInfo.Name,
+		ClusterHash: c.ClusterInfo.Hash,
 		ClusterType: c.ClusterType.String(),
 	}
 
-	if err := c.generateProviderTemplates(c.CurrentClusterInfo, c.DesiredClusterInfo, clusterID, clusterDir, clusterData); err != nil {
+	if err := c.generateProviderTemplates(clusterID, clusterDir, clusterData); err != nil {
 		return fmt.Errorf("error while generating provider templates: %w", err)
 	}
 
-	for info, pools := range nodepools.ByProviderDynamic(clusterInfo.NodePools) {
+	for info, pools := range nodepools.ByProviderDynamic(c.ClusterInfo.NodePools) {
 		templatesDownloadDir := filepath.Join(TemplatesRootDir, clusterID, info.SpecName)
 
 		for path, pools := range nodepools.ByTemplates(pools) {
@@ -289,13 +257,8 @@ func readIPs(data string) (templates.NodepoolIPs, error) {
 }
 
 // generateProviderTemplates generates only the `provider.tpl` templates so tofu can destroy the infra if needed.
-func (c *ClusterBuilder) generateProviderTemplates(current, desired *spec.ClusterInfoV2, clusterID, directory string, clusterData templates.ClusterData) error {
-	nps := slices.AppendSeq(
-		slices.Collect(slices.Values(current.GetNodePools())),
-		slices.Values(desired.GetNodePools()),
-	)
-
-	for info, pools := range nodepools.ByProviderDynamic(nps) {
+func (c *ClusterBuilder) generateProviderTemplates(clusterID, directory string, clusterData templates.ClusterData) error {
+	for info, pools := range nodepools.ByProviderDynamic(c.ClusterInfo.NodePools) {
 		if err := fileutils.CreateKey(info.Creds, directory, info.SpecName); err != nil {
 			return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", info.SpecName, directory, err)
 		}
@@ -329,6 +292,5 @@ func (c *ClusterBuilder) generateProviderTemplates(current, desired *spec.Cluste
 			}
 		}
 	}
-
 	return nil
 }

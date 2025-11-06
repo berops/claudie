@@ -198,6 +198,12 @@ func (s *Service) WatchForPendingDocuments(ctx context.Context) error {
 			continue
 		}
 
+		// TODO: I dont think we need to transfer current state
+		// to the desired state here, only when we're about
+		// to schedule the task, otherwise we should be able
+		// to do the diff via just the namings.
+		// This is to be done in the reconciliation loop.
+
 		result, err := scheduleTasks(pending, desiredState)
 		if err != nil {
 			logger.Err(err).Msgf("Failed to create tasks, skipping.")
@@ -305,7 +311,7 @@ func messageForStage(
 		}
 
 		description = b.String()
-		subject = natsutils.KubeElevenRequest
+		subject = natsutils.KubeElevenRequests
 		replySubject = natsutils.KubeElevenResponse
 	case *spec.Stage_Kuber:
 		b := new(strings.Builder)
@@ -339,7 +345,7 @@ func messageForStage(
 		}
 
 		description = b.String()
-		subject = natsutils.TerraformerRequest
+		subject = natsutils.TerraformerRequests
 		replySubject = natsutils.TerraformerResponse
 	default:
 		return nats.Msg{}, "", fmt.Errorf("no mapping exists for stage %T", stage)

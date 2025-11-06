@@ -7,6 +7,8 @@ import (
 	"github.com/berops/claudie/proto/pb"
 )
 
+// TODO: remove.
+
 func RemoveClaudieUtilities(c pb.AnsiblerServiceClient, req *pb.RemoveClaudieUtilitiesRequest) (*pb.RemoveClaudieUtilitiesResponse, error) {
 	res, err := c.RemoveClaudieUtilities(context.Background(), req)
 	if err != nil {

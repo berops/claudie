@@ -84,7 +84,7 @@ func New(ctx context.Context, opts ...grpc.ServerOption) (*Service, error) {
 		DurableName,
 		envs.NatsClusterJetstreamName,
 		AckWait,
-		natsutils.TerraformerRequest,
+		natsutils.TerraformerRequests,
 	)
 	if err != nil {
 		listener.Close()
@@ -127,7 +127,7 @@ func New(ctx context.Context, opts ...grpc.ServerOption) (*Service, error) {
 		// The consumer will by default buffer messages behind the scenes and if the messages are not
 		// acknowledged, even if they're buffered, within the specified ack timeout they will be re-send,
 		// thus we always keep a maximum of 1 message to be buffered. To then handle multiple msgs at once
-		// we process each message in each go-routine.
+		// we process each message in a go-routine.
 		jetstream.PullMaxMessages(1),
 	}
 

@@ -1,0 +1,47 @@
+---
+- hosts: all
+  gather_facts: false
+  become: yes
+
+  pre_tasks:
+    # Gather facts manually after we made sure, VMs are accessible
+    - name: Gather facts from nodes
+      ansible.builtin.setup:
+
+  tasks:
+    - name: Run kubeadm reset
+      shell: |
+        kubeadm reset -f
+      ignore_errors: yes
+
+    - name: Delete /etc/kubernetes directory
+      ansible.builtin.file:
+        path: "/etc/kubernetes"
+        state: absent
+
+    - name: Delete /etc/cni directory
+      ansible.builtin.file:
+        path: "/etc/cni"
+        state: absent
+
+    - name: Bring down WireGuard interface
+      ansible.builtin.command: wg-quick down wg0
+      ignore_errors: yes
+
+    - name: Stop and disable systemd service for wg-quick@wg0
+      ansible.builtin.systemd:
+        name: "wg-quick@wg0"
+        enabled: false
+      ignore_errors: yes
+
+    - name: Delete WireGuard configuration directory
+      ansible.builtin.file:
+        path: "/etc/wireguard"
+        state: absent
+
+    - name: Remove WireGuard package via apt
+      ansible.builtin.apt:
+        pkg:
+          - wireguard
+          - wireguard-tools
+        state: absent

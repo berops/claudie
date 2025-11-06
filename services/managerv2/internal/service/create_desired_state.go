@@ -45,6 +45,10 @@ func createDesiredState(pending *spec.ConfigV2, result *map[string]*spec.Cluster
 		return nil
 	}
 
+	// TODO: this cannot be here.... this should really be part of the reconciliation loop.
+	// Desired state should just be the parsed InputManifest. How to handle the CIDR generation then ?
+	// could be also part of the reconciliation, here only the skeleton would be generated.
+
 	// In the next steps It might be the case either the Current State or Desired state is nil and thus
 	// these cases needs to be handled gracefully.
 

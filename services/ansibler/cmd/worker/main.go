@@ -10,44 +10,65 @@ import (
 	"syscall"
 	"time"
 
-	"golang.org/x/sync/errgroup"
-	"golang.org/x/sync/semaphore"
-
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/grpcutils"
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/metrics"
-	"github.com/berops/claudie/services/ansibler/server/adapters/inbound/grpc"
-	"github.com/berops/claudie/services/ansibler/server/domain/usecases"
+	"github.com/berops/claudie/services/ansibler/internal/worker/service"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
-
-	grpc2 "google.golang.org/grpc"
+	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc"
 )
 
-const (
-	defaultPrometheusPort = "9090"
+var (
+	PrometheusPort = envs.GetOrDefaultInt("PROMETHEUS_PORT", 9090)
 )
 
 func main() {
-	// Initialize logger
-	loggerutils.Init("ansibler")
+	loggerutils.Init(service.DurableName)
 
-	grpcAdapter := grpc.CreateGrpcAdapter(
-		&usecases.Usecases{
-			SpawnProcessLimit: semaphore.NewWeighted(int64(usecases.SpawnProcessLimit)),
-		},
-		grpc2.ChainUnaryInterceptor(
+	if err := run(); err != nil {
+		log.Fatal().Msgf("ansibler service finished with: %s", err)
+	}
+}
+
+func run() error {
+	metricsServer := &http.Server{
+		Addr: fmt.Sprintf(":%v", PrometheusPort),
+	}
+	metrics.MustRegisterCounters()
+
+	errGroup, errGroupCtx := errgroup.WithContext(context.Background())
+
+	ansibler, err := service.New(
+		errGroupCtx,
+		grpc.ChainUnaryInterceptor(
 			metrics.MetricsMiddleware,
 			grpcutils.PeerInfoInterceptor(&log.Logger),
 		),
 	)
+	if err != nil {
+		return err
+	}
 
-	metricsServer := &http.Server{Addr: fmt.Sprintf(":%s", envs.GetOrDefault("PROMETHEUS_PORT", defaultPrometheusPort))}
-	metrics.MustRegisterCounters()
+	errGroup.Go(ansibler.ServeHealthChecks)
 
-	errGroup, errGroupContext := errgroup.WithContext(context.Background())
-	errGroup.Go(grpcAdapter.Serve)
+	// Check if service is in ready state every 30s
+	errGroup.Go(func() error {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-errGroupCtx.Done():
+				ticker.Stop()
+				return nil
+			case <-ticker.C:
+				ansibler.PerformHealthCheckAndUpdateStatus()
+			}
+		}
+	})
 
 	// Listen for system interruptions to gracefully shut down
 	// Listen for program interruption signals and shut it down gracefully
@@ -59,19 +80,19 @@ func main() {
 		var err error
 
 		select {
-		case <-errGroupContext.Done():
-			err = errGroupContext.Err()
+		case <-errGroupCtx.Done():
+			err = errGroupCtx.Err()
 
 		case shutdownSignal := <-shutdownSignalChan:
 			log.Info().Msgf("Received program shutdown signal %v", shutdownSignal)
 			err = errors.New("program interruption signal")
 		}
 
-		if err := metricsServer.Shutdown(errGroupContext); err != nil {
+		if err := metricsServer.Shutdown(errGroupCtx); err != nil {
 			log.Err(err).Msgf("Failed to shutdown metrics server")
 		}
 
-		grpcAdapter.Stop()
+		ansibler.Stop()
 
 		// Sometimes when the container terminates gRPC logs the following message:
 		// rpc error: code = Unknown desc = Error: No such container: hash of the container...
@@ -87,5 +108,5 @@ func main() {
 		return metricsServer.ListenAndServe()
 	})
 
-	log.Info().Msgf("Stopping ansibler microservice: %v", errGroup.Wait())
+	return errGroup.Wait()
 }

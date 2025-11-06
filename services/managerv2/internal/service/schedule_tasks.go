@@ -132,6 +132,29 @@ func createCluster(desired *spec.ClustersV2) *spec.TaskEventV2 {
 						About:      "Configuring newly spawned cluster infrastructure",
 						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 					},
+					SubPasses: []*spec.StageAnsibler_SubPass{
+						{
+							Kind: spec.StageAnsibler_INSTALL_NODE_REQUIREMENTS,
+							Description: &spec.StageDescription{
+								About:      "Installing pre-requisites on all of the nodes of the cluster",
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+						},
+						{
+							Kind: spec.StageAnsibler_INSTALL_VPN,
+							Description: &spec.StageDescription{
+								About:      "Setting up VPN across the nodes of the kuberentes and loadbalancer clusters",
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+						},
+						{
+							Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
+							Description: &spec.StageDescription{
+								About:      "Reconciling Envoy service across the loadbalancer nodes",
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+						},
+					},
 				},
 			},
 		},
@@ -142,19 +165,31 @@ func createCluster(desired *spec.ClustersV2) *spec.TaskEventV2 {
 						About:      "Building kubernetes cluster out of the spawned infrastructure",
 						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 					},
-				},
-			},
-		},
-		{
-			StageKind: &spec.Stage_Kuber{
-				Kuber: &spec.StageKuber{
-					Description: &spec.StageDescription{
-						About:      "Finalizing cluster configuration",
-						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					SubPasses: []*spec.StageKubeEleven_SubPass{
+						{
+							Kind: spec.StageKubeEleven_RECONCILE_CLUSTER,
+							Description: &spec.StageDescription{
+								About:      "Creating kubernetes cluster from the set up infrastructure",
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+						},
 					},
 				},
 			},
 		},
+
+		// TODO: will we need this ?
+		// This could be handled by the reconciliation loop ??
+		// {
+		// 	StageKind: &spec.Stage_Kuber{
+		// 		Kuber: &spec.StageKuber{
+		// 			Description: &spec.StageDescription{
+		// 				About:      "Finalizing cluster configuration",
+		// 				ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+		// 			},
+		// 		},
+		// 	},
+		// },
 	}
 
 	return &spec.TaskEventV2{
@@ -228,19 +263,21 @@ func deleteCluster(current *spec.ClustersV2) *spec.TaskEventV2 {
 		},
 	}
 
-	kb := &spec.Stage{
-		StageKind: &spec.Stage_Kuber{
-			Kuber: &spec.StageKuber{
-				Description: &spec.StageDescription{
-					About:      "Cleanup cluster resources in the Claudie Management Cluster",
-					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-				},
-			},
-		},
-	}
+	// TODO: will we need this ?
+	// This could be handled by a proper reconciliation loop reading the current state.
+	// kb := &spec.Stage{
+	// 	StageKind: &spec.Stage_Kuber{
+	// 		Kuber: &spec.StageKuber{
+	// 			Description: &spec.StageDescription{
+	// 				About:      "Cleanup cluster resources in the Claudie Management Cluster",
+	// 				ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+	// 			},
+	// 		},
+	// 	},
+	// }
 
 	pipeline = append(pipeline, tf)
-	pipeline = append(pipeline, kb)
+	// pipeline = append(pipeline, kb)
 
 	return &spec.TaskEventV2{
 		Id:        uuid.New().String(),

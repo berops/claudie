@@ -1,0 +1,58 @@
+- hosts: all
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Verifying if /etc/apt/apt.conf.d/ exists
+      ansible.builtin.file:
+        path: /etc/apt/apt.conf.d/
+        state: directory
+    - name: Verifying if directories in /etc/systemd/system for containerd,kubelet,docker exists
+      ansible.builtin.file:
+        path: "/etc/systemd/system/{{ item }}.service.d/"
+        state: directory
+      loop:
+        - docker
+        - containerd
+        - kubelet
+    - name: Setting HTTP,HTTPS proxy settings in /etc/apt/apt.conf.d/proxy.conf
+      ansible.builtin.copy:
+        content: |
+          Acquire::https::Proxy "{{ http_proxy_url }}";
+          Acquire::http::Proxy "{{ http_proxy_url }}";
+        dest: "/etc/apt/apt.conf.d/proxy.conf"
+    - name: Setting HTTP,HTTPS proxy settings in /etc/systemd/system/
+      ansible.builtin.copy:
+        content: |
+          [Service]
+          EnvironmentFile=/etc/environment
+        dest: "/etc/systemd/system/{{ item }}.service.d/http-proxy.conf"
+      loop:
+        - kubelet
+        - containerd
+        - docker
+
+    - name: Delete HTTP,HTTPS,NO_PROXY from /etc/environmennt
+      ansible.builtin.lineinfile:
+        path: /etc/environment
+        regexp: "^{{ item.key }}=.*$"
+        state: absent
+      loop:
+        - { key: "HTTP_PROXY" }
+        - { key: "http_proxy" }
+        - { key: "HTTPS_PROXY" }
+        - { key: "https_proxy" }
+        - { key: "NO_PROXY" }
+        - { key: "no_proxy" }
+
+    - name: Add HTTP,HTTPS,NO_PROXY into /etc/environmennt
+      ansible.builtin.lineinfile:
+        path: /etc/environment
+        regexp: "^{{ item.key }}=.*$"
+        line: "{{ item.key }}={{ item.value }}"
+      loop:
+        - { key: "HTTP_PROXY", value: "{{ http_proxy_url }}" }
+        - { key: "http_proxy", value: "{{ http_proxy_url }}" }
+        - { key: "HTTPS_PROXY", value: "{{ http_proxy_url }}" }
+        - { key: "https_proxy", value: "{{ http_proxy_url }}" }
+        - { key: "NO_PROXY", value: "{{ no_proxy_list }}" }
+        - { key: "no_proxy", value: "{{ no_proxy_list }}" }

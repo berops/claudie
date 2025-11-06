@@ -185,12 +185,25 @@ func ConvertFromGRPCStages(stages []*spec.Stage) ([]Stage, error) {
 	return out, nil
 }
 
-func ConvertFromGRPCTask(te *spec.TaskEventV2) (*TaskEvent, error) {
+func ConvertFromGRPCTask(t *spec.TaskV2) ([]byte, error) {
+	marshaller := proto.MarshalOptions{Deterministic: true}
+	return marshaller.Marshal(t)
+}
+
+func ConvertToGRPCTask(t []byte) (*spec.TaskV2, error) {
+	var task spec.TaskV2
+	if err := proto.Unmarshal(t, &task); err != nil {
+		return nil, err
+	}
+	return &task, nil
+}
+
+func ConvertFromGRPCTaskEvent(te *spec.TaskEventV2) (*TaskEvent, error) {
 	if te == nil {
 		return nil, nil
 	}
 
-	task, err := proto.Marshal(te.Task)
+	task, err := ConvertFromGRPCTask(te.Task)
 	if err != nil {
 		return nil, err
 	}
@@ -219,13 +232,13 @@ func ConvertFromGRPCTask(te *spec.TaskEventV2) (*TaskEvent, error) {
 	return &e, nil
 }
 
-func ConvertToGRPCTask(te *TaskEvent) (*spec.TaskEventV2, error) {
+func ConvertToGRPCTaskEvent(te *TaskEvent) (*spec.TaskEventV2, error) {
 	if te == nil {
 		return nil, nil
 	}
 
-	var task spec.TaskV2
-	if err := proto.Unmarshal(te.Task, &task); err != nil {
+	task, err := ConvertToGRPCTask(te.Task)
+	if err != nil {
 		return nil, err
 	}
 
@@ -243,7 +256,7 @@ func ConvertToGRPCTask(te *TaskEvent) (*spec.TaskEventV2, error) {
 		Id:           te.Id,
 		Timestamp:    timestamppb.New(t),
 		Event:        spec.EventV2(spec.EventV2_value[te.Type]),
-		Task:         &task,
+		Task:         task,
 		Description:  te.Description,
 		OnError:      &strategy,
 		Pipeline:     nil,
@@ -296,29 +309,11 @@ func ConvertFromGRPC(cfg *spec.ConfigV2) (*Config, error) {
 	clusters := make(map[string]*ClusterState, len(cfg.GetClusters()))
 
 	for k8sName, cluster := range cfg.GetClusters() {
-		currentK8s, err := ConvertFromGRPCCluster(cluster.GetCurrent().GetK8S())
+		c, err := ConvertFromGRPCClusterState(cluster)
 		if err != nil {
 			return nil, err
 		}
-
-		currentLbs, err := ConvertFromGRPCLoadBalancers(cluster.GetCurrent().GetLoadBalancers())
-		if err != nil {
-			return nil, err
-		}
-
-		task, err := ConvertFromGRPCTask(cluster.GetTask())
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert task to database representation: %w", err)
-		}
-
-		clusters[k8sName] = &ClusterState{
-			Current: Clusters{
-				K8s:           currentK8s,
-				LoadBalancers: currentLbs,
-			},
-			Task:  task,
-			State: ConvertFromGRPCWorkflow(cluster.State),
-		}
+		clusters[k8sName] = c
 	}
 
 	if len(clusters) > 0 {
@@ -351,28 +346,11 @@ func ConvertToGRPC(cfg *Config) (*spec.ConfigV2, error) {
 	clusters := make(map[string]*spec.ClusterStateV2)
 
 	for k8sName, cluster := range cfg.Clusters {
-		task, err := ConvertToGRPCTask(cluster.Task)
+		c, err := ConvertToGRPCClusterState(cluster)
 		if err != nil {
-			return nil, fmt.Errorf("failed to convert db events back to grpc representation: %w", err)
+			return nil, err
 		}
-
-		// WARN:
-		// If making changes to .proto files in the /spec directory
-		// we need to always consider backwards compabitlity with the
-		// version stored in the database. The database is the proto message
-		// in the past and if we update the /spec directory by modifying fields
-		// or changing their order we need to consider these changes when reading it from
-		// the database aswell.
-		current, err := ConvertToGRPCClusters(cluster.Current)
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert db clusters back to grpc representation: %w", err)
-		}
-
-		clusters[k8sName] = &spec.ClusterStateV2{
-			Current: current,
-			State:   ConvertToGRPCWorkflow(cluster.State),
-			Task:    task,
-		}
+		clusters[k8sName] = c
 	}
 
 	if len(clusters) > 0 {
@@ -446,4 +424,59 @@ func ConvertFromGRPCCluster(k8s *spec.K8SclusterV2) ([]byte, error) {
 		return nil, fmt.Errorf("failed to marshal kubernetes cluster: %w", err)
 	}
 	return b, nil
+}
+
+func ConvertToGRPCClusterState(cluster *ClusterState) (*spec.ClusterStateV2, error) {
+	task, err := ConvertToGRPCTaskEvent(cluster.Task)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert db events back to grpc representation: %w", err)
+	}
+
+	// WARN:
+	// If making changes to .proto files in the /spec directory
+	// we need to always consider backwards compabitlity with the
+	// version stored in the database. The database is the proto message
+	// in the past and if we update the /spec directory by modifying fields
+	// or changing their order we need to consider these changes when reading
+	// it from the database aswell.
+	current, err := ConvertToGRPCClusters(cluster.Current)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert db clusters back to grpc representation: %w", err)
+	}
+
+	out := spec.ClusterStateV2{
+		Current: current,
+		State:   ConvertToGRPCWorkflow(cluster.State),
+		Task:    task,
+	}
+
+	return &out, nil
+}
+
+func ConvertFromGRPCClusterState(cluster *spec.ClusterStateV2) (*ClusterState, error) {
+	currentK8s, err := ConvertFromGRPCCluster(cluster.GetCurrent().GetK8S())
+	if err != nil {
+		return nil, err
+	}
+
+	currentLbs, err := ConvertFromGRPCLoadBalancers(cluster.GetCurrent().GetLoadBalancers())
+	if err != nil {
+		return nil, err
+	}
+
+	task, err := ConvertFromGRPCTaskEvent(cluster.GetTask())
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert task to database representation: %w", err)
+	}
+
+	out := ClusterState{
+		Current: Clusters{
+			K8s:           currentK8s,
+			LoadBalancers: currentLbs,
+		},
+		Task:  task,
+		State: ConvertFromGRPCWorkflow(cluster.State),
+	}
+
+	return &out, nil
 }

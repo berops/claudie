@@ -31,7 +31,7 @@ type usedProvidersTemplateData struct {
 }
 
 // CreateUsedProviderDNS creates provider file used for DNS management.
-func (p UsedProviders) CreateUsedProviderDNS(current, desired *spec.DNS) error {
+func (p UsedProviders) CreateUsedProviderDNS(dns *spec.DNS) error {
 	template := templateUtils.Templates{Directory: p.Directory}
 
 	tpl, err := templateUtils.LoadTemplate(providersTemplate)
@@ -40,19 +40,17 @@ func (p UsedProviders) CreateUsedProviderDNS(current, desired *spec.DNS) error {
 	}
 
 	var data usedProvidersTemplateData
-	getDNSProvider(current, &data)
-	getDNSProvider(desired, &data)
+	getDNSProvider(dns, &data)
+
 	return template.Generate(tpl, "providers.tf", data)
 }
 
 // CreateUsedProvider creates provider file used for infrastructure management.
-func (p UsedProviders) CreateUsedProviderV2(currentCluster, desiredCluster *spec.ClusterInfoV2) error {
+func (p UsedProviders) CreateUsedProvider(c *spec.ClusterInfoV2) error {
 	template := templateUtils.Templates{Directory: p.Directory}
 
 	var data usedProvidersTemplateData
-
-	getProvidersUsed(currentCluster.DynamicNodePools(), &data)
-	getProvidersUsed(desiredCluster.DynamicNodePools(), &data)
+	getProvidersUsed(c.DynamicNodePools(), &data)
 
 	tpl, err := templateUtils.LoadTemplate(providersTemplate)
 	if err != nil {

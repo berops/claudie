@@ -1,7 +1,6 @@
 package tofu
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -149,89 +148,6 @@ func (t *Terraform) Destroy() error {
 	}
 
 	return nil
-}
-
-func (t *Terraform) DestroyTarget(targets []string) error {
-	if len(targets) == 0 {
-		return nil
-	}
-
-	if err := t.SpawnProcessLimit.Acquire(context.Background(), 1); err != nil {
-		return fmt.Errorf("failed to prepare tofu destroy target process: %w", err)
-	}
-	defer t.SpawnProcessLimit.Release(1)
-
-	if t.Parallelism <= 0 {
-		t.Parallelism = parallelism
-	}
-
-	args := []string{
-		"destroy",
-		"--auto-approve",
-		fmt.Sprintf("--parallelism=%v", t.Parallelism),
-	}
-
-	for _, resource := range targets {
-		args = append(args, fmt.Sprintf("--target=%s", resource))
-	}
-
-	//nolint
-	cmd := exec.Command("tofu", args...)
-	cmd.Dir = t.Directory
-	cmd.Stdout = t.Stdout
-	cmd.Stderr = t.Stderr
-
-	if err := cmd.Run(); err != nil {
-		command := fmt.Sprintf("tofu %s", strings.Join(args, " "))
-
-		log.Warn().Msgf("Error encountered while executing %s from %s: %v", cmd, t.Directory, err)
-
-		retryCmd := comm.Cmd{
-			Command: command,
-			Dir:     t.Directory,
-			Stdout:  cmd.Stdout,
-			Stderr:  cmd.Stderr,
-		}
-
-		// NOTE: the maxTfCommandRetryCount * 2 is crucial here. Some resources may have a kind of
-		// "lock" on a resource that cannot be immediately deleted and a timeout is needed, for example
-		// this is the case with azures NIC which have a reservation for 180.
-		if err := retryCmd.RetryCommand(maxTfCommandRetryCount * 2); err != nil {
-			return fmt.Errorf("failed to execute cmd: %s: %w", retryCmd.Command, err)
-		}
-	}
-
-	return nil
-}
-
-func (t *Terraform) StateList() ([]string, error) {
-	//nolint
-	cmd := exec.Command("tofu", "state", "list")
-	cmd.Dir = t.Directory
-	out, err := cmd.Output()
-	if err != nil {
-		log.Warn().Msgf("Error encountered while executing %s from %s: %v", cmd, t.Directory, err)
-		retryCmd := comm.Cmd{
-			Command: "tofu state list",
-			Dir:     t.Directory,
-		}
-
-		out, err = retryCmd.RetryCommandWithOutput(maxTfCommandRetryCount)
-		if err != nil {
-			return nil, fmt.Errorf("failed to execute cmd: %s: %w", retryCmd.Command, err)
-		}
-		// fallthrough
-	}
-
-	r := bytes.Split(out, []byte("\n"))
-	var resources []string
-	for _, b := range r {
-		if r := strings.TrimSpace(string(b)); r != "" {
-			resources = append(resources, strings.TrimSpace(string(b)))
-		}
-	}
-
-	return resources, nil
 }
 
 func (t *Terraform) Output(resourceName string) (string, error) {

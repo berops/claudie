@@ -12,7 +12,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	"golang.org/x/sync/semaphore"
@@ -64,7 +63,7 @@ func handlerInner(
 	var work spec.Work
 	if err := proto.Unmarshal(msg.Data(), &work); err != nil {
 		logger.Err(err).Msg("Failed to unmarshal received message")
-		reply := ReplyMsg{
+		reply := natsutils.ReplyMsg{
 			InputManifest: inputManifestName,
 			Cluster:       clusterName,
 			TaskID:        taskID,
@@ -73,7 +72,7 @@ func handlerInner(
 		}
 		// Try to send a noop as we failed to unmarshal the received message
 		// if that fails we will get the same message re-delivered.
-		tryReplyNoop(logger, reply, js, msg)
+		natsutils.TryReplyErrorFTL(logger, err, reply, js, msg)
 		return
 	}
 
@@ -88,7 +87,7 @@ func handlerInner(
 			var stage spec.StageTerraformer_SubPass
 			if err := anypb.UnmarshalTo(pass, &stage, proto.UnmarshalOptions{}); err != nil {
 				logger.Err(err).Msg("Failed to unmarshal received stage for work")
-				reply := ReplyMsg{
+				reply := natsutils.ReplyMsg{
 					InputManifest: inputManifestName,
 					Cluster:       clusterName,
 					TaskID:        taskID,
@@ -97,7 +96,7 @@ func handlerInner(
 				}
 				// Try to send a noop as we failed to unmarshal the received message
 				// if that fails we will get the same message re-delivered.
-				tryReplyNoop(logger, reply, js, msg)
+				natsutils.TryReplyErrorFTL(logger, err, reply, js, msg)
 				return
 			}
 			terraformWork.Passes = append(terraformWork.Passes, &stage)
@@ -146,7 +145,7 @@ func handlerInner(
 	var (
 		err error
 
-		reply = ReplyMsg{
+		reply = natsutils.ReplyMsg{
 			InputManifest: inputManifestName,
 			Cluster:       clusterName,
 			TaskID:        taskID,
@@ -167,7 +166,7 @@ func handlerInner(
 			log.Warn().Msgf("failed to refresh msg while trying to send result to its reply channel: %v", err)
 		}
 
-		if err = replyTo(ctx, logger, js, reply); err == nil {
+		if err = natsutils.ReplyTo(ctx, logger, js, reply); err == nil {
 			break
 		}
 
@@ -178,7 +177,7 @@ func handlerInner(
 	}
 
 	if err != nil {
-		// If we failed to submit the result to the requested reply channel, do not
+		// If failed to submit the result to the requested reply channel, do not
 		// acknowledge the message and consider it as failed.
 		logger.Err(err).Msgf("Failed to send task result to the requested reply channel: %q", reply.Subject)
 		if err := msg.Nak(); err != nil {
@@ -208,106 +207,4 @@ func handlerInner(
 	}
 
 	logger.Info().Msg("Task processed")
-}
-
-type ReplyMsg struct {
-	// Name of the InputManifest for which the reply is targeted at.
-	InputManifest string
-
-	// Name of the cluster within the [ReplyMsg.InputManifest] for
-	// which the reply is targeted at.
-	Cluster string
-
-	// TaskID is the ID from the picked up [nats.Msg], that was received
-	// via the [nats.MsgIdHdr]. This is the actuall ID of the task that was
-	// scheduled and this information is given back to the reply channel in
-	// the header [natsutils.WorkID].
-	TaskID string
-
-	// ID of the message that will be set as [nats.MsgIdHdr]
-	// This must be unique even on re-delivery of the same message
-	ID string
-
-	// To which subject should the reply be send to.
-	Subject string
-
-	// Result of the processed task.
-	Result *spec.TaskResult
-}
-
-func replyTo(
-	ctx context.Context,
-	logger zerolog.Logger,
-	js jetstream.JetStream,
-	result ReplyMsg,
-) error {
-	if result.Subject == natsutils.ReplyDiscard {
-		logger.Warn().Msg("Message does not have a reply channel attached, result is discarded")
-		return nil
-	}
-
-	b, err := proto.Marshal(result.Result)
-	if err != nil {
-		return err
-	}
-
-	headers := nats.Header{}
-	headers.Set(nats.MsgIdHdr, result.ID)
-	headers.Set(natsutils.WorkID, result.TaskID)
-	headers.Set(natsutils.InputManifestName, result.InputManifest)
-	headers.Set(natsutils.ClusterName, result.Cluster)
-
-	msg := nats.Msg{
-		Subject: result.Subject,
-		Header:  headers,
-		Data:    b,
-	}
-
-	ack, err := js.PublishMsg(ctx, &msg)
-	if err != nil {
-		return err
-	}
-
-	if ack.Duplicate {
-		logger.Warn().Msg("Message was catched as a duplicate")
-	}
-
-	return nil
-}
-
-// acknowledges the passed in `msg` and replies a Noop to the targeted `replyChannel` channel.
-func tryReplyNoop(logger zerolog.Logger, reply ReplyMsg, js jetstream.JetStream, msg jetstream.Msg) {
-	reply.Result = &spec.TaskResult{
-		Result: &spec.TaskResult_None_{None: new(spec.TaskResult_None)},
-	}
-
-	logger = logger.With().
-		Str("reply-msg-id", reply.ID).
-		Str(natsutils.ReplyToHeader, reply.Subject).Logger()
-
-	// Send a reply and wait for an ack within the next 10 seconds, which should be genereous enough.
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	if err := replyTo(ctx, logger, js, reply); err != nil {
-		logger.Err(err).Msg("Failed to send reply message")
-
-		if err := msg.NakWithDelay(2 * time.Second); err != nil {
-			logger.
-				Err(err).
-				Msg("Failed to Nak message, exiting, will wait for [AckWait] to expire for the re-delivery")
-		}
-
-		// Failed to publish to the requested reply to channel, return here and wait for the re-delivery
-		return
-	}
-
-	logger.Debug().Msg("Successfully send noop reply")
-
-	if err := msg.DoubleAck(ctx); err != nil {
-		logger.Err(err).Msg("Failed to acknowledge message after sending NOOP reply")
-		// if this fails just fallthrough here, we will get a re-delivery of the message after the [AckWait].
-	}
-
-	logger.Debug().Msg("Successfully acknowledged msg")
 }

@@ -30,15 +30,15 @@ func (a *AnsiblerGrpcService) UpdateProxyEnvsOnNodes(_ context.Context, request 
 }
 
 func (a *AnsiblerGrpcService) InstallNodeRequirements(_ context.Context, request *pb.InstallRequest) (*pb.InstallResponse, error) {
-	return a.usecases.InstallNodeRequirements(request)
+	panic("")
 }
 
 func (a *AnsiblerGrpcService) InstallVPN(_ context.Context, request *pb.InstallRequest) (*pb.InstallResponse, error) {
-	return a.usecases.InstallVPN(request)
+	panic("")
 }
 
 func (a *AnsiblerGrpcService) SetUpLoadbalancers(_ context.Context, request *pb.SetUpLBRequest) (*pb.SetUpLBResponse, error) {
-	return a.usecases.SetUpLoadbalancers(request)
+	panic("")
 }
 
 func (a *AnsiblerGrpcService) DetermineApiEndpointChange(ctx context.Context, request *pb.DetermineApiEndpointChangeRequest) (*pb.DetermineApiEndpointChangeResponse, error) {

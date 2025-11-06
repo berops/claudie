@@ -116,16 +116,37 @@ func (StageTerraformer_SubPassKind) EnumDescriptor() ([]byte, []int) {
 type StageAnsibler_SubPassKind int32
 
 const (
-	StageAnsibler_TODO StageAnsibler_SubPassKind = 0
+	StageAnsibler_INSTALL_NODE_REQUIREMENTS          StageAnsibler_SubPassKind = 0
+	StageAnsibler_INSTALL_VPN                        StageAnsibler_SubPassKind = 1
+	StageAnsibler_DETERMINE_API_ENDPOINT_CHANGE      StageAnsibler_SubPassKind = 2
+	StageAnsibler_RECONCILE_LOADBALANCERS            StageAnsibler_SubPassKind = 3
+	StageAnsibler_REMOVE_CLAUDIE_UTILITIES           StageAnsibler_SubPassKind = 4
+	StageAnsibler_UPDATE_API_ENDPOINT                StageAnsibler_SubPassKind = 5
+	StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES_FOR_K8S StageAnsibler_SubPassKind = 6
+	StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES         StageAnsibler_SubPassKind = 7
 )
 
 // Enum value maps for StageAnsibler_SubPassKind.
 var (
 	StageAnsibler_SubPassKind_name = map[int32]string{
-		0: "TODO",
+		0: "INSTALL_NODE_REQUIREMENTS",
+		1: "INSTALL_VPN",
+		2: "DETERMINE_API_ENDPOINT_CHANGE",
+		3: "RECONCILE_LOADBALANCERS",
+		4: "REMOVE_CLAUDIE_UTILITIES",
+		5: "UPDATE_API_ENDPOINT",
+		6: "UPDATE_PROXY_ENVS_ON_NODES_FOR_K8S",
+		7: "UPDATE_PROXY_ENVS_ON_NODES",
 	}
 	StageAnsibler_SubPassKind_value = map[string]int32{
-		"TODO": 0,
+		"INSTALL_NODE_REQUIREMENTS":          0,
+		"INSTALL_VPN":                        1,
+		"DETERMINE_API_ENDPOINT_CHANGE":      2,
+		"RECONCILE_LOADBALANCERS":            3,
+		"REMOVE_CLAUDIE_UTILITIES":           4,
+		"UPDATE_API_ENDPOINT":                5,
+		"UPDATE_PROXY_ENVS_ON_NODES_FOR_K8S": 6,
+		"UPDATE_PROXY_ENVS_ON_NODES":         7,
 	}
 )
 
@@ -159,16 +180,19 @@ func (StageAnsibler_SubPassKind) EnumDescriptor() ([]byte, []int) {
 type StageKubeEleven_SubPassKind int32
 
 const (
-	StageKubeEleven_TODO StageKubeEleven_SubPassKind = 0
+	StageKubeEleven_RECONCILE_CLUSTER StageKubeEleven_SubPassKind = 0
+	StageKubeEleven_DESTROY_CLUSTER   StageKubeEleven_SubPassKind = 1
 )
 
 // Enum value maps for StageKubeEleven_SubPassKind.
 var (
 	StageKubeEleven_SubPassKind_name = map[int32]string{
-		0: "TODO",
+		0: "RECONCILE_CLUSTER",
+		1: "DESTROY_CLUSTER",
 	}
 	StageKubeEleven_SubPassKind_value = map[string]int32{
-		"TODO": 0,
+		"RECONCILE_CLUSTER": 0,
+		"DESTROY_CLUSTER":   1,
 	}
 )
 
@@ -710,7 +734,7 @@ func (x *StageAnsibler_SubPass) GetKind() StageAnsibler_SubPassKind {
 	if x != nil {
 		return x.Kind
 	}
-	return StageAnsibler_TODO
+	return StageAnsibler_INSTALL_NODE_REQUIREMENTS
 }
 
 func (x *StageAnsibler_SubPass) GetDescription() *StageDescription {
@@ -762,7 +786,7 @@ func (x *StageKubeEleven_SubPass) GetKind() StageKubeEleven_SubPassKind {
 	if x != nil {
 		return x.Kind
 	}
-	return StageKubeEleven_TODO
+	return StageKubeEleven_RECONCILE_CLUSTER
 }
 
 func (x *StageKubeEleven_SubPass) GetDescription() *StageDescription {
@@ -842,23 +866,31 @@ const file_spec_pass_proto_rawDesc = "" +
 	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"C\n" +
 	"\vSubPassKind\x12\x18\n" +
 	"\x14BUILD_INFRASTRUCTURE\x10\x00\x12\x1a\n" +
-	"\x16DESTROY_INFRASTRUCTURE\x10\x01\"\x97\x02\n" +
+	"\x16DESTROY_INFRASTRUCTURE\x10\x01\"\xfd\x03\n" +
 	"\rStageAnsibler\x128\n" +
 	"\vdescription\x18\x01 \x01(\v2\x16.spec.StageDescriptionR\vdescription\x129\n" +
 	"\tsubPasses\x18\x02 \x03(\v2\x1b.spec.StageAnsibler.SubPassR\tsubPasses\x1ax\n" +
 	"\aSubPass\x123\n" +
 	"\x04kind\x18\x01 \x01(\x0e2\x1f.spec.StageAnsibler.SubPassKindR\x04kind\x128\n" +
-	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"\x17\n" +
-	"\vSubPassKind\x12\b\n" +
-	"\x04TODO\x10\x00\"\x9d\x02\n" +
+	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"\xfc\x01\n" +
+	"\vSubPassKind\x12\x1d\n" +
+	"\x19INSTALL_NODE_REQUIREMENTS\x10\x00\x12\x0f\n" +
+	"\vINSTALL_VPN\x10\x01\x12!\n" +
+	"\x1dDETERMINE_API_ENDPOINT_CHANGE\x10\x02\x12\x1b\n" +
+	"\x17RECONCILE_LOADBALANCERS\x10\x03\x12\x1c\n" +
+	"\x18REMOVE_CLAUDIE_UTILITIES\x10\x04\x12\x17\n" +
+	"\x13UPDATE_API_ENDPOINT\x10\x05\x12&\n" +
+	"\"UPDATE_PROXY_ENVS_ON_NODES_FOR_K8S\x10\x06\x12\x1e\n" +
+	"\x1aUPDATE_PROXY_ENVS_ON_NODES\x10\a\"\xbf\x02\n" +
 	"\x0fStageKubeEleven\x128\n" +
 	"\vdescription\x18\x01 \x01(\v2\x16.spec.StageDescriptionR\vdescription\x12;\n" +
 	"\tsubPasses\x18\x02 \x03(\v2\x1d.spec.StageKubeEleven.SubPassR\tsubPasses\x1az\n" +
 	"\aSubPass\x125\n" +
 	"\x04kind\x18\x01 \x01(\x0e2!.spec.StageKubeEleven.SubPassKindR\x04kind\x128\n" +
-	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"\x17\n" +
-	"\vSubPassKind\x12\b\n" +
-	"\x04TODO\x10\x00\"\x8e\x02\n" +
+	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"9\n" +
+	"\vSubPassKind\x12\x15\n" +
+	"\x11RECONCILE_CLUSTER\x10\x00\x12\x13\n" +
+	"\x0fDESTROY_CLUSTER\x10\x01\"\x8e\x02\n" +
 	"\n" +
 	"StageKuber\x128\n" +
 	"\vdescription\x18\x01 \x01(\v2\x16.spec.StageDescriptionR\vdescription\x126\n" +

@@ -1,4 +1,4 @@
-package usecases
+package service
 
 import (
 	"errors"
@@ -10,73 +10,91 @@ import (
 	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/nodepools"
-	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/ansibler/server/utils"
 	"github.com/berops/claudie/services/ansibler/templates"
-	"github.com/rs/zerolog/log"
-
+	"github.com/rs/zerolog"
 	"golang.org/x/sync/semaphore"
 )
 
-const (
-	wireguardPlaybookFilePath = "../../ansible-playbooks/wireguard.yml"
-	wireguardUninstall        = "../../ansible-playbooks/wireguard-uninstall.yml"
-)
+const wireguardPlaybook = "../../ansible-playbooks/wireguard.yml"
 
 type VPNInfo struct {
 	ClusterNetwork string
+
 	// NodepoolsInfos is a slice with each element of type *DesiredClusterNodepoolsInfo.
 	// Each element corresponds to a cluster (either a Kubernetes cluster or attached LB clusters).
 	NodepoolsInfos []*NodepoolsInfo
 }
 
-// InstallVPN installs VPN between nodes in the k8s cluster and lb clusters
-func (u *Usecases) InstallVPN(request *pb.InstallRequest) (*pb.InstallResponse, error) {
-	logger := log.With().Str("project", request.ProjectName).Str("cluster", request.Desired.ClusterInfo.Name).Logger()
-	logger.Info().Msgf("Installing VPN")
+// InstallVPN install wiregaurd VPN across all of the Loadbalancer and kubernetes nodes.
+func InstallVPN(
+	logger zerolog.Logger,
+	projectName string,
+	processLimit *semaphore.Weighted,
+	task *spec.TaskV2,
+	tracker Tracker,
+) {
+	logger.Info().Msg("Installing VPN")
+	action, ok := task.GetDo().(*spec.TaskV2_Create)
+	if !ok {
+		logger.
+			Warn().
+			Msgf("received task with action %T while wanting to install vpn, assuming the task was misscheduled, ignoring", task.GetDo())
+		tracker.Result.KeepAsIs()
+		return
+	}
 
-	vpnInfo := &VPNInfo{
-		ClusterNetwork: request.Desired.Network,
+	k8s := action.Create.K8S
+	lbs := action.Create.LoadBalancers
+
+	vi := VPNInfo{
+		ClusterNetwork: k8s.Network,
 		NodepoolsInfos: []*NodepoolsInfo{
-			// Construct and add NodepoolsInfo for the Kubernetes cluster
 			{
 				Nodepools: utils.NodePools{
-					Dynamic: nodepools.Dynamic(request.Desired.ClusterInfo.NodePools),
-					Static:  nodepools.Static(request.Desired.ClusterInfo.NodePools),
+					Dynamic: nodepools.Dynamic(k8s.ClusterInfo.NodePools),
+					Static:  nodepools.Static(k8s.ClusterInfo.NodePools),
 				},
-				ClusterID:      request.Desired.ClusterInfo.Id(),
-				ClusterNetwork: request.Desired.Network,
+				ClusterID:      k8s.ClusterInfo.Id(),
+				ClusterNetwork: k8s.Network,
 			},
 		},
 	}
-	// Construct and add NodepoolsInfo for each of the attached LB clusters
-	for _, lbCluster := range request.DesiredLbs {
-		vpnInfo.NodepoolsInfos = append(vpnInfo.NodepoolsInfos,
-			&NodepoolsInfo{
-				Nodepools: utils.NodePools{
-					Dynamic: nodepools.Dynamic(lbCluster.ClusterInfo.NodePools),
-					Static:  nodepools.Static(lbCluster.ClusterInfo.NodePools),
-				},
-				ClusterID:      lbCluster.ClusterInfo.Id(),
-				ClusterNetwork: request.Desired.Network,
+
+	for _, lb := range lbs {
+		vi.NodepoolsInfos = append(vi.NodepoolsInfos, &NodepoolsInfo{
+			Nodepools: utils.NodePools{
+				Dynamic: nodepools.Dynamic(lb.ClusterInfo.NodePools),
+				Static:  nodepools.Static(lb.ClusterInfo.NodePools),
 			},
-		)
+			ClusterID:      lb.ClusterInfo.Id(),
+			ClusterNetwork: k8s.Network,
+		})
 	}
 
-	if err := installWireguardVPN(request.Desired.ClusterInfo.Id(), vpnInfo, u.SpawnProcessLimit); err != nil {
-		logger.Err(err).Msgf("Error encountered while installing VPN")
-		return nil, fmt.Errorf("error encountered while installing VPN for cluster %s project %s : %w", request.Desired.ClusterInfo.Name, request.ProjectName, err)
+	if err := installWireguardVPN(k8s.ClusterInfo.Id(), &vi, processLimit); err != nil {
+		tracker.Diagnostics.Push(err.Error())
+		// as there could be partial results, fallthrough.
 	}
 
-	logger.Info().Msgf("VPN was successfully installed")
-	return &pb.InstallResponse{Desired: request.Desired, DesiredLbs: request.DesiredLbs}, nil
+	tracker.
+		Result.
+		ToUpdate().
+		TakeKubernetesCluster(k8s).
+		TakeLoadBalancers(lbs...).
+		Replace()
 }
 
 // installWireguardVPN install wireguard VPN for all nodes in the infrastructure.
 func installWireguardVPN(clusterID string, vpnInfo *VPNInfo, processLimit *semaphore.Weighted) error {
 	// Directory where files (required by Ansible) will be generated.
-	clusterDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s", clusterID, hash.Create(hash.Length)))
+	clusterDirectory := filepath.Join(
+		BaseDirectory,
+		OutputDirectory,
+		fmt.Sprintf("%s-%s", clusterID, hash.Create(hash.Length)),
+	)
+
 	if err := fileutils.CreateDirectory(clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
 	}
@@ -85,12 +103,10 @@ func installWireguardVPN(clusterID string, vpnInfo *VPNInfo, processLimit *semap
 		return fmt.Errorf("error while setting the private IPs for %s : %w", clusterDirectory, err)
 	}
 
-	if err := utils.GenerateInventoryFile(templates.AllNodesInventoryTemplate, clusterDirectory,
-		// Value of Ansible template parameters.
-		AllNodesInventoryData{
-			NodepoolsInfo: vpnInfo.NodepoolsInfos,
-		},
-	); err != nil {
+	data := AllNodesInventoryData{
+		NodepoolsInfo: vpnInfo.NodepoolsInfos,
+	}
+	if err := utils.GenerateInventoryFile(templates.AllNodesInventoryTemplate, clusterDirectory, data); err != nil {
 		return fmt.Errorf("error while creating inventory file for %s : %w", clusterDirectory, err)
 	}
 
@@ -103,7 +119,7 @@ func installWireguardVPN(clusterID string, vpnInfo *VPNInfo, processLimit *semap
 		}
 	}
 	ansible := utils.Ansible{
-		Playbook:          wireguardPlaybookFilePath,
+		Playbook:          wireguardPlaybook,
 		Inventory:         utils.InventoryFileName,
 		Directory:         clusterDirectory,
 		SpawnProcessLimit: processLimit,

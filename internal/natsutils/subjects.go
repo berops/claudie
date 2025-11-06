@@ -41,13 +41,13 @@ const (
 	KuberResponse = "claudie-internal-cluster-response-kuber"
 
 	// Subject related to KubeEleven service only request Messages.
-	KubeElevenRequest = "claudie-internal-cluster-request-kube-eleven"
+	KubeElevenRequests = "claudie-internal-cluster-request-kube-eleven"
 
 	// Subject related to KubeEleven service only response Messages.
 	KubeElevenResponse = "claudie-internal-cluster-response-kube-eleven"
 
 	// Subject related to Terraformer service only request Messages.
-	TerraformerRequest = "claudie-internal-cluster-request-terraformer"
+	TerraformerRequests = "claudie-internal-cluster-request-terraformer"
 
 	// Subject related to Terraformer service only response Messages.
 	TerraformerResponse = "claudie-internal-cluster-response-terraformer"
@@ -63,9 +63,9 @@ var DefaultSubjects = [...]string{
 	AnsiblerResponse,
 	KuberRequests,
 	KuberResponse,
-	KubeElevenRequest,
+	KubeElevenRequests,
 	KubeElevenResponse,
-	TerraformerRequest,
+	TerraformerRequests,
 	TerraformerResponse,
 	Misc,
 }

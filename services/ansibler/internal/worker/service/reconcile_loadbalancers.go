@@ -1,4 +1,4 @@
-package usecases
+package service
 
 import (
 	"fmt"
@@ -6,19 +6,15 @@ import (
 	"path/filepath"
 
 	"github.com/berops/claudie/internal/api/manifest"
-	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/concurrent"
 	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/hash"
-	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/internal/templateUtils"
-	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/berops/claudie/services/ansibler/server/utils"
+	utils "github.com/berops/claudie/services/ansibler/internal/worker/service/internal"
 	"github.com/berops/claudie/services/ansibler/templates"
 	"github.com/rs/zerolog"
-
 	"golang.org/x/sync/semaphore"
 )
 
@@ -49,23 +45,50 @@ const (
 	envoyLDS = "lds_temp.yml"
 )
 
-func (u *Usecases) SetUpLoadbalancers(request *pb.SetUpLBRequest) (*pb.SetUpLBResponse, error) {
-	logger := loggerutils.WithProjectAndCluster(request.ProjectName, request.Desired.ClusterInfo.Id())
-	logger.Info().Msgf("Setting up the loadbalancers")
-
-	if err := setUpLoadbalancers(request, logger, u.SpawnProcessLimit); err != nil {
-		logger.Err(err).Msgf("Error encountered while setting up the loadbalancers")
-		return nil, fmt.Errorf("error encountered while setting up the loadbalancers for cluster %s project %s : %w", request.Desired.ClusterInfo.Name, request.ProjectName, err)
+func ReconcileLoadBalancers(
+	logger zerolog.Logger,
+	projectName string,
+	processLimit *semaphore.Weighted,
+	task *spec.TaskV2,
+	tracker Tracker,
+) {
+	logger.Info().Msg("Reconciling LoadBalancers")
+	action, ok := task.GetDo().(*spec.TaskV2_Create)
+	if !ok {
+		logger.
+			Warn().
+			Msgf(
+				"received task with action %T while wanting to reconcile loadbalancers, assuming the task was misscheduled, ignoring",
+				task.GetDo(),
+			)
+		tracker.Result.KeepAsIs()
+		return
 	}
 
-	logger.Info().Msgf("Loadbalancers were successfully set up")
-	return &pb.SetUpLBResponse{Desired: request.Desired, DesiredLbs: request.DesiredLbs}, nil
+	k8s := action.Create.K8S
+	lbs := action.Create.LoadBalancers
+
+	li := utils.LBClustersInfo{
+		Lbs:               lbs,
+		TargetK8sNodepool: k8s.ClusterInfo.NodePools,
+		ClusterID:         k8s.ClusterInfo.Id(),
+	}
+
+	if err := setUpLoadbalancers(logger, processLimit, &li); err != nil {
+		tracker.Diagnostics.Push(err.Error())
+		// does not change the stored state in any way, fallthrough
+	}
+
+	tracker.Result.KeepAsIs()
 }
 
 // setUpLoadbalancers sets up the loadbalancers along with DNS and verifies their configuration
-func setUpLoadbalancers(request *pb.SetUpLBRequest, logger zerolog.Logger, processLimit *semaphore.Weighted) error {
-	clusterName := request.Desired.ClusterInfo.Id()
-	clusterBaseDirectory := filepath.Join(baseDirectory, outputDirectory, fmt.Sprintf("%s-%s-lbs", clusterName, hash.Create(hash.Length)))
+func setUpLoadbalancers(logger zerolog.Logger, processLimit *semaphore.Weighted, info *utils.LBClustersInfo) error {
+	clusterBaseDirectory := filepath.Join(
+		BaseDirectory,
+		OutputDirectory,
+		fmt.Sprintf("%s-%s-lbs", info.ClusterID, hash.Create(hash.Length)),
+	)
 
 	defer func() {
 		if err := os.RemoveAll(clusterBaseDirectory); err != nil {
@@ -73,25 +96,19 @@ func setUpLoadbalancers(request *pb.SetUpLBRequest, logger zerolog.Logger, proce
 		}
 	}()
 
-	info := &utils.LBClustersInfo{
-		Lbs:               request.DesiredLbs,
-		TargetK8sNodepool: request.Desired.ClusterInfo.NodePools,
-		ClusterID:         request.Desired.ClusterInfo.Id(),
-	}
-
 	if err := utils.GenerateLBBaseFiles(clusterBaseDirectory, info); err != nil {
-		return fmt.Errorf("error encountered while generating base files for %s : %w", clusterName, err)
+		return fmt.Errorf("error encountered while generating base files for %s : %w", info.ClusterID, err)
 	}
 
-	err := concurrent.Exec(info.Lbs, func(_ int, lbCluster *spec.LBcluster) error {
+	err := concurrent.Exec(info.Lbs, func(_ int, lbCluster *spec.LBclusterV2) error {
 		var (
 			loggerPrefix = "LB-cluster"
 			lbClusterId  = lbCluster.ClusterInfo.Id()
+			logger       = logger.With().Str(loggerPrefix, lbClusterId).Logger()
 		)
 
-		logger.Info().Str(loggerPrefix, lbClusterId).Msg("Setting up the loadbalancer cluster")
+		logger.Info().Msg("Setting up the loadbalancer cluster")
 
-		// Create the directory where files will be generated
 		clusterDirectory := filepath.Join(clusterBaseDirectory, lbClusterId)
 		if err := fileutils.CreateDirectory(clusterDirectory); err != nil {
 			return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
@@ -121,16 +138,12 @@ func setUpLoadbalancers(request *pb.SetUpLBRequest, logger zerolog.Logger, proce
 			return err
 		}
 
-		logger.Info().Str(loggerPrefix, lbClusterId).Msg("Loadbalancer cluster successfully set up")
+		logger.Info().Msg("Loadbalancer cluster successfully set up")
 		return nil
 	})
 
 	if err != nil {
-		return fmt.Errorf("error while setting up the loadbalancers for cluster %s : %w", clusterName, err)
-	}
-
-	if err := handleMoveApiEndpoint(logger, request, clusterBaseDirectory, processLimit); err != nil {
-		return err
+		return fmt.Errorf("error while setting up the loadbalancers for cluster %s : %w", info.ClusterID, err)
 	}
 
 	return nil
@@ -138,7 +151,7 @@ func setUpLoadbalancers(request *pb.SetUpLBRequest, logger zerolog.Logger, proce
 
 // setUpNodeExporter sets up node-exporter on each node of the LB cluster.
 // Returns error if not successful, nil otherwise.
-func setUpNodeExporter(lbCluster *spec.LBcluster, clusterDirectory string, processLimit *semaphore.Weighted) error {
+func setUpNodeExporter(lbCluster *spec.LBclusterV2, clusterDirectory string, processLimit *semaphore.Weighted) error {
 	playbookParameters := utils.NodeExporterTemplateParams{
 		LoadBalancer:     lbCluster.ClusterInfo.Name,
 		NodeExporterPort: manifest.NodeExporterPort,
@@ -168,7 +181,7 @@ func setUpNodeExporter(lbCluster *spec.LBcluster, clusterDirectory string, proce
 }
 
 func uninstallNginx(
-	lbCluster *spec.LBcluster,
+	lbCluster *spec.LBclusterV2,
 	clusterDirectory string,
 	processLimit *semaphore.Weighted,
 ) error {
@@ -178,11 +191,10 @@ func uninstallNginx(
 		return fmt.Errorf("error while loading nginx uninstall file for %s: %w", lbCluster.ClusterInfo.Id(), err)
 	}
 
-	err = tpl.Generate(uninstall, uninstallNginxPlaybookName, utils.UninstallNginxParams{
+	data := utils.UninstallNginxParams{
 		LoadBalancer: lbCluster.ClusterInfo.Name,
-	})
-
-	if err != nil {
+	}
+	if err := tpl.Generate(uninstall, uninstallNginxPlaybookName, data); err != nil {
 		return fmt.Errorf("error while generating uninstall nginx playbook for %s: %w", lbCluster.ClusterInfo.Id(), err)
 	}
 
@@ -194,11 +206,9 @@ func uninstallNginx(
 		SpawnProcessLimit: processLimit,
 	}
 
-	err = ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s", lbCluster.ClusterInfo.Id()))
-	if err != nil {
+	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s", lbCluster.ClusterInfo.Id())); err != nil {
 		return fmt.Errorf("error while running ansible for %s: %w", lbCluster.ClusterInfo.Name, err)
 	}
-
 	return nil
 }
 
@@ -213,7 +223,7 @@ func uninstallNginx(
 //
 // Based on https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/configuration-dynamic-filesystem
 func setupEnvoyProxyViaDocker(
-	lbCluster *spec.LBcluster,
+	lbCluster *spec.LBclusterV2,
 	targetK8sNodePool []*spec.NodePool,
 	clusterDirectory string,
 	processLimit *semaphore.Weighted,
@@ -317,7 +327,7 @@ func setupEnvoyProxyViaDocker(
 	return nil
 }
 
-func targetPools(lbCluster *spec.LBcluster, targetK8sNodepool []*spec.NodePool) []utils.LBClusterRolesInfo {
+func targetPools(lbCluster *spec.LBclusterV2, targetK8sNodepool []*spec.NodePool) []utils.LBClusterRolesInfo {
 	var lbClusterRolesInfo []utils.LBClusterRolesInfo
 	for _, role := range lbCluster.Roles {
 		lbClusterRolesInfo = append(lbClusterRolesInfo, utils.LBClusterRolesInfo{
@@ -325,7 +335,6 @@ func targetPools(lbCluster *spec.LBcluster, targetK8sNodepool []*spec.NodePool) 
 			TargetNodes: targetNodes(role.TargetPools, targetK8sNodepool),
 		})
 	}
-
 	return lbClusterRolesInfo
 }
 
@@ -353,46 +362,51 @@ func targetNodes(targetPools []string, targetk8sPools []*spec.NodePool) (nodes [
 	return
 }
 
-func handleMoveApiEndpoint(logger zerolog.Logger, request *pb.SetUpLBRequest, outputDirectory string, processLimit *semaphore.Weighted) error {
-	cID, dID, state := clusters.DetermineLBApiEndpointChange(request.CurrentLbs, request.DesiredLbs)
-	// Endpoint renamed has to be done at this stage, as the endpoint
-	// was updated in the terraformer stage and needs to be subsequently
-	// updated in ansibler.
-	if state != spec.ApiEndpointChangeState_EndpointRenamed {
-		return nil
-	}
+// TODO: have this in the manager.
+//
+// if err := handleMoveApiEndpoint(logger, request, clusterBaseDirectory, processLimit); err != nil {
+// 	return err
+// }
+// func handleMoveApiEndpoint(logger zerolog.Logger, request *pb.SetUpLBRequest, outputDirectory string, processLimit *semaphore.Weighted) error {
+// 	cID, dID, state := clusters.DetermineLBApiEndpointChange(request.CurrentLbs, request.DesiredLbs)
+// 	// Endpoint renamed has to be done at this stage, as the endpoint
+// 	// was updated in the terraformer stage and needs to be subsequently
+// 	// updated in ansibler.
+// 	if state != spec.ApiEndpointChangeState_EndpointRenamed {
+// 		return nil
+// 	}
 
-	lbc := clusters.IndexLoadbalancerById(cID, request.CurrentLbs)
-	lbd := clusters.IndexLoadbalancerById(dID, request.DesiredLbs)
+// 	lbc := clusters.IndexLoadbalancerById(cID, request.CurrentLbs)
+// 	lbd := clusters.IndexLoadbalancerById(dID, request.DesiredLbs)
 
-	if lbc < 0 {
-		return fmt.Errorf("failed to find requested loadbalancer %s from which to move the api endpoint from", cID)
-	}
+// 	if lbc < 0 {
+// 		return fmt.Errorf("failed to find requested loadbalancer %s from which to move the api endpoint from", cID)
+// 	}
 
-	if lbd < 0 {
-		return fmt.Errorf("failed to find requested loadbalancer %s to which to move the api endpoint", dID)
-	}
+// 	if lbd < 0 {
+// 		return fmt.Errorf("failed to find requested loadbalancer %s to which to move the api endpoint", dID)
+// 	}
 
-	oldEndpoint := request.CurrentLbs[lbc].Dns.Endpoint
-	newEndpoint := request.DesiredLbs[lbd].Dns.Endpoint
+// 	oldEndpoint := request.CurrentLbs[lbc].Dns.Endpoint
+// 	newEndpoint := request.DesiredLbs[lbd].Dns.Endpoint
 
-	cdid := clusters.IndexLoadbalancerById(cID, request.DesiredLbs)
+// 	cdid := clusters.IndexLoadbalancerById(cID, request.DesiredLbs)
 
-	request.DesiredLbs[cdid].UsedApiEndpoint = false
-	request.DesiredLbs[lbd].UsedApiEndpoint = true
+// 	request.DesiredLbs[cdid].UsedApiEndpoint = false
+// 	request.DesiredLbs[lbd].UsedApiEndpoint = true
 
-	logger.Debug().Msgf("Changing the API endpoint from %s to %s", oldEndpoint, newEndpoint)
+// 	logger.Debug().Msgf("Changing the API endpoint from %s to %s", oldEndpoint, newEndpoint)
 
-	err := utils.ChangeAPIEndpoint(
-		request.Desired.ClusterInfo.Id(),
-		oldEndpoint,
-		newEndpoint,
-		outputDirectory,
-		processLimit,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to change API endpoint from %s to %s: %w", oldEndpoint, newEndpoint, err)
-	}
+// 	err := utils.ChangeAPIEndpoint(
+// 		request.Desired.ClusterInfo.Id(),
+// 		oldEndpoint,
+// 		newEndpoint,
+// 		outputDirectory,
+// 		processLimit,
+// 	)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to change API endpoint from %s to %s: %w", oldEndpoint, newEndpoint, err)
+// 	}
 
-	return nil
-}
+// 	return nil
+// }

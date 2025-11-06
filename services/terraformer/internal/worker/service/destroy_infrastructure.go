@@ -84,6 +84,5 @@ func DestroyCluster(
 	}
 
 	logger.Info().Msg("Cluster successfully destroyed")
-	cluster.UpdateCurrentState()
 	return nil
 }

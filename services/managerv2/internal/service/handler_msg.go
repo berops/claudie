@@ -179,6 +179,8 @@ func handlerInner(
 }
 
 func discard(logger zerolog.Logger, msg jetstream.Msg) {
+	logger.Warn().Msg("Discarding received message")
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 

@@ -237,36 +237,6 @@ message CreateV2{
     repeated LBclusterV2 loadBalancers = 2;
 }
 
-message UpdateV2{
-    message K8sClusters {
-        K8sclusterV2 current = 1;
-        K8sclusterV2 desired = 2;
-    }
-    message LoadBalancers {
-        LBclusterV2 current = 1;
-        LBclusterV2 desired = 2;
-    }
-
-    message State {
-        // Update the current state of the kubernetes cluster to the desired state.
-        //
-        // For this message both states are required to be present.
-        K8sClusters k8s = 1;
-
-        // Update the current state of the loadbalancers to the desired state, that are
-        // attached to the passed in kubernetes cluster. This field depends on the above
-        // [k8s] field and is required if the kubernetes clsuter has any loadbalancers
-        // attached.
-        //
-        // For this message both states are required to be present.
-        repeated LoadBalancers loadBalancers = 2;
-    }
-
-    oneof Op {
-        State state = 1;
-    }
-}
-
 message DeleteV2{
     message Clusters {
         // The current state of the kuberentes cluster to delete.
@@ -300,9 +270,9 @@ message TaskV2 {
     uint64 options = 1;
 
     oneof Do {
-        CreateV2 create = 2;
-        UpdateV2 update = 3;
-        DeleteV2 delete = 4;
+        CreateV2 create     = 2;
+        // Reconcile reconcile = 3;
+        DeleteV2 delete     = 4;
     }
 }
 

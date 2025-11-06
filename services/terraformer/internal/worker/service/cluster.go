@@ -14,10 +14,4 @@ type Cluster interface {
 
 	// whether the cluster is a kubernetes cluster, if not it is a loadbalancer.
 	IsKubernetes() bool
-
-	// UpdateCurrentState sets the current state equal to the desired state.
-	UpdateCurrentState()
-
-	// If current state exists.
-	HasCurrentState() bool
 }

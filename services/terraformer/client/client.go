@@ -7,6 +7,8 @@ import (
 	"github.com/berops/claudie/proto/pb"
 )
 
+// TODO: remove.
+
 // BuildInfrastructure uses TerraformServiceClient to build/deploy the infrastructure
 func BuildInfrastructure(c pb.TerraformerServiceClient, req *pb.BuildInfrastructureRequest) (*pb.BuildInfrastructureResponse, error) {
 	res, err := c.BuildInfrastructure(context.Background(), req) //sending request to the server and receiving response

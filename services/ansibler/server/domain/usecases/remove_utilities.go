@@ -17,6 +17,16 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
+const wireguardUninstall = ""
+
+type VPNInfo struct {
+	ClusterNetwork string
+
+	// NodepoolsInfos is a slice with each element of type *DesiredClusterNodepoolsInfo.
+	// Each element corresponds to a cluster (either a Kubernetes cluster or attached LB clusters).
+	NodepoolsInfos []*NodepoolsInfo
+}
+
 func (u *Usecases) RemoveUtilities(req *pb.RemoveClaudieUtilitiesRequest) (*pb.RemoveClaudieUtilitiesResponse, error) {
 	logger := loggerutils.WithProjectAndCluster(req.ProjectName, req.Current.ClusterInfo.Id())
 	logger.Info().Msgf("Removing Claudie installed utilities")

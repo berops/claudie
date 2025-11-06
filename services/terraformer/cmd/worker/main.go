@@ -12,7 +12,7 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	grpc2 "google.golang.org/grpc"
+	"google.golang.org/grpc"
 
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/grpcutils"
@@ -46,7 +46,7 @@ func run() error {
 	// starts consuming messages in the background.
 	terraformer, err := service.New(
 		errGroupCtx,
-		grpc2.ChainUnaryInterceptor(
+		grpc.ChainUnaryInterceptor(
 			metrics.MetricsMiddleware,
 			grpcutils.PeerInfoInterceptor(&log.Logger),
 		),

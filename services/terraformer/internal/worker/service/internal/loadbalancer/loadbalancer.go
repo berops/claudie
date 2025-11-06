@@ -22,98 +22,88 @@ var (
 
 type LBcluster struct {
 	ProjectName string
-
-	DesiredState *spec.LBclusterV2
-	CurrentState *spec.LBclusterV2
+	Cluster     *spec.LBclusterV2
 
 	// SpawnProcessLimit  limits the number of spawned tofu processes.
 	SpawnProcessLimit *semaphore.Weighted
 }
 
-func (l *LBcluster) Id() string {
-	state := l.DesiredState
-	if state == nil {
-		state = l.CurrentState
-	}
-	return state.ClusterInfo.Id()
-}
-
-func (l *LBcluster) HasCurrentState() bool { return l.CurrentState != nil }
-func (l *LBcluster) IsKubernetes() bool    { return false }
+func (l *LBcluster) Id() string         { return l.Cluster.ClusterInfo.Id() }
+func (l *LBcluster) IsKubernetes() bool { return false }
 
 func (l *LBcluster) Build(logger zerolog.Logger) error {
-	logger.Info().Msgf("Building LB Cluster %s and DNS", l.DesiredState.ClusterInfo.Name)
+	logger.Info().Msgf("Building LB Cluster %s and DNS", l.Cluster.ClusterInfo.Name)
 
-	var currentClusterInfo *spec.ClusterInfoV2
-	var currentDNS *spec.DNS
-	var currentNodeIPs []string
-
-	// Check if current cluster was defined, to avoid access of unrefferenced memory
-	if l.CurrentState != nil {
-		currentClusterInfo = l.CurrentState.ClusterInfo
-		currentDNS = l.CurrentState.Dns
-		currentNodeIPs = getNodeIPs(l.CurrentState.ClusterInfo.NodePools)
-	}
+	var (
+		projectName  = l.ProjectName
+		ci           = l.Cluster.ClusterInfo
+		roles        = l.Cluster.Roles
+		processLimit = l.SpawnProcessLimit
+	)
 
 	clusterBuilder := cluster_builder.ClusterBuilder{
-		DesiredClusterInfo: l.DesiredState.ClusterInfo,
-		CurrentClusterInfo: currentClusterInfo,
-		ProjectName:        l.ProjectName,
-		ClusterType:        spec.ClusterType_LB,
+		ClusterInfo: ci,
+		ProjectName: projectName,
+		ClusterType: spec.ClusterType_LB,
 		LBInfo: cluster_builder.LBInfo{
-			Roles: l.DesiredState.Roles,
+			Roles: roles,
 		},
-		SpawnProcessLimit: l.SpawnProcessLimit,
+		SpawnProcessLimit: processLimit,
 	}
 
 	if err := clusterBuilder.CreateNodepools(); err != nil {
-		return fmt.Errorf("%w: error while creating the LB cluster %s : %w", ErrCreateNodePools, l.DesiredState.ClusterInfo.Name, err)
+		return fmt.Errorf("%w: error while creating the LB cluster %s : %w", ErrCreateNodePools, ci.Name, err)
 	}
 
-	nodeIPs := getNodeIPs(l.DesiredState.ClusterInfo.NodePools)
+	nodeIPs := getNodeIPs(l.Cluster.ClusterInfo.NodePools)
 	dns := DNS{
-		ClusterName:       l.DesiredState.ClusterInfo.Name,
-		ClusterHash:       l.DesiredState.ClusterInfo.Hash,
-		CurrentNodeIPs:    currentNodeIPs,
-		DesiredNodeIPs:    nodeIPs,
-		CurrentDNS:        currentDNS,
-		DesiredDNS:        l.DesiredState.Dns,
-		ProjectName:       l.ProjectName,
-		SpawnProcessLimit: l.SpawnProcessLimit,
+		ProjectName:       projectName,
+		ClusterName:       ci.Name,
+		ClusterHash:       ci.Hash,
+		NodeIPs:           nodeIPs,
+		Dns:               l.Cluster.Dns,
+		SpawnProcessLimit: processLimit,
 	}
 
 	if err := dns.CreateDNSRecords(logger); err != nil {
-		return fmt.Errorf("%w for %s: %w", ErrCreateDNSRecord, l.DesiredState.ClusterInfo.Name, err)
+		return fmt.Errorf("%w for %s: %w", ErrCreateDNSRecord, ci.Name, err)
 	}
 
 	return nil
 }
 
 func (l *LBcluster) Destroy(logger zerolog.Logger) error {
-	group := errgroup.Group{}
-	logger.Info().Msgf("Destroying LB Cluster %s and DNS", l.CurrentState.ClusterInfo.Name)
+	logger.Info().Msgf("Destroying LB Cluster %s and DNS", l.Cluster.ClusterInfo.Name)
 
+	var (
+		projectName  = l.ProjectName
+		ci           = l.Cluster.ClusterInfo
+		processLimit = l.SpawnProcessLimit
+		nodeIPs      = getNodeIPs(ci.NodePools)
+	)
+
+	group := errgroup.Group{}
 	group.Go(func() error {
 		cluster := cluster_builder.ClusterBuilder{
-			CurrentClusterInfo: l.CurrentState.ClusterInfo,
-			ProjectName:        l.ProjectName,
-			ClusterType:        spec.ClusterType_LB,
-			SpawnProcessLimit:  l.SpawnProcessLimit,
+			ClusterInfo:       ci,
+			ProjectName:       projectName,
+			ClusterType:       spec.ClusterType_LB,
+			SpawnProcessLimit: processLimit,
 		}
 		return cluster.DestroyNodepools()
 	})
 
 	group.Go(func() error {
-		if l.CurrentState.Dns == nil {
+		if l.Cluster.Dns == nil {
 			return nil
 		}
 
 		dns := DNS{
-			ClusterName:       l.CurrentState.ClusterInfo.Name,
-			ClusterHash:       l.CurrentState.ClusterInfo.Hash,
-			CurrentNodeIPs:    getNodeIPs(l.CurrentState.ClusterInfo.NodePools),
-			CurrentDNS:        l.CurrentState.Dns,
-			ProjectName:       l.ProjectName,
+			ProjectName:       projectName,
+			ClusterName:       ci.Name,
+			ClusterHash:       ci.Hash,
+			NodeIPs:           nodeIPs,
+			Dns:               l.Cluster.Dns,
 			SpawnProcessLimit: l.SpawnProcessLimit,
 		}
 		return dns.DestroyDNSRecords(logger)
@@ -121,8 +111,6 @@ func (l *LBcluster) Destroy(logger zerolog.Logger) error {
 
 	return group.Wait()
 }
-
-func (l *LBcluster) UpdateCurrentState() { l.CurrentState = l.DesiredState }
 
 // getNodeIPs returns slice of public IPs used in the node pool.
 func getNodeIPs(nodepools []*spec.NodePool) []string {

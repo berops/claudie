@@ -135,66 +135,34 @@ func build(
 	task *spec.TaskV2,
 	tracker Tracker,
 ) {
-	var (
-		current, desired     *spec.K8SclusterV2
-		currentLB, desiredLB []*spec.LBclusterV2
-	)
-
-	switch action := task.GetDo().(type) {
-	case *spec.TaskV2_Create:
-		current, currentLB = nil, nil
-		desired = action.Create.GetK8S()
-		if desired == nil {
-			logger.Warn().Msg("create task validation failed, required desired state of the kuberentes cluster to be presetn, ignoring")
-			tracker.Result.KeepAsIs()
-			return
-		}
-		desiredLB = action.Create.GetLoadBalancers()
-	case *spec.TaskV2_Update:
-		update, ok := action.Update.GetOp().(*spec.UpdateV2_State_)
-		if !ok {
-			logger.Warn().Msgf("unknown update action to perform %T, ignoring", action.Update.GetOp())
-			tracker.Result.KeepAsIs()
-			return
-		}
-		current, desired = update.State.GetK8S().GetCurrent(), update.State.GetK8S().GetDesired()
-		if current == nil || desired == nil {
-			logger.
-				Warn().
-				Msg("update task validation failed, required kuberentes current,desired state to be present, but one of them is missing, ignoring")
-			tracker.Result.KeepAsIs()
-			return
-		}
-
-		for _, lb := range update.State.GetLoadBalancers() {
-			if lb.Current == nil || lb.Desired == nil {
-				logger.
-					Warn().
-					Msg("update task validation failed, required loadbalancer current,desired state to be present, but one of them is missing, ignoring")
-				tracker.Result.KeepAsIs()
-				return
-			}
-			currentLB = append(currentLB, lb.Current)
-			desiredLB = append(desiredLB, lb.Desired)
-		}
-	case *spec.TaskV2_Delete:
-		logger.Warn().Msgf("received delete task while wanting to build infrastructure, assuming the task was misscheduled, ignoring")
+	action, ok := task.GetDo().(*spec.TaskV2_Create)
+	if !ok {
+		logger.
+			Warn().
+			Msgf("Received task with action %T while wanting to create new infrastructure, assuming the task was misscheduled, ignoring", task.GetDo())
 		tracker.Result.KeepAsIs()
 		return
-	default:
-		logger.Warn().Msgf("unknown action to perform %T, ignoring", action)
+	}
+
+	var (
+		k8s = action.Create.K8S
+		lbs = action.Create.LoadBalancers
+	)
+
+	if k8s == nil {
+		logger.Warn().Msg("create task validation failed, required desired state of the kuberentes cluster to be presetn, ignoring")
 		tracker.Result.KeepAsIs()
 		return
 	}
 
 	cluster := kubernetes.K8Scluster{
 		ProjectName:       projectName,
-		DesiredState:      desired,
-		CurrentState:      current,
-		ExportPort6443:    clusters.FindAssignedLbApiEndpointV2(desiredLB) == nil,
+		Cluster:           k8s,
+		ExportPort6443:    clusters.FindAssignedLbApiEndpointV2(lbs) == nil,
 		SpawnProcessLimit: processLimit,
 	}
 
+	// TODO: will we need the options ? after reconciliation.
 	if spec.OptionIsSet(task.Options, spec.ForceExportPort6443OnControlPlane) {
 		cluster.ExportPort6443 = true
 	}
@@ -202,21 +170,16 @@ func build(
 	buildLogger := logger.With().Str("cluster", cluster.Id()).Logger()
 
 	if err := BuildK8Scluster(buildLogger, cluster); err != nil {
-		// If the building of the cluster failed, we want the result to be a NOOP
-		// as we do not want to update the current state in any way, as on failure
-		// the just called function also cleans up after failing to run OpenTofu
-		// thus the infra shouldn't have changed, though there are risks that OpenTofu
-		// could fail (due to network conditions) but that up to the caller to handle
-		// the error, we just propagate it from here.
+		possiblyUpdated := k8s
 		tracker.Diagnostics.Push(err.Error())
-		tracker.Result.KeepAsIs()
+		tracker.Result.ToUpdate().TakeKubernetesCluster(possiblyUpdated).Replace()
 		return
 	}
 
 	buildLogger.Info().Msg("Infrastructure for kubernetes cluster build successfully")
 
 	if spec.OptionIsSet(task.Options, spec.K8sOnlyRefresh) {
-		updatedCluster := cluster.CurrentState
+		updatedCluster := k8s
 
 		// Processing an event that only targets the nodepools used within the k8s
 		// clusters, thus we do not need to update/refresh the loadbalancer and dns
@@ -227,20 +190,10 @@ func build(
 	}
 
 	var loadbalancers []loadbalancer.LBcluster
-	for _, desired := range desiredLB {
-		var match *spec.LBclusterV2
-
-		for _, current := range currentLB {
-			if desired.ClusterInfo.Id() == current.ClusterInfo.Id() {
-				match = current
-				break
-			}
-		}
-
+	for _, lb := range lbs {
 		loadbalancers = append(loadbalancers, loadbalancer.LBcluster{
 			ProjectName:       projectName,
-			DesiredState:      desired,
-			CurrentState:      match,
+			Cluster:           lb,
 			SpawnProcessLimit: processLimit,
 		})
 	}
@@ -252,25 +205,24 @@ func build(
 	if err != nil {
 		// Some part of loadbalancer infrastructure was not build successfully.
 		// Since we still want to report the partially build infrastructure back to the
-		// caller we fallthrough here, as any of the lbs successfully build infrastructure
-		// will have its [CurrentState] updated.
+		// caller we fallthrough here.
 		tracker.Diagnostics.Push(err.Error())
 	}
 
 	var (
-		updatedK8s           = cluster.CurrentState
-		updatedLoadBalancers []*spec.LBclusterV2
+		updatedK8s                   = k8s
+		possiblyUpdatedLoadBalancers []*spec.LBclusterV2
 	)
 
 	for _, lb := range loadbalancers {
-		updatedLoadBalancers = append(updatedLoadBalancers, lb.CurrentState)
+		possiblyUpdatedLoadBalancers = append(possiblyUpdatedLoadBalancers, lb.Cluster)
 	}
 
 	tracker.
 		Result.
 		ToUpdate().
 		TakeKubernetesCluster(updatedK8s).
-		TakeLoadBalancers(updatedLoadBalancers...).
+		TakeLoadBalancers(possiblyUpdatedLoadBalancers...).
 		Replace()
 }
 
@@ -309,7 +261,7 @@ func destroy(
 
 		clusters = append(clusters, &kubernetes.K8Scluster{
 			ProjectName:       projectName,
-			CurrentState:      k8s,
+			Cluster:           k8s,
 			SpawnProcessLimit: processLimit,
 		})
 
@@ -324,7 +276,7 @@ func destroy(
 
 			clusters = append(clusters, &loadbalancer.LBcluster{
 				ProjectName:       projectName,
-				CurrentState:      lb,
+				Cluster:           lb,
 				SpawnProcessLimit: processLimit,
 			})
 		}
@@ -340,7 +292,7 @@ func destroy(
 
 			clusters = append(clusters, &loadbalancer.LBcluster{
 				ProjectName:       projectName,
-				CurrentState:      lb,
+				Cluster:           lb,
 				SpawnProcessLimit: processLimit,
 			})
 		}
@@ -351,10 +303,13 @@ func destroy(
 	}
 
 	ids := make([]string, len(clusters))
+	errs := make([]error, len(clusters))
+
 	err := concurrent.Exec(clusters, func(idx int, cluster Cluster) error {
 		buildLogger := logger.With().Str("cluster", cluster.Id()).Logger()
 		ids[idx] = cluster.Id()
-		return DestroyCluster(buildLogger, projectName, cluster, stores.s3, stores.dynamo)
+		errs[idx] = DestroyCluster(buildLogger, projectName, cluster, stores.s3, stores.dynamo)
+		return errs[idx]
 	})
 	if err != nil {
 		// Some of the provided clusters didn't destroy successfully.
@@ -370,7 +325,7 @@ func destroy(
 	)
 
 	for i, c := range clusters {
-		if !c.HasCurrentState() {
+		if errs[i] == nil {
 			if c.IsKubernetes() {
 				k8s = ids[i]
 			} else {
