@@ -76,9 +76,11 @@ func ReconcileLoadBalancers(
 
 	if err := setUpLoadbalancers(logger, processLimit, &li); err != nil {
 		tracker.Diagnostics.Push(err.Error())
-		// does not change the stored state in any way, fallthrough
+		tracker.Result.KeepAsIs()
+		return
 	}
 
+	// does not change the stored state in any way
 	tracker.Result.KeepAsIs()
 }
 

@@ -48,7 +48,7 @@ func (s *Service) WatchForScheduledDocuments(ctx context.Context) error {
 				continue clusters
 			}
 
-			event := state.Task
+			event := state.InFlight
 
 			noWork := event == nil
 			noWork = noWork || len(event.Pipeline) < 1
@@ -56,7 +56,7 @@ func (s *Service) WatchForScheduledDocuments(ctx context.Context) error {
 			if noWork {
 				logger.Debug().Msgf("Nothing to be worked on for cluster %q, considering as done", cluster)
 
-				state.Task = nil
+				state.InFlight = nil
 				state.State.Status = spec.WorkflowV2_DONE.String()
 				state.State.Description = ""
 
@@ -111,9 +111,14 @@ func (s *Service) WatchForScheduledDocuments(ctx context.Context) error {
 					// which shouldn't pose an issue as they're idemponent.
 					continue clusters
 				}
+
 				if ack.Duplicate {
-					logger.Warn().Msgf("event %q: %q, for cluster %q was submitted more than once but the duplication was caught", event.Id, event.Description, cluster)
-					// if it was a duplicate we didn't managed to update the state in the DB last try, thus continue.
+					// Each message for a specific stage has its own ID for catching duplicates
+					// The pattern is [TaskID]-[StageName], thus it's not possible to catch duplicate
+					// messages from another stage here and there had to be some network issues.
+					logger.
+						Warn().
+						Msgf("event %q: %q, for cluster %q was submitted more than once but the duplication was caught, will move the task to the next stage, assuming the last try failed", event.Id, event.Description, cluster)
 				}
 
 				state.State.Status = spec.WorkflowV2_IN_PROGRESS.String()
@@ -259,7 +264,7 @@ func (g *Service) WatchForDoneOrErrorDocuments(ctx context.Context) error {
 }
 
 func messageForStage(
-	inputManifestName, clusterName, natsMsgId string,
+	inputManifestName, clusterName, eventID string,
 	marshalledTask []byte,
 	stage *spec.Stage,
 ) (nats.Msg, string, error) {
@@ -360,8 +365,14 @@ func messageForStage(
 		return nats.Msg{}, "", err
 	}
 
+	// Duplicate messages are tracked jetstream-wide
+	// thus each stage needs its own ID for it to not
+	// be considered as a duplicate if send to another
+	// stage.
+	stageID := fmt.Sprintf("%v-%v", eventID, subject)
+
 	headers := nats.Header{}
-	headers.Set(nats.MsgIdHdr, natsMsgId)
+	headers.Set(nats.MsgIdHdr, stageID)
 	headers.Set(natsutils.ReplyToHeader, replySubject)
 	headers.Set(natsutils.InputManifestName, inputManifestName)
 	headers.Set(natsutils.ClusterName, clusterName)

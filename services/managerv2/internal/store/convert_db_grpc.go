@@ -366,7 +366,10 @@ func ConvertToGRPC(cfg *Config) (*spec.ConfigV2, error) {
 // if the respective value is not set) value as well when converted which simplifies
 // checking absence of a specific state (i.e. current, desired).
 func ConvertToGRPCClusters(cluster Clusters) (*spec.ClustersV2, error) {
-	var out *spec.ClustersV2
+	out := spec.ClustersV2{
+		K8S:           nil,
+		LoadBalancers: &spec.LoadBalancersV2{},
+	}
 
 	if len(cluster.K8s) > 0 {
 		k8s, err := ConvertToGRPCCluster(cluster.K8s)
@@ -374,7 +377,7 @@ func ConvertToGRPCClusters(cluster Clusters) (*spec.ClustersV2, error) {
 			return nil, err
 		}
 
-		out = &spec.ClustersV2{K8S: k8s}
+		out.K8S = k8s
 
 		if len(cluster.LoadBalancers) > 0 {
 			lbs, err := ConvertToGRPCLoadBalancers(cluster.LoadBalancers)
@@ -385,7 +388,7 @@ func ConvertToGRPCClusters(cluster Clusters) (*spec.ClustersV2, error) {
 		}
 	}
 
-	return out, nil
+	return &out, nil
 }
 
 // ConvertToGRPCCluster converts the database representation to the GRPC representation.
@@ -427,7 +430,7 @@ func ConvertFromGRPCCluster(k8s *spec.K8SclusterV2) ([]byte, error) {
 }
 
 func ConvertToGRPCClusterState(cluster *ClusterState) (*spec.ClusterStateV2, error) {
-	task, err := ConvertToGRPCTaskEvent(cluster.Task)
+	task, err := ConvertToGRPCTaskEvent(cluster.InFlight)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert db events back to grpc representation: %w", err)
 	}
@@ -474,8 +477,8 @@ func ConvertFromGRPCClusterState(cluster *spec.ClusterStateV2) (*ClusterState, e
 			K8s:           currentK8s,
 			LoadBalancers: currentLbs,
 		},
-		Task:  task,
-		State: ConvertFromGRPCWorkflow(cluster.State),
+		InFlight: task,
+		State:    ConvertFromGRPCWorkflow(cluster.State),
 	}
 
 	return &out, nil

@@ -48,9 +48,11 @@ func InstallNodeRequirements(
 
 	if err := installLonghornRequirements(&ni, processLimit); err != nil {
 		tracker.Diagnostics.Push(err.Error())
-		// Installing node requirements does not change the cluster state in any way.
-		// fallthrough
+		tracker.Result.KeepAsIs()
+		return
 	}
+
+	// Installing node requirements does not change the cluster state in any way.
 	tracker.Result.KeepAsIs()
 }
 

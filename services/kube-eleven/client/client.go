@@ -8,6 +8,8 @@ import (
 	"github.com/berops/claudie/proto/pb"
 )
 
+// TODO: remove.
+
 // BuildCluster uses KubeEleven service client to deploy our cluster
 func BuildCluster(c pb.KubeElevenServiceClient, req *pb.BuildClusterRequest) (*pb.BuildClusterResponse, error) {
 	res, err := c.BuildCluster(context.Background(), req)

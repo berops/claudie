@@ -18,17 +18,14 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"golang.org/x/sync/semaphore"
+
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
 func (s *Service) Handler(msg jetstream.Msg) {
 	handler := func() {
-		stores := Stores{
-			s3:     s.stateStorage,
-			dynamo: s.dynamoDB,
-		}
-		handlerInner(AckWait, s.spawnProcessLimit, s.done, s.consumer.natsclient.JetStream(), msg, stores)
+		handlerInner(AckWait, s.spawnProcessLimit, s.done, s.consumer.natsclient.JetStream(), msg)
 	}
 	s.consumer.inFlight.Go(handler)
 }
@@ -43,11 +40,10 @@ func handlerInner(
 	done chan struct{},
 	js jetstream.JetStream,
 	msg jetstream.Msg,
-	stores Stores,
 ) {
 	var (
 		stageID       = msg.Headers().Get(nats.MsgIdHdr)
-		suffix        = fmt.Sprintf("-%v", natsutils.TerraformerRequests)
+		suffix        = fmt.Sprintf("-%v", natsutils.KubeElevenRequests)
 		parsedStageID = strings.Split(stageID, suffix)
 		discard       = false
 	)
@@ -106,15 +102,15 @@ func handlerInner(
 		return
 	}
 
-	var terraformWork Work
+	var kubeelevenWork Work
 	{
-		terraformWork.InputManifestName = inputManifestName
+		kubeelevenWork.InputManifestName = inputManifestName
 
-		terraformWork.Task = work.Task
+		kubeelevenWork.Task = work.Task
 		work.Task = nil
 
 		for _, pass := range work.Passes {
-			var stage spec.StageTerraformer_SubPass
+			var stage spec.StageKubeEleven_SubPass
 			if err := anypb.UnmarshalTo(pass, &stage, proto.UnmarshalOptions{}); err != nil {
 				logger.Err(err).Msg("Failed to unmarshal received stage for work")
 				reply := natsutils.ReplyMsg{
@@ -128,7 +124,7 @@ func handlerInner(
 				natsutils.TryReplyErrorFTL(logger, err, reply, js, msg)
 				return
 			}
-			terraformWork.Passes = append(terraformWork.Passes, &stage)
+			kubeelevenWork.Passes = append(kubeelevenWork.Passes, &stage)
 		}
 
 		work.Passes = nil
@@ -166,7 +162,7 @@ func handlerInner(
 		}
 	}()
 
-	result := ProcessTask(ctx, stores, terraformWork)
+	result := ProcessTask(ctx, kubeelevenWork)
 
 	close(processingDone)
 	<-ctx.Done()

@@ -153,6 +153,10 @@ func New(ctx context.Context, opts ...grpc.ServerOption) (*Service, error) {
 
 	pb.RegisterManagerV2ServiceServer(s.server.server, s)
 
+	go s.watchPending()
+	go s.watchScheduled()
+	go s.watchDoneOrError()
+
 	return s, nil
 }
 
@@ -201,4 +205,42 @@ func (s *Service) PerformHealthCheckAndUpdateStatus() {
 		return
 	}
 	s.server.healthServer.SetServingStatus(HealthCheckName, grpc_health_v1.HealthCheckResponse_SERVING)
+}
+
+// TODO: remove the worker package used in managerv1.
+
+func (s *Service) watchPending() {
+	for {
+		select {
+		case <-s.done:
+			log.Info().Msg("Exited worker loop running WatchForPendingDocuments")
+			return
+		case <-time.After(Tick):
+			s.WatchForPendingDocuments(context.Background())
+		}
+	}
+}
+
+func (s *Service) watchScheduled() {
+	for {
+		select {
+		case <-s.done:
+			log.Info().Msgf("Exited worker loop running WatchForScheduledDocuments")
+			return
+		case <-time.After(Tick):
+			s.WatchForScheduledDocuments(context.Background())
+		}
+	}
+}
+
+func (s *Service) watchDoneOrError() {
+	for {
+		select {
+		case <-s.done:
+			log.Info().Msgf("Exited worker loop running WatchForDoneOrErrorDocuments")
+			return
+		case <-time.After(Tick):
+			s.WatchForDoneOrErrorDocuments(context.Background())
+		}
+	}
 }

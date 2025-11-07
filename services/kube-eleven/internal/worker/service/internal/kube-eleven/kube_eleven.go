@@ -11,16 +11,15 @@ import (
 	"github.com/berops/claudie/internal/sanitise"
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/berops/claudie/services/kube-eleven/server/domain/utils/kubeone"
+	"github.com/berops/claudie/services/kube-eleven/internal/worker/service/internal/kubeone"
 	"github.com/berops/claudie/services/kube-eleven/templates"
 	"github.com/rs/zerolog/log"
-
 	"golang.org/x/sync/semaphore"
 )
 
 const (
 	generatedKubeoneManifestName = "kubeone.yaml"
-	baseDirectory                = "services/kube-eleven/server"
+	baseDirectory                = "services/kube-eleven"
 	outputDirectory              = "clusters"
 	staticRegion                 = "on-premise"
 	staticZone                   = "datacenter"
@@ -33,7 +32,7 @@ type KubeEleven struct {
 	outputDirectory string
 
 	// Kubernetes cluster that will be set up.
-	K8sCluster *spec.K8Scluster
+	K8sCluster *spec.K8SclusterV2
 
 	// LoadBalancerEndpoint specifies the dns hostname
 	// that should be used as the endpoint for the K8sCluster.

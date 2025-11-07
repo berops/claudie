@@ -98,7 +98,7 @@ func (c *Client) JetStreamWorkQueue(ctx context.Context, name string, subjects .
 		Subjects: subjects,
 		// Retention type WorkQueuePolicy so that the messages are retained until acknowledged.
 		Retention:            jetstream.WorkQueuePolicy,
-		MaxMsgs:              512,                  // have up to 512 messages across all subjects.
+		MaxMsgs:              1024,                 // have up to 1024 messages across all subjects.
 		Discard:              jetstream.DiscardNew, // when full discard new messages while keeping the old.
 		DiscardNewPerSubject: true,                 // Discard also new messages per subject when the queue is full already.
 		MaxMsgsPerSubject:    256,                  // Limit the number of messages to 256 per each subject.

@@ -2,6 +2,7 @@ package natsutils
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/berops/claudie/proto/pb/spec"
@@ -22,14 +23,12 @@ type ReplyMsg struct {
 
 	// TaskID is the ID from the picked up [nats.Msg], that was received
 	// via the [nats.MsgIdHdr]. This is the actuall ID of the task that was
-	// scheduled and this information is given back to the reply channel in
-	// the header [WorkID].
+	// scheduled by the manager and this information is given back to the reply
+	// channel in the header [WorkID]. This ID is also used to construct the ID
+	// of the reply message, as each deplication tracking of messages is stream-wide
+	// each stage needs to have its own ID, thus a simply concatenation of the
+	// fmt.Sprintf("%v-%v", TaskID, Subject) is used.
 	TaskID string
-
-	// ID of the message that will be set as [nats.MsgIdHdr]. This must be
-	// unique, based on use-case, as on re-delivery it might be flaged as a
-	// duplicate based on the active [jetstream.JetStream] settings.
-	ID string
 
 	// To which subject should the reply be send to.
 	Subject string
@@ -54,8 +53,13 @@ func ReplyTo(
 		return err
 	}
 
+	// Duplicate messages are tracked jetstream-wide thus each stage
+	// needs its own ID for it to not be considered as a duplicate if
+	// send to another stage.
+	replyMsgID := fmt.Sprintf("%v-%v", result.TaskID, result.Subject)
+
 	headers := nats.Header{}
-	headers.Set(nats.MsgIdHdr, result.ID)
+	headers.Set(nats.MsgIdHdr, replyMsgID)
 	headers.Set(WorkID, result.TaskID)
 	headers.Set(InputManifestName, result.InputManifest)
 	headers.Set(ClusterName, result.Cluster)
@@ -97,7 +101,7 @@ func TryReplyErrorFTL(
 	}
 
 	logger = logger.With().
-		Str("reply-msg-id", reply.ID).
+		Str("reply-msg-id", msg.Headers().Get(nats.MsgIdHdr)).
 		Str(ReplyToHeader, reply.Subject).Logger()
 
 	// Send a reply and wait for an ack within the next 10 seconds, which should be genereous enough.

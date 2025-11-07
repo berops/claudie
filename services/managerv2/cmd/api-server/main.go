@@ -12,7 +12,6 @@ import (
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/metrics"
-	"github.com/berops/claudie/internal/worker"
 	"github.com/berops/claudie/services/managerv2/internal/service"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
@@ -60,39 +59,6 @@ func run() error {
 	})
 
 	errGroup.Go(func() error { return manager.Serve() })
-
-	errGroup.Go(func() error {
-		worker.NewWorker(
-			errGroupContext,
-			service.Tick,
-			func() error { return manager.WatchForPendingDocuments(errGroupContext) },
-			worker.ErrorLogger,
-		).Run()
-		log.Info().Msg("Exited worker loop running WatchForPendingDocuments")
-		return nil
-	})
-
-	errGroup.Go(func() error {
-		worker.NewWorker(
-			errGroupContext,
-			service.Tick,
-			func() error { return manager.WatchForScheduledDocuments(errGroupContext) },
-			worker.ErrorLogger,
-		).Run()
-		log.Info().Msgf("Exited worker loop running WatchForScheduledDocuments")
-		return nil
-	})
-
-	errGroup.Go(func() error {
-		worker.NewWorker(
-			errGroupContext,
-			service.Tick,
-			func() error { return manager.WatchForDoneOrErrorDocuments(errGroupContext) },
-			worker.ErrorLogger,
-		).Run()
-		log.Info().Msgf("Exited worker loop running WatchForDoneOrErrorDocuments")
-		return nil
-	})
 
 	errGroup.Go(func() error {
 		ctx, stop := signal.NotifyContext(errGroupContext, syscall.SIGTERM)

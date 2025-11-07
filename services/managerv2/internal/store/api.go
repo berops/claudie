@@ -76,9 +76,9 @@ type Manifest struct {
 }
 
 type ClusterState struct {
-	Current Clusters   `bson:"current"`
-	Task    *TaskEvent `bson:"task"`
-	State   Workflow   `bson:"state"`
+	Current  Clusters   `bson:"current"`
+	InFlight *TaskEvent `bson:"inFlight"`
+	State    Workflow   `bson:"state"`
 }
 
 type Clusters struct {

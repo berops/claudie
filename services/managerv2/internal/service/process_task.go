@@ -54,13 +54,13 @@ func ProcessTask(ctx context.Context, stores Stores, work Work) (acknowledge boo
 		return
 	}
 
-	if cluster.Task == nil || (cluster.Task.Id != work.TaskID) {
+	if cluster.InFlight == nil || (cluster.InFlight.Id != work.TaskID) {
 		logger.Warn().Msg("Recevied task for cluster does not match, ignoring.")
 		acknowledge = true
 		return
 	}
 
-	stage := cluster.Task.Pipeline[cluster.Task.CurrentStage]
+	stage := cluster.InFlight.Pipeline[cluster.InFlight.CurrentStage]
 	if stage.Kind != work.Stage {
 		logger.
 			Warn().
@@ -125,7 +125,7 @@ func processTaskWithError(
 
 	var (
 		cluster = im.Clusters[work.Cluster]
-		stage   = cluster.Task.Pipeline[cluster.Task.CurrentStage]
+		stage   = cluster.InFlight.Pipeline[cluster.InFlight.CurrentStage]
 
 		isErrorPartial = work.Result.Error.Kind == spec.TaskResult_Error_PARTIAL
 		isStageWarn    = stage.Description.ErrorLevel == spec.ErrorLevel_ERROR_WARN.String()
@@ -171,15 +171,15 @@ func processTaskWithError(
 }
 
 func advanceToNextStage(logger zerolog.Logger, state *store.ClusterState) error {
-	state.Task.CurrentStage += 1
+	state.InFlight.CurrentStage += 1
 
-	if int(state.Task.CurrentStage) < len(state.Task.Pipeline) {
+	if int(state.InFlight.CurrentStage) < len(state.InFlight.Pipeline) {
 		logger.
 			Info().
-			Msgf("Advancing task to the next stage %s", state.Task.Pipeline[state.Task.CurrentStage].Kind)
+			Msgf("Advancing task to the next stage %s", state.InFlight.Pipeline[state.InFlight.CurrentStage].Kind)
 
 		state.State.Status = spec.WorkflowV2_WAIT_FOR_PICKUP.String()
-		state.State.Description = state.Task.Pipeline[state.Task.CurrentStage].Description.About
+		state.State.Description = state.InFlight.Pipeline[state.InFlight.CurrentStage].Description.About
 		return nil
 	}
 
@@ -188,7 +188,7 @@ func advanceToNextStage(logger zerolog.Logger, state *store.ClusterState) error 
 		return err
 	}
 
-	state.Task = nil
+	state.InFlight = nil
 	state.State.Status = spec.WorkflowV2_DONE.String()
 	state.State.Description = ""
 
@@ -271,7 +271,7 @@ func propagateResult(
 	clusterName string,
 	result *spec.TaskResult,
 ) error {
-	inFlight, err := store.ConvertToGRPCTask(cluster.Task.Task)
+	inFlight, err := store.ConvertToGRPCTask(cluster.InFlight.Task)
 	if err != nil {
 		logger.Err(err).Msg("Failed to unmarshal database representation")
 		return err
@@ -300,7 +300,7 @@ func propagateResult(
 		logger.Warn().Msgf("received message with unknown result type %T, ignoring", result)
 	}
 
-	cluster.Task.Task, err = store.ConvertFromGRPCTask(inFlight)
+	cluster.InFlight.Task, err = store.ConvertFromGRPCTask(inFlight)
 	if err != nil {
 		logger.Err(err).Msg("Failed to marshal grpc representation to database")
 		return err

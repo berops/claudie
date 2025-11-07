@@ -2,7 +2,10 @@ package service
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"math/rand/v2"
+	"strings"
 	"time"
 
 	"github.com/berops/claudie/internal/loggerutils"
@@ -39,8 +42,23 @@ func handlerInner(
 	msg jetstream.Msg,
 ) {
 	var (
-		replyMsgID        = uuid.New().String()
-		taskID            = msg.Headers().Get(nats.MsgIdHdr)
+		stageID       = msg.Headers().Get(nats.MsgIdHdr)
+		suffix        = fmt.Sprintf("-%v", natsutils.AnsiblerRequests)
+		parsedStageID = strings.Split(stageID, suffix)
+		discard       = false
+	)
+
+	if len(parsedStageID) < 1 || parsedStageID[0] == "" {
+		discard = true
+		parsedStageID = []string{"unknown"}
+	}
+
+	if _, err := uuid.Parse(parsedStageID[0]); err != nil {
+		discard = true
+	}
+
+	var (
+		eventID           = parsedStageID[0]
 		replyChannel      = msg.Headers().Get(natsutils.ReplyToHeader)
 		inputManifestName = msg.Headers().Get(natsutils.InputManifestName)
 		clusterName       = msg.Headers().Get(natsutils.ClusterName)
@@ -48,9 +66,22 @@ func handlerInner(
 		logger = log.With().
 			Str(natsutils.ClusterName, clusterName).
 			Str(natsutils.InputManifestName, inputManifestName).
-			Str(nats.MsgIdHdr, taskID).
+			Str(nats.MsgIdHdr, eventID).
 			Logger()
 	)
+
+	if discard {
+		reply := natsutils.ReplyMsg{
+			InputManifest: inputManifestName,
+			Cluster:       clusterName,
+			TaskID:        eventID,
+			Subject:       replyChannel,
+		}
+		// Try to send a noop as we failed to unmarshal the received message
+		// if that fails we will get the same message re-delivered.
+		natsutils.TryReplyErrorFTL(logger, errors.New("nats message with unknown/unsupported/missing headers received"), reply, js, msg)
+		return
+	}
 
 	if err := msg.InProgress(); err != nil {
 		logger.Warn().Msg("Failed perform first Progress refresh")
@@ -62,8 +93,7 @@ func handlerInner(
 		reply := natsutils.ReplyMsg{
 			InputManifest: inputManifestName,
 			Cluster:       clusterName,
-			TaskID:        taskID,
-			ID:            replyMsgID,
+			TaskID:        eventID,
 			Subject:       replyChannel,
 		}
 		// Try to send a noop as we failed to unmarshal the received message
@@ -86,8 +116,7 @@ func handlerInner(
 				reply := natsutils.ReplyMsg{
 					InputManifest: inputManifestName,
 					Cluster:       clusterName,
-					TaskID:        taskID,
-					ID:            replyMsgID,
+					TaskID:        eventID,
 					Subject:       replyChannel,
 				}
 				// Try to send a noop as we failed to unmarshal the received message
@@ -144,8 +173,7 @@ func handlerInner(
 		reply = natsutils.ReplyMsg{
 			InputManifest: inputManifestName,
 			Cluster:       clusterName,
-			TaskID:        taskID,
-			ID:            replyMsgID,
+			TaskID:        eventID,
 			Subject:       replyChannel,
 			Result:        result,
 		}
