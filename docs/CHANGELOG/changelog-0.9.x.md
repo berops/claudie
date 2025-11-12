@@ -368,3 +368,8 @@ kubernetes:
         name: ovh-secret
         namespace: e2e-secrets
 ```
+
+## v0.9.14
+
+## Bug fixes
+- Fixes issues with incompatible docker api in the ansibler service that resulted in the error from [#1885](https://github.com/berops/claudie/issues/1885)
