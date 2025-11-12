@@ -26,13 +26,13 @@ WORKDIR /go/services/kube-eleven/server
 #Compile the golang code, CGO_ENABLE=0 removes cross compile dependencies
 RUN CGO_ENABLED=0 go build
 
-FROM docker.io/library/alpine:3.20
+FROM docker.io/library/alpine:3.22
 #Add repository label
-LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
+LABEL org.opencontainers.image.source="https://github.com/berops/claudie"
 #Add image name as a label
-LABEL org.opencontainers.image.base.name "docker.io/library/alpine"
+LABEL org.opencontainers.image.base.name="docker.io/library/alpine"
 #Add description to the image
-LABEL org.opencontainers.image.description "Image for Kube-eleven from Claudie"
+LABEL org.opencontainers.image.description="Image for Kube-eleven from Claudie"
 
 RUN apk update
 RUN apk add -q bash

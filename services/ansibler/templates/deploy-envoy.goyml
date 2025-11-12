@@ -166,7 +166,7 @@
         docker compose up --detach --no-color --quiet-pull --remove-orphans
       register: compose_out
       ignore_errors: false
-    
+
     - name: Show compose results
       ansible.builtin.debug:
-	var: compose_out
+        var: compose_out
