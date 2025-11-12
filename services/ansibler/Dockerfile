@@ -32,7 +32,9 @@ RUN apk add --no-cache \
     libgcc \
     yaml \
     && ln -sf /usr/bin/python3 /usr/bin/python \
-    && pip3 install --no-cache-dir --break-system-packages ansible==12.2.0
+    && python -m venv /ansibler-env \
+    && . /ansibler-env/bin/activate \
+    && pip3 install --no-cache-dir ansible==12.2.0
 
 FROM alpine:3.22
 
