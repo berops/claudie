@@ -161,13 +161,12 @@
 {{- end }}
 
     - name: run docker compose
-      community.docker.docker_compose_v2:
-        project_src: /var/lib/envoy
-        state: present
-        # removes unused containers, which stay orphaned after the removal of a role in the loadbalancer.
-        remove_orphans: true
+      ansible.builtin.shell: |
+        cd /var/lib/envoy
+        docker compose up --detach --no-color --quiet-pull --remove-orphans
       register: compose_out
-
+      ignore_errors: false
+    
     - name: Show compose results
       ansible.builtin.debug:
-        var: compose_out
+	var: compose_out

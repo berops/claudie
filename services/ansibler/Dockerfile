@@ -32,7 +32,7 @@ RUN apk add --no-cache \
     libgcc \
     yaml \
     && ln -s /usr/bin/python3 /usr/bin/python \
-    && pip3 install --no-cache-dir ansible==10.1.0
+    && pip3 install --no-cache-dir ansible==12.2.0
 
 FROM alpine:3.16
 #Add repository label
