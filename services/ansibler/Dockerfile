@@ -39,7 +39,7 @@ FROM alpine:3.22
 #Add repository label
 LABEL org.opencontainers.image.source="https://github.com/berops/claudie"
 #Add image name as a label
-LABEL org.opencontainers.image.base.name="alpine:3.16"
+LABEL org.opencontainers.image.base.name="alpine:3.22"
 #Add description to the image
 LABEL org.opencontainers.image.description="Image for Ansibler from Claudie"
 
