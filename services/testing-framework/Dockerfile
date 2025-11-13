@@ -23,13 +23,13 @@ COPY . .
 WORKDIR /go/services/testing-framework
 RUN CGO_ENABLED=0 go test -c -run TestClaudie
 
-FROM docker.io/library/alpine:3.20
+FROM docker.io/library/alpine:3.22
 #Add repository label
-LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
+LABEL org.opencontainers.image.source="https://github.com/berops/claudie"
 #Add image name as a label
-LABEL org.opencontainers.image.base.name "docker.io/library/alpine"
+LABEL org.opencontainers.image.base.name="docker.io/library/alpine"
 #Add description to the image
-LABEL org.opencontainers.image.description "Image for Testing-framework from Claudie"
+LABEL org.opencontainers.image.description="Image for Testing-framework from Claudie"
 
 COPY --from=build /go/kubectl /usr/local/bin/kubectl
 COPY --from=build /go/services/testing-framework/testing-framework.test /go/services/testing-framework/testing-framework.test
