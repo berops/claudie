@@ -77,11 +77,13 @@ func createDesiredState(pending *spec.ConfigV2, result *map[string]*spec.Cluster
 	backwardsCompatibility(pending) // uses only current state, so we can pass [pending].
 
 	for cluster, desired := range desiredState {
-		log.Debug().Str("cluster", cluster).Msgf("reusing existing state")
 		current := pending.Clusters[cluster].GetCurrent()
-		if err := transferExistingState(current, desired); err != nil {
-			return fmt.Errorf("failed to reuse current state for desired state for cluster: %q, config: %q: %w", cluster, m.Name, err)
+		if current.GetK8S() == nil {
+			// if there is no K8S cluster there are no loadbalancers.
+			continue
 		}
+		log.Debug().Str("cluster", cluster).Msgf("reusing existing state")
+		transferPreviouslyAcquiredState(current, desired)
 	}
 
 	// 3. generate the CIDR for individual nodepools at this step, as
@@ -463,6 +465,8 @@ func calculateCIDR(baseCIDR, key string, existing map[string][]string, nodepools
 // getCIDR function returns CIDR in IPv4 format, with position replaced by value
 // The function does not check if it is a valid CIDR/can be used in subnet spec
 func getCIDR(baseCIDR string, position int, existing []string) (string, error) {
+	// TODO: don't return error here.
+	// the baseCIDR cannot fail as its a constant.
 	_, ipNet, err := net.ParseCIDR(baseCIDR)
 	if err != nil {
 		return "", fmt.Errorf("cannot parse a CIDR with base %s, position %d", baseCIDR, position)

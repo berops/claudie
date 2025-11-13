@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -19,7 +20,7 @@ import (
 )
 
 // Tick represents the interval at which each manifest state is checked.
-const Tick = 3 * time.Second
+const Tick = 1 * time.Second
 
 func (s *Service) WatchForScheduledDocuments(ctx context.Context) error {
 	cfgs, err := s.store.ListConfigs(ctx, &store.ListFilter{ManifestState: []string{manifest.Scheduled.String()}})
@@ -189,7 +190,6 @@ func (s *Service) WatchForPendingDocuments(ctx context.Context) error {
 	for _, cfg := range cfgs {
 		name := cfg.Name
 		logger := loggerutils.WithProjectName(name)
-		logger.Info().Msgf("Processing Pending Config")
 
 		pending, err := store.ConvertToGRPC(cfg)
 		if err != nil {
@@ -203,25 +203,18 @@ func (s *Service) WatchForPendingDocuments(ctx context.Context) error {
 			continue
 		}
 
-		// TODO: I dont think we need to transfer current state
-		// to the desired state here, only when we're about
-		// to schedule the task, otherwise we should be able
-		// to do the diff via just the namings.
-		// This is to be done in the reconciliation loop.
-
-		result, err := scheduleTasks(pending, desiredState)
-		if err != nil {
-			logger.Err(err).Msgf("Failed to create tasks, skipping.")
-			continue
-		}
-
 		ok, err := manifest.ValidStateTransitionString(pending.Manifest.State.String(), manifest.Scheduled)
 		if err != nil || !ok {
 			logger.Err(err).Msgf("Cannot transtition from manifest state %q to %q, skipping", pending.Manifest.State, manifest.Scheduled)
 			continue
 		}
 
+		result := reconciliate(pending, desiredState)
+
 		switch result {
+		case Noop:
+			logger.Debug().Msg("No task to be worked on, skip updating DB representation")
+			continue
 		case NotReady:
 			logger.Info().Msgf("manifest is not ready to be scheduled, retrying again later")
 		case Reschedule:
@@ -259,7 +252,105 @@ func (s *Service) WatchForPendingDocuments(ctx context.Context) error {
 	return nil
 }
 
-func (g *Service) WatchForDoneOrErrorDocuments(ctx context.Context) error {
+func (s *Service) WatchForDoneOrErrorDocuments(ctx context.Context) error {
+	cfgs, err := s.store.ListConfigs(ctx, &store.ListFilter{
+		ManifestState: []string{
+			manifest.Done.String(),
+			manifest.Error.String(),
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	for _, idle := range cfgs {
+		logger := loggerutils.WithProjectName(idle.Name)
+
+		if !bytes.Equal(idle.Manifest.LastAppliedChecksum, idle.Manifest.Checksum) {
+			logger.Info().Msgf("Moving to %q as changes have been made to the manifest since the last build", manifest.Pending.String())
+
+			ok, err := manifest.ValidStateTransitionString(idle.Manifest.State, manifest.Pending)
+			if err != nil || !ok {
+				logger.Err(err).Msgf("Cannot transtition from manifest state %q to %q, skipping", idle.Manifest.State, manifest.Pending)
+				continue
+			}
+
+			idle.Manifest.State = manifest.Pending.String()
+
+			if err := s.store.UpdateConfig(ctx, idle); err != nil {
+				if errors.Is(err, store.ErrNotFoundOrDirty) {
+					logger.Warn().Msgf("Idle Config couldn't be updated due to a Dirty Write, another retry will start shortly.")
+					continue
+				}
+				logger.Err(err).Msgf("Failed to update idle config, skipping.")
+				continue
+			}
+
+			logger.Info().Msgf("Config has been successfully processed and moved to the %q state", manifest.Pending.String())
+			continue
+		}
+
+		if idle.Manifest.State == manifest.Done.String() {
+			if idle.Manifest.Checksum == nil && idle.Manifest.LastAppliedChecksum == nil {
+				if err := s.store.DeleteConfig(ctx, idle.Name, idle.Version); err != nil {
+					if errors.Is(err, store.ErrNotFoundOrDirty) {
+						logger.Warn().Msgf("Idle Config couldn't be deleted due to a Dirty Write, another retry will start shortly.")
+						continue
+					}
+					logger.Err(err).Msgf("Failed to delete idle config, skipping.")
+				}
+				continue
+			}
+
+			clustersDeleted := false
+			for cluster, state := range idle.Clusters {
+				currentEmpty := len(state.Current.K8s) == 0 && len(state.Current.LoadBalancers) == 0
+				inFlightEmpty := state.InFlight == nil
+
+				if currentEmpty && inFlightEmpty {
+					logger.Debug().Msgf("Deleting cluster %q from database as infrastructure was destroyed", cluster)
+					clustersDeleted = true
+					delete(idle.Clusters, cluster)
+				}
+			}
+
+			if clustersDeleted {
+				if err := s.store.UpdateConfig(ctx, idle); err != nil {
+					if errors.Is(err, store.ErrNotFoundOrDirty) {
+						logger.Warn().Msgf("Idle Config couldn't be updated due to a Dirty Write, another retry will start shortly.")
+						continue
+					}
+					logger.Err(err).Msgf("Failed to update idle config, skipping.")
+				}
+				continue
+			}
+		}
+
+		cfg, err := store.ConvertToGRPC(idle)
+		if err != nil {
+			return fmt.Errorf("failed to convert database representation to grpc: %w", err)
+		}
+
+		updated, err := templatesUpdated(cfg)
+		if err != nil {
+			return fmt.Errorf("failed to check if templates for nodepools were updated: %w", err)
+		}
+
+		if updated {
+			logger.Debug().Msgf("rescheduling idle config for rolling updates")
+			// trigger reschedule.
+			idle.Manifest.LastAppliedChecksum = append([]byte(nil), idle.Manifest.Checksum[1:]...)
+			if err := s.store.UpdateConfig(ctx, idle); err != nil {
+				if errors.Is(err, store.ErrNotFoundOrDirty) {
+					logger.Warn().Msgf("Idle config couldn't be rescheduled for rolling update due to a Dirty Write, another retry will start shortly.")
+					continue
+				}
+				logger.Err(err).Msgf("Failed to reschedule Idle config for rolling update, skipping.")
+			}
+			continue
+		}
+	}
+
 	return nil
 }
 

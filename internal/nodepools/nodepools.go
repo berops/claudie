@@ -10,6 +10,7 @@ import (
 	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/proto/pb/spec"
+	"google.golang.org/protobuf/proto"
 )
 
 type RegionNetwork struct {
@@ -26,9 +27,15 @@ func DeleteByName(nodepools []*spec.NodePool, name string) []*spec.NodePool {
 	return nodepools
 }
 
-// DeleteNodeByName goes through each nodepool until if find the node with the specified name. If the nodepool
-// reaches 0 nodes the keepNodePools map is checked whether the nodepool should be removed or not.
-func DeleteNodeByName(nodepools []*spec.NodePool, nodeName string, keepNodePools map[string]struct{}) []*spec.NodePool {
+// DeleteNodeByName goes through each nodepool until it finds the node with the specified name.
+// If the nodepool reaches 0 nodes the keepNodePools map is checked whether the nodepool should
+// be removed or not.
+func DeleteNodeByName(
+	nodepools []*spec.NodePool,
+	nodeName string,
+	keepNodePools map[string]struct{},
+	// TODO: do we need to return a slice in here ?
+) []*spec.NodePool {
 	for n, np := range nodepools {
 		j := slices.IndexFunc(np.Nodes, func(n *spec.Node) bool { return n.Name == nodeName })
 		if j < 0 {
@@ -51,6 +58,60 @@ func DeleteNodeByName(nodepools []*spec.NodePool, nodeName string, keepNodePools
 	}
 
 	return nodepools
+}
+
+// Copies the nodes from `src` into `dst` cloning the invidivual
+// nodes, such that they do not keep any pointers or shared
+// memory with the original. The type of the nodepool of the
+// `src` and `dst` must be the same, otherwise no copying is done.
+func CopyNodes(dst, src *spec.NodePool, nodes []string) {
+	noop := src.GetDynamicNodePool() != nil && dst.GetDynamicNodePool() == nil
+	noop = noop || (src.GetStaticNodePool() != nil && dst.GetStaticNodePool() == nil)
+	if noop {
+		return
+	}
+
+	for _, n := range src.Nodes {
+		if !slices.Contains(nodes, n.Name) {
+			continue
+		}
+
+		n := proto.Clone(n).(*spec.Node)
+		dst.Nodes = append(dst.Nodes, n)
+
+		switch src := src.GetType().(type) {
+		case *spec.NodePool_DynamicNodePool:
+			dst.GetDynamicNodePool().Count += 1
+		case *spec.NodePool_StaticNodePool:
+			dst.GetStaticNodePool().NodeKeys[n.Public] = src.StaticNodePool.NodeKeys[n.Public]
+		}
+	}
+}
+
+// Deletes any matching `nodes` in the passed in `nodepool`
+// If the passed in `nodes` contain all of the nodes of the
+// `nodepool` then the nodepool will be modified to contain
+// no nodes at all.
+func DeleteNodes(nodepool *spec.NodePool, nodes []string) {
+	var deleted []*spec.Node
+	nodepool.Nodes = slices.DeleteFunc(nodepool.Nodes, func(n *spec.Node) bool {
+		if slices.Contains(nodes, n.Name) {
+			deleted = append(deleted, n)
+			return true
+		}
+		return false
+	})
+
+	switch np := nodepool.GetType().(type) {
+	case *spec.NodePool_DynamicNodePool:
+		np.DynamicNodePool.Count -= int32(len(deleted))
+	case *spec.NodePool_StaticNodePool:
+		for _, deleted := range deleted {
+			delete(np.StaticNodePool.NodeKeys, deleted.Public)
+		}
+	}
+
+	clear(deleted)
 }
 
 func FindNode(nodepools []*spec.NodePool, nodeName string) (static bool, node *spec.Node) {

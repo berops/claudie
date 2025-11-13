@@ -57,18 +57,6 @@ func backwardsCompatibility(c *spec.ConfigV2) {
 	}
 }
 
-// transferExistingState transfers existing data from current state to desired.
-func transferExistingState(current, desired *spec.ClustersV2) error {
-	if err := transferExistingK8sState(current.GetK8S(), desired.GetK8S()); err != nil {
-		return fmt.Errorf("error while updating kuberentes cluster: %w", err)
-	}
-
-	if err := transferExistingLBState(current.GetLoadBalancers(), desired.GetLoadBalancers()); err != nil {
-		return fmt.Errorf("error while updating loadbalancer cluster: %w", err)
-	}
-	return nil
-}
-
 // deduplicateNodepoolNames renames multiple references of the same nodepool in k8s,lb clusters to treat
 // them as individual nodepools.
 func deduplicateNodepoolNames(from *manifest.Manifest, current, desired *spec.ClustersV2) {
@@ -188,77 +176,69 @@ func findNodePoolReferences(name string, nodePools []*spec.NodePool) []*spec.Nod
 	return references
 }
 
-// transferExistingK8sState updates the desired state of the kubernetes clusters based on the current state
-func transferExistingK8sState(current, desired *spec.K8SclusterV2) error {
-	if desired == nil || current == nil {
-		return nil
-	}
-
-	if err := transferNodePools(desired.ClusterInfo, current.ClusterInfo); err != nil {
-		return err
-	}
-
-	if current.Kubeconfig != "" {
-		desired.Kubeconfig = current.Kubeconfig
-	}
-
-	return nil
+// transferPreviouslyAcquiredState transfer state that was not generated as part of [createDesiredState]
+// and parts that were generated but must stay unchanged even for the newly generated `desired` state.
+func transferPreviouslyAcquiredState(current, desired *spec.ClustersV2) {
+	transferK8sState(current.K8S, desired.K8S)
+	transferLBState(current.LoadBalancers, desired.LoadBalancers)
 }
 
-// transferDynamicNp updates the desired state of the kubernetes clusters based on the current state
-// transferring only nodepoolData.
-func transferDynamicNp(clusterID string, current, desired *spec.NodePool, updateAutoscaler bool) bool {
-	dnp := desired.GetDynamicNodePool()
-	cnp := current.GetDynamicNodePool()
+// transferK8sState transfers only the kubernetes cluster relevant parts of the `current` into `desired`.
+// The function transfer only the state that should be "Immutable" once assigned.
+func transferK8sState(current, desired *spec.K8SclusterV2) {
+	// TODO: what happens when I change the [spec.K8SclusterV2.Network] ?
+	// I think that should stay immutable as well... or maybe not ?
+	transferClusterInfo(desired.ClusterInfo, current.ClusterInfo)
+	desired.Kubeconfig = current.Kubeconfig
+}
 
-	canUpdate := dnp != nil && cnp != nil
-	if !canUpdate {
-		return false
-	}
+// transferDynamicNodePool transfers state that should be "Immutable" once assigned
+// from the `current` into the `desired` state.
+func transferDynamicNodePool(current, desired *spec.NodePool) {
+	cnp := current.GetDynamicNodePool()
+	dnp := current.GetDynamicNodePool()
 
 	dnp.PublicKey = cnp.PublicKey
 	dnp.PrivateKey = cnp.PrivateKey
 	dnp.Cidr = cnp.Cidr
 
-	if updateAutoscaler && dnp.AutoscalerConfig != nil {
-		switch {
-		case dnp.AutoscalerConfig.Min > cnp.Count:
-			dnp.Count = dnp.AutoscalerConfig.Min
-		case dnp.AutoscalerConfig.Max < cnp.Count:
-			dnp.Count = dnp.AutoscalerConfig.Max
-		default:
-			dnp.Count = cnp.Count
-		}
-	}
-
-	fillDynamicNodes(clusterID, current, desired)
-	return true
+	count := min(cnp.Count, dnp.Count)
+	transferDynamicNodes(current, desired, int(count))
 }
 
-// updateClusterInfo updates the desired state based on the current state
-// clusterInfo.
-func transferNodePools(desired, current *spec.ClusterInfoV2) error {
+// transferClusterInfo transfers state that should be "Immutable" once assigned
+// from the `current` into the `desired` state.
+func transferClusterInfo(desired, current *spec.ClusterInfoV2) {
+	desired.Name = current.Name
 	desired.Hash = current.Hash
-desired:
-	for _, desiredNp := range desired.NodePools {
-		for _, currentNp := range current.NodePools {
-			if desiredNp.Name != currentNp.Name {
+
+	for _, desired := range desired.NodePools {
+		for _, current := range current.NodePools {
+			if current.Name != desired.Name {
 				continue
 			}
 
-			switch {
-			case transferDynamicNp(desired.Id(), currentNp, desiredNp, true):
-			case transferStaticNodes(desired.Id(), currentNp, desiredNp):
-			default:
-				return fmt.Errorf("%q is neither dynamic nor static, unexpected value: %T", desiredNp.Name, desiredNp.Type)
+			switch current.GetType().(type) {
+			case *spec.NodePool_DynamicNodePool:
+				if desired.GetDynamicNodePool() == nil {
+					continue
+				}
+				transferDynamicNodePool(current, desired)
+			case *spec.NodePool_StaticNodePool:
+				if desired.GetStaticNodePool() == nil {
+					continue
+				}
+				transferStaticNodePool(current, desired)
 			}
-
-			continue desired
 		}
 	}
-	return nil
 }
 
+func transferDynamicNodes(current, desired *spec.NodePool, count int) {
+	// TODO: first part of the split.
+}
+
+// TODO: split into two functions.
 func fillDynamicNodes(clusterID string, current, desired *spec.NodePool) {
 	dnp := desired.GetDynamicNodePool()
 
@@ -411,8 +391,9 @@ func transferStaticNodes(clusterID string, current, desired *spec.NodePool) bool
 	return true
 }
 
-// transferExistingLBState updates the desired state of the loadbalancer clusters based on the current state
-func transferExistingLBState(current, desired *spec.LoadBalancersV2) error {
+// transferLBState transfers the relevant parts of the `current` into `desired`.
+// The function transfer only the state that should be "Immutable" once assigned.
+func transferLBState(current, desired *spec.LoadBalancersV2) {
 	transferExistingDns(current, desired)
 
 	currentLbs := current.GetClusters()

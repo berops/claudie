@@ -183,8 +183,9 @@ message TaskEventV2 {
   string id = 1;
   google.protobuf.Timestamp timestamp = 2;
   EventV2 event = 3;
-  TaskV2 task = 4;
-  string description = 5;
+  ClustersV2 state = 4;
+  TaskV2 task = 5;
+  string description = 6;
   RetryV2 onError = 7;
 
   // Pipeline stages of the task through which it has to pass
@@ -237,6 +238,24 @@ message CreateV2{
     repeated LBclusterV2 loadBalancers = 2;
 }
 
+message UpdateV2 {
+    message State {
+        // The state of the kubernetes cluster to update.
+        K8sclusterV2 k8s = 1;
+        // The state of the loadbalancers to update.
+        repeated LBclusterV2 loadBalancers = 2;
+    }
+
+    message JoinLoadBalancer {
+        LBclusterV2 loadBalancer = 1;
+    }
+
+    State state = 1;
+    oneof Delta {
+        JoinLoadBalancer joinLoadBalancer = 2;
+    }
+}
+
 message DeleteV2{
     message Clusters {
         // The current state of the kuberentes cluster to delete.
@@ -271,7 +290,7 @@ message TaskV2 {
 
     oneof Do {
         CreateV2 create     = 2;
-        // Reconcile reconcile = 3;
+        UpdateV2 update     = 3;
         DeleteV2 delete     = 4;
     }
 }

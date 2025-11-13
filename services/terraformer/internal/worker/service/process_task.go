@@ -90,6 +90,9 @@ passes:
 		case spec.StageTerraformer_BUILD_INFRASTRUCTURE:
 			logger.Info().Msg("Bulding infrastructure")
 			build(logger, work.InputManifestName, processlimit, work.Task, tracker)
+		case spec.StageTerraformer_UPDATE_INFRASTRUCTURE:
+			logger.Info().Msg("Updating infrastructure")
+			update(logger, work.InputManifestName, processlimit, work.Task, tracker)
 		case spec.StageTerraformer_DESTROY_INFRASTRUCTURE:
 			logger.Info().Msg("Destroying infrastructure")
 			destroy(logger, stores, work.InputManifestName, processlimit, work.Task, tracker)
@@ -150,7 +153,7 @@ func build(
 	)
 
 	if k8s == nil {
-		logger.Warn().Msg("create task validation failed, required desired state of the kuberentes cluster to be presetn, ignoring")
+		logger.Warn().Msg("create task validation failed, required desired state of the kuberentes cluster to be present, ignoring")
 		tracker.Result.KeepAsIs()
 		return
 	}
@@ -340,4 +343,52 @@ func destroy(
 		TakeKuberentesCluster(k8s != "").
 		TakeLoadBalancers(lbs...).
 		Replace()
+}
+
+func update(
+	logger zerolog.Logger,
+	projectName string,
+	processLimit *semaphore.Weighted,
+	task *spec.TaskV2,
+	tracker Tracker,
+) {
+	action, ok := task.GetDo().(*spec.TaskV2_Update)
+	if !ok {
+		logger.
+			Warn().
+			Msgf("Received task with action %T while wanting to update infrastructure, assuming the task was misscheduled, ignoring", task.GetDo())
+		tracker.Result.KeepAsIs()
+		return
+	}
+
+	state := action.Update.State
+	if state == nil || state.K8S == nil {
+		logger.Warn().Msg("update task validation failed, required state of the kuberentes cluster to be present, ignoring")
+		tracker.Result.KeepAsIs()
+		return
+	}
+
+	switch delta := action.Update.Delta.(type) {
+	case *spec.UpdateV2_JoinLoadBalancer_:
+		lb := loadbalancer.LBcluster{
+			ProjectName:       projectName,
+			Cluster:           delta.JoinLoadBalancer.LoadBalancer,
+			SpawnProcessLimit: processLimit,
+		}
+
+		buildLogger := logger.With().Str("cluster", lb.Cluster.ClusterInfo.Id()).Logger()
+		if err := BuildLoadbalancers(buildLogger, lb); err != nil {
+			// Some part of the loadbalancer infrastructure was not build successfully.
+			// Since we still want to report the partially build infrastructure back to the
+			// caller we fallthrough here.
+			tracker.Diagnostics.Push(err.Error())
+		}
+		panic("TODO")
+	default:
+		logger.
+			Warn().
+			Msgf("Received update task with action %T, assuming the task was misscheduled, ignoring", action.Update.Delta)
+		tracker.Result.KeepAsIs()
+		return
+	}
 }

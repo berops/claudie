@@ -15,7 +15,8 @@ message StageDescription {
 message StageTerraformer {
     enum SubPassKind {
         BUILD_INFRASTRUCTURE = 0;
-        DESTROY_INFRASTRUCTURE = 1;
+        UPDATE_INFRASTRUCTURE = 1;
+        DESTROY_INFRASTRUCTURE = 2;
     }
     message SubPass {
         SubPassKind kind = 1;

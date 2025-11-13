@@ -213,11 +213,17 @@ func ConvertFromGRPCTaskEvent(te *spec.TaskEventV2) (*TaskEvent, error) {
 		return nil, err
 	}
 
+	clusters, err := ConvertFromGRPCClusters(te.State)
+	if err != nil {
+		return nil, err
+	}
+
 	var e TaskEvent
 	{
 		e.Id = te.Id
 		e.Timestamp = te.Timestamp.AsTime().Format(time.RFC3339)
 		e.Type = te.Event.String()
+		e.State = clusters
 		e.Task = task
 		e.Description = te.Description
 		e.OnError = retry
@@ -252,10 +258,16 @@ func ConvertToGRPCTaskEvent(te *TaskEvent) (*spec.TaskEventV2, error) {
 		return nil, err
 	}
 
+	clusters, err := ConvertToGRPCClusters(te.State)
+	if err != nil {
+		return nil, err
+	}
+
 	e := &spec.TaskEventV2{
 		Id:           te.Id,
 		Timestamp:    timestamppb.New(t),
 		Event:        spec.EventV2(spec.EventV2_value[te.Type]),
+		State:        clusters,
 		Task:         task,
 		Description:  te.Description,
 		OnError:      &strategy,
@@ -391,6 +403,25 @@ func ConvertToGRPCClusters(cluster Clusters) (*spec.ClustersV2, error) {
 	return &out, nil
 }
 
+func ConvertFromGRPCClusters(cluster *spec.ClustersV2) (Clusters, error) {
+	k8s, err := ConvertFromGRPCCluster(cluster.GetK8S())
+	if err != nil {
+		return Clusters{}, nil
+	}
+
+	lbs, err := ConvertFromGRPCLoadBalancers(cluster.GetLoadBalancers())
+	if err != nil {
+		return Clusters{}, nil
+	}
+
+	out := Clusters{
+		K8s:           k8s,
+		LoadBalancers: lbs,
+	}
+
+	return out, nil
+}
+
 // ConvertToGRPCCluster converts the database representation to the GRPC representation.
 func ConvertToGRPCCluster(k8s []byte) (*spec.K8SclusterV2, error) {
 	var cluster spec.K8SclusterV2
@@ -457,12 +488,7 @@ func ConvertToGRPCClusterState(cluster *ClusterState) (*spec.ClusterStateV2, err
 }
 
 func ConvertFromGRPCClusterState(cluster *spec.ClusterStateV2) (*ClusterState, error) {
-	currentK8s, err := ConvertFromGRPCCluster(cluster.GetCurrent().GetK8S())
-	if err != nil {
-		return nil, err
-	}
-
-	currentLbs, err := ConvertFromGRPCLoadBalancers(cluster.GetCurrent().GetLoadBalancers())
+	clusters, err := ConvertFromGRPCClusters(cluster.GetCurrent())
 	if err != nil {
 		return nil, err
 	}
@@ -473,10 +499,7 @@ func ConvertFromGRPCClusterState(cluster *spec.ClusterStateV2) (*ClusterState, e
 	}
 
 	out := ClusterState{
-		Current: Clusters{
-			K8s:           currentK8s,
-			LoadBalancers: currentLbs,
-		},
+		Current:  clusters,
 		InFlight: task,
 		State:    ConvertFromGRPCWorkflow(cluster.State),
 	}

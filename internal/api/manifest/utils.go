@@ -302,9 +302,10 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.Nod
 			var autoscalerConf *spec.AutoscalerConf
 			count := nodePool.Count
 			if nodePool.AutoscalerConfig.isDefined() {
-				autoscalerConf = &spec.AutoscalerConf{}
-				autoscalerConf.Min = nodePool.AutoscalerConfig.Min
-				autoscalerConf.Max = nodePool.AutoscalerConfig.Max
+				autoscalerConf = &spec.AutoscalerConf{
+					Min: nodePool.AutoscalerConfig.Min,
+					Max: nodePool.AutoscalerConfig.Max,
+				}
 				count = nodePool.AutoscalerConfig.Min
 			}
 
@@ -346,16 +347,20 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.Nod
 				},
 			})
 		} else if nodePool := ds.FindStaticNodePool(nodePoolName); nodePool != nil {
+			nodes := staticNodes(nodePool, isControl)
+			taints := getTaints(nodePool.Taints)
+			keys := getNodeKeys(nodePool)
+
 			nodePools = append(nodePools, &spec.NodePool{
 				Name:        nodePool.Name,
-				Nodes:       staticNodes(nodePool, isControl),
+				Nodes:       nodes,
 				IsControl:   isControl,
 				Labels:      nodePool.Labels,
 				Annotations: nodePool.Annotations,
-				Taints:      getTaints(nodePool.Taints),
+				Taints:      taints,
 				Type: &spec.NodePool_StaticNodePool{
 					StaticNodePool: &spec.StaticNodePool{
-						NodeKeys: getNodeKeys(nodePool),
+						NodeKeys: keys,
 					},
 				},
 			})
@@ -417,7 +422,7 @@ func staticNodes(np *StaticNodePool, isControl bool) []*spec.Node {
 			// Name only matters on the first run of the static nodepool,
 			// on subsequent runs, if there are previously build nodes
 			// with the same public IP we will transfer that existing name.
-			// see existing_state.go:transferStaticNodes
+			// see existing_state.go:[transferStaticNodePool]
 			Name:     fmt.Sprintf("%s-%02x", np.Name, uint8(i+1)),
 			Public:   node.Endpoint,
 			NodeType: nodeType,

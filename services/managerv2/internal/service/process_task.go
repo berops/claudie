@@ -183,10 +183,7 @@ func advanceToNextStage(logger zerolog.Logger, state *store.ClusterState) error 
 		return nil
 	}
 
-	if err := moveInFlightStateToCurrentState(logger, state); err != nil {
-		logger.Err(err).Msg("Failed to move in flight state as current")
-		return err
-	}
+	moveInFlightStateToCurrentState(state)
 
 	state.InFlight = nil
 	state.State.Status = spec.WorkflowV2_DONE.String()
@@ -196,10 +193,10 @@ func advanceToNextStage(logger zerolog.Logger, state *store.ClusterState) error 
 	return nil
 }
 
-func propagateUpdateResultForCreate(
+func propagateUpdateResult(
 	logger zerolog.Logger,
 	clusterName string,
-	inFlight *spec.CreateV2,
+	inFlight *spec.ClustersV2,
 	result *spec.TaskResult_Update,
 ) {
 	if k8s := result.Update.K8S; k8s != nil {
@@ -224,12 +221,12 @@ func propagateUpdateResultForCreate(
 	toUpdate.Clusters = slices.DeleteFunc(toUpdate.Clusters, func(lb *spec.LBclusterV2) bool { return lb.TargetedK8S != clusterName })
 
 	// update existing ones.
-	for i := range inFlight.LoadBalancers {
-		lb := inFlight.LoadBalancers[i].ClusterInfo.Id()
+	for i := range inFlight.LoadBalancers.Clusters {
+		lb := inFlight.LoadBalancers.Clusters[i].ClusterInfo.Id()
 		for j := range toUpdate.Clusters {
 			update := toUpdate.Clusters[j].ClusterInfo.Id()
 			if lb == update {
-				inFlight.LoadBalancers[i] = toUpdate.Clusters[j]
+				inFlight.LoadBalancers.Clusters[i] = toUpdate.Clusters[j]
 				break
 			}
 		}
@@ -239,30 +236,23 @@ func propagateUpdateResultForCreate(
 	for i := range toUpdate.Clusters {
 		id := toUpdate.Clusters[i].ClusterInfo.Id()
 		filter := func(lb *spec.LBclusterV2) bool { return lb.ClusterInfo.Id() == id }
-		if !slices.ContainsFunc(inFlight.LoadBalancers, filter) {
-			inFlight.LoadBalancers = append(inFlight.LoadBalancers, toUpdate.Clusters[i])
+		if !slices.ContainsFunc(inFlight.LoadBalancers.Clusters, filter) {
+			inFlight.LoadBalancers.Clusters = append(inFlight.LoadBalancers.Clusters, toUpdate.Clusters[i])
 		}
 	}
 }
 
-func propagateClearResult(
-	inFlight *spec.DeleteV2,
-	result *spec.TaskResult_Clear,
-) {
+func propagateClearResult(inFlight *spec.ClustersV2, result *spec.TaskResult_Clear) {
+	if result.Clear.K8S != nil && *result.Clear.K8S {
+		inFlight.K8S = nil
+		inFlight.LoadBalancers.Clusters = nil
+		return
+	}
+
 	lbFilter := func(lb *spec.LBclusterV2) bool {
 		return slices.Contains(result.Clear.LoadBalancersIDs, lb.GetClusterInfo().Id())
 	}
-	switch inFlight := inFlight.GetOp().(type) {
-	case *spec.DeleteV2_Clusters_:
-		if result.Clear.K8S != nil && *result.Clear.K8S {
-			inFlight.Clusters.K8S = nil
-			inFlight.Clusters.LoadBalancers = nil
-			return
-		}
-		inFlight.Clusters.LoadBalancers = slices.DeleteFunc(inFlight.Clusters.LoadBalancers, lbFilter)
-	case *spec.DeleteV2_Loadbalancers:
-		inFlight.Loadbalancers.LoadBalancers = slices.DeleteFunc(inFlight.Loadbalancers.LoadBalancers, lbFilter)
-	}
+	inFlight.LoadBalancers.Clusters = slices.DeleteFunc(inFlight.LoadBalancers.Clusters, lbFilter)
 }
 
 func propagateResult(
@@ -271,7 +261,7 @@ func propagateResult(
 	clusterName string,
 	result *spec.TaskResult,
 ) error {
-	inFlight, err := store.ConvertToGRPCTask(cluster.InFlight.Task)
+	inFlight, err := store.ConvertToGRPCClusters(cluster.InFlight.State)
 	if err != nil {
 		logger.Err(err).Msg("Failed to unmarshal database representation")
 		return err
@@ -280,27 +270,17 @@ func propagateResult(
 	switch result := result.Result.(type) {
 	case *spec.TaskResult_Update:
 		logger.Debug().Msg("Received [Update] as a result for the task")
-		create := inFlight.GetCreate()
-		if create == nil {
-			logger.Warn().Msgf("Received [Update] as a result for scheduled task %T, ignoring", inFlight.GetDo())
-			panic("todo, for update maybe ?")
-		}
-		propagateUpdateResultForCreate(logger, clusterName, create, result)
+		propagateUpdateResult(logger, clusterName, inFlight, result)
 	case *spec.TaskResult_Clear:
 		logger.Debug().Msg("Received [Clear] as a result for the task")
-		delete := inFlight.GetDelete()
-		if delete == nil {
-			logger.Warn().Msgf("Received [Clear] as a result for scheduled task %T, ignoring", inFlight.GetDo())
-			break
-		}
-		propagateClearResult(delete, result)
+		propagateClearResult(inFlight, result)
 	case *spec.TaskResult_None_:
 		logger.Debug().Msg("Received [None] as a result for the task, no work to be done.")
 	default:
 		logger.Warn().Msgf("received message with unknown result type %T, ignoring", result)
 	}
 
-	cluster.InFlight.Task, err = store.ConvertFromGRPCTask(inFlight)
+	cluster.InFlight.State, err = store.ConvertFromGRPCClusters(inFlight)
 	if err != nil {
 		logger.Err(err).Msg("Failed to marshal grpc representation to database")
 		return err
@@ -309,46 +289,11 @@ func propagateResult(
 	return nil
 }
 
-func moveCreateToCurrentState(inFlight *spec.TaskV2_Create, current *spec.ClustersV2) {
-	current.K8S = inFlight.Create.K8S
-	current.LoadBalancers.Clusters = inFlight.Create.LoadBalancers
-}
+func moveInFlightStateToCurrentState(state *store.ClusterState) {
+	inFlight := state.InFlight.State
 
-func moveDeleteToCurrentState(inFlight *spec.TaskV2_Delete, current *spec.ClustersV2) {
-	switch inFlight := inFlight.Delete.GetOp().(type) {
-	case *spec.DeleteV2_Clusters_:
-		current.K8S = inFlight.Clusters.K8S
-		current.LoadBalancers.Clusters = inFlight.Clusters.LoadBalancers
-	case *spec.DeleteV2_Loadbalancers:
-		current.LoadBalancers.Clusters = inFlight.Loadbalancers.LoadBalancers
-	}
-}
+	state.InFlight.State.K8s = nil
+	state.InFlight.State.LoadBalancers = nil
 
-func moveInFlightStateToCurrentState(
-	logger zerolog.Logger,
-	state *store.ClusterState,
-) error {
-	s, err := store.ConvertToGRPCClusterState(state)
-	if err != nil {
-		return err
-	}
-
-	switch inFlight := s.Task.Task.GetDo().(type) {
-	case *spec.TaskV2_Create:
-		logger.Debug().Msg("Moving [Create] into the current state of the cluster")
-		moveCreateToCurrentState(inFlight, s.Current)
-	case *spec.TaskV2_Delete:
-		logger.Debug().Msg("Moving [Delete] into the current state of the cluster")
-		moveDeleteToCurrentState(inFlight, s.Current)
-	default:
-		logger.Warn().Msgf("Received message with unknown result type %T, ignoring", inFlight)
-	}
-
-	k, err := store.ConvertFromGRPCClusterState(s)
-	if err != nil {
-		return err
-	}
-
-	*state = *k
-	return nil
+	state.Current = inFlight
 }
