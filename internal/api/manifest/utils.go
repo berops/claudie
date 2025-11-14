@@ -3,6 +3,7 @@ package manifest
 import (
 	"errors"
 	"fmt"
+	"math"
 	"slices"
 
 	"github.com/berops/claudie/proto/pb/spec"
@@ -329,8 +330,12 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.Nod
 				Labels:      nodePool.Labels,
 				Annotations: nodePool.Annotations,
 				Taints:      getTaints(nodePool.Taints),
-				//Nodes: We can't create dynamic nodes at this point
-				// as the nodepool hashes are not known yet.
+				// The nodes are left empty, as the desired state
+				// in the manifest does not specify each of the nodes
+				// individually, just the count of the nodes that the
+				// nodepools should have. The nodes themselves will
+				// be resolved at a later step in the build pipeline.
+				Nodes: nil,
 				Type: &spec.NodePool_DynamicNodePool{
 					DynamicNodePool: &spec.DynamicNodePool{
 						Region:              nodePool.ProviderSpec.Region,
@@ -352,7 +357,11 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.Nod
 			keys := getNodeKeys(nodePool)
 
 			nodePools = append(nodePools, &spec.NodePool{
-				Name:        nodePool.Name,
+				Name: nodePool.Name,
+				// Contrary to the dynamic nodepools, The nodes
+				// for the static nodepools are explicitly defined
+				// in the manifest itself, thus they already are stored
+				// in this step of the build pipeline.
 				Nodes:       nodes,
 				IsControl:   isControl,
 				Labels:      nodePool.Labels,
@@ -412,23 +421,34 @@ func FetchCommitHash(tmpl *spec.TemplateRepository) error {
 
 // staticNodes returns slice of static nodes with initialised name.
 func staticNodes(np *StaticNodePool, isControl bool) []*spec.Node {
+	if len(np.Nodes) > math.MaxUint8 {
+		panic(fmt.Sprintf("static nodepool %q defined more than 255 nodes, which is the claudie internal maximum", np.Name))
+	}
+
 	nodes := make([]*spec.Node, 0, len(np.Nodes))
 	nodeType := spec.NodeType_worker
 	if isControl {
 		nodeType = spec.NodeType_master
 	}
+
 	for i, node := range np.Nodes {
 		nodes = append(nodes, &spec.Node{
 			// Name only matters on the first run of the static nodepool,
 			// on subsequent runs, if there are previously build nodes
 			// with the same public IP we will transfer that existing name.
 			// see existing_state.go:[transferStaticNodePool]
+			// Further, the name is not used for "determining" if the
+			// node is used in any previous or any other state, for that
+			// the Public endpoint should be used which is an Unique Identifier
+			// of the node. If this changes in the future, relevant code may
+			// need to be adjusted.
 			Name:     fmt.Sprintf("%s-%02x", np.Name, uint8(i+1)),
 			Public:   node.Endpoint,
 			NodeType: nodeType,
 			Username: node.Username,
 		})
 	}
+
 	return nodes
 }
 
@@ -439,6 +459,14 @@ func getNodeKeys(nodepool *StaticNodePool) map[string]string {
 		m[n.Endpoint] = n.Key
 	}
 	return m
+}
+
+func getTaints(taints []k8sV1.Taint) []*spec.Taint {
+	arr := make([]*spec.Taint, 0, len(taints))
+	for _, t := range taints {
+		arr = append(arr, &spec.Taint{Key: t.Key, Value: t.Value, Effect: string(t.Effect)})
+	}
+	return arr
 }
 
 // nodePoolDefined returns true if node pool is defined in manifest, false otherwise.
@@ -455,14 +483,6 @@ func (ds *Manifest) nodePoolDefined(pool string) (defined bool, static bool) {
 	}
 
 	return
-}
-
-func getTaints(taints []k8sV1.Taint) []*spec.Taint {
-	arr := make([]*spec.Taint, 0, len(taints))
-	for _, t := range taints {
-		arr = append(arr, &spec.Taint{Key: t.Key, Value: t.Value, Effect: string(t.Effect)})
-	}
-	return arr
 }
 
 func (ds *Manifest) GetProviderType(provider string) (string, error) {

@@ -1,11 +1,6 @@
 package service
 
 import (
-	"bytes"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"net"
@@ -20,8 +15,6 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"gopkg.in/yaml.v3"
-
-	"golang.org/x/crypto/ssh"
 )
 
 const (
@@ -41,16 +34,10 @@ func createDesiredState(pending *spec.ConfigV2, result *map[string]*spec.Cluster
 		pending.Manifest.State == spec.ManifestV2_Pending
 
 	if markedForDeletion {
-		// The result map will me nil, indicating there is no desired state.
+		// The result map will be empty, indicating there is no desired state.
+		clear(*result)
 		return nil
 	}
-
-	// TODO: this cannot be here.... this should really be part of the reconciliation loop.
-	// Desired state should just be the parsed InputManifest. How to handle the CIDR generation then ?
-	// could be also part of the reconciliation, here only the skeleton would be generated.
-
-	// In the next steps It might be the case either the Current State or Desired state is nil and thus
-	// these cases needs to be handled gracefully.
 
 	// 2. create the desired state from the input manifest.
 	var m manifest.Manifest
@@ -66,53 +53,85 @@ func createDesiredState(pending *spec.ConfigV2, result *map[string]*spec.Cluster
 		return fmt.Errorf("failed to parse lb clusters from manifest: %q: %w", m.Name, err)
 	}
 
-	// 2.1 Also consider to re-use existing data created in previous run if not first-run of the workflow for the manifest.
+	// TODO: double check and validate with tests the slightly changed build of desired state.
+	// TODO: then use the transfering of the state when propagating the Task Result.
+	// 3.
+	// In the next steps It might be the case either the Current State or Desired state is nil
+	// thus these cases needs to be handled gracefully. Parts of the desired state are populated
+	// based on the values in the current state, if any exists.
 	for cluster, desired := range desiredState {
 		// It is guaranteed by validation, that within a single InputManifest
 		// no two clusters (including LB) can share the same name.
 		current := pending.Clusters[cluster].GetCurrent()
-		deduplicateNodepoolNames(&m, current, desired)
-	}
 
-	backwardsCompatibility(pending) // uses only current state, so we can pass [pending].
+		// Generate hashes for multiple references of the same dynamic nodepools,
+		// while also considering hashes previously assigned in the current state.
+		//
+		// This is so that the same reference to a dynamic nodepool is treated as
+		// a unique nodepool with its own state to be maintained. The validation
+		// layers guarantee that a dynamic nodepool can be referenced at most once
+		// within a block, i.e kubernetes:, loadbalancers:, If that invariant is
+		// somehow broken, the function panics.
+		deduplicateDynamicNodepoolNames(&m, current, desired)
 
-	for cluster, desired := range desiredState {
-		current := pending.Clusters[cluster].GetCurrent()
-		if current.GetK8S() == nil {
-			// if there is no K8S cluster there are no loadbalancers.
-			continue
+		// Deduplicate, static node names. Contrary to how dynamic node works, static
+		// nodes are identified via the Public endpoint. The name that is assigned to
+		// static nodes is not used to identify them, atleast not in this stage of the
+		// build pipeline.
+		//
+		// For identifying the if the same static node is reused the public Endpoint is used.
+		// After the [deduplicateStaticNodeNames] newly added static nodes will have unique
+		// names
+		deduplicateStaticNodeNames(current, desired)
+
+		if current.GetK8S() != nil {
+			log.Debug().Str("cluster", cluster).Msgf("reusing existing state")
+
+			// Transfers any state from the [current] into [desired]. The state
+			// that is transferred is considered to be "Immutable" by claudie,
+			// thus once it is assigned it must not changed. This "Immutable"
+			// state is used here to transfer it, possibly overwriting any
+			// existing state in [desired].
+			transferPreviouslyAcquiredState(current, desired)
 		}
-		log.Debug().Str("cluster", cluster).Msgf("reusing existing state")
-		transferPreviouslyAcquiredState(current, desired)
-	}
 
-	// 3. generate the CIDR for individual nodepools at this step, as
-	// we need information about the current state so that we do not
-	// generate the same cidr for the same Provider/Region pair multiple
-	// times, avoiding conflicts.
-	for cluster, desired := range desiredState {
-		current := pending.Clusters[cluster].GetCurrent()
-		if err := fillMissingCIDR(current, desired); err != nil {
-			return fmt.Errorf("failed to generate cidrs for nodepools: %w", err)
+		// Must follow after [transferPreviouslyAcquiredState]
+		// Generate the CIDR for individual nodepools at this step, as
+		// we need information about the current state so that we do not
+		// generate the same cidr for the same Provider/Region pair multiple
+		// times, avoiding conflicts.
+		if err := GenerateMissingCIDR(current, desired); err != nil {
+			return fmt.Errorf("failed to generate CIDRs for nodepools: %w", err)
 		}
 	}
 
-	// 4. generate missing envoy admin ports and add the default role for the healthcheck.
+	// uses only current state, so we can pass [pending] without the [desiredState]
+	// yet to be fully populated.
+	backwardsCompatibility(pending)
+
+	// 4. After step 3. there can still be missing state that needs to be populated.
 	for _, desired := range desiredState {
+		if err := PopulateSSHKeys(desired); err != nil {
+			return err
+		}
+
+		// Populate DNS hostname if it was not transfered from the existing state.
+		PopulateDnsHostName(desired)
+
 		// After transferring the existing state we fill the remaining
 		// missing dynamic nodes, as the [spec.DynamicNodePool.Count]
 		// could have changed.
-		fillMissingDynamicNodes(desired)
+		PopulateDynamicNodesForClusters(desired)
 
 		// validation of the Manifest assures that the number of
 		// roles is limited and that we will always be able to
 		// generate the required number of ports for the envoy
 		// admin interface.
-		fillMissingEnvoyAdminPorts(desired)
+		PopulateEnvoyAdminPorts(desired)
 
 		// To each loadbalancer cluster we add a default healthcheck role
 		// that can then be used for the HA loadbalancing.
-		fillDefaultHealthcheckRole(desired)
+		PopulateDefaultHealthcheckRole(desired)
 	}
 
 	*result = desiredState
@@ -168,11 +187,8 @@ func createK8sClustersFromManifest(from *manifest.Manifest, into *map[string]*sp
 
 		newCluster.ClusterInfo.NodePools = append(controlNodePools, computeNodePools...)
 
-		// NOTE: we do not populate nodepool.CIDR at this stage
-
-		if err := generateSSHKeys(newCluster.ClusterInfo); err != nil {
-			return fmt.Errorf("error encountered while creating desired state for %s : %w", newCluster.ClusterInfo.Name, err)
-		}
+		// NOTE: the CIDR and SSH keys are not populated at this point in the pipeline. Here
+		// only the parsed skeleton of the passed in [manifest.Manifest] is created.
 
 		(*into)[newCluster.ClusterInfo.Name] = &spec.ClustersV2{K8S: newCluster}
 	}
@@ -195,7 +211,7 @@ func createLBClustersFromManifest(from *manifest.Manifest, into *map[string]*spe
 			return fmt.Errorf("error while building desired state for LB %s : %w", lbCluster.Name, err)
 		}
 
-		// NOTE: we do not populate roles.Settings.EnvoyAdminPort at this stage.
+		// NOTE: do not populate roles.Settings.EnvoyAdminPort at this stage.
 		attachedRoles := getRolesAttachedToLBCluster(from.LoadBalancer.Roles, lbCluster.Roles)
 
 		newLbCluster := &spec.LBclusterV2{
@@ -214,14 +230,10 @@ func createLBClustersFromManifest(from *manifest.Manifest, into *map[string]*spe
 		}
 		newLbCluster.ClusterInfo.NodePools = nodes
 
-		// NOTE: we do not populate nodepool.CIDR at this stage
-
-		if err := generateSSHKeys(newLbCluster.ClusterInfo); err != nil {
-			return fmt.Errorf("error encountered while creating desired state for %s : %w", newLbCluster.ClusterInfo.Name, err)
-		}
-
-		// delay the creation of the hostname at a later point
-		// where we can re-use the current state.
+		// NOTE:
+		// the CIDR,SSH keys and DNS hostname (if not set) are not populated at this point
+		// in the pipeline. Here only the parsed skeleton of the passed in [manifest.Manifest]
+		// is created.
 
 		if _, ok := lbs[newLbCluster.TargetedK8S]; !ok {
 			lbs[newLbCluster.TargetedK8S] = new(spec.LoadBalancersV2)
@@ -316,97 +328,7 @@ func getRolesAttachedToLBCluster(roles []manifest.Role, roleNames []string) []*s
 	return matchingRoles
 }
 
-// generateSSHKeys will generate SSH keypair for each nodepool that does not yet have
-// a keypair assigned.
-func generateSSHKeys(desiredInfo *spec.ClusterInfoV2) error {
-	for i := range desiredInfo.NodePools {
-		if dp := desiredInfo.NodePools[i].GetDynamicNodePool(); dp != nil && dp.PublicKey == "" {
-			var err error
-			if dp.PublicKey, dp.PrivateKey, err = generateSSHKeyPair(); err != nil {
-				return fmt.Errorf("error while create SSH key pair for nodepool %s: %w", desiredInfo.NodePools[i].Name, err)
-			}
-		}
-	}
-	return nil
-}
-
-func generateSSHKeyPair() (string, string, error) {
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		return "", "", err
-	}
-
-	// Generate and write private key as PEM
-	var privKeyBuf strings.Builder
-
-	privateKeyPEM := &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)}
-	if err := pem.Encode(&privKeyBuf, privateKeyPEM); err != nil {
-		return "", "", err
-	}
-
-	// Generate and write public key
-	pubKey, err := ssh.NewPublicKey(&privateKey.PublicKey)
-	if err != nil {
-		return "", "", err
-	}
-
-	b := &bytes.Buffer{}
-	b.Write(ssh.MarshalAuthorizedKey(pubKey))
-	b.Truncate(b.Len() - 1) // remove generated newline
-
-	return b.String(), privKeyBuf.String(), nil
-}
-
-func fillMissingDynamicNodes(c *spec.ClustersV2) {
-	k8sID := c.GetK8S().GetClusterInfo().Id()
-
-	for _, np := range c.GetK8S().GetClusterInfo().GetNodePools() {
-		if np.GetDynamicNodePool() == nil {
-			continue
-		}
-		usedNames := make(map[string]struct{})
-		for _, node := range np.Nodes {
-			usedNames[node.Name] = struct{}{}
-		}
-
-		nodepoolID := fmt.Sprintf("%s-%s", k8sID, np.Name)
-		generateMissingDynamicNodes(nodepoolID, usedNames, np)
-	}
-
-	for _, lb := range c.GetLoadBalancers().GetClusters() {
-		lbID := lb.ClusterInfo.Id()
-		for _, np := range lb.GetClusterInfo().GetNodePools() {
-			if np.GetDynamicNodePool() == nil {
-				continue
-			}
-			usedNames := make(map[string]struct{})
-			for _, node := range np.Nodes {
-				usedNames[node.Name] = struct{}{}
-			}
-			nodepoolID := fmt.Sprintf("%s-%s", lbID, np.Name)
-			generateMissingDynamicNodes(nodepoolID, usedNames, np)
-		}
-	}
-}
-
-func generateMissingDynamicNodes(nodepoolID string, usedNames map[string]struct{}, np *spec.NodePool) {
-	typ := spec.NodeType_worker
-	if np.IsControl {
-		typ = spec.NodeType_master
-	}
-
-	for len(np.Nodes) < int(np.GetDynamicNodePool().Count) {
-		name := uniqueNodeName(nodepoolID, usedNames)
-		usedNames[name] = struct{}{}
-		np.Nodes = append(np.Nodes, &spec.Node{
-			Name:     name,
-			NodeType: typ,
-		})
-		log.Debug().Str("nodepool", nodepoolID).Msgf("adding new node %q into desired state IsControl: %v", name, np.IsControl)
-	}
-}
-
-func fillMissingCIDR(current, desired *spec.ClustersV2) error {
+func GenerateMissingCIDR(current, desired *spec.ClustersV2) error {
 	// https://github.com/berops/claudie/issues/647
 	// 1. generate cidrs for k8s nodepools.
 	existing := make(map[string][]string)
@@ -465,8 +387,6 @@ func calculateCIDR(baseCIDR, key string, existing map[string][]string, nodepools
 // getCIDR function returns CIDR in IPv4 format, with position replaced by value
 // The function does not check if it is a valid CIDR/can be used in subnet spec
 func getCIDR(baseCIDR string, position int, existing []string) (string, error) {
-	// TODO: don't return error here.
-	// the baseCIDR cannot fail as its a constant.
 	_, ipNet, err := net.ParseCIDR(baseCIDR)
 	if err != nil {
 		return "", fmt.Errorf("cannot parse a CIDR with base %s, position %d", baseCIDR, position)

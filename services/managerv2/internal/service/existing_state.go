@@ -9,6 +9,7 @@ import (
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/rs/zerolog/log"
+	"google.golang.org/protobuf/proto"
 )
 
 func backwardsCompatibility(c *spec.ConfigV2) {
@@ -57,9 +58,57 @@ func backwardsCompatibility(c *spec.ConfigV2) {
 	}
 }
 
-// deduplicateNodepoolNames renames multiple references of the same nodepool in k8s,lb clusters to treat
-// them as individual nodepools.
-func deduplicateNodepoolNames(from *manifest.Manifest, current, desired *spec.ClustersV2) {
+// deduplicateStaticNodeNames re-assings all names for static nodes for the `desired` nodepools
+// such that nodes with the same public IP will keep existing name and new nodes will have
+// a unique not used name.
+func deduplicateStaticNodeNames(current, desired *spec.ClustersV2) {
+outer:
+	for _, current := range current.GetK8S().GetClusterInfo().GetNodePools() {
+		for _, desired := range desired.GetK8S().GetClusterInfo().GetNodePools() {
+			if current.Name != desired.Name {
+				continue
+			}
+
+			switch current.GetType().(type) {
+			case *spec.NodePool_StaticNodePool:
+				if desired.GetStaticNodePool() == nil {
+					// names match but not nodepool types
+					// since there cannot be two nodepools
+					// with the same name, break.
+					continue outer
+				}
+			default:
+				continue outer
+			}
+
+			usedNames := make(map[string]struct{})
+			for _, n := range current.Nodes {
+				usedNames[n.Name] = struct{}{}
+			}
+
+			// for all new nodes within the nodepool that also exists
+			// in the current state, regenerate node names to be unique
+			// and do not collide with the names in the current state.
+			//
+			// If the names of the nodes that exist in both current and desired
+			// based on a public endpoint match, do not match this should not be
+			// handled in this function and should instead be handled with [transferStaticNodePool]
+			// which trasnfers also the Name, that is considered "Immutable" once assigned.
+			for _, n := range desired.Nodes {
+				filter := func(cn *spec.Node) bool { return cn.Public == n.Public }
+				if slices.IndexFunc(current.Nodes, filter) >= 0 {
+					continue
+				}
+				n.Name = uniqueNodeName(desired.Name, usedNames)
+			}
+			break
+		}
+	}
+}
+
+// deduplicateDynamicNodepoolNames renames multiple references of the same dynamic nodepool in k8s
+// and loadbalancer clusters to treat them as individual nodepools.
+func deduplicateDynamicNodepoolNames(from *manifest.Manifest, current, desired *spec.ClustersV2) {
 	desiredK8s := desired.GetK8S()
 	desiredLbs := desired.GetLoadBalancers().GetClusters()
 
@@ -188,7 +237,7 @@ func transferPreviouslyAcquiredState(current, desired *spec.ClustersV2) {
 func transferK8sState(current, desired *spec.K8SclusterV2) {
 	// TODO: what happens when I change the [spec.K8SclusterV2.Network] ?
 	// I think that should stay immutable as well... or maybe not ?
-	transferClusterInfo(desired.ClusterInfo, current.ClusterInfo)
+	transferClusterInfo(current.ClusterInfo, desired.ClusterInfo)
 	desired.Kubeconfig = current.Kubeconfig
 }
 
@@ -202,16 +251,43 @@ func transferDynamicNodePool(current, desired *spec.NodePool) {
 	dnp.PrivateKey = cnp.PrivateKey
 	dnp.Cidr = cnp.Cidr
 
+	clear(desired.Nodes)
+	desired.Nodes = desired.Nodes[:0]
+
 	count := min(cnp.Count, dnp.Count)
-	transferDynamicNodes(current, desired, int(count))
+	for _, node := range current.Nodes[:count] {
+		n := proto.Clone(node).(*spec.Node)
+		desired.Nodes = append(desired.Nodes, n)
+	}
+}
+
+func transferStaticNodePool(current, desired *spec.NodePool) {
+	for _, cn := range current.Nodes {
+		for _, dn := range desired.Nodes {
+			// Static nodes are identified based on the Publicly reachable IP.
+			if cn.Public != dn.Public {
+				continue
+			}
+
+			dn.Name = cn.Name
+			dn.Private = cn.Private
+			dn.NodeType = cn.NodeType
+
+			// Note: The node Keys of the desired state do not need to
+			// be updated here, as the key is not immutable and could be changed.
+
+			break
+		}
+	}
 }
 
 // transferClusterInfo transfers state that should be "Immutable" once assigned
 // from the `current` into the `desired` state.
-func transferClusterInfo(desired, current *spec.ClusterInfoV2) {
+func transferClusterInfo(current, desired *spec.ClusterInfoV2) {
 	desired.Name = current.Name
 	desired.Hash = current.Hash
 
+outer:
 	for _, desired := range desired.NodePools {
 		for _, current := range current.NodePools {
 			if current.Name != desired.Name {
@@ -221,12 +297,20 @@ func transferClusterInfo(desired, current *spec.ClusterInfoV2) {
 			switch current.GetType().(type) {
 			case *spec.NodePool_DynamicNodePool:
 				if desired.GetDynamicNodePool() == nil {
-					continue
+					// name match but not types.
+					// Thus, no transferring can be done since
+					// there cannot be two nodepools with the same
+					// name.
+					continue outer
 				}
 				transferDynamicNodePool(current, desired)
 			case *spec.NodePool_StaticNodePool:
 				if desired.GetStaticNodePool() == nil {
-					continue
+					// name match but not types.
+					// Thus, no transferring can be done since
+					// there cannot be two nodepools with the same
+					// name.
+					continue outer
 				}
 				transferStaticNodePool(current, desired)
 			}
@@ -234,244 +318,56 @@ func transferClusterInfo(desired, current *spec.ClusterInfoV2) {
 	}
 }
 
-func transferDynamicNodes(current, desired *spec.NodePool, count int) {
-	// TODO: first part of the split.
-}
-
-// TODO: split into two functions.
-func fillDynamicNodes(clusterID string, current, desired *spec.NodePool) {
-	dnp := desired.GetDynamicNodePool()
-
-	nodes := make([]*spec.Node, 0, dnp.Count)
-	nodeNames := make(map[string]struct{}, dnp.Count)
-
-	for i, node := range current.Nodes {
-		if i == int(dnp.Count) {
-			break
-		}
-		nodes = append(nodes, node)
-		nodeNames[node.Name] = struct{}{}
-		log.Debug().Str("cluster", clusterID).Msgf("reusing node %q from current state nodepool %q, IsControl: %v, into desired state of the nodepool", node.Name, desired.Name, desired.IsControl)
-	}
-
-	typ := spec.NodeType_worker
-	if desired.IsControl {
-		typ = spec.NodeType_master
-	}
-	nodepoolID := fmt.Sprintf("%s-%s", clusterID, desired.Name)
-	for len(nodes) < int(dnp.Count) {
-		name := uniqueNodeName(nodepoolID, nodeNames)
-		nodeNames[name] = struct{}{}
-		nodes = append(nodes, &spec.Node{
-			Name:     name,
-			NodeType: typ,
-		})
-		log.Debug().Str("cluster", clusterID).Msgf("adding node %q into desired state nodepool %q, IsControl: %v", name, desired.Name, desired.IsControl)
-	}
-
-	desired.Nodes = nodes
-}
-
-// Generates the entire range of reserved ports, including the ports for static services
-// like NodeExporter and Healthcheck. To exclude these ports you can re-slice the result
-// using [manifest.MaxRolesPerLoadBalancer]
-func generateClaudieReservedPorts() []int {
-	size := manifest.ReservedPortRangeEnd - manifest.ReservedPortRangeStart
-	p := make([]int, size)
-	for i := range size {
-		p[i] = manifest.ReservedPortRangeStart + i
-	}
-	return p
-}
-
-func fillMissingEnvoyAdminPorts(desired *spec.ClustersV2) {
-	for _, lb := range desired.GetLoadBalancers().GetClusters() {
-		used := make(map[int]struct{})
-		for _, r := range lb.Roles {
-			if r.Settings.EnvoyAdminPort >= 0 {
-				used[int(r.Settings.EnvoyAdminPort)] = struct{}{}
-			}
-		}
-
-		// The number of roles is limited to [manifest.MaxRolesPerLoadBalancer],
-		// thus we will never consume all of the ports.
-		freePorts := generateClaudieReservedPorts()[:manifest.MaxRolesPerLoadBalancer]
-		if len(used) > 0 {
-			freePorts = slices.DeleteFunc(freePorts, func(port int) bool {
-				_, ok := used[port]
-				return ok
-			})
-		}
-
-		for _, r := range lb.Roles {
-			if r.Settings.EnvoyAdminPort < 0 {
-				p := freePorts[len(freePorts)-1]
-				freePorts = freePorts[:len(freePorts)-1]
-				r.Settings.EnvoyAdminPort = int32(p)
-			}
-		}
-	}
-}
-
-func fillDefaultHealthcheckRole(desired *spec.ClustersV2) {
-	for _, lb := range desired.GetLoadBalancers().GetClusters() {
-		// as this function is called after merging the current state to the desired
-		// state, existing clusters already could have the healthcheck created.
-		healthcheck := func(r *spec.RoleV2) bool { return r.Port == manifest.HealthcheckPort }
-		if slices.ContainsFunc(lb.Roles, healthcheck) {
-			continue
-		}
-
-		healthcheckRole := &spec.RoleV2{
-			Name:     "internal.claudie.healthcheck",
-			Protocol: "tcp",
-			Port:     manifest.HealthcheckPort,
-			// This is not a valid target port number. The healthcheck role
-			// is only used for TCP healthchecks using the 3-way handshake
-			// on the loadbalancers. Thus settings the TargetPort to an
-			// invalid number leaving the TargetPools empty will result
-			// in the opening of the [manifest.HealthcheckPort] on the firewall
-			// which will be forwarded to the loadbalancer nodes, but thats
-			// where the packets will end as no further forwarding will be
-			// done.
-			TargetPort:  -1,
-			TargetPools: []string{},
-			RoleType:    spec.RoleTypeV2_Ingress_V2,
-			Settings: &spec.RoleV2_Settings{
-				ProxyProtocol:  false,
-				StickySessions: false,
-				EnvoyAdminPort: manifest.HealthcheckEnvoyPort,
-			},
-		}
-
-		lb.Roles = append(lb.Roles, healthcheckRole)
-	}
-}
-
-// uniqueNodeName returns new node name, which is guaranteed to be unique, based on the provided existing names.
-func uniqueNodeName(nodepoolID string, existingNames map[string]struct{}) string {
-	index := uint8(1)
-	for {
-		candidate := fmt.Sprintf("%s-%02x", nodepoolID, index)
-		if _, ok := existingNames[candidate]; !ok {
-			return candidate
-		}
-		index++
-	}
-}
-
-func transferStaticNodes(clusterID string, current, desired *spec.NodePool) bool {
-	dsp := desired.GetStaticNodePool()
-	csp := current.GetStaticNodePool()
-
-	canUpdate := dsp != nil && csp != nil
-	if !canUpdate {
-		return false
-	}
-
-	usedNames := make(map[string]struct{})
-	for _, cn := range current.Nodes {
-		usedNames[cn.Name] = struct{}{}
-	}
-
-	for _, dn := range desired.Nodes {
-		i := slices.IndexFunc(current.Nodes, func(cn *spec.Node) bool { return cn.Public == dn.Public })
-		if i < 0 {
-			dn.Name = uniqueNodeName(desired.Name, usedNames)
-			usedNames[dn.Name] = struct{}{}
-			log.Debug().Str("cluster", clusterID).Msgf("adding static node %q into desired state nodepool %q, IsControl: %v", dn.Name, desired.Name, desired.IsControl)
-			continue
-		}
-		dn.Name = current.Nodes[i].Name
-		dn.Private = current.Nodes[i].Private
-		dn.NodeType = current.Nodes[i].NodeType
-		log.Debug().Str("cluster", clusterID).Msgf("reusing node %q from current state static nodepool %q, IsControl: %v, into desired state static nodepool", dn.Name, desired.Name, desired.IsControl)
-	}
-
-	return true
-}
-
 // transferLBState transfers the relevant parts of the `current` into `desired`.
 // The function transfer only the state that should be "Immutable" once assigned.
 func transferLBState(current, desired *spec.LoadBalancersV2) {
-	transferExistingDns(current, desired)
-
-	currentLbs := current.GetClusters()
-	desiredLbs := desired.GetClusters()
-
-	for _, desired := range desiredLbs {
-		for _, current := range currentLbs {
+	for _, current := range current.GetClusters() {
+		for _, desired := range desired.GetClusters() {
 			if current.ClusterInfo.Name != desired.ClusterInfo.Name {
 				continue
 			}
 
-			if err := transferNodePools(desired.ClusterInfo, current.ClusterInfo); err != nil {
-				return err
-			}
-
-			transferExistingRoles(current.Roles, desired.Roles)
+			transferDns(current, desired)
+			transferClusterInfo(current.ClusterInfo, desired.ClusterInfo)
+			transferRoles(current.Roles, desired.Roles)
 			desired.UsedApiEndpoint = current.UsedApiEndpoint
 			break
 		}
 	}
-
-	return nil
 }
 
-func transferExistingRoles(current, desired []*spec.RoleV2) {
-	currentRoles := make(map[string]*spec.RoleV2) // role names are unique
-	for _, r := range current {
-		currentRoles[r.Name] = r
-	}
-
-	for _, r := range desired {
-		if prev, ok := currentRoles[r.Name]; ok {
-			r.Settings.EnvoyAdminPort = prev.Settings.EnvoyAdminPort
+func transferRoles(current, desired []*spec.RoleV2) {
+	for _, current := range current {
+		for _, desired := range desired {
+			if current.Name == desired.Name {
+				desired.Settings.EnvoyAdminPort = current.Settings.EnvoyAdminPort
+			}
 		}
 	}
 }
 
-func transferExistingDns(current, desired *spec.LoadBalancersV2) {
-	const hostnameHashLength = 17
-
-	currentLbs := make(map[string]*spec.LBclusterV2)
-	for _, cluster := range current.GetClusters() {
-		currentLbs[cluster.ClusterInfo.Name] = cluster
+func transferDns(current, desired *spec.LBclusterV2) {
+	if current.Dns == nil {
+		return
 	}
 
-	for _, cluster := range desired.GetClusters() {
-		previous, ok := currentLbs[cluster.ClusterInfo.Name]
-		// check if lb cluster in current state exists and was build successfully.
-		if !ok || previous.Dns == nil {
-			if cluster.Dns.Hostname == "" {
-				cluster.Dns.Hostname = hash.Create(hostnameHashLength)
+	// transfer alternatives names.
+	for _, current := range current.Dns.AlternativeNames {
+		for _, desired := range desired.Dns.AlternativeNames {
+			if desired.Hostname == current.Hostname {
+				desired.Endpoint = current.Endpoint
 			}
-			continue
-		}
-
-		// transfer matching alternative names, if any.
-		for _, prev := range previous.Dns.AlternativeNames {
-			i := slices.IndexFunc(cluster.Dns.AlternativeNames, func(n *spec.AlternativeName) bool {
-				return n.Hostname == prev.Hostname
-			})
-			if i < 0 {
-				continue
-			}
-			cluster.Dns.AlternativeNames[i].Endpoint = prev.Endpoint
-		}
-
-		// transfer the endpoint if the hostname did not change.
-		if cluster.Dns.Hostname != "" {
-			if previous.Dns.Hostname == cluster.Dns.Hostname {
-				cluster.Dns.Endpoint = previous.Dns.Endpoint
-			}
-			continue
-		}
-
-		// keep hostname from current state if not specified in manifest
-		if cluster.Dns.Hostname == "" || cluster.Dns.Endpoint == "" {
-			cluster.Dns.Hostname = previous.Dns.Hostname
-			cluster.Dns.Endpoint = previous.Dns.Endpoint
 		}
 	}
+
+	// transfer the endpoint if the hostname did not change.
+	if desired.Dns.Hostname != "" {
+		if desired.Dns.Hostname == current.Dns.Hostname {
+			desired.Dns.Endpoint = current.Dns.Endpoint
+		}
+		return
+	}
+
+	desired.Dns.Hostname = current.Dns.Hostname
+	desired.Dns.Endpoint = current.Dns.Endpoint
 }

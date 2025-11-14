@@ -51,7 +51,7 @@ const (
 func reconciliate(pending *spec.ConfigV2, desired map[string]*spec.ClustersV2) ScheduleResult {
 	var result ScheduleResult
 
-	fillEntriesForNewClusters(&pending.Clusters, desired)
+	PopulateEntriesForNewClusters(&pending.Clusters, desired)
 
 	for cluster, state := range pending.Clusters {
 		var (
@@ -181,7 +181,7 @@ func reconciliate(pending *spec.ConfigV2, desired map[string]*spec.ClustersV2) S
 	return result
 }
 
-func fillEntriesForNewClusters(
+func PopulateEntriesForNewClusters(
 	current *map[string]*spec.ClusterStateV2,
 	desired map[string]*spec.ClustersV2,
 ) {
@@ -592,54 +592,55 @@ func joinLoadBalancer(current, desired *spec.ClustersV2, lb string) *spec.TaskEv
 				},
 			},
 		}
-		pipeline = []*spec.Stage{
-			{
-				StageKind: &spec.Stage_Terraformer{
-					Terraformer: &spec.StageTerraformer{
-						Description: &spec.StageDescription{
-							About:      "Creating infrastructure for newly added loadbalancer",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-						SubPasses: []*spec.StageTerraformer_SubPass{
-							{
-								Kind: spec.StageTerraformer_UPDATE_INFRASTRUCTURE,
-								Description: &spec.StageDescription{
-									About:      fmt.Sprintf("Spawning infrastructure for %q", lb),
-									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-								},
-							},
-						},
-					},
-				},
-			},
-			{
-				StageKind: &spec.Stage_Ansibler{
-					Ansibler: &spec.StageAnsibler{
-						Description: &spec.StageDescription{
-							About:      "Setting up VPN for the newly added loadbalancer",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-						SubPasses: []*spec.StageAnsibler_SubPass{
-							{
-								Kind: spec.StageAnsibler_INSTALL_VPN,
-								Description: &spec.StageDescription{
-									About:      fmt.Sprintf("Install VPN and interconnect %q with existing infrastructure", lb),
-									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-								},
-							},
-							{
-								Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
-								Description: &spec.StageDescription{
-									About:      fmt.Sprintf("Setup envoy for the newly added loadbalancer %q", lb),
-									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-								},
-							},
-						},
-					},
-				},
-			},
-		}
 	)
+
+	pipeline := []*spec.Stage{
+		{
+			StageKind: &spec.Stage_Terraformer{
+				Terraformer: &spec.StageTerraformer{
+					Description: &spec.StageDescription{
+						About:      "Creating infrastructure for newly added loadbalancer",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+					SubPasses: []*spec.StageTerraformer_SubPass{
+						{
+							Kind: spec.StageTerraformer_UPDATE_INFRASTRUCTURE,
+							Description: &spec.StageDescription{
+								About:      fmt.Sprintf("Spawning infrastructure for %q", lb),
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			StageKind: &spec.Stage_Ansibler{
+				Ansibler: &spec.StageAnsibler{
+					Description: &spec.StageDescription{
+						About:      "Setting up VPN for the newly added loadbalancer",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+					SubPasses: []*spec.StageAnsibler_SubPass{
+						{
+							Kind: spec.StageAnsibler_INSTALL_VPN,
+							Description: &spec.StageDescription{
+								About:      fmt.Sprintf("Install VPN and interconnect %q with existing infrastructure", lb),
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+						},
+						{
+							Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
+							Description: &spec.StageDescription{
+								About:      fmt.Sprintf("Setup envoy for the newly added loadbalancer %q", lb),
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 
 	return &spec.TaskEventV2{
 		Id:        uuid.New().String(),
