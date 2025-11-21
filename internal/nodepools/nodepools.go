@@ -3,7 +3,9 @@ package nodepools
 import (
 	"errors"
 	"fmt"
+	"iter"
 	"maps"
+	"math/rand/v2"
 	"slices"
 	"strings"
 
@@ -305,6 +307,22 @@ func FirstControlNode(nodepools []*spec.NodePool) *spec.Node {
 	return nil
 }
 
+// Returns a random node. Nil if there is none.
+func RandomNode(nodepools iter.Seq[*spec.NodePool]) *spec.Node {
+	var nodes []*spec.Node
+
+	for np := range nodepools {
+		nodes = append(nodes, np.Nodes...)
+	}
+
+	if len(nodes) == 0 {
+		return nil
+	}
+
+	idx := rand.IntN(len(nodes))
+	return nodes[idx]
+}
+
 // DynamicGenerateKeys creates private keys files for all nodes in the provided dynamic node pools in form
 // of <node name>.pem.
 func DynamicGenerateKeys(nodepools []*spec.NodePool, outputDir string) error {
@@ -392,4 +410,28 @@ func LabelsTaintsAnnotationsDiff(current, desired []*spec.NodePool) LabelsTaints
 	}
 
 	return out
+}
+
+// FindReferences return all nodepools that share the given name.
+func FindReferences(name string, nodePools []*spec.NodePool) []*spec.NodePool {
+	var references []*spec.NodePool
+	for _, np := range nodePools {
+		if np.Name == name {
+			references = append(references, np)
+		}
+	}
+	return references
+}
+
+// Returns all Public Endpoints, for all of the nodes for the passed in nodepools.
+func PublicEndpoints(nodepools []*spec.NodePool) []string {
+	var ips []string
+
+	for _, nodepool := range nodepools {
+		for _, node := range nodepool.Nodes {
+			ips = append(ips, node.Public)
+		}
+	}
+
+	return ips
 }

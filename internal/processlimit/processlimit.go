@@ -15,7 +15,7 @@ func With(ctx context.Context, semaphore *semaphore.Weighted) context.Context {
 }
 
 func Value(ctx context.Context) (*semaphore.Weighted, bool) {
-	val := ctx.Value(ctx)
+	val := ctx.Value(key)
 	limit, ok := val.(*semaphore.Weighted)
 	return limit, ok
 }

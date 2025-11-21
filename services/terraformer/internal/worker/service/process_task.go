@@ -4,15 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/berops/claudie/internal/clusters"
-	"github.com/berops/claudie/internal/concurrent"
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/processlimit"
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/berops/claudie/services/terraformer/internal/worker/service/internal/kubernetes"
-	"github.com/berops/claudie/services/terraformer/internal/worker/service/internal/loadbalancer"
 	"github.com/berops/claudie/services/terraformer/internal/worker/store"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	"golang.org/x/sync/semaphore"
@@ -92,10 +87,13 @@ passes:
 			build(logger, work.InputManifestName, processlimit, work.Task, tracker)
 		case spec.StageTerraformer_UPDATE_INFRASTRUCTURE:
 			logger.Info().Msg("Updating infrastructure")
-			update(logger, work.InputManifestName, processlimit, work.Task, tracker)
+			reconcileInfrastructure(logger, work.InputManifestName, processlimit, work.Task, tracker)
 		case spec.StageTerraformer_DESTROY_INFRASTRUCTURE:
 			logger.Info().Msg("Destroying infrastructure")
 			destroy(logger, stores, work.InputManifestName, processlimit, work.Task, tracker)
+		case spec.StageTerraformer_API_PORT_ON_KUBERNETES:
+			logger.Info().Msg("Reconciling Api Port on kuberentes cluster")
+			reconcileApiPort(logger, work.InputManifestName, processlimit, work.Task, tracker)
 		default:
 			logger.Warn().Msg("Stage not recognized, skipping")
 			continue
@@ -129,266 +127,4 @@ passes:
 	}
 
 	return &result
-}
-
-func build(
-	logger zerolog.Logger,
-	projectName string,
-	processLimit *semaphore.Weighted,
-	task *spec.TaskV2,
-	tracker Tracker,
-) {
-	action, ok := task.GetDo().(*spec.TaskV2_Create)
-	if !ok {
-		logger.
-			Warn().
-			Msgf("Received task with action %T while wanting to create new infrastructure, assuming the task was misscheduled, ignoring", task.GetDo())
-		tracker.Result.KeepAsIs()
-		return
-	}
-
-	var (
-		k8s = action.Create.K8S
-		lbs = action.Create.LoadBalancers
-	)
-
-	if k8s == nil {
-		logger.Warn().Msg("create task validation failed, required desired state of the kuberentes cluster to be present, ignoring")
-		tracker.Result.KeepAsIs()
-		return
-	}
-
-	cluster := kubernetes.K8Scluster{
-		ProjectName:       projectName,
-		Cluster:           k8s,
-		ExportPort6443:    clusters.FindAssignedLbApiEndpointV2(lbs) == nil,
-		SpawnProcessLimit: processLimit,
-	}
-
-	// TODO: will we need the options ? after reconciliation.
-	if spec.OptionIsSet(task.Options, spec.ForceExportPort6443OnControlPlane) {
-		cluster.ExportPort6443 = true
-	}
-
-	buildLogger := logger.With().Str("cluster", cluster.Id()).Logger()
-
-	if err := BuildK8Scluster(buildLogger, cluster); err != nil {
-		possiblyUpdated := k8s
-		tracker.Diagnostics.Push(err.Error())
-		tracker.Result.ToUpdate().TakeKubernetesCluster(possiblyUpdated).Replace()
-		return
-	}
-
-	buildLogger.Info().Msg("Infrastructure for kubernetes cluster build successfully")
-
-	if spec.OptionIsSet(task.Options, spec.K8sOnlyRefresh) {
-		updatedCluster := k8s
-
-		// Processing an event that only targets the nodepools used within the k8s
-		// clusters, thus we do not need to update/refresh the loadbalancer and dns
-		// infrastructure here. This is only done here for the purpose of shaving off
-		// a few minutes from the build process.
-		tracker.Result.ToUpdate().TakeKubernetesCluster(updatedCluster).Replace()
-		return
-	}
-
-	var loadbalancers []loadbalancer.LBcluster
-	for _, lb := range lbs {
-		loadbalancers = append(loadbalancers, loadbalancer.LBcluster{
-			ProjectName:       projectName,
-			Cluster:           lb,
-			SpawnProcessLimit: processLimit,
-		})
-	}
-
-	err := concurrent.Exec(loadbalancers, func(_ int, cluster loadbalancer.LBcluster) error {
-		buildLogger := logger.With().Str("cluster", cluster.Id()).Logger()
-		return BuildLoadbalancers(buildLogger, cluster)
-	})
-	if err != nil {
-		// Some part of loadbalancer infrastructure was not build successfully.
-		// Since we still want to report the partially build infrastructure back to the
-		// caller we fallthrough here.
-		tracker.Diagnostics.Push(err.Error())
-	}
-
-	var (
-		updatedK8s                   = k8s
-		possiblyUpdatedLoadBalancers []*spec.LBclusterV2
-	)
-
-	for _, lb := range loadbalancers {
-		possiblyUpdatedLoadBalancers = append(possiblyUpdatedLoadBalancers, lb.Cluster)
-	}
-
-	tracker.
-		Result.
-		ToUpdate().
-		TakeKubernetesCluster(updatedK8s).
-		TakeLoadBalancers(possiblyUpdatedLoadBalancers...).
-		Replace()
-}
-
-func destroy(
-	logger zerolog.Logger,
-	stores Stores,
-	projectName string,
-	processLimit *semaphore.Weighted,
-	task *spec.TaskV2,
-	tracker Tracker,
-) {
-	var clusters []Cluster
-
-	action, ok := task.GetDo().(*spec.TaskV2_Delete)
-	if !ok {
-		logger.
-			Warn().
-			Msgf("received task with action %T while wanting to destroy infrastructure, assuming the task was misscheduled, ignoring", task.GetDo())
-
-		tracker.Result.KeepAsIs()
-		return
-	}
-
-	switch do := action.Delete.GetOp().(type) {
-	case *spec.DeleteV2_Clusters_:
-		k8s := do.Clusters.GetK8S()
-		loadbalancers := do.Clusters.GetLoadBalancers()
-
-		if k8s == nil {
-			logger.
-				Warn().
-				Msg("delete task validation failed, required kubernetes state to be present, but is missing, ignoring")
-			tracker.Result.KeepAsIs()
-			return
-		}
-
-		clusters = append(clusters, &kubernetes.K8Scluster{
-			ProjectName:       projectName,
-			Cluster:           k8s,
-			SpawnProcessLimit: processLimit,
-		})
-
-		for _, lb := range loadbalancers {
-			if lb == nil {
-				logger.
-					Warn().
-					Msg("delete task validation failed, required loadbalancer state to be present, but is missing, ignoring")
-				tracker.Result.KeepAsIs()
-				return
-			}
-
-			clusters = append(clusters, &loadbalancer.LBcluster{
-				ProjectName:       projectName,
-				Cluster:           lb,
-				SpawnProcessLimit: processLimit,
-			})
-		}
-	case *spec.DeleteV2_Loadbalancers:
-		for _, lb := range do.Loadbalancers.GetLoadBalancers() {
-			if lb == nil {
-				logger.
-					Warn().
-					Msg("delete task validation failed, required loadbalancer state to be present, but is missing, ignoring")
-				tracker.Result.KeepAsIs()
-				return
-			}
-
-			clusters = append(clusters, &loadbalancer.LBcluster{
-				ProjectName:       projectName,
-				Cluster:           lb,
-				SpawnProcessLimit: processLimit,
-			})
-		}
-	default:
-		logger.Warn().Msgf("received unsupported delete action %T ignoring", action.Delete.GetOp())
-		tracker.Result.KeepAsIs()
-		return
-	}
-
-	ids := make([]string, len(clusters))
-	errs := make([]error, len(clusters))
-
-	err := concurrent.Exec(clusters, func(idx int, cluster Cluster) error {
-		buildLogger := logger.With().Str("cluster", cluster.Id()).Logger()
-		ids[idx] = cluster.Id()
-		errs[idx] = DestroyCluster(buildLogger, projectName, cluster, stores.s3, stores.dynamo)
-		return errs[idx]
-	})
-	if err != nil {
-		// Some of the provided clusters didn't destroy successfully.
-		// Since we still want to report the partially destroyed infrastructure
-		// back to the caller we fallthrough here, as any of the successfully destroyed
-		// infrastructure will have its [CurrentState] updated to [nil].
-		tracker.Diagnostics.Push(err.Error())
-	}
-
-	var (
-		k8s string
-		lbs []string
-	)
-
-	for i, c := range clusters {
-		if errs[i] == nil {
-			if c.IsKubernetes() {
-				k8s = ids[i]
-			} else {
-				lbs = append(lbs, ids[i])
-			}
-		}
-	}
-
-	tracker.
-		Result.
-		ToClear().
-		TakeKuberentesCluster(k8s != "").
-		TakeLoadBalancers(lbs...).
-		Replace()
-}
-
-func update(
-	logger zerolog.Logger,
-	projectName string,
-	processLimit *semaphore.Weighted,
-	task *spec.TaskV2,
-	tracker Tracker,
-) {
-	action, ok := task.GetDo().(*spec.TaskV2_Update)
-	if !ok {
-		logger.
-			Warn().
-			Msgf("Received task with action %T while wanting to update infrastructure, assuming the task was misscheduled, ignoring", task.GetDo())
-		tracker.Result.KeepAsIs()
-		return
-	}
-
-	state := action.Update.State
-	if state == nil || state.K8S == nil {
-		logger.Warn().Msg("update task validation failed, required state of the kuberentes cluster to be present, ignoring")
-		tracker.Result.KeepAsIs()
-		return
-	}
-
-	switch delta := action.Update.Delta.(type) {
-	case *spec.UpdateV2_JoinLoadBalancer_:
-		lb := loadbalancer.LBcluster{
-			ProjectName:       projectName,
-			Cluster:           delta.JoinLoadBalancer.LoadBalancer,
-			SpawnProcessLimit: processLimit,
-		}
-
-		buildLogger := logger.With().Str("cluster", lb.Cluster.ClusterInfo.Id()).Logger()
-		if err := BuildLoadbalancers(buildLogger, lb); err != nil {
-			// Some part of the loadbalancer infrastructure was not build successfully.
-			// Since we still want to report the partially build infrastructure back to the
-			// caller we fallthrough here.
-			tracker.Diagnostics.Push(err.Error())
-		}
-		panic("TODO")
-	default:
-		logger.
-			Warn().
-			Msgf("Received update task with action %T, assuming the task was misscheduled, ignoring", action.Update.Delta)
-		tracker.Result.KeepAsIs()
-		return
-	}
 }

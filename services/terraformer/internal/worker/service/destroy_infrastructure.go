@@ -7,10 +7,15 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/berops/claudie/internal/concurrent"
+	"github.com/berops/claudie/proto/pb/spec"
 	cluster_builder "github.com/berops/claudie/services/terraformer/internal/worker/service/internal/cluster-builder"
+	"github.com/berops/claudie/services/terraformer/internal/worker/service/internal/kubernetes"
 	"github.com/berops/claudie/services/terraformer/internal/worker/service/internal/loadbalancer"
 	"github.com/berops/claudie/services/terraformer/internal/worker/store"
 	"github.com/rs/zerolog"
+
+	"golang.org/x/sync/semaphore"
 )
 
 const (
@@ -20,6 +25,122 @@ const (
 	keyFormatLockFile    = "%s/%s/%s-md5"
 	dnsKeyFormatLockFile = "%s/%s/%s-dns-md5"
 )
+
+func destroy(
+	logger zerolog.Logger,
+	stores Stores,
+	projectName string,
+	processLimit *semaphore.Weighted,
+	task *spec.TaskV2,
+	tracker Tracker,
+) {
+	var clusters []Cluster
+
+	action, ok := task.GetDo().(*spec.TaskV2_Delete)
+	if !ok {
+		logger.
+			Warn().
+			Msgf("received task with action %T while wanting to destroy infrastructure, assuming the task was misscheduled, ignoring", task.GetDo())
+
+		tracker.Result.KeepAsIs()
+		return
+	}
+
+	switch do := action.Delete.GetOp().(type) {
+	case *spec.DeleteV2_Clusters_:
+		k8s := do.Clusters.GetK8S()
+		loadbalancers := do.Clusters.GetLoadBalancers()
+
+		if k8s == nil {
+			logger.
+				Warn().
+				Msg("delete task validation failed, required kubernetes state to be present, but is missing, ignoring")
+			tracker.Result.KeepAsIs()
+			return
+		}
+
+		clusters = append(clusters, &kubernetes.K8Scluster{
+			ProjectName:       projectName,
+			Cluster:           k8s,
+			SpawnProcessLimit: processLimit,
+		})
+
+		for _, lb := range loadbalancers {
+			if lb == nil {
+				logger.
+					Warn().
+					Msg("delete task validation failed, required loadbalancer state to be present, but is missing, ignoring")
+				tracker.Result.KeepAsIs()
+				return
+			}
+
+			clusters = append(clusters, &loadbalancer.LBcluster{
+				ProjectName:       projectName,
+				Cluster:           lb,
+				SpawnProcessLimit: processLimit,
+			})
+		}
+	case *spec.DeleteV2_Loadbalancers:
+		for _, lb := range do.Loadbalancers.GetLoadBalancers() {
+			if lb == nil {
+				logger.
+					Warn().
+					Msg("delete task validation failed, required loadbalancer state to be present, but is missing, ignoring")
+				tracker.Result.KeepAsIs()
+				return
+			}
+
+			clusters = append(clusters, &loadbalancer.LBcluster{
+				ProjectName:       projectName,
+				Cluster:           lb,
+				SpawnProcessLimit: processLimit,
+			})
+		}
+	default:
+		logger.Warn().Msgf("received unsupported delete action %T ignoring", action.Delete.GetOp())
+		tracker.Result.KeepAsIs()
+		return
+	}
+
+	ids := make([]string, len(clusters))
+	errs := make([]error, len(clusters))
+
+	err := concurrent.Exec(clusters, func(idx int, cluster Cluster) error {
+		buildLogger := logger.With().Str("cluster", cluster.Id()).Logger()
+		ids[idx] = cluster.Id()
+		errs[idx] = DestroyCluster(buildLogger, projectName, cluster, stores.s3, stores.dynamo)
+		return errs[idx]
+	})
+	if err != nil {
+		// Some of the provided clusters didn't destroy successfully.
+		// Since we still want to report the partially destroyed infrastructure
+		// back to the caller we fallthrough here, as any of the successfully destroyed
+		// infrastructure will have its [CurrentState] updated to [nil].
+		tracker.Diagnostics.Push(err.Error())
+	}
+
+	var (
+		k8s string
+		lbs []string
+	)
+
+	for i, c := range clusters {
+		if errs[i] == nil {
+			if c.IsKubernetes() {
+				k8s = ids[i]
+			} else {
+				lbs = append(lbs, ids[i])
+			}
+		}
+	}
+
+	tracker.
+		Result.
+		ToClear().
+		TakeKuberentesCluster(k8s != "").
+		TakeLoadBalancers(lbs...).
+		Replace()
+}
 
 // Destroys the infrastructure of the passed in [Cluster] by looking
 // at its current state. On success update the [Cluster.UpdateCurrentState]

@@ -21,11 +21,11 @@ RUN CGO_ENABLED=0 go build
 
 FROM scratch
 #Add repository label
-LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
+LABEL org.opencontainers.image.source="https://github.com/berops/claudie"
 #Add image name as a label
-LABEL org.opencontainers.image.base.name "scratch"
+LABEL org.opencontainers.image.base.name="scratch"
 #Add description to the image
-LABEL org.opencontainers.image.description "Image for Builder from Claudie"
+LABEL org.opencontainers.image.description="Image for Builder from Claudie"
 
 #Copy the binaries to empty base image
 COPY --from=build /go/services/builder/builder /bin/services/builder/builder

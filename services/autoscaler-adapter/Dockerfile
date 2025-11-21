@@ -27,11 +27,11 @@ RUN apk --update add ca-certificates
 #Use empty base image
 FROM scratch
 #Add repository label
-LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
+LABEL org.opencontainers.image.source="https://github.com/berops/claudie"
 #Add base image name as a label
-LABEL org.opencontainers.image.base.name "scratch"
+LABEL org.opencontainers.image.base.name="scratch"
 #Add description to the image
-LABEL org.opencontainers.image.description "Image for external gRPC provider for Cluster Autoscaler by Claudie"
+LABEL org.opencontainers.image.description="Image for external gRPC provider for Cluster Autoscaler by Claudie"
 
 #Copy the binaries & certs to empty base image
 ENV PATH=/bin

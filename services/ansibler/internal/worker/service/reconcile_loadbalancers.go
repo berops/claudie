@@ -53,7 +53,7 @@ func ReconcileLoadBalancers(
 	tracker Tracker,
 ) {
 	logger.Info().Msg("Reconciling LoadBalancers")
-	action, ok := task.GetDo().(*spec.TaskV2_Create)
+	k8s, lbs, ok := utils.ClustersFromTask(task)
 	if !ok {
 		logger.
 			Warn().
@@ -64,9 +64,6 @@ func ReconcileLoadBalancers(
 		tracker.Result.KeepAsIs()
 		return
 	}
-
-	k8s := action.Create.K8S
-	lbs := action.Create.LoadBalancers
 
 	li := utils.LBClustersInfo{
 		Lbs:               lbs,

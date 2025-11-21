@@ -124,6 +124,75 @@ func (EventV2) EnumDescriptor() ([]byte, []int) {
 	return file_spec_manifestv2_proto_rawDescGZIP(), []int{1}
 }
 
+type ApiEndpointChangeStateV2 int32
+
+const (
+	// NoChange represents the 1st case - no change is needed as the LB cluster is currently
+	// attached and the desired spec contains no changes.
+	ApiEndpointChangeStateV2_NoChangeV2 ApiEndpointChangeStateV2 = 0
+	// AttachingLoadBalancer represents 2nd case - the K8s cluster previously
+	// didn't have an LB cluster attached and the ports needed to communicate with the API server
+	// were exposed. After attaching an LB cluster to the existing K8s cluster the ports
+	// were closed and are no longer accessible, and thus we need to change the API endpoint.
+	ApiEndpointChangeStateV2_AttachingLoadBalancerV2 ApiEndpointChangeStateV2 = 1
+	// DetachingLoadBalancer represents 3rd. case - the K8s cluster had an existing
+	// LB cluster attached but the new state removed the LB cluster and thus the API endpoint
+	// needs to be changed back to one of the control nodes of the cluster.
+	ApiEndpointChangeStateV2_DetachingLoadBalancerV2 ApiEndpointChangeStateV2 = 2
+	// EndpointRenamed represents the 4th. case - the K8s cluster has an existing
+	// LB cluster attached and also keeps it but the endpoint has changed in the desired state.
+	ApiEndpointChangeStateV2_EndpointRenamedV2 ApiEndpointChangeStateV2 = 3
+	// MoveEndpoint represents the 5th. case - the K8s cluster has an existing
+	// LB cluster attached, but it will be switched to a different LB cluster
+	// in the desired state.
+	ApiEndpointChangeStateV2_MoveEndpointV2 ApiEndpointChangeStateV2 = 4
+)
+
+// Enum value maps for ApiEndpointChangeStateV2.
+var (
+	ApiEndpointChangeStateV2_name = map[int32]string{
+		0: "NoChangeV2",
+		1: "AttachingLoadBalancerV2",
+		2: "DetachingLoadBalancerV2",
+		3: "EndpointRenamedV2",
+		4: "MoveEndpointV2",
+	}
+	ApiEndpointChangeStateV2_value = map[string]int32{
+		"NoChangeV2":              0,
+		"AttachingLoadBalancerV2": 1,
+		"DetachingLoadBalancerV2": 2,
+		"EndpointRenamedV2":       3,
+		"MoveEndpointV2":          4,
+	}
+)
+
+func (x ApiEndpointChangeStateV2) Enum() *ApiEndpointChangeStateV2 {
+	p := new(ApiEndpointChangeStateV2)
+	*p = x
+	return p
+}
+
+func (x ApiEndpointChangeStateV2) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ApiEndpointChangeStateV2) Descriptor() protoreflect.EnumDescriptor {
+	return file_spec_manifestv2_proto_enumTypes[2].Descriptor()
+}
+
+func (ApiEndpointChangeStateV2) Type() protoreflect.EnumType {
+	return &file_spec_manifestv2_proto_enumTypes[2]
+}
+
+func (x ApiEndpointChangeStateV2) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ApiEndpointChangeStateV2.Descriptor instead.
+func (ApiEndpointChangeStateV2) EnumDescriptor() ([]byte, []int) {
+	return file_spec_manifestv2_proto_rawDescGZIP(), []int{2}
+}
+
 type ManifestV2_State int32
 
 const (
@@ -160,11 +229,11 @@ func (x ManifestV2_State) String() string {
 }
 
 func (ManifestV2_State) Descriptor() protoreflect.EnumDescriptor {
-	return file_spec_manifestv2_proto_enumTypes[2].Descriptor()
+	return file_spec_manifestv2_proto_enumTypes[3].Descriptor()
 }
 
 func (ManifestV2_State) Type() protoreflect.EnumType {
-	return &file_spec_manifestv2_proto_enumTypes[2]
+	return &file_spec_manifestv2_proto_enumTypes[3]
 }
 
 func (x ManifestV2_State) Number() protoreflect.EnumNumber {
@@ -217,11 +286,11 @@ func (x WorkflowV2_Status) String() string {
 }
 
 func (WorkflowV2_Status) Descriptor() protoreflect.EnumDescriptor {
-	return file_spec_manifestv2_proto_enumTypes[3].Descriptor()
+	return file_spec_manifestv2_proto_enumTypes[4].Descriptor()
 }
 
 func (WorkflowV2_Status) Type() protoreflect.EnumType {
-	return &file_spec_manifestv2_proto_enumTypes[3]
+	return &file_spec_manifestv2_proto_enumTypes[4]
 }
 
 func (x WorkflowV2_Status) Number() protoreflect.EnumNumber {
@@ -263,11 +332,11 @@ func (x RetryV2_Repeat_Kind) String() string {
 }
 
 func (RetryV2_Repeat_Kind) Descriptor() protoreflect.EnumDescriptor {
-	return file_spec_manifestv2_proto_enumTypes[4].Descriptor()
+	return file_spec_manifestv2_proto_enumTypes[5].Descriptor()
 }
 
 func (RetryV2_Repeat_Kind) Type() protoreflect.EnumType {
-	return &file_spec_manifestv2_proto_enumTypes[4]
+	return &file_spec_manifestv2_proto_enumTypes[5]
 }
 
 func (x RetryV2_Repeat_Kind) Number() protoreflect.EnumNumber {
@@ -309,11 +378,11 @@ func (x TaskResult_Error_Kind) String() string {
 }
 
 func (TaskResult_Error_Kind) Descriptor() protoreflect.EnumDescriptor {
-	return file_spec_manifestv2_proto_enumTypes[5].Descriptor()
+	return file_spec_manifestv2_proto_enumTypes[6].Descriptor()
 }
 
 func (TaskResult_Error_Kind) Type() protoreflect.EnumType {
-	return &file_spec_manifestv2_proto_enumTypes[5]
+	return &file_spec_manifestv2_proto_enumTypes[6]
 }
 
 func (x TaskResult_Error_Kind) Number() protoreflect.EnumNumber {
@@ -1395,10 +1464,21 @@ func (x *CreateV2) GetLoadBalancers() []*LBclusterV2 {
 
 type UpdateV2 struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	State *UpdateV2_State        `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`
+	// State that gets continiously updated as the task gets processed.
+	State *UpdateV2_State `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`
+	// The initial new state that is to be build. This never gets
+	// updated as the task is processed and always has the intial
+	// state when first created. Once the initial state is build it
+	// is merged with [State], and any reconciliation should be done
+	// with that.
+	//
 	// Types that are valid to be assigned to Delta:
 	//
 	//	*UpdateV2_JoinLoadBalancer_
+	//	*UpdateV2_ReconcileLoadBalancer_
+	//	*UpdateV2_ApiEndpoint_
+	//	*UpdateV2_ClusterApiPort
+	//	*UpdateV2_ReplaceDns_
 	Delta         isUpdateV2_Delta `protobuf_oneof:"Delta"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1457,6 +1537,42 @@ func (x *UpdateV2) GetJoinLoadBalancer() *UpdateV2_JoinLoadBalancer {
 	return nil
 }
 
+func (x *UpdateV2) GetReconcileLoadBalancer() *UpdateV2_ReconcileLoadBalancer {
+	if x != nil {
+		if x, ok := x.Delta.(*UpdateV2_ReconcileLoadBalancer_); ok {
+			return x.ReconcileLoadBalancer
+		}
+	}
+	return nil
+}
+
+func (x *UpdateV2) GetApiEndpoint() *UpdateV2_ApiEndpoint {
+	if x != nil {
+		if x, ok := x.Delta.(*UpdateV2_ApiEndpoint_); ok {
+			return x.ApiEndpoint
+		}
+	}
+	return nil
+}
+
+func (x *UpdateV2) GetClusterApiPort() *UpdateV2_ApiPortOnCluster {
+	if x != nil {
+		if x, ok := x.Delta.(*UpdateV2_ClusterApiPort); ok {
+			return x.ClusterApiPort
+		}
+	}
+	return nil
+}
+
+func (x *UpdateV2) GetReplaceDns() *UpdateV2_ReplaceDns {
+	if x != nil {
+		if x, ok := x.Delta.(*UpdateV2_ReplaceDns_); ok {
+			return x.ReplaceDns
+		}
+	}
+	return nil
+}
+
 type isUpdateV2_Delta interface {
 	isUpdateV2_Delta()
 }
@@ -1465,7 +1581,31 @@ type UpdateV2_JoinLoadBalancer_ struct {
 	JoinLoadBalancer *UpdateV2_JoinLoadBalancer `protobuf:"bytes,2,opt,name=joinLoadBalancer,proto3,oneof"`
 }
 
+type UpdateV2_ReconcileLoadBalancer_ struct {
+	ReconcileLoadBalancer *UpdateV2_ReconcileLoadBalancer `protobuf:"bytes,3,opt,name=reconcileLoadBalancer,proto3,oneof"`
+}
+
+type UpdateV2_ApiEndpoint_ struct {
+	ApiEndpoint *UpdateV2_ApiEndpoint `protobuf:"bytes,4,opt,name=apiEndpoint,proto3,oneof"`
+}
+
+type UpdateV2_ClusterApiPort struct {
+	ClusterApiPort *UpdateV2_ApiPortOnCluster `protobuf:"bytes,5,opt,name=clusterApiPort,proto3,oneof"`
+}
+
+type UpdateV2_ReplaceDns_ struct {
+	ReplaceDns *UpdateV2_ReplaceDns `protobuf:"bytes,6,opt,name=replaceDns,proto3,oneof"`
+}
+
 func (*UpdateV2_JoinLoadBalancer_) isUpdateV2_Delta() {}
+
+func (*UpdateV2_ReconcileLoadBalancer_) isUpdateV2_Delta() {}
+
+func (*UpdateV2_ApiEndpoint_) isUpdateV2_Delta() {}
+
+func (*UpdateV2_ClusterApiPort) isUpdateV2_Delta() {}
+
+func (*UpdateV2_ReplaceDns_) isUpdateV2_Delta() {}
 
 type DeleteV2 struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -2100,6 +2240,220 @@ func (x *UpdateV2_JoinLoadBalancer) GetLoadBalancer() *LBclusterV2 {
 	return nil
 }
 
+type UpdateV2_ReconcileLoadBalancer struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	LoadBalancer  *LBclusterV2           `protobuf:"bytes,2,opt,name=loadBalancer,proto3" json:"loadBalancer,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateV2_ReconcileLoadBalancer) Reset() {
+	*x = UpdateV2_ReconcileLoadBalancer{}
+	mi := &file_spec_manifestv2_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateV2_ReconcileLoadBalancer) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateV2_ReconcileLoadBalancer) ProtoMessage() {}
+
+func (x *UpdateV2_ReconcileLoadBalancer) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifestv2_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateV2_ReconcileLoadBalancer.ProtoReflect.Descriptor instead.
+func (*UpdateV2_ReconcileLoadBalancer) Descriptor() ([]byte, []int) {
+	return file_spec_manifestv2_proto_rawDescGZIP(), []int{15, 2}
+}
+
+func (x *UpdateV2_ReconcileLoadBalancer) GetLoadBalancer() *LBclusterV2 {
+	if x != nil {
+		return x.LoadBalancer
+	}
+	return nil
+}
+
+type UpdateV2_ApiEndpoint struct {
+	state             protoimpl.MessageState   `protogen:"open.v1"`
+	State             ApiEndpointChangeStateV2 `protobuf:"varint,1,opt,name=state,proto3,enum=spec.ApiEndpointChangeStateV2" json:"state,omitempty"`
+	CurrentEndpointId string                   `protobuf:"bytes,2,opt,name=currentEndpointId,proto3" json:"currentEndpointId,omitempty"`
+	DesiredEndpointId string                   `protobuf:"bytes,3,opt,name=desiredEndpointId,proto3" json:"desiredEndpointId,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *UpdateV2_ApiEndpoint) Reset() {
+	*x = UpdateV2_ApiEndpoint{}
+	mi := &file_spec_manifestv2_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateV2_ApiEndpoint) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateV2_ApiEndpoint) ProtoMessage() {}
+
+func (x *UpdateV2_ApiEndpoint) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifestv2_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateV2_ApiEndpoint.ProtoReflect.Descriptor instead.
+func (*UpdateV2_ApiEndpoint) Descriptor() ([]byte, []int) {
+	return file_spec_manifestv2_proto_rawDescGZIP(), []int{15, 3}
+}
+
+func (x *UpdateV2_ApiEndpoint) GetState() ApiEndpointChangeStateV2 {
+	if x != nil {
+		return x.State
+	}
+	return ApiEndpointChangeStateV2_NoChangeV2
+}
+
+func (x *UpdateV2_ApiEndpoint) GetCurrentEndpointId() string {
+	if x != nil {
+		return x.CurrentEndpointId
+	}
+	return ""
+}
+
+func (x *UpdateV2_ApiEndpoint) GetDesiredEndpointId() string {
+	if x != nil {
+		return x.DesiredEndpointId
+	}
+	return ""
+}
+
+type UpdateV2_ApiPortOnCluster struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Open          bool                   `protobuf:"varint,1,opt,name=open,proto3" json:"open,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateV2_ApiPortOnCluster) Reset() {
+	*x = UpdateV2_ApiPortOnCluster{}
+	mi := &file_spec_manifestv2_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateV2_ApiPortOnCluster) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateV2_ApiPortOnCluster) ProtoMessage() {}
+
+func (x *UpdateV2_ApiPortOnCluster) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifestv2_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateV2_ApiPortOnCluster.ProtoReflect.Descriptor instead.
+func (*UpdateV2_ApiPortOnCluster) Descriptor() ([]byte, []int) {
+	return file_spec_manifestv2_proto_rawDescGZIP(), []int{15, 4}
+}
+
+func (x *UpdateV2_ApiPortOnCluster) GetOpen() bool {
+	if x != nil {
+		return x.Open
+	}
+	return false
+}
+
+type UpdateV2_ReplaceDns struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Loadbalancer ID to which the new [Dns] is going to created for.
+	LoadBalancerId string `protobuf:"bytes,1,opt,name=loadBalancerId,proto3" json:"loadBalancerId,omitempty"`
+	// The new dns to replace the old within [LoadBalancerId].
+	Dns *DNS `protobuf:"bytes,2,opt,name=dns,proto3" json:"dns,omitempty"`
+	// If the [Dns] is part of a Api loadbalancer this
+	// field will be set to give extra information for
+	// when changing the Api endpoint from the old to
+	// the new.
+	OldApiEndpoint *string `protobuf:"bytes,3,opt,name=oldApiEndpoint,proto3,oneof" json:"oldApiEndpoint,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *UpdateV2_ReplaceDns) Reset() {
+	*x = UpdateV2_ReplaceDns{}
+	mi := &file_spec_manifestv2_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateV2_ReplaceDns) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateV2_ReplaceDns) ProtoMessage() {}
+
+func (x *UpdateV2_ReplaceDns) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifestv2_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateV2_ReplaceDns.ProtoReflect.Descriptor instead.
+func (*UpdateV2_ReplaceDns) Descriptor() ([]byte, []int) {
+	return file_spec_manifestv2_proto_rawDescGZIP(), []int{15, 5}
+}
+
+func (x *UpdateV2_ReplaceDns) GetLoadBalancerId() string {
+	if x != nil {
+		return x.LoadBalancerId
+	}
+	return ""
+}
+
+func (x *UpdateV2_ReplaceDns) GetDns() *DNS {
+	if x != nil {
+		return x.Dns
+	}
+	return nil
+}
+
+func (x *UpdateV2_ReplaceDns) GetOldApiEndpoint() string {
+	if x != nil && x.OldApiEndpoint != nil {
+		return *x.OldApiEndpoint
+	}
+	return ""
+}
+
 type DeleteV2_Clusters struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The current state of the kuberentes cluster to delete.
@@ -2118,7 +2472,7 @@ type DeleteV2_Clusters struct {
 
 func (x *DeleteV2_Clusters) Reset() {
 	*x = DeleteV2_Clusters{}
-	mi := &file_spec_manifestv2_proto_msgTypes[26]
+	mi := &file_spec_manifestv2_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2130,7 +2484,7 @@ func (x *DeleteV2_Clusters) String() string {
 func (*DeleteV2_Clusters) ProtoMessage() {}
 
 func (x *DeleteV2_Clusters) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifestv2_proto_msgTypes[26]
+	mi := &file_spec_manifestv2_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2172,7 +2526,7 @@ type DeleteV2_LoadBalancers struct {
 
 func (x *DeleteV2_LoadBalancers) Reset() {
 	*x = DeleteV2_LoadBalancers{}
-	mi := &file_spec_manifestv2_proto_msgTypes[27]
+	mi := &file_spec_manifestv2_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2184,7 +2538,7 @@ func (x *DeleteV2_LoadBalancers) String() string {
 func (*DeleteV2_LoadBalancers) ProtoMessage() {}
 
 func (x *DeleteV2_LoadBalancers) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifestv2_proto_msgTypes[27]
+	mi := &file_spec_manifestv2_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2217,7 +2571,7 @@ type TaskResult_Error struct {
 
 func (x *TaskResult_Error) Reset() {
 	*x = TaskResult_Error{}
-	mi := &file_spec_manifestv2_proto_msgTypes[28]
+	mi := &file_spec_manifestv2_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2229,7 +2583,7 @@ func (x *TaskResult_Error) String() string {
 func (*TaskResult_Error) ProtoMessage() {}
 
 func (x *TaskResult_Error) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifestv2_proto_msgTypes[28]
+	mi := &file_spec_manifestv2_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2270,7 +2624,7 @@ type TaskResult_None struct {
 
 func (x *TaskResult_None) Reset() {
 	*x = TaskResult_None{}
-	mi := &file_spec_manifestv2_proto_msgTypes[29]
+	mi := &file_spec_manifestv2_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2282,7 +2636,7 @@ func (x *TaskResult_None) String() string {
 func (*TaskResult_None) ProtoMessage() {}
 
 func (x *TaskResult_None) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifestv2_proto_msgTypes[29]
+	mi := &file_spec_manifestv2_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2321,7 +2675,7 @@ type TaskResult_UpdateState struct {
 
 func (x *TaskResult_UpdateState) Reset() {
 	*x = TaskResult_UpdateState{}
-	mi := &file_spec_manifestv2_proto_msgTypes[30]
+	mi := &file_spec_manifestv2_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2333,7 +2687,7 @@ func (x *TaskResult_UpdateState) String() string {
 func (*TaskResult_UpdateState) ProtoMessage() {}
 
 func (x *TaskResult_UpdateState) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifestv2_proto_msgTypes[30]
+	mi := &file_spec_manifestv2_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2379,7 +2733,7 @@ type TaskResult_ClearState struct {
 
 func (x *TaskResult_ClearState) Reset() {
 	*x = TaskResult_ClearState{}
-	mi := &file_spec_manifestv2_proto_msgTypes[31]
+	mi := &file_spec_manifestv2_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2391,7 +2745,7 @@ func (x *TaskResult_ClearState) String() string {
 func (*TaskResult_ClearState) ProtoMessage() {}
 
 func (x *TaskResult_ClearState) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifestv2_proto_msgTypes[31]
+	mi := &file_spec_manifestv2_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2534,15 +2888,35 @@ const file_spec_manifestv2_proto_rawDesc = "" +
 	"\x02Do\"i\n" +
 	"\bCreateV2\x12$\n" +
 	"\x03k8s\x18\x01 \x01(\v2\x12.spec.K8sclusterV2R\x03k8s\x127\n" +
-	"\rloadBalancers\x18\x02 \x03(\v2\x11.spec.LBclusterV2R\rloadBalancers\"\xc1\x02\n" +
+	"\rloadBalancers\x18\x02 \x03(\v2\x11.spec.LBclusterV2R\rloadBalancers\"\x95\b\n" +
 	"\bUpdateV2\x12*\n" +
 	"\x05state\x18\x01 \x01(\v2\x14.spec.UpdateV2.StateR\x05state\x12M\n" +
-	"\x10joinLoadBalancer\x18\x02 \x01(\v2\x1f.spec.UpdateV2.JoinLoadBalancerH\x00R\x10joinLoadBalancer\x1af\n" +
+	"\x10joinLoadBalancer\x18\x02 \x01(\v2\x1f.spec.UpdateV2.JoinLoadBalancerH\x00R\x10joinLoadBalancer\x12\\\n" +
+	"\x15reconcileLoadBalancer\x18\x03 \x01(\v2$.spec.UpdateV2.ReconcileLoadBalancerH\x00R\x15reconcileLoadBalancer\x12>\n" +
+	"\vapiEndpoint\x18\x04 \x01(\v2\x1a.spec.UpdateV2.ApiEndpointH\x00R\vapiEndpoint\x12I\n" +
+	"\x0eclusterApiPort\x18\x05 \x01(\v2\x1f.spec.UpdateV2.ApiPortOnClusterH\x00R\x0eclusterApiPort\x12;\n" +
+	"\n" +
+	"replaceDns\x18\x06 \x01(\v2\x19.spec.UpdateV2.ReplaceDnsH\x00R\n" +
+	"replaceDns\x1af\n" +
 	"\x05State\x12$\n" +
 	"\x03k8s\x18\x01 \x01(\v2\x12.spec.K8sclusterV2R\x03k8s\x127\n" +
 	"\rloadBalancers\x18\x02 \x03(\v2\x11.spec.LBclusterV2R\rloadBalancers\x1aI\n" +
 	"\x10JoinLoadBalancer\x125\n" +
-	"\floadBalancer\x18\x01 \x01(\v2\x11.spec.LBclusterV2R\floadBalancerB\a\n" +
+	"\floadBalancer\x18\x01 \x01(\v2\x11.spec.LBclusterV2R\floadBalancer\x1aN\n" +
+	"\x15ReconcileLoadBalancer\x125\n" +
+	"\floadBalancer\x18\x02 \x01(\v2\x11.spec.LBclusterV2R\floadBalancer\x1a\x9f\x01\n" +
+	"\vApiEndpoint\x124\n" +
+	"\x05state\x18\x01 \x01(\x0e2\x1e.spec.ApiEndpointChangeStateV2R\x05state\x12,\n" +
+	"\x11currentEndpointId\x18\x02 \x01(\tR\x11currentEndpointId\x12,\n" +
+	"\x11desiredEndpointId\x18\x03 \x01(\tR\x11desiredEndpointId\x1a&\n" +
+	"\x10ApiPortOnCluster\x12\x12\n" +
+	"\x04open\x18\x01 \x01(\bR\x04open\x1a\x91\x01\n" +
+	"\n" +
+	"ReplaceDns\x12&\n" +
+	"\x0eloadBalancerId\x18\x01 \x01(\tR\x0eloadBalancerId\x12\x1b\n" +
+	"\x03dns\x18\x02 \x01(\v2\t.spec.DNSR\x03dns\x12+\n" +
+	"\x0eoldApiEndpoint\x18\x03 \x01(\tH\x00R\x0eoldApiEndpoint\x88\x01\x01B\x11\n" +
+	"\x0f_oldApiEndpointB\a\n" +
 	"\x05Delta\"\xc2\x02\n" +
 	"\bDeleteV2\x125\n" +
 	"\bclusters\x18\x01 \x01(\v2\x17.spec.DeleteV2.ClustersH\x00R\bclusters\x12D\n" +
@@ -2597,7 +2971,14 @@ const file_spec_manifestv2_proto_rawDesc = "" +
 	"UNKNOWN_V2\x10\x00\x12\r\n" +
 	"\tCREATE_V2\x10\x01\x12\r\n" +
 	"\tUPDATE_V2\x10\x02\x12\r\n" +
-	"\tDELETE_V2\x10\x03B)Z'github.com/berops/claudie/proto/pb/specb\x06proto3"
+	"\tDELETE_V2\x10\x03*\x8f\x01\n" +
+	"\x18ApiEndpointChangeStateV2\x12\x0e\n" +
+	"\n" +
+	"NoChangeV2\x10\x00\x12\x1b\n" +
+	"\x17AttachingLoadBalancerV2\x10\x01\x12\x1b\n" +
+	"\x17DetachingLoadBalancerV2\x10\x02\x12\x15\n" +
+	"\x11EndpointRenamedV2\x10\x03\x12\x12\n" +
+	"\x0eMoveEndpointV2\x10\x04B)Z'github.com/berops/claudie/proto/pb/specb\x06proto3"
 
 var (
 	file_spec_manifestv2_proto_rawDescOnce sync.Once
@@ -2611,113 +2992,125 @@ func file_spec_manifestv2_proto_rawDescGZIP() []byte {
 	return file_spec_manifestv2_proto_rawDescData
 }
 
-var file_spec_manifestv2_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
-var file_spec_manifestv2_proto_msgTypes = make([]protoimpl.MessageInfo, 32)
+var file_spec_manifestv2_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
+var file_spec_manifestv2_proto_msgTypes = make([]protoimpl.MessageInfo, 36)
 var file_spec_manifestv2_proto_goTypes = []any{
-	(RoleTypeV2)(0),                   // 0: spec.RoleTypeV2
-	(EventV2)(0),                      // 1: spec.EventV2
-	(ManifestV2_State)(0),             // 2: spec.ManifestV2.State
-	(WorkflowV2_Status)(0),            // 3: spec.WorkflowV2.Status
-	(RetryV2_Repeat_Kind)(0),          // 4: spec.RetryV2.Repeat.Kind
-	(TaskResult_Error_Kind)(0),        // 5: spec.TaskResult.Error.Kind
-	(*ConfigV2)(nil),                  // 6: spec.ConfigV2
-	(*ManifestV2)(nil),                // 7: spec.ManifestV2
-	(*ClusterStateV2)(nil),            // 8: spec.ClusterStateV2
-	(*ClustersV2)(nil),                // 9: spec.ClustersV2
-	(*LoadBalancersV2)(nil),           // 10: spec.LoadBalancersV2
-	(*KubernetesContextV2)(nil),       // 11: spec.KubernetesContextV2
-	(*WorkflowV2)(nil),                // 12: spec.WorkflowV2
-	(*K8SclusterV2)(nil),              // 13: spec.K8sclusterV2
-	(*LBclusterV2)(nil),               // 14: spec.LBclusterV2
-	(*ClusterInfoV2)(nil),             // 15: spec.ClusterInfoV2
-	(*InstallationProxyV2)(nil),       // 16: spec.InstallationProxyV2
-	(*RoleV2)(nil),                    // 17: spec.RoleV2
-	(*TaskEventV2)(nil),               // 18: spec.TaskEventV2
-	(*RetryV2)(nil),                   // 19: spec.RetryV2
-	(*CreateV2)(nil),                  // 20: spec.CreateV2
-	(*UpdateV2)(nil),                  // 21: spec.UpdateV2
-	(*DeleteV2)(nil),                  // 22: spec.DeleteV2
-	(*TaskV2)(nil),                    // 23: spec.TaskV2
-	(*Work)(nil),                      // 24: spec.Work
-	(*TaskResult)(nil),                // 25: spec.TaskResult
-	nil,                               // 26: spec.ConfigV2.ClustersEntry
-	(*RoleV2_Settings)(nil),           // 27: spec.RoleV2.Settings
-	(*RetryV2_Repeat)(nil),            // 28: spec.RetryV2.Repeat
-	(*RetryV2_Rollback)(nil),          // 29: spec.RetryV2.Rollback
-	(*UpdateV2_State)(nil),            // 30: spec.UpdateV2.State
-	(*UpdateV2_JoinLoadBalancer)(nil), // 31: spec.UpdateV2.JoinLoadBalancer
-	(*DeleteV2_Clusters)(nil),         // 32: spec.DeleteV2.Clusters
-	(*DeleteV2_LoadBalancers)(nil),    // 33: spec.DeleteV2.LoadBalancers
-	(*TaskResult_Error)(nil),          // 34: spec.TaskResult.Error
-	(*TaskResult_None)(nil),           // 35: spec.TaskResult.None
-	(*TaskResult_UpdateState)(nil),    // 36: spec.TaskResult.UpdateState
-	(*TaskResult_ClearState)(nil),     // 37: spec.TaskResult.ClearState
-	(*DNS)(nil),                       // 38: spec.DNS
-	(*NodePool)(nil),                  // 39: spec.NodePool
-	(*timestamppb.Timestamp)(nil),     // 40: google.protobuf.Timestamp
-	(*Stage)(nil),                     // 41: spec.Stage
-	(*anypb.Any)(nil),                 // 42: google.protobuf.Any
+	(RoleTypeV2)(0),                        // 0: spec.RoleTypeV2
+	(EventV2)(0),                           // 1: spec.EventV2
+	(ApiEndpointChangeStateV2)(0),          // 2: spec.ApiEndpointChangeStateV2
+	(ManifestV2_State)(0),                  // 3: spec.ManifestV2.State
+	(WorkflowV2_Status)(0),                 // 4: spec.WorkflowV2.Status
+	(RetryV2_Repeat_Kind)(0),               // 5: spec.RetryV2.Repeat.Kind
+	(TaskResult_Error_Kind)(0),             // 6: spec.TaskResult.Error.Kind
+	(*ConfigV2)(nil),                       // 7: spec.ConfigV2
+	(*ManifestV2)(nil),                     // 8: spec.ManifestV2
+	(*ClusterStateV2)(nil),                 // 9: spec.ClusterStateV2
+	(*ClustersV2)(nil),                     // 10: spec.ClustersV2
+	(*LoadBalancersV2)(nil),                // 11: spec.LoadBalancersV2
+	(*KubernetesContextV2)(nil),            // 12: spec.KubernetesContextV2
+	(*WorkflowV2)(nil),                     // 13: spec.WorkflowV2
+	(*K8SclusterV2)(nil),                   // 14: spec.K8sclusterV2
+	(*LBclusterV2)(nil),                    // 15: spec.LBclusterV2
+	(*ClusterInfoV2)(nil),                  // 16: spec.ClusterInfoV2
+	(*InstallationProxyV2)(nil),            // 17: spec.InstallationProxyV2
+	(*RoleV2)(nil),                         // 18: spec.RoleV2
+	(*TaskEventV2)(nil),                    // 19: spec.TaskEventV2
+	(*RetryV2)(nil),                        // 20: spec.RetryV2
+	(*CreateV2)(nil),                       // 21: spec.CreateV2
+	(*UpdateV2)(nil),                       // 22: spec.UpdateV2
+	(*DeleteV2)(nil),                       // 23: spec.DeleteV2
+	(*TaskV2)(nil),                         // 24: spec.TaskV2
+	(*Work)(nil),                           // 25: spec.Work
+	(*TaskResult)(nil),                     // 26: spec.TaskResult
+	nil,                                    // 27: spec.ConfigV2.ClustersEntry
+	(*RoleV2_Settings)(nil),                // 28: spec.RoleV2.Settings
+	(*RetryV2_Repeat)(nil),                 // 29: spec.RetryV2.Repeat
+	(*RetryV2_Rollback)(nil),               // 30: spec.RetryV2.Rollback
+	(*UpdateV2_State)(nil),                 // 31: spec.UpdateV2.State
+	(*UpdateV2_JoinLoadBalancer)(nil),      // 32: spec.UpdateV2.JoinLoadBalancer
+	(*UpdateV2_ReconcileLoadBalancer)(nil), // 33: spec.UpdateV2.ReconcileLoadBalancer
+	(*UpdateV2_ApiEndpoint)(nil),           // 34: spec.UpdateV2.ApiEndpoint
+	(*UpdateV2_ApiPortOnCluster)(nil),      // 35: spec.UpdateV2.ApiPortOnCluster
+	(*UpdateV2_ReplaceDns)(nil),            // 36: spec.UpdateV2.ReplaceDns
+	(*DeleteV2_Clusters)(nil),              // 37: spec.DeleteV2.Clusters
+	(*DeleteV2_LoadBalancers)(nil),         // 38: spec.DeleteV2.LoadBalancers
+	(*TaskResult_Error)(nil),               // 39: spec.TaskResult.Error
+	(*TaskResult_None)(nil),                // 40: spec.TaskResult.None
+	(*TaskResult_UpdateState)(nil),         // 41: spec.TaskResult.UpdateState
+	(*TaskResult_ClearState)(nil),          // 42: spec.TaskResult.ClearState
+	(*DNS)(nil),                            // 43: spec.DNS
+	(*NodePool)(nil),                       // 44: spec.NodePool
+	(*timestamppb.Timestamp)(nil),          // 45: google.protobuf.Timestamp
+	(*Stage)(nil),                          // 46: spec.Stage
+	(*anypb.Any)(nil),                      // 47: google.protobuf.Any
 }
 var file_spec_manifestv2_proto_depIdxs = []int32{
-	11, // 0: spec.ConfigV2.k8sCtx:type_name -> spec.KubernetesContextV2
-	7,  // 1: spec.ConfigV2.manifest:type_name -> spec.ManifestV2
-	26, // 2: spec.ConfigV2.clusters:type_name -> spec.ConfigV2.ClustersEntry
-	2,  // 3: spec.ManifestV2.state:type_name -> spec.ManifestV2.State
-	9,  // 4: spec.ClusterStateV2.current:type_name -> spec.ClustersV2
-	12, // 5: spec.ClusterStateV2.state:type_name -> spec.WorkflowV2
-	18, // 6: spec.ClusterStateV2.task:type_name -> spec.TaskEventV2
-	13, // 7: spec.ClustersV2.k8s:type_name -> spec.K8sclusterV2
-	10, // 8: spec.ClustersV2.loadBalancers:type_name -> spec.LoadBalancersV2
-	14, // 9: spec.LoadBalancersV2.clusters:type_name -> spec.LBclusterV2
-	3,  // 10: spec.WorkflowV2.status:type_name -> spec.WorkflowV2.Status
-	15, // 11: spec.K8sclusterV2.clusterInfo:type_name -> spec.ClusterInfoV2
-	16, // 12: spec.K8sclusterV2.installationProxy:type_name -> spec.InstallationProxyV2
-	15, // 13: spec.LBclusterV2.clusterInfo:type_name -> spec.ClusterInfoV2
-	17, // 14: spec.LBclusterV2.roles:type_name -> spec.RoleV2
-	38, // 15: spec.LBclusterV2.dns:type_name -> spec.DNS
-	39, // 16: spec.ClusterInfoV2.nodePools:type_name -> spec.NodePool
+	12, // 0: spec.ConfigV2.k8sCtx:type_name -> spec.KubernetesContextV2
+	8,  // 1: spec.ConfigV2.manifest:type_name -> spec.ManifestV2
+	27, // 2: spec.ConfigV2.clusters:type_name -> spec.ConfigV2.ClustersEntry
+	3,  // 3: spec.ManifestV2.state:type_name -> spec.ManifestV2.State
+	10, // 4: spec.ClusterStateV2.current:type_name -> spec.ClustersV2
+	13, // 5: spec.ClusterStateV2.state:type_name -> spec.WorkflowV2
+	19, // 6: spec.ClusterStateV2.task:type_name -> spec.TaskEventV2
+	14, // 7: spec.ClustersV2.k8s:type_name -> spec.K8sclusterV2
+	11, // 8: spec.ClustersV2.loadBalancers:type_name -> spec.LoadBalancersV2
+	15, // 9: spec.LoadBalancersV2.clusters:type_name -> spec.LBclusterV2
+	4,  // 10: spec.WorkflowV2.status:type_name -> spec.WorkflowV2.Status
+	16, // 11: spec.K8sclusterV2.clusterInfo:type_name -> spec.ClusterInfoV2
+	17, // 12: spec.K8sclusterV2.installationProxy:type_name -> spec.InstallationProxyV2
+	16, // 13: spec.LBclusterV2.clusterInfo:type_name -> spec.ClusterInfoV2
+	18, // 14: spec.LBclusterV2.roles:type_name -> spec.RoleV2
+	43, // 15: spec.LBclusterV2.dns:type_name -> spec.DNS
+	44, // 16: spec.ClusterInfoV2.nodePools:type_name -> spec.NodePool
 	0,  // 17: spec.RoleV2.roleType:type_name -> spec.RoleTypeV2
-	27, // 18: spec.RoleV2.settings:type_name -> spec.RoleV2.Settings
-	40, // 19: spec.TaskEventV2.timestamp:type_name -> google.protobuf.Timestamp
+	28, // 18: spec.RoleV2.settings:type_name -> spec.RoleV2.Settings
+	45, // 19: spec.TaskEventV2.timestamp:type_name -> google.protobuf.Timestamp
 	1,  // 20: spec.TaskEventV2.event:type_name -> spec.EventV2
-	9,  // 21: spec.TaskEventV2.state:type_name -> spec.ClustersV2
-	23, // 22: spec.TaskEventV2.task:type_name -> spec.TaskV2
-	19, // 23: spec.TaskEventV2.onError:type_name -> spec.RetryV2
-	41, // 24: spec.TaskEventV2.pipeline:type_name -> spec.Stage
-	28, // 25: spec.RetryV2.repeat:type_name -> spec.RetryV2.Repeat
-	29, // 26: spec.RetryV2.rollback:type_name -> spec.RetryV2.Rollback
-	13, // 27: spec.CreateV2.k8s:type_name -> spec.K8sclusterV2
-	14, // 28: spec.CreateV2.loadBalancers:type_name -> spec.LBclusterV2
-	30, // 29: spec.UpdateV2.state:type_name -> spec.UpdateV2.State
-	31, // 30: spec.UpdateV2.joinLoadBalancer:type_name -> spec.UpdateV2.JoinLoadBalancer
-	32, // 31: spec.DeleteV2.clusters:type_name -> spec.DeleteV2.Clusters
-	33, // 32: spec.DeleteV2.loadbalancers:type_name -> spec.DeleteV2.LoadBalancers
-	20, // 33: spec.TaskV2.create:type_name -> spec.CreateV2
-	21, // 34: spec.TaskV2.update:type_name -> spec.UpdateV2
-	22, // 35: spec.TaskV2.delete:type_name -> spec.DeleteV2
-	23, // 36: spec.Work.task:type_name -> spec.TaskV2
-	42, // 37: spec.Work.passes:type_name -> google.protobuf.Any
-	34, // 38: spec.TaskResult.error:type_name -> spec.TaskResult.Error
-	35, // 39: spec.TaskResult.none:type_name -> spec.TaskResult.None
-	36, // 40: spec.TaskResult.update:type_name -> spec.TaskResult.UpdateState
-	37, // 41: spec.TaskResult.clear:type_name -> spec.TaskResult.ClearState
-	8,  // 42: spec.ConfigV2.ClustersEntry.value:type_name -> spec.ClusterStateV2
-	4,  // 43: spec.RetryV2.Repeat.kind:type_name -> spec.RetryV2.Repeat.Kind
-	18, // 44: spec.RetryV2.Rollback.tasks:type_name -> spec.TaskEventV2
-	13, // 45: spec.UpdateV2.State.k8s:type_name -> spec.K8sclusterV2
-	14, // 46: spec.UpdateV2.State.loadBalancers:type_name -> spec.LBclusterV2
-	14, // 47: spec.UpdateV2.JoinLoadBalancer.loadBalancer:type_name -> spec.LBclusterV2
-	13, // 48: spec.DeleteV2.Clusters.k8s:type_name -> spec.K8sclusterV2
-	14, // 49: spec.DeleteV2.Clusters.loadBalancers:type_name -> spec.LBclusterV2
-	14, // 50: spec.DeleteV2.LoadBalancers.loadBalancers:type_name -> spec.LBclusterV2
-	5,  // 51: spec.TaskResult.Error.kind:type_name -> spec.TaskResult.Error.Kind
-	13, // 52: spec.TaskResult.UpdateState.k8s:type_name -> spec.K8sclusterV2
-	10, // 53: spec.TaskResult.UpdateState.loadBalancers:type_name -> spec.LoadBalancersV2
-	54, // [54:54] is the sub-list for method output_type
-	54, // [54:54] is the sub-list for method input_type
-	54, // [54:54] is the sub-list for extension type_name
-	54, // [54:54] is the sub-list for extension extendee
-	0,  // [0:54] is the sub-list for field type_name
+	10, // 21: spec.TaskEventV2.state:type_name -> spec.ClustersV2
+	24, // 22: spec.TaskEventV2.task:type_name -> spec.TaskV2
+	20, // 23: spec.TaskEventV2.onError:type_name -> spec.RetryV2
+	46, // 24: spec.TaskEventV2.pipeline:type_name -> spec.Stage
+	29, // 25: spec.RetryV2.repeat:type_name -> spec.RetryV2.Repeat
+	30, // 26: spec.RetryV2.rollback:type_name -> spec.RetryV2.Rollback
+	14, // 27: spec.CreateV2.k8s:type_name -> spec.K8sclusterV2
+	15, // 28: spec.CreateV2.loadBalancers:type_name -> spec.LBclusterV2
+	31, // 29: spec.UpdateV2.state:type_name -> spec.UpdateV2.State
+	32, // 30: spec.UpdateV2.joinLoadBalancer:type_name -> spec.UpdateV2.JoinLoadBalancer
+	33, // 31: spec.UpdateV2.reconcileLoadBalancer:type_name -> spec.UpdateV2.ReconcileLoadBalancer
+	34, // 32: spec.UpdateV2.apiEndpoint:type_name -> spec.UpdateV2.ApiEndpoint
+	35, // 33: spec.UpdateV2.clusterApiPort:type_name -> spec.UpdateV2.ApiPortOnCluster
+	36, // 34: spec.UpdateV2.replaceDns:type_name -> spec.UpdateV2.ReplaceDns
+	37, // 35: spec.DeleteV2.clusters:type_name -> spec.DeleteV2.Clusters
+	38, // 36: spec.DeleteV2.loadbalancers:type_name -> spec.DeleteV2.LoadBalancers
+	21, // 37: spec.TaskV2.create:type_name -> spec.CreateV2
+	22, // 38: spec.TaskV2.update:type_name -> spec.UpdateV2
+	23, // 39: spec.TaskV2.delete:type_name -> spec.DeleteV2
+	24, // 40: spec.Work.task:type_name -> spec.TaskV2
+	47, // 41: spec.Work.passes:type_name -> google.protobuf.Any
+	39, // 42: spec.TaskResult.error:type_name -> spec.TaskResult.Error
+	40, // 43: spec.TaskResult.none:type_name -> spec.TaskResult.None
+	41, // 44: spec.TaskResult.update:type_name -> spec.TaskResult.UpdateState
+	42, // 45: spec.TaskResult.clear:type_name -> spec.TaskResult.ClearState
+	9,  // 46: spec.ConfigV2.ClustersEntry.value:type_name -> spec.ClusterStateV2
+	5,  // 47: spec.RetryV2.Repeat.kind:type_name -> spec.RetryV2.Repeat.Kind
+	19, // 48: spec.RetryV2.Rollback.tasks:type_name -> spec.TaskEventV2
+	14, // 49: spec.UpdateV2.State.k8s:type_name -> spec.K8sclusterV2
+	15, // 50: spec.UpdateV2.State.loadBalancers:type_name -> spec.LBclusterV2
+	15, // 51: spec.UpdateV2.JoinLoadBalancer.loadBalancer:type_name -> spec.LBclusterV2
+	15, // 52: spec.UpdateV2.ReconcileLoadBalancer.loadBalancer:type_name -> spec.LBclusterV2
+	2,  // 53: spec.UpdateV2.ApiEndpoint.state:type_name -> spec.ApiEndpointChangeStateV2
+	43, // 54: spec.UpdateV2.ReplaceDns.dns:type_name -> spec.DNS
+	14, // 55: spec.DeleteV2.Clusters.k8s:type_name -> spec.K8sclusterV2
+	15, // 56: spec.DeleteV2.Clusters.loadBalancers:type_name -> spec.LBclusterV2
+	15, // 57: spec.DeleteV2.LoadBalancers.loadBalancers:type_name -> spec.LBclusterV2
+	6,  // 58: spec.TaskResult.Error.kind:type_name -> spec.TaskResult.Error.Kind
+	14, // 59: spec.TaskResult.UpdateState.k8s:type_name -> spec.K8sclusterV2
+	11, // 60: spec.TaskResult.UpdateState.loadBalancers:type_name -> spec.LoadBalancersV2
+	61, // [61:61] is the sub-list for method output_type
+	61, // [61:61] is the sub-list for method input_type
+	61, // [61:61] is the sub-list for extension type_name
+	61, // [61:61] is the sub-list for extension extendee
+	0,  // [0:61] is the sub-list for field type_name
 }
 
 func init() { file_spec_manifestv2_proto_init() }
@@ -2734,6 +3127,10 @@ func file_spec_manifestv2_proto_init() {
 	}
 	file_spec_manifestv2_proto_msgTypes[15].OneofWrappers = []any{
 		(*UpdateV2_JoinLoadBalancer_)(nil),
+		(*UpdateV2_ReconcileLoadBalancer_)(nil),
+		(*UpdateV2_ApiEndpoint_)(nil),
+		(*UpdateV2_ClusterApiPort)(nil),
+		(*UpdateV2_ReplaceDns_)(nil),
 	}
 	file_spec_manifestv2_proto_msgTypes[16].OneofWrappers = []any{
 		(*DeleteV2_Clusters_)(nil),
@@ -2749,15 +3146,16 @@ func file_spec_manifestv2_proto_init() {
 		(*TaskResult_Update)(nil),
 		(*TaskResult_Clear)(nil),
 	}
-	file_spec_manifestv2_proto_msgTypes[30].OneofWrappers = []any{}
-	file_spec_manifestv2_proto_msgTypes[31].OneofWrappers = []any{}
+	file_spec_manifestv2_proto_msgTypes[29].OneofWrappers = []any{}
+	file_spec_manifestv2_proto_msgTypes[34].OneofWrappers = []any{}
+	file_spec_manifestv2_proto_msgTypes[35].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_spec_manifestv2_proto_rawDesc), len(file_spec_manifestv2_proto_rawDesc)),
-			NumEnums:      6,
-			NumMessages:   32,
+			NumEnums:      7,
+			NumMessages:   36,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

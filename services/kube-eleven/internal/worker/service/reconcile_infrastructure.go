@@ -16,11 +16,20 @@ func Reconcile(
 	task *spec.TaskV2,
 	tracker Tracker,
 ) {
-	action, ok := task.GetDo().(*spec.TaskV2_Create)
-	if !ok {
+	var k8s *spec.K8SclusterV2
+	var lbs []*spec.LBclusterV2
+
+	switch task := task.Do.(type) {
+	case *spec.TaskV2_Create:
+		k8s = task.Create.K8S
+		lbs = task.Create.LoadBalancers
+	case *spec.TaskV2_Update:
+		k8s = task.Update.State.K8S
+		lbs = task.Update.State.LoadBalancers
+	default:
 		logger.
 			Warn().
-			Msgf("received task with action %T while wanting to reconcile kubernetes cluster, assuming the task was misscheduled, ignoring", task.GetDo())
+			Msgf("received task with action %T while wanting to reconcile kubernetes cluster, assuming the task was misscheduled, ignoring", task)
 		tracker.Result.KeepAsIs()
 		return
 	}
@@ -28,12 +37,12 @@ func Reconcile(
 	logger.Info().Msgf("Reconciling kubernetes cluster")
 
 	var loadbalancerApiEndpoint string
-	if ep := clusters.FindAssignedLbApiEndpointV2(action.Create.LoadBalancers); ep != nil {
+	if ep := clusters.FindAssignedLbApiEndpointV2(lbs); ep != nil {
 		loadbalancerApiEndpoint = ep.Dns.Endpoint
 	}
 
 	k := kube_eleven.KubeEleven{
-		K8sCluster:           action.Create.K8S,
+		K8sCluster:           k8s,
 		LoadBalancerEndpoint: loadbalancerApiEndpoint,
 		SpawnProcessLimit:    processLimit,
 	}
@@ -49,7 +58,7 @@ func Reconcile(
 	tracker.
 		Result.
 		ToUpdate().
-		TakeKubernetesCluster(action.Create.K8S).
-		TakeLoadBalancers(action.Create.LoadBalancers...).
+		TakeKubernetesCluster(k8s).
+		TakeLoadBalancers(lbs...).
 		Replace()
 }

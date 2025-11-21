@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/berops/claudie/internal/clusters"
@@ -19,6 +18,7 @@ import (
 type ScheduleResult uint8
 
 // TODO: endless reconciliation...
+// TODO: go over the descriptions of each task.
 const (
 	// Reschedule describes the case where the manifest should be rescheduled again
 	// after either error-ing or completing.
@@ -62,8 +62,9 @@ func reconciliate(pending *spec.ConfigV2, desired map[string]*spec.ClustersV2) S
 			current = state.Current
 			desired = desired[cluster]
 
-			isCurrentNil     = current == nil || (current.K8S == nil && len(current.LoadBalancers.Clusters) == 0)
-			isDesiredNil     = desired == nil || (desired.K8S == nil && len(desired.LoadBalancers.Clusters) == 0)
+			isCurrentNil = current == nil || (current.K8S == nil && len(current.LoadBalancers.Clusters) == 0)
+			isDesiredNil = desired == nil || (desired.K8S == nil && len(desired.LoadBalancers.Clusters) == 0)
+			// TODO: rename state.Task to InFlight ?
 			hasInFlightState = state.Task != nil && state.Task.Task != nil
 
 			noop      = isCurrentNil && isDesiredNil && !hasInFlightState
@@ -91,6 +92,21 @@ func reconciliate(pending *spec.ConfigV2, desired map[string]*spec.ClustersV2) S
 				state.Task = deleteCluster(state.Task.State)
 				break
 			}
+
+			// Choose API endpoint.
+			var ep bool
+			for _, lb := range desired.GetLoadBalancers().GetClusters() {
+				if lb.HasApiRole() {
+					lb.UsedApiEndpoint = true
+					ep = true
+					break
+				}
+			}
+			if !ep {
+				nps := desired.K8S.ClusterInfo.NodePools
+				nodepools.FirstControlNode(nps).NodeType = spec.NodeType_apiEndpoint
+			}
+
 			state.Task = createCluster(desired)
 		case isDestroy:
 			if hasInFlightState {
@@ -122,6 +138,16 @@ func reconciliate(pending *spec.ConfigV2, desired map[string]*spec.ClustersV2) S
 
 			state.Task = deleteCluster(current)
 		default:
+			// TODO: the autoscaler desired state could be
+			// read from the POD directly instead of the
+			// pod making requests to the manager. The manager
+			// should read the desired state of the autoscaler.
+			// errors should be handled gracefully. the autoscaler
+			// desired state should be passed when creating our desired state.
+			// so that the dynamic nodepools count is correct. But we also need
+			// to make sure that in the case the autoscaler is not reachable
+			// we will always keep the count from the current state.
+			// TODO: add diff with the in-flight state.
 			// TODO: handle this at this stage instead of the
 			// transfer_existing stage.
 			// This would Also mean that the desired state should be
@@ -137,6 +163,7 @@ func reconciliate(pending *spec.ConfigV2, desired map[string]*spec.ClustersV2) S
 			// 		dnp.Count = cnp.Count
 			// 	}
 			// }
+			// TODO: what if there is always an inflight in-between state ?
 			if err := managementcluster.StoreKubeconfig(pending.Name, current); err != nil {
 				logger.Err(err).Msg("Failed to store kubeconfig in the management cluster")
 			}
@@ -159,13 +186,30 @@ func reconciliate(pending *spec.ConfigV2, desired map[string]*spec.ClustersV2) S
 
 			result = Noop
 
-			work := Diff(current, desired)
-			if work == nil {
+			hc, err := HealthCheck(logger, current)
+			if err != nil {
+				logger.Err(err).Msg("Failed to fully healthcheck cluster")
 				break
 			}
 
-			state.Task = work
-			result = Reschedule
+			k8s := KubernetesDiff(current.K8S, desired.K8S)
+			lbs := LoadBalancersDiff(&k8s, current.LoadBalancers, desired.LoadBalancers)
+
+			if state.Task = PreKubernetesDiff(&hc, &lbs, current, desired); state.Task != nil {
+				result = Reschedule
+				break
+			}
+
+			// TODO: there would also need to be a Pre and Post diff for kubernetes.
+			// Possible could be called Add/Modify and Delete diffs.
+			if state.Task = k8sdiff(&hc, &k8s, current, desired); state.Task != nil {
+				result = Reschedule
+				break
+			}
+
+			if state.Task = PostKubernetesDiff(&hc, &lbs, current, desired); state.Task != nil {
+				result = Reschedule
+			}
 		}
 
 		switch result {
@@ -206,20 +250,6 @@ func PopulateEntriesForNewClusters(
 }
 
 func createCluster(desired *spec.ClustersV2) *spec.TaskEventV2 {
-	// Choose initial api endpoint.
-	var ep bool
-	for _, lb := range desired.GetLoadBalancers().GetClusters() {
-		if lb.HasApiRole() {
-			lb.UsedApiEndpoint = true
-			ep = true
-			break
-		}
-	}
-	if !ep {
-		nps := desired.K8S.ClusterInfo.NodePools
-		nodepools.FirstControlNode(nps).NodeType = spec.NodeType_apiEndpoint
-	}
-
 	pipeline := []*spec.Stage{
 		{
 			StageKind: &spec.Stage_Terraformer{
@@ -432,6 +462,8 @@ func deleteCluster(current *spec.ClustersV2) *spec.TaskEventV2 {
 
 // Creates an union that is the combination of the two passed in states.
 // The returned union does not point to or share any memory with the two passed in states.
+// The only "place" where a union is not made is the DNS of a LoadBalancer if it differs
+// in the two passed in states, always the on in the old is used.
 func clustersUnion(old, modified *spec.ClustersV2) *spec.ClustersV2 {
 	// should be enough to test the k8s cluster presence, as there are
 	// no loadbalancers without a kubernetes cluster.
@@ -448,50 +480,44 @@ func clustersUnion(old, modified *spec.ClustersV2) *spec.ClustersV2 {
 	}
 
 	var (
-		ir = proto.Clone(old).(*spec.ClustersV2)
-
-		odynamic, ostatic = NodePoolsView(ir.GetK8S().GetClusterInfo())
-		ndynamic, nstatic = NodePoolsView(modified.GetK8S().GetClusterInfo())
-
-		dynamicDiff = NodePoolsDiff(odynamic, ndynamic)
-		staticDiff  = NodePoolsDiff(ostatic, nstatic)
-
-		loadbalancerDiff = LoadBalancersDiff(ir.LoadBalancers, modified.LoadBalancers)
+		ir  = proto.Clone(old).(*spec.ClustersV2)
+		k8s = KubernetesDiff(ir.GetK8S(), modified.GetK8S())
+		lbs = LoadBalancersDiff(&k8s, ir.LoadBalancers, modified.LoadBalancers)
 	)
 
 	// 1. Add any nodepools/nodes.
-	for np, nodes := range dynamicDiff.PartiallyAdded {
+	for np, nodes := range k8s.Dynamic.PartiallyAdded {
 		src := nodepools.FindByName(np, modified.K8S.ClusterInfo.NodePools)
 		dst := nodepools.FindByName(np, ir.K8S.ClusterInfo.NodePools)
 		nodepools.CopyNodes(dst, src, nodes)
 	}
 
-	for np := range dynamicDiff.Added {
+	for np := range k8s.Dynamic.Added {
 		np := nodepools.FindByName(np, modified.K8S.ClusterInfo.NodePools)
 		nnp := proto.Clone(np).(*spec.NodePool)
 		ir.K8S.ClusterInfo.NodePools = append(ir.K8S.ClusterInfo.NodePools, nnp)
 	}
 
-	for np, nodes := range staticDiff.PartiallyAdded {
+	for np, nodes := range k8s.Static.PartiallyAdded {
 		src := nodepools.FindByName(np, modified.K8S.ClusterInfo.NodePools)
 		dst := nodepools.FindByName(np, ir.K8S.ClusterInfo.NodePools)
 		nodepools.CopyNodes(dst, src, nodes)
 	}
 
-	for np := range staticDiff.Added {
+	for np := range k8s.Static.Added {
 		np := nodepools.FindByName(np, modified.K8S.ClusterInfo.NodePools)
 		nnp := proto.Clone(np).(*spec.NodePool)
 		ir.K8S.ClusterInfo.NodePools = append(ir.K8S.ClusterInfo.NodePools, nnp)
 	}
 
 	// 2. Same, but for loadbalancers.
-	for _, lb := range loadbalancerDiff.Added {
+	for _, lb := range lbs.Added {
 		idx := clusters.IndexLoadbalancerByIdV2(lb, modified.LoadBalancers.Clusters)
 		lb := proto.Clone(modified.LoadBalancers.Clusters[idx]).(*spec.LBclusterV2)
 		ir.LoadBalancers.Clusters = append(ir.LoadBalancers.Clusters, lb)
 	}
 
-	for lb, diff := range loadbalancerDiff.Modified {
+	for lb, diff := range lbs.Modified {
 		var (
 			cidx = clusters.IndexLoadbalancerByIdV2(lb, ir.LoadBalancers.Clusters)
 			nidx = clusters.IndexLoadbalancerByIdV2(lb, modified.LoadBalancers.Clusters)
@@ -550,113 +576,11 @@ func clustersUnion(old, modified *spec.ClustersV2) *spec.ClustersV2 {
 	return ir
 }
 
-func Diff(current, desired *spec.ClustersV2) *spec.TaskEventV2 {
-	var (
-		odynamic, ostatic = NodePoolsView(current.K8S.ClusterInfo)
-		ndynamic, nstatic = NodePoolsView(desired.K8S.ClusterInfo)
+// TODO: the diff should be always between the committed current state and the desired state
+// if we have an inflight state the scheduled task should be merged with that inFlight state.
+// But then what if we add a loadbalancer and it fails in the ansible stage and then delete it
+// from the desired state ? the diff will miss this...
 
-		k8sDynamicDiff = NodePoolsDiff(odynamic, ndynamic)
-		k8sStaticDiff  = NodePoolsDiff(ostatic, nstatic)
-
-		loadbalancersDiff = LoadBalancersDiff(current.LoadBalancers, desired.LoadBalancers)
-	)
-
-	if task := lbdiff(current, desired, loadbalancersDiff); task != nil {
-		return task
-	}
-
-	return k8sdiff(k8sDynamicDiff, k8sStaticDiff)
-}
-
-func lbdiff(current, desired *spec.ClustersV2, diff LoadBalancersDiffResult) *spec.TaskEventV2 {
-	for _, lb := range diff.Added {
-		return joinLoadBalancer(current, desired, lb)
-	}
-	return nil
-}
-
-func joinLoadBalancer(current, desired *spec.ClustersV2, lb string) *spec.TaskEventV2 {
-	var (
-		idx      = clusters.IndexLoadbalancerByIdV2(lb, desired.LoadBalancers.Clusters)
-		toJoin   = proto.Clone(desired.LoadBalancers.Clusters[idx]).(*spec.LBclusterV2)
-		inFlight = proto.Clone(current).(*spec.ClustersV2)
-		state    = proto.Clone(current).(*spec.ClustersV2)
-		updateOp = spec.UpdateV2{
-			State: &spec.UpdateV2_State{
-				K8S:           state.K8S,
-				LoadBalancers: state.LoadBalancers.Clusters,
-			},
-			Delta: &spec.UpdateV2_JoinLoadBalancer_{
-				JoinLoadBalancer: &spec.UpdateV2_JoinLoadBalancer{
-					LoadBalancer: toJoin,
-				},
-			},
-		}
-	)
-
-	pipeline := []*spec.Stage{
-		{
-			StageKind: &spec.Stage_Terraformer{
-				Terraformer: &spec.StageTerraformer{
-					Description: &spec.StageDescription{
-						About:      "Creating infrastructure for newly added loadbalancer",
-						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-					},
-					SubPasses: []*spec.StageTerraformer_SubPass{
-						{
-							Kind: spec.StageTerraformer_UPDATE_INFRASTRUCTURE,
-							Description: &spec.StageDescription{
-								About:      fmt.Sprintf("Spawning infrastructure for %q", lb),
-								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			StageKind: &spec.Stage_Ansibler{
-				Ansibler: &spec.StageAnsibler{
-					Description: &spec.StageDescription{
-						About:      "Setting up VPN for the newly added loadbalancer",
-						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-					},
-					SubPasses: []*spec.StageAnsibler_SubPass{
-						{
-							Kind: spec.StageAnsibler_INSTALL_VPN,
-							Description: &spec.StageDescription{
-								About:      fmt.Sprintf("Install VPN and interconnect %q with existing infrastructure", lb),
-								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-							},
-						},
-						{
-							Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
-							Description: &spec.StageDescription{
-								About:      fmt.Sprintf("Setup envoy for the newly added loadbalancer %q", lb),
-								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	return &spec.TaskEventV2{
-		Id:        uuid.New().String(),
-		Timestamp: timestamppb.New(time.Now().UTC()),
-		Event:     spec.EventV2_UPDATE_V2,
-		State:     inFlight,
-		Task: &spec.TaskV2{
-			Do: &spec.TaskV2_Update{
-				Update: &updateOp,
-			},
-		},
-		Description: "Joining loadbalancer into existing infrastructure",
-		Pipeline:    pipeline,
-	}
-}
-
-func k8sdiff(dynamic, static NodePoolsDiffResult) *spec.TaskEventV2 {
+func k8sdiff(hc *HealthCheckStatus, diff *KubernetesDiffResult, current, desired *spec.ClustersV2) *spec.TaskEventV2 {
 	return nil
 }

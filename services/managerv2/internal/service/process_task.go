@@ -261,7 +261,7 @@ func propagateResult(
 	clusterName string,
 	result *spec.TaskResult,
 ) error {
-	inFlight, err := store.ConvertToGRPCClusters(cluster.InFlight.State)
+	inFlight, err := store.ConvertToGRPCTaskEvent(cluster.InFlight)
 	if err != nil {
 		logger.Err(err).Msg("Failed to unmarshal database representation")
 		return err
@@ -270,17 +270,37 @@ func propagateResult(
 	switch result := result.Result.(type) {
 	case *spec.TaskResult_Update:
 		logger.Debug().Msg("Received [Update] as a result for the task")
-		propagateUpdateResult(logger, clusterName, inFlight, result)
+		propagateUpdateResult(logger, clusterName, inFlight.State, result)
 	case *spec.TaskResult_Clear:
 		logger.Debug().Msg("Received [Clear] as a result for the task")
-		propagateClearResult(inFlight, result)
+		propagateClearResult(inFlight.State, result)
 	case *spec.TaskResult_None_:
 		logger.Debug().Msg("Received [None] as a result for the task, no work to be done.")
 	default:
-		logger.Warn().Msgf("received message with unknown result type %T, ignoring", result)
+		logger.Warn().Msgf("Received message with unknown result type %T, ignoring", result)
 	}
 
-	cluster.InFlight.State, err = store.ConvertFromGRPCClusters(inFlight)
+	// The [store.ClusterState.InFlight.Task] can have multiple pipeline stages, thus
+	// transfer the inFlight state to the scheduled task.
+	switch task := inFlight.Task.Do.(type) {
+	case *spec.TaskV2_Create:
+		logger.Debug().Msg("Propagating updated state back to [Create] task")
+		task.Create.K8S = inFlight.State.K8S
+		task.Create.LoadBalancers = inFlight.State.LoadBalancers.Clusters
+	case *spec.TaskV2_Delete:
+		// Deletion works with current state and does not modify it partially in
+		// any way, thus there does not need to by any propagation back to the task.
+		//
+		// do nothing.
+	case *spec.TaskV2_Update:
+		logger.Debug().Msg("Propagating updated state back to [Update] task")
+		task.Update.State.K8S = inFlight.State.K8S
+		task.Update.State.LoadBalancers = inFlight.State.LoadBalancers.Clusters
+	default:
+		logger.Warn().Msgf("Unsupported InFlight Task %T, ignoring transferring InFlight state", task)
+	}
+
+	cluster.InFlight, err = store.ConvertFromGRPCTaskEvent(inFlight)
 	if err != nil {
 		logger.Err(err).Msg("Failed to marshal grpc representation to database")
 		return err

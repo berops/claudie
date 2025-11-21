@@ -7,7 +7,7 @@ import (
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/processlimit"
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/berops/claudie/services/ansibler/server/utils"
+	utils "github.com/berops/claudie/services/ansibler/internal/worker/service/internal"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/semaphore"
 )
@@ -96,8 +96,7 @@ passes:
 
 		switch pass.Kind {
 		case spec.StageAnsibler_DETERMINE_API_ENDPOINT_CHANGE:
-			logger.Info().Msg("Determining api endpoint change")
-			panic(tracker)
+			MoveApiEndpoint(logger, work.InputManifestName, processlimit, work.Task, tracker)
 		case spec.StageAnsibler_INSTALL_NODE_REQUIREMENTS:
 			InstallNodeRequirements(logger, work.InputManifestName, processlimit, work.Task, tracker)
 		case spec.StageAnsibler_INSTALL_VPN:

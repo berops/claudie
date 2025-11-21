@@ -29,13 +29,13 @@ RUN CGO_ENABLED=0 go build
 FROM alpine:latest as certs
 RUN apk --update add ca-certificates
 
-FROM docker.io/library/alpine:3.20
+FROM docker.io/library/alpine:3.22
 #Add repository label
-LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
+LABEL org.opencontainers.image.source="https://github.com/berops/claudie"
 #Add base image name as a label
-LABEL org.opencontainers.image.base.name "docker.io/library/alpine"
+LABEL org.opencontainers.image.base.name="docker.io/library/alpine"
 #Add description to the image
-LABEL org.opencontainers.image.description "Image for Manager from Claudie"
+LABEL org.opencontainers.image.description="Image for Manager from Claudie"
 
 #Copy the binaries to empty base image
 COPY --from=build /go/kubectl /usr/local/bin/kubectl

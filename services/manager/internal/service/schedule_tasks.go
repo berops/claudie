@@ -1153,7 +1153,7 @@ func tryReachK8sNodes(logger zerolog.Logger, nps map[string][]string, state *spe
 	}
 
 	nodesInCluster := make(map[string]struct{})
-	for _, n := range strings.Split(string(n), "\n") {
+	for n := range strings.SplitSeq(string(n), "\n") {
 		nodesInCluster[n] = struct{}{}
 	}
 

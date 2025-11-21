@@ -73,6 +73,7 @@ const (
 	StageTerraformer_BUILD_INFRASTRUCTURE   StageTerraformer_SubPassKind = 0
 	StageTerraformer_UPDATE_INFRASTRUCTURE  StageTerraformer_SubPassKind = 1
 	StageTerraformer_DESTROY_INFRASTRUCTURE StageTerraformer_SubPassKind = 2
+	StageTerraformer_API_PORT_ON_KUBERNETES StageTerraformer_SubPassKind = 3
 )
 
 // Enum value maps for StageTerraformer_SubPassKind.
@@ -81,11 +82,13 @@ var (
 		0: "BUILD_INFRASTRUCTURE",
 		1: "UPDATE_INFRASTRUCTURE",
 		2: "DESTROY_INFRASTRUCTURE",
+		3: "API_PORT_ON_KUBERNETES",
 	}
 	StageTerraformer_SubPassKind_value = map[string]int32{
 		"BUILD_INFRASTRUCTURE":   0,
 		"UPDATE_INFRASTRUCTURE":  1,
 		"DESTROY_INFRASTRUCTURE": 2,
+		"API_PORT_ON_KUBERNETES": 3,
 	}
 )
 
@@ -860,17 +863,18 @@ const file_spec_pass_proto_rawDesc = "" +
 	"\x05about\x18\x01 \x01(\tR\x05about\x120\n" +
 	"\n" +
 	"errorLevel\x18\x02 \x01(\x0e2\x10.spec.ErrorLevelR\n" +
-	"errorLevel\"\xe7\x02\n" +
+	"errorLevel\"\x83\x03\n" +
 	"\x10StageTerraformer\x128\n" +
 	"\vdescription\x18\x01 \x01(\v2\x16.spec.StageDescriptionR\vdescription\x12<\n" +
 	"\tsubPasses\x18\x02 \x03(\v2\x1e.spec.StageTerraformer.SubPassR\tsubPasses\x1a{\n" +
 	"\aSubPass\x126\n" +
 	"\x04kind\x18\x01 \x01(\x0e2\".spec.StageTerraformer.SubPassKindR\x04kind\x128\n" +
-	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"^\n" +
+	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"z\n" +
 	"\vSubPassKind\x12\x18\n" +
 	"\x14BUILD_INFRASTRUCTURE\x10\x00\x12\x19\n" +
 	"\x15UPDATE_INFRASTRUCTURE\x10\x01\x12\x1a\n" +
-	"\x16DESTROY_INFRASTRUCTURE\x10\x02\"\xfd\x03\n" +
+	"\x16DESTROY_INFRASTRUCTURE\x10\x02\x12\x1a\n" +
+	"\x16API_PORT_ON_KUBERNETES\x10\x03\"\xfd\x03\n" +
 	"\rStageAnsibler\x128\n" +
 	"\vdescription\x18\x01 \x01(\v2\x16.spec.StageDescriptionR\vdescription\x129\n" +
 	"\tsubPasses\x18\x02 \x03(\v2\x1b.spec.StageAnsibler.SubPassR\tsubPasses\x1ax\n" +

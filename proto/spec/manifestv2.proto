@@ -224,6 +224,34 @@ message RetryV2 {
   }
 }
 
+
+enum ApiEndpointChangeStateV2 {
+  // NoChange represents the 1st case - no change is needed as the LB cluster is currently
+  // attached and the desired spec contains no changes.
+  NoChangeV2 = 0;
+
+  // AttachingLoadBalancer represents 2nd case - the K8s cluster previously
+  // didn't have an LB cluster attached and the ports needed to communicate with the API server
+  // were exposed. After attaching an LB cluster to the existing K8s cluster the ports
+  // were closed and are no longer accessible, and thus we need to change the API endpoint.
+  AttachingLoadBalancerV2 = 1;
+
+  // DetachingLoadBalancer represents 3rd. case - the K8s cluster had an existing
+  // LB cluster attached but the new state removed the LB cluster and thus the API endpoint
+  // needs to be changed back to one of the control nodes of the cluster.
+  DetachingLoadBalancerV2 = 2;
+
+  // EndpointRenamed represents the 4th. case - the K8s cluster has an existing
+  // LB cluster attached and also keeps it but the endpoint has changed in the desired state.
+  EndpointRenamedV2 = 3;
+
+  // MoveEndpoint represents the 5th. case - the K8s cluster has an existing
+  // LB cluster attached, but it will be switched to a different LB cluster
+  // in the desired state.
+  MoveEndpointV2 = 4;
+}
+
+
 message CreateV2{
     // The desired state of the kuberenetes cluster to create.
     //
@@ -250,9 +278,48 @@ message UpdateV2 {
         LBclusterV2 loadBalancer = 1;
     }
 
+    message ReconcileLoadBalancer {
+        LBclusterV2 loadBalancer = 2;
+    }
+
+    message ApiEndpoint {
+        ApiEndpointChangeStateV2 state = 1;
+        string currentEndpointId = 2;
+        string desiredEndpointId = 3;
+    }
+
+    message ApiPortOnCluster {
+        bool open = 1;
+    }
+
+    message ReplaceDns {
+        // Loadbalancer ID to which the new [Dns] is going to created for.
+        string loadBalancerId = 1;
+
+        // The new dns to replace the old within [LoadBalancerId].
+        DNS dns = 2;
+
+        // If the [Dns] is part of a Api loadbalancer this
+        // field will be set to give extra information for
+        // when changing the Api endpoint from the old to
+        // the new.
+        optional string oldApiEndpoint = 3;
+    }
+
+    // State that gets continiously updated as the task gets processed.
     State state = 1;
+
+    // The initial new state that is to be build. This never gets
+    // updated as the task is processed and always has the intial
+    // state when first created. Once the initial state is build it
+    // is merged with [State], and any reconciliation should be done
+    // with that.
     oneof Delta {
         JoinLoadBalancer joinLoadBalancer = 2;
+        ReconcileLoadBalancer reconcileLoadBalancer = 3;
+        ApiEndpoint apiEndpoint = 4;
+        ApiPortOnCluster clusterApiPort = 5;
+        ReplaceDns replaceDns = 6;
     }
 }
 

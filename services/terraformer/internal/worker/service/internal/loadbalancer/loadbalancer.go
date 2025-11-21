@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	cluster_builder "github.com/berops/claudie/services/terraformer/internal/worker/service/internal/cluster-builder"
 	"github.com/rs/zerolog"
@@ -55,7 +56,7 @@ func (l *LBcluster) Build(logger zerolog.Logger) error {
 		return fmt.Errorf("%w: error while creating the LB cluster %s : %w", ErrCreateNodePools, ci.Name, err)
 	}
 
-	nodeIPs := getNodeIPs(l.Cluster.ClusterInfo.NodePools)
+	nodeIPs := nodepools.PublicEndpoints(l.Cluster.ClusterInfo.NodePools)
 	dns := DNS{
 		ProjectName:       projectName,
 		ClusterName:       ci.Name,
@@ -79,7 +80,7 @@ func (l *LBcluster) Destroy(logger zerolog.Logger) error {
 		projectName  = l.ProjectName
 		ci           = l.Cluster.ClusterInfo
 		processLimit = l.SpawnProcessLimit
-		nodeIPs      = getNodeIPs(ci.NodePools)
+		nodeIPs      = nodepools.PublicEndpoints(ci.NodePools)
 	)
 
 	group := errgroup.Group{}
@@ -110,17 +111,4 @@ func (l *LBcluster) Destroy(logger zerolog.Logger) error {
 	})
 
 	return group.Wait()
-}
-
-// getNodeIPs returns slice of public IPs used in the node pool.
-func getNodeIPs(nodepools []*spec.NodePool) []string {
-	var ips []string
-
-	for _, nodepool := range nodepools {
-		for _, node := range nodepool.Nodes {
-			ips = append(ips, node.Public)
-		}
-	}
-
-	return ips
 }

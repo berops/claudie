@@ -11,7 +11,7 @@ import (
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/berops/claudie/services/ansibler/server/utils"
+	utils "github.com/berops/claudie/services/ansibler/internal/worker/service/internal"
 	"github.com/berops/claudie/services/ansibler/templates"
 	"github.com/rs/zerolog"
 	"golang.org/x/sync/semaphore"
@@ -36,7 +36,7 @@ func InstallVPN(
 	tracker Tracker,
 ) {
 	logger.Info().Msg("Installing VPN")
-	action, ok := task.GetDo().(*spec.TaskV2_Create)
+	k8s, lbs, ok := utils.ClustersFromTask(task)
 	if !ok {
 		logger.
 			Warn().
@@ -44,9 +44,6 @@ func InstallVPN(
 		tracker.Result.KeepAsIs()
 		return
 	}
-
-	k8s := action.Create.K8S
-	lbs := action.Create.LoadBalancers
 
 	vi := VPNInfo{
 		ClusterNetwork: k8s.Network,

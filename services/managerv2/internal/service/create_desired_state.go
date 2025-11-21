@@ -19,7 +19,9 @@ import (
 
 const (
 	// CIDR used when creating the nodepools for desired state.
-	baseSubnetCIDR       = "10.0.0.0/24"
+	baseSubnetCIDR = "10.0.0.0/24"
+
+	// Which Octet to change within the [baseSubnetCIDR]
 	defaultOctetToChange = 2
 )
 
@@ -72,35 +74,35 @@ func createDesiredState(pending *spec.ConfigV2, result *map[string]*spec.Cluster
 		// layers guarantee that a dynamic nodepool can be referenced at most once
 		// within a block, i.e kubernetes:, loadbalancers:, If that invariant is
 		// somehow broken, the function panics.
-		deduplicateDynamicNodepoolNames(&m, current, desired)
+		deduplicateDynamicNodePoolNames(&m, current, desired)
 
 		// Deduplicate, static node names. Contrary to how dynamic node works, static
 		// nodes are identified via the Public endpoint. The name that is assigned to
 		// static nodes is not used to identify them, atleast not in this stage of the
 		// build pipeline.
 		//
-		// For identifying the if the same static node is reused the public Endpoint is used.
+		// For identifying if the same static node is reused, the Public Endpoint is used.
 		// After the [deduplicateStaticNodeNames] newly added static nodes will have unique
-		// names
+		// names. Nodes that are present in both `current` and `desired` will need to have
+		// their state transferred via [transferImmutableState]
 		deduplicateStaticNodeNames(current, desired)
 
 		if current.GetK8S() != nil {
 			log.Debug().Str("cluster", cluster).Msgf("reusing existing state")
 
-			// Transfers any state from the [current] into [desired]. The state
-			// that is transferred is considered to be "Immutable" by claudie,
-			// thus once it is assigned it must not changed. This "Immutable"
-			// state is used here to transfer it, possibly overwriting any
-			// existing state in [desired].
-			transferPreviouslyAcquiredState(current, desired)
+			// Transfers any state from current into desired. The state that
+			// is transferred is considered to be "Immutable" by claudie,
+			// thus once it is assigned it must not changed.
+			//
+			// The transfer may possibly overwrite any existing state in [desired].
+			transferImmutableState(current, desired)
 		}
 
-		// Must follow after [transferPreviouslyAcquiredState]
-		// Generate the CIDR for individual nodepools at this step, as
-		// we need information about the current state so that we do not
-		// generate the same cidr for the same Provider/Region pair multiple
-		// times, avoiding conflicts.
-		if err := GenerateMissingCIDR(current, desired); err != nil {
+		// Must follow after [transferImmutableState], Generates the CIDR for
+		// individual nodepools at this step, as we need information about the
+		// current state so that we do not generate the same cidr for the same
+		// Provider/Region pair multiple times, avoiding conflicts.
+		if err := generateMissingCIDR(current, desired); err != nil {
 			return fmt.Errorf("failed to generate CIDRs for nodepools: %w", err)
 		}
 	}
@@ -190,7 +192,10 @@ func createK8sClustersFromManifest(from *manifest.Manifest, into *map[string]*sp
 		// NOTE: the CIDR and SSH keys are not populated at this point in the pipeline. Here
 		// only the parsed skeleton of the passed in [manifest.Manifest] is created.
 
-		(*into)[newCluster.ClusterInfo.Name] = &spec.ClustersV2{K8S: newCluster}
+		(*into)[newCluster.ClusterInfo.Name] = &spec.ClustersV2{
+			K8S:           newCluster,
+			LoadBalancers: new(spec.LoadBalancersV2),
+		}
 	}
 
 	return nil
@@ -328,7 +333,7 @@ func getRolesAttachedToLBCluster(roles []manifest.Role, roleNames []string) []*s
 	return matchingRoles
 }
 
-func GenerateMissingCIDR(current, desired *spec.ClustersV2) error {
+func generateMissingCIDR(current, desired *spec.ClustersV2) error {
 	// https://github.com/berops/claudie/issues/647
 	// 1. generate cidrs for k8s nodepools.
 	existing := make(map[string][]string)

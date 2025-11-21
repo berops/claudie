@@ -8,59 +8,69 @@ import (
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/rs/zerolog/log"
 	"google.golang.org/protobuf/proto"
 )
 
+// TODO: determin if we still need this with the reconciliation loop,
+// probably not.
 func backwardsCompatibility(c *spec.ConfigV2) {
-	// TODO: remove in future versions, currently only for backwards compatibility.
-	// version 0.9.3 moved selection of the api server to the manager service
-	// and introduced a new field that selects which LB is used as the api endpoint.
-	// To have backwards compatibility with clusters build with versions before 0.9.3
-	// select the first load balancer in the current state and set this new field to true.
-	for _, state := range c.GetClusters() {
-		currentLbs := state.GetCurrent().GetLoadBalancers().GetClusters()
-		var (
-			anyApiServerLoadBalancerSelected bool
-			apiServerLoadBalancers           []int
-		)
+	// 	// TODO: remove in future versions, currently only for backwards compatibility.
+	// 	// version 0.9.3 moved selection of the api server to the manager service
+	// 	// and introduced a new field that selects which LB is used as the api endpoint.
+	// 	// To have backwards compatibility with clusters build with versions before 0.9.3
+	// 	// select the first load balancer in the current state and set this new field to true.
+	// 	for _, state := range c.GetClusters() {
+	// 		currentLbs := state.GetCurrent().GetLoadBalancers().GetClusters()
+	// 		var (
+	// 			anyApiServerLoadBalancerSelected bool
+	// 			apiServerLoadBalancers           []int
+	// 		)
 
-		for i, current := range currentLbs {
-			// TODO: remove in future versions, currently only for backwards compatibility.
-			// version 0.9.7 introced additional role settings, which may not be set in the
-			// current state. To have backwards compatibility add defaults to the current state.
-			for _, role := range current.Roles {
-				if role.Settings == nil {
-					log.Info().
-						Str("cluster", current.GetClusterInfo().Id()).
-						Msg("detected loadbalancer build with version older than 0.9.7, settings default role settings for its current state")
+	// 		for i, current := range currentLbs {
+	// 			// TODO: remove in future versions, currently only for backwards compatibility.
+	// 			// version 0.9.7 introced additional role settings, which may not be set in the
+	// 			// current state. To have backwards compatibility add defaults to the current state.
+	// 			for _, role := range current.Roles {
+	// 				if role.Settings == nil {
+	// 					log.Info().
+	// 						Str("cluster", current.GetClusterInfo().Id()).
+	// 						Msg("detected loadbalancer build with version older than 0.9.7, settings default role settings for its current state")
 
-					role.Settings = &spec.RoleV2_Settings{
-						ProxyProtocol: true,
-					}
-				}
-			}
+	// 					role.Settings = &spec.RoleV2_Settings{
+	// 						ProxyProtocol: true,
+	// 					}
+	// 				}
+	// 			}
 
-			if current.IsApiEndpoint() {
-				anyApiServerLoadBalancerSelected = true
-				break
-			}
-			if current.HasApiRole() && !current.UsedApiEndpoint && current.Dns != nil {
-				apiServerLoadBalancers = append(apiServerLoadBalancers, i)
-			}
-		}
-		if !anyApiServerLoadBalancerSelected && len(apiServerLoadBalancers) > 0 {
-			currentLbs[apiServerLoadBalancers[0]].UsedApiEndpoint = true
-			log.Info().
-				Str("cluster", currentLbs[apiServerLoadBalancers[0]].GetClusterInfo().Id()).
-				Msgf("detected api-server loadbalancer build with claudie version older than 0.9.3, selecting as the loadbalancer for the api-server")
-		}
-	}
+	//				if current.IsApiEndpoint() {
+	//					anyApiServerLoadBalancerSelected = true
+	//					break
+	//				}
+	//				if current.HasApiRole() && !current.UsedApiEndpoint && current.Dns != nil {
+	//					apiServerLoadBalancers = append(apiServerLoadBalancers, i)
+	//				}
+	//			}
+	//			if !anyApiServerLoadBalancerSelected && len(apiServerLoadBalancers) > 0 {
+	//				currentLbs[apiServerLoadBalancers[0]].UsedApiEndpoint = true
+	//				log.Info().
+	//					Str("cluster", currentLbs[apiServerLoadBalancers[0]].GetClusterInfo().Id()).
+	//					Msgf("detected api-server loadbalancer build with claudie version older than 0.9.3, selecting as the loadbalancer for the api-server")
+	//			}
+	//		}
+	//	}
 }
 
-// deduplicateStaticNodeNames re-assings all names for static nodes for the `desired` nodepools
-// such that nodes with the same public IP will keep existing name and new nodes will have
-// a unique not used name.
+// Finds matching nodepools in desired that are also in current and that both have nodepool type of
+// [spec.NodePool_StaticNodePool]. For all of the nodes within the nodepool, Nodes with matching Public
+// Endpoints (IP addresses), are ignored in this function as they have an already existing Name in the
+// `current` state that needs to be transfered. For nodes that do not match unique names are generated
+// such that they do no collide with the already assigned names in the `current` state. This function
+// should be used in combination with [transferImmutableState] to both deduplicate the names
+// and then transfer existing state.
+//
+// When used without the function just generates unique names for new Nodes that are not in `current`
+// so the `desired` state for static nodepools will be in "Intermediate State", until the existing
+// state is transferred to `desired`.
 func deduplicateStaticNodeNames(current, desired *spec.ClustersV2) {
 outer:
 	for _, current := range current.GetK8S().GetClusterInfo().GetNodePools() {
@@ -72,8 +82,8 @@ outer:
 			switch current.GetType().(type) {
 			case *spec.NodePool_StaticNodePool:
 				if desired.GetStaticNodePool() == nil {
-					// names match but not nodepool types
-					// since there cannot be two nodepools
+					// names match, but not nodepool types.
+					// Since there cannot be two nodepools
 					// with the same name, break.
 					continue outer
 				}
@@ -106,9 +116,12 @@ outer:
 	}
 }
 
-// deduplicateDynamicNodepoolNames renames multiple references of the same dynamic nodepool in k8s
-// and loadbalancer clusters to treat them as individual nodepools.
-func deduplicateDynamicNodepoolNames(from *manifest.Manifest, current, desired *spec.ClustersV2) {
+// deduplicateDynamicNodePoolNames goes over each reference of each dynamic nodepool definition inside of
+// [manifest.Manifest] and with the passed in `current` state deduplicates the names in the `desired` state
+// by appending hashes to the names of the nodepools, in both k8s and loadbalancers. If `current` is empty
+// no transferring is done and the dynamic nodepools in `desired` are simply assigned a randomly generated
+// hash to their names.
+func deduplicateDynamicNodePoolNames(from *manifest.Manifest, current, desired *spec.ClustersV2) {
 	desiredK8s := desired.GetK8S()
 	desiredLbs := desired.GetLoadBalancers().GetClusters()
 
@@ -121,9 +134,9 @@ func deduplicateDynamicNodepoolNames(from *manifest.Manifest, current, desired *
 		copyK8sNodePoolsNamesFromCurrentState(used, np.Name, currentK8s, desiredK8s)
 		copyLbNodePoolNamesFromCurrentState(used, np.Name, currentLbs, desiredLbs)
 
-		references := findNodePoolReferences(np.Name, desiredK8s.GetClusterInfo().GetNodePools())
+		references := nodepools.FindReferences(np.Name, desiredK8s.GetClusterInfo().GetNodePools())
 		for _, lb := range desiredLbs {
-			references = append(references, findNodePoolReferences(np.Name, lb.GetClusterInfo().GetNodePools())...)
+			references = append(references, nodepools.FindReferences(np.Name, lb.GetClusterInfo().GetNodePools())...)
 		}
 
 		for _, np := range references {
@@ -140,7 +153,7 @@ func deduplicateDynamicNodepoolNames(from *manifest.Manifest, current, desired *
 // copyLbNodePoolNamesFromCurrentState copies the generated hash from an existing reference in the current state to the desired state.
 func copyLbNodePoolNamesFromCurrentState(used map[string]struct{}, nodepool string, current, desired []*spec.LBclusterV2) {
 	for _, desired := range desired {
-		references := findNodePoolReferences(nodepool, desired.GetClusterInfo().GetNodePools())
+		references := nodepools.FindReferences(nodepool, desired.GetClusterInfo().GetNodePools())
 		switch {
 		case len(references) > 1:
 			panic("unexpected nodepool reference count")
@@ -172,7 +185,7 @@ func copyLbNodePoolNamesFromCurrentState(used map[string]struct{}, nodepool stri
 
 // copyK8sNodePoolsNamesFromCurrentState copies the generated hash from an existing reference in the current state to the desired state.
 func copyK8sNodePoolsNamesFromCurrentState(used map[string]struct{}, nodepool string, current, desired *spec.K8SclusterV2) {
-	references := findNodePoolReferences(nodepool, desired.GetClusterInfo().GetNodePools())
+	references := nodepools.FindReferences(nodepool, desired.GetClusterInfo().GetNodePools())
 
 	switch {
 	case len(references) == 0:
@@ -214,26 +227,19 @@ func copyK8sNodePoolsNamesFromCurrentState(used map[string]struct{}, nodepool st
 	}
 }
 
-// findNodePoolReferences find all nodepools that share the given name.
-func findNodePoolReferences(name string, nodePools []*spec.NodePool) []*spec.NodePool {
-	var references []*spec.NodePool
-	for _, np := range nodePools {
-		if np.Name == name {
-			references = append(references, np)
-		}
-	}
-	return references
-}
-
-// transferPreviouslyAcquiredState transfer state that was not generated as part of [createDesiredState]
-// and parts that were generated but must stay unchanged even for the newly generated `desired` state.
-func transferPreviouslyAcquiredState(current, desired *spec.ClustersV2) {
+// transferImmutableState transfers state that was generated as part of [createDesiredState] or as part of the
+// build pipeline of the cluster, and that once is generated/assigned, must stay unchanged even for the newly
+// generated `desired` state.
+//
+// If the passed in `current` state is nil, the function panics as it expects to work with the current state
+// and it is up to the caller to make sure the current state exists.
+func transferImmutableState(current, desired *spec.ClustersV2) {
 	transferK8sState(current.K8S, desired.K8S)
 	transferLBState(current.LoadBalancers, desired.LoadBalancers)
 }
 
-// transferK8sState transfers only the kubernetes cluster relevant parts of the `current` into `desired`.
-// The function transfer only the state that should be "Immutable" once assigned.
+// transferK8sState transfers only the kubernetes cluster relevant parts of `current` into `desired`.
+// The function transfer only the state that should be "Immutable" once assigned to the kubernetes state.
 func transferK8sState(current, desired *spec.K8SclusterV2) {
 	// TODO: what happens when I change the [spec.K8SclusterV2.Network] ?
 	// I think that should stay immutable as well... or maybe not ?
@@ -241,8 +247,9 @@ func transferK8sState(current, desired *spec.K8SclusterV2) {
 	desired.Kubeconfig = current.Kubeconfig
 }
 
-// transferDynamicNodePool transfers state that should be "Immutable" once assigned
-// from the `current` into the `desired` state.
+// transferDynamicNodePool transfers state that should be "Immutable" from the
+// `current` into the `desired` state. Immutable state must stay unchanged once
+// it is assigned assigned to a dynamic NodePool,
 func transferDynamicNodePool(current, desired *spec.NodePool) {
 	cnp := current.GetDynamicNodePool()
 	dnp := current.GetDynamicNodePool()
@@ -254,6 +261,11 @@ func transferDynamicNodePool(current, desired *spec.NodePool) {
 	clear(desired.Nodes)
 	desired.Nodes = desired.Nodes[:0]
 
+	// Nodes in dynamic nodepools are not matched like how Static Nodepools are.
+	// Within dynamic nodepools IP addresses can be recycled, so they can identify
+	// different nodes, not necessarily the same node. Thus any nodes in the
+	// desired state are cleared and the nodes of the current state are copied over
+	// to the desired state.
 	count := min(cnp.Count, dnp.Count)
 	for _, node := range current.Nodes[:count] {
 		n := proto.Clone(node).(*spec.Node)
@@ -261,6 +273,9 @@ func transferDynamicNodePool(current, desired *spec.NodePool) {
 	}
 }
 
+// transferStaticNodePool transfers state that should be "Immutable" from the
+// `current` into the `desired` state. Immutable state must stay unchanged once
+// it is assigned to a dynamic NodePool.
 func transferStaticNodePool(current, desired *spec.NodePool) {
 	for _, cn := range current.Nodes {
 		for _, dn := range desired.Nodes {
@@ -273,9 +288,10 @@ func transferStaticNodePool(current, desired *spec.NodePool) {
 			dn.Private = cn.Private
 			dn.NodeType = cn.NodeType
 
-			// Note: The node Keys of the desired state do not need to
+			// Note: The [spec.NodePoolStatic.Keys] of the desired state do not need to
 			// be updated here, as the key is not immutable and could be changed.
-
+			// The desired state will already have the entry in the map populated for
+			// the Public Endpoint we are matching against.
 			break
 		}
 	}

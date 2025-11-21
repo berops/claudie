@@ -5,14 +5,89 @@ import (
 	"slices"
 
 	"github.com/berops/claudie/internal/clusters"
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/gogo/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 // TODO: write tests.
 
 type (
-	// LoadBalancersDiffResult holds all of the change between two different [LoadBalancerViewType]
+	// KubernetesDiffResult holds all of the changes between two different [spec.K8Scluster]
+	KubernetesDiffResult struct {
+		// Whether the kubernetes version changed.
+		KubernetesVersion bool
+
+		// Whether proxy settigns changed.
+		Proxy bool
+
+		// Diff in the Dynamic NodePools of the cluster.
+		Dynamic NodePoolsDiffResult
+
+		// Diff in the Static NodePools of the cluster.
+		Static NodePoolsDiffResult
+
+		// TODO: possibly include autoscaling diff here ?
+		// TODO: endpointNodeDeleted function from managerV1.
+		//
+		// State of the Api endpoint for the kubernetes cluster.
+		// If the kubernetes cluster has no api endpoint, but it
+		// is in one of the loadbalancers attached to the cluster
+		// both of the values will be empty.
+		ApiEndpoint struct {
+			// ID of the node which is used for the API server in the
+			// current state. If there is no, the value will be empty.
+			Current string
+
+			// ID of the node which is used for the API server in the
+			// desired state. If there is no, the value will be empty.
+			Desired string
+		}
+
+		// TODO: should be done per nodepool below.
+		// Changes made to the autoscaler nodepools.
+		Autoscaler struct { /* TODO */
+		}
+
+		// Labels updated.
+		Labels bool
+
+		// Annotations updated.
+		Annotations bool
+
+		// Taints updated.
+		Taints bool
+	}
+
+	ModifiedLoadBalancer struct {
+		// DNS changed
+		DNS bool
+
+		// Changes related to roles.
+		Roles struct {
+			// Name of the roles added.
+			Added []string
+
+			// Name of the roles deleted.
+			Deleted []string
+
+			// Name of the roles to which TargetPools were added
+			// with the name of the Pools that were added.
+			TargetPoolsAdded TargetPoolsViewType
+
+			// Name of the roles from which TargetPools were deleted
+			// with the name of the Pools that were deleted.
+			TargetPoolsDeleted TargetPoolsViewType
+		}
+
+		// Diff in the Dynamic NodePools of the cluster.
+		Dynamic NodePoolsDiffResult
+
+		// Diff in the Static NodePools of the cluster.
+		Static NodePoolsDiffResult
+	}
+
+	// LoadBalancersDiffResult holds all of the changes between two different [spec.LoadBalancers] states
 	LoadBalancersDiffResult struct {
 		// IDs of the loadbalancer that were added.
 		Added []string
@@ -21,32 +96,23 @@ type (
 		Deleted []string
 
 		// LoadBalancers present in both views but have inner differences.
-		Modified map[string]struct {
-			// DNS changed
-			DNS bool
+		Modified map[string]ModifiedLoadBalancer
 
-			// Changes related to roles.
-			Roles struct {
-				// Name of the roles added.
-				Added []string
+		// State of the Api endpoint for the Loadbalancers.
+		ApiEndpoint struct {
+			// ID of the loadbalancer with the Api role in the current state.
+			Current string
 
-				// Name of the roles deleted.
-				Deleted []string
+			// ID of the loadbalancers with the Api role in the desired state.
+			Desired string
 
-				// Name of the roles to which TargetPools were added
-				// with the name of the Pools that were added.
-				TargetPoolsAdded TargetPoolsViewType
+			// What action should be done based on the difference for the [Current] and [Desired].
+			State spec.ApiEndpointChangeStateV2
 
-				// Name of the roles from which TargetPools were deleted
-				// with the name of the Pools that were deleted.
-				TargetPoolsDeleted TargetPoolsViewType
-			}
-
-			// Diff in the Dynamic NodePools of the cluster.
-			Dynamic NodePoolsDiffResult
-
-			// Diff in the Static NodePools of the cluster.
-			Static NodePoolsDiffResult
+			// Whether all of the nodepools in the kubernetes cluster's desired state
+			// are deleted which the ApiEndpoint targets. This field is
+			// mutually exclusive with all of the above [ApiEndpoint] fields.
+			TargetPoolsDeleted bool
 		}
 	}
 
@@ -193,8 +259,40 @@ func NodePoolsView(info *spec.ClusterInfoV2) (dynamic NodePoolsViewType, static 
 	return
 }
 
-func LoadBalancersDiff(old, new *spec.LoadBalancersV2) LoadBalancersDiffResult {
-	var result LoadBalancersDiffResult
+func KubernetesDiff(old, new *spec.K8SclusterV2) KubernetesDiffResult {
+	// TODO:
+
+	var (
+		odynamic, ostatic = NodePoolsView(old.GetClusterInfo())
+		ndynamic, nstatic = NodePoolsView(new.GetClusterInfo())
+
+		dynamicDiff = NodePoolsDiff(odynamic, ndynamic)
+		staticDiff  = NodePoolsDiff(ostatic, nstatic)
+	)
+
+	return KubernetesDiffResult{
+		KubernetesVersion: false,
+		Proxy:             false,
+		Dynamic:           dynamicDiff,
+		Static:            staticDiff,
+		ApiEndpoint: struct {
+			Current string
+			Desired string
+		}{
+			Current: "",
+			Desired: "",
+		},
+		Autoscaler:  struct{}{},
+		Labels:      false,
+		Annotations: false,
+		Taints:      false,
+	}
+}
+
+func LoadBalancersDiff(k8sdiff *KubernetesDiffResult, old, new *spec.LoadBalancersV2) LoadBalancersDiffResult {
+	result := LoadBalancersDiffResult{
+		Modified: make(map[string]ModifiedLoadBalancer),
+	}
 
 	// 1. Find any added.
 	for _, n := range new.Clusters {
@@ -205,7 +303,7 @@ func LoadBalancersDiff(old, new *spec.LoadBalancersV2) LoadBalancersDiffResult {
 		}
 	}
 
-	// 2. Find any deleted.
+	// 2. Find any deleted/modified.
 	for _, old := range old.Clusters {
 		idx := clusters.IndexLoadbalancerByIdV2(old.ClusterInfo.Id(), new.Clusters)
 		if idx < 0 {
@@ -280,7 +378,7 @@ func LoadBalancersDiff(old, new *spec.LoadBalancersV2) LoadBalancersDiffResult {
 			dnsChanged = true
 		case old.Dns != nil && new.Dns != nil:
 			if old.Dns.Provider.SpecName == new.Dns.Provider.SpecName {
-				if proto.Equal(old.Dns.Provider, new.Dns.Provider) {
+				if proto.Equal(old.Dns, new.Dns) {
 					break
 				}
 			}
@@ -330,5 +428,49 @@ func LoadBalancersDiff(old, new *spec.LoadBalancersV2) LoadBalancersDiffResult {
 		}
 	}
 
+	// 3. Determine API Endpoint changes.
+	cid, did, change := clusters.DetermineLBApiEndpointChangeV2(old.Clusters, new.Clusters)
+	result.ApiEndpoint.Current = cid
+	result.ApiEndpoint.Desired = did
+	result.ApiEndpoint.State = change
+	result.ApiEndpoint.TargetPoolsDeleted = apiNodePoolsDeleted(k8sdiff, old)
+
 	return result
+}
+
+func apiNodePoolsDeleted(k8sdiff *KubernetesDiffResult, old *spec.LoadBalancersV2) bool {
+	search := make(map[string]struct{})
+
+	for np := range k8sdiff.Dynamic.Deleted {
+		search[np] = struct{}{}
+	}
+
+	for np := range k8sdiff.Static.Deleted {
+		search[np] = struct{}{}
+	}
+
+	ep := clusters.FindAssignedLbApiEndpointV2(old.Clusters)
+	for _, role := range ep.GetRoles() {
+		if role.RoleType != spec.RoleTypeV2_ApiServer_V2 {
+			continue
+		}
+
+		matched := 0
+		for _, tp := range role.TargetPools {
+			for np := range search {
+				if name, _ := nodepools.MatchNameAndHashWithTemplate(tp, np); name == tp {
+					matched += 1
+					break
+				}
+			}
+		}
+
+		if matched == len(role.TargetPools) {
+			return true
+		}
+
+		break
+	}
+
+	return false
 }
