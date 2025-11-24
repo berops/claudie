@@ -352,9 +352,6 @@ message DeleteV2{
 }
 
 message TaskV2 {
-    // Options to be considered when processing the task.
-    uint64 options = 1;
-
     oneof Do {
         CreateV2 create     = 2;
         UpdateV2 update     = 3;

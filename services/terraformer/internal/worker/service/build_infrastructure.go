@@ -60,16 +60,16 @@ func build(
 	buildLogger.Info().Msg("Infrastructure for kubernetes cluster build successfully")
 
 	// TODO: we should not need this at all.
-	if spec.OptionIsSet(task.Options, spec.K8sOnlyRefresh) {
-		updatedCluster := k8s
+	// if spec.OptionIsSet(task.Options, spec.K8sOnlyRefresh) {
+	// 	updatedCluster := k8s
 
-		// Processing an event that only targets the nodepools used within the k8s
-		// clusters, thus we do not need to update/refresh the loadbalancer and dns
-		// infrastructure here. This is only done here for the purpose of shaving off
-		// a few minutes from the build process.
-		tracker.Result.ToUpdate().TakeKubernetesCluster(updatedCluster).Replace()
-		return
-	}
+	// 	// Processing an event that only targets the nodepools used within the k8s
+	// 	// clusters, thus we do not need to update/refresh the loadbalancer and dns
+	// 	// infrastructure here. This is only done here for the purpose of shaving off
+	// 	// a few minutes from the build process.
+	// 	tracker.Result.ToUpdate().TakeKubernetesCluster(updatedCluster).Replace()
+	// 	return
+	// }
 
 	var loadbalancers []loadbalancer.LBcluster
 	for _, lb := range lbs {

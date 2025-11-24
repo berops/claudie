@@ -42,5 +42,5 @@ func (a *AnsiblerGrpcService) SetUpLoadbalancers(_ context.Context, request *pb.
 }
 
 func (a *AnsiblerGrpcService) DetermineApiEndpointChange(ctx context.Context, request *pb.DetermineApiEndpointChangeRequest) (*pb.DetermineApiEndpointChangeResponse, error) {
-	return a.usecases.DetermineApiEndpointChange(ctx, request)
+	panic("")
 }

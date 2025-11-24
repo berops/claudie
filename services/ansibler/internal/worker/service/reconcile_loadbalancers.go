@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/berops/claudie/internal/api/manifest"
+	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/concurrent"
 	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/hash"
@@ -53,7 +54,7 @@ func ReconcileLoadBalancers(
 	tracker Tracker,
 ) {
 	logger.Info().Msg("Reconciling LoadBalancers")
-	k8s, lbs, ok := utils.ClustersFromTask(task)
+	k8s, lbs, ok := utils.StateFromTask(task)
 	if !ok {
 		logger.
 			Warn().
@@ -63,6 +64,20 @@ func ReconcileLoadBalancers(
 			)
 		tracker.Result.KeepAsIs()
 		return
+	}
+
+	lbs = utils.OnReconciliationDefaultToSingleLoadBalancer(task, lbs)
+
+	if r := task.GetUpdate().GetReconcileLoadBalancer(); r != nil {
+		// If the message to processed is only to reconcile a single loadbalancer
+		// ignore the other loadbalancers in the state.
+		id := r.LoadBalancer.ClusterInfo.Id()
+		i := clusters.IndexLoadbalancerByIdV2(id, task.GetUpdate().State.LoadBalancers)
+		lb := task.GetUpdate().State.LoadBalancers[i]
+
+		clear(lbs)
+		lbs = lbs[:0]
+		lbs = append(lbs, lb)
 	}
 
 	li := utils.LBClustersInfo{
@@ -99,7 +114,7 @@ func setUpLoadbalancers(logger zerolog.Logger, processLimit *semaphore.Weighted,
 		return fmt.Errorf("error encountered while generating base files for %s : %w", info.ClusterID, err)
 	}
 
-	err := concurrent.Exec(info.Lbs, func(_ int, lbCluster *spec.LBclusterV2) error {
+	return concurrent.Exec(info.Lbs, func(_ int, lbCluster *spec.LBclusterV2) error {
 		var (
 			loggerPrefix = "LB-cluster"
 			lbClusterId  = lbCluster.ClusterInfo.Id()
@@ -140,12 +155,6 @@ func setUpLoadbalancers(logger zerolog.Logger, processLimit *semaphore.Weighted,
 		logger.Info().Msg("Loadbalancer cluster successfully set up")
 		return nil
 	})
-
-	if err != nil {
-		return fmt.Errorf("error while setting up the loadbalancers for cluster %s : %w", info.ClusterID, err)
-	}
-
-	return nil
 }
 
 // setUpNodeExporter sets up node-exporter on each node of the LB cluster.
@@ -360,52 +369,3 @@ func targetNodes(targetPools []string, targetk8sPools []*spec.NodePool) (nodes [
 
 	return
 }
-
-// TODO: have this in the manager.
-//
-// if err := handleMoveApiEndpoint(logger, request, clusterBaseDirectory, processLimit); err != nil {
-// 	return err
-// }
-// func handleMoveApiEndpoint(logger zerolog.Logger, request *pb.SetUpLBRequest, outputDirectory string, processLimit *semaphore.Weighted) error {
-// 	cID, dID, state := clusters.DetermineLBApiEndpointChange(request.CurrentLbs, request.DesiredLbs)
-// 	// Endpoint renamed has to be done at this stage, as the endpoint
-// 	// was updated in the terraformer stage and needs to be subsequently
-// 	// updated in ansibler.
-// 	if state != spec.ApiEndpointChangeState_EndpointRenamed {
-// 		return nil
-// 	}
-
-// 	lbc := clusters.IndexLoadbalancerById(cID, request.CurrentLbs)
-// 	lbd := clusters.IndexLoadbalancerById(dID, request.DesiredLbs)
-
-// 	if lbc < 0 {
-// 		return fmt.Errorf("failed to find requested loadbalancer %s from which to move the api endpoint from", cID)
-// 	}
-
-// 	if lbd < 0 {
-// 		return fmt.Errorf("failed to find requested loadbalancer %s to which to move the api endpoint", dID)
-// 	}
-
-// 	oldEndpoint := request.CurrentLbs[lbc].Dns.Endpoint
-// 	newEndpoint := request.DesiredLbs[lbd].Dns.Endpoint
-
-// 	cdid := clusters.IndexLoadbalancerById(cID, request.DesiredLbs)
-
-// 	request.DesiredLbs[cdid].UsedApiEndpoint = false
-// 	request.DesiredLbs[lbd].UsedApiEndpoint = true
-
-// 	logger.Debug().Msgf("Changing the API endpoint from %s to %s", oldEndpoint, newEndpoint)
-
-// 	err := utils.ChangeAPIEndpoint(
-// 		request.Desired.ClusterInfo.Id(),
-// 		oldEndpoint,
-// 		newEndpoint,
-// 		outputDirectory,
-// 		processLimit,
-// 	)
-// 	if err != nil {
-// 		return fmt.Errorf("failed to change API endpoint from %s to %s: %w", oldEndpoint, newEndpoint, err)
-// 	}
-
-// 	return nil
-// }

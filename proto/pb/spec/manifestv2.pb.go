@@ -1691,8 +1691,6 @@ func (*DeleteV2_Loadbalancers) isDeleteV2_Op() {}
 
 type TaskV2 struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Options to be considered when processing the task.
-	Options uint64 `protobuf:"varint,1,opt,name=options,proto3" json:"options,omitempty"`
 	// Types that are valid to be assigned to Do:
 	//
 	//	*TaskV2_Create
@@ -1731,13 +1729,6 @@ func (x *TaskV2) ProtoReflect() protoreflect.Message {
 // Deprecated: Use TaskV2.ProtoReflect.Descriptor instead.
 func (*TaskV2) Descriptor() ([]byte, []int) {
 	return file_spec_manifestv2_proto_rawDescGZIP(), []int{17}
-}
-
-func (x *TaskV2) GetOptions() uint64 {
-	if x != nil {
-		return x.Options
-	}
-	return 0
 }
 
 func (x *TaskV2) GetDo() isTaskV2_Do {
@@ -2926,9 +2917,8 @@ const file_spec_manifestv2_proto_rawDesc = "" +
 	"\rloadBalancers\x18\x02 \x03(\v2\x11.spec.LBclusterV2R\rloadBalancers\x1aH\n" +
 	"\rLoadBalancers\x127\n" +
 	"\rloadBalancers\x18\x01 \x03(\v2\x11.spec.LBclusterV2R\rloadBalancersB\x04\n" +
-	"\x02Op\"\xa6\x01\n" +
-	"\x06TaskV2\x12\x18\n" +
-	"\aoptions\x18\x01 \x01(\x04R\aoptions\x12(\n" +
+	"\x02Op\"\x8c\x01\n" +
+	"\x06TaskV2\x12(\n" +
 	"\x06create\x18\x02 \x01(\v2\x0e.spec.CreateV2H\x00R\x06create\x12(\n" +
 	"\x06update\x18\x03 \x01(\v2\x0e.spec.UpdateV2H\x00R\x06update\x12(\n" +
 	"\x06delete\x18\x04 \x01(\v2\x0e.spec.DeleteV2H\x00R\x06deleteB\x04\n" +

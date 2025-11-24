@@ -36,7 +36,7 @@ func InstallVPN(
 	tracker Tracker,
 ) {
 	logger.Info().Msg("Installing VPN")
-	k8s, lbs, ok := utils.ClustersFromTask(task)
+	k8s, lbs, ok := utils.StateFromTask(task)
 	if !ok {
 		logger.
 			Warn().

@@ -1,10 +1,13 @@
 package utils
 
-import "github.com/berops/claudie/proto/pb/spec"
+import (
+	"github.com/berops/claudie/internal/clusters"
+	"github.com/berops/claudie/proto/pb/spec"
+)
 
-// Reads the state of the clusters for the supported tasks.
-// TODO: find a better name.
-func ClustersFromTask(task *spec.TaskV2) (*spec.K8SclusterV2, []*spec.LBclusterV2, bool) {
+// Reads the state of the clusters for the received task. On unknown state
+// no state is returned and `false` indicating failure.
+func StateFromTask(task *spec.TaskV2) (*spec.K8SclusterV2, []*spec.LBclusterV2, bool) {
 	switch task := task.GetDo().(type) {
 	case *spec.TaskV2_Create:
 		return task.Create.K8S, task.Create.LoadBalancers, true
@@ -13,4 +16,34 @@ func ClustersFromTask(task *spec.TaskV2) (*spec.K8SclusterV2, []*spec.LBclusterV
 	default:
 		return nil, nil, false
 	}
+}
+
+// If the task is of [spec.Update_ReconcileLoadBalancer], instead of keeping all
+// of the loadbalancers in `lbs` slices, only the loadbalancer for which the
+// reconciliation is called is kept in the `lbs`.
+func OnReconciliationDefaultToSingleLoadBalancer(
+	task *spec.TaskV2,
+	lbs []*spec.LBclusterV2,
+) []*spec.LBclusterV2 {
+	if len(lbs) == 0 {
+		return lbs
+	}
+
+	u, ok := task.Do.(*spec.TaskV2_Update)
+	if !ok {
+		return lbs
+	}
+
+	r, ok := u.Update.Delta.(*spec.UpdateV2_ReconcileLoadBalancer_)
+	if !ok {
+		return lbs
+	}
+
+	id := r.ReconcileLoadBalancer.LoadBalancer.ClusterInfo.Id()
+	idx := clusters.IndexLoadbalancerByIdV2(id, u.Update.State.LoadBalancers)
+	lb := u.Update.State.LoadBalancers[idx]
+
+	clear(lbs)
+	lbs = lbs[:0]
+	return append(lbs, lb)
 }

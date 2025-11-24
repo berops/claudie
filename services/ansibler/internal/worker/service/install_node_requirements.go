@@ -27,7 +27,7 @@ func InstallNodeRequirements(
 	tracker Tracker,
 ) {
 	logger.Info().Msg("Installing node requirements")
-	k8s, _, ok := utils.ClustersFromTask(task)
+	k8s, _, ok := utils.StateFromTask(task)
 	if !ok {
 		logger.
 			Warn().

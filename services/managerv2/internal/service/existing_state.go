@@ -252,7 +252,7 @@ func transferK8sState(current, desired *spec.K8SclusterV2) {
 // it is assigned assigned to a dynamic NodePool,
 func transferDynamicNodePool(current, desired *spec.NodePool) {
 	cnp := current.GetDynamicNodePool()
-	dnp := current.GetDynamicNodePool()
+	dnp := desired.GetDynamicNodePool()
 
 	dnp.PublicKey = cnp.PublicKey
 	dnp.PrivateKey = cnp.PrivateKey

@@ -109,6 +109,7 @@ func (c *LBclusterV2) IsApiEndpoint() bool {
 	return c.HasApiRole() && c.UsedApiEndpoint
 }
 
+// TODO: remove any unsued functions after the refactor.
 // MergeTargetPools takes the target pools from the other role
 // and adds them to this role, ignoring duplicates.
 func (r *RoleV2) MergeTargetPools(o *Role) {

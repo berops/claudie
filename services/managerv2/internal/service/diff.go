@@ -11,6 +11,8 @@ import (
 )
 
 // TODO: write tests.
+// TODO: what if the key for the static nodes is changed that should trigger, or not that would
+// be handled automatically on the run anyways.
 
 type (
 	// KubernetesDiffResult holds all of the changes between two different [spec.K8Scluster]
@@ -395,7 +397,7 @@ func LoadBalancersDiff(k8sdiff *KubernetesDiffResult, old, new *spec.LoadBalance
 		modified := len(rolesAdded) > 0 || len(rolesDeleted) > 0
 		modified = modified || len(targetPoolsAdded) > 0 || len(targetPoolsDeleted) > 0
 		modified = modified || dnsChanged
-		modified = modified || (!dynDiff.IsEmpty() || sttDiff.IsEmpty())
+		modified = modified || (!dynDiff.IsEmpty() || !sttDiff.IsEmpty())
 		if modified {
 			entry := struct {
 				DNS   bool
