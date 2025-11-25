@@ -12,20 +12,9 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func backwardsCompatibility(c *spec.Config) {
-	// TODO: remove in future versions, currently only for backwards compatibility.
-	// version 0.9.3 moved selection of the api server to the manager service
-	// and introduced a new field that selects which LB is used as the api endpoint.
-	// To have backwards compatibility with clusters build with versions before 0.9.3
-	// select the first load balancer in the current state and set this new field to true.
+func backwardsCompatiblityTransferMissingState(c *spec.Config) {
 	for _, state := range c.GetClusters() {
-		currentLbs := state.GetCurrent().GetLoadBalancers().GetClusters()
-		var (
-			anyApiServerLoadBalancerSelected bool
-			apiServerLoadBalancers           []int
-		)
-
-		for i, current := range currentLbs {
+		for _, current := range state.GetCurrent().GetLoadBalancers().GetClusters() {
 			// TODO: remove in future versions, cloudflare account id may not be correctly
 			// propagated to the current state when upgrading claudie versions, since the
 			// [manifest.Cloudflare.AccountID] has a validation which requires the presence
@@ -46,7 +35,24 @@ func backwardsCompatibility(c *spec.Config) {
 					}
 				}
 			}
+		}
+	}
+}
 
+func backwardsCompatibility(c *spec.Config) {
+	// TODO: remove in future versions, currently only for backwards compatibility.
+	// version 0.9.3 moved selection of the api server to the manager service
+	// and introduced a new field that selects which LB is used as the api endpoint.
+	// To have backwards compatibility with clusters build with versions before 0.9.3
+	// select the first load balancer in the current state and set this new field to true.
+	for _, state := range c.GetClusters() {
+		currentLbs := state.GetCurrent().GetLoadBalancers().GetClusters()
+		var (
+			anyApiServerLoadBalancerSelected bool
+			apiServerLoadBalancers           []int
+		)
+
+		for _, current := range currentLbs {
 			// TODO: remove in future versions, currently only for backwards compatibility.
 			// version 0.9.7 introced additional role settings, which may not be set in the
 			// current state. To have backwards compatibility add defaults to the current state.
@@ -61,7 +67,9 @@ func backwardsCompatibility(c *spec.Config) {
 					}
 				}
 			}
+		}
 
+		for i, current := range currentLbs {
 			if current.IsApiEndpoint() {
 				anyApiServerLoadBalancerSelected = true
 				break

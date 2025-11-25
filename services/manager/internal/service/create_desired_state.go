@@ -77,6 +77,8 @@ func createDesiredState(pending *store.Config) error {
 		return fmt.Errorf("failed to reuse current state date for desired state for %q: %w", m.Name, err)
 	}
 
+	backwardsCompatiblityTransferMissingState(grpcRepr)
+
 	// after transferring existing state fill remaining data.
 	// 1. generate dynamic nodes
 	for _, state := range grpcRepr.Clusters {
