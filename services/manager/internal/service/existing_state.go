@@ -12,7 +12,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func backwardsCompatiblityTransferMissingState(c *spec.Config) {
+func backwardsCompatibilityTransferMissingState(c *spec.Config) {
 	for _, state := range c.GetClusters() {
 		for _, current := range state.GetCurrent().GetLoadBalancers().GetClusters() {
 			// TODO: remove in future versions, cloudflare account id may not be correctly
