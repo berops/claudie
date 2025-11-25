@@ -129,15 +129,15 @@ type (
 		// If you specify multiple nodepools from the same provider but in different regions and with different
 		// external network names and use those nodepool in the same cluster (either K8s or LB) this field will
 		// contain those used regions with their corresponding external network names.
-		//       - name: openstack-1
+		//      - name: openstack-1
 		//        providerSpec:
 		//          name: openstack-1
 		//          region: regionOne
 		//          zone: nova
 		//          externalNetworkName: ext-net-1
 		//        count: 1
-		//        serverType: s1.small
-		//        image: ubuntu-22.04
+		//        serverType: c3-4-flex
+		//        image: "Ubuntu 22.04"
 		//
 		//      - name: openstack-2
 		//        providerSpec:
@@ -146,8 +146,8 @@ type (
 		//          zone: nova
 		//          externalNetworkName: ext-net-2
 		//        count: 1
-		//        serverType: s1.small
-		//        image: ubuntu-22.04
+		//        serverType: c3-8-flex
+		//        image: "Ubuntu 22.04"
 		//
 		//      - name: openstack-3
 		//        providerSpec:
@@ -156,8 +156,8 @@ type (
 		//          zone: nova
 		//          externalNetworkName: ext-net-1
 		//        count: 1
-		//        serverType: s1.small
-		//        image: ubuntu-22.04
+		//        serverType: c3-4-flex
+		//        image: "Ubuntu 24.04"
 		//
 		// RegionNetwork: [
 		//   {Region: "regionOne", externalNetworkName: "ext-net-1"},
