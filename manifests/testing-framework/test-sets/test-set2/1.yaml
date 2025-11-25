@@ -151,7 +151,7 @@ spec:
           externalNetworkName: Ext-Net
         count: 1
         serverType: c3-4-flex
-        image: 75efe356-e0e2-453b-b5e0-8ddd5e554fe1
+        image: "Ubuntu 24.04"
         storageDiskSize: 50
   kubernetes:
     clusters:
