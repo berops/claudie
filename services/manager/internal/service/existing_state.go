@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/berops/claudie/internal/api/manifest"
+	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -25,6 +26,27 @@ func backwardsCompatibility(c *spec.Config) {
 		)
 
 		for i, current := range currentLbs {
+			// TODO: remove in future versions, cloudflare account id may not be correctly
+			// propagated to the current state when upgrading claudie versions, since the
+			// [manifest.Cloudflare.AccountID] has a validation which requires the presence
+			// of a valid, non-empty `account_id`, which might be missing in the current state,
+			// that will result in errors on subsequent workflows, simply transfer the `account_id`
+			// from the desired state to the current state, only if it's empty. That will take care
+			// of the drift introduced during claudie updates.
+			if cc := current.GetDns().GetProvider().GetCloudflare(); cc != nil && cc.AccountID == "" {
+				i := clusters.IndexLoadbalancerById(current.GetClusterInfo().Id(), state.GetDesired().GetLoadBalancers().GetClusters())
+				if i >= 0 {
+					dlb := state.Desired.LoadBalancers.Clusters[i]
+					if dc := dlb.GetDns().GetProvider().GetCloudflare(); dc != nil {
+						log.
+							Info().
+							Str("cluster", current.GetClusterInfo().Id()).
+							Msg("detected drift in current state for Cloudflare AccountID, transfering state from desired state")
+						cc.AccountID = dc.AccountID
+					}
+				}
+			}
+
 			// TODO: remove in future versions, currently only for backwards compatibility.
 			// version 0.9.7 introced additional role settings, which may not be set in the
 			// current state. To have backwards compatibility add defaults to the current state.
