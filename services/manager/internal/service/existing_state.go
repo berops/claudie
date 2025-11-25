@@ -30,7 +30,7 @@ func backwardsCompatibilityTransferMissingState(c *spec.Config) {
 						log.
 							Info().
 							Str("cluster", current.GetClusterInfo().Id()).
-							Msg("detected drift in current state for Cloudflare AccountID, transfering state from desired state")
+							Msg("detected drift in current state for Cloudflare AccountID, transferring state from desired state")
 						cc.AccountID = dc.AccountID
 					}
 				}
