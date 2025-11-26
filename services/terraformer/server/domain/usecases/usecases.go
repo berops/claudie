@@ -12,8 +12,6 @@ import (
 var SpawnProcessLimit = envs.GetOrDefaultInt("TERRAFORMER_CONCURRENT_CLUSTERS", 7)
 
 type Usecases struct {
-	// DynamoDB connector.
-	DynamoDB ports.DynamoDBPort
 	// Minio connector.
 	StateStorage ports.StateStoragePort
 	// SpawnProcessLimit limits the number of spawned tofu processes.

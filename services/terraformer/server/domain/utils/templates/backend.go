@@ -14,8 +14,6 @@ var backendTemplate string
 var (
 	bucketName         = envs.BucketName
 	bucketURL          = envs.BucketEndpoint
-	dynamoTable        = envs.DynamoTable
-	dynamoURL          = envs.DynamoEndpoint
 	awsAccessKey       = envs.AwsAccesskeyId
 	awsSecretAccessKey = envs.AwsSecretAccessKey
 	region             = envs.AwsRegion
@@ -41,8 +39,6 @@ func (b Backend) CreateTFFile() error {
 		ClusterName string
 		BucketURL   string
 		BucketName  string
-		DynamoURL   string
-		DynamoTable string
 		Region      string
 		AccessKey   string
 		SecretKey   string
@@ -51,8 +47,6 @@ func (b Backend) CreateTFFile() error {
 		ClusterName: b.ClusterName,
 		BucketURL:   bucketURL,
 		BucketName:  bucketName,
-		DynamoURL:   dynamoURL,
-		DynamoTable: dynamoTable,
 		AccessKey:   awsAccessKey,
 		SecretKey:   awsSecretAccessKey,
 		Region:      region,

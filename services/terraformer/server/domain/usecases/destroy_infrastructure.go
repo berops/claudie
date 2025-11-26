@@ -68,10 +68,7 @@ func (u *Usecases) DestroyInfrastructure(ctx context.Context, request *pb.Destro
 		}
 		logger.Info().Msgf("Infrastructure was successfully destroyed")
 
-		// After the infrastructure is destroyed, we need to delete the tofu state file from MinIO and tofu state-lock file from DynamoDB.
-		if err := u.DynamoDB.DeleteLockFile(ctx, request.ProjectName, cluster.Id(), keyFormatLockFile); err != nil {
-			logger.Warn().Msgf("Failed to delete lock file for %q, assumming it was deleted/not created", cluster.Id())
-		}
+		// After the infrastructure is destroyed, we need to delete the tofu state file from MinIO.
 		if err := u.StateStorage.DeleteStateFile(ctx, request.ProjectName, cluster.Id(), keyFormatStateFile); err != nil {
 			logger.Warn().Msgf("Failed to delete state file for %q, assumming it was deleted/not created", cluster.Id())
 		}
@@ -83,11 +80,8 @@ func (u *Usecases) DestroyInfrastructure(ctx context.Context, request *pb.Destro
 		logger.Info().Msgf("Successfully deleted Templates files for cluster %q", cluster.Id())
 
 		// In case of LoadBalancer type cluster,
-		// there are additional DNS related tofu state and state-lock files.
+		// there are additional DNS related tofu state.
 		if _, ok := cluster.(*loadbalancer.LBcluster); ok {
-			if err := u.DynamoDB.DeleteLockFile(ctx, request.ProjectName, cluster.Id(), dnsKeyFormatLockFile); err != nil {
-				logger.Warn().Msgf("Failed to delete lock file for %q-dns, assumming it was deleted/not created", cluster.Id())
-			}
 			if err := u.StateStorage.DeleteStateFile(ctx, request.ProjectName, cluster.Id(), dnsKeyFormatStateFile); err != nil {
 				logger.Warn().Msgf("Failed to delete state file for %q-dns, assumming it was deleted/not created", cluster.Id())
 			}
