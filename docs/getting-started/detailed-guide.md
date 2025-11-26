@@ -468,7 +468,7 @@ All of the customisable settings can be found in `claudie/.env` file.
 | `KUBE_ELEVEN_HOSTNAME` | `kube-eleven` | string | Kube-eleven service hostname.                                |
 | `KUBER_HOSTNAME`       | `kuber`       | string | Kuber service hostname.                                      |
 | `MINIO_HOSTNAME`       | `minio`       | string | MinIO hostname used for state files.                         |
-| `AWS_REGION`           | `local`       | string | Region for Minio lock files.                                 |
+| `AWS_REGION`           | `local`       | string | Region for MinIO.                                            |
 | `DATABASE_PORT`        | 27017         | int    | Port of the database service.                                |
 | `TERRAFORMER_PORT`     | 50052         | int    | Port of the Terraformer service.                             |
 | `ANSIBLER_PORT`        | 50053         | int    | Port of the Ansibler service.                                |
