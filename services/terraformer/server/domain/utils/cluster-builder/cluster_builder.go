@@ -25,6 +25,7 @@ import (
 const (
 	TemplatesRootDir = "services/terraformer/templates"
 	Output           = "services/terraformer/server/clusters"
+	CacheDir         = "services/terraformer/server/cache"
 )
 
 type K8sInfo struct{ ExportPort6443 bool }
@@ -70,10 +71,15 @@ func (c ClusterBuilder) CreateNodepools() error {
 	tofu := tofu.Terraform{
 		Directory:         clusterDir,
 		SpawnProcessLimit: c.SpawnProcessLimit,
+		CacheDir:          CacheDir,
 	}
 
 	tofu.Stdout = comm.GetStdOut(clusterID)
 	tofu.Stderr = comm.GetStdErr(clusterID)
+
+	if err := tofu.ProvidersLock(); err != nil {
+		return fmt.Errorf("error while locking providers in %s : %w", clusterID, err)
+	}
 
 	if err := tofu.Init(); err != nil {
 		return fmt.Errorf("error while running tofu init in %s : %w", clusterID, err)
@@ -157,10 +163,15 @@ func (c ClusterBuilder) DestroyNodepools() error {
 	tofu := tofu.Terraform{
 		Directory:         clusterDir,
 		SpawnProcessLimit: c.SpawnProcessLimit,
+		CacheDir:          CacheDir,
 	}
 
 	tofu.Stdout = comm.GetStdOut(clusterID)
 	tofu.Stderr = comm.GetStdErr(clusterID)
+
+	if err := tofu.ProvidersLock(); err != nil {
+		return fmt.Errorf("error while locking providers in %s : %w", clusterID, err)
+	}
 
 	if err := tofu.Init(); err != nil {
 		return fmt.Errorf("error while running tofu init in %s : %w", clusterID, err)

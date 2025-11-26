@@ -53,6 +53,7 @@ func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 	tofu := tofu.Terraform{
 		Directory:         dnsDir,
 		SpawnProcessLimit: d.SpawnProcessLimit,
+		CacheDir:          cluster_builder.CacheDir,
 	}
 
 	tofu.Stdout = comm.GetStdOut(clusterID)
@@ -77,6 +78,9 @@ func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 		// delete also the desired state, which might have been created.
 		if err := d.generateFiles(logger, dnsID, dnsDir, d.DesiredDNS, d.DesiredNodeIPs); err != nil {
 			return fmt.Errorf("error while creating desired state dns.tf files for %s : %w", dnsID, err)
+		}
+		if err := tofu.ProvidersLock(); err != nil {
+			return fmt.Errorf("error while locking providers in %s : %w", clusterID, err)
 		}
 		if err := tofu.Init(); err != nil {
 			return err
@@ -106,6 +110,10 @@ func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 
 	if err := d.generateFiles(logger, dnsID, dnsDir, d.DesiredDNS, d.DesiredNodeIPs); err != nil {
 		return fmt.Errorf("error while creating dns .tf files for %s : %w", dnsID, err)
+	}
+
+	if err := tofu.ProvidersLock(); err != nil {
+		return fmt.Errorf("error while locking providers in %s : %w", clusterID, err)
 	}
 
 	if err := tofu.Init(); err != nil {
@@ -202,10 +210,15 @@ func (d *DNS) DestroyDNSRecords(logger zerolog.Logger) error {
 	tofu := tofu.Terraform{
 		Directory:         dnsDir,
 		SpawnProcessLimit: d.SpawnProcessLimit,
+		CacheDir:          cluster_builder.CacheDir,
 	}
 
 	tofu.Stdout = comm.GetStdOut(dnsID)
 	tofu.Stderr = comm.GetStdErr(dnsID)
+
+	if err := tofu.ProvidersLock(); err != nil {
+		return fmt.Errorf("error while locking providers in %s : %w", dnsID, err)
+	}
 
 	if err := tofu.Init(); err != nil {
 		return err

@@ -5,7 +5,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	comm "github.com/berops/claudie/internal/command"
@@ -26,6 +28,9 @@ var parallelism = envs.GetOrDefaultInt("TERRAFORMER_TOFU_PARALLELISM", 40)
 type Terraform struct {
 	// Directory represents the directory of .tf files
 	Directory string
+	// CacheDir represents the directory for caching terraform plugins
+	// It will be defined via env TF_PLUGIN_CACHE_DIR
+	CacheDir string
 
 	Stdout io.Writer
 	Stderr io.Writer
@@ -37,14 +42,54 @@ type Terraform struct {
 	SpawnProcessLimit *semaphore.Weighted
 }
 
+func (t *Terraform) ProvidersLock() error {
+	absCache, err := filepath.Abs(t.CacheDir)
+	if err != nil {
+		return fmt.Errorf("failed to resolve absolute cache dir: %w", err)
+	}
+	err = os.Mkdir(absCache, 0775)
+	if err != nil && !os.IsExist(err) {
+		return fmt.Errorf("failed to create cache directory: %w", err)
+	}
+
+	//nolint
+	args := []string{
+		"providers",
+		"lock",
+		fmt.Sprintf("-fs-mirror=%v", absCache),
+	}
+	cmd := exec.Command("tofu", args...)
+	cmd.Dir = t.Directory
+
+	stderrBuf := &bytes.Buffer{}
+	cmd.Stderr = stderrBuf
+
+	if err := cmd.Run(); err != nil {
+		// In case that cache mirror does not contain the required providers
+		// continue and fetch them from opentofu registry.
+		if strings.Contains(stderrBuf.String(), "Could not retrieve providers for locking") {
+			log.Info().Msg("OpenTofu failed to fetch the requested providers from mirror. Proceed to get providers from opentofu registry.")
+		} else {
+			return fmt.Errorf("failed to execute cmd: %s: %s", cmd, stderrBuf.String())
+		}
+	}
+	return nil
+}
+
 func (t *Terraform) Init() error {
 	if err := t.SpawnProcessLimit.Acquire(context.Background(), 1); err != nil {
 		return fmt.Errorf("failed to prepare tofu init process: %w", err)
 	}
 	defer t.SpawnProcessLimit.Release(1)
 
+	absCache, err := filepath.Abs(t.CacheDir)
+	if err != nil {
+		return fmt.Errorf("failed to resolve absolute cache dir: %w", err)
+	}
+
 	//nolint
 	cmd := exec.Command("tofu", "init")
+	cmd.Env = append(os.Environ(), "TF_PLUGIN_CACHE_DIR="+absCache)
 	cmd.Dir = t.Directory
 	cmd.Stdout = t.Stdout
 	cmd.Stderr = t.Stderr
