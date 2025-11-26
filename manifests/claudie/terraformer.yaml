@@ -87,17 +87,6 @@ spec:
                 configMapKeyRef:
                   name: env
                   key: BUCKET_URL
-            # DynamoDB envs
-            - name: DYNAMO_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: env
-                  key: DYNAMO_URL
-            - name: DYNAMO_TABLE_NAME
-              valueFrom:
-                configMapKeyRef:
-                  name: env
-                  key: DYNAMO_TABLE_NAME
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:
