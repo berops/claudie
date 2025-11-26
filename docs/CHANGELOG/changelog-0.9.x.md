@@ -377,7 +377,7 @@ kubernetes:
 ## v0.9.16
 
 ## What's Changed
-- The open stack provider will not use image names instead of image ids, this was due to the possibility of the ids being replaced by the provider and no longer valid [#1902](https://github.com/berops/claudie/pull/1902)
+- The open stack provider will now use image names instead of image ids, this was due to the possibility of the ids being replaced by the provider and no longer valid [#1902](https://github.com/berops/claudie/pull/1902)
 
 ## Bug fixes
 - Fix cloudflare account id propagation when updating to newer claudie versions [#1904](https://github.com/berops/claudie/pull/1904)
