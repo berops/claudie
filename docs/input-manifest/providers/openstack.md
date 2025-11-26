@@ -99,7 +99,7 @@ spec:
       # Machine type name.
       serverType: c3-4-flex
       # OS image name.
-      image: ed4ac2cf-f5d6-48ec-8cdf-fe2432763f22
+      image: "Ubuntu 24.04"
 
     - name: compute-1-os
       providerSpec:
@@ -115,7 +115,7 @@ spec:
       # Machine type name.
       serverType: c3-4-flex
       # OS image name.
-      image: 13272f19-7645-426c-b96e-e438932dd27e
+      image: "Ubuntu 24.04"
       storageDiskSize: 50
 
     - name: compute-2-os
@@ -132,7 +132,7 @@ spec:
       # Machine type name.
       serverType: c3-4-flex
       # OS image name.
-      image: 44592480-925e-4485-9675-91e211ea22c0
+      image: "Ubuntu 24.04"
       storageDiskSize: 50
 
   kubernetes:
