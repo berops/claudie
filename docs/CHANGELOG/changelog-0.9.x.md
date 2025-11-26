@@ -373,3 +373,8 @@ kubernetes:
 
 ## Bug fixes
 - Fixes issues with incompatible docker api in the ansibler service that resulted in the error from [#1885](https://github.com/berops/claudie/issues/1885)
+
+## v0.9.16
+
+## Bug fixes
+- Fix cloudflare accound id propagation when updating to newer claudie versions [#1904](https://github.com/berops/claudie/pull/1904)
