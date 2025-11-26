@@ -377,4 +377,4 @@ kubernetes:
 ## v0.9.16
 
 ## Bug fixes
-- Fix cloudflare accound id propagation when updating to newer claudie versions [#1904](https://github.com/berops/claudie/pull/1904)
+- Fix cloudflare account id propagation when updating to newer claudie versions [#1904](https://github.com/berops/claudie/pull/1904)
