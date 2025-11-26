@@ -82,8 +82,6 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     ansibler-5c6c776b75-82c2q      1/1     Running     0               8m10s
     builder-59f9d44596-n2qzm       1/1     Running     0               8m10s
     manager-5d76c89b4d-tb6h4       1/1     Running     1 (6m37s ago)   8m10s
-    create-table-job-jvs9n         0/1     Completed   1               8m10s
-    dynamodb-68777f9787-8wjhs      1/1     Running     0               8m10s
     claudie-operator-5755b7bc69-5l84h      1/1     Running     0               8m10s
     kube-eleven-64468cd5bd-qp4d4   1/1     Running     0               8m10s
     kuber-698c4564c-dhsvg          1/1     Running     0               8m10s
@@ -470,9 +468,7 @@ All of the customisable settings can be found in `claudie/.env` file.
 | `KUBE_ELEVEN_HOSTNAME` | `kube-eleven` | string | Kube-eleven service hostname.                                |
 | `KUBER_HOSTNAME`       | `kuber`       | string | Kuber service hostname.                                      |
 | `MINIO_HOSTNAME`       | `minio`       | string | MinIO hostname used for state files.                         |
-| `DYNAMO_HOSTNAME`      | `dynamo`      | string | DynamoDB hostname used for lock files.                       |
-| `DYNAMO_TABLE_NAME`    | `claudie`     | string | Table name for DynamoDB lock files.                          |
-| `AWS_REGION`           | `local`       | string | Region for DynamoDB lock files.                              |
+| `AWS_REGION`           | `local`       | string | Region for Minio lock files.                                 |
 | `DATABASE_PORT`        | 27017         | int    | Port of the database service.                                |
 | `TERRAFORMER_PORT`     | 50052         | int    | Port of the Terraformer service.                             |
 | `ANSIBLER_PORT`        | 50053         | int    | Port of the Ansibler service.                                |
@@ -480,4 +476,3 @@ All of the customisable settings can be found in `claudie/.env` file.
 | `MANAGER_PORT`         | 50055         | int    | Port of the MANAGER service.                                 |
 | `KUBER_PORT`           | 50057         | int    | Port of the Kuber service.                                   |
 | `MINIO_PORT`           | 9000          | int    | Port of the MinIO service.                                   |
-| `DYNAMO_PORT`          | 8000          | int    | Port of the DynamoDB service.                                |

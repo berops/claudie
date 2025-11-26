@@ -9,8 +9,8 @@ new cluster.
 Claudie stores its state in 3 different places. 
 
 -   Input Manifests are stored in <b>Mongo</b>.
--   Terraform state files are stored in <b>MinIO</b>
--   Locking Mechanism for the state files is implemented via <b>DynamoDB</b>
+-   Terraform/OpenTofu state files are stored in **MinIO**. This same **MinIO** instance is utilized for the locking mechanism, leveraging [S3 native state locking](https://opentofu.org/blog/opentofu-1-10-0/) in OpenTofu.
+
 
 These are the only services that will have a PVC attached to it, the other are stateless.
 
@@ -113,8 +113,6 @@ ansibler-6f4557cf74-b4dts           1/1     Running     0             18m
 builder-5d68987c86-qdfd5            1/1     Running     0             18m
 claudie-operator-6d9ddc7f8b-hv84c   1/1     Running     0             18m
 manager-5d75bfffc6-d9qfm            1/1     Running     0             18m
-create-table-job-ghb9f              0/1     Completed   1             18m
-dynamodb-6d65df988-c626j            1/1     Running     0             18m
 kube-eleven-556cfdfd98-jq6hl        1/1     Running     0             18m
 kuber-7f8cd4cd89-6ds2w              1/1     Running     0             18m
 make-bucket-job-9mjft               0/1     Completed   0             18m
