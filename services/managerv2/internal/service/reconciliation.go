@@ -9,6 +9,7 @@ import (
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/managerv2/internal/service/managementcluster"
 	"github.com/google/uuid"
+
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -62,10 +63,9 @@ func reconciliate(pending *spec.ConfigV2, desired map[string]*spec.ClustersV2) S
 			current = state.Current
 			desired = desired[cluster]
 
-			isCurrentNil = current == nil || (current.K8S == nil && len(current.LoadBalancers.Clusters) == 0)
-			isDesiredNil = desired == nil || (desired.K8S == nil && len(desired.LoadBalancers.Clusters) == 0)
-			// TODO: rename state.Task to InFlight ?
-			hasInFlightState = state.Task != nil && state.Task.Task != nil
+			isCurrentNil     = current == nil || (current.K8S == nil && len(current.LoadBalancers.Clusters) == 0)
+			isDesiredNil     = desired == nil || (desired.K8S == nil && len(desired.LoadBalancers.Clusters) == 0)
+			hasInFlightState = state.InFlight != nil && state.InFlight.Task != nil
 
 			noop      = isCurrentNil && isDesiredNil && !hasInFlightState
 			isCreate  = isCurrentNil && !isDesiredNil
@@ -82,14 +82,20 @@ func reconciliate(pending *spec.ConfigV2, desired map[string]*spec.ClustersV2) S
 					Info().
 					Msg("Detected cluster to Create, but has previous InFlight state that will be scheduled for deletion")
 
-					// If there is any InFlight state that was not commited
-					// to the current state, delete it, as we still don't
-					// have any current state and the InFlight state could
-					// have been partially applied.
-					//
-					// If that fails, that will trigger another reconciliation iteration,
-					// while keeping the original [state.Current] unmodified.
-				state.Task = deleteCluster(state.Task.State)
+				cs, err := state.InFlight.Task.MutableClusters()
+				if err != nil {
+					logger.Err(err).Msg("Failed to schedule a destroy of the cluster, skipping")
+					break
+				}
+
+				// If there is any InFlight state that was not commited
+				// to the current state, delete it, as we still don't
+				// have any current state and the InFlight state could
+				// have been partially applied.
+				//
+				// If that fails, that will trigger another reconciliation iteration,
+				// while keeping the original [state.Current] unmodified.
+				state.InFlight = deleteCluster(cs)
 				break
 			}
 
@@ -107,9 +113,16 @@ func reconciliate(pending *spec.ConfigV2, desired map[string]*spec.ClustersV2) S
 				nodepools.FirstControlNode(nps).NodeType = spec.NodeType_apiEndpoint
 			}
 
-			state.Task = createCluster(desired)
+			state.InFlight = createCluster(desired)
 		case isDestroy:
+			del := current
 			if hasInFlightState {
+				cs, err := state.InFlight.Task.MutableClusters()
+				if err != nil {
+					logger.Err(err).Msg("Failed to schedule a destroy of the cluster, skipping")
+					break
+				}
+
 				// If there is any InFlight state that was not commited
 				// to the current state, create an Intermediate Representation
 				// combining the two together to delete all of the infrastructure.
@@ -117,26 +130,24 @@ func reconciliate(pending *spec.ConfigV2, desired map[string]*spec.ClustersV2) S
 				//
 				// If that fails, that will trigger another reconciliation iteration,
 				// while keeping the original [state.Current] unmodified.
-				ir := clustersUnion(current, state.Task.State)
-				state.Task = deleteCluster(ir)
-				break
+				del = clustersUnion(current, cs)
 			}
 
-			if err := managementcluster.DeleteKubeconfig(current); err != nil {
+			if err := managementcluster.DeleteKubeconfig(del); err != nil {
 				logger.Err(err).Msg("Failed to delete kubeconfig secret in the management cluster")
 			}
 
-			if err := managementcluster.DeleteClusterMetadata(current); err != nil {
+			if err := managementcluster.DeleteClusterMetadata(del); err != nil {
 				logger.Err(err).Msg("Failed to delete metadata secret in the management cluster")
 			}
 
-			if current.K8S.AnyAutoscaledNodePools() {
-				if err := managementcluster.DestroyClusterAutoscaler(pending.Name, current); err != nil {
+			if nodepools.AnyAutoscaled(del.K8S.ClusterInfo.NodePools) {
+				if err := managementcluster.DestroyClusterAutoscaler(pending.Name, del); err != nil {
 					logger.Err(err).Msg("Failed to destroy autoscaler pods")
 				}
 			}
 
-			state.Task = deleteCluster(current)
+			state.InFlight = deleteCluster(del)
 		default:
 			// TODO: the autoscaler desired state could be
 			// read from the POD directly instead of the
@@ -174,7 +185,7 @@ func reconciliate(pending *spec.ConfigV2, desired map[string]*spec.ClustersV2) S
 					Msg("Failed to store cluster metadata secret in the management cluster")
 			}
 
-			updateAutoscalerPods := state.Current.K8S.AnyAutoscaledNodePools()
+			updateAutoscalerPods := nodepools.AnyAutoscaled(state.Current.K8S.ClusterInfo.NodePools)
 			updateAutoscalerPods = updateAutoscalerPods && managementcluster.DriftInAutoscalerPods(pending.Name, current)
 			if updateAutoscalerPods {
 				if err := managementcluster.SetUpClusterAutoscaler(pending.Name, current); err != nil {
@@ -195,19 +206,19 @@ func reconciliate(pending *spec.ConfigV2, desired map[string]*spec.ClustersV2) S
 			k8s := KubernetesDiff(current.K8S, desired.K8S)
 			lbs := LoadBalancersDiff(&k8s, current.LoadBalancers, desired.LoadBalancers)
 
-			if state.Task = PreKubernetesDiff(&hc, &lbs, current, desired); state.Task != nil {
+			if state.InFlight = PreKubernetesDiff(&hc, &lbs, current, desired); state.InFlight != nil {
 				result = Reschedule
 				break
 			}
 
 			// TODO: there would also need to be a Pre and Post diff for kubernetes.
 			// Possible could be called Add/Modify and Delete diffs.
-			if state.Task = k8sdiff(&hc, &k8s, current, desired); state.Task != nil {
+			if state.InFlight = k8sdiff(&hc, &k8s, current, desired); state.InFlight != nil {
 				result = Reschedule
 				break
 			}
 
-			if state.Task = PostKubernetesDiff(&hc, &lbs, current, desired); state.Task != nil {
+			if state.InFlight = PostKubernetesDiff(&hc, &lbs, current, desired); state.InFlight != nil {
 				result = Reschedule
 			}
 		}
@@ -243,8 +254,8 @@ func PopulateEntriesForNewClusters(
 				K8S:           nil,
 				LoadBalancers: &spec.LoadBalancersV2{},
 			},
-			State: nil,
-			Task:  nil,
+			State:    nil,
+			InFlight: nil,
 		}
 	}
 }
@@ -338,19 +349,18 @@ func createCluster(desired *spec.ClustersV2) *spec.TaskEventV2 {
 	}
 
 	var (
-		inFlightState = proto.Clone(desired).(*spec.ClustersV2)
-		createK8s     = proto.Clone(desired.GetK8S()).(*spec.K8SclusterV2)
-		createLbs     = proto.Clone(desired.GetLoadBalancers()).(*spec.LoadBalancersV2)
-		createOp      = spec.CreateV2{
+		createK8s = proto.Clone(desired.GetK8S()).(*spec.K8SclusterV2)
+		createLbs = proto.Clone(desired.GetLoadBalancers()).(*spec.LoadBalancersV2)
+		createOp  = spec.CreateV2{
 			K8S:           createK8s,
 			LoadBalancers: createLbs.GetClusters(),
 		}
 	)
+
 	return &spec.TaskEventV2{
 		Id:        uuid.New().String(),
 		Timestamp: timestamppb.New(time.Now().UTC()),
 		Event:     spec.EventV2_CREATE_V2,
-		State:     inFlightState,
 		Task: &spec.TaskV2{
 			Do: &spec.TaskV2_Create{
 				Create: &createOp,
@@ -432,14 +442,11 @@ func deleteCluster(current *spec.ClustersV2) *spec.TaskEventV2 {
 	// pipeline = append(pipeline, kb)
 
 	var (
-		inFlightState = proto.Clone(current).(*spec.ClustersV2)
-		deleteK8s     = proto.Clone(current.GetK8S()).(*spec.K8SclusterV2)
-		deleteLbs     = proto.Clone(current.GetLoadBalancers()).(*spec.LoadBalancersV2)
-		deleteOp      = spec.DeleteV2_Clusters_{
-			Clusters: &spec.DeleteV2_Clusters{
-				K8S:           deleteK8s,
-				LoadBalancers: deleteLbs.GetClusters(),
-			},
+		deleteK8s = proto.Clone(current.GetK8S()).(*spec.K8SclusterV2)
+		deleteLbs = proto.Clone(current.GetLoadBalancers()).(*spec.LoadBalancersV2)
+		deleteOp  = spec.DeleteV2{
+			K8S:           deleteK8s,
+			LoadBalancers: deleteLbs.GetClusters(),
 		}
 	)
 
@@ -447,12 +454,9 @@ func deleteCluster(current *spec.ClustersV2) *spec.TaskEventV2 {
 		Id:        uuid.New().String(),
 		Timestamp: timestamppb.New(time.Now().UTC()),
 		Event:     spec.EventV2_DELETE_V2,
-		State:     inFlightState,
 		Task: &spec.TaskV2{
 			Do: &spec.TaskV2_Delete{
-				Delete: &spec.DeleteV2{
-					Op: &deleteOp,
-				},
+				Delete: &deleteOp,
 			},
 		},
 		Description: "deleting cluster and its attached loadbalancers",

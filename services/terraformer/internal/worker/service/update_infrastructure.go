@@ -13,6 +13,7 @@ import (
 
 func reconcileInfrastructure(
 	logger zerolog.Logger,
+	stores Stores,
 	projectName string,
 	processLimit *semaphore.Weighted,
 	task *spec.TaskV2,
@@ -23,31 +24,33 @@ func reconcileInfrastructure(
 		logger.
 			Warn().
 			Msgf("Received task with action %T while wanting to update infrastructure, assuming the task was misscheduled, ignoring", task.GetDo())
-		tracker.Result.KeepAsIs()
 		return
 	}
 
 	state := action.Update.State
 	if state == nil || state.K8S == nil {
-		logger.Warn().Msg("update task validation failed, required state of the kuberentes cluster to be present, ignoring")
-		tracker.Result.KeepAsIs()
+		logger.Warn().Msg("Update task validation failed, required state of the kuberentes cluster to be present, ignoring")
 		return
 	}
 
 	switch delta := action.Update.Delta.(type) {
-	case *spec.UpdateV2_JoinLoadBalancer_:
-		lb := delta.JoinLoadBalancer.LoadBalancer
+	case *spec.UpdateV2_DeleteLoadBalancer_:
+		id := delta.DeleteLoadBalancer.Id
+		destroyLoadBalancer(logger, projectName, id, state.LoadBalancers, processLimit, stores, tracker)
+	case *spec.UpdateV2_AddLoadBalancer_:
+		lb := delta.AddLoadBalancer.LoadBalancer
 		reconcileLoadBalancer(logger, projectName, processLimit, lb, tracker)
 	case *spec.UpdateV2_ReconcileLoadBalancer_:
 		lb := delta.ReconcileLoadBalancer.LoadBalancer
 		reconcileLoadBalancer(logger, projectName, processLimit, lb, tracker)
 	case *spec.UpdateV2_ReplaceDns_:
-		replaceDns(logger, projectName, processLimit, state, delta.ReplaceDns, tracker)
+		dns := delta.ReplaceDns
+		replaceDns(logger, projectName, processLimit, state, dns, tracker)
 	default:
 		logger.
 			Warn().
 			Msgf("Received update task with action %T, assuming the task was misscheduled, ignoring", action.Update.Delta)
-		tracker.Result.KeepAsIs()
+		return
 	}
 }
 
@@ -63,7 +66,6 @@ func reconcileApiPort(
 		logger.
 			Warn().
 			Msgf("Received task with action %T while wanting to reconcile Api port, assuming the task was misscheduled, ignoring", task.Do)
-		tracker.Result.KeepAsIs()
 		return
 	}
 
@@ -78,14 +80,55 @@ func reconcileApiPort(
 	buildLogger := logger.With().Str("cluster", cluster.Id()).Logger()
 
 	if err := BuildK8Scluster(buildLogger, cluster); err != nil {
-		possiblyUpdated := cluster.Cluster
 		tracker.Diagnostics.Push(err.Error())
-		tracker.Result.ToUpdate().TakeKubernetesCluster(possiblyUpdated).Replace()
+
+		possiblyUpdated := cluster.Cluster
+		update := tracker.Result.Update()
+		update.Kubernetes(possiblyUpdated)
+		update.Commit()
+
 		return
 	}
 
 	buildLogger.Info().Msg("Api Port for kubernetes cluster successfully reconciled")
-	tracker.Result.ToUpdate().TakeKubernetesCluster(cluster.Cluster).Replace()
+
+	update := tracker.Result.Update()
+	update.Kubernetes(cluster.Cluster)
+	update.Commit()
+}
+
+func destroyLoadBalancer(
+	logger zerolog.Logger,
+	projectName string,
+	toDestroy string,
+	lbs []*spec.LBclusterV2,
+	processLimit *semaphore.Weighted,
+	stores Stores,
+	tracker Tracker,
+) {
+	idx := clusters.IndexLoadbalancerByIdV2(toDestroy, lbs)
+	if idx < 0 {
+		logger.
+			Warn().
+			Msgf("Update task validation failed, required loadbalancer to delete %q to be present, ignoring", toDestroy)
+		return
+	}
+
+	lb := loadbalancer.LBcluster{
+		ProjectName:       projectName,
+		Cluster:           lbs[idx],
+		SpawnProcessLimit: processLimit,
+	}
+
+	buildLogger := logger.With().Str("cluster", lb.Cluster.ClusterInfo.Id()).Logger()
+	if err := DestroyCluster(buildLogger, projectName, &lb, stores.s3, stores.dynamo); err != nil {
+		tracker.Diagnostics.Push(err.Error())
+		return
+	}
+
+	clear := tracker.Result.Clear()
+	clear.LoadBalancers(lb.Cluster.ClusterInfo.Id())
+	clear.Commit()
 }
 
 func reconcileLoadBalancer(
@@ -105,12 +148,13 @@ func reconcileLoadBalancer(
 	if err := BuildLoadbalancers(buildLogger, lb); err != nil {
 		// Some part of the loadbalancer infrastructure was not build successfully.
 		// Since we still want to report the partially build infrastructure back to the
-		// caller we fallthrough here.
+		// caller, fallthrough here.
 		tracker.Diagnostics.Push(err.Error())
 	}
 
-	// TODO: this api is weird.
-	tracker.Result.ToUpdate().TakeLoadBalancers(lb.Cluster).Replace()
+	update := tracker.Result.Update()
+	update.Loadbalancers(lb.Cluster)
+	update.Commit()
 }
 
 func replaceDns(
@@ -126,7 +170,6 @@ func replaceDns(
 		logger.
 			Warn().
 			Msgf("Can't replace DNS for loadbalancer %q that is missing from the received state", delta.LoadBalancerId)
-		tracker.Result.KeepAsIs()
 		return
 	}
 
@@ -143,7 +186,7 @@ func replaceDns(
 
 		if err := dns.DestroyDNSRecords(logger); err != nil {
 			logger.Err(err).Msg("Failed to destroy DNS records")
-			tracker.Result.KeepAsIs()
+			tracker.Diagnostics.Push(err.Error())
 			return
 		}
 
@@ -151,9 +194,9 @@ func replaceDns(
 	}
 
 	if delta.Dns == nil {
-		// TODO: I think this API needs to also perform merges and not
-		// whole replaces, or maybe both ?
-		tracker.Result.ToUpdate().TakeLoadBalancers(lb).Replace()
+		update := tracker.Result.Update()
+		update.Loadbalancers(lb)
+		update.Commit()
 		return
 	}
 
@@ -169,13 +212,11 @@ func replaceDns(
 
 	if err := dns.CreateDNSRecords(logger); err != nil {
 		logger.Err(err).Msg("Failed to create new DNS records")
-		tracker.Result.KeepAsIs()
+		tracker.Diagnostics.Push(err.Error())
 		return
 	}
 
-	tracker.
-		Result.
-		ToUpdate().
-		TakeLoadBalancers(lb).
-		Replace()
+	update := tracker.Result.Update()
+	update.Loadbalancers(lb)
+	update.Commit()
 }

@@ -36,6 +36,7 @@ type (
 	Diagnostics []string
 )
 
+// TODO: make this more ergonomic.
 func (d *Diagnostics) Push(val string) { (*d) = append(*d, val) }
 func (d *Diagnostics) String() string  { return fmt.Sprint(*d) }
 
@@ -87,7 +88,7 @@ passes:
 			build(logger, work.InputManifestName, processlimit, work.Task, tracker)
 		case spec.StageTerraformer_UPDATE_INFRASTRUCTURE:
 			logger.Info().Msg("Updating infrastructure")
-			reconcileInfrastructure(logger, work.InputManifestName, processlimit, work.Task, tracker)
+			reconcileInfrastructure(logger, stores, work.InputManifestName, processlimit, work.Task, tracker)
 		case spec.StageTerraformer_DESTROY_INFRASTRUCTURE:
 			logger.Info().Msg("Destroying infrastructure")
 			destroy(logger, stores, work.InputManifestName, processlimit, work.Task, tracker)

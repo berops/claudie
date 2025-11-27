@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/proto/pb/spec"
 )
@@ -50,7 +51,7 @@ func (p UsedProviders) CreateUsedProvider(c *spec.ClusterInfoV2) error {
 	template := templateUtils.Templates{Directory: p.Directory}
 
 	var data usedProvidersTemplateData
-	getProvidersUsed(c.DynamicNodePools(), &data)
+	getProvidersUsed(nodepools.ExtractDynamic(c.NodePools), &data)
 
 	tpl, err := templateUtils.LoadTemplate(providersTemplate)
 	if err != nil {

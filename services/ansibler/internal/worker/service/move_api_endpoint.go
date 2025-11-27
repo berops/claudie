@@ -31,7 +31,6 @@ func MoveApiEndpoint(
 		logger.
 			Warn().
 			Msgf("Received task with action %T while wanting to move api endpoint, assuming the task was misscheduled, ignoring", task.GetDo())
-		tracker.Result.KeepAsIs()
 		return
 	}
 
@@ -47,7 +46,6 @@ func MoveApiEndpoint(
 			logger.
 				Warn().
 				Msgf("Received task with action %T, but with missing [OldApiEndpoint], assuming the task was misscheduled, ignoring", delta)
-			tracker.Result.KeepAsIs()
 			return
 		}
 
@@ -61,7 +59,6 @@ func MoveApiEndpoint(
 		logger.
 			Warn().
 			Msgf("Received task with action %T while wanting to move api endpoint, assuming the task was misscheduled, ignoring", action.Update.Delta)
-		tracker.Result.KeepAsIs()
 		return
 	}
 
@@ -69,22 +66,19 @@ func MoveApiEndpoint(
 		logger.
 			Warn().
 			Msgf("Received valid task for moving the api endpoint, but the required values are missing, assuming the task was misscheduled, ignoring")
-		tracker.Result.KeepAsIs()
 		return
 	}
 
 	if err := determineApiChanges(logger, action.Update.State, &ep, processLimit); err != nil {
 		logger.Err(err).Msg("Failed to move Api endpoint")
-		tracker.Result.KeepAsIs()
+		tracker.Diagnostics.Push(err.Error())
 		return
 	}
 
-	tracker.
-		Result.
-		ToUpdate().
-		TakeKubernetesCluster(action.Update.State.K8S).
-		TakeLoadBalancers(action.Update.State.LoadBalancers...).
-		Replace()
+	update := tracker.Result.Update()
+	update.Kubernetes(action.Update.State.K8S)
+	update.Loadbalancers(action.Update.State.LoadBalancers...)
+	update.Commit()
 }
 
 func determineApiChanges(

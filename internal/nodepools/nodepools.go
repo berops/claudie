@@ -62,6 +62,21 @@ func DeleteNodeByName(
 	return nodepools
 }
 
+func NodeCount(nodepools []*spec.NodePool) int {
+	var out int
+
+	for _, np := range nodepools {
+		switch i := np.Type.(type) {
+		case *spec.NodePool_DynamicNodePool:
+			out += int(i.DynamicNodePool.Count)
+		case *spec.NodePool_StaticNodePool:
+			out += len(i.StaticNodePool.NodeKeys)
+		}
+	}
+
+	return out
+}
+
 // Copies the nodes from `src` into `dst` cloning the invidivual
 // nodes, such that they do not keep any pointers or shared
 // memory with the original. The type of the nodepool of the
@@ -171,6 +186,19 @@ func ExtractDynamic(nodepools []*spec.NodePool) []*spec.DynamicNodePool {
 		}
 	}
 	return dnps
+}
+
+// AnyAutoscaledNodePools returns true, if cluster has at least one nodepool with autoscaler config.
+func AnyAutoscaled(nodepools []*spec.NodePool) bool {
+	for _, np := range nodepools {
+		if n := np.GetDynamicNodePool(); n != nil {
+			if n.AutoscalerConfig != nil {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 // Dynamic returns every dynamic nodepool.
@@ -321,6 +349,38 @@ func RandomNode(nodepools iter.Seq[*spec.NodePool]) *spec.Node {
 
 	idx := rand.IntN(len(nodes))
 	return nodes[idx]
+}
+
+// Returns a random node public Endpoint and a SSH key to connect to it. Nil if there is none.
+func RandomNodePublicEndpoint(nps []*spec.NodePool) (string, string, string) {
+	if len(nps) == 0 {
+		return "", "", ""
+	}
+
+	idx := rand.IntN(len(nps))
+	np := nps[idx]
+
+	if len(np.Nodes) == 0 {
+		return "", "", ""
+	}
+
+	idx = rand.IntN(len(np.Nodes))
+	node := np.Nodes[idx]
+
+	endpoint := node.Public
+	username := "root"
+	if node.Username != "" && node.Username != username {
+		username = node.Username
+	}
+
+	switch np := np.Type.(type) {
+	case *spec.NodePool_DynamicNodePool:
+		return username, endpoint, np.DynamicNodePool.PrivateKey
+	case *spec.NodePool_StaticNodePool:
+		return username, endpoint, np.StaticNodePool.NodeKeys[node.Public]
+	default:
+		return "", "", ""
+	}
 }
 
 // DynamicGenerateKeys creates private keys files for all nodes in the provided dynamic node pools in form

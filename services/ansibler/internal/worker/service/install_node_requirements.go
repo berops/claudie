@@ -32,7 +32,6 @@ func InstallNodeRequirements(
 		logger.
 			Warn().
 			Msgf("received task with action %T while wanting to install node requirements, assuming the task was misscheduled, ignoring", task.GetDo())
-		tracker.Result.KeepAsIs()
 		return
 	}
 
@@ -47,12 +46,8 @@ func InstallNodeRequirements(
 
 	if err := installLonghornRequirements(&ni, processLimit); err != nil {
 		tracker.Diagnostics.Push(err.Error())
-		tracker.Result.KeepAsIs()
 		return
 	}
-
-	// Installing node requirements does not change the cluster state in any way.
-	tracker.Result.KeepAsIs()
 }
 
 // installLonghornRequirements installs pre-requisite tools for LongHorn in all the nodes

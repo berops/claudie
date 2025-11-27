@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/proto/pb/spec"
 )
 
@@ -19,8 +18,8 @@ func StateFromTask(task *spec.TaskV2) (*spec.K8SclusterV2, []*spec.LBclusterV2, 
 }
 
 // If the task is of [spec.Update_ReconcileLoadBalancer], instead of keeping all
-// of the loadbalancers in `lbs` slices, only the loadbalancer for which the
-// reconciliation is called is kept in the `lbs`.
+// of the loadbalancers in lbs slices, only the loadbalancer for which the
+// reconciliation is called is kept in the lbs.
 func OnReconciliationDefaultToSingleLoadBalancer(
 	task *spec.TaskV2,
 	lbs []*spec.LBclusterV2,
@@ -39,11 +38,7 @@ func OnReconciliationDefaultToSingleLoadBalancer(
 		return lbs
 	}
 
-	id := r.ReconcileLoadBalancer.LoadBalancer.ClusterInfo.Id()
-	idx := clusters.IndexLoadbalancerByIdV2(id, u.Update.State.LoadBalancers)
-	lb := u.Update.State.LoadBalancers[idx]
-
 	clear(lbs)
 	lbs = lbs[:0]
-	return append(lbs, lb)
+	return append(lbs, r.ReconcileLoadBalancer.LoadBalancer)
 }

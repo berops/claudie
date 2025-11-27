@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 
 	"github.com/berops/claudie/internal/api/manifest"
-	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/concurrent"
 	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/hash"
@@ -62,38 +61,24 @@ func ReconcileLoadBalancers(
 				"received task with action %T while wanting to reconcile loadbalancers, assuming the task was misscheduled, ignoring",
 				task.GetDo(),
 			)
-		tracker.Result.KeepAsIs()
 		return
 	}
 
-	lbs = utils.OnReconciliationDefaultToSingleLoadBalancer(task, lbs)
-
-	if r := task.GetUpdate().GetReconcileLoadBalancer(); r != nil {
-		// If the message to processed is only to reconcile a single loadbalancer
-		// ignore the other loadbalancers in the state.
-		id := r.LoadBalancer.ClusterInfo.Id()
-		i := clusters.IndexLoadbalancerByIdV2(id, task.GetUpdate().State.LoadBalancers)
-		lb := task.GetUpdate().State.LoadBalancers[i]
-
-		clear(lbs)
-		lbs = lbs[:0]
-		lbs = append(lbs, lb)
-	}
-
 	li := utils.LBClustersInfo{
-		Lbs:               lbs,
+		Lbs:               utils.OnReconciliationDefaultToSingleLoadBalancer(task, lbs),
 		TargetK8sNodepool: k8s.ClusterInfo.NodePools,
 		ClusterID:         k8s.ClusterInfo.Id(),
 	}
 
 	if err := setUpLoadbalancers(logger, processLimit, &li); err != nil {
 		tracker.Diagnostics.Push(err.Error())
-		tracker.Result.KeepAsIs()
 		return
 	}
 
-	// does not change the stored state in any way
-	tracker.Result.KeepAsIs()
+	// Changes to TargetPools could have been done.
+	update := tracker.Result.Update()
+	update.Loadbalancers(li.Lbs...)
+	update.Commit()
 }
 
 // setUpLoadbalancers sets up the loadbalancers along with DNS and verifies their configuration

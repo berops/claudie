@@ -41,7 +41,6 @@ func InstallVPN(
 		logger.
 			Warn().
 			Msgf("received task with action %T while wanting to install vpn, assuming the task was misscheduled, ignoring", task.GetDo())
-		tracker.Result.KeepAsIs()
 		return
 	}
 
@@ -75,12 +74,10 @@ func InstallVPN(
 		// as there could be partial results, fallthrough.
 	}
 
-	tracker.
-		Result.
-		ToUpdate().
-		TakeKubernetesCluster(k8s).
-		TakeLoadBalancers(lbs...).
-		Replace()
+	update := tracker.Result.Update()
+	update.Kubernetes(k8s)
+	update.Loadbalancers(lbs...)
+	update.Commit()
 }
 
 // installWireguardVPN install wireguard VPN for all nodes in the infrastructure.

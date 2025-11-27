@@ -13,6 +13,16 @@ type ProviderTemplateGroup struct {
 	Creds         string
 }
 
+func All(nodepools []*spec.NodePool) iter.Seq[*spec.NodePool] {
+	return func(yield func(*spec.NodePool) bool) {
+		for _, np := range nodepools {
+			if !yield(np) {
+				return
+			}
+		}
+	}
+}
+
 // ByProviderDynamic returns an iterator that groups dynamic nodepools only by provider.
 func ByProviderDynamic(nps []*spec.NodePool) iter.Seq2[ProviderTemplateGroup, []*spec.NodePool] {
 	m := make(map[ProviderTemplateGroup][]*spec.NodePool)

@@ -14,7 +14,6 @@ import (
 func DeleteKubeconfig(clusters *spec.ClustersV2) error {
 	namespace := envs.Namespace
 	clusterID := clusters.K8S.ClusterInfo.Id()
-
 	if namespace == "" {
 		return nil
 	}

@@ -30,7 +30,6 @@ func Reconcile(
 		logger.
 			Warn().
 			Msgf("received task with action %T while wanting to reconcile kubernetes cluster, assuming the task was misscheduled, ignoring", task)
-		tracker.Result.KeepAsIs()
 		return
 	}
 
@@ -50,15 +49,12 @@ func Reconcile(
 	if err := k.BuildCluster(); err != nil {
 		logger.Err(err).Msg("Failed to reconcile cluster")
 		tracker.Diagnostics.Push(err.Error())
-		tracker.Result.KeepAsIs()
 		return
 	}
 
 	logger.Info().Msg("Successfully reconciled kubernetes cluster")
-	tracker.
-		Result.
-		ToUpdate().
-		TakeKubernetesCluster(k8s).
-		TakeLoadBalancers(lbs...).
-		Replace()
+
+	update := tracker.Result.Update()
+	update.Kubernetes(k8s)
+	update.Commit()
 }

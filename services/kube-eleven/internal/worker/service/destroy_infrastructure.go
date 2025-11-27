@@ -22,28 +22,20 @@ func Destroy(
 		logger.
 			Warn().
 			Msgf("received task with action %T while wanting to destroy kubernetes cluster, assuming the task was misscheduled, ignoring", task.GetDo())
-		tracker.Result.KeepAsIs()
 		return
 	}
 
-	delete, ok := action.Delete.GetOp().(*spec.DeleteV2_Clusters_)
-	if !ok {
-		logger.
-			Warn().
-			Msgf("received task with action %T while wanting to destroy kubernetes cluster, assuming the task was misscheduled, ignoring", action.Delete.GetOp())
-		tracker.Result.KeepAsIs()
-		return
-	}
+	delete := action.Delete
 
 	logger.Info().Msgf("Destroying kubernetes cluster")
 
 	var loadbalancerApiEndpoint string
-	if ep := clusters.FindAssignedLbApiEndpointV2(delete.Clusters.LoadBalancers); ep != nil {
+	if ep := clusters.FindAssignedLbApiEndpointV2(delete.LoadBalancers); ep != nil {
 		loadbalancerApiEndpoint = ep.Dns.Endpoint
 	}
 
 	k := kube_eleven.KubeEleven{
-		K8sCluster:           delete.Clusters.K8S,
+		K8sCluster:           delete.K8S,
 		LoadBalancerEndpoint: loadbalancerApiEndpoint,
 		SpawnProcessLimit:    processLimit,
 	}
@@ -51,15 +43,14 @@ func Destroy(
 	if err := k.DestroyCluster(); err != nil {
 		logger.Error().Msgf("Error while destroying cluster: %s", err)
 		tracker.Diagnostics.Push(err.Error())
-		tracker.Result.KeepAsIs()
 		return
 	}
 
 	logger.Info().Msgf("Kubernetes cluster was successfully destroyed")
-	delete.Clusters.K8S.Kubeconfig = ""
-	tracker.
-		Result.
-		ToUpdate().
-		TakeKubernetesCluster(delete.Clusters.K8S).
-		TakeLoadBalancers(delete.Clusters.LoadBalancers...)
+
+	// No changes to LoadBalancers, update only kuberentes cluster.
+	delete.K8S.Kubeconfig = ""
+	update := tracker.Result.Update()
+	update.Kubernetes(delete.K8S)
+	update.Commit()
 }

@@ -14,6 +14,9 @@ import (
 	"github.com/rs/zerolog"
 )
 
+// TODO: check if in terraform it is preferred to use the cached
+// local version instead of downloading the templates.
+
 // UnreachableNodesMap holds the nodepools and all of the nodes within
 // that nodepool that are unreachable via a Ping on the IPv4 public endpoint.
 type UnreachableIPv4Map = map[string][]string
@@ -97,6 +100,65 @@ func HealthCheck(logger zerolog.Logger, state *spec.ClustersV2) (HealthCheckStat
 			c.Close()
 		}
 	}
+
+	// TODO: need to cache public keys of each node
+	// with via node requirements in ansible playbook.
+	// Check number of wireguard peers.
+	// username, public, key := nodepools.RandomNodePublicEndpoint(state.K8S.ClusterInfo.NodePools)
+	// if key != "" {
+
+	// 	homedir, err := os.UserHomeDir()
+	// 	if err != nil {
+	// 		// TODO:
+	// 		panic(err)
+	// 	}
+
+	// 	callback, err := knownhosts.New(fmt.Sprintf("%s/.ssh/known_hosts", homedir))
+	// 	if err != nil {
+	// 		// TODO:
+	// 		panic(err)
+	// 	}
+
+	// 	// for now this is constant.
+	// 	const sshPort = "22"
+	// 	signer, err := ssh.ParsePrivateKey([]byte(key))
+	// 	if err != nil {
+	// 		// TODO:
+	// 		panic(err)
+	// 	}
+
+	// 	cfg := ssh.ClientConfig{
+	// 		User: username,
+	// 		Auth: []ssh.AuthMethod{
+	// 			ssh.PublicKeys(signer),
+	// 		},
+	// 		HostKeyCallback: callback,
+	// 		Timeout:         1 * time.Second,
+	// 	}
+
+	// 	client, err := ssh.Dial("tcp", net.JoinHostPort(public, sshPort), &cfg)
+	// 	if err != nil {
+	// 		// TODO:
+	// 		panic(err)
+	// 	}
+
+	// 	defer client.Close()
+
+	// 	session, err := client.NewSession()
+	// 	if err != nil {
+	// 		// TODO:
+	// 		panic(err)
+	// 	}
+	// 	defer session.Close()
+
+	// 	out, err := session.Output("wg show")
+	// 	if err != nil {
+	// 		// TODO:
+	// 		panic(err)
+	// 	}
+
+	// 	println(fmt.Sprintf("out- %v", string(out)))
+	// }
 
 	return result, nil
 }

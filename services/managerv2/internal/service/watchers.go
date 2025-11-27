@@ -19,8 +19,15 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
-// Tick represents the interval at which each manifest state is checked.
-const Tick = 1 * time.Second
+const (
+	// PendingTick represents the interval at which each manifest state is checked
+	// while in the [manifest.Pending] state.
+	PendingTick = 5 * time.Second
+
+	// Tick represents the interval at which each manifest state is checked while
+	// not in the [manifest.Pending] state.
+	Tick = 1 * time.Second
+)
 
 func (s *Service) WatchForScheduledDocuments(ctx context.Context) error {
 	cfgs, err := s.store.ListConfigs(ctx, &store.ListFilter{ManifestState: []string{manifest.Scheduled.String()}})
@@ -367,8 +374,7 @@ func messageForStage(
 		description  string
 	)
 
-	err := proto.Unmarshal(marshalledTask, &task)
-	if err != nil {
+	if err := proto.Unmarshal(marshalledTask, &task); err != nil {
 		return nats.Msg{}, "", err
 	}
 

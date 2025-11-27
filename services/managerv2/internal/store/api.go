@@ -113,15 +113,14 @@ type Stage struct {
 }
 
 type TaskEvent struct {
-	Id           string   `bson:"id"`
-	Timestamp    string   `bson:"timestamp"`
-	Type         string   `bson:"event"`
-	State        Clusters `bson:"state"`
-	Task         []byte   `bson:"task"`
-	Description  string   `bson:"description"`
-	OnError      []byte   `bson:"onError"`
-	Pipeline     []Stage  `bson:"pipeline"`
-	CurrentStage uint32   `bson:"currentStage"`
+	Id           string  `bson:"id"`
+	Timestamp    string  `bson:"timestamp"`
+	Type         string  `bson:"event"`
+	Task         []byte  `bson:"task"`
+	Description  string  `bson:"description"`
+	OnError      []byte  `bson:"onError"`
+	Pipeline     []Stage `bson:"pipeline"`
+	CurrentStage uint32  `bson:"currentStage"`
 }
 
 type Workflow struct {

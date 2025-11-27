@@ -215,7 +215,7 @@ func (s *Service) watchPending() {
 		case <-s.done:
 			log.Info().Msg("Exited worker loop running WatchForPendingDocuments")
 			return
-		case <-time.After(Tick):
+		case <-time.After(PendingTick):
 			s.WatchForPendingDocuments(context.Background())
 		}
 	}

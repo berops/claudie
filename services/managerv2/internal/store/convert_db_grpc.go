@@ -213,17 +213,11 @@ func ConvertFromGRPCTaskEvent(te *spec.TaskEventV2) (*TaskEvent, error) {
 		return nil, err
 	}
 
-	clusters, err := ConvertFromGRPCClusters(te.State)
-	if err != nil {
-		return nil, err
-	}
-
 	var e TaskEvent
 	{
 		e.Id = te.Id
 		e.Timestamp = te.Timestamp.AsTime().Format(time.RFC3339)
 		e.Type = te.Event.String()
-		e.State = clusters
 		e.Task = task
 		e.Description = te.Description
 		e.OnError = retry
@@ -258,16 +252,10 @@ func ConvertToGRPCTaskEvent(te *TaskEvent) (*spec.TaskEventV2, error) {
 		return nil, err
 	}
 
-	clusters, err := ConvertToGRPCClusters(te.State)
-	if err != nil {
-		return nil, err
-	}
-
 	e := &spec.TaskEventV2{
 		Id:           te.Id,
 		Timestamp:    timestamppb.New(t),
 		Event:        spec.EventV2(spec.EventV2_value[te.Type]),
-		State:        clusters,
 		Task:         task,
 		Description:  te.Description,
 		OnError:      &strategy,
@@ -461,7 +449,7 @@ func ConvertFromGRPCCluster(k8s *spec.K8SclusterV2) ([]byte, error) {
 }
 
 func ConvertToGRPCClusterState(cluster *ClusterState) (*spec.ClusterStateV2, error) {
-	task, err := ConvertToGRPCTaskEvent(cluster.InFlight)
+	i, err := ConvertToGRPCTaskEvent(cluster.InFlight)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert db events back to grpc representation: %w", err)
 	}
@@ -479,9 +467,9 @@ func ConvertToGRPCClusterState(cluster *ClusterState) (*spec.ClusterStateV2, err
 	}
 
 	out := spec.ClusterStateV2{
-		Current: current,
-		State:   ConvertToGRPCWorkflow(cluster.State),
-		Task:    task,
+		Current:  current,
+		State:    ConvertToGRPCWorkflow(cluster.State),
+		InFlight: i,
 	}
 
 	return &out, nil
@@ -493,7 +481,7 @@ func ConvertFromGRPCClusterState(cluster *spec.ClusterStateV2) (*ClusterState, e
 		return nil, err
 	}
 
-	task, err := ConvertFromGRPCTaskEvent(cluster.GetTask())
+	task, err := ConvertFromGRPCTaskEvent(cluster.GetInFlight())
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert task to database representation: %w", err)
 	}

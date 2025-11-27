@@ -40,7 +40,7 @@ message ManifestV2 {
 message ClusterStateV2 {
   ClustersV2 current = 1;
   WorkflowV2 state = 4;
-  TaskEventV2 task = 5;
+  TaskEventV2 inFlight = 5;
 }
 
 message ClustersV2 {
@@ -183,17 +183,16 @@ message TaskEventV2 {
   string id = 1;
   google.protobuf.Timestamp timestamp = 2;
   EventV2 event = 3;
-  ClustersV2 state = 4;
-  TaskV2 task = 5;
-  string description = 6;
-  RetryV2 onError = 7;
+  TaskV2 task = 4;
+  string description = 5;
+  RetryV2 onError = 6;
 
   // Pipeline stages of the task through which it has to pass
   // to be considered as done.
-  repeated Stage pipeline = 8;
+  repeated Stage pipeline = 7;
 
   // Index into the currently to be worked on pipeline stage.
-  uint32 currentStage = 9;
+  uint32 currentStage = 8;
 }
 
 message RetryV2 {
@@ -252,6 +251,7 @@ enum ApiEndpointChangeStateV2 {
 }
 
 
+// Creates a new kubernetes cluster with the attached [LBcluster], if any.
 message CreateV2{
     // The desired state of the kuberenetes cluster to create.
     //
@@ -274,8 +274,12 @@ message UpdateV2 {
         repeated LBclusterV2 loadBalancers = 2;
     }
 
-    message JoinLoadBalancer {
+    message AddLoadBalancer {
         LBclusterV2 loadBalancer = 1;
+    }
+
+    message DeleteLoadBalancer {
+        string id = 1;
     }
 
     message ReconcileLoadBalancer {
@@ -315,40 +319,28 @@ message UpdateV2 {
     // is merged with [State], and any reconciliation should be done
     // with that.
     oneof Delta {
-        JoinLoadBalancer joinLoadBalancer = 2;
-        ReconcileLoadBalancer reconcileLoadBalancer = 3;
-        ApiEndpoint apiEndpoint = 4;
-        ApiPortOnCluster clusterApiPort = 5;
-        ReplaceDns replaceDns = 6;
+        AddLoadBalancer addLoadBalancer = 2;
+        DeleteLoadBalancer deleteLoadBalancer = 3;
+        ReconcileLoadBalancer reconcileLoadBalancer = 4;
+        ApiEndpoint apiEndpoint = 5;
+        ApiPortOnCluster clusterApiPort = 6;
+        ReplaceDns replaceDns = 7;
     }
 }
 
+// Deletes an existing kubernetes cluster along with its attached [LBcluster], if any.
 message DeleteV2{
-    message Clusters {
-        // The current state of the kuberentes cluster to delete.
-        //
-        // This field is required
-        K8sclusterV2 k8s = 1;
+   // The current state of the kuberentes cluster to delete.
+   //
+   // This field is required
+   K8sclusterV2 k8s = 1;
 
-        // The current state of the loadbalancers  to delete, that
-        // are attached to the kubernetes cluster.
-        //
-        // This field depends on the above [k8s] field and is required if
-        // the kuberentes cluster has any loadbalancers attached.
-        repeated LBclusterV2 loadBalancers = 2;
-    }
-
-    message LoadBalancers {
-        // The current state of the loadbalancers to delete.
-        //
-        // Optional, if none are specified none are deleted.
-        repeated LBclusterV2 loadBalancers = 1;
-    }
-
-    oneof Op {
-        Clusters clusters = 1;
-        LoadBalancers loadbalancers = 2;
-    }
+   // The current state of the loadbalancers  to delete, that
+   // are attached to the kubernetes cluster.
+   //
+   // This field depends on the above [k8s] field and is required if
+   // the kuberentes cluster has any loadbalancers attached.
+   repeated LBclusterV2 loadBalancers = 2;
 }
 
 message TaskV2 {

@@ -23,7 +23,6 @@ func build(
 		logger.
 			Warn().
 			Msgf("Received task with action %T while wanting to create new infrastructure, assuming the task was misscheduled, ignoring", task.GetDo())
-		tracker.Result.KeepAsIs()
 		return
 	}
 
@@ -31,8 +30,9 @@ func build(
 	lbs := action.Create.LoadBalancers
 
 	if k8s == nil {
-		logger.Warn().Msg("create task validation failed, required desired state of the kuberentes cluster to be present, ignoring")
-		tracker.Result.KeepAsIs()
+		logger.
+			Warn().
+			Msg("create task validation failed, required desired state of the kuberentes cluster to be present, ignoring")
 		return
 	}
 
@@ -43,33 +43,20 @@ func build(
 		SpawnProcessLimit: processLimit,
 	}
 
-	// TODO: will we need the options ? after reconciliation.
-	// if spec.OptionIsSet(task.Options, spec.ForceExportPort6443OnControlPlane) {
-	// 	cluster.ExportPort6443 = true
-	// }
-
 	buildLogger := logger.With().Str("cluster", cluster.Id()).Logger()
 
 	if err := BuildK8Scluster(buildLogger, cluster); err != nil {
-		possiblyUpdated := k8s
 		tracker.Diagnostics.Push(err.Error())
-		tracker.Result.ToUpdate().TakeKubernetesCluster(possiblyUpdated).Replace()
+
+		possiblyUpdated := k8s
+		update := tracker.Result.Update()
+		update.Kubernetes(possiblyUpdated)
+		update.Commit()
+
 		return
 	}
 
 	buildLogger.Info().Msg("Infrastructure for kubernetes cluster build successfully")
-
-	// TODO: we should not need this at all.
-	// if spec.OptionIsSet(task.Options, spec.K8sOnlyRefresh) {
-	// 	updatedCluster := k8s
-
-	// 	// Processing an event that only targets the nodepools used within the k8s
-	// 	// clusters, thus we do not need to update/refresh the loadbalancer and dns
-	// 	// infrastructure here. This is only done here for the purpose of shaving off
-	// 	// a few minutes from the build process.
-	// 	tracker.Result.ToUpdate().TakeKubernetesCluster(updatedCluster).Replace()
-	// 	return
-	// }
 
 	var loadbalancers []loadbalancer.LBcluster
 	for _, lb := range lbs {
@@ -100,12 +87,10 @@ func build(
 		possiblyUpdatedLoadBalancers = append(possiblyUpdatedLoadBalancers, lb.Cluster)
 	}
 
-	tracker.
-		Result.
-		ToUpdate().
-		TakeKubernetesCluster(updatedK8s).
-		TakeLoadBalancers(possiblyUpdatedLoadBalancers...).
-		Replace()
+	update := tracker.Result.Update()
+	update.Kubernetes(updatedK8s)
+	update.Loadbalancers(possiblyUpdatedLoadBalancers...)
+	update.Commit()
 }
 
 // Builds the required infrastructure by looking at the difference between

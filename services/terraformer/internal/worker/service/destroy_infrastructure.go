@@ -41,65 +41,36 @@ func destroy(
 		logger.
 			Warn().
 			Msgf("received task with action %T while wanting to destroy infrastructure, assuming the task was misscheduled, ignoring", task.GetDo())
-
-		tracker.Result.KeepAsIs()
 		return
 	}
 
-	switch do := action.Delete.GetOp().(type) {
-	case *spec.DeleteV2_Clusters_:
-		k8s := do.Clusters.GetK8S()
-		loadbalancers := do.Clusters.GetLoadBalancers()
+	k8s, loadbalancers := action.Delete.K8S, action.Delete.LoadBalancers
+	if k8s == nil {
+		logger.
+			Warn().
+			Msg("delete task validation failed, required kubernetes state to be present, but is missing, ignoring")
+		return
+	}
 
-		if k8s == nil {
+	clusters = append(clusters, &kubernetes.K8Scluster{
+		ProjectName:       projectName,
+		Cluster:           k8s,
+		SpawnProcessLimit: processLimit,
+	})
+
+	for _, lb := range loadbalancers {
+		if lb == nil {
 			logger.
 				Warn().
-				Msg("delete task validation failed, required kubernetes state to be present, but is missing, ignoring")
-			tracker.Result.KeepAsIs()
+				Msg("delete task validation failed, required loadbalancer state to be present, but is missing, ignoring")
 			return
 		}
 
-		clusters = append(clusters, &kubernetes.K8Scluster{
+		clusters = append(clusters, &loadbalancer.LBcluster{
 			ProjectName:       projectName,
-			Cluster:           k8s,
+			Cluster:           lb,
 			SpawnProcessLimit: processLimit,
 		})
-
-		for _, lb := range loadbalancers {
-			if lb == nil {
-				logger.
-					Warn().
-					Msg("delete task validation failed, required loadbalancer state to be present, but is missing, ignoring")
-				tracker.Result.KeepAsIs()
-				return
-			}
-
-			clusters = append(clusters, &loadbalancer.LBcluster{
-				ProjectName:       projectName,
-				Cluster:           lb,
-				SpawnProcessLimit: processLimit,
-			})
-		}
-	case *spec.DeleteV2_Loadbalancers:
-		for _, lb := range do.Loadbalancers.GetLoadBalancers() {
-			if lb == nil {
-				logger.
-					Warn().
-					Msg("delete task validation failed, required loadbalancer state to be present, but is missing, ignoring")
-				tracker.Result.KeepAsIs()
-				return
-			}
-
-			clusters = append(clusters, &loadbalancer.LBcluster{
-				ProjectName:       projectName,
-				Cluster:           lb,
-				SpawnProcessLimit: processLimit,
-			})
-		}
-	default:
-		logger.Warn().Msgf("received unsupported delete action %T ignoring", action.Delete.GetOp())
-		tracker.Result.KeepAsIs()
-		return
 	}
 
 	ids := make([]string, len(clusters))
@@ -120,26 +91,26 @@ func destroy(
 	}
 
 	var (
-		k8s string
-		lbs []string
+		k8sId string
+		lbIds []string
 	)
 
 	for i, c := range clusters {
 		if errs[i] == nil {
 			if c.IsKubernetes() {
-				k8s = ids[i]
+				k8sId = ids[i]
 			} else {
-				lbs = append(lbs, ids[i])
+				lbIds = append(lbIds, ids[i])
 			}
 		}
 	}
 
-	tracker.
-		Result.
-		ToClear().
-		TakeKuberentesCluster(k8s != "").
-		TakeLoadBalancers(lbs...).
-		Replace()
+	clear := tracker.Result.Clear()
+	if k8sId != "" {
+		clear.Kubernetes()
+	}
+	clear.LoadBalancers(lbIds...)
+	clear.Commit()
 }
 
 // Destroys the infrastructure of the passed in [Cluster] by looking

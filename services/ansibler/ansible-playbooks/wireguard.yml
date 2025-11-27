@@ -12,6 +12,26 @@
     - name: Gather facts from nodes
       ansible.builtin.setup:
 
+    # Read all public keys of the connected to host.
+    - name: Read Host Keys
+      # TODO: use ssh-keyscan -q endpoint for retreiving all of the
+      # public keys and storing them inside the node.RemotePublicKeys
+      # which will then be used for the SSH handshake.
+      # wireguard has a stable output for the wg show that can be
+      # parsed via the output
+      # https://manpages.debian.org/unstable/wireguard-tools/wg.8.en.html
+      # TODO: backwards compatible current state will not have this. in the reconciliation loop
+      local_action:
+        ansible.builtin.shell: |
+          ssh-keyscan -q {{ ansible_host }}
+      register: keyscan_output
+
+    - name: Save Read Host Keys
+      local_action:
+        ansible.builtin.copy:
+          content: "{{ keyscan_output.stdout }}"
+          dest: "{{ inventory_hostname }}_{{ ansible_host }}_keyscan.txt"
+
   # abort playbook on any fatal error, the golang code will trigger a retry
   any_errors_fatal: true
   roles:

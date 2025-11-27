@@ -357,7 +357,6 @@ func LoadBalancersDiff(k8sdiff *KubernetesDiffResult, old, new *spec.LoadBalance
 				found := slices.Contains(newRole.TargetPools, old)
 				if !found {
 					targetPoolsDeleted[newRole.Name] = append(targetPoolsDeleted[newRole.Name], old)
-					break
 				}
 			}
 
@@ -366,7 +365,6 @@ func LoadBalancersDiff(k8sdiff *KubernetesDiffResult, old, new *spec.LoadBalance
 				found := slices.Contains(o.TargetPools, n)
 				if !found {
 					targetPoolsAdded[newRole.Name] = append(targetPoolsAdded[newRole.Name], n)
-					break
 				}
 			}
 		}
