@@ -29,18 +29,11 @@ var (
 	//BucketName is the name of the bucket use for state
 	//If not defined it will default to "claudie-tf-state"
 	BucketName = os.Getenv("BUCKET_NAME")
-	//DynamoEndpoint is a listening URL for DynamoDB local deployment
-	//If not defined it will use and external DynamoDB,
-	//by using AWS_REGION and DYNAMO_TABLE_NAME variables
-	DynamoEndpoint = os.Getenv("DYNAMO_URL")
-	//DynamoTable is the name of the DB table used for state locking
-	//If not defined it will default to "claudie"
-	DynamoTable = os.Getenv("DYNAMO_TABLE_NAME")
-	// AwsAccesskeyId is part of credentials needed for connecting to bucket and dynamoDB
+	// AwsAccesskeyId is part of credentials needed for connecting to bucket
 	AwsAccesskeyId = os.Getenv("AWS_ACCESS_KEY_ID")
-	// AwsSecretAccessKey is part of credentials needed for connecting to bucket and dynamoDB
+	// AwsSecretAccessKey is part of credentials needed for connecting to bucket
 	AwsSecretAccessKey = os.Getenv("AWS_SECRET_ACCESS_KEY")
-	// AwsRegion is part of credentials needed for connecting to bucket and dynamoDB
+	// AwsRegion is part of credentials needed for connecting to bucket
 	AwsRegion = os.Getenv("AWS_REGION")
 
 	//Namespace of current deployment
@@ -90,9 +83,6 @@ func init() {
 		BucketName = "claudie-tf-state-files"
 	}
 
-	if DynamoTable == "" {
-		DynamoTable = "claudie"
-	}
 	if AwsAccesskeyId == "" {
 		AwsAccesskeyId = "fake"
 	}

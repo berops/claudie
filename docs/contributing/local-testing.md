@@ -26,7 +26,6 @@ As Claudie uses number of external tools to build and manage clusters, it is imp
 - `kubeone` - check current version used in Kube-eleven Dockerfile
 - `kubectl` - check current version used in Kuber Dockerfile
 - `mongo` - when running locally, we recommend to run `mongo` as a container, check current version used in manifests for Mongo
-- `dynamo` - when running locally, we recommend to run `dynamo` as a container, check current version used in manifests for Dynamo
 - `minio` - when running locally, we recommend to run `minio` as a container, check current version used in manifests for Minio
 
 ## How to run Claudie locally
