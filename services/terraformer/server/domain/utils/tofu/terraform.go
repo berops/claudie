@@ -12,6 +12,7 @@ import (
 
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/envs"
+	"github.com/berops/claudie/internal/fileutils"
 	"github.com/rs/zerolog/log"
 
 	"golang.org/x/sync/semaphore"
@@ -49,7 +50,7 @@ func (t *Terraform) ProvidersLock() error {
 	}
 
 	if _, err := os.Stat(absCache); os.IsNotExist(err) {
-		if err := os.MkdirAll(absCache, os.ModePerm); err != nil {
+		if err := fileutils.CreateDirectory(absCache); err != nil {
 			return fmt.Errorf("failed to create cache directory %s : %w", absCache, err)
 		}
 	}
