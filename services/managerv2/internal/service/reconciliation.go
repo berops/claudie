@@ -19,7 +19,9 @@ import (
 type ScheduleResult uint8
 
 // TODO: endless reconciliation...
-// TODO: go over the descriptions of each task.
+// TODO: with a failed inFlight state there needs to be a decision to be made if a task
+// with a higher priority is to be scheduled what happens in that case ?
+// TODO: maybe restrucurize the workers project directory ?
 const (
 	// Reschedule describes the case where the manifest should be rescheduled again
 	// after either error-ing or completing.
@@ -197,6 +199,11 @@ func reconciliate(pending *spec.ConfigV2, desired map[string]*spec.ClustersV2) S
 
 			result = Noop
 
+			// After the [HealhCheck] and the [KubernetesDiff], [LoadBalancersDiff]
+			// is made all of the current,desired [spec.Clusters] state is considered
+			// immutable and is not modified to not invalidate cached indices for the
+			// returned diffs.
+			logger.Info().Msg("Health checking current state")
 			hc, err := HealthCheck(logger, current)
 			if err != nil {
 				logger.Err(err).Msg("Failed to fully healthcheck cluster")
@@ -204,7 +211,7 @@ func reconciliate(pending *spec.ConfigV2, desired map[string]*spec.ClustersV2) S
 			}
 
 			k8s := KubernetesDiff(current.K8S, desired.K8S)
-			lbs := LoadBalancersDiff(&k8s, current.LoadBalancers, desired.LoadBalancers)
+			lbs := LoadBalancersDiff(current.LoadBalancers, desired.LoadBalancers)
 
 			if state.InFlight = PreKubernetesDiff(&hc, &lbs, current, desired); state.InFlight != nil {
 				result = Reschedule
@@ -220,6 +227,12 @@ func reconciliate(pending *spec.ConfigV2, desired map[string]*spec.ClustersV2) S
 
 			if state.InFlight = PostKubernetesDiff(&hc, &lbs, current, desired); state.InFlight != nil {
 				result = Reschedule
+				break
+			}
+
+			if hc.Cluster.VpnDrift {
+				result = Reschedule
+				state.InFlight = refreshVPN(current)
 			}
 		}
 
@@ -257,6 +270,48 @@ func PopulateEntriesForNewClusters(
 			State:    nil,
 			InFlight: nil,
 		}
+	}
+}
+
+func refreshVPN(current *spec.ClustersV2) *spec.TaskEventV2 {
+	inFlight := proto.Clone(current).(*spec.ClustersV2)
+	return &spec.TaskEventV2{
+		Id:        uuid.New().String(),
+		Timestamp: timestamppb.New(time.Now().UTC()),
+		Event:     spec.EventV2_UPDATE_V2,
+		Task: &spec.TaskV2{
+			Do: &spec.TaskV2_Update{
+				Update: &spec.UpdateV2{
+					State: &spec.UpdateV2_State{
+						K8S:           inFlight.K8S,
+						LoadBalancers: inFlight.LoadBalancers.Clusters,
+					},
+					Delta: &spec.UpdateV2_None_{},
+				},
+			},
+		},
+		Description: "Refreshing VPN",
+		Pipeline: []*spec.Stage{
+			{
+				StageKind: &spec.Stage_Ansibler{
+					Ansibler: &spec.StageAnsibler{
+						Description: &spec.StageDescription{
+							About:      "Configuring infrastructure",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+						SubPasses: []*spec.StageAnsibler_SubPass{
+							{
+								Kind: spec.StageAnsibler_INSTALL_VPN,
+								Description: &spec.StageDescription{
+									About:      "Fixing drift in VPN across nodes of the kuberentes and loadbalancer clusters",
+									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 }
 
@@ -486,7 +541,7 @@ func clustersUnion(old, modified *spec.ClustersV2) *spec.ClustersV2 {
 	var (
 		ir  = proto.Clone(old).(*spec.ClustersV2)
 		k8s = KubernetesDiff(ir.GetK8S(), modified.GetK8S())
-		lbs = LoadBalancersDiff(&k8s, ir.LoadBalancers, modified.LoadBalancers)
+		lbs = LoadBalancersDiff(ir.LoadBalancers, modified.LoadBalancers)
 	)
 
 	// 1. Add any nodepools/nodes.
@@ -516,7 +571,7 @@ func clustersUnion(old, modified *spec.ClustersV2) *spec.ClustersV2 {
 
 	// 2. Same, but for loadbalancers.
 	for _, lb := range lbs.Added {
-		idx := clusters.IndexLoadbalancerByIdV2(lb, modified.LoadBalancers.Clusters)
+		idx := clusters.IndexLoadbalancerByIdV2(lb.Id, modified.LoadBalancers.Clusters)
 		lb := proto.Clone(modified.LoadBalancers.Clusters[idx]).(*spec.LBclusterV2)
 		ir.LoadBalancers.Clusters = append(ir.LoadBalancers.Clusters, lb)
 	}

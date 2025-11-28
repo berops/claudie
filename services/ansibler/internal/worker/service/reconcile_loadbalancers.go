@@ -65,7 +65,7 @@ func ReconcileLoadBalancers(
 	}
 
 	li := utils.LBClustersInfo{
-		Lbs:               utils.OnReconciliationDefaultToSingleLoadBalancer(task, lbs),
+		Lbs:               utils.DefaultToSingleLoadBalancerIfPossible(task, lbs),
 		TargetK8sNodepool: k8s.ClusterInfo.NodePools,
 		ClusterID:         k8s.ClusterInfo.Id(),
 	}

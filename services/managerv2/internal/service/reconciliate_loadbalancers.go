@@ -9,38 +9,42 @@ import (
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/google/uuid"
+
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// TODO: with a failed inFlight state there needs to be a decision to be made if a task
-// with a higher priority is to be scheduled what happens in that case ?
-// TODO: maybe restrucurize the workers project directory ?
-// TODO: the reocnciliation could check a random node to see if its wiregurad count matches the count
-// of the nodes in the current state if not, refresh.
-// TODO: what about the refresh for ansible ? -> Healthcheck random node to dump number of wg peers
-// if does not match current state refresh VPN.
-// TODO: what about the VPN for the deleted loadbalancers ? it would need to be refreshed.
-
 // PreKubernetesDiff returns load balancer changes that can be done/executed before handling any changes to the kubernetes clusters.
+// Assumes that both the current and desired [spec.Clusters] were not modified since the [HealthCheckStatue] and [LoadBalancersDiffResult]
+// was computed, and that all of the Cached Indices within the [LoadBalancerDiffresult] are not invalidated. This function does not
+// modify the input in any way and also the returned [spec.TaskEvent] does not hold or shared any memory to related to the input.
 func PreKubernetesDiff(hc *HealthCheckStatus, diff *LoadBalancersDiffResult, current, desired *spec.ClustersV2) *spec.TaskEventV2 {
 	for lb, modified := range diff.Modified {
+		currentId := LoadBalancerIdentifier{
+			Id:    lb,
+			Index: modified.CurrentIdx,
+		}
+		desiredId := LoadBalancerIdentifier{
+			Id:    lb,
+			Index: modified.DesiredIdx,
+		}
+
 		if modified.DNS {
 			isApiEndpointChange := diff.ApiEndpoint.State == spec.ApiEndpointChangeStateV2_EndpointRenamedV2
-			isApiEndpointChange = isApiEndpointChange && diff.ApiEndpoint.Current == lb
-			return replaceDns(current, desired, lb, isApiEndpointChange)
+			isApiEndpointChange = isApiEndpointChange && diff.ApiEndpoint.Current.Id == lb
+			return replaceDns(current, desired, currentId, desiredId, isApiEndpointChange)
 		}
 
 		if len(modified.Roles.Added) > 0 {
-			return addRoles(current, desired, lb, modified.Roles.Added)
+			return addRoles(current, desired, currentId, desiredId, modified.Roles.Added)
 		}
 
 		if !modified.Dynamic.IsEmpty() {
-			return reconcileLoadBalancerNodePools(current, desired, lb, &modified.Dynamic)
+			return reconcileLoadBalancerNodePools(current, desired, currentId, desiredId, &modified.Dynamic)
 		}
 
 		if !modified.Static.IsEmpty() {
-			return reconcileLoadBalancerNodePools(current, desired, lb, &modified.Static)
+			return reconcileLoadBalancerNodePools(current, desired, currentId, desiredId, &modified.Static)
 		}
 	}
 
@@ -48,16 +52,20 @@ func PreKubernetesDiff(hc *HealthCheckStatus, diff *LoadBalancersDiffResult, cur
 		return joinLoadBalancer(current, desired, lb)
 	}
 
+	// TODO move this up the tree as a priority.
+	// And check if the loadbalancers are setup before executing.
+	// otherwise fallthrough. This should have the highest priority.
+	// that way we don't need endless retries.
 	switch diff.ApiEndpoint.State {
 	case spec.ApiEndpointChangeStateV2_AttachingLoadBalancerV2:
-		return moveApiEndpoint(current, diff.ApiEndpoint.Current, diff.ApiEndpoint.Desired, diff.ApiEndpoint.State)
+		return moveApiEndpoint(current, diff.ApiEndpoint.Current, diff.ApiEndpoint.New, diff.ApiEndpoint.State)
 	case spec.ApiEndpointChangeStateV2_DetachingLoadBalancerV2:
 		if !hc.Cluster.ControlNodesHave6443 {
 			return controlNodesPort6443(current, true)
 		}
-		return moveApiEndpoint(current, diff.ApiEndpoint.Current, diff.ApiEndpoint.Desired, diff.ApiEndpoint.State)
+		return moveApiEndpoint(current, diff.ApiEndpoint.Current, diff.ApiEndpoint.New, diff.ApiEndpoint.State)
 	case spec.ApiEndpointChangeStateV2_MoveEndpointV2:
-		return moveApiEndpoint(current, diff.ApiEndpoint.Current, diff.ApiEndpoint.Desired, diff.ApiEndpoint.State)
+		return moveApiEndpoint(current, diff.ApiEndpoint.Current, diff.ApiEndpoint.New, diff.ApiEndpoint.State)
 	case spec.ApiEndpointChangeStateV2_EndpointRenamedV2:
 		// Handled above, with the modified.DNS flag.
 	case spec.ApiEndpointChangeStateV2_NoChangeV2:
@@ -69,7 +77,11 @@ func PreKubernetesDiff(hc *HealthCheckStatus, diff *LoadBalancersDiffResult, cur
 	// make the cluster broken and unreachable.
 	for lb, modified := range diff.Modified {
 		if len(modified.Roles.Deleted) > 0 {
-			return deleteRoles(current, lb, modified.Roles.Deleted)
+			cid := LoadBalancerIdentifier{
+				Id:    lb,
+				Index: modified.CurrentIdx,
+			}
+			return deleteRoles(current, cid, modified.Roles.Deleted)
 		}
 	}
 
@@ -83,6 +95,9 @@ func PreKubernetesDiff(hc *HealthCheckStatus, diff *LoadBalancersDiffResult, cur
 }
 
 // PostKubernetesDiff returns load balancer changes can be done/executed after handling addition/modification changes to the kubernetes clusters.
+// Assumes that both the current and desired [spec.Clusters] were not modified since the [HealthCheckStatue] and [LoadBalancersDiffResult]
+// was computed, and that all of the Cached Indices within the [LoadBalancerDiffresult] are not invalidated. This function does not
+// modify the input in any way and also the returned [spec.TaskEvent] does not hold or shared any memory to related to the input.
 func PostKubernetesDiff(_ *HealthCheckStatus, diff *LoadBalancersDiffResult, current, desired *spec.ClustersV2) *spec.TaskEventV2 {
 	// TargetPools modifications needs to be handled after changes to the kubernetes
 	// cluster, namely after adding new nodepools as old targetPools could be replaced
@@ -90,7 +105,15 @@ func PostKubernetesDiff(_ *HealthCheckStatus, diff *LoadBalancersDiffResult, cur
 	// would not exist in the cluster yet and would make the workflow break.
 	for lb, modified := range diff.Modified {
 		if len(modified.Roles.TargetPoolsAdded) > 0 || len(modified.Roles.TargetPoolsDeleted) > 0 {
-			return reconcileRoleTargetPools(current, desired, lb)
+			cid := LoadBalancerIdentifier{
+				Id:    lb,
+				Index: modified.CurrentIdx,
+			}
+			did := LoadBalancerIdentifier{
+				Id:    lb,
+				Index: modified.DesiredIdx,
+			}
+			return reconcileRoleTargetPools(current, desired, cid, did)
 		}
 	}
 
@@ -111,15 +134,13 @@ func PostKubernetesDiff(_ *HealthCheckStatus, diff *LoadBalancersDiffResult, cur
 func reconcileLoadBalancerNodePools(
 	current *spec.ClustersV2,
 	desired *spec.ClustersV2,
-	lb string,
+	currentId LoadBalancerIdentifier,
+	desiredId LoadBalancerIdentifier,
 	diff *NodePoolsDiffResult,
 ) *spec.TaskEventV2 {
 	var (
-		cidx = clusters.IndexLoadbalancerByIdV2(lb, current.LoadBalancers.Clusters)
-		didx = clusters.IndexLoadbalancerByIdV2(lb, desired.LoadBalancers.Clusters)
-
-		desiredLb   = desired.LoadBalancers.Clusters[didx]
-		toReconcile = proto.Clone(current.LoadBalancers.Clusters[cidx]).(*spec.LBclusterV2)
+		desiredLb   = desired.LoadBalancers.Clusters[desiredId.Index]
+		toReconcile = proto.Clone(current.LoadBalancers.Clusters[currentId.Index]).(*spec.LBclusterV2)
 
 		inFlight = proto.Clone(current).(*spec.ClustersV2)
 		added    = len(diff.PartiallyAdded) > 0 || len(diff.Added) > 0
@@ -157,7 +178,7 @@ func reconcileLoadBalancerNodePools(
 			Timestamp:   timestamppb.New(time.Now().UTC()),
 			Event:       spec.EventV2_UPDATE_V2,
 			Task:        &spec.TaskV2{Do: &updateOp},
-			Description: fmt.Sprintf("Reconciling load balancer %q", lb),
+			Description: fmt.Sprintf("Reconciling load balancer %q", currentId.Id),
 			Pipeline: []*spec.Stage{
 				{
 					StageKind: &spec.Stage_Terraformer{
@@ -241,7 +262,7 @@ func reconcileLoadBalancerNodePools(
 		Timestamp:   timestamppb.New(time.Now().UTC()),
 		Event:       spec.EventV2_UPDATE_V2,
 		Task:        &spec.TaskV2{Do: &updateOp},
-		Description: fmt.Sprintf("Reconciling load balancer %q", lb),
+		Description: fmt.Sprintf("Reconciling load balancer %q", currentId.Id),
 		Pipeline: []*spec.Stage{
 			{
 				StageKind: &spec.Stage_Terraformer{
@@ -272,10 +293,9 @@ func reconcileLoadBalancerNodePools(
 // to the new [spec.DNS.Endpoint].
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
-func replaceDns(current, desired *spec.ClustersV2, lb string, apiEndpoint bool) *spec.TaskEventV2 {
+func replaceDns(current, desired *spec.ClustersV2, currentId, desiredId LoadBalancerIdentifier, apiEndpoint bool) *spec.TaskEventV2 {
 	var (
-		idx      = clusters.IndexLoadbalancerByIdV2(lb, desired.LoadBalancers.Clusters)
-		dns      = proto.Clone(desired.LoadBalancers.Clusters[idx].Dns).(*spec.DNS)
+		dns      = proto.Clone(desired.LoadBalancers.Clusters[desiredId.Index].Dns).(*spec.DNS)
 		inFlight = proto.Clone(current).(*spec.ClustersV2)
 	)
 
@@ -286,7 +306,7 @@ func replaceDns(current, desired *spec.ClustersV2, lb string, apiEndpoint bool) 
 		},
 		Delta: &spec.UpdateV2_ReplaceDns_{
 			ReplaceDns: &spec.UpdateV2_ReplaceDns{
-				LoadBalancerId: lb,
+				LoadBalancerId: currentId.Id,
 				Dns:            dns,
 			},
 		},
@@ -303,7 +323,7 @@ func replaceDns(current, desired *spec.ClustersV2, lb string, apiEndpoint bool) 
 				Update: &updateOp,
 			},
 		},
-		Description: fmt.Sprintf("Reconciling DNS for load balancer %q", lb),
+		Description: fmt.Sprintf("Reconciling DNS for load balancer %q", currentId.Id),
 		Pipeline: []*spec.Stage{
 			{
 				StageKind: &spec.Stage_Terraformer{
@@ -327,9 +347,8 @@ func replaceDns(current, desired *spec.ClustersV2, lb string, apiEndpoint bool) 
 		},
 	}
 
-	if desired.LoadBalancers.Clusters[idx].IsApiEndpoint() && apiEndpoint {
-		idx := clusters.IndexLoadbalancerByIdV2(lb, current.LoadBalancers.Clusters)
-		pst := current.LoadBalancers.Clusters[idx].Dns
+	if desired.LoadBalancers.Clusters[desiredId.Index].IsApiEndpoint() && apiEndpoint {
+		pst := current.LoadBalancers.Clusters[currentId.Index].Dns
 		updateOp.Delta.(*spec.UpdateV2_ReplaceDns_).ReplaceDns.OldApiEndpoint = &pst.Endpoint
 
 		task.Pipeline = append(task.Pipeline, &spec.Stage{
@@ -435,7 +454,12 @@ func controlNodesPort6443(current *spec.ClustersV2, open bool) *spec.TaskEventV2
 // if the kuberentes cluster in [spec.Clusters] does not have Loadbalancers, i.e. only has kubernetes nodes.
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
-func moveApiEndpoint(current *spec.ClustersV2, cid, did string, change spec.ApiEndpointChangeStateV2) *spec.TaskEventV2 {
+func moveApiEndpoint(
+	current *spec.ClustersV2,
+	currentId LoadBalancerIdentifier,
+	desiredId LoadBalancerIdentifier,
+	change spec.ApiEndpointChangeStateV2,
+) *spec.TaskEventV2 {
 	inFlight := proto.Clone(current).(*spec.ClustersV2)
 	updateOp := spec.UpdateV2{
 		State: &spec.UpdateV2_State{
@@ -445,13 +469,12 @@ func moveApiEndpoint(current *spec.ClustersV2, cid, did string, change spec.ApiE
 		Delta: &spec.UpdateV2_ApiEndpoint_{
 			ApiEndpoint: &spec.UpdateV2_ApiEndpoint{
 				State:             change,
-				CurrentEndpointId: cid,
-				DesiredEndpointId: did,
+				CurrentEndpointId: currentId.Id,
+				DesiredEndpointId: desiredId.Id,
 			},
 		},
 	}
 
-	// TODO: will we need Endless retries if we will have healthchecking ???
 	return &spec.TaskEventV2{
 		Id:        uuid.New().String(),
 		Timestamp: timestamppb.New(time.Now().UTC()),
@@ -461,14 +484,7 @@ func moveApiEndpoint(current *spec.ClustersV2, cid, did string, change spec.ApiE
 				Update: &updateOp,
 			},
 		},
-		Description: fmt.Sprintf("Moving Api endpoint %s from %q to %q", change.String(), cid, did),
-		OnError: &spec.RetryV2{
-			Do: &spec.RetryV2_Repeat_{
-				Repeat: &spec.RetryV2_Repeat{
-					Kind: spec.RetryV2_Repeat_ENDLESS,
-				},
-			},
-		},
+		Description: fmt.Sprintf("Moving Api endpoint %s from %q to %q", change.String(), currentId.Id, desiredId.Id),
 		Pipeline: []*spec.Stage{
 			{
 				StageKind: &spec.Stage_Ansibler{
@@ -515,7 +531,7 @@ func moveApiEndpoint(current *spec.ClustersV2, cid, did string, change spec.ApiE
 // Deletes the loadbalancer with the id specified in the passed in lb from the [spec.Clusters] state.
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
-func deleteLoadBalancer(current *spec.ClustersV2, lb string) *spec.TaskEventV2 {
+func deleteLoadBalancer(current *spec.ClustersV2, i LoadBalancerIdentifier) *spec.TaskEventV2 {
 	inFlight := proto.Clone(current).(*spec.ClustersV2)
 	updateOp := spec.UpdateV2{
 		State: &spec.UpdateV2_State{
@@ -524,7 +540,7 @@ func deleteLoadBalancer(current *spec.ClustersV2, lb string) *spec.TaskEventV2 {
 		},
 		Delta: &spec.UpdateV2_DeleteLoadBalancer_{
 			DeleteLoadBalancer: &spec.UpdateV2_DeleteLoadBalancer{
-				Id: lb,
+				Id: i.Id,
 			},
 		},
 	}
@@ -538,7 +554,7 @@ func deleteLoadBalancer(current *spec.ClustersV2, lb string) *spec.TaskEventV2 {
 				Update: &updateOp,
 			},
 		},
-		Description: fmt.Sprintf("Removing load balancer %q", lb),
+		Description: fmt.Sprintf("Removing load balancer %q", i.Id),
 		Pipeline: []*spec.Stage{
 			{
 				StageKind: &spec.Stage_Terraformer{
@@ -549,7 +565,7 @@ func deleteLoadBalancer(current *spec.ClustersV2, lb string) *spec.TaskEventV2 {
 						},
 						SubPasses: []*spec.StageTerraformer_SubPass{
 							{
-								Kind: spec.StageTerraformer_DESTROY_INFRASTRUCTURE,
+								Kind: spec.StageTerraformer_UPDATE_INFRASTRUCTURE,
 								Description: &spec.StageDescription{
 									About:      "Destroying infrastructure",
 									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
@@ -567,10 +583,9 @@ func deleteLoadBalancer(current *spec.ClustersV2, lb string) *spec.TaskEventV2 {
 // into the existing current infrastructure of [spec.Clusters].
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
-func joinLoadBalancer(current, desired *spec.ClustersV2, lb string) *spec.TaskEventV2 {
+func joinLoadBalancer(current, desired *spec.ClustersV2, desiredId LoadBalancerIdentifier) *spec.TaskEventV2 {
 	var (
-		idx      = clusters.IndexLoadbalancerByIdV2(lb, desired.LoadBalancers.Clusters)
-		toJoin   = proto.Clone(desired.LoadBalancers.Clusters[idx]).(*spec.LBclusterV2)
+		toJoin   = proto.Clone(desired.LoadBalancers.Clusters[desiredId.Index]).(*spec.LBclusterV2)
 		inFlight = proto.Clone(current).(*spec.ClustersV2)
 	)
 
@@ -595,7 +610,7 @@ func joinLoadBalancer(current, desired *spec.ClustersV2, lb string) *spec.TaskEv
 				Update: &updateOp,
 			},
 		},
-		Description: fmt.Sprintf("Joining loadbalancer %q into existing infrastructure", lb),
+		Description: fmt.Sprintf("Joining loadbalancer %q into existing infrastructure", desiredId.Id),
 		Pipeline: []*spec.Stage{
 			{
 				StageKind: &spec.Stage_Terraformer{
@@ -650,10 +665,9 @@ func joinLoadBalancer(current, desired *spec.ClustersV2, lb string) *spec.TaskEv
 // in lb string, from the current [spec.Clusters] state.
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
-func deleteRoles(current *spec.ClustersV2, lb string, roles []string) *spec.TaskEventV2 {
+func deleteRoles(current *spec.ClustersV2, currentId LoadBalancerIdentifier, roles []string) *spec.TaskEventV2 {
 	var (
-		idx         = clusters.IndexLoadbalancerByIdV2(lb, current.LoadBalancers.Clusters)
-		toReconcile = proto.Clone(current.LoadBalancers.Clusters[idx]).(*spec.LBclusterV2)
+		toReconcile = proto.Clone(current.LoadBalancers.Clusters[currentId.Index]).(*spec.LBclusterV2)
 		inFlight    = proto.Clone(current).(*spec.ClustersV2)
 	)
 
@@ -680,7 +694,7 @@ func deleteRoles(current *spec.ClustersV2, lb string, roles []string) *spec.Task
 		Timestamp:   timestamppb.New(time.Now().UTC()),
 		Event:       spec.EventV2_UPDATE_V2,
 		Task:        &spec.TaskV2{Do: &updateOp},
-		Description: fmt.Sprintf("Reconciling load balancer %q", lb),
+		Description: fmt.Sprintf("Reconciling load balancer %q", currentId.Id),
 		Pipeline: []*spec.Stage{
 			{
 				StageKind: &spec.Stage_Terraformer{
@@ -728,17 +742,15 @@ func deleteRoles(current *spec.ClustersV2, lb string, roles []string) *spec.Task
 // in lb string, from the desired [spec.Clusters] state into the current [spec.Clusters] state.
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
-func addRoles(current, desired *spec.ClustersV2, lb string, roles []string) *spec.TaskEventV2 {
+func addRoles(current, desired *spec.ClustersV2, currentId, desiredId LoadBalancerIdentifier, roles []string) *spec.TaskEventV2 {
 	var toAdd []*spec.RoleV2
-	did := clusters.IndexLoadbalancerByIdV2(lb, desired.LoadBalancers.Clusters)
-	for _, role := range desired.LoadBalancers.Clusters[did].Roles {
+	for _, role := range desired.LoadBalancers.Clusters[desiredId.Index].Roles {
 		if slices.Contains(roles, role.Name) {
 			toAdd = append(toAdd, proto.Clone(role).(*spec.RoleV2))
 		}
 	}
 
-	idx := clusters.IndexLoadbalancerByIdV2(lb, current.LoadBalancers.Clusters)
-	toReconcile := proto.Clone(current.LoadBalancers.Clusters[idx]).(*spec.LBclusterV2)
+	toReconcile := proto.Clone(current.LoadBalancers.Clusters[currentId.Index]).(*spec.LBclusterV2)
 	toReconcile.Roles = append(toReconcile.Roles, toAdd...)
 
 	inFlight := proto.Clone(current).(*spec.ClustersV2)
@@ -761,7 +773,7 @@ func addRoles(current, desired *spec.ClustersV2, lb string, roles []string) *spe
 				},
 			},
 		},
-		Description: fmt.Sprintf("Reconciling load balancer %q", lb),
+		Description: fmt.Sprintf("Reconciling load balancer %q", currentId.Id),
 		Pipeline: []*spec.Stage{
 			{
 				StageKind: &spec.Stage_Terraformer{
@@ -809,16 +821,11 @@ func addRoles(current, desired *spec.ClustersV2, lb string, roles []string) *spe
 // in lb string, from the desired [spec.Clusters] state into the current [spec.Clusters] state.
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
-func reconcileRoleTargetPools(current, desired *spec.ClustersV2, lb string) *spec.TaskEventV2 {
-	// TODO: maybe cache the indices instead of querying the index each time ?
+func reconcileRoleTargetPools(current, desired *spec.ClustersV2, currentId, desiredId LoadBalancerIdentifier) *spec.TaskEventV2 {
 	var (
-		cidx = clusters.IndexLoadbalancerByIdV2(lb, current.LoadBalancers.Clusters)
-		didx = clusters.IndexLoadbalancerByIdV2(lb, desired.LoadBalancers.Clusters)
-
-		desiredLb   = desired.LoadBalancers.Clusters[didx]
-		toReconcile = proto.Clone(current.LoadBalancers.Clusters[cidx]).(*spec.LBclusterV2)
-
-		inFlight = proto.Clone(current).(*spec.ClustersV2)
+		desiredLb   = desired.LoadBalancers.Clusters[desiredId.Index]
+		toReconcile = proto.Clone(current.LoadBalancers.Clusters[currentId.Index]).(*spec.LBclusterV2)
+		inFlight    = proto.Clone(current).(*spec.ClustersV2)
 	)
 
 	for _, cr := range toReconcile.Roles {
@@ -851,7 +858,7 @@ func reconcileRoleTargetPools(current, desired *spec.ClustersV2, lb string) *spe
 				},
 			},
 		},
-		Description: fmt.Sprintf("Reconciling load balancer %q", lb),
+		Description: fmt.Sprintf("Reconciling load balancer %q", currentId.Id),
 		Pipeline: []*spec.Stage{
 			{
 				StageKind: &spec.Stage_Ansibler{

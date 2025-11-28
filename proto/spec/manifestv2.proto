@@ -274,6 +274,8 @@ message UpdateV2 {
         repeated LBclusterV2 loadBalancers = 2;
     }
 
+    message None {}
+
     message AddLoadBalancer {
         LBclusterV2 loadBalancer = 1;
     }
@@ -319,12 +321,13 @@ message UpdateV2 {
     // is merged with [State], and any reconciliation should be done
     // with that.
     oneof Delta {
-        AddLoadBalancer addLoadBalancer = 2;
-        DeleteLoadBalancer deleteLoadBalancer = 3;
-        ReconcileLoadBalancer reconcileLoadBalancer = 4;
-        ApiEndpoint apiEndpoint = 5;
-        ApiPortOnCluster clusterApiPort = 6;
-        ReplaceDns replaceDns = 7;
+        None none = 2;
+        AddLoadBalancer addLoadBalancer = 3;
+        DeleteLoadBalancer deleteLoadBalancer = 4;
+        ReconcileLoadBalancer reconcileLoadBalancer = 5;
+        ApiEndpoint apiEndpoint = 6;
+        ApiPortOnCluster clusterApiPort = 7;
+        ReplaceDns replaceDns = 8;
     }
 }
 

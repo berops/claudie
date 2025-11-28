@@ -57,43 +57,6 @@ func DetermineLBApiEndpointChange(currentLbs, desiredLbs []*spec.LBcluster) (str
 	}
 }
 
-func DetermineLBApiEndpointChangeV2(currentLbs, desiredLbs []*spec.LBclusterV2) (string, string, spec.ApiEndpointChangeStateV2) {
-	var first *spec.LBclusterV2
-	desired := make(map[string]*spec.LBclusterV2)
-	for _, lb := range desiredLbs {
-		if lb.HasApiRole() {
-			desired[lb.ClusterInfo.Id()] = lb
-			if first == nil {
-				first = lb
-			}
-		}
-	}
-
-	if current := FindAssignedLbApiEndpointV2(currentLbs); current != nil {
-		if len(desired) == 0 && current.Dns == nil { // current state has no dns, but lb was deleted.
-			return "", "", spec.ApiEndpointChangeStateV2_NoChangeV2
-		}
-		if len(desired) == 0 {
-			return current.ClusterInfo.Id(), "", spec.ApiEndpointChangeStateV2_DetachingLoadBalancerV2
-		}
-		if current.Dns == nil { // current state has no dns but there is at least one cluster in desired state.
-			return "", first.ClusterInfo.Id(), spec.ApiEndpointChangeStateV2_AttachingLoadBalancerV2
-		}
-		if desired, ok := desired[current.ClusterInfo.Id()]; ok {
-			if current.Dns.Endpoint != desired.Dns.Endpoint {
-				return current.ClusterInfo.Id(), desired.ClusterInfo.Id(), spec.ApiEndpointChangeStateV2_EndpointRenamedV2
-			}
-			return "", "", spec.ApiEndpointChangeStateV2_NoChangeV2
-		}
-		return current.ClusterInfo.Id(), first.ClusterInfo.Id(), spec.ApiEndpointChangeStateV2_MoveEndpointV2
-	} else {
-		if len(desired) == 0 {
-			return "", "", spec.ApiEndpointChangeStateV2_NoChangeV2
-		}
-		return "", first.ClusterInfo.Id(), spec.ApiEndpointChangeStateV2_AttachingLoadBalancerV2
-	}
-}
-
 func FindAssignedLbApiEndpoint(clusters []*spec.LBcluster) *spec.LBcluster {
 	for _, lb := range clusters {
 		if lb.IsApiEndpoint() {

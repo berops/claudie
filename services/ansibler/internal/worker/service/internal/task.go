@@ -4,6 +4,8 @@ import (
 	"github.com/berops/claudie/proto/pb/spec"
 )
 
+// TODO: make this part of spec.Task
+
 // Reads the state of the clusters for the received task. On unknown state
 // no state is returned and `false` indicating failure.
 func StateFromTask(task *spec.TaskV2) (*spec.K8SclusterV2, []*spec.LBclusterV2, bool) {
@@ -17,13 +19,10 @@ func StateFromTask(task *spec.TaskV2) (*spec.K8SclusterV2, []*spec.LBclusterV2, 
 	}
 }
 
-// If the task is of [spec.Update_ReconcileLoadBalancer], instead of keeping all
-// of the loadbalancers in lbs slices, only the loadbalancer for which the
-// reconciliation is called is kept in the lbs.
-func OnReconciliationDefaultToSingleLoadBalancer(
-	task *spec.TaskV2,
-	lbs []*spec.LBclusterV2,
-) []*spec.LBclusterV2 {
+// If the task is of [spec.Update_ReconcileLoadBalancer] or [spec.Update_AddLoadBalancer]
+// instead of keeping all of the loadbalancers in lbs slices, only the loadbalancer for
+// which the reconciliation is called is kept in the lbs slice.
+func DefaultToSingleLoadBalancerIfPossible(task *spec.TaskV2, lbs []*spec.LBclusterV2) []*spec.LBclusterV2 {
 	if len(lbs) == 0 {
 		return lbs
 	}
@@ -33,12 +32,16 @@ func OnReconciliationDefaultToSingleLoadBalancer(
 		return lbs
 	}
 
-	r, ok := u.Update.Delta.(*spec.UpdateV2_ReconcileLoadBalancer_)
-	if !ok {
+	switch delta := u.Update.Delta.(type) {
+	case *spec.UpdateV2_AddLoadBalancer_:
+		clear(lbs)
+		lbs = lbs[:0]
+		return append(lbs, delta.AddLoadBalancer.LoadBalancer)
+	case *spec.UpdateV2_ReconcileLoadBalancer_:
+		clear(lbs)
+		lbs = lbs[:0]
+		return append(lbs, delta.ReconcileLoadBalancer.LoadBalancer)
+	default:
 		return lbs
 	}
-
-	clear(lbs)
-	lbs = lbs[:0]
-	return append(lbs, r.ReconcileLoadBalancer.LoadBalancer)
 }

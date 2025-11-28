@@ -74,6 +74,13 @@ func InstallVPN(
 		// as there could be partial results, fallthrough.
 	}
 
+	// TOODO:
+	// The issue with this is that on things where we only try to consider a single loadbalancer
+	// i.e look at reconciliate_loadbalancers, it takes from the scheduled single loadbalancer
+	// which may not have updated its. Whatever changes are done here need to be reflected back
+	// to the updated single entite, i.e loadbalancer or nodepool in the future... And since
+	// this would need to be on most places it would need to be part of the spec.Task utility function.
+
 	update := tracker.Result.Update()
 	update.Kubernetes(k8s)
 	update.Loadbalancers(lbs...)

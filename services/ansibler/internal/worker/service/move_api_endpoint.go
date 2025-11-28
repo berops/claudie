@@ -55,17 +55,22 @@ func MoveApiEndpoint(
 		ep.State = spec.ApiEndpointChangeStateV2_EndpointRenamedV2
 		ep.CurrentEndpointId = *delta.ReplaceDns.OldApiEndpoint
 		ep.DesiredEndpointId = lb.Dns.Endpoint // this should have been build by now.
+
+		if ep.CurrentEndpointId == "" || ep.DesiredEndpointId == "" {
+			logger.
+				Warn().
+				Msgf(
+					"Received valid task for moving the api endpoint, but the required values are missing, prev %q, new %q change %q, assuming the task was misscheduled, ignoring",
+					ep.CurrentEndpointId,
+					ep.DesiredEndpointId,
+					ep.State.String(),
+				)
+			return
+		}
 	default:
 		logger.
 			Warn().
 			Msgf("Received task with action %T while wanting to move api endpoint, assuming the task was misscheduled, ignoring", action.Update.Delta)
-		return
-	}
-
-	if ep.CurrentEndpointId == "" || ep.DesiredEndpointId == "" {
-		logger.
-			Warn().
-			Msgf("Received valid task for moving the api endpoint, but the required values are missing, assuming the task was misscheduled, ignoring")
 		return
 	}
 

@@ -62,6 +62,18 @@ type (
 	}
 
 	ModifiedLoadBalancer struct {
+		// Index in the previous state.
+		//
+		// If changes to the current state are
+		// made the index is invalidated.
+		CurrentIdx int
+
+		// Index in the new state.
+		//
+		// If changes to the new state are
+		// made the index is invalidated.
+		DesiredIdx int
+
 		// DNS changed
 		DNS bool
 
@@ -89,24 +101,37 @@ type (
 		Static NodePoolsDiffResult
 	}
 
+	LoadBalancerIdentifier struct {
+		// Id of the loadbalancer
+		Id string
+
+		// Index of the loadbalancer
+		//
+		// If the state from which the index
+		// was obtained is modified, this
+		// index is invalidated and must not
+		// be used futher.
+		Index int
+	}
+
 	// LoadBalancersDiffResult holds all of the changes between two different [spec.LoadBalancers] states
 	LoadBalancersDiffResult struct {
-		// IDs of the loadbalancer that were added.
-		Added []string
+		// Loadbalancers that were added.
+		Added []LoadBalancerIdentifier
 
 		// IDs of the loadbalancers that were deleted.
-		Deleted []string
+		Deleted []LoadBalancerIdentifier
 
 		// LoadBalancers present in both views but have inner differences.
 		Modified map[string]ModifiedLoadBalancer
 
 		// State of the Api endpoint for the Loadbalancers.
 		ApiEndpoint struct {
-			// ID of the loadbalancer with the Api role in the current state.
-			Current string
+			// ID of the loadbalancer with the Api role.
+			Current LoadBalancerIdentifier
 
-			// ID of the loadbalancers with the Api role in the desired state.
-			Desired string
+			// ID of the loadbalancers to which the Api role should be transfered to.
+			New LoadBalancerIdentifier
 
 			// What action should be done based on the difference for the [Current] and [Desired].
 			State spec.ApiEndpointChangeStateV2
@@ -114,7 +139,9 @@ type (
 			// Whether all of the nodepools in the kubernetes cluster's desired state
 			// are deleted which the ApiEndpoint targets. This field is
 			// mutually exclusive with all of the above [ApiEndpoint] fields.
-			TargetPoolsDeleted bool
+			// TODO: handle, I don't think we need this information.
+			// TODO: test this once kubernetes part is done.
+			// TargetPoolsDeleted bool
 		}
 	}
 
@@ -291,25 +318,31 @@ func KubernetesDiff(old, new *spec.K8SclusterV2) KubernetesDiffResult {
 	}
 }
 
-func LoadBalancersDiff(k8sdiff *KubernetesDiffResult, old, new *spec.LoadBalancersV2) LoadBalancersDiffResult {
+func LoadBalancersDiff(old, new *spec.LoadBalancersV2) LoadBalancersDiffResult {
 	result := LoadBalancersDiffResult{
 		Modified: make(map[string]ModifiedLoadBalancer),
 	}
 
 	// 1. Find any added.
-	for _, n := range new.Clusters {
+	for i, n := range new.Clusters {
 		idx := clusters.IndexLoadbalancerByIdV2(n.ClusterInfo.Id(), old.Clusters)
 		if idx < 0 {
-			result.Added = append(result.Added, n.ClusterInfo.Id())
+			result.Added = append(result.Added, LoadBalancerIdentifier{
+				Id:    n.ClusterInfo.Id(),
+				Index: i,
+			})
 			continue
 		}
 	}
 
 	// 2. Find any deleted/modified.
-	for _, old := range old.Clusters {
+	for oldIdx, old := range old.Clusters {
 		idx := clusters.IndexLoadbalancerByIdV2(old.ClusterInfo.Id(), new.Clusters)
 		if idx < 0 {
-			result.Deleted = append(result.Deleted, old.ClusterInfo.Id())
+			result.Deleted = append(result.Deleted, LoadBalancerIdentifier{
+				Id:    old.ClusterInfo.Id(),
+				Index: oldIdx,
+			})
 			continue
 		}
 
@@ -398,8 +431,10 @@ func LoadBalancersDiff(k8sdiff *KubernetesDiffResult, old, new *spec.LoadBalance
 		modified = modified || (!dynDiff.IsEmpty() || !sttDiff.IsEmpty())
 		if modified {
 			entry := struct {
-				DNS   bool
-				Roles struct {
+				CurrentIdx int
+				DesiredIdx int
+				DNS        bool
+				Roles      struct {
 					Added              []string
 					Deleted            []string
 					TargetPoolsAdded   TargetPoolsViewType
@@ -409,6 +444,8 @@ func LoadBalancersDiff(k8sdiff *KubernetesDiffResult, old, new *spec.LoadBalance
 				Static  NodePoolsDiffResult
 			}{}
 
+			entry.CurrentIdx = oldIdx
+			entry.DesiredIdx = idx
 			entry.DNS = dnsChanged
 
 			entry.Roles.Added = rolesAdded
@@ -429,11 +466,12 @@ func LoadBalancersDiff(k8sdiff *KubernetesDiffResult, old, new *spec.LoadBalance
 	}
 
 	// 3. Determine API Endpoint changes.
-	cid, did, change := clusters.DetermineLBApiEndpointChangeV2(old.Clusters, new.Clusters)
+	cid, did, change := determineLBApiEndpointChangeV2(old.Clusters, new.Clusters)
 	result.ApiEndpoint.Current = cid
-	result.ApiEndpoint.Desired = did
+	result.ApiEndpoint.New = did
 	result.ApiEndpoint.State = change
-	result.ApiEndpoint.TargetPoolsDeleted = apiNodePoolsDeleted(k8sdiff, old)
+	// TODO: remove me.
+	// result.ApiEndpoint.TargetPoolsDeleted = apiNodePoolsDeleted(k8sdiff, old)
 
 	return result
 }
@@ -473,4 +511,56 @@ func apiNodePoolsDeleted(k8sdiff *KubernetesDiffResult, old *spec.LoadBalancersV
 	}
 
 	return false
+}
+
+func determineLBApiEndpointChangeV2(
+	currentLbs,
+	desiredLbs []*spec.LBclusterV2,
+) (LoadBalancerIdentifier, LoadBalancerIdentifier, spec.ApiEndpointChangeStateV2) {
+	var (
+		none      LoadBalancerIdentifier
+		desiredId LoadBalancerIdentifier
+		desired   = make(map[string]*spec.LBclusterV2)
+	)
+
+	for i, lb := range desiredLbs {
+		if lb.HasApiRole() {
+			desired[lb.ClusterInfo.Id()] = lb
+			if desiredId.Id == "" {
+				desiredId.Id = lb.ClusterInfo.Id()
+				desiredId.Index = i
+			}
+		}
+	}
+
+	if current := clusters.FindAssignedLbApiEndpointV2(currentLbs); current != nil {
+		if len(desired) == 0 && current.Dns == nil { // current state has no dns, but lb was deleted.
+			return none, none, spec.ApiEndpointChangeStateV2_NoChangeV2
+		}
+
+		currentId := LoadBalancerIdentifier{
+			Id:    current.ClusterInfo.Id(),
+			Index: clusters.IndexLoadbalancerByIdV2(current.ClusterInfo.Id(), currentLbs),
+		}
+
+		if len(desired) == 0 {
+			return currentId, none, spec.ApiEndpointChangeStateV2_DetachingLoadBalancerV2
+		}
+		if current.Dns == nil { // current state has no dns but there is at least one cluster in desired state.
+			return none, desiredId, spec.ApiEndpointChangeStateV2_AttachingLoadBalancerV2
+		}
+		if desired, ok := desired[current.ClusterInfo.Id()]; ok {
+			if current.Dns.Endpoint != desired.Dns.Endpoint {
+				return currentId, desiredId, spec.ApiEndpointChangeStateV2_EndpointRenamedV2
+			}
+			return none, none, spec.ApiEndpointChangeStateV2_NoChangeV2
+		}
+		return currentId, desiredId, spec.ApiEndpointChangeStateV2_MoveEndpointV2
+	} else {
+		if len(desired) == 0 {
+			return none, none, spec.ApiEndpointChangeStateV2_NoChangeV2
+		}
+
+		return none, desiredId, spec.ApiEndpointChangeStateV2_AttachingLoadBalancerV2
+	}
 }
