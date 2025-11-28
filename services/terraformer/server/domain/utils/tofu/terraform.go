@@ -47,9 +47,11 @@ func (t *Terraform) ProvidersLock() error {
 	if err != nil {
 		return fmt.Errorf("failed to resolve absolute cache dir: %w", err)
 	}
-	err = os.Mkdir(absCache, 0775)
-	if err != nil && !os.IsExist(err) {
-		return fmt.Errorf("failed to create cache directory: %w", err)
+
+	if _, err := os.Stat(absCache); os.IsNotExist(err) {
+		if err := os.MkdirAll(absCache, os.ModePerm); err != nil {
+			return fmt.Errorf("failed to create cache directory %s : %w", absCache, err)
+		}
 	}
 
 	//nolint
