@@ -54,12 +54,13 @@ func (t *Terraform) ProvidersLock() error {
 		}
 	}
 
-	//nolint
 	args := []string{
 		"providers",
 		"lock",
 		fmt.Sprintf("-fs-mirror=%v", absCache),
 	}
+
+	//nolint
 	cmd := exec.Command("tofu", args...)
 	cmd.Dir = t.Directory
 
