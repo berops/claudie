@@ -80,7 +80,8 @@ func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 			return fmt.Errorf("error while creating desired state dns.tf files for %s : %w", dnsID, err)
 		}
 		if err := tofu.ProvidersLock(); err != nil {
-			return fmt.Errorf("error while locking providers in %s : %w", clusterID, err)
+			sublogger.Warn().Msgf("Error while locking providers\n" +
+				"Continue to retrieve providers and generate hash from remote registry")
 		}
 		if err := tofu.Init(); err != nil {
 			return err
@@ -113,7 +114,8 @@ func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 	}
 
 	if err := tofu.ProvidersLock(); err != nil {
-		return fmt.Errorf("error while locking providers in %s : %w", clusterID, err)
+		sublogger.Warn().Msgf("Error while locking providers\n" +
+			"Continue to retrieve providers and generate hash from remote registry")
 	}
 
 	if err := tofu.Init(); err != nil {
@@ -217,9 +219,9 @@ func (d *DNS) DestroyDNSRecords(logger zerolog.Logger) error {
 	tofu.Stderr = comm.GetStdErr(dnsID)
 
 	if err := tofu.ProvidersLock(); err != nil {
-		return fmt.Errorf("error while locking providers in %s : %w", dnsID, err)
+		sublogger.Warn().Msgf("Error while locking providers\n" +
+			"Continue to retrieve providers and generate hash from remote registry")
 	}
-
 	if err := tofu.Init(); err != nil {
 		return err
 	}

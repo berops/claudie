@@ -78,7 +78,8 @@ func (c ClusterBuilder) CreateNodepools() error {
 	tofu.Stderr = comm.GetStdErr(clusterID)
 
 	if err := tofu.ProvidersLock(); err != nil {
-		return fmt.Errorf("error while locking providers in %s : %w", clusterID, err)
+		log.Warn().Msgf("Error while locking providers\n" +
+			"Continue to retrieve providers and generate hash from remote registry.")
 	}
 
 	if err := tofu.Init(); err != nil {
@@ -170,7 +171,8 @@ func (c ClusterBuilder) DestroyNodepools() error {
 	tofu.Stderr = comm.GetStdErr(clusterID)
 
 	if err := tofu.ProvidersLock(); err != nil {
-		return fmt.Errorf("error while locking providers in %s : %w", clusterID, err)
+		log.Warn().Msgf("Error while locking providers\n" +
+			"Continue to retrieve providers and generate hash from remote registry.")
 	}
 
 	if err := tofu.Init(); err != nil {
