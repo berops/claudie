@@ -19,7 +19,7 @@ builder:
 	GOLANG_LOG=debug PROMETHEUS_PORT=9092 go run ./services/builder
 # Start Terraformer service on a local environment, exposed on port 50052
 terraformer:
-	GOLANG_LOG=debug BUCKET_URL="http://localhost:9000" DYNAMO_URL="http://localhost:8000" AWS_ACCESS_KEY_ID=minioadmin AWS_SECRET_ACCESS_KEY=minioadmin DYNAMO_TABLE_NAME=claudie PROMETHEUS_PORT=9093 go run ./services/terraformer/server
+	GOLANG_LOG=debug BUCKET_URL="http://localhost:9000" AWS_ACCESS_KEY_ID=minioadmin AWS_SECRET_ACCESS_KEY=minioadmin PROMETHEUS_PORT=9093 go run ./services/terraformer/server
 
 # Start Ansibler service on a local environment, exposed on port 50053
 ansibler:
@@ -50,11 +50,6 @@ minio:
 	mkdir -p ~/minio/data/claudie-tf-state-files
 	docker run --name minio -d --rm -p 9000:9000 -p 9001:9001 --name minio -v ~/minio/data:/data quay.io/minio/minio server /data --console-address ":9001"
 
-# Start DynamoDB backend used for state file locks
-dynamodb:
-	mkdir -p ~/dynamodb
-	docker run --name dynamodb -d --rm -p 8000:8000 -v ~/dynamodb:/home/dynamodblocal/data amazon/dynamodb-local:1.21.0 -jar DynamoDBLocal.jar -sharedDb -dbPath ./data
-
 # Start Testing-framework, which will inject manifests from /services/testing-framework/test-sets
 # -timeout 0 will disable default timeout
 # Successful test will end with infrastructure being destroyed
@@ -66,20 +61,12 @@ lint:
 	golangci-lint run
 
 # Start all data stores at once,in docker containers, to simplify the local development
-datastoreStart: mongo minio dynamodb
+datastoreStart: mongo minio
 
 # Stops all data stores at once, which will also remove docker containers
 datastoreStop:
 	docker stop mongo
 	docker stop minio
-	docker stop dynamodb
-
-# DynamoDB utilities
-dynamodb-create-table:
-	aws dynamodb create-table --attribute-definitions AttributeName=LockID,AttributeType=S --table-name claudie --key-schema AttributeName=LockID,KeyType=HASH --provisioned-throughput ReadCapacityUnits=1,WriteCapacityUnits=1  --output json --endpoint-url http://localhost:8000 --debug --region local
-
-dynamodb-scan-table:
-	aws dynamodb scan --table-name claudie --endpoint-url http://localhost:8000 --region local --no-cli-pager --debug
 
 # We need the value of local architecture to pass to docker as a build arg and
 # Go already needs to be installed so we make use of it here.

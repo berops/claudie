@@ -18,7 +18,6 @@
 
 - [MongoDB](https://github.com/berops/claudie/tree/master/manifests/claudie/mongo)
 - [Minio](https://github.com/berops/claudie/tree/master/manifests/claudie/minio)
-- [DynamoDB](https://github.com/berops/claudie/tree/master/manifests/claudie/dynamo)
 
 ### Tools used
 

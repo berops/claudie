@@ -35,11 +35,9 @@ func main() {
 	// Initialize logger
 	loggerutils.Init("terraformer")
 
-	dynamoDBAdapter := outboundAdapters.CreateDynamoDBAdapter()
 	stateAdapter := outboundAdapters.CreateS3Adapter()
 
 	usecases := &usecases.Usecases{
-		DynamoDB:          dynamoDBAdapter,
 		StateStorage:      stateAdapter,
 		SpawnProcessLimit: semaphore.NewWeighted(int64(usecases.SpawnProcessLimit)),
 	}
@@ -72,7 +70,7 @@ func main() {
 
 			case <-ticker.C:
 				// If healthcheck result is positive then set the microservice as ready otherwise not ready
-				if err := healthCheck(stateAdapter.Healthcheck, dynamoDBAdapter.Healthcheck); err != nil {
+				if err := healthCheck(stateAdapter.Healthcheck); err != nil {
 					grpcAdapter.HealthServer.SetServingStatus("terraformer-readiness", grpc_health_v1.HealthCheckResponse_NOT_SERVING)
 					log.Debug().Msgf("Failed to verify healthcheck: %v", err)
 				} else {
@@ -125,13 +123,8 @@ func main() {
 }
 
 // healthCheck function is a readiness function defined by terraformer
-// it checks whether MinIO bucket exists and if dynamoDB table exists.
+// it checks whether MinIO bucket exists.
 // If true, returns nil, error otherwise.
-func healthCheck(minIOHealthcheck, dynamoDBHealthcheck func() error) error {
-	err := minIOHealthcheck()
-	if err != nil {
-		return err
-	}
-
-	return dynamoDBHealthcheck()
+func healthCheck(minIOHealthcheck func() error) error {
+	return minIOHealthcheck()
 }
