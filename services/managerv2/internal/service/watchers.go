@@ -130,7 +130,7 @@ func (s *Service) WatchForScheduledDocuments(ctx context.Context) error {
 				}
 
 				state.State.Status = spec.WorkflowV2_IN_PROGRESS.String()
-				state.State.Description = fmt.Sprintf("%s\n\t- %s", event.Description, msgDescription)
+				state.State.Description = fmt.Sprintf("%s\n- %s", event.Description, msgDescription)
 
 				logger.Debug().Msgf("Moving event %q cluster %q state to InProgress", event.Id, cluster)
 				if err := s.store.UpdateConfig(ctx, scheduled); err != nil {
@@ -392,7 +392,7 @@ func messageForStage(
 			}
 			work.Passes = append(work.Passes, r)
 			b.WriteByte('\n')
-			fmt.Fprintf(b, "\t- %s", pass.Description.About)
+			fmt.Fprintf(b, "- %s", pass.Description.About)
 		}
 
 		description = b.String()
@@ -409,7 +409,7 @@ func messageForStage(
 			}
 			work.Passes = append(work.Passes, r)
 			b.WriteByte('\n')
-			fmt.Fprintf(b, "\t- %s", pass.Description.About)
+			fmt.Fprintf(b, "- %s", pass.Description.About)
 		}
 
 		description = b.String()
@@ -426,7 +426,7 @@ func messageForStage(
 			}
 			work.Passes = append(work.Passes, r)
 			b.WriteByte('\n')
-			fmt.Fprintf(b, "\t- %s", pass.Description.About)
+			fmt.Fprintf(b, "- %s", pass.Description.About)
 		}
 
 		description = b.String()
@@ -443,7 +443,7 @@ func messageForStage(
 			}
 			work.Passes = append(work.Passes, r)
 			b.WriteByte('\n')
-			fmt.Fprintf(b, "\t- %s", pass.Description.About)
+			fmt.Fprintf(b, "- %s", pass.Description.About)
 		}
 
 		description = b.String()

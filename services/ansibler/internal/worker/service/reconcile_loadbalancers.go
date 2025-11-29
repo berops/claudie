@@ -15,6 +15,7 @@ import (
 	utils "github.com/berops/claudie/services/ansibler/internal/worker/service/internal"
 	"github.com/berops/claudie/services/ansibler/templates"
 	"github.com/rs/zerolog"
+
 	"golang.org/x/sync/semaphore"
 )
 

@@ -41,19 +41,19 @@ func MoveApiEndpoint(
 		ep.State = delta.ApiEndpoint.State
 		ep.CurrentEndpointId = delta.ApiEndpoint.CurrentEndpointId
 		ep.DesiredEndpointId = delta.ApiEndpoint.DesiredEndpointId
-	case *spec.UpdateV2_ReplaceDns_:
-		if delta.ReplaceDns.OldApiEndpoint == nil {
+	case *spec.UpdateV2_ReplacedDns_:
+		if delta.ReplacedDns.OldApiEndpoint == nil {
 			logger.
 				Warn().
 				Msgf("Received task with action %T, but with missing [OldApiEndpoint], assuming the task was misscheduled, ignoring", delta)
 			return
 		}
 
-		idx := clusters.IndexLoadbalancerByIdV2(delta.ReplaceDns.LoadBalancerId, action.Update.State.LoadBalancers)
+		idx := clusters.IndexLoadbalancerByIdV2(delta.ReplacedDns.Handle, action.Update.State.LoadBalancers)
 		lb := action.Update.State.LoadBalancers[idx]
 
 		ep.State = spec.ApiEndpointChangeStateV2_EndpointRenamedV2
-		ep.CurrentEndpointId = *delta.ReplaceDns.OldApiEndpoint
+		ep.CurrentEndpointId = *delta.ReplacedDns.OldApiEndpoint
 		ep.DesiredEndpointId = lb.Dns.Endpoint // this should have been build by now.
 
 		if ep.CurrentEndpointId == "" || ep.DesiredEndpointId == "" {

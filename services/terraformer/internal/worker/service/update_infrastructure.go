@@ -35,16 +35,16 @@ func reconcileInfrastructure(
 
 	switch delta := action.Update.Delta.(type) {
 	case *spec.UpdateV2_DeleteLoadBalancer_:
-		id := delta.DeleteLoadBalancer.Id
+		id := delta.DeleteLoadBalancer.Handle
 		destroyLoadBalancer(logger, projectName, id, state.LoadBalancers, processLimit, stores, tracker)
-	case *spec.UpdateV2_AddLoadBalancer_:
-		lb := delta.AddLoadBalancer.LoadBalancer
+	case *spec.UpdateV2_TfAddLoadBalancer:
+		lb := delta.TfAddLoadBalancer.Handle
 		reconcileLoadBalancer(logger, projectName, processLimit, lb, tracker)
-	case *spec.UpdateV2_ReconcileLoadBalancer_:
-		lb := delta.ReconcileLoadBalancer.LoadBalancer
+	case *spec.UpdateV2_TfReconcileLoadBalancer:
+		lb := delta.TfReconcileLoadBalancer.Handle
 		reconcileLoadBalancer(logger, projectName, processLimit, lb, tracker)
-	case *spec.UpdateV2_ReplaceDns_:
-		dns := delta.ReplaceDns
+	case *spec.UpdateV2_TfReplaceDns:
+		dns := delta.TfReplaceDns
 		replaceDns(logger, projectName, processLimit, state, dns, tracker)
 	default:
 		logger.
@@ -162,14 +162,14 @@ func replaceDns(
 	projectName string,
 	processLimit *semaphore.Weighted,
 	state *spec.UpdateV2_State,
-	delta *spec.UpdateV2_ReplaceDns,
+	delta *spec.UpdateV2_TerraformerReplaceDns,
 	tracker Tracker,
 ) {
-	idx := clusters.IndexLoadbalancerByIdV2(delta.LoadBalancerId, state.LoadBalancers)
+	idx := clusters.IndexLoadbalancerByIdV2(delta.Handle, state.LoadBalancers)
 	if idx < 0 {
 		logger.
 			Warn().
-			Msgf("Can't replace DNS for loadbalancer %q that is missing from the received state", delta.LoadBalancerId)
+			Msgf("Can't replace DNS for loadbalancer %q that is missing from the received state", delta.Handle)
 		return
 	}
 

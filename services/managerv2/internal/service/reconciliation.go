@@ -18,6 +18,7 @@ import (
 // scheduling of the tasks.
 type ScheduleResult uint8
 
+// TODO: kubernetes cluster
 // TODO: endless reconciliation...
 // TODO: with a failed inFlight state there needs to be a decision to be made if a task
 // with a higher priority is to be scheduled what happens in that case ?

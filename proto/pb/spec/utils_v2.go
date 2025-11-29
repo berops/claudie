@@ -94,6 +94,47 @@ func (te *TaskV2) ConsumeUpdateResult(result *TaskResult_Update) error {
 
 	// add new ones.
 	*lbs = append(*lbs, toUpdate.Clusters...)
+
+	if update := te.GetUpdate(); update != nil {
+		switch delta := update.Delta.(type) {
+		case *UpdateV2_AddedLoadBalancer_:
+			// nothing to consume.
+		case *UpdateV2_ApiEndpoint_:
+			// nothing to consume.
+		case *UpdateV2_ClusterApiPort:
+			// nothing to consume.
+		case *UpdateV2_DeleteLoadBalancer_:
+			// nothing to consume.
+		case *UpdateV2_None_:
+			// nothing to consume.
+		case *UpdateV2_ReconciledLoadBalancer_:
+			// nothing to consume.
+		case *UpdateV2_ReplacedDns_:
+			// nothing to consume.
+		case *UpdateV2_TfAddLoadBalancer:
+			update.Delta = &UpdateV2_AddedLoadBalancer_{
+				AddedLoadBalancer: &UpdateV2_AddedLoadBalancer{
+					Handle: delta.TfAddLoadBalancer.Handle.ClusterInfo.Id(),
+				},
+			}
+		case *UpdateV2_TfReconcileLoadBalancer:
+			update.Delta = &UpdateV2_ReconciledLoadBalancer_{
+				ReconciledLoadBalancer: &UpdateV2_ReconciledLoadBalancer{
+					Handle: delta.TfReconcileLoadBalancer.Handle.ClusterInfo.Id(),
+				},
+			}
+		case *UpdateV2_TfReplaceDns:
+			update.Delta = &UpdateV2_ReplacedDns_{
+				ReplacedDns: &UpdateV2_ReplacedDns{
+					Handle:         delta.TfReplaceDns.Handle,
+					OldApiEndpoint: delta.TfReplaceDns.OldApiEndpoint,
+				},
+			}
+		default:
+			panic(fmt.Sprintf("TODO: remove all panics: unexpected spec.isUpdateV2_Delta: %#v", delta))
+		}
+	}
+
 	return nil
 }
 

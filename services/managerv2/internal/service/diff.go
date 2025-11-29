@@ -116,10 +116,12 @@ type (
 
 	// LoadBalancersDiffResult holds all of the changes between two different [spec.LoadBalancers] states
 	LoadBalancersDiffResult struct {
-		// Loadbalancers that were added.
+		// Loadbalancers that were added in the desired state
+		// but are not present in the current state.
 		Added []LoadBalancerIdentifier
 
-		// IDs of the loadbalancers that were deleted.
+		// IDs of the loadbalancers that were deleted in the desired
+		// state but are present in the current state.
 		Deleted []LoadBalancerIdentifier
 
 		// LoadBalancers present in both views but have inner differences.
@@ -128,10 +130,10 @@ type (
 		// State of the Api endpoint for the Loadbalancers.
 		ApiEndpoint struct {
 			// ID of the loadbalancer with the Api role.
-			Current LoadBalancerIdentifier
+			Current string
 
 			// ID of the loadbalancers to which the Api role should be transfered to.
-			New LoadBalancerIdentifier
+			New string
 
 			// What action should be done based on the difference for the [Current] and [Desired].
 			State spec.ApiEndpointChangeStateV2
@@ -516,19 +518,18 @@ func apiNodePoolsDeleted(k8sdiff *KubernetesDiffResult, old *spec.LoadBalancersV
 func determineLBApiEndpointChangeV2(
 	currentLbs,
 	desiredLbs []*spec.LBclusterV2,
-) (LoadBalancerIdentifier, LoadBalancerIdentifier, spec.ApiEndpointChangeStateV2) {
+) (string, string, spec.ApiEndpointChangeStateV2) {
 	var (
-		none      LoadBalancerIdentifier
-		desiredId LoadBalancerIdentifier
-		desired   = make(map[string]*spec.LBclusterV2)
+		none    string
+		first   *spec.LBclusterV2
+		desired = make(map[string]*spec.LBclusterV2)
 	)
 
-	for i, lb := range desiredLbs {
+	for _, lb := range desiredLbs {
 		if lb.HasApiRole() {
 			desired[lb.ClusterInfo.Id()] = lb
-			if desiredId.Id == "" {
-				desiredId.Id = lb.ClusterInfo.Id()
-				desiredId.Index = i
+			if first == nil {
+				first = lb
 			}
 		}
 	}
@@ -538,29 +539,24 @@ func determineLBApiEndpointChangeV2(
 			return none, none, spec.ApiEndpointChangeStateV2_NoChangeV2
 		}
 
-		currentId := LoadBalancerIdentifier{
-			Id:    current.ClusterInfo.Id(),
-			Index: clusters.IndexLoadbalancerByIdV2(current.ClusterInfo.Id(), currentLbs),
-		}
-
 		if len(desired) == 0 {
-			return currentId, none, spec.ApiEndpointChangeStateV2_DetachingLoadBalancerV2
+			return current.ClusterInfo.Id(), none, spec.ApiEndpointChangeStateV2_DetachingLoadBalancerV2
 		}
 		if current.Dns == nil { // current state has no dns but there is at least one cluster in desired state.
-			return none, desiredId, spec.ApiEndpointChangeStateV2_AttachingLoadBalancerV2
+			return none, first.ClusterInfo.Id(), spec.ApiEndpointChangeStateV2_AttachingLoadBalancerV2
 		}
 		if desired, ok := desired[current.ClusterInfo.Id()]; ok {
 			if current.Dns.Endpoint != desired.Dns.Endpoint {
-				return currentId, desiredId, spec.ApiEndpointChangeStateV2_EndpointRenamedV2
+				return current.ClusterInfo.Id(), first.ClusterInfo.Id(), spec.ApiEndpointChangeStateV2_EndpointRenamedV2
 			}
 			return none, none, spec.ApiEndpointChangeStateV2_NoChangeV2
 		}
-		return currentId, desiredId, spec.ApiEndpointChangeStateV2_MoveEndpointV2
+		return current.ClusterInfo.Id(), first.ClusterInfo.Id(), spec.ApiEndpointChangeStateV2_MoveEndpointV2
 	} else {
 		if len(desired) == 0 {
 			return none, none, spec.ApiEndpointChangeStateV2_NoChangeV2
 		}
 
-		return none, desiredId, spec.ApiEndpointChangeStateV2_AttachingLoadBalancerV2
+		return none, first.ClusterInfo.Id(), spec.ApiEndpointChangeStateV2_AttachingLoadBalancerV2
 	}
 }

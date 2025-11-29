@@ -19,6 +19,46 @@ import (
 // was computed, and that all of the Cached Indices within the [LoadBalancerDiffresult] are not invalidated. This function does not
 // modify the input in any way and also the returned [spec.TaskEvent] does not hold or shared any memory to related to the input.
 func PreKubernetesDiff(hc *HealthCheckStatus, diff *LoadBalancersDiffResult, current, desired *spec.ClustersV2) *spec.TaskEventV2 {
+	switch diff.ApiEndpoint.State {
+	case spec.ApiEndpointChangeStateV2_AttachingLoadBalancerV2:
+		// make sure the new lb is already in the cluster.
+		if i := clusters.IndexLoadbalancerByIdV2(diff.ApiEndpoint.New, current.LoadBalancers.Clusters); i >= 0 {
+			return moveApiEndpoint(current, diff.ApiEndpoint.Current, diff.ApiEndpoint.New, diff.ApiEndpoint.State)
+		}
+	case spec.ApiEndpointChangeStateV2_DetachingLoadBalancerV2:
+		if !hc.Cluster.ControlNodesHave6443 {
+			return controlNodesPort6443(current, true)
+		}
+		return moveApiEndpoint(current, diff.ApiEndpoint.Current, diff.ApiEndpoint.New, diff.ApiEndpoint.State)
+	case spec.ApiEndpointChangeStateV2_MoveEndpointV2:
+		// make sure both are in the current cluster and that the roles have been synced.
+		old := clusters.IndexLoadbalancerByIdV2(diff.ApiEndpoint.Current, current.LoadBalancers.Clusters)
+		new := clusters.IndexLoadbalancerByIdV2(diff.ApiEndpoint.New, current.LoadBalancers.Clusters)
+		oldRolesSynced := len(diff.Modified[diff.ApiEndpoint.Current].Roles.Added) == 0
+		newRolesSynced := len(diff.Modified[diff.ApiEndpoint.New].Roles.Added) == 0
+		if old >= 0 && new >= 0 && oldRolesSynced && newRolesSynced {
+			return moveApiEndpoint(current, diff.ApiEndpoint.Current, diff.ApiEndpoint.New, diff.ApiEndpoint.State)
+		}
+	case spec.ApiEndpointChangeStateV2_EndpointRenamedV2:
+		for lb, modified := range diff.Modified {
+			if modified.DNS && lb == diff.ApiEndpoint.Current {
+				currentId := LoadBalancerIdentifier{
+					Id:    lb,
+					Index: modified.CurrentIdx,
+				}
+				desiredId := LoadBalancerIdentifier{
+					Id:    lb,
+					Index: modified.DesiredIdx,
+				}
+				return replaceDns(current, desired, currentId, desiredId, true)
+			}
+		}
+	case spec.ApiEndpointChangeStateV2_NoChangeV2:
+		// Nothing to do.
+	}
+
+	// Handle modifications that do not rely on the desired state of
+	// the Kubernetes infrastructure to be already existing.
 	for lb, modified := range diff.Modified {
 		currentId := LoadBalancerIdentifier{
 			Id:    lb,
@@ -30,64 +70,14 @@ func PreKubernetesDiff(hc *HealthCheckStatus, diff *LoadBalancersDiffResult, cur
 		}
 
 		if modified.DNS {
-			isApiEndpointChange := diff.ApiEndpoint.State == spec.ApiEndpointChangeStateV2_EndpointRenamedV2
-			isApiEndpointChange = isApiEndpointChange && diff.ApiEndpoint.Current.Id == lb
-			return replaceDns(current, desired, currentId, desiredId, isApiEndpointChange)
-		}
-
-		if len(modified.Roles.Added) > 0 {
-			return addRoles(current, desired, currentId, desiredId, modified.Roles.Added)
+			return replaceDns(current, desired, currentId, desiredId, false)
 		}
 
 		if !modified.Dynamic.IsEmpty() {
 			return reconcileLoadBalancerNodePools(current, desired, currentId, desiredId, &modified.Dynamic)
 		}
-
 		if !modified.Static.IsEmpty() {
 			return reconcileLoadBalancerNodePools(current, desired, currentId, desiredId, &modified.Static)
-		}
-	}
-
-	for _, lb := range diff.Added {
-		return joinLoadBalancer(current, desired, lb)
-	}
-
-	// TODO move this up the tree as a priority.
-	// And check if the loadbalancers are setup before executing.
-	// otherwise fallthrough. This should have the highest priority.
-	// that way we don't need endless retries.
-	switch diff.ApiEndpoint.State {
-	case spec.ApiEndpointChangeStateV2_AttachingLoadBalancerV2:
-		return moveApiEndpoint(current, diff.ApiEndpoint.Current, diff.ApiEndpoint.New, diff.ApiEndpoint.State)
-	case spec.ApiEndpointChangeStateV2_DetachingLoadBalancerV2:
-		if !hc.Cluster.ControlNodesHave6443 {
-			return controlNodesPort6443(current, true)
-		}
-		return moveApiEndpoint(current, diff.ApiEndpoint.Current, diff.ApiEndpoint.New, diff.ApiEndpoint.State)
-	case spec.ApiEndpointChangeStateV2_MoveEndpointV2:
-		return moveApiEndpoint(current, diff.ApiEndpoint.Current, diff.ApiEndpoint.New, diff.ApiEndpoint.State)
-	case spec.ApiEndpointChangeStateV2_EndpointRenamedV2:
-		// Handled above, with the modified.DNS flag.
-	case spec.ApiEndpointChangeStateV2_NoChangeV2:
-		// Nothing to do.
-	}
-
-	// Deletetion of the roles is placed after changes to the API endpoint,
-	// if any, as otherwise removing the roles for the API endpoint would
-	// make the cluster broken and unreachable.
-	for lb, modified := range diff.Modified {
-		if len(modified.Roles.Deleted) > 0 {
-			cid := LoadBalancerIdentifier{
-				Id:    lb,
-				Index: modified.CurrentIdx,
-			}
-			return deleteRoles(current, cid, modified.Roles.Deleted)
-		}
-	}
-
-	if ep := clusters.FindAssignedLbApiEndpointV2(current.LoadBalancers.Clusters); ep != nil {
-		if hc.Cluster.ControlNodesHave6443 {
-			return controlNodesPort6443(current, false)
 		}
 	}
 
@@ -98,27 +88,53 @@ func PreKubernetesDiff(hc *HealthCheckStatus, diff *LoadBalancersDiffResult, cur
 // Assumes that both the current and desired [spec.Clusters] were not modified since the [HealthCheckStatue] and [LoadBalancersDiffResult]
 // was computed, and that all of the Cached Indices within the [LoadBalancerDiffresult] are not invalidated. This function does not
 // modify the input in any way and also the returned [spec.TaskEvent] does not hold or shared any memory to related to the input.
-func PostKubernetesDiff(_ *HealthCheckStatus, diff *LoadBalancersDiffResult, current, desired *spec.ClustersV2) *spec.TaskEventV2 {
-	// TargetPools modifications needs to be handled after changes to the kubernetes
-	// cluster, namely after adding new nodepools as old targetPools could be replaced
-	// by new and this could not be handled before the kubernetes changes, as the nodepools
-	// would not exist in the cluster yet and would make the workflow break.
+func PostKubernetesDiff(hc *HealthCheckStatus, diff *LoadBalancersDiffResult, current, desired *spec.ClustersV2) *spec.TaskEventV2 {
 	for lb, modified := range diff.Modified {
+		cid := LoadBalancerIdentifier{
+			Id:    lb,
+			Index: modified.CurrentIdx,
+		}
+		did := LoadBalancerIdentifier{
+			Id:    lb,
+			Index: modified.DesiredIdx,
+		}
+
+		// Role modifications need to be handled after changes to the kubernetes cluster
+		// namely after halding modifications and additions, as roles from the desired
+		// state may reference nodepools that are not yet in the current state which
+		// would result in inproper updating of the envoy service on the loadbalancers.
+		if len(modified.Roles.Added) > 0 {
+			return addRoles(current, desired, cid, did, modified.Roles.Added)
+		}
+		if len(modified.Roles.Deleted) > 0 {
+			return deleteRoles(current, cid, modified.Roles.Deleted)
+		}
+
+		// TargetPools modifications needs to be handled after changes to the kubernetes
+		// cluster, namely after adding new nodepools as old targetPools could be replaced
+		// by new and this could not be handled before the kubernetes changes, as the nodepools
+		// would not exist in the cluster yet and would make the workflow break.
 		if len(modified.Roles.TargetPoolsAdded) > 0 || len(modified.Roles.TargetPoolsDeleted) > 0 {
-			cid := LoadBalancerIdentifier{
-				Id:    lb,
-				Index: modified.CurrentIdx,
-			}
-			did := LoadBalancerIdentifier{
-				Id:    lb,
-				Index: modified.DesiredIdx,
-			}
 			return reconcileRoleTargetPools(current, desired, cid, did)
 		}
 	}
 
+	// Additions must also be handled after additions/modifications to the kubernetes cluster
+	// due to the possiblity of having new roles/targetpools that may not yet exist in the
+	// current state otherwise.
+	for _, lb := range diff.Added {
+		return joinLoadBalancer(current, desired, lb)
+	}
+
+	// Deletion need to follow after addition.
 	for _, lb := range diff.Deleted {
 		return deleteLoadBalancer(current, lb)
+	}
+
+	if ep := clusters.FindAssignedLbApiEndpointV2(current.LoadBalancers.Clusters); ep != nil {
+		if hc.Cluster.ControlNodesHave6443 {
+			return controlNodesPort6443(current, false)
+		}
 	}
 
 	return nil
@@ -165,9 +181,9 @@ func reconcileLoadBalancerNodePools(
 					K8S:           inFlight.K8S,
 					LoadBalancers: inFlight.LoadBalancers.Clusters,
 				},
-				Delta: &spec.UpdateV2_ReconcileLoadBalancer_{
-					ReconcileLoadBalancer: &spec.UpdateV2_ReconcileLoadBalancer{
-						LoadBalancer: toReconcile,
+				Delta: &spec.UpdateV2_TfReconcileLoadBalancer{
+					TfReconcileLoadBalancer: &spec.UpdateV2_TerraformerReconcileLoadBalancer{
+						Handle: toReconcile,
 					},
 				},
 			},
@@ -244,9 +260,9 @@ func reconcileLoadBalancerNodePools(
 				K8S:           inFlight.K8S,
 				LoadBalancers: inFlight.LoadBalancers.Clusters,
 			},
-			Delta: &spec.UpdateV2_ReconcileLoadBalancer_{
-				ReconcileLoadBalancer: &spec.UpdateV2_ReconcileLoadBalancer{
-					LoadBalancer: toReconcile,
+			Delta: &spec.UpdateV2_TfReconcileLoadBalancer{
+				TfReconcileLoadBalancer: &spec.UpdateV2_TerraformerReconcileLoadBalancer{
+					Handle: toReconcile,
 				},
 			},
 		},
@@ -304,10 +320,10 @@ func replaceDns(current, desired *spec.ClustersV2, currentId, desiredId LoadBala
 			K8S:           inFlight.K8S,
 			LoadBalancers: inFlight.LoadBalancers.Clusters,
 		},
-		Delta: &spec.UpdateV2_ReplaceDns_{
-			ReplaceDns: &spec.UpdateV2_ReplaceDns{
-				LoadBalancerId: currentId.Id,
-				Dns:            dns,
+		Delta: &spec.UpdateV2_TfReplaceDns{
+			TfReplaceDns: &spec.UpdateV2_TerraformerReplaceDns{
+				Handle: currentId.Id,
+				Dns:    dns,
 			},
 		},
 	}
@@ -349,7 +365,7 @@ func replaceDns(current, desired *spec.ClustersV2, currentId, desiredId LoadBala
 
 	if desired.LoadBalancers.Clusters[desiredId.Index].IsApiEndpoint() && apiEndpoint {
 		pst := current.LoadBalancers.Clusters[currentId.Index].Dns
-		updateOp.Delta.(*spec.UpdateV2_ReplaceDns_).ReplaceDns.OldApiEndpoint = &pst.Endpoint
+		updateOp.Delta.(*spec.UpdateV2_TfReplaceDns).TfReplaceDns.OldApiEndpoint = &pst.Endpoint
 
 		task.Pipeline = append(task.Pipeline, &spec.Stage{
 			StageKind: &spec.Stage_Ansibler{
@@ -456,8 +472,8 @@ func controlNodesPort6443(current *spec.ClustersV2, open bool) *spec.TaskEventV2
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
 func moveApiEndpoint(
 	current *spec.ClustersV2,
-	currentId LoadBalancerIdentifier,
-	desiredId LoadBalancerIdentifier,
+	cid string,
+	did string,
 	change spec.ApiEndpointChangeStateV2,
 ) *spec.TaskEventV2 {
 	inFlight := proto.Clone(current).(*spec.ClustersV2)
@@ -469,8 +485,8 @@ func moveApiEndpoint(
 		Delta: &spec.UpdateV2_ApiEndpoint_{
 			ApiEndpoint: &spec.UpdateV2_ApiEndpoint{
 				State:             change,
-				CurrentEndpointId: currentId.Id,
-				DesiredEndpointId: desiredId.Id,
+				CurrentEndpointId: cid,
+				DesiredEndpointId: did,
 			},
 		},
 	}
@@ -484,7 +500,7 @@ func moveApiEndpoint(
 				Update: &updateOp,
 			},
 		},
-		Description: fmt.Sprintf("Moving Api endpoint %s from %q to %q", change.String(), currentId.Id, desiredId.Id),
+		Description: fmt.Sprintf("Moving Api endpoint %s from %q to %q", change.String(), cid, did),
 		Pipeline: []*spec.Stage{
 			{
 				StageKind: &spec.Stage_Ansibler{
@@ -540,7 +556,7 @@ func deleteLoadBalancer(current *spec.ClustersV2, i LoadBalancerIdentifier) *spe
 		},
 		Delta: &spec.UpdateV2_DeleteLoadBalancer_{
 			DeleteLoadBalancer: &spec.UpdateV2_DeleteLoadBalancer{
-				Id: i.Id,
+				Handle: i.Id,
 			},
 		},
 	}
@@ -594,9 +610,9 @@ func joinLoadBalancer(current, desired *spec.ClustersV2, desiredId LoadBalancerI
 			K8S:           inFlight.K8S,
 			LoadBalancers: inFlight.LoadBalancers.Clusters,
 		},
-		Delta: &spec.UpdateV2_AddLoadBalancer_{
-			AddLoadBalancer: &spec.UpdateV2_AddLoadBalancer{
-				LoadBalancer: toJoin,
+		Delta: &spec.UpdateV2_TfAddLoadBalancer{
+			TfAddLoadBalancer: &spec.UpdateV2_TerraformerAddLoadBalancer{
+				Handle: toJoin,
 			},
 		},
 	}
@@ -681,9 +697,9 @@ func deleteRoles(current *spec.ClustersV2, currentId LoadBalancerIdentifier, rol
 				K8S:           inFlight.K8S,
 				LoadBalancers: inFlight.LoadBalancers.Clusters,
 			},
-			Delta: &spec.UpdateV2_ReconcileLoadBalancer_{
-				ReconcileLoadBalancer: &spec.UpdateV2_ReconcileLoadBalancer{
-					LoadBalancer: toReconcile,
+			Delta: &spec.UpdateV2_TfReconcileLoadBalancer{
+				TfReconcileLoadBalancer: &spec.UpdateV2_TerraformerReconcileLoadBalancer{
+					Handle: toReconcile,
 				},
 			},
 		},
@@ -765,9 +781,9 @@ func addRoles(current, desired *spec.ClustersV2, currentId, desiredId LoadBalanc
 						K8S:           inFlight.K8S,
 						LoadBalancers: inFlight.LoadBalancers.Clusters,
 					},
-					Delta: &spec.UpdateV2_ReconcileLoadBalancer_{
-						ReconcileLoadBalancer: &spec.UpdateV2_ReconcileLoadBalancer{
-							LoadBalancer: toReconcile,
+					Delta: &spec.UpdateV2_TfReconcileLoadBalancer{
+						TfReconcileLoadBalancer: &spec.UpdateV2_TerraformerReconcileLoadBalancer{
+							Handle: toReconcile,
 						},
 					},
 				},
@@ -850,9 +866,10 @@ func reconcileRoleTargetPools(current, desired *spec.ClustersV2, currentId, desi
 						K8S:           inFlight.K8S,
 						LoadBalancers: inFlight.LoadBalancers.Clusters,
 					},
-					Delta: &spec.UpdateV2_ReconcileLoadBalancer_{
-						ReconcileLoadBalancer: &spec.UpdateV2_ReconcileLoadBalancer{
-							LoadBalancer: toReconcile,
+
+					Delta: &spec.UpdateV2_TfReconcileLoadBalancer{
+						TfReconcileLoadBalancer: &spec.UpdateV2_TerraformerReconcileLoadBalancer{
+							Handle: toReconcile,
 						},
 					},
 				},

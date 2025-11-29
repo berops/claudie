@@ -1459,21 +1459,22 @@ type UpdateV2 struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// State that gets continiously updated as the task gets processed.
 	State *UpdateV2_State `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`
-	// The initial new state that is to be build. This never gets
-	// updated as the task is processed and always has the intial
-	// state when first created. Once the initial state is build it
-	// is merged with [State], and any reconciliation should be done
-	// with that.
+	// Additional information while the [Update] message is passed through
+	// the build pipeline to give context what has been scheduled and what
+	// to process.
 	//
 	// Types that are valid to be assigned to Delta:
 	//
 	//	*UpdateV2_None_
-	//	*UpdateV2_AddLoadBalancer_
+	//	*UpdateV2_TfAddLoadBalancer
+	//	*UpdateV2_TfReconcileLoadBalancer
+	//	*UpdateV2_TfReplaceDns
+	//	*UpdateV2_AddedLoadBalancer_
+	//	*UpdateV2_ReconciledLoadBalancer_
+	//	*UpdateV2_ReplacedDns_
 	//	*UpdateV2_DeleteLoadBalancer_
-	//	*UpdateV2_ReconcileLoadBalancer_
 	//	*UpdateV2_ApiEndpoint_
 	//	*UpdateV2_ClusterApiPort
-	//	*UpdateV2_ReplaceDns_
 	Delta         isUpdateV2_Delta `protobuf_oneof:"Delta"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1532,10 +1533,55 @@ func (x *UpdateV2) GetNone() *UpdateV2_None {
 	return nil
 }
 
-func (x *UpdateV2) GetAddLoadBalancer() *UpdateV2_AddLoadBalancer {
+func (x *UpdateV2) GetTfAddLoadBalancer() *UpdateV2_TerraformerAddLoadBalancer {
 	if x != nil {
-		if x, ok := x.Delta.(*UpdateV2_AddLoadBalancer_); ok {
-			return x.AddLoadBalancer
+		if x, ok := x.Delta.(*UpdateV2_TfAddLoadBalancer); ok {
+			return x.TfAddLoadBalancer
+		}
+	}
+	return nil
+}
+
+func (x *UpdateV2) GetTfReconcileLoadBalancer() *UpdateV2_TerraformerReconcileLoadBalancer {
+	if x != nil {
+		if x, ok := x.Delta.(*UpdateV2_TfReconcileLoadBalancer); ok {
+			return x.TfReconcileLoadBalancer
+		}
+	}
+	return nil
+}
+
+func (x *UpdateV2) GetTfReplaceDns() *UpdateV2_TerraformerReplaceDns {
+	if x != nil {
+		if x, ok := x.Delta.(*UpdateV2_TfReplaceDns); ok {
+			return x.TfReplaceDns
+		}
+	}
+	return nil
+}
+
+func (x *UpdateV2) GetAddedLoadBalancer() *UpdateV2_AddedLoadBalancer {
+	if x != nil {
+		if x, ok := x.Delta.(*UpdateV2_AddedLoadBalancer_); ok {
+			return x.AddedLoadBalancer
+		}
+	}
+	return nil
+}
+
+func (x *UpdateV2) GetReconciledLoadBalancer() *UpdateV2_ReconciledLoadBalancer {
+	if x != nil {
+		if x, ok := x.Delta.(*UpdateV2_ReconciledLoadBalancer_); ok {
+			return x.ReconciledLoadBalancer
+		}
+	}
+	return nil
+}
+
+func (x *UpdateV2) GetReplacedDns() *UpdateV2_ReplacedDns {
+	if x != nil {
+		if x, ok := x.Delta.(*UpdateV2_ReplacedDns_); ok {
+			return x.ReplacedDns
 		}
 	}
 	return nil
@@ -1545,15 +1591,6 @@ func (x *UpdateV2) GetDeleteLoadBalancer() *UpdateV2_DeleteLoadBalancer {
 	if x != nil {
 		if x, ok := x.Delta.(*UpdateV2_DeleteLoadBalancer_); ok {
 			return x.DeleteLoadBalancer
-		}
-	}
-	return nil
-}
-
-func (x *UpdateV2) GetReconcileLoadBalancer() *UpdateV2_ReconcileLoadBalancer {
-	if x != nil {
-		if x, ok := x.Delta.(*UpdateV2_ReconcileLoadBalancer_); ok {
-			return x.ReconcileLoadBalancer
 		}
 	}
 	return nil
@@ -1577,15 +1614,6 @@ func (x *UpdateV2) GetClusterApiPort() *UpdateV2_ApiPortOnCluster {
 	return nil
 }
 
-func (x *UpdateV2) GetReplaceDns() *UpdateV2_ReplaceDns {
-	if x != nil {
-		if x, ok := x.Delta.(*UpdateV2_ReplaceDns_); ok {
-			return x.ReplaceDns
-		}
-	}
-	return nil
-}
-
 type isUpdateV2_Delta interface {
 	isUpdateV2_Delta()
 }
@@ -1594,43 +1622,61 @@ type UpdateV2_None_ struct {
 	None *UpdateV2_None `protobuf:"bytes,2,opt,name=none,proto3,oneof"`
 }
 
-type UpdateV2_AddLoadBalancer_ struct {
-	AddLoadBalancer *UpdateV2_AddLoadBalancer `protobuf:"bytes,3,opt,name=addLoadBalancer,proto3,oneof"`
+type UpdateV2_TfAddLoadBalancer struct {
+	TfAddLoadBalancer *UpdateV2_TerraformerAddLoadBalancer `protobuf:"bytes,3,opt,name=tfAddLoadBalancer,proto3,oneof"`
+}
+
+type UpdateV2_TfReconcileLoadBalancer struct {
+	TfReconcileLoadBalancer *UpdateV2_TerraformerReconcileLoadBalancer `protobuf:"bytes,4,opt,name=tfReconcileLoadBalancer,proto3,oneof"`
+}
+
+type UpdateV2_TfReplaceDns struct {
+	TfReplaceDns *UpdateV2_TerraformerReplaceDns `protobuf:"bytes,5,opt,name=tfReplaceDns,proto3,oneof"`
+}
+
+type UpdateV2_AddedLoadBalancer_ struct {
+	AddedLoadBalancer *UpdateV2_AddedLoadBalancer `protobuf:"bytes,6,opt,name=addedLoadBalancer,proto3,oneof"`
+}
+
+type UpdateV2_ReconciledLoadBalancer_ struct {
+	ReconciledLoadBalancer *UpdateV2_ReconciledLoadBalancer `protobuf:"bytes,7,opt,name=reconciledLoadBalancer,proto3,oneof"`
+}
+
+type UpdateV2_ReplacedDns_ struct {
+	ReplacedDns *UpdateV2_ReplacedDns `protobuf:"bytes,8,opt,name=replacedDns,proto3,oneof"`
 }
 
 type UpdateV2_DeleteLoadBalancer_ struct {
-	DeleteLoadBalancer *UpdateV2_DeleteLoadBalancer `protobuf:"bytes,4,opt,name=deleteLoadBalancer,proto3,oneof"`
-}
-
-type UpdateV2_ReconcileLoadBalancer_ struct {
-	ReconcileLoadBalancer *UpdateV2_ReconcileLoadBalancer `protobuf:"bytes,5,opt,name=reconcileLoadBalancer,proto3,oneof"`
+	DeleteLoadBalancer *UpdateV2_DeleteLoadBalancer `protobuf:"bytes,9,opt,name=deleteLoadBalancer,proto3,oneof"`
 }
 
 type UpdateV2_ApiEndpoint_ struct {
-	ApiEndpoint *UpdateV2_ApiEndpoint `protobuf:"bytes,6,opt,name=apiEndpoint,proto3,oneof"`
+	ApiEndpoint *UpdateV2_ApiEndpoint `protobuf:"bytes,10,opt,name=apiEndpoint,proto3,oneof"`
 }
 
 type UpdateV2_ClusterApiPort struct {
-	ClusterApiPort *UpdateV2_ApiPortOnCluster `protobuf:"bytes,7,opt,name=clusterApiPort,proto3,oneof"`
-}
-
-type UpdateV2_ReplaceDns_ struct {
-	ReplaceDns *UpdateV2_ReplaceDns `protobuf:"bytes,8,opt,name=replaceDns,proto3,oneof"`
+	ClusterApiPort *UpdateV2_ApiPortOnCluster `protobuf:"bytes,11,opt,name=clusterApiPort,proto3,oneof"`
 }
 
 func (*UpdateV2_None_) isUpdateV2_Delta() {}
 
-func (*UpdateV2_AddLoadBalancer_) isUpdateV2_Delta() {}
+func (*UpdateV2_TfAddLoadBalancer) isUpdateV2_Delta() {}
+
+func (*UpdateV2_TfReconcileLoadBalancer) isUpdateV2_Delta() {}
+
+func (*UpdateV2_TfReplaceDns) isUpdateV2_Delta() {}
+
+func (*UpdateV2_AddedLoadBalancer_) isUpdateV2_Delta() {}
+
+func (*UpdateV2_ReconciledLoadBalancer_) isUpdateV2_Delta() {}
+
+func (*UpdateV2_ReplacedDns_) isUpdateV2_Delta() {}
 
 func (*UpdateV2_DeleteLoadBalancer_) isUpdateV2_Delta() {}
-
-func (*UpdateV2_ReconcileLoadBalancer_) isUpdateV2_Delta() {}
 
 func (*UpdateV2_ApiEndpoint_) isUpdateV2_Delta() {}
 
 func (*UpdateV2_ClusterApiPort) isUpdateV2_Delta() {}
-
-func (*UpdateV2_ReplaceDns_) isUpdateV2_Delta() {}
 
 // Deletes an existing kubernetes cluster along with its attached [LBcluster], if any.
 type DeleteV2 struct {
@@ -2137,6 +2183,8 @@ func (x *RetryV2_Rollback) GetTasks() []*TaskEventV2 {
 	return nil
 }
 
+// State is the current state as known by the Manager service that is continiously
+// updated and merged into the [Update] message as it traverses the build pipeline.
 type UpdateV2_State struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The state of the kubernetes cluster to update.
@@ -2227,27 +2275,36 @@ func (*UpdateV2_None) Descriptor() ([]byte, []int) {
 	return file_spec_manifestv2_proto_rawDescGZIP(), []int{15, 1}
 }
 
-type UpdateV2_AddLoadBalancer struct {
+// TerraformerAddLoadBalancer is a message that once processed
+// by the Terraformer service and a result is send back to the
+// Manager, the manager will consume the message further stages
+// will only have a [AddedLoadBalancer] message to process.
+//
+// New, "desired", state needs only to be present in the terraformer
+// stage and all other services need to only see what has been done
+// and ocasionally index the loadbalancer, which will already be present
+// in the [State] of the [Update] message.
+type UpdateV2_TerraformerAddLoadBalancer struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	LoadBalancer  *LBclusterV2           `protobuf:"bytes,1,opt,name=loadBalancer,proto3" json:"loadBalancer,omitempty"`
+	Handle        *LBclusterV2           `protobuf:"bytes,1,opt,name=handle,proto3" json:"handle,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *UpdateV2_AddLoadBalancer) Reset() {
-	*x = UpdateV2_AddLoadBalancer{}
+func (x *UpdateV2_TerraformerAddLoadBalancer) Reset() {
+	*x = UpdateV2_TerraformerAddLoadBalancer{}
 	mi := &file_spec_manifestv2_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *UpdateV2_AddLoadBalancer) String() string {
+func (x *UpdateV2_TerraformerAddLoadBalancer) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*UpdateV2_AddLoadBalancer) ProtoMessage() {}
+func (*UpdateV2_TerraformerAddLoadBalancer) ProtoMessage() {}
 
-func (x *UpdateV2_AddLoadBalancer) ProtoReflect() protoreflect.Message {
+func (x *UpdateV2_TerraformerAddLoadBalancer) ProtoReflect() protoreflect.Message {
 	mi := &file_spec_manifestv2_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -2259,28 +2316,298 @@ func (x *UpdateV2_AddLoadBalancer) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use UpdateV2_AddLoadBalancer.ProtoReflect.Descriptor instead.
-func (*UpdateV2_AddLoadBalancer) Descriptor() ([]byte, []int) {
+// Deprecated: Use UpdateV2_TerraformerAddLoadBalancer.ProtoReflect.Descriptor instead.
+func (*UpdateV2_TerraformerAddLoadBalancer) Descriptor() ([]byte, []int) {
 	return file_spec_manifestv2_proto_rawDescGZIP(), []int{15, 2}
 }
 
-func (x *UpdateV2_AddLoadBalancer) GetLoadBalancer() *LBclusterV2 {
+func (x *UpdateV2_TerraformerAddLoadBalancer) GetHandle() *LBclusterV2 {
 	if x != nil {
-		return x.LoadBalancer
+		return x.Handle
 	}
 	return nil
 }
 
+type UpdateV2_AddedLoadBalancer struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Handle        string                 `protobuf:"bytes,1,opt,name=handle,proto3" json:"handle,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateV2_AddedLoadBalancer) Reset() {
+	*x = UpdateV2_AddedLoadBalancer{}
+	mi := &file_spec_manifestv2_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateV2_AddedLoadBalancer) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateV2_AddedLoadBalancer) ProtoMessage() {}
+
+func (x *UpdateV2_AddedLoadBalancer) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifestv2_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateV2_AddedLoadBalancer.ProtoReflect.Descriptor instead.
+func (*UpdateV2_AddedLoadBalancer) Descriptor() ([]byte, []int) {
+	return file_spec_manifestv2_proto_rawDescGZIP(), []int{15, 3}
+}
+
+func (x *UpdateV2_AddedLoadBalancer) GetHandle() string {
+	if x != nil {
+		return x.Handle
+	}
+	return ""
+}
+
+// TerraformerReconcileLoadBalancer is a message that once processed
+// by the Terraformer service and a result is send back to the Manager,
+// it will consume the message and further stages will only have a
+// [ReconciledLoadBalancer] message to process.
+//
+// New, "desired", state needs only to be present in the terraformer
+// stage and all other services need to only see what has been done and
+// occasionally index the loadbalancer, which will already be present
+// in the [State] of the [Update] message.
+type UpdateV2_TerraformerReconcileLoadBalancer struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Handle        *LBclusterV2           `protobuf:"bytes,2,opt,name=handle,proto3" json:"handle,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateV2_TerraformerReconcileLoadBalancer) Reset() {
+	*x = UpdateV2_TerraformerReconcileLoadBalancer{}
+	mi := &file_spec_manifestv2_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateV2_TerraformerReconcileLoadBalancer) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateV2_TerraformerReconcileLoadBalancer) ProtoMessage() {}
+
+func (x *UpdateV2_TerraformerReconcileLoadBalancer) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifestv2_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateV2_TerraformerReconcileLoadBalancer.ProtoReflect.Descriptor instead.
+func (*UpdateV2_TerraformerReconcileLoadBalancer) Descriptor() ([]byte, []int) {
+	return file_spec_manifestv2_proto_rawDescGZIP(), []int{15, 4}
+}
+
+func (x *UpdateV2_TerraformerReconcileLoadBalancer) GetHandle() *LBclusterV2 {
+	if x != nil {
+		return x.Handle
+	}
+	return nil
+}
+
+type UpdateV2_ReconciledLoadBalancer struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Handle        string                 `protobuf:"bytes,1,opt,name=handle,proto3" json:"handle,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateV2_ReconciledLoadBalancer) Reset() {
+	*x = UpdateV2_ReconciledLoadBalancer{}
+	mi := &file_spec_manifestv2_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateV2_ReconciledLoadBalancer) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateV2_ReconciledLoadBalancer) ProtoMessage() {}
+
+func (x *UpdateV2_ReconciledLoadBalancer) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifestv2_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateV2_ReconciledLoadBalancer.ProtoReflect.Descriptor instead.
+func (*UpdateV2_ReconciledLoadBalancer) Descriptor() ([]byte, []int) {
+	return file_spec_manifestv2_proto_rawDescGZIP(), []int{15, 5}
+}
+
+func (x *UpdateV2_ReconciledLoadBalancer) GetHandle() string {
+	if x != nil {
+		return x.Handle
+	}
+	return ""
+}
+
+// TerraformerReplaceDns is a message that once processed by the
+// Terraformer service and a result is send back to the Manager,
+// it will consume the message and further stages will only have
+// a [ReplacedDns] message to process.
+//
+// New, "desired", state needs only to be present in the terraformer
+// stage and all other services need to only see what has been done and
+// occasionally index the LoadBalancer, which will already be present
+// in the [State] of the [Update] message.
+type UpdateV2_TerraformerReplaceDns struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Loadbalancer ID to which the new [Dns] is going to created for.
+	Handle string `protobuf:"bytes,1,opt,name=handle,proto3" json:"handle,omitempty"`
+	// The new dns to replace the old within [LoadBalancerId].
+	Dns *DNS `protobuf:"bytes,2,opt,name=dns,proto3" json:"dns,omitempty"`
+	// If the [Dns] is part of a Api loadbalancer this
+	// field will be set to give extra information for
+	// when changing the Api endpoint from the old to
+	// the new.
+	OldApiEndpoint *string `protobuf:"bytes,3,opt,name=oldApiEndpoint,proto3,oneof" json:"oldApiEndpoint,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *UpdateV2_TerraformerReplaceDns) Reset() {
+	*x = UpdateV2_TerraformerReplaceDns{}
+	mi := &file_spec_manifestv2_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateV2_TerraformerReplaceDns) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateV2_TerraformerReplaceDns) ProtoMessage() {}
+
+func (x *UpdateV2_TerraformerReplaceDns) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifestv2_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateV2_TerraformerReplaceDns.ProtoReflect.Descriptor instead.
+func (*UpdateV2_TerraformerReplaceDns) Descriptor() ([]byte, []int) {
+	return file_spec_manifestv2_proto_rawDescGZIP(), []int{15, 6}
+}
+
+func (x *UpdateV2_TerraformerReplaceDns) GetHandle() string {
+	if x != nil {
+		return x.Handle
+	}
+	return ""
+}
+
+func (x *UpdateV2_TerraformerReplaceDns) GetDns() *DNS {
+	if x != nil {
+		return x.Dns
+	}
+	return nil
+}
+
+func (x *UpdateV2_TerraformerReplaceDns) GetOldApiEndpoint() string {
+	if x != nil && x.OldApiEndpoint != nil {
+		return *x.OldApiEndpoint
+	}
+	return ""
+}
+
+type UpdateV2_ReplacedDns struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Handle         string                 `protobuf:"bytes,1,opt,name=handle,proto3" json:"handle,omitempty"`
+	OldApiEndpoint *string                `protobuf:"bytes,2,opt,name=oldApiEndpoint,proto3,oneof" json:"oldApiEndpoint,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *UpdateV2_ReplacedDns) Reset() {
+	*x = UpdateV2_ReplacedDns{}
+	mi := &file_spec_manifestv2_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateV2_ReplacedDns) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateV2_ReplacedDns) ProtoMessage() {}
+
+func (x *UpdateV2_ReplacedDns) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifestv2_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateV2_ReplacedDns.ProtoReflect.Descriptor instead.
+func (*UpdateV2_ReplacedDns) Descriptor() ([]byte, []int) {
+	return file_spec_manifestv2_proto_rawDescGZIP(), []int{15, 7}
+}
+
+func (x *UpdateV2_ReplacedDns) GetHandle() string {
+	if x != nil {
+		return x.Handle
+	}
+	return ""
+}
+
+func (x *UpdateV2_ReplacedDns) GetOldApiEndpoint() string {
+	if x != nil && x.OldApiEndpoint != nil {
+		return *x.OldApiEndpoint
+	}
+	return ""
+}
+
+// DeleteLoadBalancer works with the [State] that is part of the [Update]
+// message, thus no "message consuming" needs to happen.
 type UpdateV2_DeleteLoadBalancer struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Handle        string                 `protobuf:"bytes,1,opt,name=handle,proto3" json:"handle,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *UpdateV2_DeleteLoadBalancer) Reset() {
 	*x = UpdateV2_DeleteLoadBalancer{}
-	mi := &file_spec_manifestv2_proto_msgTypes[27]
+	mi := &file_spec_manifestv2_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2292,7 +2619,7 @@ func (x *UpdateV2_DeleteLoadBalancer) String() string {
 func (*UpdateV2_DeleteLoadBalancer) ProtoMessage() {}
 
 func (x *UpdateV2_DeleteLoadBalancer) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifestv2_proto_msgTypes[27]
+	mi := &file_spec_manifestv2_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2305,60 +2632,18 @@ func (x *UpdateV2_DeleteLoadBalancer) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateV2_DeleteLoadBalancer.ProtoReflect.Descriptor instead.
 func (*UpdateV2_DeleteLoadBalancer) Descriptor() ([]byte, []int) {
-	return file_spec_manifestv2_proto_rawDescGZIP(), []int{15, 3}
+	return file_spec_manifestv2_proto_rawDescGZIP(), []int{15, 8}
 }
 
-func (x *UpdateV2_DeleteLoadBalancer) GetId() string {
+func (x *UpdateV2_DeleteLoadBalancer) GetHandle() string {
 	if x != nil {
-		return x.Id
+		return x.Handle
 	}
 	return ""
 }
 
-type UpdateV2_ReconcileLoadBalancer struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	LoadBalancer  *LBclusterV2           `protobuf:"bytes,2,opt,name=loadBalancer,proto3" json:"loadBalancer,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *UpdateV2_ReconcileLoadBalancer) Reset() {
-	*x = UpdateV2_ReconcileLoadBalancer{}
-	mi := &file_spec_manifestv2_proto_msgTypes[28]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UpdateV2_ReconcileLoadBalancer) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UpdateV2_ReconcileLoadBalancer) ProtoMessage() {}
-
-func (x *UpdateV2_ReconcileLoadBalancer) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifestv2_proto_msgTypes[28]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use UpdateV2_ReconcileLoadBalancer.ProtoReflect.Descriptor instead.
-func (*UpdateV2_ReconcileLoadBalancer) Descriptor() ([]byte, []int) {
-	return file_spec_manifestv2_proto_rawDescGZIP(), []int{15, 4}
-}
-
-func (x *UpdateV2_ReconcileLoadBalancer) GetLoadBalancer() *LBclusterV2 {
-	if x != nil {
-		return x.LoadBalancer
-	}
-	return nil
-}
-
+// ApiEndpoint works with the [State] that is part of the [Update] message
+// thus no "message consuming" needs to happen.
 type UpdateV2_ApiEndpoint struct {
 	state             protoimpl.MessageState   `protogen:"open.v1"`
 	State             ApiEndpointChangeStateV2 `protobuf:"varint,1,opt,name=state,proto3,enum=spec.ApiEndpointChangeStateV2" json:"state,omitempty"`
@@ -2370,7 +2655,7 @@ type UpdateV2_ApiEndpoint struct {
 
 func (x *UpdateV2_ApiEndpoint) Reset() {
 	*x = UpdateV2_ApiEndpoint{}
-	mi := &file_spec_manifestv2_proto_msgTypes[29]
+	mi := &file_spec_manifestv2_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2382,7 +2667,7 @@ func (x *UpdateV2_ApiEndpoint) String() string {
 func (*UpdateV2_ApiEndpoint) ProtoMessage() {}
 
 func (x *UpdateV2_ApiEndpoint) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifestv2_proto_msgTypes[29]
+	mi := &file_spec_manifestv2_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2395,7 +2680,7 @@ func (x *UpdateV2_ApiEndpoint) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateV2_ApiEndpoint.ProtoReflect.Descriptor instead.
 func (*UpdateV2_ApiEndpoint) Descriptor() ([]byte, []int) {
-	return file_spec_manifestv2_proto_rawDescGZIP(), []int{15, 5}
+	return file_spec_manifestv2_proto_rawDescGZIP(), []int{15, 9}
 }
 
 func (x *UpdateV2_ApiEndpoint) GetState() ApiEndpointChangeStateV2 {
@@ -2419,6 +2704,8 @@ func (x *UpdateV2_ApiEndpoint) GetDesiredEndpointId() string {
 	return ""
 }
 
+// ApiPortOnCluster works with the [State] that is part of the [Update] message
+// thus no "message consuming" needs to happen.
 type UpdateV2_ApiPortOnCluster struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Open          bool                   `protobuf:"varint,1,opt,name=open,proto3" json:"open,omitempty"`
@@ -2428,7 +2715,7 @@ type UpdateV2_ApiPortOnCluster struct {
 
 func (x *UpdateV2_ApiPortOnCluster) Reset() {
 	*x = UpdateV2_ApiPortOnCluster{}
-	mi := &file_spec_manifestv2_proto_msgTypes[30]
+	mi := &file_spec_manifestv2_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2440,7 +2727,7 @@ func (x *UpdateV2_ApiPortOnCluster) String() string {
 func (*UpdateV2_ApiPortOnCluster) ProtoMessage() {}
 
 func (x *UpdateV2_ApiPortOnCluster) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifestv2_proto_msgTypes[30]
+	mi := &file_spec_manifestv2_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2453,7 +2740,7 @@ func (x *UpdateV2_ApiPortOnCluster) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateV2_ApiPortOnCluster.ProtoReflect.Descriptor instead.
 func (*UpdateV2_ApiPortOnCluster) Descriptor() ([]byte, []int) {
-	return file_spec_manifestv2_proto_rawDescGZIP(), []int{15, 6}
+	return file_spec_manifestv2_proto_rawDescGZIP(), []int{15, 10}
 }
 
 func (x *UpdateV2_ApiPortOnCluster) GetOpen() bool {
@@ -2461,72 +2748,6 @@ func (x *UpdateV2_ApiPortOnCluster) GetOpen() bool {
 		return x.Open
 	}
 	return false
-}
-
-type UpdateV2_ReplaceDns struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Loadbalancer ID to which the new [Dns] is going to created for.
-	LoadBalancerId string `protobuf:"bytes,1,opt,name=loadBalancerId,proto3" json:"loadBalancerId,omitempty"`
-	// The new dns to replace the old within [LoadBalancerId].
-	Dns *DNS `protobuf:"bytes,2,opt,name=dns,proto3" json:"dns,omitempty"`
-	// If the [Dns] is part of a Api loadbalancer this
-	// field will be set to give extra information for
-	// when changing the Api endpoint from the old to
-	// the new.
-	OldApiEndpoint *string `protobuf:"bytes,3,opt,name=oldApiEndpoint,proto3,oneof" json:"oldApiEndpoint,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
-}
-
-func (x *UpdateV2_ReplaceDns) Reset() {
-	*x = UpdateV2_ReplaceDns{}
-	mi := &file_spec_manifestv2_proto_msgTypes[31]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UpdateV2_ReplaceDns) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UpdateV2_ReplaceDns) ProtoMessage() {}
-
-func (x *UpdateV2_ReplaceDns) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifestv2_proto_msgTypes[31]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use UpdateV2_ReplaceDns.ProtoReflect.Descriptor instead.
-func (*UpdateV2_ReplaceDns) Descriptor() ([]byte, []int) {
-	return file_spec_manifestv2_proto_rawDescGZIP(), []int{15, 7}
-}
-
-func (x *UpdateV2_ReplaceDns) GetLoadBalancerId() string {
-	if x != nil {
-		return x.LoadBalancerId
-	}
-	return ""
-}
-
-func (x *UpdateV2_ReplaceDns) GetDns() *DNS {
-	if x != nil {
-		return x.Dns
-	}
-	return nil
-}
-
-func (x *UpdateV2_ReplaceDns) GetOldApiEndpoint() string {
-	if x != nil && x.OldApiEndpoint != nil {
-		return *x.OldApiEndpoint
-	}
-	return ""
 }
 
 type TaskResult_Error struct {
@@ -2539,7 +2760,7 @@ type TaskResult_Error struct {
 
 func (x *TaskResult_Error) Reset() {
 	*x = TaskResult_Error{}
-	mi := &file_spec_manifestv2_proto_msgTypes[32]
+	mi := &file_spec_manifestv2_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2551,7 +2772,7 @@ func (x *TaskResult_Error) String() string {
 func (*TaskResult_Error) ProtoMessage() {}
 
 func (x *TaskResult_Error) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifestv2_proto_msgTypes[32]
+	mi := &file_spec_manifestv2_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2592,7 +2813,7 @@ type TaskResult_None struct {
 
 func (x *TaskResult_None) Reset() {
 	*x = TaskResult_None{}
-	mi := &file_spec_manifestv2_proto_msgTypes[33]
+	mi := &file_spec_manifestv2_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2604,7 +2825,7 @@ func (x *TaskResult_None) String() string {
 func (*TaskResult_None) ProtoMessage() {}
 
 func (x *TaskResult_None) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifestv2_proto_msgTypes[33]
+	mi := &file_spec_manifestv2_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2643,7 +2864,7 @@ type TaskResult_UpdateState struct {
 
 func (x *TaskResult_UpdateState) Reset() {
 	*x = TaskResult_UpdateState{}
-	mi := &file_spec_manifestv2_proto_msgTypes[34]
+	mi := &file_spec_manifestv2_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2655,7 +2876,7 @@ func (x *TaskResult_UpdateState) String() string {
 func (*TaskResult_UpdateState) ProtoMessage() {}
 
 func (x *TaskResult_UpdateState) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifestv2_proto_msgTypes[34]
+	mi := &file_spec_manifestv2_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2701,7 +2922,7 @@ type TaskResult_ClearState struct {
 
 func (x *TaskResult_ClearState) Reset() {
 	*x = TaskResult_ClearState{}
-	mi := &file_spec_manifestv2_proto_msgTypes[35]
+	mi := &file_spec_manifestv2_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2713,7 +2934,7 @@ func (x *TaskResult_ClearState) String() string {
 func (*TaskResult_ClearState) ProtoMessage() {}
 
 func (x *TaskResult_ClearState) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifestv2_proto_msgTypes[35]
+	mi := &file_spec_manifestv2_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2855,40 +3076,49 @@ const file_spec_manifestv2_proto_rawDesc = "" +
 	"\x02Do\"i\n" +
 	"\bCreateV2\x12$\n" +
 	"\x03k8s\x18\x01 \x01(\v2\x12.spec.K8sclusterV2R\x03k8s\x127\n" +
-	"\rloadBalancers\x18\x02 \x03(\v2\x11.spec.LBclusterV2R\rloadBalancers\"\xbf\t\n" +
+	"\rloadBalancers\x18\x02 \x03(\v2\x11.spec.LBclusterV2R\rloadBalancers\"\xa6\r\n" +
 	"\bUpdateV2\x12*\n" +
 	"\x05state\x18\x01 \x01(\v2\x14.spec.UpdateV2.StateR\x05state\x12)\n" +
-	"\x04none\x18\x02 \x01(\v2\x13.spec.UpdateV2.NoneH\x00R\x04none\x12J\n" +
-	"\x0faddLoadBalancer\x18\x03 \x01(\v2\x1e.spec.UpdateV2.AddLoadBalancerH\x00R\x0faddLoadBalancer\x12S\n" +
-	"\x12deleteLoadBalancer\x18\x04 \x01(\v2!.spec.UpdateV2.DeleteLoadBalancerH\x00R\x12deleteLoadBalancer\x12\\\n" +
-	"\x15reconcileLoadBalancer\x18\x05 \x01(\v2$.spec.UpdateV2.ReconcileLoadBalancerH\x00R\x15reconcileLoadBalancer\x12>\n" +
-	"\vapiEndpoint\x18\x06 \x01(\v2\x1a.spec.UpdateV2.ApiEndpointH\x00R\vapiEndpoint\x12I\n" +
-	"\x0eclusterApiPort\x18\a \x01(\v2\x1f.spec.UpdateV2.ApiPortOnClusterH\x00R\x0eclusterApiPort\x12;\n" +
-	"\n" +
-	"replaceDns\x18\b \x01(\v2\x19.spec.UpdateV2.ReplaceDnsH\x00R\n" +
-	"replaceDns\x1af\n" +
+	"\x04none\x18\x02 \x01(\v2\x13.spec.UpdateV2.NoneH\x00R\x04none\x12Y\n" +
+	"\x11tfAddLoadBalancer\x18\x03 \x01(\v2).spec.UpdateV2.TerraformerAddLoadBalancerH\x00R\x11tfAddLoadBalancer\x12k\n" +
+	"\x17tfReconcileLoadBalancer\x18\x04 \x01(\v2/.spec.UpdateV2.TerraformerReconcileLoadBalancerH\x00R\x17tfReconcileLoadBalancer\x12J\n" +
+	"\ftfReplaceDns\x18\x05 \x01(\v2$.spec.UpdateV2.TerraformerReplaceDnsH\x00R\ftfReplaceDns\x12P\n" +
+	"\x11addedLoadBalancer\x18\x06 \x01(\v2 .spec.UpdateV2.AddedLoadBalancerH\x00R\x11addedLoadBalancer\x12_\n" +
+	"\x16reconciledLoadBalancer\x18\a \x01(\v2%.spec.UpdateV2.ReconciledLoadBalancerH\x00R\x16reconciledLoadBalancer\x12>\n" +
+	"\vreplacedDns\x18\b \x01(\v2\x1a.spec.UpdateV2.ReplacedDnsH\x00R\vreplacedDns\x12S\n" +
+	"\x12deleteLoadBalancer\x18\t \x01(\v2!.spec.UpdateV2.DeleteLoadBalancerH\x00R\x12deleteLoadBalancer\x12>\n" +
+	"\vapiEndpoint\x18\n" +
+	" \x01(\v2\x1a.spec.UpdateV2.ApiEndpointH\x00R\vapiEndpoint\x12I\n" +
+	"\x0eclusterApiPort\x18\v \x01(\v2\x1f.spec.UpdateV2.ApiPortOnClusterH\x00R\x0eclusterApiPort\x1af\n" +
 	"\x05State\x12$\n" +
 	"\x03k8s\x18\x01 \x01(\v2\x12.spec.K8sclusterV2R\x03k8s\x127\n" +
 	"\rloadBalancers\x18\x02 \x03(\v2\x11.spec.LBclusterV2R\rloadBalancers\x1a\x06\n" +
-	"\x04None\x1aH\n" +
-	"\x0fAddLoadBalancer\x125\n" +
-	"\floadBalancer\x18\x01 \x01(\v2\x11.spec.LBclusterV2R\floadBalancer\x1a$\n" +
-	"\x12DeleteLoadBalancer\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x1aN\n" +
-	"\x15ReconcileLoadBalancer\x125\n" +
-	"\floadBalancer\x18\x02 \x01(\v2\x11.spec.LBclusterV2R\floadBalancer\x1a\x9f\x01\n" +
+	"\x04None\x1aG\n" +
+	"\x1aTerraformerAddLoadBalancer\x12)\n" +
+	"\x06handle\x18\x01 \x01(\v2\x11.spec.LBclusterV2R\x06handle\x1a+\n" +
+	"\x11AddedLoadBalancer\x12\x16\n" +
+	"\x06handle\x18\x01 \x01(\tR\x06handle\x1aM\n" +
+	" TerraformerReconcileLoadBalancer\x12)\n" +
+	"\x06handle\x18\x02 \x01(\v2\x11.spec.LBclusterV2R\x06handle\x1a0\n" +
+	"\x16ReconciledLoadBalancer\x12\x16\n" +
+	"\x06handle\x18\x01 \x01(\tR\x06handle\x1a\x8c\x01\n" +
+	"\x15TerraformerReplaceDns\x12\x16\n" +
+	"\x06handle\x18\x01 \x01(\tR\x06handle\x12\x1b\n" +
+	"\x03dns\x18\x02 \x01(\v2\t.spec.DNSR\x03dns\x12+\n" +
+	"\x0eoldApiEndpoint\x18\x03 \x01(\tH\x00R\x0eoldApiEndpoint\x88\x01\x01B\x11\n" +
+	"\x0f_oldApiEndpoint\x1ae\n" +
+	"\vReplacedDns\x12\x16\n" +
+	"\x06handle\x18\x01 \x01(\tR\x06handle\x12+\n" +
+	"\x0eoldApiEndpoint\x18\x02 \x01(\tH\x00R\x0eoldApiEndpoint\x88\x01\x01B\x11\n" +
+	"\x0f_oldApiEndpoint\x1a,\n" +
+	"\x12DeleteLoadBalancer\x12\x16\n" +
+	"\x06handle\x18\x01 \x01(\tR\x06handle\x1a\x9f\x01\n" +
 	"\vApiEndpoint\x124\n" +
 	"\x05state\x18\x01 \x01(\x0e2\x1e.spec.ApiEndpointChangeStateV2R\x05state\x12,\n" +
 	"\x11currentEndpointId\x18\x02 \x01(\tR\x11currentEndpointId\x12,\n" +
 	"\x11desiredEndpointId\x18\x03 \x01(\tR\x11desiredEndpointId\x1a&\n" +
 	"\x10ApiPortOnCluster\x12\x12\n" +
-	"\x04open\x18\x01 \x01(\bR\x04open\x1a\x91\x01\n" +
-	"\n" +
-	"ReplaceDns\x12&\n" +
-	"\x0eloadBalancerId\x18\x01 \x01(\tR\x0eloadBalancerId\x12\x1b\n" +
-	"\x03dns\x18\x02 \x01(\v2\t.spec.DNSR\x03dns\x12+\n" +
-	"\x0eoldApiEndpoint\x18\x03 \x01(\tH\x00R\x0eoldApiEndpoint\x88\x01\x01B\x11\n" +
-	"\x0f_oldApiEndpointB\a\n" +
+	"\x04open\x18\x01 \x01(\bR\x04openB\a\n" +
 	"\x05Delta\"i\n" +
 	"\bDeleteV2\x12$\n" +
 	"\x03k8s\x18\x01 \x01(\v2\x12.spec.K8sclusterV2R\x03k8s\x127\n" +
@@ -2958,56 +3188,59 @@ func file_spec_manifestv2_proto_rawDescGZIP() []byte {
 }
 
 var file_spec_manifestv2_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
-var file_spec_manifestv2_proto_msgTypes = make([]protoimpl.MessageInfo, 36)
+var file_spec_manifestv2_proto_msgTypes = make([]protoimpl.MessageInfo, 39)
 var file_spec_manifestv2_proto_goTypes = []any{
-	(RoleTypeV2)(0),                        // 0: spec.RoleTypeV2
-	(EventV2)(0),                           // 1: spec.EventV2
-	(ApiEndpointChangeStateV2)(0),          // 2: spec.ApiEndpointChangeStateV2
-	(ManifestV2_State)(0),                  // 3: spec.ManifestV2.State
-	(WorkflowV2_Status)(0),                 // 4: spec.WorkflowV2.Status
-	(RetryV2_Repeat_Kind)(0),               // 5: spec.RetryV2.Repeat.Kind
-	(TaskResult_Error_Kind)(0),             // 6: spec.TaskResult.Error.Kind
-	(*ConfigV2)(nil),                       // 7: spec.ConfigV2
-	(*ManifestV2)(nil),                     // 8: spec.ManifestV2
-	(*ClusterStateV2)(nil),                 // 9: spec.ClusterStateV2
-	(*ClustersV2)(nil),                     // 10: spec.ClustersV2
-	(*LoadBalancersV2)(nil),                // 11: spec.LoadBalancersV2
-	(*KubernetesContextV2)(nil),            // 12: spec.KubernetesContextV2
-	(*WorkflowV2)(nil),                     // 13: spec.WorkflowV2
-	(*K8SclusterV2)(nil),                   // 14: spec.K8sclusterV2
-	(*LBclusterV2)(nil),                    // 15: spec.LBclusterV2
-	(*ClusterInfoV2)(nil),                  // 16: spec.ClusterInfoV2
-	(*InstallationProxyV2)(nil),            // 17: spec.InstallationProxyV2
-	(*RoleV2)(nil),                         // 18: spec.RoleV2
-	(*TaskEventV2)(nil),                    // 19: spec.TaskEventV2
-	(*RetryV2)(nil),                        // 20: spec.RetryV2
-	(*CreateV2)(nil),                       // 21: spec.CreateV2
-	(*UpdateV2)(nil),                       // 22: spec.UpdateV2
-	(*DeleteV2)(nil),                       // 23: spec.DeleteV2
-	(*TaskV2)(nil),                         // 24: spec.TaskV2
-	(*Work)(nil),                           // 25: spec.Work
-	(*TaskResult)(nil),                     // 26: spec.TaskResult
-	nil,                                    // 27: spec.ConfigV2.ClustersEntry
-	(*RoleV2_Settings)(nil),                // 28: spec.RoleV2.Settings
-	(*RetryV2_Repeat)(nil),                 // 29: spec.RetryV2.Repeat
-	(*RetryV2_Rollback)(nil),               // 30: spec.RetryV2.Rollback
-	(*UpdateV2_State)(nil),                 // 31: spec.UpdateV2.State
-	(*UpdateV2_None)(nil),                  // 32: spec.UpdateV2.None
-	(*UpdateV2_AddLoadBalancer)(nil),       // 33: spec.UpdateV2.AddLoadBalancer
-	(*UpdateV2_DeleteLoadBalancer)(nil),    // 34: spec.UpdateV2.DeleteLoadBalancer
-	(*UpdateV2_ReconcileLoadBalancer)(nil), // 35: spec.UpdateV2.ReconcileLoadBalancer
-	(*UpdateV2_ApiEndpoint)(nil),           // 36: spec.UpdateV2.ApiEndpoint
-	(*UpdateV2_ApiPortOnCluster)(nil),      // 37: spec.UpdateV2.ApiPortOnCluster
-	(*UpdateV2_ReplaceDns)(nil),            // 38: spec.UpdateV2.ReplaceDns
-	(*TaskResult_Error)(nil),               // 39: spec.TaskResult.Error
-	(*TaskResult_None)(nil),                // 40: spec.TaskResult.None
-	(*TaskResult_UpdateState)(nil),         // 41: spec.TaskResult.UpdateState
-	(*TaskResult_ClearState)(nil),          // 42: spec.TaskResult.ClearState
-	(*DNS)(nil),                            // 43: spec.DNS
-	(*NodePool)(nil),                       // 44: spec.NodePool
-	(*timestamppb.Timestamp)(nil),          // 45: google.protobuf.Timestamp
-	(*Stage)(nil),                          // 46: spec.Stage
-	(*anypb.Any)(nil),                      // 47: google.protobuf.Any
+	(RoleTypeV2)(0),                             // 0: spec.RoleTypeV2
+	(EventV2)(0),                                // 1: spec.EventV2
+	(ApiEndpointChangeStateV2)(0),               // 2: spec.ApiEndpointChangeStateV2
+	(ManifestV2_State)(0),                       // 3: spec.ManifestV2.State
+	(WorkflowV2_Status)(0),                      // 4: spec.WorkflowV2.Status
+	(RetryV2_Repeat_Kind)(0),                    // 5: spec.RetryV2.Repeat.Kind
+	(TaskResult_Error_Kind)(0),                  // 6: spec.TaskResult.Error.Kind
+	(*ConfigV2)(nil),                            // 7: spec.ConfigV2
+	(*ManifestV2)(nil),                          // 8: spec.ManifestV2
+	(*ClusterStateV2)(nil),                      // 9: spec.ClusterStateV2
+	(*ClustersV2)(nil),                          // 10: spec.ClustersV2
+	(*LoadBalancersV2)(nil),                     // 11: spec.LoadBalancersV2
+	(*KubernetesContextV2)(nil),                 // 12: spec.KubernetesContextV2
+	(*WorkflowV2)(nil),                          // 13: spec.WorkflowV2
+	(*K8SclusterV2)(nil),                        // 14: spec.K8sclusterV2
+	(*LBclusterV2)(nil),                         // 15: spec.LBclusterV2
+	(*ClusterInfoV2)(nil),                       // 16: spec.ClusterInfoV2
+	(*InstallationProxyV2)(nil),                 // 17: spec.InstallationProxyV2
+	(*RoleV2)(nil),                              // 18: spec.RoleV2
+	(*TaskEventV2)(nil),                         // 19: spec.TaskEventV2
+	(*RetryV2)(nil),                             // 20: spec.RetryV2
+	(*CreateV2)(nil),                            // 21: spec.CreateV2
+	(*UpdateV2)(nil),                            // 22: spec.UpdateV2
+	(*DeleteV2)(nil),                            // 23: spec.DeleteV2
+	(*TaskV2)(nil),                              // 24: spec.TaskV2
+	(*Work)(nil),                                // 25: spec.Work
+	(*TaskResult)(nil),                          // 26: spec.TaskResult
+	nil,                                         // 27: spec.ConfigV2.ClustersEntry
+	(*RoleV2_Settings)(nil),                     // 28: spec.RoleV2.Settings
+	(*RetryV2_Repeat)(nil),                      // 29: spec.RetryV2.Repeat
+	(*RetryV2_Rollback)(nil),                    // 30: spec.RetryV2.Rollback
+	(*UpdateV2_State)(nil),                      // 31: spec.UpdateV2.State
+	(*UpdateV2_None)(nil),                       // 32: spec.UpdateV2.None
+	(*UpdateV2_TerraformerAddLoadBalancer)(nil), // 33: spec.UpdateV2.TerraformerAddLoadBalancer
+	(*UpdateV2_AddedLoadBalancer)(nil),          // 34: spec.UpdateV2.AddedLoadBalancer
+	(*UpdateV2_TerraformerReconcileLoadBalancer)(nil), // 35: spec.UpdateV2.TerraformerReconcileLoadBalancer
+	(*UpdateV2_ReconciledLoadBalancer)(nil),           // 36: spec.UpdateV2.ReconciledLoadBalancer
+	(*UpdateV2_TerraformerReplaceDns)(nil),            // 37: spec.UpdateV2.TerraformerReplaceDns
+	(*UpdateV2_ReplacedDns)(nil),                      // 38: spec.UpdateV2.ReplacedDns
+	(*UpdateV2_DeleteLoadBalancer)(nil),               // 39: spec.UpdateV2.DeleteLoadBalancer
+	(*UpdateV2_ApiEndpoint)(nil),                      // 40: spec.UpdateV2.ApiEndpoint
+	(*UpdateV2_ApiPortOnCluster)(nil),                 // 41: spec.UpdateV2.ApiPortOnCluster
+	(*TaskResult_Error)(nil),                          // 42: spec.TaskResult.Error
+	(*TaskResult_None)(nil),                           // 43: spec.TaskResult.None
+	(*TaskResult_UpdateState)(nil),                    // 44: spec.TaskResult.UpdateState
+	(*TaskResult_ClearState)(nil),                     // 45: spec.TaskResult.ClearState
+	(*DNS)(nil),                                       // 46: spec.DNS
+	(*NodePool)(nil),                                  // 47: spec.NodePool
+	(*timestamppb.Timestamp)(nil),                     // 48: google.protobuf.Timestamp
+	(*Stage)(nil),                                     // 49: spec.Stage
+	(*anypb.Any)(nil),                                 // 50: google.protobuf.Any
 }
 var file_spec_manifestv2_proto_depIdxs = []int32{
 	12, // 0: spec.ConfigV2.k8sCtx:type_name -> spec.KubernetesContextV2
@@ -3025,55 +3258,58 @@ var file_spec_manifestv2_proto_depIdxs = []int32{
 	17, // 12: spec.K8sclusterV2.installationProxy:type_name -> spec.InstallationProxyV2
 	16, // 13: spec.LBclusterV2.clusterInfo:type_name -> spec.ClusterInfoV2
 	18, // 14: spec.LBclusterV2.roles:type_name -> spec.RoleV2
-	43, // 15: spec.LBclusterV2.dns:type_name -> spec.DNS
-	44, // 16: spec.ClusterInfoV2.nodePools:type_name -> spec.NodePool
+	46, // 15: spec.LBclusterV2.dns:type_name -> spec.DNS
+	47, // 16: spec.ClusterInfoV2.nodePools:type_name -> spec.NodePool
 	0,  // 17: spec.RoleV2.roleType:type_name -> spec.RoleTypeV2
 	28, // 18: spec.RoleV2.settings:type_name -> spec.RoleV2.Settings
-	45, // 19: spec.TaskEventV2.timestamp:type_name -> google.protobuf.Timestamp
+	48, // 19: spec.TaskEventV2.timestamp:type_name -> google.protobuf.Timestamp
 	1,  // 20: spec.TaskEventV2.event:type_name -> spec.EventV2
 	24, // 21: spec.TaskEventV2.task:type_name -> spec.TaskV2
 	20, // 22: spec.TaskEventV2.onError:type_name -> spec.RetryV2
-	46, // 23: spec.TaskEventV2.pipeline:type_name -> spec.Stage
+	49, // 23: spec.TaskEventV2.pipeline:type_name -> spec.Stage
 	29, // 24: spec.RetryV2.repeat:type_name -> spec.RetryV2.Repeat
 	30, // 25: spec.RetryV2.rollback:type_name -> spec.RetryV2.Rollback
 	14, // 26: spec.CreateV2.k8s:type_name -> spec.K8sclusterV2
 	15, // 27: spec.CreateV2.loadBalancers:type_name -> spec.LBclusterV2
 	31, // 28: spec.UpdateV2.state:type_name -> spec.UpdateV2.State
 	32, // 29: spec.UpdateV2.none:type_name -> spec.UpdateV2.None
-	33, // 30: spec.UpdateV2.addLoadBalancer:type_name -> spec.UpdateV2.AddLoadBalancer
-	34, // 31: spec.UpdateV2.deleteLoadBalancer:type_name -> spec.UpdateV2.DeleteLoadBalancer
-	35, // 32: spec.UpdateV2.reconcileLoadBalancer:type_name -> spec.UpdateV2.ReconcileLoadBalancer
-	36, // 33: spec.UpdateV2.apiEndpoint:type_name -> spec.UpdateV2.ApiEndpoint
-	37, // 34: spec.UpdateV2.clusterApiPort:type_name -> spec.UpdateV2.ApiPortOnCluster
-	38, // 35: spec.UpdateV2.replaceDns:type_name -> spec.UpdateV2.ReplaceDns
-	14, // 36: spec.DeleteV2.k8s:type_name -> spec.K8sclusterV2
-	15, // 37: spec.DeleteV2.loadBalancers:type_name -> spec.LBclusterV2
-	21, // 38: spec.TaskV2.create:type_name -> spec.CreateV2
-	22, // 39: spec.TaskV2.update:type_name -> spec.UpdateV2
-	23, // 40: spec.TaskV2.delete:type_name -> spec.DeleteV2
-	24, // 41: spec.Work.task:type_name -> spec.TaskV2
-	47, // 42: spec.Work.passes:type_name -> google.protobuf.Any
-	39, // 43: spec.TaskResult.error:type_name -> spec.TaskResult.Error
-	40, // 44: spec.TaskResult.none:type_name -> spec.TaskResult.None
-	41, // 45: spec.TaskResult.update:type_name -> spec.TaskResult.UpdateState
-	42, // 46: spec.TaskResult.clear:type_name -> spec.TaskResult.ClearState
-	9,  // 47: spec.ConfigV2.ClustersEntry.value:type_name -> spec.ClusterStateV2
-	5,  // 48: spec.RetryV2.Repeat.kind:type_name -> spec.RetryV2.Repeat.Kind
-	19, // 49: spec.RetryV2.Rollback.tasks:type_name -> spec.TaskEventV2
-	14, // 50: spec.UpdateV2.State.k8s:type_name -> spec.K8sclusterV2
-	15, // 51: spec.UpdateV2.State.loadBalancers:type_name -> spec.LBclusterV2
-	15, // 52: spec.UpdateV2.AddLoadBalancer.loadBalancer:type_name -> spec.LBclusterV2
-	15, // 53: spec.UpdateV2.ReconcileLoadBalancer.loadBalancer:type_name -> spec.LBclusterV2
-	2,  // 54: spec.UpdateV2.ApiEndpoint.state:type_name -> spec.ApiEndpointChangeStateV2
-	43, // 55: spec.UpdateV2.ReplaceDns.dns:type_name -> spec.DNS
-	6,  // 56: spec.TaskResult.Error.kind:type_name -> spec.TaskResult.Error.Kind
-	14, // 57: spec.TaskResult.UpdateState.k8s:type_name -> spec.K8sclusterV2
-	11, // 58: spec.TaskResult.UpdateState.loadBalancers:type_name -> spec.LoadBalancersV2
-	59, // [59:59] is the sub-list for method output_type
-	59, // [59:59] is the sub-list for method input_type
-	59, // [59:59] is the sub-list for extension type_name
-	59, // [59:59] is the sub-list for extension extendee
-	0,  // [0:59] is the sub-list for field type_name
+	33, // 30: spec.UpdateV2.tfAddLoadBalancer:type_name -> spec.UpdateV2.TerraformerAddLoadBalancer
+	35, // 31: spec.UpdateV2.tfReconcileLoadBalancer:type_name -> spec.UpdateV2.TerraformerReconcileLoadBalancer
+	37, // 32: spec.UpdateV2.tfReplaceDns:type_name -> spec.UpdateV2.TerraformerReplaceDns
+	34, // 33: spec.UpdateV2.addedLoadBalancer:type_name -> spec.UpdateV2.AddedLoadBalancer
+	36, // 34: spec.UpdateV2.reconciledLoadBalancer:type_name -> spec.UpdateV2.ReconciledLoadBalancer
+	38, // 35: spec.UpdateV2.replacedDns:type_name -> spec.UpdateV2.ReplacedDns
+	39, // 36: spec.UpdateV2.deleteLoadBalancer:type_name -> spec.UpdateV2.DeleteLoadBalancer
+	40, // 37: spec.UpdateV2.apiEndpoint:type_name -> spec.UpdateV2.ApiEndpoint
+	41, // 38: spec.UpdateV2.clusterApiPort:type_name -> spec.UpdateV2.ApiPortOnCluster
+	14, // 39: spec.DeleteV2.k8s:type_name -> spec.K8sclusterV2
+	15, // 40: spec.DeleteV2.loadBalancers:type_name -> spec.LBclusterV2
+	21, // 41: spec.TaskV2.create:type_name -> spec.CreateV2
+	22, // 42: spec.TaskV2.update:type_name -> spec.UpdateV2
+	23, // 43: spec.TaskV2.delete:type_name -> spec.DeleteV2
+	24, // 44: spec.Work.task:type_name -> spec.TaskV2
+	50, // 45: spec.Work.passes:type_name -> google.protobuf.Any
+	42, // 46: spec.TaskResult.error:type_name -> spec.TaskResult.Error
+	43, // 47: spec.TaskResult.none:type_name -> spec.TaskResult.None
+	44, // 48: spec.TaskResult.update:type_name -> spec.TaskResult.UpdateState
+	45, // 49: spec.TaskResult.clear:type_name -> spec.TaskResult.ClearState
+	9,  // 50: spec.ConfigV2.ClustersEntry.value:type_name -> spec.ClusterStateV2
+	5,  // 51: spec.RetryV2.Repeat.kind:type_name -> spec.RetryV2.Repeat.Kind
+	19, // 52: spec.RetryV2.Rollback.tasks:type_name -> spec.TaskEventV2
+	14, // 53: spec.UpdateV2.State.k8s:type_name -> spec.K8sclusterV2
+	15, // 54: spec.UpdateV2.State.loadBalancers:type_name -> spec.LBclusterV2
+	15, // 55: spec.UpdateV2.TerraformerAddLoadBalancer.handle:type_name -> spec.LBclusterV2
+	15, // 56: spec.UpdateV2.TerraformerReconcileLoadBalancer.handle:type_name -> spec.LBclusterV2
+	46, // 57: spec.UpdateV2.TerraformerReplaceDns.dns:type_name -> spec.DNS
+	2,  // 58: spec.UpdateV2.ApiEndpoint.state:type_name -> spec.ApiEndpointChangeStateV2
+	6,  // 59: spec.TaskResult.Error.kind:type_name -> spec.TaskResult.Error.Kind
+	14, // 60: spec.TaskResult.UpdateState.k8s:type_name -> spec.K8sclusterV2
+	11, // 61: spec.TaskResult.UpdateState.loadBalancers:type_name -> spec.LoadBalancersV2
+	62, // [62:62] is the sub-list for method output_type
+	62, // [62:62] is the sub-list for method input_type
+	62, // [62:62] is the sub-list for extension type_name
+	62, // [62:62] is the sub-list for extension extendee
+	0,  // [0:62] is the sub-list for field type_name
 }
 
 func init() { file_spec_manifestv2_proto_init() }
@@ -3090,12 +3326,15 @@ func file_spec_manifestv2_proto_init() {
 	}
 	file_spec_manifestv2_proto_msgTypes[15].OneofWrappers = []any{
 		(*UpdateV2_None_)(nil),
-		(*UpdateV2_AddLoadBalancer_)(nil),
+		(*UpdateV2_TfAddLoadBalancer)(nil),
+		(*UpdateV2_TfReconcileLoadBalancer)(nil),
+		(*UpdateV2_TfReplaceDns)(nil),
+		(*UpdateV2_AddedLoadBalancer_)(nil),
+		(*UpdateV2_ReconciledLoadBalancer_)(nil),
+		(*UpdateV2_ReplacedDns_)(nil),
 		(*UpdateV2_DeleteLoadBalancer_)(nil),
-		(*UpdateV2_ReconcileLoadBalancer_)(nil),
 		(*UpdateV2_ApiEndpoint_)(nil),
 		(*UpdateV2_ClusterApiPort)(nil),
-		(*UpdateV2_ReplaceDns_)(nil),
 	}
 	file_spec_manifestv2_proto_msgTypes[17].OneofWrappers = []any{
 		(*TaskV2_Create)(nil),
@@ -3107,16 +3346,17 @@ func file_spec_manifestv2_proto_init() {
 		(*TaskResult_Update)(nil),
 		(*TaskResult_Clear)(nil),
 	}
+	file_spec_manifestv2_proto_msgTypes[30].OneofWrappers = []any{}
 	file_spec_manifestv2_proto_msgTypes[31].OneofWrappers = []any{}
-	file_spec_manifestv2_proto_msgTypes[34].OneofWrappers = []any{}
-	file_spec_manifestv2_proto_msgTypes[35].OneofWrappers = []any{}
+	file_spec_manifestv2_proto_msgTypes[37].OneofWrappers = []any{}
+	file_spec_manifestv2_proto_msgTypes[38].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_spec_manifestv2_proto_rawDesc), len(file_spec_manifestv2_proto_rawDesc)),
 			NumEnums:      7,
-			NumMessages:   36,
+			NumMessages:   39,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -21,9 +21,6 @@ import (
 // individual nodes.
 const sshPort = "22"
 
-// TODO: check if in terraform it is preferred to use the cached
-// local version instead of downloading the templates.
-
 // UnreachableNodesMap holds the nodepools and all of the nodes within
 // that nodepool that are unreachable via a Ping on the IPv4 public endpoint.
 type UnreachableIPv4Map = map[string][]string
@@ -87,8 +84,6 @@ func HealthCheck(logger zerolog.Logger, state *spec.ClustersV2) (HealthCheckStat
 	kc := kubectl.Kubectl{
 		MaxKubectlRetries: -1,
 	}
-
-	logger.Info().Msg("Verifying if Api server is reachable")
 
 	n, err := kc.KubectlGetNodeNames()
 	if err != nil {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/managerv2/internal/store"
@@ -216,67 +215,6 @@ func propagateResult(logger zerolog.Logger, cluster *store.ClusterState, result 
 		logger.Debug().Msg("Received [None] as a result for the task, no work to be done.")
 	default:
 		logger.Warn().Msgf("Received message with unknown result type %T, ignoring", result)
-	}
-
-	state, err := inFlight.Task.MutableClusters()
-	if err != nil {
-		logger.Err(err).Msg("Failed to acquire mutable state from scheduled task")
-		return err
-	}
-
-	// The [store.ClusterState.InFlight.Task] can have multiple pipeline stages, thus
-	// transfer the inFlight state, back to the scheduled task.
-	switch task := inFlight.Task.Do.(type) {
-	case *spec.TaskV2_Delete, *spec.TaskV2_Create:
-		// Create and Delete task directly store the [spec.Clusters] state within
-		// the scheduled tasks, therefore there is nothing left to be propagated
-		// back as everything was handled by the propagation at the start of this
-		// function.
-		//
-		// do nothing.
-	case *spec.TaskV2_Update:
-		// Contrary to the other scheduled tasks, Update task do not only have
-		// the [spec.Clusters] state stored but also additional state that
-		// needs to be updated, for example when Adding/Deleting loadbalancers
-		// replacing Dns etc...
-		logger.Debug().Msg("Propagating updated state back to [Update] task")
-
-		// Replace the scheduled 'delta' with the updated state, if any, from the
-		// updated [spec.Clusters], propagated from the task result.
-		switch delta := task.Update.Delta.(type) {
-		case *spec.UpdateV2_AddLoadBalancer_:
-			u := delta.AddLoadBalancer
-			id := u.LoadBalancer.ClusterInfo.Id()
-			if i := clusters.IndexLoadbalancerByIdV2(id, state.LoadBalancers.Clusters); i >= 0 {
-				u.LoadBalancer = state.LoadBalancers.Clusters[i]
-			}
-		case *spec.UpdateV2_ApiEndpoint_:
-			// nothing to update.
-		case *spec.UpdateV2_ClusterApiPort:
-			// nothing to update.
-		case *spec.UpdateV2_DeleteLoadBalancer_:
-			// Deletion works with current state that is
-			// not partially modified in any way.
-			//
-			// nothing to update.
-		case *spec.UpdateV2_ReconcileLoadBalancer_:
-			u := delta.ReconcileLoadBalancer
-			id := u.LoadBalancer.ClusterInfo.Id()
-			if i := clusters.IndexLoadbalancerByIdV2(id, state.LoadBalancers.Clusters); i >= 0 {
-				u.LoadBalancer = state.LoadBalancers.Clusters[i]
-			}
-		case *spec.UpdateV2_ReplaceDns_:
-			id := delta.ReplaceDns.LoadBalancerId
-			if i := clusters.IndexLoadbalancerByIdV2(id, state.LoadBalancers.Clusters); i >= 0 {
-				updated := state.LoadBalancers.Clusters[i]
-				delta.ReplaceDns.Dns = updated.Dns
-			}
-		default:
-			logger.Warn().Msgf("Unknown update delta %T, ignoring propagating updated state", delta)
-		}
-
-	default:
-		logger.Warn().Msgf("Unsupported InFlight Task %T, ignoring transferring InFlight state", task)
 	}
 
 	cluster.InFlight, err = store.ConvertFromGRPCTaskEvent(inFlight)

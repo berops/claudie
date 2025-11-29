@@ -267,6 +267,8 @@ message CreateV2{
 }
 
 message UpdateV2 {
+    // State is the current state as known by the Manager service that is continiously
+    // updated and merged into the [Update] message as it traverses the build pipeline.
     message State {
         // The state of the kubernetes cluster to update.
         K8sclusterV2 k8s = 1;
@@ -276,31 +278,42 @@ message UpdateV2 {
 
     message None {}
 
-    message AddLoadBalancer {
-        LBclusterV2 loadBalancer = 1;
-    }
+    // TerraformerAddLoadBalancer is a message that once processed
+    // by the Terraformer service and a result is send back to the
+    // Manager, the manager will consume the message further stages
+    // will only have a [AddedLoadBalancer] message to process.
+    //
+    // New, "desired", state needs only to be present in the terraformer
+    // stage and all other services need to only see what has been done
+    // and ocasionally index the loadbalancer, which will already be present
+    // in the [State] of the [Update] message.
+    message TerraformerAddLoadBalancer { LBclusterV2 handle = 1; }
+    message AddedLoadBalancer { string handle = 1; }
 
-    message DeleteLoadBalancer {
-        string id = 1;
-    }
+    // TerraformerReconcileLoadBalancer is a message that once processed
+    // by the Terraformer service and a result is send back to the Manager,
+    // it will consume the message and further stages will only have a
+    // [ReconciledLoadBalancer] message to process.
+    //
+    // New, "desired", state needs only to be present in the terraformer
+    // stage and all other services need to only see what has been done and
+    // occasionally index the loadbalancer, which will already be present
+    // in the [State] of the [Update] message.
+    message TerraformerReconcileLoadBalancer { LBclusterV2 handle = 2; }
+    message ReconciledLoadBalancer { string handle = 1; }
 
-    message ReconcileLoadBalancer {
-        LBclusterV2 loadBalancer = 2;
-    }
-
-    message ApiEndpoint {
-        ApiEndpointChangeStateV2 state = 1;
-        string currentEndpointId = 2;
-        string desiredEndpointId = 3;
-    }
-
-    message ApiPortOnCluster {
-        bool open = 1;
-    }
-
-    message ReplaceDns {
+    // TerraformerReplaceDns is a message that once processed by the
+    // Terraformer service and a result is send back to the Manager,
+    // it will consume the message and further stages will only have
+    // a [ReplacedDns] message to process.
+    //
+    // New, "desired", state needs only to be present in the terraformer
+    // stage and all other services need to only see what has been done and
+    // occasionally index the LoadBalancer, which will already be present
+    // in the [State] of the [Update] message.
+    message TerraformerReplaceDns {
         // Loadbalancer ID to which the new [Dns] is going to created for.
-        string loadBalancerId = 1;
+        string handle = 1;
 
         // The new dns to replace the old within [LoadBalancerId].
         DNS dns = 2;
@@ -311,23 +324,49 @@ message UpdateV2 {
         // the new.
         optional string oldApiEndpoint = 3;
     }
+    message ReplacedDns {
+        string handle = 1;
+        optional string oldApiEndpoint = 2;
+    }
+
+    // DeleteLoadBalancer works with the [State] that is part of the [Update]
+    // message, thus no "message consuming" needs to happen.
+    message DeleteLoadBalancer { string handle = 1; }
+
+    // ApiEndpoint works with the [State] that is part of the [Update] message
+    // thus no "message consuming" needs to happen.
+    message ApiEndpoint {
+        ApiEndpointChangeStateV2 state = 1;
+        string currentEndpointId = 2;
+        string desiredEndpointId = 3;
+    }
+
+    // ApiPortOnCluster works with the [State] that is part of the [Update] message
+    // thus no "message consuming" needs to happen.
+    message ApiPortOnCluster { bool open = 1; }
+
 
     // State that gets continiously updated as the task gets processed.
     State state = 1;
 
-    // The initial new state that is to be build. This never gets
-    // updated as the task is processed and always has the intial
-    // state when first created. Once the initial state is build it
-    // is merged with [State], and any reconciliation should be done
-    // with that.
+    // Additional information while the [Update] message is passed through
+    // the build pipeline to give context what has been scheduled and what
+    // to process.
     oneof Delta {
         None none = 2;
-        AddLoadBalancer addLoadBalancer = 3;
-        DeleteLoadBalancer deleteLoadBalancer = 4;
-        ReconcileLoadBalancer reconcileLoadBalancer = 5;
-        ApiEndpoint apiEndpoint = 6;
-        ApiPortOnCluster clusterApiPort = 7;
-        ReplaceDns replaceDns = 8;
+
+        TerraformerAddLoadBalancer tfAddLoadBalancer = 3;
+        TerraformerReconcileLoadBalancer tfReconcileLoadBalancer = 4;
+        TerraformerReplaceDns tfReplaceDns = 5;
+
+        AddedLoadBalancer addedLoadBalancer = 6;
+        ReconciledLoadBalancer reconciledLoadBalancer = 7;
+        ReplacedDns replacedDns = 8;
+
+        DeleteLoadBalancer deleteLoadBalancer = 9;
+
+        ApiEndpoint apiEndpoint = 10;
+        ApiPortOnCluster clusterApiPort = 11;
     }
 }
 
