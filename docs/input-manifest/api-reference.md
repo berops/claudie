@@ -408,7 +408,7 @@ Collection of data used to define a Kubernetes cluster.
 
   Kubernetes version of the cluster.
 
-  Version should be defined in format `vX.Y`. In terms of supported versions of Kubernetes, Claudie follows `kubeone` releases and their supported versions. The current `kubeone` version used in Claudie is `1.10.0`. To see the list of supported versions, please refer to `kubeone` [documentation](https://docs.kubermatic.com/kubeone/v1.10/architecture/compatibility/supported-versions/).
+  Version should be defined in format `vX.Y`. In terms of supported versions of Kubernetes, Claudie follows `kubeone` releases and their supported versions. The current `kubeone` version used in Claudie is `1.12.0`. To see the list of supported versions, please refer to `kubeone` [documentation](https://docs.kubermatic.com/kubeone/v1.10/architecture/compatibility/supported-versions/).
 
 - `network`
 
