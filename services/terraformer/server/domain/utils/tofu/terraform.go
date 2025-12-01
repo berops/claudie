@@ -101,6 +101,7 @@ func (t *Terraform) Init() error {
 
 		retryCmd := comm.Cmd{
 			Command: "tofu init",
+			Env:     append(os.Environ(), "TF_PLUGIN_CACHE_DIR="+absCache),
 			Dir:     t.Directory,
 			Stdout:  cmd.Stdout,
 			Stderr:  cmd.Stderr,
