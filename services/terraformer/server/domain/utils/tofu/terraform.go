@@ -49,10 +49,8 @@ func (t *Terraform) ProvidersLock() error {
 		return fmt.Errorf("failed to resolve absolute cache dir: %w", err)
 	}
 
-	if _, err := os.Stat(absCache); os.IsNotExist(err) {
-		if err := fileutils.CreateDirectory(absCache); err != nil {
-			return fmt.Errorf("failed to create cache directory %s : %w", absCache, err)
-		}
+	if err := fileutils.CreateDirectory(absCache); err != nil {
+		return fmt.Errorf("failed to create cache directory %s: %w", absCache, err)
 	}
 
 	args := []string{
