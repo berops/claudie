@@ -70,4 +70,4 @@ images:
 - name: ghcr.io/berops/claudie/manager
   newTag: 98746ea-3721
 - name: ghcr.io/berops/claudie/terraformer
-  newTag: 98746ea-3721
+  newTag: 65f159b-3722
