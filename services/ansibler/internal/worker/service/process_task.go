@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/processlimit"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -31,11 +32,17 @@ type (
 	}
 
 	Tracker struct {
-		Result      *spec.TaskResult
+		// [Work.Task] worked on.
+		Task *spec.TaskV2
+
+		// Result of the [Work.Task] as it is processed by the pipeline.
+		Result *spec.TaskResult
+
+		// Diagnostics during the processing of the received [Work.Task]
 		Diagnostics *Diagnostics
 	}
 
-	Diagnostics []string
+	Diagnostics []error
 
 	// Utility types while processing the messages.
 	NodepoolsInfo struct {
@@ -49,8 +56,7 @@ type (
 	}
 )
 
-func (d *Diagnostics) Push(val string) { (*d) = append(*d, val) }
-func (d *Diagnostics) String() string  { return fmt.Sprint(*d) }
+func (d *Diagnostics) Push(err error) { (*d) = append(*d, err) }
 
 func ProcessTask(ctx context.Context, work Work) *spec.TaskResult {
 	logger, ok := loggerutils.Value(ctx)
@@ -83,12 +89,13 @@ passes:
 		case <-ctx.Done():
 			err := ctx.Err()
 			logger.Err(err).Msg("Stopped passing state through passes, context cancelled")
-			diags.Push(err.Error())
+			diags.Push(err)
 			break passes
 		default:
 		}
 
 		tracker := Tracker{
+			Task:        work.Task,
 			Result:      &result,
 			Diagnostics: &diags,
 		}
@@ -96,25 +103,21 @@ passes:
 
 		switch pass.Kind {
 		case spec.StageAnsibler_DETERMINE_API_ENDPOINT_CHANGE:
-			MoveApiEndpoint(logger, work.InputManifestName, processlimit, work.Task, tracker)
+			MoveApiEndpoint(logger, work.InputManifestName, processlimit, tracker)
 		case spec.StageAnsibler_INSTALL_NODE_REQUIREMENTS:
-			InstallNodeRequirements(logger, work.InputManifestName, processlimit, work.Task, tracker)
+			InstallNodeRequirements(logger, work.InputManifestName, processlimit, tracker)
 		case spec.StageAnsibler_INSTALL_VPN:
-			InstallVPN(logger, work.InputManifestName, processlimit, work.Task, tracker)
+			InstallVPN(logger, work.InputManifestName, processlimit, tracker)
 		case spec.StageAnsibler_RECONCILE_LOADBALANCERS:
-			ReconcileLoadBalancers(logger, work.InputManifestName, processlimit, work.Task, tracker)
+			ReconcileLoadBalancers(logger, work.InputManifestName, processlimit, tracker)
 		case spec.StageAnsibler_REMOVE_CLAUDIE_UTILITIES:
-			logger.Info().Msg("Removing Claudie utilities")
-			panic(tracker)
+			RemoveUtilities(logger, work.InputManifestName, processlimit, tracker)
 		case spec.StageAnsibler_UPDATE_API_ENDPOINT:
-			logger.Info().Msg("Updating API endpoint")
-			panic(tracker)
+			UpdateApiEndpoint(logger, work.InputManifestName, processlimit, tracker)
 		case spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES:
-			logger.Info().Msg("Updating Proxy Envs on cluster nodes")
-			panic(tracker)
-		case spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES_FOR_K8S:
-			logger.Info().Msg("Updating Proxy Envs on cluster nodes for kuberentes services")
-			panic(tracker)
+			UpdateProxyEnvs(logger, work.InputManifestName, processlimit, tracker)
+		case spec.StageAnsibler_COMMIT_PROXY_ENVS:
+			CommitProxyEnvs(logger, work.InputManifestName, processlimit, tracker)
 		default:
 			logger.Warn().Msg("Stage not recognized, skipping")
 			continue
@@ -148,4 +151,37 @@ passes:
 	}
 
 	return &result
+}
+
+// If the task is of [spec.Update_AddedLoadBalancer] or [spec.Update_ReconciledLoadBalancer]
+// instead of keeping all of the loadbalancers in lbs slices, only the loadbalancer for
+// which the reconciliation is called is kept in the lbs slice.
+func DefaultToSingleLoadBalancerIfPossible(task *spec.TaskV2, lbs []*spec.LBclusterV2) []*spec.LBclusterV2 {
+	if len(lbs) == 0 {
+		return lbs
+	}
+
+	u, ok := task.Do.(*spec.TaskV2_Update)
+	if !ok {
+		return lbs
+	}
+
+	switch delta := u.Update.Delta.(type) {
+	case *spec.UpdateV2_AddedLoadBalancer_:
+		if i := clusters.IndexLoadbalancerByIdV2(delta.AddedLoadBalancer.Handle, lbs); i >= 0 {
+			lb := lbs[i]
+			clear(lbs)
+			lbs = lbs[:0]
+			return append(lbs, lb)
+		}
+	case *spec.UpdateV2_ReconciledLoadBalancer_:
+		if i := clusters.IndexLoadbalancerByIdV2(delta.ReconciledLoadBalancer.Handle, lbs); i >= 0 {
+			lb := lbs[i]
+			clear(lbs)
+			lbs = lbs[:0]
+			return append(lbs, lb)
+		}
+	}
+
+	return lbs
 }

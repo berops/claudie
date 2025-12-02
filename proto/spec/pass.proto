@@ -36,7 +36,7 @@ message StageAnsibler {
         RECONCILE_LOADBALANCERS = 3;
         REMOVE_CLAUDIE_UTILITIES = 4;
         UPDATE_API_ENDPOINT = 5;
-        UPDATE_PROXY_ENVS_ON_NODES_FOR_K8S = 6;
+        COMMIT_PROXY_ENVS = 6;
         UPDATE_PROXY_ENVS_ON_NODES = 7;
     }
     message SubPass {

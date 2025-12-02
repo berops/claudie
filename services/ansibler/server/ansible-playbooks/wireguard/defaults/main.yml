@@ -1,5 +1,0 @@
----
-wg_conf_dir: "/etc/wireguard"
-wg_listen_port: 51820
-wg_interface_name: "wg0"
-mtu_size: 1380

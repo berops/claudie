@@ -29,16 +29,20 @@ type (
 	}
 
 	Tracker struct {
-		Result      *spec.TaskResult
+		// [Work.Task] worked on.
+		Task *spec.TaskV2
+
+		// Result of the [Work.Task] as it is processed by the pipeline.
+		Result *spec.TaskResult
+
+		// Diagnostics during the processing of the received [Work.Task]
 		Diagnostics *Diagnostics
 	}
 
-	Diagnostics []string
+	Diagnostics []error
 )
 
-// TODO: make this more ergonomic.
-func (d *Diagnostics) Push(val string) { (*d) = append(*d, val) }
-func (d *Diagnostics) String() string  { return fmt.Sprint(*d) }
+func (d *Diagnostics) Push(err error) { (*d) = append(*d, err) }
 
 func ProcessTask(ctx context.Context, stores Stores, work Work) *spec.TaskResult {
 	logger, ok := loggerutils.Value(ctx)
@@ -71,12 +75,13 @@ passes:
 		case <-ctx.Done():
 			err := ctx.Err()
 			logger.Err(err).Msg("Stopped passing state through passes, context cancelled")
-			diags.Push(err.Error())
+			diags.Push(err)
 			break passes
 		default:
 		}
 
 		tracker := Tracker{
+			Task:        work.Task,
 			Result:      &result,
 			Diagnostics: &diags,
 		}
@@ -85,16 +90,16 @@ passes:
 		switch pass.Kind {
 		case spec.StageTerraformer_BUILD_INFRASTRUCTURE:
 			logger.Info().Msg("Bulding infrastructure")
-			build(logger, work.InputManifestName, processlimit, work.Task, tracker)
+			build(logger, work.InputManifestName, processlimit, tracker)
 		case spec.StageTerraformer_UPDATE_INFRASTRUCTURE:
 			logger.Info().Msg("Updating infrastructure")
-			reconcileInfrastructure(logger, stores, work.InputManifestName, processlimit, work.Task, tracker)
+			reconcileInfrastructure(logger, stores, work.InputManifestName, processlimit, tracker)
 		case spec.StageTerraformer_DESTROY_INFRASTRUCTURE:
 			logger.Info().Msg("Destroying infrastructure")
-			destroy(logger, stores, work.InputManifestName, processlimit, work.Task, tracker)
+			destroy(logger, stores, work.InputManifestName, processlimit, tracker)
 		case spec.StageTerraformer_API_PORT_ON_KUBERNETES:
 			logger.Info().Msg("Reconciling Api Port on kuberentes cluster")
-			reconcileApiPort(logger, work.InputManifestName, processlimit, work.Task, tracker)
+			reconcileApiPort(logger, work.InputManifestName, processlimit, tracker)
 		default:
 			logger.Warn().Msg("Stage not recognized, skipping")
 			continue

@@ -106,6 +106,8 @@ func (te *TaskV2) ConsumeUpdateResult(result *TaskResult_Update) error {
 		case *UpdateV2_DeleteLoadBalancer_:
 			// nothing to consume.
 		case *UpdateV2_None_:
+		// nothing to consume.
+		case *UpdateV2_Proxy:
 			// nothing to consume.
 		case *UpdateV2_ReconciledLoadBalancer_:
 			// nothing to consume.

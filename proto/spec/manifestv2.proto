@@ -251,19 +251,46 @@ enum ApiEndpointChangeStateV2 {
 }
 
 
+message Proxy {
+    enum Op {
+        // None specifies that no change happened in the desired
+        // state of the Proxy settings compared to the current.
+        NONE = 0;
+
+        // Modified indicates some change happened, either add,
+        // delete, modified, replaced etc.
+        MODIFIED = 1;
+
+        // Off indicates that the Proxy envs should be turned off.
+        OFF = 2;
+    }
+
+    Op op = 1;
+
+    // Holds a proxy endpoint.
+    string httpProxyUrl = 2;
+
+    // Holds a list of IPs and hostnames that aren't routed through proxy.
+    string noProxyList = 3;
+}
+
+
 // Creates a new kubernetes cluster with the attached [LBcluster], if any.
 message CreateV2{
+    // Proxy settings while building the cluster.
+    Proxy proxy = 1;
+
     // The desired state of the kuberenetes cluster to create.
     //
     // This field is required to be present.
-    K8sclusterV2 k8s = 1;
+    K8sclusterV2 k8s = 2;
 
     // The desired state of the LoadBalancers attached to the
     // kubernetes cluster to create.
     //
     // This field is optional, if the kuberentes cluster does not have
     // any loadbalacners.
-    repeated LBclusterV2 loadBalancers = 2;
+    repeated LBclusterV2 loadBalancers = 3;
 }
 
 message UpdateV2 {
@@ -341,10 +368,22 @@ message UpdateV2 {
         string desiredEndpointId = 3;
     }
 
+    // K8sOnlyApiEndpoint works with the [State] that is part of the [Update]
+    // message, thus no "message consuming" needs to happen.
+    message K8sOnlyApiEndpoint {
+        string nodepool = 1;
+        string node = 2;
+    }
+
     // ApiPortOnCluster works with the [State] that is part of the [Update] message
     // thus no "message consuming" needs to happen.
     message ApiPortOnCluster { bool open = 1; }
 
+    // UpdateProxyEnvs works with the [State] that is part of the [Update]
+    // message, thus no "message consuming" needs to happen.
+    message UpdateProxyEnvs {
+        Proxy settings = 1;
+    }
 
     // State that gets continiously updated as the task gets processed.
     State state = 1;
@@ -367,6 +406,9 @@ message UpdateV2 {
 
         ApiEndpoint apiEndpoint = 10;
         ApiPortOnCluster clusterApiPort = 11;
+        K8sOnlyApiEndpoint k8sApiEndpoint = 12;
+
+        UpdateProxyEnvs proxy = 13;
     }
 }
 

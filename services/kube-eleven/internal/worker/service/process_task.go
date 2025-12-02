@@ -22,15 +22,20 @@ type (
 	}
 
 	Tracker struct {
-		Result      *spec.TaskResult
+		// [Work.Task] worked on.
+		Task *spec.TaskV2
+
+		// Result of the [Work.Task] as it is processed by the pipeline.
+		Result *spec.TaskResult
+
+		// Diagnostics during the processing of the received [Work.Task]
 		Diagnostics *Diagnostics
 	}
 
-	Diagnostics []string
+	Diagnostics []error
 )
 
-func (d *Diagnostics) Push(val string) { (*d) = append(*d, val) }
-func (d *Diagnostics) String() string  { return fmt.Sprint(*d) }
+func (d *Diagnostics) Push(err error) { (*d) = append(*d, err) }
 
 func ProcessTask(ctx context.Context, work Work) *spec.TaskResult {
 	logger, ok := loggerutils.Value(ctx)
@@ -63,12 +68,13 @@ passes:
 		case <-ctx.Done():
 			err := ctx.Err()
 			logger.Err(err).Msg("Stopped passing state through passes, context cancelled")
-			diags.Push(err.Error())
+			diags.Push(err)
 			break passes
 		default:
 		}
 
 		tracker := Tracker{
+			Task:        work.Task,
 			Result:      &result,
 			Diagnostics: &diags,
 		}
@@ -76,9 +82,9 @@ passes:
 
 		switch pass.Kind {
 		case spec.StageKubeEleven_DESTROY_CLUSTER:
-			Destroy(logger, work.InputManifestName, processlimit, work.Task, tracker)
+			Destroy(logger, work.InputManifestName, processlimit, tracker)
 		case spec.StageKubeEleven_RECONCILE_CLUSTER:
-			Reconcile(logger, work.InputManifestName, processlimit, work.Task, tracker)
+			Reconcile(logger, work.InputManifestName, processlimit, tracker)
 		default:
 			logger.Warn().Msg("Stage not recognized, skipping")
 			continue

@@ -122,14 +122,14 @@ func (StageTerraformer_SubPassKind) EnumDescriptor() ([]byte, []int) {
 type StageAnsibler_SubPassKind int32
 
 const (
-	StageAnsibler_INSTALL_NODE_REQUIREMENTS          StageAnsibler_SubPassKind = 0
-	StageAnsibler_INSTALL_VPN                        StageAnsibler_SubPassKind = 1
-	StageAnsibler_DETERMINE_API_ENDPOINT_CHANGE      StageAnsibler_SubPassKind = 2
-	StageAnsibler_RECONCILE_LOADBALANCERS            StageAnsibler_SubPassKind = 3
-	StageAnsibler_REMOVE_CLAUDIE_UTILITIES           StageAnsibler_SubPassKind = 4
-	StageAnsibler_UPDATE_API_ENDPOINT                StageAnsibler_SubPassKind = 5
-	StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES_FOR_K8S StageAnsibler_SubPassKind = 6
-	StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES         StageAnsibler_SubPassKind = 7
+	StageAnsibler_INSTALL_NODE_REQUIREMENTS     StageAnsibler_SubPassKind = 0
+	StageAnsibler_INSTALL_VPN                   StageAnsibler_SubPassKind = 1
+	StageAnsibler_DETERMINE_API_ENDPOINT_CHANGE StageAnsibler_SubPassKind = 2
+	StageAnsibler_RECONCILE_LOADBALANCERS       StageAnsibler_SubPassKind = 3
+	StageAnsibler_REMOVE_CLAUDIE_UTILITIES      StageAnsibler_SubPassKind = 4
+	StageAnsibler_UPDATE_API_ENDPOINT           StageAnsibler_SubPassKind = 5
+	StageAnsibler_COMMIT_PROXY_ENVS             StageAnsibler_SubPassKind = 6
+	StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES    StageAnsibler_SubPassKind = 7
 )
 
 // Enum value maps for StageAnsibler_SubPassKind.
@@ -141,18 +141,18 @@ var (
 		3: "RECONCILE_LOADBALANCERS",
 		4: "REMOVE_CLAUDIE_UTILITIES",
 		5: "UPDATE_API_ENDPOINT",
-		6: "UPDATE_PROXY_ENVS_ON_NODES_FOR_K8S",
+		6: "COMMIT_PROXY_ENVS",
 		7: "UPDATE_PROXY_ENVS_ON_NODES",
 	}
 	StageAnsibler_SubPassKind_value = map[string]int32{
-		"INSTALL_NODE_REQUIREMENTS":          0,
-		"INSTALL_VPN":                        1,
-		"DETERMINE_API_ENDPOINT_CHANGE":      2,
-		"RECONCILE_LOADBALANCERS":            3,
-		"REMOVE_CLAUDIE_UTILITIES":           4,
-		"UPDATE_API_ENDPOINT":                5,
-		"UPDATE_PROXY_ENVS_ON_NODES_FOR_K8S": 6,
-		"UPDATE_PROXY_ENVS_ON_NODES":         7,
+		"INSTALL_NODE_REQUIREMENTS":     0,
+		"INSTALL_VPN":                   1,
+		"DETERMINE_API_ENDPOINT_CHANGE": 2,
+		"RECONCILE_LOADBALANCERS":       3,
+		"REMOVE_CLAUDIE_UTILITIES":      4,
+		"UPDATE_API_ENDPOINT":           5,
+		"COMMIT_PROXY_ENVS":             6,
+		"UPDATE_PROXY_ENVS_ON_NODES":    7,
 	}
 )
 
@@ -874,21 +874,21 @@ const file_spec_pass_proto_rawDesc = "" +
 	"\x14BUILD_INFRASTRUCTURE\x10\x00\x12\x19\n" +
 	"\x15UPDATE_INFRASTRUCTURE\x10\x01\x12\x1a\n" +
 	"\x16DESTROY_INFRASTRUCTURE\x10\x02\x12\x1a\n" +
-	"\x16API_PORT_ON_KUBERNETES\x10\x03\"\xfd\x03\n" +
+	"\x16API_PORT_ON_KUBERNETES\x10\x03\"\xec\x03\n" +
 	"\rStageAnsibler\x128\n" +
 	"\vdescription\x18\x01 \x01(\v2\x16.spec.StageDescriptionR\vdescription\x129\n" +
 	"\tsubPasses\x18\x02 \x03(\v2\x1b.spec.StageAnsibler.SubPassR\tsubPasses\x1ax\n" +
 	"\aSubPass\x123\n" +
 	"\x04kind\x18\x01 \x01(\x0e2\x1f.spec.StageAnsibler.SubPassKindR\x04kind\x128\n" +
-	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"\xfc\x01\n" +
+	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"\xeb\x01\n" +
 	"\vSubPassKind\x12\x1d\n" +
 	"\x19INSTALL_NODE_REQUIREMENTS\x10\x00\x12\x0f\n" +
 	"\vINSTALL_VPN\x10\x01\x12!\n" +
 	"\x1dDETERMINE_API_ENDPOINT_CHANGE\x10\x02\x12\x1b\n" +
 	"\x17RECONCILE_LOADBALANCERS\x10\x03\x12\x1c\n" +
 	"\x18REMOVE_CLAUDIE_UTILITIES\x10\x04\x12\x17\n" +
-	"\x13UPDATE_API_ENDPOINT\x10\x05\x12&\n" +
-	"\"UPDATE_PROXY_ENVS_ON_NODES_FOR_K8S\x10\x06\x12\x1e\n" +
+	"\x13UPDATE_API_ENDPOINT\x10\x05\x12\x15\n" +
+	"\x11COMMIT_PROXY_ENVS\x10\x06\x12\x1e\n" +
 	"\x1aUPDATE_PROXY_ENVS_ON_NODES\x10\a\"\xbf\x02\n" +
 	"\x0fStageKubeEleven\x128\n" +
 	"\vdescription\x18\x01 \x01(\v2\x16.spec.StageDescriptionR\vdescription\x12;\n" +
