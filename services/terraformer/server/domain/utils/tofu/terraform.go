@@ -63,17 +63,8 @@ func (t *Terraform) ProvidersLock() error {
 	cmd := exec.Command("tofu", args...)
 	cmd.Dir = t.Directory
 
-	stderrBuf := &bytes.Buffer{}
-	cmd.Stderr = stderrBuf
-
 	if err := cmd.Run(); err != nil {
-		// In case that cache mirror does not contain the required providers
-		// continue and fetch them from opentofu registry.
-		if strings.Contains(stderrBuf.String(), "Could not retrieve providers for locking") {
-			log.Info().Msg("OpenTofu failed to fetch the requested providers from mirror. Proceed to get providers from opentofu registry.")
-		} else {
-			return fmt.Errorf("failed to execute cmd: %s: %s", cmd, stderrBuf.String())
-		}
+		return err
 	}
 	return nil
 }
@@ -91,7 +82,7 @@ func (t *Terraform) Init() error {
 
 	//nolint
 	cmd := exec.Command("tofu", "init")
-	cmd.Env = append(os.Environ(), "TF_PLUGIN_CACHE_DIR="+absCache)
+	os.Setenv("TF_PLUGIN_CACHE_DIR", absCache)
 	cmd.Dir = t.Directory
 	cmd.Stdout = t.Stdout
 	cmd.Stderr = t.Stderr
@@ -99,9 +90,9 @@ func (t *Terraform) Init() error {
 	if err := cmd.Run(); err != nil {
 		log.Warn().Msgf("Error encountered while executing %s from %s: %v", cmd, t.Directory, err)
 
+		os.Setenv("TF_PLUGIN_CACHE_DIR", absCache)
 		retryCmd := comm.Cmd{
 			Command: "tofu init",
-			Env:     append(os.Environ(), "TF_PLUGIN_CACHE_DIR="+absCache),
 			Dir:     t.Directory,
 			Stdout:  cmd.Stdout,
 			Stderr:  cmd.Stderr,

@@ -18,7 +18,6 @@ import (
 type Cmd struct {
 	Command        string
 	Options        []string
-	Env            []string
 	Dir            string
 	Stdout         io.Writer
 	Stderr         io.Writer
@@ -183,7 +182,6 @@ func (c *Cmd) buildCmd() (*exec.Cmd, context.CancelFunc) {
 		//nolint
 		cmd = exec.Command("bash", "-c", strings.Join(append([]string{c.Command}, c.Options...), " "))
 	}
-	cmd.Env = c.Env
 	cmd.Dir = c.Dir
 	cmd.Stdout = c.Stdout
 	cmd.Stderr = c.Stderr
