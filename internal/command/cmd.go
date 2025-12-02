@@ -186,7 +186,7 @@ func (c *Cmd) buildCmd() (*exec.Cmd, context.CancelFunc) {
 	cmd.Dir = c.Dir
 	cmd.Stdout = c.Stdout
 	cmd.Stderr = c.Stderr
-	cmd.Env = c.Env
+	cmd.Env = append(cmd.Environ(), c.Env...)
 	return cmd, cancelFun
 }
 

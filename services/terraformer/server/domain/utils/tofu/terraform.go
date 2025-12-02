@@ -94,7 +94,7 @@ func (t *Terraform) Init() error {
 			Dir:     t.Directory,
 			Stdout:  cmd.Stdout,
 			Stderr:  cmd.Stderr,
-			Env:     append(cmd.Environ(), fmt.Sprintf("TF_PLUGIN_CACHE_DIR=%s", absCache)),
+			Env:     []string{fmt.Sprintf("TF_PLUGIN_CACHE_DIR=%s", absCache)},
 		}
 
 		if err := retryCmd.RetryCommand(maxTfCommandRetryCount); err != nil {
