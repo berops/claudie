@@ -100,4 +100,6 @@ service AnsiblerService {
   rpc UpdateProxyEnvsK8sServices(UpdateProxyEnvsK8sServicesRequest) returns (UpdateProxyEnvsK8sServicesResponse);
   // Removes utilities installed by claudie via ansible playbooks.
   rpc RemoveClaudieUtilities(RemoveClaudieUtilitiesRequest) returns (RemoveClaudieUtilitiesResponse);
+  // InstallTeeOverride installs tee binary override on nodes.
+  rpc InstallTeeOverride(InstallRequest) returns (InstallResponse);
 }

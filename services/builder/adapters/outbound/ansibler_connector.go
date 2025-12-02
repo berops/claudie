@@ -111,6 +111,15 @@ func (a *AnsiblerConnector) RemoveClaudieUtilities(builderCtx *builder.Context, 
 	return err
 }
 
+// InstallTeeOverride installs node requirements on all nodes.
+func (a *AnsiblerConnector) InstallTeeOverride(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.InstallResponse, error) {
+	return ansibler.InstallTeeOverride(ansiblerGrpcClient,
+		&pb.InstallRequest{Desired: builderCtx.DesiredCluster,
+			DesiredLbs:  builderCtx.DesiredLoadbalancers,
+			ProjectName: builderCtx.ProjectName,
+		})
+}
+
 // Disconnect closes the underlying gRPC connection to ansibler microservice
 func (a *AnsiblerConnector) Disconnect() {
 	grpcutils.CloseClientConnection(a.Connection)
