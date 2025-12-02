@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -82,20 +81,20 @@ func (t *Terraform) Init() error {
 
 	//nolint
 	cmd := exec.Command("tofu", "init")
-	os.Setenv("TF_PLUGIN_CACHE_DIR", absCache)
 	cmd.Dir = t.Directory
 	cmd.Stdout = t.Stdout
 	cmd.Stderr = t.Stderr
+	cmd.Env = append(cmd.Environ(), fmt.Sprintf("TF_PLUGIN_CACHE_DIR=%s", absCache))
 
 	if err := cmd.Run(); err != nil {
 		log.Warn().Msgf("Error encountered while executing %s from %s: %v", cmd, t.Directory, err)
 
-		os.Setenv("TF_PLUGIN_CACHE_DIR", absCache)
 		retryCmd := comm.Cmd{
 			Command: "tofu init",
 			Dir:     t.Directory,
 			Stdout:  cmd.Stdout,
 			Stderr:  cmd.Stderr,
+			Env:     append(cmd.Environ(), fmt.Sprintf("TF_PLUGIN_CACHE_DIR=%s", absCache)),
 		}
 
 		if err := retryCmd.RetryCommand(maxTfCommandRetryCount); err != nil {

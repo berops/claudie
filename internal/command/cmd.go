@@ -18,6 +18,7 @@ import (
 type Cmd struct {
 	Command        string
 	Options        []string
+	Env            []string
 	Dir            string
 	Stdout         io.Writer
 	Stderr         io.Writer
@@ -185,6 +186,7 @@ func (c *Cmd) buildCmd() (*exec.Cmd, context.CancelFunc) {
 	cmd.Dir = c.Dir
 	cmd.Stdout = c.Stdout
 	cmd.Stderr = c.Stderr
+	cmd.Env = c.Env
 	return cmd, cancelFun
 }
 
