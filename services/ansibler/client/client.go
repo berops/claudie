@@ -74,3 +74,12 @@ func UpdateProxyEnvsOnNodes(c pb.AnsiblerServiceClient, req *pb.UpdateProxyEnvsO
 	}
 	return res, nil
 }
+
+// InstallTeeOverride injects the tee binary override on nodes
+func InstallTeeOverride(c pb.AnsiblerServiceClient, req *pb.InstallRequest) (*pb.InstallResponse, error) {
+	res, err := c.InstallTeeOverride(context.Background(), req)
+	if err != nil {
+		return res, fmt.Errorf("error while calling InstallTeeOverride on Ansibler: %w", err)
+	}
+	return res, nil
+}

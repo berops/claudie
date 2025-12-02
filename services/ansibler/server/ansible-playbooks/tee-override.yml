@@ -1,0 +1,41 @@
+- hosts: all
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Create a tee binary override 
+      copy:
+        dest: "/usr/local/bin/tee"
+        mode: "0755"
+        content: |
+          #!/bin/bash
+
+          # Function to check if any ancestor process is kubeone
+          is_kubeone_ancestor() {
+              local pid=$$
+              while [ "$pid" -ne 1 ]; do
+                  local p_name
+                  p_name=$(ps -o comm= -p "$pid" 2>/dev/null)
+                  if [ "$p_name" = "kubeone" ]; then
+                      return 0  # Found kubeone
+                  fi
+                  pid=$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')
+                  if [ -z "$pid" ]; then
+                      break
+                  fi
+              done
+              return 1  # kubeone not found
+          }
+
+
+          if is_kubeone_ancestor; then
+              # If first argument is config.toml and it exists, redirect to /dev/null
+              if [ "$1" = "config.toml" ] && [ -f "config.toml" ]; then
+                  /usr/bin/tee /dev/null "${@:2}"
+                  exit $?
+              fi
+          fi
+
+
+          # Otherwise, run normal tee
+          /usr/bin/tee "$@"
+          exit $?

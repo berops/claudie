@@ -15,6 +15,7 @@ type AnsiblerPort interface {
 	UpdateProxyEnvsK8SServices(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) error
 	UpdateProxyEnvsOnNodes(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) error
 	RemoveClaudieUtilities(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) error
+	InstallTeeOverride(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) (*pb.InstallResponse, error)
 
 	PerformHealthCheck() error
 	GetClient() pb.AnsiblerServiceClient
