@@ -1974,8 +1974,6 @@ kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> <
 ansibler-5c6c776b75-82c2q      1/1     Running     0               8m10s
 builder-59f9d44596-n2qzm       1/1     Running     0               8m10s
 manager-5d76c89b4d-tb6h4       1/1     Running     1 (6m37s ago)   8m10s
-create-table-job-jvs9n         0/1     Completed   1               8m10s
-dynamodb-68777f9787-8wjhs      1/1     Running     0               8m10s
 claudie-operator-5755b7bc69-5l84h      1/1     Running     0               8m10s
 kube-eleven-64468cd5bd-qp4d4   1/1     Running     0               8m10s
 kuber-698c4564c-dhsvg          1/1     Running     0               8m10s
@@ -2420,22 +2418,10 @@ kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="
 <td>MinIO hostname used for state files.</td>
 </tr>
 <tr>
-<td><code>DYNAMO_HOSTNAME</code></td>
-<td><code>dynamo</code></td>
-<td>string</td>
-<td>DynamoDB hostname used for lock files.</td>
-</tr>
-<tr>
-<td><code>DYNAMO_TABLE_NAME</code></td>
-<td><code>claudie</code></td>
-<td>string</td>
-<td>Table name for DynamoDB lock files.</td>
-</tr>
-<tr>
 <td><code>AWS_REGION</code></td>
 <td><code>local</code></td>
 <td>string</td>
-<td>Region for DynamoDB lock files.</td>
+<td>Region for MinIO.</td>
 </tr>
 <tr>
 <td><code>DATABASE_PORT</code></td>
@@ -2478,12 +2464,6 @@ kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="
 <td>9000</td>
 <td>int</td>
 <td>Port of the MinIO service.</td>
-</tr>
-<tr>
-<td><code>DYNAMO_PORT</code></td>
-<td>8000</td>
-<td>int</td>
-<td>Port of the DynamoDB service.</td>
 </tr>
 </tbody>
 </table>

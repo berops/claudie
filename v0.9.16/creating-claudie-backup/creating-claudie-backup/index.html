@@ -1773,8 +1773,7 @@ new cluster.</p>
 <p>Claudie stores its state in 3 different places. </p>
 <ul>
 <li>Input Manifests are stored in <b>Mongo</b>.</li>
-<li>Terraform state files are stored in <b>MinIO</b></li>
-<li>Locking Mechanism for the state files is implemented via <b>DynamoDB</b></li>
+<li>Terraform/OpenTofu state files are stored in <strong>MinIO</strong>. This same <strong>MinIO</strong> instance is utilized for the locking mechanism, leveraging <a href="https://opentofu.org/blog/opentofu-1-10-0/">S3 native state locking</a> in OpenTofu.</li>
 </ul>
 <p>These are the only services that will have a PVC attached to it, the other are stateless.</p>
 <h2 id="backing-up-claudie">Backing up Claudie<a class="headerlink" href="#backing-up-claudie" title="Permanent link">&para;</a></h2>
@@ -1858,8 +1857,6 @@ ansibler-6f4557cf74-b4dts<span class="w">           </span><span class="m">1</sp
 builder-5d68987c86-qdfd5<span class="w">            </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
 claudie-operator-6d9ddc7f8b-hv84c<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
 manager-5d75bfffc6-d9qfm<span class="w">            </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
-create-table-job-ghb9f<span class="w">              </span><span class="m">0</span>/1<span class="w">     </span>Completed<span class="w">   </span><span class="m">1</span><span class="w">             </span>18m
-dynamodb-6d65df988-c626j<span class="w">            </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
 kube-eleven-556cfdfd98-jq6hl<span class="w">        </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
 kuber-7f8cd4cd89-6ds2w<span class="w">              </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
 make-bucket-job-9mjft<span class="w">               </span><span class="m">0</span>/1<span class="w">     </span>Completed<span class="w">   </span><span class="m">0</span><span class="w">             </span>18m

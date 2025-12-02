@@ -1721,12 +1721,10 @@
 <p>In this section we'll describe how to further configure security hardening of the default
 deployment for claudie.</p>
 <h2 id="passwords">Passwords<a class="headerlink" href="#passwords" title="Permanent link">&para;</a></h2>
-<p>When deploying the default manifests claudie uses simple passwords for MongoDB, DynamoDB
-and MinIO.</p>
+<p>When deploying the default manifests claudie uses simple passwords for MongoDB and MinIO.</p>
 <p>You can find the passwords at these paths:</p>
 <div class="highlight"><pre><span></span><code>manifests/claudie/mongo/secrets
 manifests/claudie/minio/secrets
-manifests/claudie/dynamo/secrets
 </code></pre></div>
 <p>It is highly recommended that you change these passwords to more secure ones.</p>
 <h2 id="network-policies">Network Policies<a class="headerlink" href="#network-policies" title="Permanent link">&para;</a></h2>

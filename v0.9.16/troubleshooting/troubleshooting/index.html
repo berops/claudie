@@ -1877,8 +1877,6 @@
 ansibler-5c6c776b75-82c2q              1/1     Running     0               8m10s
 builder-59f9d44596-n2qzm               1/1     Running     0               8m10s
 manager-5d76c89b4d-tb6h4               1/1     Running     1 (6m37s ago)   8m10s
-create-table-job-jvs9n                 0/1     Completed   1               8m10s
-dynamodb-68777f9787-8wjhs              1/1     Running     0               8m10s
 claudie-operator-5755b7bc69-5l84h      1/1     Running     0               8m10s
 kube-eleven-64468cd5bd-qp4d4           1/1     Running     0               8m10s
 kuber-698c4564c-dhsvg                  1/1     Running     0               8m10s
@@ -1926,9 +1924,9 @@ terraformer-fd664b7ff-dd2h7            1/1     Running     0               8m9s
 </li>
 </ol>
 <h3 id="terraformer-service-not-starting">Terraformer service not starting<a class="headerlink" href="#terraformer-service-not-starting" title="Permanent link">&para;</a></h3>
-<p>Terraformer relies on MinIO and DynamoDB datastores to be configured via jobs <code>make-bucket-job</code> and <code>create-table-job</code> respectively. If these jobs fail to configure the datastores, or the datastores themselves fail to start, Terraformer will also fail to start.</p>
+<p>Terraformer relies on MinIO datastore to be configured via jobs <code>make-bucket-job</code>. If the job fails to configure the datastore, or the datastore itself fails to start, Terraformer will also fail to start.</p>
 <h3 id="datastore-initialization-jobs">Datastore initialization jobs<a class="headerlink" href="#datastore-initialization-jobs" title="Permanent link">&para;</a></h3>
-<p>The <code>create-table-job</code> is responsible for creating necessary tables in the DynamoDB datastore, while the <code>make-bucket-job</code> creates a bucket in the MinIO datastore. If these jobs encounter scheduling problems or experience slow autoscaling, they may fail to complete within the designated time frame. To handle this, we have set the <code>backoffLimit</code> of both jobs to fail after approximately 42 minutes. If you encounter any issues with these jobs or believe the <code>backoffLimit</code> should be adjusted, please <a href="https://github.com/berops/claudie/issues">create an issue</a>.</p>
+<p>The <code>make-bucket-job</code> creates a bucket in the MinIO datastore. If this job encounter scheduling problems or experience slow autoscaling, it may fail to complete within the designated time frame. To handle this, we have set the <code>backoffLimit</code> to fail after approximately 42 minutes. If you encounter any issues with this job or believe the <code>backoffLimit</code> should be adjusted, please <a href="https://github.com/berops/claudie/issues">create an issue</a>.</p>
 <h2 id="networking-issues">Networking issues<a class="headerlink" href="#networking-issues" title="Permanent link">&para;</a></h2>
 <h3 id="wireguard-mtu">Wireguard MTU<a class="headerlink" href="#wireguard-mtu" title="Permanent link">&para;</a></h3>
 <p>We use Wireguard for secure node-to-node connectivity. However, it requires setting the MTU value to match that of Wireguard. While the host system interface MTU value is adjusted accordingly, networking issues may arise for services hosted on Claudie managed Kubernetes clusters. For example, we observed that the GitHub actions runner docker container had to be configured with an MTU value of <code>1380</code> to avoid network errors during <code>docker build</code> process.</p>
