@@ -4,38 +4,24 @@
   tasks:
     - name: Create a tee binary override 
       copy:
+        # In order the script to work, the /usr/local/bin has to be before /usr/bin in PATH
         dest: "/usr/local/bin/tee"
         mode: "0755"
         content: |
           #!/bin/bash
 
-          # Function to check if any ancestor process is kubeone
-          is_kubeone_ancestor() {
-              local pid=$$
-              while [ "$pid" -ne 1 ]; do
-                  local p_name
-                  p_name=$(ps -o comm= -p "$pid" 2>/dev/null)
-                  if [ "$p_name" = "kubeone" ]; then
-                      return 0  # Found kubeone
+          # Loop over arguments to check if /etc/containerd/config.toml is being written
+          for arg in "$@"; do
+              if [[ "$arg" == "/etc/containerd/config.toml" ]]; then
+                  # If file exists and is non-empty, discard input
+                  if [[ -f "/etc/containerd/config.toml" ]] && [[ -s "/etc/containerd/config.toml" ]]; then
+                      while read -r line; do
+                          : # discard each line
+                      done
+                      exit 0
                   fi
-                  pid=$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')
-                  if [ -z "$pid" ]; then
-                      break
-                  fi
-              done
-              return 1  # kubeone not found
-          }
-
-
-          if is_kubeone_ancestor; then
-              # If first argument is config.toml and it exists, redirect to /dev/null
-              if [ "$1" = "config.toml" ] && [ -f "config.toml" ]; then
-                  /usr/bin/tee /dev/null "${@:2}"
-                  exit $?
               fi
-          fi
+          done
 
-
-          # Otherwise, run normal tee
-          /usr/bin/tee "$@"
-          exit $?
+          # Otherwise, pass through to the real tee
+          exec /usr/bin/tee "$@"
