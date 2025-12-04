@@ -53,7 +53,7 @@ type AnsiblerServiceClient interface {
 	// Removes utilities installed by claudie via ansible playbooks.
 	RemoveClaudieUtilities(ctx context.Context, in *RemoveClaudieUtilitiesRequest, opts ...grpc.CallOption) (*RemoveClaudieUtilitiesResponse, error)
 	// InstallTeeOverride installs tee binary override on nodes.
-	InstallTeeOverride(ctx context.Context, in *InstallRequest, opts ...grpc.CallOption) (*InstallResponse, error)
+	InstallTeeOverride(ctx context.Context, in *InstallTeeOverrideRequest, opts ...grpc.CallOption) (*InstallTeeOverrideResponse, error)
 }
 
 type ansiblerServiceClient struct {
@@ -136,8 +136,8 @@ func (c *ansiblerServiceClient) RemoveClaudieUtilities(ctx context.Context, in *
 	return out, nil
 }
 
-func (c *ansiblerServiceClient) InstallTeeOverride(ctx context.Context, in *InstallRequest, opts ...grpc.CallOption) (*InstallResponse, error) {
-	out := new(InstallResponse)
+func (c *ansiblerServiceClient) InstallTeeOverride(ctx context.Context, in *InstallTeeOverrideRequest, opts ...grpc.CallOption) (*InstallTeeOverrideResponse, error) {
+	out := new(InstallTeeOverrideResponse)
 	err := c.cc.Invoke(ctx, AnsiblerService_InstallTeeOverride_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -168,7 +168,7 @@ type AnsiblerServiceServer interface {
 	// Removes utilities installed by claudie via ansible playbooks.
 	RemoveClaudieUtilities(context.Context, *RemoveClaudieUtilitiesRequest) (*RemoveClaudieUtilitiesResponse, error)
 	// InstallTeeOverride installs tee binary override on nodes.
-	InstallTeeOverride(context.Context, *InstallRequest) (*InstallResponse, error)
+	InstallTeeOverride(context.Context, *InstallTeeOverrideRequest) (*InstallTeeOverrideResponse, error)
 	mustEmbedUnimplementedAnsiblerServiceServer()
 }
 
@@ -200,7 +200,7 @@ func (UnimplementedAnsiblerServiceServer) UpdateProxyEnvsK8SServices(context.Con
 func (UnimplementedAnsiblerServiceServer) RemoveClaudieUtilities(context.Context, *RemoveClaudieUtilitiesRequest) (*RemoveClaudieUtilitiesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveClaudieUtilities not implemented")
 }
-func (UnimplementedAnsiblerServiceServer) InstallTeeOverride(context.Context, *InstallRequest) (*InstallResponse, error) {
+func (UnimplementedAnsiblerServiceServer) InstallTeeOverride(context.Context, *InstallTeeOverrideRequest) (*InstallTeeOverrideResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method InstallTeeOverride not implemented")
 }
 func (UnimplementedAnsiblerServiceServer) mustEmbedUnimplementedAnsiblerServiceServer() {}
@@ -361,7 +361,7 @@ func _AnsiblerService_RemoveClaudieUtilities_Handler(srv interface{}, ctx contex
 }
 
 func _AnsiblerService_InstallTeeOverride_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(InstallRequest)
+	in := new(InstallTeeOverrideRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -373,7 +373,7 @@ func _AnsiblerService_InstallTeeOverride_Handler(srv interface{}, ctx context.Co
 		FullMethod: AnsiblerService_InstallTeeOverride_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AnsiblerServiceServer).InstallTeeOverride(ctx, req.(*InstallRequest))
+		return srv.(AnsiblerServiceServer).InstallTeeOverride(ctx, req.(*InstallTeeOverrideRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

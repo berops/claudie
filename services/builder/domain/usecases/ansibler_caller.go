@@ -142,11 +142,8 @@ func (u *Usecases) updateControlPlaneApiEndpoint(nodepool, node string) Task {
 }
 
 func (u *Usecases) installTeeOverride(_ context.Context, work *builder.Context, _ *zerolog.Logger) error {
-	installRes, err := u.Ansibler.InstallTeeOverride(work, u.Ansibler.GetClient())
-	if err != nil {
+	if err := u.Ansibler.InstallTeeOverride(work, u.Ansibler.GetClient()); err != nil {
 		return err
 	}
-	work.DesiredCluster = installRes.Desired
-	work.DesiredLoadbalancers = installRes.DesiredLbs
 	return nil
 }

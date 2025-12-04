@@ -45,6 +45,6 @@ func (a *AnsiblerGrpcService) DetermineApiEndpointChange(ctx context.Context, re
 	return a.usecases.DetermineApiEndpointChange(ctx, request)
 }
 
-func (a *AnsiblerGrpcService) InstallTeeOverride(_ context.Context, request *pb.InstallRequest) (*pb.InstallResponse, error) {
+func (a *AnsiblerGrpcService) InstallTeeOverride(_ context.Context, request *pb.InstallTeeOverrideRequest) (*pb.InstallTeeOverrideResponse, error) {
 	return a.usecases.InstallTeeOverride(request)
 }

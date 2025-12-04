@@ -18,7 +18,7 @@ import (
 const ansibleTeeOverridePlaybookFilePath = "../../ansible-playbooks/tee-override.yml"
 
 // InstallTeeOverride installs tee binary override on nodes
-func (u *Usecases) InstallTeeOverride(request *pb.InstallRequest) (*pb.InstallResponse, error) {
+func (u *Usecases) InstallTeeOverride(request *pb.InstallTeeOverrideRequest) (*pb.InstallTeeOverrideResponse, error) {
 	logger := log.With().Str("project", request.ProjectName).Str("cluster", request.Desired.ClusterInfo.Name).Logger()
 	logger.Info().Msgf("Installing tee binary override")
 
@@ -37,7 +37,7 @@ func (u *Usecases) InstallTeeOverride(request *pb.InstallRequest) (*pb.InstallRe
 	}
 
 	logger.Info().Msgf("Tee binary override was successfully installed")
-	return &pb.InstallResponse{Desired: request.Desired, DesiredLbs: request.DesiredLbs}, nil
+	return &pb.InstallTeeOverrideResponse{}, nil
 }
 
 // installTeeOverride injects the tee binary override on all the nodes
