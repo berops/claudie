@@ -19,7 +19,8 @@
         state: absent
         purge: yes
         autoremove: yes
-        update_cache: yes
+      async: 600
+      poll: 0
       ignore_errors: true
 
     - name: Remove NGINX configuration directory

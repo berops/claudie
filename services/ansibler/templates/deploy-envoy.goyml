@@ -1,6 +1,9 @@
 ---
 - hosts: {{ .LoadBalancer }}
-  gather_facts: yes
+  gather_facts: true
+  gather_subset: 
+    - distribution
+    - distribution_release
   become: yes
   vars:
     # for node-limits tasks
