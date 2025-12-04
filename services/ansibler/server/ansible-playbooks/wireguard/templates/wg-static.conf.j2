@@ -1,12 +1,12 @@
 [Interface]
 Address = {{ private_ip }}/24
-PrivateKey = {{ privatekey.stdout }}
+PrivateKey = {{ publickey.content | b64decode }}
 ListenPort = {{ wg_listen_port }}
 
 {% for host in groups['dynamic'] %}
-{% if publickey.stdout != hostvars[host].publickey.stdout %}
+{% if publickey.content | b64decode != hostvars[host].publickey.content | b64decode %}
 [Peer]
-PublicKey = {{ hostvars[host].publickey.stdout }}
+PublicKey = {{ hostvars[host].publickey.content | b64decode }}
 Endpoint = {{ hostvars[host].ansible_host }}:{{ wg_listen_port }}
 AllowedIps = {{ hostvars[host].private_ip }}/32
 PersistentKeepalive = 60
@@ -14,9 +14,9 @@ PersistentKeepalive = 60
 {% endfor %}
 
 {% for host in groups['static'] %}
-{% if publickey.stdout != hostvars[host].publickey.stdout %}
+{% if publickey.content | b64decode != hostvars[host].publickey.content | b64decode %}
 [Peer]
-PublicKey = {{ hostvars[host].publickey.stdout }}
+PublicKey = {{ hhostvars[host].publickey.content | b64decode}}
 Endpoint = {{ hostvars[host].ansible_host }}:{{ wg_listen_port }}
 AllowedIps = {{ hostvars[host].private_ip }}/32
 {% endif %}
