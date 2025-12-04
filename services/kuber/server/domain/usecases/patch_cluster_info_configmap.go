@@ -109,7 +109,7 @@ func (u *Usecases) PatchClusterInfoConfigMap(request *pb.PatchClusterInfoConfigM
 	if err != nil {
 		return nil, fmt.Errorf("failed to write contents to temporary file: %w", err)
 	}
-	if n != int64(len(b)) {
+	if n != int64(len(patchedConfigMap)) {
 		return nil, fmt.Errorf("failed to fully write contents to temporary file")
 	}
 
