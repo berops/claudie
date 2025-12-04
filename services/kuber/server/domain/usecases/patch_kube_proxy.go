@@ -1,18 +1,41 @@
 package usecases
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
 
+	"github.com/berops/claudie/internal/fileutils"
+	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/rs/zerolog/log"
+
 	"gopkg.in/yaml.v3"
 )
 
 func (u *Usecases) PatchKubeProxyConfigMap(ctx context.Context, request *pb.PatchKubeProxyConfigMapRequest) (*pb.PatchKubeProxyConfigMapResponse, error) {
-	logger := loggerutils.WithClusterName(request.DesiredCluster.ClusterInfo.Id())
+	var (
+		clusterID  = request.DesiredCluster.ClusterInfo.Id()
+		logger     = loggerutils.WithClusterName(clusterID)
+		clusterDir = filepath.Join(outputDir, fmt.Sprintf("%s-%s", clusterID, hash.Create(7)))
+	)
+
+	if err := fileutils.CreateDirectory(clusterDir); err != nil {
+		return nil, fmt.Errorf("error while creating temp directory: %w", err)
+	}
+
+	defer func() {
+		if err := os.RemoveAll(clusterDir); err != nil {
+			log.Err(err).Msgf("error while deleting temp directory: %s", clusterDir)
+		}
+	}()
+
 	logger.Info().Msgf("Patching kube-proxy ConfigMap")
 
 	k := kubectl.Kubectl{
@@ -53,7 +76,22 @@ func (u *Usecases) PatchKubeProxyConfigMap(ctx context.Context, request *pb.Patc
 		return nil, fmt.Errorf("failed to marshal patched config map : %w", err)
 	}
 
-	if err = k.KubectlApplyString(string(b), "-n kube-system"); err != nil {
+	file, err := os.CreateTemp(clusterDir, clusterID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temporary file: %w", err)
+	}
+	defer file.Close()
+
+	n, err := io.Copy(file, bytes.NewReader(b))
+	if err != nil {
+		return nil, fmt.Errorf("failed to write contents to temporary file: %w", err)
+	}
+	if n != int64(len(b)) {
+		return nil, fmt.Errorf("failed to fully write contents to temporary file")
+	}
+
+	k.Directory = clusterDir
+	if err := k.KubectlApply(filepath.Base(file.Name()), "-n kube-system"); err != nil {
 		return nil, fmt.Errorf("failed to patch config map: %w", err)
 	}
 

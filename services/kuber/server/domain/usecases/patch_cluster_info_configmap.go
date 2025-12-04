@@ -2,10 +2,17 @@ package usecases
 
 import (
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
 
+	"github.com/berops/claudie/internal/fileutils"
+	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/proto/pb"
+	"github.com/rs/zerolog/log"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 	"gopkg.in/yaml.v3"
@@ -19,7 +26,22 @@ import (
 // PatchClusterInfoConfigMap updates that kubeconfig so that it represents the already reached
 // desired state of the cluster.
 func (u *Usecases) PatchClusterInfoConfigMap(request *pb.PatchClusterInfoConfigMapRequest) (*pb.PatchClusterInfoConfigMapResponse, error) {
-	logger := loggerutils.WithClusterName(request.DesiredCluster.ClusterInfo.Id())
+	var (
+		clusterID  = request.DesiredCluster.ClusterInfo.Id()
+		logger     = loggerutils.WithClusterName(clusterID)
+		clusterDir = filepath.Join(outputDir, fmt.Sprintf("%s-%s", clusterID, hash.Create(7)))
+	)
+
+	if err := fileutils.CreateDirectory(clusterDir); err != nil {
+		return nil, fmt.Errorf("error while creating temp directory: %w", err)
+	}
+
+	defer func() {
+		if err := os.RemoveAll(clusterDir); err != nil {
+			log.Err(err).Msgf("error while deleting temp directory: %s", clusterDir)
+		}
+	}()
+
 	logger.Info().Msgf("Patching cluster info ConfigMap")
 
 	k := kubectl.Kubectl{
@@ -77,7 +99,22 @@ func (u *Usecases) PatchClusterInfoConfigMap(request *pb.PatchClusterInfoConfigM
 		return nil, fmt.Errorf("failed to update config map with new kubeconfig : %w", err)
 	}
 
-	if err = k.KubectlApplyString(patchedConfigMap, "-n kube-public"); err != nil {
+	file, err := os.CreateTemp(clusterDir, clusterID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temporary file: %w", err)
+	}
+	defer file.Close()
+
+	n, err := io.Copy(file, strings.NewReader(patchedConfigMap))
+	if err != nil {
+		return nil, fmt.Errorf("failed to write contents to temporary file: %w", err)
+	}
+	if n != int64(len(b)) {
+		return nil, fmt.Errorf("failed to fully write contents to temporary file")
+	}
+
+	k.Directory = clusterDir
+	if err := k.KubectlApply(filepath.Base(file.Name()), "-n kube-public"); err != nil {
 		return nil, fmt.Errorf("failed to patch config map: %w", err)
 	}
 
