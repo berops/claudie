@@ -1,6 +1,6 @@
 ---
 - hosts: all
-  gather_facts: no
+  gather_facts: false
   become: yes
   vars:
     # for node-limits tasks
@@ -12,33 +12,18 @@
     max_queued_events: 65535
   # Install longhorn  dependencies
   tasks:
-    - name: install open-iscsi
+    - name: install open-iscsi and nfs-common
       ansible.builtin.apt:
-        name: open-iscsi
+        name: 
+          - open-iscsi
+          - nfs-common
         state: present
         update_cache: true
       retries: 2
       delay: 10
-      register: res
-      until: res is not failed
-      # open-iscsi packages are few hundred Kibs in size
-      # having a timeout of 8 mins with 2 retries is generous.
+      register: async_job
       async: 480
-      poll: 5
-
-    - name: install nfs-common
-      ansible.builtin.apt:
-        name: nfs-common
-        state: present
-        update_cache: true
-      retries: 2
-      delay: 10
-      register: res
-      until: res is not failed
-      # nfs-common packages are few hundred Kibs in size
-      # having a timeout of 8 mins with 2 retries generous.
-      async: 480
-      poll: 5
+      poll: 0
 
     - name: Update /etc/multipath.conf with blacklist configuration
       blockinfile:
@@ -61,3 +46,11 @@
 
     - name: update node limits
       include_tasks: ./node-limits.yml
+
+    - name: Check async task result
+      async_status:
+        jid: "{{ async_job.ansible_job_id }}"
+      register: result
+      until: result.finished
+      retries: 10
+      delay: 5
