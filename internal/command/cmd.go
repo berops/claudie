@@ -66,7 +66,9 @@ func (c *Cmd) RetryCommand(numOfRetries int) error {
 		log.Warn().Msgf("Error encountered while executing %s : %v", printSafeCmd, err)
 	}
 
-	log.Error().Msgf("Command %s was not successful after %d retries", printSafeCmd, numOfRetries)
+	if numOfRetries >= 0 {
+		log.Error().Msgf("Command %s was not successful after %d retries", printSafeCmd, numOfRetries)
+	}
 
 	return err
 }

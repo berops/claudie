@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"io"
 	"math/rand/v2"
+	"net"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/berops/claudie/internal/api/manifest"
 	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/kubectl"
@@ -23,7 +25,7 @@ import (
 
 // Number of retries to perform to try to unmarshal the kubeadm config map
 // before giving up.
-const ReadKubeadmConfigRetries = 3
+const PatchKubeadmConfigRetries = 3
 
 func (u *Usecases) PatchKubeadmConfigMap(ctx context.Context, request *pb.PatchKubeadmConfigMapRequest) (*pb.PatchKubeadmConfigMapResponse, error) {
 	var (
@@ -44,6 +46,9 @@ func (u *Usecases) PatchKubeadmConfigMap(ctx context.Context, request *pb.PatchK
 
 	logger.Info().Msgf("Patching kubeadm ConfigMap")
 
+	// Kubeadm uses this config map when joining new nodes, we need to update it with correct certSANs
+	// after api endpoint change.
+	// https://github.com/berops/claudie/issues/1597
 	certSANs := []string{request.LbEndpoint}
 	if request.LbEndpoint == "" {
 		certSANs = certSANs[:len(certSANs)-1]
@@ -54,59 +59,95 @@ func (u *Usecases) PatchKubeadmConfigMap(ctx context.Context, request *pb.PatchK
 		}
 	}
 
-	// Kubeadm uses this config map when joining new nodes, we need to update it with correct certSANs
-	// after api endpoint change.
-	// https://github.com/berops/claudie/issues/1597
-
-	k := kubectl.Kubectl{
-		Kubeconfig:        request.DesiredCluster.Kubeconfig,
-		MaxKubectlRetries: 3,
-	}
-
 	var err error
-	var configMap []byte
-	var rawKubeadmConfigMap map[string]any
-
-	for i := range ReadKubeadmConfigRetries {
+	for i := range PatchKubeadmConfigRetries {
 		if i > 0 {
 			wait := time.Duration(150+rand.IntN(300)) * time.Millisecond
 			logger.Warn().Msgf("reading kubeadm-config failed err: %v, retrying again in %s ms [%v/%v]",
 				err,
 				wait,
 				i+1,
-				ReadKubeadmConfigRetries,
+				PatchKubeadmConfigRetries,
 			)
 			time.Sleep(wait)
 		}
 
-		configMap, err = k.KubectlGet("cm kubeadm-config", "-oyaml", "-n kube-system")
-		if err != nil || len(configMap) == 0 {
+		var (
+			patched []byte
+			file    *os.File
+			n       int64
+		)
+
+		if patched, err = patchKubeadmConfigMap(request.DesiredCluster.Kubeconfig, certSANs); err != nil {
+			logger.Warn().Msgf("failed to patch kubeadm-config config map: %v", err)
 			continue
 		}
-		if err = yaml.Unmarshal(configMap, &rawKubeadmConfigMap); err != nil {
+
+		if file, err = os.CreateTemp(clusterDir, clusterID); err != nil {
+			logger.Warn().Msgf("failed to create temporary file: %v", err)
 			continue
 		}
+		defer file.Close()
+
+		n, err = io.Copy(file, bytes.NewReader(patched))
+		if err != nil {
+			logger.Warn().Msgf("failed to write contents to temporary file: %v", err)
+			continue
+		}
+		if n != int64(len(patched)) {
+			logger.Warn().Msg("failed to fully write contents to temporary file")
+			continue
+		}
+
+		k := kubectl.Kubectl{
+			Directory:         clusterDir,
+			Kubeconfig:        request.DesiredCluster.Kubeconfig,
+			MaxKubectlRetries: -1,
+		}
+
+		if err = k.KubectlApply(filepath.Base(file.Name()), "-n kube-system"); err != nil {
+			logger.Warn().Msgf("failed to patch kubeadm-config config map: %v", err)
+			continue
+		}
+
 		break
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve kubeadm-config map after %v retries: %w", ReadKubeadmConfigRetries, err)
+		return nil, fmt.Errorf("failed to retrieve kubeadm-config map after %v retries: %w", PatchKubeadmConfigRetries, err)
+	}
+
+	logger.Info().Msgf("Kubeadm-config Config Map patched successfully")
+	return &pb.PatchKubeadmConfigMapResponse{}, nil
+}
+
+func patchKubeadmConfigMap(kubeconfig string, certSANs []string) ([]byte, error) {
+	k := kubectl.Kubectl{
+		Kubeconfig:        kubeconfig,
+		MaxKubectlRetries: 1,
+	}
+
+	configMap, err := k.KubectlGet("cm kubeadm-config", "-oyaml", "-n kube-system")
+	if err != nil {
+		return nil, err
 	}
 
 	if len(configMap) == 0 {
-		logger.Warn().Msgf("kubeadm-config config map was not found, skip patching kubeadm-config map")
-		return &pb.PatchKubeadmConfigMapResponse{}, nil
+		return nil, fmt.Errorf("received empty kubeadm config map")
+	}
+
+	var rawKubeadmConfigMap map[string]any
+	if err := yaml.Unmarshal(configMap, &rawKubeadmConfigMap); err != nil {
+		return nil, err
 	}
 
 	data, ok := rawKubeadmConfigMap["data"].(map[string]any)
 	if !ok {
-		logger.Warn().Msgf("Expected 'data' field to be present in the kubeadm config map but was not")
 		return nil, fmt.Errorf("expected 'data' field to present, but was missing inside the kubeadm config map")
 	}
 
 	config, ok := data["ClusterConfiguration"].(string)
 	if !ok {
-		logger.Warn().Msgf("Expected 'ClusterConfiguration' field to be present in the kubeadm config map but was not")
 		return nil, fmt.Errorf("expected 'ClusterConfiguration' field to present, but was missing inside the kubeadm config map")
 	}
 
@@ -117,11 +158,13 @@ func (u *Usecases) PatchKubeadmConfigMap(ctx context.Context, request *pb.PatchK
 
 	apiServer, ok := rawKubeadmConfig["apiServer"].(map[string]any)
 	if !ok {
-		logger.Warn().Msgf("Expected 'apiServer' field to be present in the 'ClusterConfiguration' for kubeadm, but was not")
 		return nil, fmt.Errorf("expected 'apiServer' field to present in the 'ClusterConfiguration' for kubeadm, but was missing: %w", err)
 	}
 
 	apiServer["certSANs"] = certSANs
+	if _, ok := rawKubeadmConfig["controlPlaneEndpoint"]; ok {
+		rawKubeadmConfig["controlPlaneEndpoint"] = net.JoinHostPort(certSANs[0], fmt.Sprint(manifest.APIServerPort))
+	}
 
 	b, err := yaml.Marshal(rawKubeadmConfig)
 	if err != nil {
@@ -130,30 +173,5 @@ func (u *Usecases) PatchKubeadmConfigMap(ctx context.Context, request *pb.PatchK
 
 	data["ClusterConfiguration"] = string(b)
 
-	b, err = yaml.Marshal(rawKubeadmConfigMap)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal updated kubeadm-config config map: %w", err)
-	}
-
-	file, err := os.CreateTemp(clusterDir, clusterID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create temporary file: %w", err)
-	}
-	defer file.Close()
-
-	n, err := io.Copy(file, bytes.NewReader(b))
-	if err != nil {
-		return nil, fmt.Errorf("failed to write contents to temporary file: %w", err)
-	}
-	if n != int64(len(b)) {
-		return nil, fmt.Errorf("failed to fully write contents to temporary file")
-	}
-
-	k.Directory = clusterDir
-	if err := k.KubectlApply(filepath.Base(file.Name()), "-n kube-system"); err != nil {
-		return nil, fmt.Errorf("failed to patch kubeadm-config config map: %w", err)
-	}
-
-	logger.Info().Msgf("Kubeadm-config Config Map patched successfully")
-	return &pb.PatchKubeadmConfigMapResponse{}, nil
+	return yaml.Marshal(rawKubeadmConfigMap)
 }
