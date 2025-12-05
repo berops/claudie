@@ -29,6 +29,8 @@ spec:
           emptyDir: {}
         - name: templates
           emptyDir: {}
+        - name: cache
+          emptyDir: {}
       containers:
         - name: terraformer
           imagePullPolicy: Always
@@ -38,6 +40,8 @@ spec:
               name: templates
             - mountPath: /bin/services/terraformer/server/clusters
               name: data
+            - mountPath: /bin/services/terraformer/server/cache
+              name: cache
             - mountPath: /tmp
               name: temp
           securityContext:
