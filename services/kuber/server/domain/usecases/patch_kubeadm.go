@@ -87,14 +87,15 @@ func (u *Usecases) PatchKubeadmConfigMap(ctx context.Context, request *pb.PatchK
 			logger.Warn().Msgf("failed to create temporary file: %v", err)
 			continue
 		}
-		defer file.Close()
 
 		n, err = io.Copy(file, bytes.NewReader(patched))
 		if err != nil {
+			file.Close()
 			logger.Warn().Msgf("failed to write contents to temporary file: %v", err)
 			continue
 		}
 		if n != int64(len(patched)) {
+			file.Close()
 			logger.Warn().Msg("failed to fully write contents to temporary file")
 			continue
 		}
@@ -102,14 +103,16 @@ func (u *Usecases) PatchKubeadmConfigMap(ctx context.Context, request *pb.PatchK
 		k := kubectl.Kubectl{
 			Directory:         clusterDir,
 			Kubeconfig:        request.DesiredCluster.Kubeconfig,
-			MaxKubectlRetries: -1,
+			MaxKubectlRetries: -1, // No retries.
 		}
 
 		if err = k.KubectlApply(filepath.Base(file.Name()), "-n kube-system"); err != nil {
+			file.Close()
 			logger.Warn().Msgf("failed to patch kubeadm-config config map: %v", err)
 			continue
 		}
 
+		file.Close()
 		break
 	}
 
