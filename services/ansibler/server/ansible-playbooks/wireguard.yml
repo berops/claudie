@@ -8,10 +8,6 @@
       wait_for_connection:
         timeout: 100
 
-    # Gather facts manually after we made sure, VMs are accessible
-    - name: Gather facts from nodes
-      ansible.builtin.setup:
-
   # abort playbook on any fatal error, the golang code will trigger a retry
   any_errors_fatal: true
   roles:
