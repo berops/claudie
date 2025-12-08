@@ -114,9 +114,9 @@ func (a *AnsiblerConnector) RemoveClaudieUtilities(builderCtx *builder.Context, 
 // InstallTeeOverride installs node requirements on all nodes.
 func (a *AnsiblerConnector) InstallTeeOverride(builderCtx *builder.Context, ansiblerGrpcClient pb.AnsiblerServiceClient) error {
 	_, err := ansibler.InstallTeeOverride(ansiblerGrpcClient, &pb.InstallTeeOverrideRequest{
-			Current:     builderCtx.CurrentCluster,
-			Desired:     builderCtx.DesiredCluster,
-			ProjectName: builderCtx.ProjectName,
+		Current:     builderCtx.CurrentCluster,
+		Desired:     builderCtx.DesiredCluster,
+		ProjectName: builderCtx.ProjectName,
 	})
 	return err
 }
