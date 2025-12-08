@@ -239,7 +239,19 @@ func getEtcdPodNames(kc kubectl.Kubectl, masterNodeName string) ([]string, error
 	if err != nil {
 		return nil, fmt.Errorf("cannot find etcd pods in cluster with master node %s : %w", masterNodeName, err)
 	}
-	return strings.Split(string(etcdPodsBytes), "\n"), nil
+
+	var lines []string
+	for line := range strings.SplitSeq(string(etcdPodsBytes), "\n") {
+		if line := strings.TrimSpace(line); line != "" {
+			lines = append(lines, line)
+		}
+	}
+
+	if len(lines) == 0 {
+		return nil, errors.New("no etcd pods found in cluster")
+	}
+
+	return lines, nil
 }
 
 // getEtcdMembers returns [etcdMemberList], each element containing etcd member info from "etcdctl member list"
