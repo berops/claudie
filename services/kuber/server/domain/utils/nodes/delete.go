@@ -1,6 +1,7 @@
 package nodes
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
@@ -19,9 +20,17 @@ const (
 	longhornNamespace = "longhorn-system"
 )
 
-type etcdPodInfo struct {
-	nodeName   string
-	memberHash string
+// etcdMemberList wraps parsed structures that are
+// needed from the output of the `etcdctl member list`
+// command, ignoring others.
+type etcdMemberList struct {
+	Members []struct {
+		// Hex encoded id of the member within etcd.
+		Id string
+
+		// Name of the node within the cluster.
+		Name string
+	}
 }
 
 type nodeInfo struct {
@@ -174,21 +183,19 @@ func (d *Deleter) deleteFromEtcd(kc kubectl.Kubectl, etcdEpNode *spec.Node) erro
 	if err != nil {
 		return fmt.Errorf("cannot find etcd pods in cluster %s  : %w", d.clusterPrefix, err)
 	}
-	etcdMembers, err := getEtcdMembers(kc, etcdPods[0])
+	etcd, err := getEtcdMembers(kc, etcdPods[0])
 	if err != nil {
 		return fmt.Errorf("cannot find etcd members in cluster %s : %w", d.clusterPrefix, err)
 	}
-	//get pod info, like name of a node where pod is deployed and etcd member hash
-	etcdPodInfos := getEtcdPodInfo(etcdMembers)
+
 	// Remove etcd members that are in mastersToDelete, you need to know an etcd node hash to be able to remove a member
 	for _, node := range d.masterNodes {
-		for _, etcdPodInfo := range etcdPodInfos {
-			if node.k8sName == etcdPodInfo.nodeName {
-				d.logger.Debug().Msgf("Deleting etcd member %s, with hash %s", etcdPodInfo.nodeName, etcdPodInfo.memberHash)
-				etcdctlCmd := fmt.Sprintf("etcdctl member remove %s", etcdPodInfo.memberHash)
-				_, err := kc.KubectlExecEtcd(etcdPods[0], etcdctlCmd)
-				if err != nil {
-					return fmt.Errorf("error while executing \"etcdctl member remove\" on node %s, cluster %s: %w", etcdPodInfo.nodeName, d.clusterPrefix, err)
+		for _, member := range etcd.Members {
+			if node.k8sName == member.Name {
+				d.logger.Debug().Msgf("Deleting etcd member %s, with hash %s", member.Name, member.Id)
+				etcdctlCmd := fmt.Sprintf("etcdctl member remove %s", member.Id)
+				if _, err := kc.KubectlExecEtcd(etcdPods[0], etcdctlCmd); err != nil {
+					return fmt.Errorf("error while executing \"etcdctl member remove\" on node %s, cluster %s: %w", member.Name, d.clusterPrefix, err)
 				}
 			}
 		}
@@ -235,38 +242,20 @@ func getEtcdPodNames(kc kubectl.Kubectl, masterNodeName string) ([]string, error
 	return strings.Split(string(etcdPodsBytes), "\n"), nil
 }
 
-// getEtcdMembers will return slice of strings, each element containing etcd member info from "etcdctl member list"
-//
-// Example output:
-// [
-// "3ea84f69be8336f3, started, test2-cluster-name1-hetzner-control-2, https://192.168.2.2:2380, https://192.168.2.2:2379, false",
-// "56c921bc723229ec, started, test2-cluster-name1-hetzner-control-1, https://192.168.2.1:2380, https://192.168.2.1:2379, false"
-// ]
-func getEtcdMembers(kc kubectl.Kubectl, etcdPod string) ([]string, error) {
-	//get etcd members
-	etcdMembersBytes, err := kc.KubectlExecEtcd(etcdPod, "etcdctl member list")
-	if err != nil {
-		return nil, fmt.Errorf("cannot find etcd members in cluster with etcd pod %s : %w", etcdPod, err)
-	}
-	// Convert output into []string, each line of output is a separate string
-	etcdMembersStrings := strings.Split(string(etcdMembersBytes), "\n")
-	//delete last entry - empty \n
-	if len(etcdMembersStrings) > 0 {
-		etcdMembersStrings = etcdMembersStrings[:len(etcdMembersStrings)-1]
-	}
-	return etcdMembersStrings, nil
-}
+// getEtcdMembers returns [etcdMemberList], each element containing etcd member info from "etcdctl member list"
+func getEtcdMembers(kc kubectl.Kubectl, etcdPod string) (etcdMemberList, error) {
+	var out etcdMemberList
 
-// getEtcdPodInfo tokenizes an etcdMemberInfo and data containing node name and etcd member hash for all etcd members
-// return slice of etcdPodInfo containing node name and etcd member hash for all etcd members
-func getEtcdPodInfo(etcdMembersString []string) []etcdPodInfo {
-	var etcdPodInfos []etcdPodInfo
-	for _, etcdString := range etcdMembersString {
-		etcdStringTokenized := strings.Split(etcdString, ", ")
-		if len(etcdStringTokenized) > 0 {
-			temp := etcdPodInfo{etcdStringTokenized[2] /*name*/, etcdStringTokenized[0] /*hash*/}
-			etcdPodInfos = append(etcdPodInfos, temp)
-		}
+	// List all members known by etcd, printed as a json with Hexified strings.
+	cmd := "etcdctl member list -w json --hex=true"
+	b, err := kc.KubectlExecEtcd(etcdPod, cmd)
+	if err != nil {
+		return out, fmt.Errorf("cannot find etcd members in cluster with etcd pod %s : %w", etcdPod, err)
 	}
-	return etcdPodInfos
+
+	if err := json.Unmarshal(b, &out); err != nil {
+		return out, fmt.Errorf("failed to unmarshal etcd member list output: %w", err)
+	}
+
+	return out, nil
 }
