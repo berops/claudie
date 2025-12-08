@@ -46,7 +46,7 @@ spec:
   kubernetes:
     clusters:
       - name: proxy-with-hetzner
-        version: "1.30.0"
+        version: "1.34.0"
         network: 192.168.2.0/24
         installationProxy:
           mode: "on"

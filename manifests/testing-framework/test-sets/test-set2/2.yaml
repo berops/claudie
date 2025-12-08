@@ -166,7 +166,7 @@ spec:
   kubernetes:
     clusters:
       - name: ts2-htz-cluster-test-set-no2
-        version: 1.30.0
+        version: "1.34.0"
         network: 192.168.2.0/24
         pools:
           control:
@@ -174,7 +174,7 @@ spec:
           compute:
             - htz-kube-nodes
       - name: ts2-oci-cluster-test-set-no2
-        version: 1.30.0
+        version: "1.34.0"
         network: 192.168.2.0/24
         installationProxy:
           mode: "on"

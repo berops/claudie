@@ -96,7 +96,7 @@ spec:
   kubernetes:
     clusters:
       - name: ts-rolling-update-nodepools1
-        version: 1.30.0
+        version: "1.34.0"
         network: 192.168.2.0/24
         pools:
           control:

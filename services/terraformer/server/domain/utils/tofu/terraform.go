@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/envs"
+	"github.com/berops/claudie/internal/fileutils"
 	"github.com/rs/zerolog/log"
 
 	"golang.org/x/sync/semaphore"
@@ -26,6 +28,9 @@ var parallelism = envs.GetOrDefaultInt("TERRAFORMER_TOFU_PARALLELISM", 40)
 type Terraform struct {
 	// Directory represents the directory of .tf files
 	Directory string
+	// CacheDir represents the directory for caching terraform plugins
+	// It will be defined via env TF_PLUGIN_CACHE_DIR
+	CacheDir string
 
 	Stdout io.Writer
 	Stderr io.Writer
@@ -37,17 +42,49 @@ type Terraform struct {
 	SpawnProcessLimit *semaphore.Weighted
 }
 
+func (t *Terraform) ProvidersLock() error {
+	absCache, err := filepath.Abs(t.CacheDir)
+	if err != nil {
+		return fmt.Errorf("failed to resolve absolute cache dir: %w", err)
+	}
+
+	if err := fileutils.CreateDirectory(absCache); err != nil {
+		return fmt.Errorf("failed to create cache directory %s: %w", absCache, err)
+	}
+
+	args := []string{
+		"providers",
+		"lock",
+		fmt.Sprintf("-fs-mirror=%v", absCache),
+	}
+
+	//nolint
+	cmd := exec.Command("tofu", args...)
+	cmd.Dir = t.Directory
+
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (t *Terraform) Init() error {
 	if err := t.SpawnProcessLimit.Acquire(context.Background(), 1); err != nil {
 		return fmt.Errorf("failed to prepare tofu init process: %w", err)
 	}
 	defer t.SpawnProcessLimit.Release(1)
 
+	absCache, err := filepath.Abs(t.CacheDir)
+	if err != nil {
+		return fmt.Errorf("failed to resolve absolute cache dir: %w", err)
+	}
+
 	//nolint
 	cmd := exec.Command("tofu", "init")
 	cmd.Dir = t.Directory
 	cmd.Stdout = t.Stdout
 	cmd.Stderr = t.Stderr
+	cmd.Env = append(cmd.Environ(), fmt.Sprintf("TF_PLUGIN_CACHE_DIR=%s", absCache))
 
 	if err := cmd.Run(); err != nil {
 		log.Warn().Msgf("Error encountered while executing %s from %s: %v", cmd, t.Directory, err)
@@ -57,6 +94,7 @@ func (t *Terraform) Init() error {
 			Dir:     t.Directory,
 			Stdout:  cmd.Stdout,
 			Stderr:  cmd.Stderr,
+			Env:     []string{fmt.Sprintf("TF_PLUGIN_CACHE_DIR=%s", absCache)},
 		}
 
 		if err := retryCmd.RetryCommand(maxTfCommandRetryCount); err != nil {
