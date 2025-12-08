@@ -178,28 +178,38 @@ func (d *Deleter) deleteNodesByName(kc kubectl.Kubectl, node nodeInfo, realNodeN
 // deleteFromEtcd function deletes members of the etcd cluster. This needs to be done in order to prevent any data corruption in etcd
 // return nil if successful, error otherwise
 func (d *Deleter) deleteFromEtcd(kc kubectl.Kubectl, etcdEpNode *spec.Node) error {
-	//get etcd pods
 	etcdPods, err := getEtcdPodNames(kc, strings.TrimPrefix(etcdEpNode.Name, fmt.Sprintf("%s-", d.clusterPrefix)))
 	if err != nil {
 		return fmt.Errorf("cannot find etcd pods in cluster %s  : %w", d.clusterPrefix, err)
 	}
+
 	etcd, err := getEtcdMembers(kc, etcdPods[0])
 	if err != nil {
 		return fmt.Errorf("cannot find etcd members in cluster %s : %w", d.clusterPrefix, err)
 	}
 
-	// Remove etcd members that are in mastersToDelete, you need to know an etcd node hash to be able to remove a member
 	for _, node := range d.masterNodes {
+		found := false
+
 		for _, member := range etcd.Members {
 			if node.k8sName == member.Name {
+				found = true
 				d.logger.Debug().Msgf("Deleting etcd member %s, with hash %s", member.Name, member.Id)
+
 				etcdctlCmd := fmt.Sprintf("etcdctl member remove %s", member.Id)
 				if _, err := kc.KubectlExecEtcd(etcdPods[0], etcdctlCmd); err != nil {
 					return fmt.Errorf("error while executing \"etcdctl member remove\" on node %s, cluster %s: %w", member.Name, d.clusterPrefix, err)
 				}
+
+				break
 			}
 		}
+
+		if !found {
+			d.logger.Warn().Msgf("%v is not a member of etcd, ignoring", node.k8sName)
+		}
 	}
+
 	return nil
 }
 
