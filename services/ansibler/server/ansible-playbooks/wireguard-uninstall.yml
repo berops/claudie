@@ -9,6 +9,11 @@
       ansible.builtin.setup:
 
   tasks:
+    - name: Remove /usr/local/bin/tee
+      ansible.builtin.file:
+        path: "/usr/local/bin/tee"
+        state: absent
+
     - name: Run kubeadm reset
       shell: |
         kubeadm reset -f
