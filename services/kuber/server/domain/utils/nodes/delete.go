@@ -96,9 +96,22 @@ func (d *Deleter) DeleteNodes() (*spec.K8Scluster, error) {
 		return nil, fmt.Errorf("error while getting nodes from cluster %s : %w", d.clusterPrefix, err)
 	}
 
+	var errDel error
 	etcdEpNode := d.getMainMaster()
 	// Remove master nodes sequentially to minimise risk of faults in etcd
 	for _, master := range d.masterNodes {
+		// IMPORTANT: first you have to cordon and drain, and only after that you can remove from etcd
+		// kubectl cordon <node-name> <args>
+		if err := kubectl.KubectlCordon(master.k8sName); err != nil {
+			errDel = errors.Join(errDel, fmt.Errorf("error while cordon master node %s from cluster %s: %w", master.k8sName, d.clusterPrefix, err))
+			continue
+		}
+
+		// kubectl drain <node-name> --ignore-daemonsets --delete-emptydir-data
+		if err := kubectl.KubectlDrain(master.k8sName); err != nil {
+			return nil, fmt.Errorf("error while draining node %s from cluster %s : %w", master.k8sName, d.clusterPrefix, err)
+		}
+
 		// delete master nodes from etcd
 		if err := d.deleteFromEtcd(kubectl, etcdEpNode); err != nil {
 			return nil, fmt.Errorf("error while deleting nodes from etcd for %s : %w", d.clusterPrefix, err)
@@ -110,16 +123,21 @@ func (d *Deleter) DeleteNodes() (*spec.K8Scluster, error) {
 	}
 
 	// Remove worker nodes sequentially to minimise risk of fault when replicating PVC
-	var errDel error
 	for _, worker := range d.workerNodes {
 		if !slices.Contains(realNodeNames, worker.k8sName) {
 			d.logger.Warn().Msgf("Node with name %s not found in cluster", worker.k8sName)
 			continue
 		}
 
+		// kubectl cordon <node-name> <args>
 		if err := kubectl.KubectlCordon(worker.k8sName); err != nil {
 			errDel = errors.Join(errDel, fmt.Errorf("error while cordon worker node %s from cluster %s: %w", worker.k8sName, d.clusterPrefix, err))
 			continue
+		}
+
+		// kubectl drain <node-name> --ignore-daemonsets --delete-emptydir-data
+		if err := kubectl.KubectlDrain(worker.k8sName); err != nil {
+			return nil, fmt.Errorf("error while draining node %s from cluster %s : %w", worker.k8sName, d.clusterPrefix, err)
 		}
 
 		if err := d.deleteNodesByName(kubectl, worker, realNodeNames); err != nil {
@@ -161,11 +179,6 @@ func (d *Deleter) deleteNodesByName(kc kubectl.Kubectl, node nodeInfo, realNodeN
 	}
 
 	d.logger.Info().Msgf("Deleting node %s from k8s cluster", node.k8sName)
-
-	//kubectl drain <node-name> --ignore-daemonsets --delete-emptydir-data
-	if err := kc.KubectlDrain(node.k8sName); err != nil {
-		return fmt.Errorf("error while draining node %s from cluster %s : %w", node.k8sName, d.clusterPrefix, err)
-	}
 
 	//kubectl delete node <node-name>
 	if err := kc.KubectlDeleteResource("nodes", node.k8sName); err != nil {
