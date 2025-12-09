@@ -14,7 +14,6 @@
         path: /opt/claudie/bin
         state: absent
 
-    # TODO: check if the $PATH doesn't have the /opt/claudie/bin
     - name: Remove /etc/profile.d/claudie_path.sh
       ansible.builtin.file:
         path: /etc/profile.d/claudie_path.sh
