@@ -2,10 +2,17 @@
   gather_facts: false
   become: true
   tasks:
+    - name: Ensure /opt/claudie/bin exists
+      ansible.builtin.file:
+        path: /opt/claudie/bin
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
     - name: Create a tee binary override 
-      copy:
-        # In order the script to work, the /usr/local/bin has to be before /usr/bin in PATH
-        dest: "/usr/local/bin/tee"
+      ansible.builtin.copy:
+        dest: "/opt/claudie/bin/tee"
         mode: "0755"
         content: |
           #!/bin/bash
@@ -22,3 +29,18 @@
 
           # Otherwise, pass through to the real tee
           exec /usr/bin/tee "$@"
+
+    - name: Check if /opt/claudie/bin is already in PATH
+      ansible.builtin.shell: 'echo "$PATH" | grep -q "/opt/claudie/bin"'
+      register: path_check
+      ignore_errors: yes
+
+    - name: Add /opt/claudie/bin to PATH if missing (system-wide)
+      # In order the tee override to work, the /opt/claudie/bin has to be before /usr/bin in PATH
+      ansible.builtin.copy:
+        dest: /etc/profile.d/claudie_path.sh
+        mode: '0755'
+        content: |
+          #!/bin/sh
+          export PATH=/opt/claudie/bin:$PATH
+      when: path_check.rc != 0
