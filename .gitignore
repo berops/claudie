@@ -19,3 +19,4 @@ services/terraformer/templates
 bin
 .manifest*
 .DS_Store
+/services/terraformer/server/cache
