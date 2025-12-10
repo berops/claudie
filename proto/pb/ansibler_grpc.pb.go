@@ -27,6 +27,7 @@ const (
 	AnsiblerService_UpdateProxyEnvsOnNodes_FullMethodName     = "/claudie.AnsiblerService/UpdateProxyEnvsOnNodes"
 	AnsiblerService_UpdateProxyEnvsK8SServices_FullMethodName = "/claudie.AnsiblerService/UpdateProxyEnvsK8sServices"
 	AnsiblerService_RemoveClaudieUtilities_FullMethodName     = "/claudie.AnsiblerService/RemoveClaudieUtilities"
+	AnsiblerService_InstallTeeOverride_FullMethodName         = "/claudie.AnsiblerService/InstallTeeOverride"
 )
 
 // AnsiblerServiceClient is the client API for AnsiblerService service.
@@ -51,6 +52,8 @@ type AnsiblerServiceClient interface {
 	UpdateProxyEnvsK8SServices(ctx context.Context, in *UpdateProxyEnvsK8SServicesRequest, opts ...grpc.CallOption) (*UpdateProxyEnvsK8SServicesResponse, error)
 	// Removes utilities installed by claudie via ansible playbooks.
 	RemoveClaudieUtilities(ctx context.Context, in *RemoveClaudieUtilitiesRequest, opts ...grpc.CallOption) (*RemoveClaudieUtilitiesResponse, error)
+	// InstallTeeOverride installs tee binary override on nodes.
+	InstallTeeOverride(ctx context.Context, in *InstallTeeOverrideRequest, opts ...grpc.CallOption) (*InstallTeeOverrideResponse, error)
 }
 
 type ansiblerServiceClient struct {
@@ -141,6 +144,16 @@ func (c *ansiblerServiceClient) RemoveClaudieUtilities(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *ansiblerServiceClient) InstallTeeOverride(ctx context.Context, in *InstallTeeOverrideRequest, opts ...grpc.CallOption) (*InstallTeeOverrideResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(InstallTeeOverrideResponse)
+	err := c.cc.Invoke(ctx, AnsiblerService_InstallTeeOverride_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AnsiblerServiceServer is the server API for AnsiblerService service.
 // All implementations must embed UnimplementedAnsiblerServiceServer
 // for forward compatibility.
@@ -163,6 +176,8 @@ type AnsiblerServiceServer interface {
 	UpdateProxyEnvsK8SServices(context.Context, *UpdateProxyEnvsK8SServicesRequest) (*UpdateProxyEnvsK8SServicesResponse, error)
 	// Removes utilities installed by claudie via ansible playbooks.
 	RemoveClaudieUtilities(context.Context, *RemoveClaudieUtilitiesRequest) (*RemoveClaudieUtilitiesResponse, error)
+	// InstallTeeOverride installs tee binary override on nodes.
+	InstallTeeOverride(context.Context, *InstallTeeOverrideRequest) (*InstallTeeOverrideResponse, error)
 	mustEmbedUnimplementedAnsiblerServiceServer()
 }
 
@@ -196,6 +211,9 @@ func (UnimplementedAnsiblerServiceServer) UpdateProxyEnvsK8SServices(context.Con
 }
 func (UnimplementedAnsiblerServiceServer) RemoveClaudieUtilities(context.Context, *RemoveClaudieUtilitiesRequest) (*RemoveClaudieUtilitiesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveClaudieUtilities not implemented")
+}
+func (UnimplementedAnsiblerServiceServer) InstallTeeOverride(context.Context, *InstallTeeOverrideRequest) (*InstallTeeOverrideResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method InstallTeeOverride not implemented")
 }
 func (UnimplementedAnsiblerServiceServer) mustEmbedUnimplementedAnsiblerServiceServer() {}
 func (UnimplementedAnsiblerServiceServer) testEmbeddedByValue()                         {}
@@ -362,6 +380,24 @@ func _AnsiblerService_RemoveClaudieUtilities_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AnsiblerService_InstallTeeOverride_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InstallTeeOverrideRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AnsiblerServiceServer).InstallTeeOverride(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AnsiblerService_InstallTeeOverride_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AnsiblerServiceServer).InstallTeeOverride(ctx, req.(*InstallTeeOverrideRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AnsiblerService_ServiceDesc is the grpc.ServiceDesc for AnsiblerService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -400,6 +436,10 @@ var AnsiblerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RemoveClaudieUtilities",
 			Handler:    _AnsiblerService_RemoveClaudieUtilities_Handler,
+		},
+		{
+			MethodName: "InstallTeeOverride",
+			Handler:    _AnsiblerService_InstallTeeOverride_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

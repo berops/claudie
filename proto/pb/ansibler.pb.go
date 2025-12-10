@@ -790,6 +790,94 @@ func (*RemoveClaudieUtilitiesResponse) Descriptor() ([]byte, []int) {
 	return file_ansibler_proto_rawDescGZIP(), []int{13}
 }
 
+type InstallTeeOverrideRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Desired       *spec.K8Scluster       `protobuf:"bytes,1,opt,name=desired,proto3" json:"desired,omitempty"`
+	ProjectName   string                 `protobuf:"bytes,2,opt,name=projectName,proto3" json:"projectName,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InstallTeeOverrideRequest) Reset() {
+	*x = InstallTeeOverrideRequest{}
+	mi := &file_ansibler_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InstallTeeOverrideRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InstallTeeOverrideRequest) ProtoMessage() {}
+
+func (x *InstallTeeOverrideRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ansibler_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InstallTeeOverrideRequest.ProtoReflect.Descriptor instead.
+func (*InstallTeeOverrideRequest) Descriptor() ([]byte, []int) {
+	return file_ansibler_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *InstallTeeOverrideRequest) GetDesired() *spec.K8Scluster {
+	if x != nil {
+		return x.Desired
+	}
+	return nil
+}
+
+func (x *InstallTeeOverrideRequest) GetProjectName() string {
+	if x != nil {
+		return x.ProjectName
+	}
+	return ""
+}
+
+type InstallTeeOverrideResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InstallTeeOverrideResponse) Reset() {
+	*x = InstallTeeOverrideResponse{}
+	mi := &file_ansibler_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InstallTeeOverrideResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InstallTeeOverrideResponse) ProtoMessage() {}
+
+func (x *InstallTeeOverrideResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ansibler_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InstallTeeOverrideResponse.ProtoReflect.Descriptor instead.
+func (*InstallTeeOverrideResponse) Descriptor() ([]byte, []int) {
+	return file_ansibler_proto_rawDescGZIP(), []int{15}
+}
+
 type UpdateAPIEndpointRequest_Endpoint struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Nodepool      string                 `protobuf:"bytes,1,opt,name=nodepool,proto3" json:"nodepool,omitempty"`
@@ -800,7 +888,7 @@ type UpdateAPIEndpointRequest_Endpoint struct {
 
 func (x *UpdateAPIEndpointRequest_Endpoint) Reset() {
 	*x = UpdateAPIEndpointRequest_Endpoint{}
-	mi := &file_ansibler_proto_msgTypes[14]
+	mi := &file_ansibler_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -812,7 +900,7 @@ func (x *UpdateAPIEndpointRequest_Endpoint) String() string {
 func (*UpdateAPIEndpointRequest_Endpoint) ProtoMessage() {}
 
 func (x *UpdateAPIEndpointRequest_Endpoint) ProtoReflect() protoreflect.Message {
-	mi := &file_ansibler_proto_msgTypes[14]
+	mi := &file_ansibler_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -912,7 +1000,11 @@ const file_ansibler_proto_rawDesc = "" +
 	"currentLbs\x18\x02 \x03(\v2\x0f.spec.LBclusterR\n" +
 	"currentLbs\x12 \n" +
 	"\vprojectName\x18\x03 \x01(\tR\vprojectName\" \n" +
-	"\x1eRemoveClaudieUtilitiesResponse2\x89\x06\n" +
+	"\x1eRemoveClaudieUtilitiesResponse\"i\n" +
+	"\x19InstallTeeOverrideRequest\x12*\n" +
+	"\adesired\x18\x01 \x01(\v2\x10.spec.K8sclusterR\adesired\x12 \n" +
+	"\vprojectName\x18\x02 \x01(\tR\vprojectName\"\x1c\n" +
+	"\x1aInstallTeeOverrideResponse2\xe8\x06\n" +
 	"\x0fAnsiblerService\x12L\n" +
 	"\x17InstallNodeRequirements\x12\x17.claudie.InstallRequest\x1a\x18.claudie.InstallResponse\x12?\n" +
 	"\n" +
@@ -922,7 +1014,8 @@ const file_ansibler_proto_rawDesc = "" +
 	"\x11UpdateAPIEndpoint\x12!.claudie.UpdateAPIEndpointRequest\x1a\".claudie.UpdateAPIEndpointResponse\x12i\n" +
 	"\x16UpdateProxyEnvsOnNodes\x12&.claudie.UpdateProxyEnvsOnNodesRequest\x1a'.claudie.UpdateProxyEnvsOnNodesResponse\x12u\n" +
 	"\x1aUpdateProxyEnvsK8sServices\x12*.claudie.UpdateProxyEnvsK8sServicesRequest\x1a+.claudie.UpdateProxyEnvsK8sServicesResponse\x12i\n" +
-	"\x16RemoveClaudieUtilities\x12&.claudie.RemoveClaudieUtilitiesRequest\x1a'.claudie.RemoveClaudieUtilitiesResponseB\n" +
+	"\x16RemoveClaudieUtilities\x12&.claudie.RemoveClaudieUtilitiesRequest\x1a'.claudie.RemoveClaudieUtilitiesResponse\x12]\n" +
+	"\x12InstallTeeOverride\x12\".claudie.InstallTeeOverrideRequest\x1a#.claudie.InstallTeeOverrideResponseB\n" +
 	"Z\bproto/pbb\x06proto3"
 
 var (
@@ -937,7 +1030,7 @@ func file_ansibler_proto_rawDescGZIP() []byte {
 	return file_ansibler_proto_rawDescData
 }
 
-var file_ansibler_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_ansibler_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_ansibler_proto_goTypes = []any{
 	(*InstallRequest)(nil),                     // 0: claudie.InstallRequest
 	(*InstallResponse)(nil),                    // 1: claudie.InstallResponse
@@ -953,58 +1046,63 @@ var file_ansibler_proto_goTypes = []any{
 	(*UpdateProxyEnvsK8SServicesResponse)(nil), // 11: claudie.UpdateProxyEnvsK8sServicesResponse
 	(*RemoveClaudieUtilitiesRequest)(nil),      // 12: claudie.RemoveClaudieUtilitiesRequest
 	(*RemoveClaudieUtilitiesResponse)(nil),     // 13: claudie.RemoveClaudieUtilitiesResponse
-	(*UpdateAPIEndpointRequest_Endpoint)(nil),  // 14: claudie.UpdateAPIEndpointRequest.Endpoint
-	(*spec.K8Scluster)(nil),                    // 15: spec.K8scluster
-	(*spec.LBcluster)(nil),                     // 16: spec.LBcluster
-	(spec.ApiEndpointChangeState)(0),           // 17: spec.ApiEndpointChangeState
-	(*spec.ProxyEnvs)(nil),                     // 18: spec.ProxyEnvs
+	(*InstallTeeOverrideRequest)(nil),          // 14: claudie.InstallTeeOverrideRequest
+	(*InstallTeeOverrideResponse)(nil),         // 15: claudie.InstallTeeOverrideResponse
+	(*UpdateAPIEndpointRequest_Endpoint)(nil),  // 16: claudie.UpdateAPIEndpointRequest.Endpoint
+	(*spec.K8Scluster)(nil),                    // 17: spec.K8scluster
+	(*spec.LBcluster)(nil),                     // 18: spec.LBcluster
+	(spec.ApiEndpointChangeState)(0),           // 19: spec.ApiEndpointChangeState
+	(*spec.ProxyEnvs)(nil),                     // 20: spec.ProxyEnvs
 }
 var file_ansibler_proto_depIdxs = []int32{
-	15, // 0: claudie.InstallRequest.desired:type_name -> spec.K8scluster
-	16, // 1: claudie.InstallRequest.desiredLbs:type_name -> spec.LBcluster
-	15, // 2: claudie.InstallResponse.desired:type_name -> spec.K8scluster
-	16, // 3: claudie.InstallResponse.desiredLbs:type_name -> spec.LBcluster
-	15, // 4: claudie.SetUpLBRequest.desired:type_name -> spec.K8scluster
-	16, // 5: claudie.SetUpLBRequest.currentLbs:type_name -> spec.LBcluster
-	16, // 6: claudie.SetUpLBRequest.desiredLbs:type_name -> spec.LBcluster
-	15, // 7: claudie.SetUpLBResponse.desired:type_name -> spec.K8scluster
-	16, // 8: claudie.SetUpLBResponse.desiredLbs:type_name -> spec.LBcluster
-	15, // 9: claudie.DetermineApiEndpointChangeRequest.current:type_name -> spec.K8scluster
-	16, // 10: claudie.DetermineApiEndpointChangeRequest.currentLbs:type_name -> spec.LBcluster
-	17, // 11: claudie.DetermineApiEndpointChangeRequest.state:type_name -> spec.ApiEndpointChangeState
-	15, // 12: claudie.DetermineApiEndpointChangeResponse.current:type_name -> spec.K8scluster
-	16, // 13: claudie.DetermineApiEndpointChangeResponse.currentLbs:type_name -> spec.LBcluster
-	15, // 14: claudie.UpdateAPIEndpointRequest.current:type_name -> spec.K8scluster
-	14, // 15: claudie.UpdateAPIEndpointRequest.endpoint:type_name -> claudie.UpdateAPIEndpointRequest.Endpoint
-	15, // 16: claudie.UpdateAPIEndpointResponse.current:type_name -> spec.K8scluster
-	15, // 17: claudie.UpdateProxyEnvsOnNodesRequest.desired:type_name -> spec.K8scluster
-	18, // 18: claudie.UpdateProxyEnvsOnNodesRequest.proxyEnvs:type_name -> spec.ProxyEnvs
-	15, // 19: claudie.UpdateProxyEnvsK8sServicesRequest.current:type_name -> spec.K8scluster
-	15, // 20: claudie.UpdateProxyEnvsK8sServicesRequest.desired:type_name -> spec.K8scluster
-	18, // 21: claudie.UpdateProxyEnvsK8sServicesRequest.proxyEnvs:type_name -> spec.ProxyEnvs
-	15, // 22: claudie.RemoveClaudieUtilitiesRequest.current:type_name -> spec.K8scluster
-	16, // 23: claudie.RemoveClaudieUtilitiesRequest.currentLbs:type_name -> spec.LBcluster
-	0,  // 24: claudie.AnsiblerService.InstallNodeRequirements:input_type -> claudie.InstallRequest
-	0,  // 25: claudie.AnsiblerService.InstallVPN:input_type -> claudie.InstallRequest
-	2,  // 26: claudie.AnsiblerService.SetUpLoadbalancers:input_type -> claudie.SetUpLBRequest
-	4,  // 27: claudie.AnsiblerService.DetermineApiEndpointChange:input_type -> claudie.DetermineApiEndpointChangeRequest
-	6,  // 28: claudie.AnsiblerService.UpdateAPIEndpoint:input_type -> claudie.UpdateAPIEndpointRequest
-	8,  // 29: claudie.AnsiblerService.UpdateProxyEnvsOnNodes:input_type -> claudie.UpdateProxyEnvsOnNodesRequest
-	10, // 30: claudie.AnsiblerService.UpdateProxyEnvsK8sServices:input_type -> claudie.UpdateProxyEnvsK8sServicesRequest
-	12, // 31: claudie.AnsiblerService.RemoveClaudieUtilities:input_type -> claudie.RemoveClaudieUtilitiesRequest
-	1,  // 32: claudie.AnsiblerService.InstallNodeRequirements:output_type -> claudie.InstallResponse
-	1,  // 33: claudie.AnsiblerService.InstallVPN:output_type -> claudie.InstallResponse
-	3,  // 34: claudie.AnsiblerService.SetUpLoadbalancers:output_type -> claudie.SetUpLBResponse
-	5,  // 35: claudie.AnsiblerService.DetermineApiEndpointChange:output_type -> claudie.DetermineApiEndpointChangeResponse
-	7,  // 36: claudie.AnsiblerService.UpdateAPIEndpoint:output_type -> claudie.UpdateAPIEndpointResponse
-	9,  // 37: claudie.AnsiblerService.UpdateProxyEnvsOnNodes:output_type -> claudie.UpdateProxyEnvsOnNodesResponse
-	11, // 38: claudie.AnsiblerService.UpdateProxyEnvsK8sServices:output_type -> claudie.UpdateProxyEnvsK8sServicesResponse
-	13, // 39: claudie.AnsiblerService.RemoveClaudieUtilities:output_type -> claudie.RemoveClaudieUtilitiesResponse
-	32, // [32:40] is the sub-list for method output_type
-	24, // [24:32] is the sub-list for method input_type
-	24, // [24:24] is the sub-list for extension type_name
-	24, // [24:24] is the sub-list for extension extendee
-	0,  // [0:24] is the sub-list for field type_name
+	17, // 0: claudie.InstallRequest.desired:type_name -> spec.K8scluster
+	18, // 1: claudie.InstallRequest.desiredLbs:type_name -> spec.LBcluster
+	17, // 2: claudie.InstallResponse.desired:type_name -> spec.K8scluster
+	18, // 3: claudie.InstallResponse.desiredLbs:type_name -> spec.LBcluster
+	17, // 4: claudie.SetUpLBRequest.desired:type_name -> spec.K8scluster
+	18, // 5: claudie.SetUpLBRequest.currentLbs:type_name -> spec.LBcluster
+	18, // 6: claudie.SetUpLBRequest.desiredLbs:type_name -> spec.LBcluster
+	17, // 7: claudie.SetUpLBResponse.desired:type_name -> spec.K8scluster
+	18, // 8: claudie.SetUpLBResponse.desiredLbs:type_name -> spec.LBcluster
+	17, // 9: claudie.DetermineApiEndpointChangeRequest.current:type_name -> spec.K8scluster
+	18, // 10: claudie.DetermineApiEndpointChangeRequest.currentLbs:type_name -> spec.LBcluster
+	19, // 11: claudie.DetermineApiEndpointChangeRequest.state:type_name -> spec.ApiEndpointChangeState
+	17, // 12: claudie.DetermineApiEndpointChangeResponse.current:type_name -> spec.K8scluster
+	18, // 13: claudie.DetermineApiEndpointChangeResponse.currentLbs:type_name -> spec.LBcluster
+	17, // 14: claudie.UpdateAPIEndpointRequest.current:type_name -> spec.K8scluster
+	16, // 15: claudie.UpdateAPIEndpointRequest.endpoint:type_name -> claudie.UpdateAPIEndpointRequest.Endpoint
+	17, // 16: claudie.UpdateAPIEndpointResponse.current:type_name -> spec.K8scluster
+	17, // 17: claudie.UpdateProxyEnvsOnNodesRequest.desired:type_name -> spec.K8scluster
+	20, // 18: claudie.UpdateProxyEnvsOnNodesRequest.proxyEnvs:type_name -> spec.ProxyEnvs
+	17, // 19: claudie.UpdateProxyEnvsK8sServicesRequest.current:type_name -> spec.K8scluster
+	17, // 20: claudie.UpdateProxyEnvsK8sServicesRequest.desired:type_name -> spec.K8scluster
+	20, // 21: claudie.UpdateProxyEnvsK8sServicesRequest.proxyEnvs:type_name -> spec.ProxyEnvs
+	17, // 22: claudie.RemoveClaudieUtilitiesRequest.current:type_name -> spec.K8scluster
+	18, // 23: claudie.RemoveClaudieUtilitiesRequest.currentLbs:type_name -> spec.LBcluster
+	17, // 24: claudie.InstallTeeOverrideRequest.desired:type_name -> spec.K8scluster
+	0,  // 25: claudie.AnsiblerService.InstallNodeRequirements:input_type -> claudie.InstallRequest
+	0,  // 26: claudie.AnsiblerService.InstallVPN:input_type -> claudie.InstallRequest
+	2,  // 27: claudie.AnsiblerService.SetUpLoadbalancers:input_type -> claudie.SetUpLBRequest
+	4,  // 28: claudie.AnsiblerService.DetermineApiEndpointChange:input_type -> claudie.DetermineApiEndpointChangeRequest
+	6,  // 29: claudie.AnsiblerService.UpdateAPIEndpoint:input_type -> claudie.UpdateAPIEndpointRequest
+	8,  // 30: claudie.AnsiblerService.UpdateProxyEnvsOnNodes:input_type -> claudie.UpdateProxyEnvsOnNodesRequest
+	10, // 31: claudie.AnsiblerService.UpdateProxyEnvsK8sServices:input_type -> claudie.UpdateProxyEnvsK8sServicesRequest
+	12, // 32: claudie.AnsiblerService.RemoveClaudieUtilities:input_type -> claudie.RemoveClaudieUtilitiesRequest
+	14, // 33: claudie.AnsiblerService.InstallTeeOverride:input_type -> claudie.InstallTeeOverrideRequest
+	1,  // 34: claudie.AnsiblerService.InstallNodeRequirements:output_type -> claudie.InstallResponse
+	1,  // 35: claudie.AnsiblerService.InstallVPN:output_type -> claudie.InstallResponse
+	3,  // 36: claudie.AnsiblerService.SetUpLoadbalancers:output_type -> claudie.SetUpLBResponse
+	5,  // 37: claudie.AnsiblerService.DetermineApiEndpointChange:output_type -> claudie.DetermineApiEndpointChangeResponse
+	7,  // 38: claudie.AnsiblerService.UpdateAPIEndpoint:output_type -> claudie.UpdateAPIEndpointResponse
+	9,  // 39: claudie.AnsiblerService.UpdateProxyEnvsOnNodes:output_type -> claudie.UpdateProxyEnvsOnNodesResponse
+	11, // 40: claudie.AnsiblerService.UpdateProxyEnvsK8sServices:output_type -> claudie.UpdateProxyEnvsK8sServicesResponse
+	13, // 41: claudie.AnsiblerService.RemoveClaudieUtilities:output_type -> claudie.RemoveClaudieUtilitiesResponse
+	15, // 42: claudie.AnsiblerService.InstallTeeOverride:output_type -> claudie.InstallTeeOverrideResponse
+	34, // [34:43] is the sub-list for method output_type
+	25, // [25:34] is the sub-list for method input_type
+	25, // [25:25] is the sub-list for extension type_name
+	25, // [25:25] is the sub-list for extension extendee
+	0,  // [0:25] is the sub-list for field type_name
 }
 
 func init() { file_ansibler_proto_init() }
@@ -1018,7 +1116,7 @@ func file_ansibler_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ansibler_proto_rawDesc), len(file_ansibler_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   15,
+			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
