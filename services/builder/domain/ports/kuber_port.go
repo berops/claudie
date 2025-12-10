@@ -23,7 +23,6 @@ type KuberPort interface {
 	PatchNodes(builderCtx *builder.Context, toRemove nodepools.LabelsTaintsAnnotationsData, kuberGrpcClient pb.KuberServiceClient) error
 	DeleteNodes(cluster *spec.K8Scluster, nodepools map[string]*spec.DeletedNodes, kuberGrpcClient pb.KuberServiceClient) (*pb.DeleteNodesResponse, error)
 	CiliumRolloutRestart(cluster *spec.K8Scluster, kuberGrpcClient pb.KuberServiceClient) error
-	GpuOperatorRolloutRestart(cluster *spec.K8Scluster, kuberGrpcClient pb.KuberServiceClient) error
 
 	PerformHealthCheck() error
 	GetClient() pb.KuberServiceClient
