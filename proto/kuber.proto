@@ -92,9 +92,6 @@ message PatchClusterInfoConfigMapResponse {}
 message CiliumRolloutRestartRequest {spec.K8scluster cluster = 1;}
 message CiliumRolloutRestartResponse {}
 
-message GpuOperatorRolloutRestartRequest {spec.K8scluster cluster = 1;}
-message GpuOperatorRolloutRestartResponse {}
-
 message PatchKubeProxyConfigMapRequest {spec.K8scluster desiredCluster = 1;}
 message PatchKubeProxyConfigMapResponse {}
 
@@ -159,8 +156,4 @@ service KuberService {
   // CiliumRolloutRestart performs a rollout restart of the cilium daemonset.
   rpc CiliumRolloutRestart(CiliumRolloutRestartRequest)
       returns (CiliumRolloutRestartResponse);
-
-  // GpuOperatorRolloutRestarts performs a rollout restart of the NVIDIA toolkit daemon set, if deployed
-  // as part of the GPU-operator deployment.
-  rpc GpuOperatorRolloutRestart(GpuOperatorRolloutRestartRequest) returns (GpuOperatorRolloutRestartResponse);
 }

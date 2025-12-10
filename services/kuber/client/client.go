@@ -123,8 +123,3 @@ func PatchKubeadmConfigMap(c pb.KuberServiceClient, req *pb.PatchKubeadmConfigMa
 	_, err := c.PatchKubeadmConfigMap(context.Background(), req)
 	return err
 }
-
-func GpuOperatorRolloutRestart(c pb.KuberServiceClient, req *pb.GpuOperatorRolloutRestartRequest) error {
-	_, err := c.GpuOperatorRolloutRestart(context.Background(), req)
-	return err
-}

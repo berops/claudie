@@ -74,7 +74,3 @@ func (k *KuberGrpcService) PatchNodes(ctx context.Context, request *pb.PatchNode
 func (k *KuberGrpcService) DeleteNodes(ctx context.Context, request *pb.DeleteNodesRequest) (*pb.DeleteNodesResponse, error) {
 	return k.usecases.DeleteNodes(ctx, request)
 }
-
-func (k *KuberGrpcService) GpuOperatorRolloutRestart(ctx context.Context, request *pb.GpuOperatorRolloutRestartRequest) (*pb.GpuOperatorRolloutRestartResponse, error) {
-	return k.usecases.GpuOperatorRolloutRestart(ctx, request)
-}

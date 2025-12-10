@@ -214,14 +214,6 @@ func (u *Usecases) executeUpdateTask(ctx context.Context, te *managerclient.Next
 				stage:       spec.Workflow_KUBER,
 				description: "reconciling cluster configuration after API endpoint change",
 			},
-			{
-				do: func(ctx context.Context, work *builder.Context, logger *zerolog.Logger) error {
-					return u.Kuber.GpuOperatorRolloutRestart(work.DesiredCluster, u.Kuber.GetClient())
-				},
-				stage:           spec.Workflow_KUBER,
-				description:     "performing rollout of NVIDIA container toolkit, if present",
-				continueOnError: true,
-			},
 		}
 
 		if err := u.processTasks(ctx, work, &logger, tasks); err != nil {
