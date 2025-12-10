@@ -82,9 +82,8 @@ message RemoveClaudieUtilitiesRequest {
 message RemoveClaudieUtilitiesResponse {}
 
 message InstallTeeOverrideRequest {
-  spec.K8scluster current = 1;
-  spec.K8scluster desired = 2;
-  string projectName = 3;
+  spec.K8scluster desired = 1;
+  string projectName = 2;
 }
 
 message InstallTeeOverrideResponse{}

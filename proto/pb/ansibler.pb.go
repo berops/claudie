@@ -792,9 +792,8 @@ func (*RemoveClaudieUtilitiesResponse) Descriptor() ([]byte, []int) {
 
 type InstallTeeOverrideRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Current       *spec.K8Scluster       `protobuf:"bytes,1,opt,name=current,proto3" json:"current,omitempty"`
-	Desired       *spec.K8Scluster       `protobuf:"bytes,2,opt,name=desired,proto3" json:"desired,omitempty"`
-	ProjectName   string                 `protobuf:"bytes,3,opt,name=projectName,proto3" json:"projectName,omitempty"`
+	Desired       *spec.K8Scluster       `protobuf:"bytes,1,opt,name=desired,proto3" json:"desired,omitempty"`
+	ProjectName   string                 `protobuf:"bytes,2,opt,name=projectName,proto3" json:"projectName,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -827,13 +826,6 @@ func (x *InstallTeeOverrideRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use InstallTeeOverrideRequest.ProtoReflect.Descriptor instead.
 func (*InstallTeeOverrideRequest) Descriptor() ([]byte, []int) {
 	return file_ansibler_proto_rawDescGZIP(), []int{14}
-}
-
-func (x *InstallTeeOverrideRequest) GetCurrent() *spec.K8Scluster {
-	if x != nil {
-		return x.Current
-	}
-	return nil
 }
 
 func (x *InstallTeeOverrideRequest) GetDesired() *spec.K8Scluster {
@@ -1008,11 +1000,10 @@ const file_ansibler_proto_rawDesc = "" +
 	"currentLbs\x18\x02 \x03(\v2\x0f.spec.LBclusterR\n" +
 	"currentLbs\x12 \n" +
 	"\vprojectName\x18\x03 \x01(\tR\vprojectName\" \n" +
-	"\x1eRemoveClaudieUtilitiesResponse\"\x95\x01\n" +
+	"\x1eRemoveClaudieUtilitiesResponse\"i\n" +
 	"\x19InstallTeeOverrideRequest\x12*\n" +
-	"\acurrent\x18\x01 \x01(\v2\x10.spec.K8sclusterR\acurrent\x12*\n" +
-	"\adesired\x18\x02 \x01(\v2\x10.spec.K8sclusterR\adesired\x12 \n" +
-	"\vprojectName\x18\x03 \x01(\tR\vprojectName\"\x1c\n" +
+	"\adesired\x18\x01 \x01(\v2\x10.spec.K8sclusterR\adesired\x12 \n" +
+	"\vprojectName\x18\x02 \x01(\tR\vprojectName\"\x1c\n" +
 	"\x1aInstallTeeOverrideResponse2\xe8\x06\n" +
 	"\x0fAnsiblerService\x12L\n" +
 	"\x17InstallNodeRequirements\x12\x17.claudie.InstallRequest\x1a\x18.claudie.InstallResponse\x12?\n" +
@@ -1088,31 +1079,30 @@ var file_ansibler_proto_depIdxs = []int32{
 	20, // 21: claudie.UpdateProxyEnvsK8sServicesRequest.proxyEnvs:type_name -> spec.ProxyEnvs
 	17, // 22: claudie.RemoveClaudieUtilitiesRequest.current:type_name -> spec.K8scluster
 	18, // 23: claudie.RemoveClaudieUtilitiesRequest.currentLbs:type_name -> spec.LBcluster
-	17, // 24: claudie.InstallTeeOverrideRequest.current:type_name -> spec.K8scluster
-	17, // 25: claudie.InstallTeeOverrideRequest.desired:type_name -> spec.K8scluster
-	0,  // 26: claudie.AnsiblerService.InstallNodeRequirements:input_type -> claudie.InstallRequest
-	0,  // 27: claudie.AnsiblerService.InstallVPN:input_type -> claudie.InstallRequest
-	2,  // 28: claudie.AnsiblerService.SetUpLoadbalancers:input_type -> claudie.SetUpLBRequest
-	4,  // 29: claudie.AnsiblerService.DetermineApiEndpointChange:input_type -> claudie.DetermineApiEndpointChangeRequest
-	6,  // 30: claudie.AnsiblerService.UpdateAPIEndpoint:input_type -> claudie.UpdateAPIEndpointRequest
-	8,  // 31: claudie.AnsiblerService.UpdateProxyEnvsOnNodes:input_type -> claudie.UpdateProxyEnvsOnNodesRequest
-	10, // 32: claudie.AnsiblerService.UpdateProxyEnvsK8sServices:input_type -> claudie.UpdateProxyEnvsK8sServicesRequest
-	12, // 33: claudie.AnsiblerService.RemoveClaudieUtilities:input_type -> claudie.RemoveClaudieUtilitiesRequest
-	14, // 34: claudie.AnsiblerService.InstallTeeOverride:input_type -> claudie.InstallTeeOverrideRequest
-	1,  // 35: claudie.AnsiblerService.InstallNodeRequirements:output_type -> claudie.InstallResponse
-	1,  // 36: claudie.AnsiblerService.InstallVPN:output_type -> claudie.InstallResponse
-	3,  // 37: claudie.AnsiblerService.SetUpLoadbalancers:output_type -> claudie.SetUpLBResponse
-	5,  // 38: claudie.AnsiblerService.DetermineApiEndpointChange:output_type -> claudie.DetermineApiEndpointChangeResponse
-	7,  // 39: claudie.AnsiblerService.UpdateAPIEndpoint:output_type -> claudie.UpdateAPIEndpointResponse
-	9,  // 40: claudie.AnsiblerService.UpdateProxyEnvsOnNodes:output_type -> claudie.UpdateProxyEnvsOnNodesResponse
-	11, // 41: claudie.AnsiblerService.UpdateProxyEnvsK8sServices:output_type -> claudie.UpdateProxyEnvsK8sServicesResponse
-	13, // 42: claudie.AnsiblerService.RemoveClaudieUtilities:output_type -> claudie.RemoveClaudieUtilitiesResponse
-	15, // 43: claudie.AnsiblerService.InstallTeeOverride:output_type -> claudie.InstallTeeOverrideResponse
-	35, // [35:44] is the sub-list for method output_type
-	26, // [26:35] is the sub-list for method input_type
-	26, // [26:26] is the sub-list for extension type_name
-	26, // [26:26] is the sub-list for extension extendee
-	0,  // [0:26] is the sub-list for field type_name
+	17, // 24: claudie.InstallTeeOverrideRequest.desired:type_name -> spec.K8scluster
+	0,  // 25: claudie.AnsiblerService.InstallNodeRequirements:input_type -> claudie.InstallRequest
+	0,  // 26: claudie.AnsiblerService.InstallVPN:input_type -> claudie.InstallRequest
+	2,  // 27: claudie.AnsiblerService.SetUpLoadbalancers:input_type -> claudie.SetUpLBRequest
+	4,  // 28: claudie.AnsiblerService.DetermineApiEndpointChange:input_type -> claudie.DetermineApiEndpointChangeRequest
+	6,  // 29: claudie.AnsiblerService.UpdateAPIEndpoint:input_type -> claudie.UpdateAPIEndpointRequest
+	8,  // 30: claudie.AnsiblerService.UpdateProxyEnvsOnNodes:input_type -> claudie.UpdateProxyEnvsOnNodesRequest
+	10, // 31: claudie.AnsiblerService.UpdateProxyEnvsK8sServices:input_type -> claudie.UpdateProxyEnvsK8sServicesRequest
+	12, // 32: claudie.AnsiblerService.RemoveClaudieUtilities:input_type -> claudie.RemoveClaudieUtilitiesRequest
+	14, // 33: claudie.AnsiblerService.InstallTeeOverride:input_type -> claudie.InstallTeeOverrideRequest
+	1,  // 34: claudie.AnsiblerService.InstallNodeRequirements:output_type -> claudie.InstallResponse
+	1,  // 35: claudie.AnsiblerService.InstallVPN:output_type -> claudie.InstallResponse
+	3,  // 36: claudie.AnsiblerService.SetUpLoadbalancers:output_type -> claudie.SetUpLBResponse
+	5,  // 37: claudie.AnsiblerService.DetermineApiEndpointChange:output_type -> claudie.DetermineApiEndpointChangeResponse
+	7,  // 38: claudie.AnsiblerService.UpdateAPIEndpoint:output_type -> claudie.UpdateAPIEndpointResponse
+	9,  // 39: claudie.AnsiblerService.UpdateProxyEnvsOnNodes:output_type -> claudie.UpdateProxyEnvsOnNodesResponse
+	11, // 40: claudie.AnsiblerService.UpdateProxyEnvsK8sServices:output_type -> claudie.UpdateProxyEnvsK8sServicesResponse
+	13, // 41: claudie.AnsiblerService.RemoveClaudieUtilities:output_type -> claudie.RemoveClaudieUtilitiesResponse
+	15, // 42: claudie.AnsiblerService.InstallTeeOverride:output_type -> claudie.InstallTeeOverrideResponse
+	34, // [34:43] is the sub-list for method output_type
+	25, // [25:34] is the sub-list for method input_type
+	25, // [25:25] is the sub-list for extension type_name
+	25, // [25:25] is the sub-list for extension extendee
+	0,  // [0:25] is the sub-list for field type_name
 }
 
 func init() { file_ansibler_proto_init() }
