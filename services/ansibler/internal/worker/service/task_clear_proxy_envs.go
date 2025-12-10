@@ -13,52 +13,46 @@ import (
 	"github.com/berops/claudie/services/ansibler/templates"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-
 	"golang.org/x/sync/semaphore"
 )
 
-const populateProxy = "../../ansible-playbooks/proxy/populate-proxy-envs.yml"
+const removeProxy = "../../ansible-playbooks/proxy/remove-proxy-envs.yml"
 
-// UpdateProxyEnvs updates the environment of the nodes. These changes are not
-// ully committed to yet, until the [CommitProxyEnvs] function is called, unless
-// this is called when creating the cluster in which case there is no need
-// to call the [CommitProxyEnvs] func.
-func UpdateProxyEnvs(
+// ClearProxyEnvs updates the environment of the nodes to clear the proxy environment
+// variables. These changes are not fully committed to yet, until the [CommitProxyEnvs]
+// function is called.
+func ClearProxyEnvs(
 	logger zerolog.Logger,
 	projectName string,
 	processLimit *semaphore.Weighted,
 	tracker Tracker,
 ) {
-	logger.Info().Msg("Updating Proxy Envs on cluster nodes")
+	logger.
+		Info().
+		Msg("Clearing Proxy Envs on cluster nodes")
 
-	var k8s *spec.K8SclusterV2
-	var lbs []*spec.LBclusterV2
-
-	switch do := tracker.Task.Do.(type) {
-	case *spec.TaskV2_Create:
-		k8s, lbs = do.Create.K8S, do.Create.LoadBalancers
-	case *spec.TaskV2_Update:
-		k8s, lbs = do.Update.State.K8S, do.Update.State.LoadBalancers
-	default:
+	update, ok := tracker.Task.Do.(*spec.TaskV2_Update)
+	if !ok {
 		logger.
 			Warn().
-			Msgf("Received task with action %T while wanting to update proxy envs, assuming task was misscheduled, ignoring", tracker.Task.GetDo())
+			Msgf("Received task with action %T while wanting to clear proxy envs, assuming task was misscheduled, ignoring", tracker.Task.GetDo())
 		return
 	}
 
-	proxy := utils.HttpProxyUrlAndNoProxyList(k8s, lbs)
-	if err := updateProxyEnvsOnNodes(k8s, proxy, processLimit); err != nil {
-		logger.Err(err).Msg("Failed to update proxy envs")
+	state := update.Update.State
+	proxy := utils.HttpProxyUrlAndNoProxyList(state.K8S, state.LoadBalancers)
+	if err := clearProxyEnvsOnNodes(state.K8S, proxy, processLimit); err != nil {
+		logger.Err(err).Msg("Failed to clear proxy envs")
 		tracker.Diagnostics.Push(err)
 		return
 	}
 
 	log.
 		Info().
-		Msgf("Successfully updated proxy envs for nodes in cluster")
+		Msgf("Successfully cleared proxy envs for nodes in cluster")
 }
 
-func updateProxyEnvsOnNodes(cluster *spec.K8SclusterV2, proxy utils.Proxy, processLimit *semaphore.Weighted) error {
+func clearProxyEnvsOnNodes(cluster *spec.K8SclusterV2, proxy utils.Proxy, processLimit *semaphore.Weighted) error {
 	clusterID := cluster.ClusterInfo.Id()
 
 	// This is the directory where files (Ansible inventory files, SSH keys etc.) will be generated.
@@ -102,7 +96,7 @@ func updateProxyEnvsOnNodes(cluster *spec.K8SclusterV2, proxy utils.Proxy, proce
 		Inventory:         utils.InventoryFileName,
 		Directory:         clusterDirectory,
 		SpawnProcessLimit: processLimit,
-		Playbook:          populateProxy,
+		Playbook:          removeProxy,
 	}
 
 	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("Update proxy envs in /etc/environment - %s", clusterID)); err != nil {

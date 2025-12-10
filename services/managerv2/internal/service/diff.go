@@ -7,6 +7,7 @@ import (
 	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
+
 	"google.golang.org/protobuf/proto"
 )
 
@@ -14,14 +15,47 @@ import (
 // TODO: what if the key for the static nodes is changed that should trigger, or not that would
 // be handled automatically on the run anyways.
 
+type ProxyChange uint8
+
+const (
+	ProxyNoChange ProxyChange = iota
+	ProxyOff
+	ProxyOn
+)
+
 type (
+	ProxyDiffResult struct {
+		// Whether the proxy is in use in current state.
+		CurrentUsed bool
+
+		// Whether the proxy is in use in the desired state.
+		DesiredUsed bool
+
+		// Whether there is any change from the current to the
+		// desired state.
+		Change ProxyChange
+	}
+
+	LabelsTaintsAnnotationsDiffResult struct {
+		Deleted struct {
+			LabelKeys       map[string][]string
+			AnnotationsKeys map[string][]string
+			TaintKeys       map[string][]*spec.Taint
+		}
+		Added struct {
+			LabelKeys       map[string][]string
+			AnnotationsKeys map[string][]string
+			TaintKeys       map[string][]*spec.Taint
+		}
+	}
+
 	// KubernetesDiffResult holds all of the changes between two different [spec.K8Scluster]
 	KubernetesDiffResult struct {
 		// Whether the kubernetes version changed.
 		KubernetesVersion bool
 
-		// Whether proxy settigns changed.
-		Proxy bool
+		// Whether proxy settings changed.
+		Proxy ProxyDiffResult
 
 		// Diff in the Dynamic NodePools of the cluster.
 		Dynamic NodePoolsDiffResult
@@ -29,36 +63,35 @@ type (
 		// Diff in the Static NodePools of the cluster.
 		Static NodePoolsDiffResult
 
-		// TODO: possibly include autoscaling diff here ?
-		// TODO: endpointNodeDeleted function from managerV1.
-		//
 		// State of the Api endpoint for the kubernetes cluster.
 		// If the kubernetes cluster has no api endpoint, but it
 		// is in one of the loadbalancers attached to the cluster
 		// both of the values will be empty.
+		//
+		// This is only here to be checked if the endpoint should
+		// be moved to another control node, if the current on is
+		// being deleted. If this is the case both of the values
+		// will not be empty and will have different Node ids.
 		ApiEndpoint struct {
 			// ID of the node which is used for the API server in the
 			// current state. If there is no, the value will be empty.
-			Current string
+			Current         string
+			CurrentNodePool string
 
 			// ID of the node which is used for the API server in the
 			// desired state. If there is no, the value will be empty.
-			Desired string
+			Desired         string
+			DesiredNodePool string
 		}
 
 		// TODO: should be done per nodepool below.
 		// Changes made to the autoscaler nodepools.
+		// TODO: possibly include autoscaling diff here ?
 		Autoscaler struct { /* TODO */
 		}
 
-		// Labels updated.
-		Labels bool
-
-		// Annotations updated.
-		Annotations bool
-
-		// Taints updated.
-		Taints bool
+		// TODO move the diff from nodepools.go into here...
+		LabelsTaintsAnnotations LabelsTaintsAnnotationsDiffResult
 	}
 
 	ModifiedLoadBalancer struct {
@@ -291,9 +324,9 @@ func NodePoolsView(info *spec.ClusterInfoV2) (dynamic NodePoolsViewType, static 
 }
 
 func KubernetesDiff(old, new *spec.K8SclusterV2) KubernetesDiffResult {
-	// TODO:
-
 	var (
+		result KubernetesDiffResult
+
 		odynamic, ostatic = NodePoolsView(old.GetClusterInfo())
 		ndynamic, nstatic = NodePoolsView(new.GetClusterInfo())
 
@@ -301,23 +334,148 @@ func KubernetesDiff(old, new *spec.K8SclusterV2) KubernetesDiffResult {
 		staticDiff  = NodePoolsDiff(ostatic, nstatic)
 	)
 
-	return KubernetesDiffResult{
-		KubernetesVersion: false,
-		Proxy:             false,
-		Dynamic:           dynamicDiff,
-		Static:            staticDiff,
-		ApiEndpoint: struct {
-			Current string
-			Desired string
-		}{
-			Current: "",
-			Desired: "",
-		},
-		Autoscaler:  struct{}{},
-		Labels:      false,
-		Annotations: false,
-		Taints:      false,
+	proxyDiff := ProxyDiffResult{
+		CurrentUsed: UsesProxy(old),
+		DesiredUsed: UsesProxy(new),
 	}
+
+	if proxyDiff.CurrentUsed && !proxyDiff.DesiredUsed {
+		proxyDiff.Change = ProxyOff
+	}
+
+	if !proxyDiff.CurrentUsed && proxyDiff.DesiredUsed {
+		proxyDiff.Change = ProxyOn
+	}
+
+	result.Proxy = proxyDiff
+	result.KubernetesVersion = old.Kubernetes != new.Kubernetes
+	result.Dynamic = dynamicDiff
+	result.Static = staticDiff
+
+	// Check if Api endpoint is deleted, based on the nodepools diff.
+	for _, np := range old.ClusterInfo.NodePools {
+		if del, ok := result.Dynamic.Deleted[np.Name]; ok {
+			if m := matchApiEndpoint(np, del); m != "" {
+				result.ApiEndpoint.Current = m
+				result.ApiEndpoint.CurrentNodePool = np.Name
+
+				np, ep := newAPIEndpointNodeCandidate(new.ClusterInfo.NodePools)
+				result.ApiEndpoint.Desired = ep
+				result.ApiEndpoint.DesiredNodePool = np
+
+				break
+			}
+		}
+
+		if del, ok := result.Dynamic.PartiallyDeleted[np.Name]; ok {
+			if m := matchApiEndpoint(np, del); m != "" {
+				result.ApiEndpoint.Current = m
+				result.ApiEndpoint.CurrentNodePool = np.Name
+
+				np, ep := newAPIEndpointNodeCandidate(new.ClusterInfo.NodePools)
+				result.ApiEndpoint.Desired = ep
+				result.ApiEndpoint.DesiredNodePool = np
+
+				break
+			}
+		}
+
+		if del, ok := result.Static.Deleted[np.Name]; ok {
+			if m := matchApiEndpoint(np, del); m != "" {
+				result.ApiEndpoint.Current = m
+				result.ApiEndpoint.CurrentNodePool = np.Name
+
+				np, ep := newAPIEndpointNodeCandidate(new.ClusterInfo.NodePools)
+				result.ApiEndpoint.Desired = ep
+				result.ApiEndpoint.DesiredNodePool = np
+
+				break
+			}
+		}
+
+		if del, ok := result.Static.PartiallyDeleted[np.Name]; ok {
+			if m := matchApiEndpoint(np, del); m != "" {
+				result.ApiEndpoint.Current = m
+				result.ApiEndpoint.CurrentNodePool = np.Name
+
+				np, ep := newAPIEndpointNodeCandidate(new.ClusterInfo.NodePools)
+				result.ApiEndpoint.Desired = ep
+				result.ApiEndpoint.DesiredNodePool = np
+
+				break
+			}
+		}
+	}
+
+	// labels,taints,annotaions diff.
+	for _, c := range old.ClusterInfo.NodePools {
+		for _, n := range new.ClusterInfo.NodePools {
+			// Only perform the diff on NodePools in both
+			// states. Is Old is not in New than it will
+			// be deleted, and if New is not in Old than
+			// it will be added with the correct ones.
+			if c.Name != n.Name {
+				continue
+			}
+			diff := result.LabelsTaintsAnnotations
+
+			// deleted
+			for k := range c.Labels {
+				if _, ok := n.Labels[k]; !ok {
+					diff.Deleted.LabelKeys[n.Name] = append(diff.Deleted.LabelKeys[n.Name], k)
+				}
+			}
+
+			for k := range c.Annotations {
+				if _, ok := n.Annotations[k]; !ok {
+					diff.Deleted.AnnotationsKeys[n.Name] = append(diff.Deleted.AnnotationsKeys[n.Name], k)
+				}
+			}
+
+			for _, t := range c.Taints {
+				ok := slices.ContainsFunc(n.Taints, func(other *spec.Taint) bool {
+					return other.Key == t.Key && other.Value == t.Value && other.Effect == t.Effect
+				})
+				if !ok {
+					diff.Deleted.TaintKeys[n.Name] = append(diff.Deleted.TaintKeys[n.Name], &spec.Taint{
+						Key:    t.Key,
+						Value:  t.Value,
+						Effect: t.Effect,
+					})
+				}
+			}
+
+			// added
+			for k := range n.Labels {
+				if _, ok := c.Labels[k]; !ok {
+					diff.Added.LabelKeys[c.Name] = append(diff.Added.LabelKeys[c.Name], k)
+				}
+			}
+
+			for k := range n.Annotations {
+				if _, ok := c.Annotations[k]; !ok {
+					diff.Added.AnnotationsKeys[c.Name] = append(diff.Added.AnnotationsKeys[c.Name], k)
+				}
+			}
+
+			for _, t := range n.Taints {
+				ok := slices.ContainsFunc(c.Taints, func(other *spec.Taint) bool {
+					return other.Key == t.Key && other.Value == t.Value && other.Effect == t.Effect
+				})
+				if !ok {
+					diff.Added.TaintKeys[c.Name] = append(diff.Added.TaintKeys[c.Name], &spec.Taint{
+						Key:    t.Key,
+						Value:  t.Value,
+						Effect: t.Effect,
+					})
+				}
+			}
+
+			break
+		}
+	}
+
+	return result
 }
 
 func LoadBalancersDiff(old, new *spec.LoadBalancersV2) LoadBalancersDiffResult {
@@ -559,4 +717,30 @@ func determineLBApiEndpointChangeV2(
 
 		return none, first.ClusterInfo.Id(), spec.ApiEndpointChangeStateV2_AttachingLoadBalancerV2
 	}
+}
+
+// matchApiEndpoint goes over the nodes of the nodepool, look for the api endpoint node, if any
+// and looks if its name matches the one in the provided slice. If no match is found the empty
+// string is returned.
+func matchApiEndpoint(np *spec.NodePool, names []string) string {
+	for _, node := range np.Nodes {
+		if node.NodeType == spec.NodeType_apiEndpoint && slices.Contains(names, node.Name) {
+			return node.Name
+		}
+	}
+	return ""
+}
+
+func newAPIEndpointNodeCandidate(desired []*spec.NodePool) (string, string) {
+	for _, np := range desired {
+		if np.IsControl {
+			// There should always be a control node, this is an invariant
+			// by checked at the validation level.
+			return np.Name, np.Nodes[0].Name
+		}
+	}
+
+	// This should never happen as the validation forbids not having
+	// any control plane nodes.
+	panic("no suitable api endpoint replacement candidate found, malformed state.")
 }

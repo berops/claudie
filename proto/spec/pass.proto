@@ -38,6 +38,7 @@ message StageAnsibler {
         UPDATE_API_ENDPOINT = 5;
         COMMIT_PROXY_ENVS = 6;
         UPDATE_PROXY_ENVS_ON_NODES = 7;
+        CLEAR_PROXY_ENVS_ON_NODES = 8;
     }
     message SubPass {
         SubPassKind kind = 1;
@@ -62,7 +63,16 @@ message StageKubeEleven {
 
 message StageKuber {
     enum SubPassKind {
-        TODO = 0;
+        CILIUM_RESTART = 0;
+        DELETE_NODES = 1;
+        GPU_OPERATOR_RESTART = 2;
+        PATCH_CLUSTER_INFO_CM = 3;
+        PATCH_KUBE_PROXY = 4;
+        PATCH_KUBEADM = 5;
+        REMOVE_LB_SCRAPE_CONFIG = 6;
+        SETUP_STORAGE = 7;
+        STORE_LB_SCRAPE_CONFIG = 8;
+        PATCH_NODES = 9;
     }
     message SubPass {
         SubPassKind kind = 1;

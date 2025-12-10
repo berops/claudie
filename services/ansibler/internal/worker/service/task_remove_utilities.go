@@ -71,6 +71,8 @@ func RemoveUtilities(
 		tracker.Diagnostics.Push(err)
 		return
 	}
+
+	logger.Info().Msg("Successfully removed claudie utilities")
 }
 
 func removeUtilities(clusterID string, vpnInfo *VPNInfo, processLimit *semaphore.Weighted) error {

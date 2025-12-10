@@ -26,6 +26,11 @@ func Reconcile(
 	case *spec.TaskV2_Update:
 		k8s = task.Update.State.K8S
 		lbs = task.Update.State.LoadBalancers
+
+		if upgrade := task.Update.GetUpgradeVersion(); upgrade != nil {
+			logger.Info().Msg("Upgrading kubernetes version")
+			k8s.Kubernetes = upgrade.Version
+		}
 	default:
 		logger.
 			Warn().

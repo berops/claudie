@@ -22,7 +22,7 @@ import (
 const (
 	// PendingTick represents the interval at which each manifest state is checked
 	// while in the [manifest.Pending] state.
-	PendingTick = 5 * time.Second
+	PendingTick = 6 * time.Second
 
 	// Tick represents the interval at which each manifest state is checked while
 	// not in the [manifest.Pending] state.

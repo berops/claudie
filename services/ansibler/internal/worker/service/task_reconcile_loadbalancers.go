@@ -90,6 +90,8 @@ func ReconcileLoadBalancers(
 	update := tracker.Result.Update()
 	update.Loadbalancers(li.Lbs...)
 	update.Commit()
+
+	logger.Info().Msg("Sucessfully reconciled LoadBalancers")
 }
 
 // setUpLoadbalancers sets up the loadbalancers along with DNS and verifies their configuration

@@ -116,6 +116,8 @@ passes:
 			UpdateApiEndpoint(logger, work.InputManifestName, processlimit, tracker)
 		case spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES:
 			UpdateProxyEnvs(logger, work.InputManifestName, processlimit, tracker)
+		case spec.StageAnsibler_CLEAR_PROXY_ENVS_ON_NODES:
+			ClearProxyEnvs(logger, work.InputManifestName, processlimit, tracker)
 		case spec.StageAnsibler_COMMIT_PROXY_ENVS:
 			CommitProxyEnvs(logger, work.InputManifestName, processlimit, tracker)
 		default:

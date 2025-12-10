@@ -27,7 +27,9 @@ func CommitProxyEnvs(
 	processLimit *semaphore.Weighted,
 	tracker Tracker,
 ) {
-	logger.Info().Msg("Updating kube-proxy DaemonSet and static pods with new Proxy envs")
+	logger.
+		Info().
+		Msg("Updating kube-proxy DaemonSet and static pods with new Proxy envs")
 
 	update, ok := tracker.Task.Do.(*spec.TaskV2_Update)
 	if !ok {
@@ -37,26 +39,32 @@ func CommitProxyEnvs(
 		return
 	}
 
-	proxy, ok := update.Update.Delta.(*spec.UpdateV2_Proxy)
-	if !ok {
-		logger.
-			Warn().
-			Msgf("Received update task with delta %T while wanting to commit proxy, assuming task was misscheduled, ignoring", update.Update.GetDelta())
-		return
-	}
-
-	k8s := update.Update.State.K8S
-	if err := updateNoProxyEnvsInKubernetes(k8s, proxy.Proxy.Settings, processLimit); err != nil {
+	state := update.Update.State
+	proxy := utils.HttpProxyUrlAndNoProxyList(state.K8S, state.LoadBalancers)
+	if err := commitProxyEnvs(state.K8S, proxy, processLimit); err != nil {
 		logger.Err(err).Msg("Failed to commit proxy envs")
 		tracker.Diagnostics.Push(err)
 		return
 	}
 
-	log.Info().Msg("Successfully updated proxy envs for kube-proxy DaemonSet and static pods ")
+	// Optionally, if  the task currently processed, needs to update the state,
+	// update it with the passed in desired proxy setting.
+	if updateProxy, ok := update.Update.Delta.(*spec.UpdateV2_AnsReplaceProxy); ok {
+		state.K8S.InstallationProxy = updateProxy.AnsReplaceProxy.Proxy
+
+		update := tracker.Result.Update()
+		update.Kubernetes(state.K8S)
+		update.Commit()
+	}
+
+	log.
+		Info().
+		Msg("Successfully updated proxy envs for kube-proxy DaemonSet and static pods ")
 }
 
-// updateNoProxyEnvsInKubernetes updates NO_PROXY and no_proxy envs across k8s services on nodes.
-func updateNoProxyEnvsInKubernetes(cluster *spec.K8SclusterV2, proxyEnvs *spec.Proxy, processLimit *semaphore.Weighted) error {
+// commitProxyEnvs updates NO_PROXY and no_proxy envs across k8s services on nodes and restarts necessary
+// services so that the changes will be propagated to them.
+func commitProxyEnvs(cluster *spec.K8SclusterV2, proxy utils.Proxy, processLimit *semaphore.Weighted) error {
 	clusterID := cluster.ClusterInfo.Id()
 
 	// This is the directory where files (Ansible inventory files, SSH keys etc.) will be generated.
@@ -93,8 +101,8 @@ func updateNoProxyEnvsInKubernetes(cluster *spec.K8SclusterV2, proxyEnvs *spec.P
 				Static:  nodepools.Static(cluster.ClusterInfo.NodePools),
 			},
 			ClusterID:    clusterID,
-			NoProxyList:  proxyEnvs.NoProxyList,
-			HttpProxyUrl: proxyEnvs.HttpProxyUrl,
+			NoProxyList:  proxy.NoProxyList,
+			HttpProxyUrl: proxy.HttpProxyUrl,
 		},
 	)
 	if err != nil {

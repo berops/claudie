@@ -131,6 +131,19 @@ func DeleteNodes(nodepool *spec.NodePool, nodes []string) {
 	clear(deleted)
 }
 
+// Returns true if the node is within one of the provided nodepools.
+func ContainsNode(nodepools []*spec.NodePool, nodeName string) bool {
+	for _, np := range nodepools {
+		for _, node := range np.Nodes {
+			if node.Name == nodeName {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
 func FindNode(nodepools []*spec.NodePool, nodeName string) (static bool, node *spec.Node) {
 	for _, np := range nodepools {
 		i := slices.IndexFunc(np.Nodes, func(n *spec.Node) bool { return n.Name == nodeName })
@@ -326,10 +339,8 @@ func FindApiEndpoint(nodepools []*spec.NodePool) (*spec.NodePool, *spec.Node) {
 // FirstControlNode returns the first control node encountered.
 func FirstControlNode(nodepools []*spec.NodePool) *spec.Node {
 	for _, np := range nodepools {
-		for _, node := range np.Nodes {
-			if node.NodeType == spec.NodeType_master {
-				return node
-			}
+		if np.IsControl && len(np.Nodes) > 0 {
+			return np.Nodes[0]
 		}
 	}
 	return nil
@@ -414,6 +425,7 @@ func StaticGenerateKeys(nodepools []*spec.NodePool, outputDir string) error {
 	return errors.Join(errs...)
 }
 
+// TODO: remove.
 type LabelsTaintsAnnotationsData struct {
 	LabelKeys      map[string][]string
 	AnnotationKeys map[string][]string

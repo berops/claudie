@@ -130,6 +130,7 @@ const (
 	StageAnsibler_UPDATE_API_ENDPOINT           StageAnsibler_SubPassKind = 5
 	StageAnsibler_COMMIT_PROXY_ENVS             StageAnsibler_SubPassKind = 6
 	StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES    StageAnsibler_SubPassKind = 7
+	StageAnsibler_CLEAR_PROXY_ENVS_ON_NODES     StageAnsibler_SubPassKind = 8
 )
 
 // Enum value maps for StageAnsibler_SubPassKind.
@@ -143,6 +144,7 @@ var (
 		5: "UPDATE_API_ENDPOINT",
 		6: "COMMIT_PROXY_ENVS",
 		7: "UPDATE_PROXY_ENVS_ON_NODES",
+		8: "CLEAR_PROXY_ENVS_ON_NODES",
 	}
 	StageAnsibler_SubPassKind_value = map[string]int32{
 		"INSTALL_NODE_REQUIREMENTS":     0,
@@ -153,6 +155,7 @@ var (
 		"UPDATE_API_ENDPOINT":           5,
 		"COMMIT_PROXY_ENVS":             6,
 		"UPDATE_PROXY_ENVS_ON_NODES":    7,
+		"CLEAR_PROXY_ENVS_ON_NODES":     8,
 	}
 )
 
@@ -232,16 +235,43 @@ func (StageKubeEleven_SubPassKind) EnumDescriptor() ([]byte, []int) {
 type StageKuber_SubPassKind int32
 
 const (
-	StageKuber_TODO StageKuber_SubPassKind = 0
+	StageKuber_CILIUM_RESTART          StageKuber_SubPassKind = 0
+	StageKuber_DELETE_NODES            StageKuber_SubPassKind = 1
+	StageKuber_GPU_OPERATOR_RESTART    StageKuber_SubPassKind = 2
+	StageKuber_PATCH_CLUSTER_INFO_CM   StageKuber_SubPassKind = 3
+	StageKuber_PATCH_KUBE_PROXY        StageKuber_SubPassKind = 4
+	StageKuber_PATCH_KUBEADM           StageKuber_SubPassKind = 5
+	StageKuber_REMOVE_LB_SCRAPE_CONFIG StageKuber_SubPassKind = 6
+	StageKuber_SETUP_STORAGE           StageKuber_SubPassKind = 7
+	StageKuber_STORE_LB_SCRAPE_CONFIG  StageKuber_SubPassKind = 8
+	StageKuber_PATCH_NODES             StageKuber_SubPassKind = 9
 )
 
 // Enum value maps for StageKuber_SubPassKind.
 var (
 	StageKuber_SubPassKind_name = map[int32]string{
-		0: "TODO",
+		0: "CILIUM_RESTART",
+		1: "DELETE_NODES",
+		2: "GPU_OPERATOR_RESTART",
+		3: "PATCH_CLUSTER_INFO_CM",
+		4: "PATCH_KUBE_PROXY",
+		5: "PATCH_KUBEADM",
+		6: "REMOVE_LB_SCRAPE_CONFIG",
+		7: "SETUP_STORAGE",
+		8: "STORE_LB_SCRAPE_CONFIG",
+		9: "PATCH_NODES",
 	}
 	StageKuber_SubPassKind_value = map[string]int32{
-		"TODO": 0,
+		"CILIUM_RESTART":          0,
+		"DELETE_NODES":            1,
+		"GPU_OPERATOR_RESTART":    2,
+		"PATCH_CLUSTER_INFO_CM":   3,
+		"PATCH_KUBE_PROXY":        4,
+		"PATCH_KUBEADM":           5,
+		"REMOVE_LB_SCRAPE_CONFIG": 6,
+		"SETUP_STORAGE":           7,
+		"STORE_LB_SCRAPE_CONFIG":  8,
+		"PATCH_NODES":             9,
 	}
 )
 
@@ -844,7 +874,7 @@ func (x *StageKuber_SubPass) GetKind() StageKuber_SubPassKind {
 	if x != nil {
 		return x.Kind
 	}
-	return StageKuber_TODO
+	return StageKuber_CILIUM_RESTART
 }
 
 func (x *StageKuber_SubPass) GetDescription() *StageDescription {
@@ -874,13 +904,13 @@ const file_spec_pass_proto_rawDesc = "" +
 	"\x14BUILD_INFRASTRUCTURE\x10\x00\x12\x19\n" +
 	"\x15UPDATE_INFRASTRUCTURE\x10\x01\x12\x1a\n" +
 	"\x16DESTROY_INFRASTRUCTURE\x10\x02\x12\x1a\n" +
-	"\x16API_PORT_ON_KUBERNETES\x10\x03\"\xec\x03\n" +
+	"\x16API_PORT_ON_KUBERNETES\x10\x03\"\x8b\x04\n" +
 	"\rStageAnsibler\x128\n" +
 	"\vdescription\x18\x01 \x01(\v2\x16.spec.StageDescriptionR\vdescription\x129\n" +
 	"\tsubPasses\x18\x02 \x03(\v2\x1b.spec.StageAnsibler.SubPassR\tsubPasses\x1ax\n" +
 	"\aSubPass\x123\n" +
 	"\x04kind\x18\x01 \x01(\x0e2\x1f.spec.StageAnsibler.SubPassKindR\x04kind\x128\n" +
-	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"\xeb\x01\n" +
+	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"\x8a\x02\n" +
 	"\vSubPassKind\x12\x1d\n" +
 	"\x19INSTALL_NODE_REQUIREMENTS\x10\x00\x12\x0f\n" +
 	"\vINSTALL_VPN\x10\x01\x12!\n" +
@@ -889,7 +919,8 @@ const file_spec_pass_proto_rawDesc = "" +
 	"\x18REMOVE_CLAUDIE_UTILITIES\x10\x04\x12\x17\n" +
 	"\x13UPDATE_API_ENDPOINT\x10\x05\x12\x15\n" +
 	"\x11COMMIT_PROXY_ENVS\x10\x06\x12\x1e\n" +
-	"\x1aUPDATE_PROXY_ENVS_ON_NODES\x10\a\"\xbf\x02\n" +
+	"\x1aUPDATE_PROXY_ENVS_ON_NODES\x10\a\x12\x1d\n" +
+	"\x19CLEAR_PROXY_ENVS_ON_NODES\x10\b\"\xbf\x02\n" +
 	"\x0fStageKubeEleven\x128\n" +
 	"\vdescription\x18\x01 \x01(\v2\x16.spec.StageDescriptionR\vdescription\x12;\n" +
 	"\tsubPasses\x18\x02 \x03(\v2\x1d.spec.StageKubeEleven.SubPassR\tsubPasses\x1az\n" +
@@ -898,16 +929,25 @@ const file_spec_pass_proto_rawDesc = "" +
 	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"9\n" +
 	"\vSubPassKind\x12\x15\n" +
 	"\x11RECONCILE_CLUSTER\x10\x00\x12\x13\n" +
-	"\x0fDESTROY_CLUSTER\x10\x01\"\x8e\x02\n" +
+	"\x0fDESTROY_CLUSTER\x10\x01\"\xe6\x03\n" +
 	"\n" +
 	"StageKuber\x128\n" +
 	"\vdescription\x18\x01 \x01(\v2\x16.spec.StageDescriptionR\vdescription\x126\n" +
 	"\tsubPasses\x18\x02 \x03(\v2\x18.spec.StageKuber.SubPassR\tsubPasses\x1au\n" +
 	"\aSubPass\x120\n" +
 	"\x04kind\x18\x01 \x01(\x0e2\x1c.spec.StageKuber.SubPassKindR\x04kind\x128\n" +
-	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"\x17\n" +
-	"\vSubPassKind\x12\b\n" +
-	"\x04TODO\x10\x00\"\xe6\x01\n" +
+	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"\xee\x01\n" +
+	"\vSubPassKind\x12\x12\n" +
+	"\x0eCILIUM_RESTART\x10\x00\x12\x10\n" +
+	"\fDELETE_NODES\x10\x01\x12\x18\n" +
+	"\x14GPU_OPERATOR_RESTART\x10\x02\x12\x19\n" +
+	"\x15PATCH_CLUSTER_INFO_CM\x10\x03\x12\x14\n" +
+	"\x10PATCH_KUBE_PROXY\x10\x04\x12\x11\n" +
+	"\rPATCH_KUBEADM\x10\x05\x12\x1b\n" +
+	"\x17REMOVE_LB_SCRAPE_CONFIG\x10\x06\x12\x11\n" +
+	"\rSETUP_STORAGE\x10\a\x12\x1a\n" +
+	"\x16STORE_LB_SCRAPE_CONFIG\x10\b\x12\x0f\n" +
+	"\vPATCH_NODES\x10\t\"\xe6\x01\n" +
 	"\x05Stage\x12:\n" +
 	"\vterraformer\x18\x01 \x01(\v2\x16.spec.StageTerraformerH\x00R\vterraformer\x121\n" +
 	"\bansibler\x18\x02 \x01(\v2\x13.spec.StageAnsiblerH\x00R\bansibler\x127\n" +

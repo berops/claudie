@@ -250,36 +250,8 @@ enum ApiEndpointChangeStateV2 {
   MoveEndpointV2 = 4;
 }
 
-
-message Proxy {
-    enum Op {
-        // None specifies that no change happened in the desired
-        // state of the Proxy settings compared to the current.
-        NONE = 0;
-
-        // Modified indicates some change happened, either add,
-        // delete, modified, replaced etc.
-        MODIFIED = 1;
-
-        // Off indicates that the Proxy envs should be turned off.
-        OFF = 2;
-    }
-
-    Op op = 1;
-
-    // Holds a proxy endpoint.
-    string httpProxyUrl = 2;
-
-    // Holds a list of IPs and hostnames that aren't routed through proxy.
-    string noProxyList = 3;
-}
-
-
 // Creates a new kubernetes cluster with the attached [LBcluster], if any.
 message CreateV2{
-    // Proxy settings while building the cluster.
-    Proxy proxy = 1;
-
     // The desired state of the kuberenetes cluster to create.
     //
     // This field is required to be present.
@@ -379,11 +351,49 @@ message UpdateV2 {
     // thus no "message consuming" needs to happen.
     message ApiPortOnCluster { bool open = 1; }
 
-    // UpdateProxyEnvs works with the [State] that is part of the [Update]
+    // AnsiblerReplaceProxySettings is a message that once processed
+    // by the Ansibler service and a result is send back to the Manager,
+    // it will consume the message and further stages will only have
+    // a [ReplacedProxySettings] message to process.
+    //
+    // New, "desired", state needs only to be present in the ansibler
+    // stage and all other services need to only see what has been done
+    // which will already be present in the [State] of the [Update] message.
+    message AnsiblerReplaceProxySettings { InstallationProxyV2 proxy = 1; }
+    message ReplacedProxySettings {}
+
+
+    // UpgradeVersion works with the [State] that is part of the [Update]
     // message, thus no "message consuming" needs to happen.
-    message UpdateProxyEnvs {
-        Proxy settings = 1;
+    message UpgradeVersion { string version = 1;}
+
+    // KuberPatchNodes is a message that once processed by the Kuber service
+    // and a result is send back to the Manager, it will consume the message
+    // and further stages will only have a [PatchedNodes] message to process.
+    //
+    // New, "desired", state needs only to be present in the kuber stage and
+    // all other services need to only see what has been done which will already
+    // be present in the [State] of the [Update] message.
+    message KuberPatchNodes {
+        message ListOfTaintKeys {
+            repeated spec.Taint taints = 1;
+        }
+        message ListOfLabelKeys {
+            repeated string labels = 1;
+        }
+        message ListOfAnnotationKeys {
+            repeated string annotations = 1;
+        }
+        message Batch {
+            map<string, ListOfTaintKeys> taints = 1;
+            map<string, ListOfAnnotationKeys> annotations = 2;
+            map<string, ListOfLabelKeys> labels = 3;
+        }
+
+        Batch add = 1;
+        Batch remove = 2;
     }
+    message PatchedNodes {}
 
     // State that gets continiously updated as the task gets processed.
     State state = 1;
@@ -398,17 +408,23 @@ message UpdateV2 {
         TerraformerReconcileLoadBalancer tfReconcileLoadBalancer = 4;
         TerraformerReplaceDns tfReplaceDns = 5;
 
-        AddedLoadBalancer addedLoadBalancer = 6;
-        ReconciledLoadBalancer reconciledLoadBalancer = 7;
-        ReplacedDns replacedDns = 8;
+        AnsiblerReplaceProxySettings ansReplaceProxy  = 10;
 
-        DeleteLoadBalancer deleteLoadBalancer = 9;
+        KuberPatchNodes kpatchNodes = 13;
 
-        ApiEndpoint apiEndpoint = 10;
-        ApiPortOnCluster clusterApiPort = 11;
-        K8sOnlyApiEndpoint k8sApiEndpoint = 12;
+        AddedLoadBalancer addedLoadBalancer = 15;
+        ReconciledLoadBalancer reconciledLoadBalancer = 16;
+        ReplacedDns replacedDns = 17;
+        ReplacedProxySettings replacedProxy = 18;
+        PatchedNodes patchedNodes = 19;
 
-        UpdateProxyEnvs proxy = 13;
+        DeleteLoadBalancer deleteLoadBalancer = 20;
+
+        ApiEndpoint apiEndpoint = 25;
+        ApiPortOnCluster clusterApiPort = 26;
+        K8sOnlyApiEndpoint k8sApiEndpoint = 27;
+        UpgradeVersion upgradeVersion = 28;
+
     }
 }
 

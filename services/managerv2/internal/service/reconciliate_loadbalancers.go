@@ -14,43 +14,62 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// PreKubernetesDiff returns load balancer changes that can be done/executed before handling any changes to the kubernetes clusters.
-// Assumes that both the current and desired [spec.Clusters] were not modified since the [HealthCheckStatus] and [LoadBalancersDiffResult]
-// was computed, and that all of the Cached Indices within the [LoadBalancersDiffResult] are not invalidated. This function does not
-// modify the input in any way and also the returned [spec.TaskEvent] does not hold or shared any memory to related to the input.
-func PreKubernetesDiff(hc *HealthCheckStatus, diff *LoadBalancersDiffResult, current, desired *spec.ClustersV2) *spec.TaskEventV2 {
-	switch diff.ApiEndpoint.State {
+// Wraps data and diffs needed by the reconciliation
+// for loadbalancers attached to the kubernetes cluster.
+//
+// The LoadBalancer reconciliation will only consider
+// fixing drifts in the passed [LoadBalancerDiffResult]
+// Others will only be used for guiding the decisions
+// when scheduling the tasks and will not schedule tasks
+// that will fix the drift in other Diff Results.
+type LoadBalancersReconciliate struct {
+	Hc      *HealthCheckStatus
+	Diff    *LoadBalancersDiffResult
+	Proxy   *ProxyDiffResult
+	Current *spec.ClustersV2
+	Desired *spec.ClustersV2
+}
+
+// PreKubernetesDiff returns load balancer changes that can be done/executed before
+// handling any changes to the kubernetes clusters. Assumes that both the current and
+// desired [spec.Clusters] were not modified since the [HealthCheckStatus] and
+// [LoadBalancersDiffResult] was computed, and that all of the Cached Indices within
+// the [LoadBalancersDiffResult] are not invalidated. This function does not modify the
+// input in any way and also the returned [spec.TaskEvent] does not hold or share any
+// memory to related to the input.
+func PreKubernetesDiff(r LoadBalancersReconciliate) *spec.TaskEventV2 {
+	switch r.Diff.ApiEndpoint.State {
 	case spec.ApiEndpointChangeStateV2_AttachingLoadBalancerV2:
 		// make sure the new lb is already in the cluster.
-		if i := clusters.IndexLoadbalancerByIdV2(diff.ApiEndpoint.New, current.LoadBalancers.Clusters); i >= 0 {
-			return ScheduleMoveApiEndpoint(current, diff.ApiEndpoint.Current, diff.ApiEndpoint.New, diff.ApiEndpoint.State)
+		if i := clusters.IndexLoadbalancerByIdV2(r.Diff.ApiEndpoint.New, r.Current.LoadBalancers.Clusters); i >= 0 {
+			return ScheduleMoveApiEndpoint(r.Current, r.Diff.ApiEndpoint.Current, r.Diff.ApiEndpoint.New, r.Diff.ApiEndpoint.State)
 		}
 	case spec.ApiEndpointChangeStateV2_DetachingLoadBalancerV2:
-		if !hc.Cluster.ControlNodesHave6443 {
-			return ScheduleControlNodesPort6443(current, true)
+		if !r.Hc.Cluster.ControlNodesHave6443 {
+			return ScheduleControlNodesPort6443(r.Current, true)
 		}
-		return ScheduleMoveApiEndpoint(current, diff.ApiEndpoint.Current, diff.ApiEndpoint.New, diff.ApiEndpoint.State)
+		return ScheduleMoveApiEndpoint(r.Current, r.Diff.ApiEndpoint.Current, r.Diff.ApiEndpoint.New, r.Diff.ApiEndpoint.State)
 	case spec.ApiEndpointChangeStateV2_MoveEndpointV2:
 		// make sure both are in the current cluster and that the roles have been synced.
-		old := clusters.IndexLoadbalancerByIdV2(diff.ApiEndpoint.Current, current.LoadBalancers.Clusters)
-		new := clusters.IndexLoadbalancerByIdV2(diff.ApiEndpoint.New, current.LoadBalancers.Clusters)
-		oldRolesSynced := len(diff.Modified[diff.ApiEndpoint.Current].Roles.Added) == 0
-		newRolesSynced := len(diff.Modified[diff.ApiEndpoint.New].Roles.Added) == 0
+		old := clusters.IndexLoadbalancerByIdV2(r.Diff.ApiEndpoint.Current, r.Current.LoadBalancers.Clusters)
+		new := clusters.IndexLoadbalancerByIdV2(r.Diff.ApiEndpoint.New, r.Current.LoadBalancers.Clusters)
+		oldRolesSynced := len(r.Diff.Modified[r.Diff.ApiEndpoint.Current].Roles.Added) == 0
+		newRolesSynced := len(r.Diff.Modified[r.Diff.ApiEndpoint.New].Roles.Added) == 0
 		if old >= 0 && new >= 0 && oldRolesSynced && newRolesSynced {
-			return ScheduleMoveApiEndpoint(current, diff.ApiEndpoint.Current, diff.ApiEndpoint.New, diff.ApiEndpoint.State)
+			return ScheduleMoveApiEndpoint(r.Current, r.Diff.ApiEndpoint.Current, r.Diff.ApiEndpoint.New, r.Diff.ApiEndpoint.State)
 		}
 	case spec.ApiEndpointChangeStateV2_EndpointRenamedV2:
-		for lb, modified := range diff.Modified {
-			if modified.DNS && lb == diff.ApiEndpoint.Current {
-				currentId := LoadBalancerIdentifier{
+		for lb, modified := range r.Diff.Modified {
+			if modified.DNS && lb == r.Diff.ApiEndpoint.Current {
+				cid := LoadBalancerIdentifier{
 					Id:    lb,
 					Index: modified.CurrentIdx,
 				}
-				desiredId := LoadBalancerIdentifier{
+				did := LoadBalancerIdentifier{
 					Id:    lb,
 					Index: modified.DesiredIdx,
 				}
-				return ScheduleReplaceDns(current, desired, currentId, desiredId, true)
+				return ScheduleReplaceDns(r.Proxy.CurrentUsed, r.Current, r.Desired, cid, did, true)
 			}
 		}
 	case spec.ApiEndpointChangeStateV2_NoChangeV2:
@@ -59,37 +78,40 @@ func PreKubernetesDiff(hc *HealthCheckStatus, diff *LoadBalancersDiffResult, cur
 
 	// Handle modifications that do not rely on the desired state of
 	// the Kubernetes infrastructure to be already existing.
-	for lb, modified := range diff.Modified {
-		currentId := LoadBalancerIdentifier{
+	for lb, modified := range r.Diff.Modified {
+		cid := LoadBalancerIdentifier{
 			Id:    lb,
 			Index: modified.CurrentIdx,
 		}
-		desiredId := LoadBalancerIdentifier{
+		did := LoadBalancerIdentifier{
 			Id:    lb,
 			Index: modified.DesiredIdx,
 		}
 
 		if modified.DNS {
-			return ScheduleReplaceDns(current, desired, currentId, desiredId, false)
+			return ScheduleReplaceDns(r.Proxy.CurrentUsed, r.Current, r.Desired, cid, did, false)
 		}
 
 		if !modified.Dynamic.IsEmpty() {
-			return ScheduleReconcileLoadBalancerNodePools(current, desired, currentId, desiredId, &modified.Dynamic)
+			return ScheduleReconcileLoadBalancerNodePools(r.Proxy.CurrentUsed, r.Current, r.Desired, cid, did, &modified.Dynamic)
 		}
+
 		if !modified.Static.IsEmpty() {
-			return ScheduleReconcileLoadBalancerNodePools(current, desired, currentId, desiredId, &modified.Static)
+			return ScheduleReconcileLoadBalancerNodePools(r.Proxy.CurrentUsed, r.Current, r.Desired, cid, did, &modified.Static)
 		}
 	}
 
 	return nil
 }
 
-// PostKubernetesDiff returns load balancer changes can be done/executed after handling addition/modification changes to the kubernetes clusters.
-// Assumes that both the current and desired [spec.Clusters] were not modified since the [HealthCheckStatue] and [LoadBalancersDiffResult]
-// was computed, and that all of the Cached Indices within the [LoadBalancersDiffResult] are not invalidated. This function does not
-// modify the input in any way and also the returned [spec.TaskEvent] does not hold or shared any memory to related to the input.
-func PostKubernetesDiff(hc *HealthCheckStatus, diff *LoadBalancersDiffResult, current, desired *spec.ClustersV2) *spec.TaskEventV2 {
-	for lb, modified := range diff.Modified {
+// PostKubernetesDiff returns load balancer changes can be done/executed after handling
+// addition/modification changes to the kubernetes clusters. Assumes that both the current
+// and desired [spec.Clusters] were not modified since the [HealthCheckStatue] and [LoadBalancersDiffResult]
+// was computed, and that all of the Cached Indices within the [LoadBalancersDiffResult]
+// are not invalidated. This function does not modify the input in any way and also the
+// returned [spec.TaskEvent] does not hold or share any memory to related to the input.
+func PostKubernetesDiff(r LoadBalancersReconciliate) *spec.TaskEventV2 {
+	for lb, modified := range r.Diff.Modified {
 		cid := LoadBalancerIdentifier{
 			Id:    lb,
 			Index: modified.CurrentIdx,
@@ -104,10 +126,10 @@ func PostKubernetesDiff(hc *HealthCheckStatus, diff *LoadBalancersDiffResult, cu
 		// state may reference nodepools that are not yet in the current state which
 		// would result in inproper updating of the envoy service on the loadbalancers.
 		if len(modified.Roles.Added) > 0 {
-			return ScheduleAddRoles(current, desired, cid, did, modified.Roles.Added)
+			return ScheduleAddRoles(r.Current, r.Desired, cid, did, modified.Roles.Added)
 		}
 		if len(modified.Roles.Deleted) > 0 {
-			return ScheduleDeleteRoles(current, cid, modified.Roles.Deleted)
+			return ScheduleDeleteRoles(r.Current, cid, modified.Roles.Deleted)
 		}
 
 		// TargetPools modifications needs to be handled after changes to the kubernetes
@@ -115,25 +137,25 @@ func PostKubernetesDiff(hc *HealthCheckStatus, diff *LoadBalancersDiffResult, cu
 		// by new and this could not be handled before the kubernetes changes, as the nodepools
 		// would not exist in the cluster yet and would make the workflow break.
 		if len(modified.Roles.TargetPoolsAdded) > 0 || len(modified.Roles.TargetPoolsDeleted) > 0 {
-			return ScheduleReconcileRoleTargetPools(current, desired, cid, did)
+			return ScheduleReconcileRoleTargetPools(r.Current, r.Desired, cid, did)
 		}
 	}
 
 	// Additions must also be handled after additions/modifications to the kubernetes cluster
 	// due to the possiblity of having new roles/targetpools that may not yet exist in the
 	// current state otherwise.
-	for _, lb := range diff.Added {
-		return ScheduleJoinLoadBalancer(current, desired, lb)
+	for _, lb := range r.Diff.Added {
+		return ScheduleJoinLoadBalancer(r.Proxy.CurrentUsed, r.Current, r.Desired, lb)
 	}
 
 	// Deletion need to follow after addition.
-	for _, lb := range diff.Deleted {
-		return ScheduleDeleteLoadBalancer(current, lb)
+	for _, lb := range r.Diff.Deleted {
+		return ScheduleDeleteLoadBalancer(r.Proxy.CurrentUsed, r.Current, lb)
 	}
 
-	if ep := clusters.FindAssignedLbApiEndpointV2(current.LoadBalancers.Clusters); ep != nil {
-		if hc.Cluster.ControlNodesHave6443 {
-			return ScheduleControlNodesPort6443(current, false)
+	if ep := clusters.FindAssignedLbApiEndpointV2(r.Current.LoadBalancers.Clusters); ep != nil {
+		if r.Hc.Cluster.ControlNodesHave6443 {
+			return ScheduleControlNodesPort6443(r.Current, false)
 		}
 	}
 
@@ -148,6 +170,7 @@ func PostKubernetesDiff(hc *HealthCheckStatus, diff *LoadBalancersDiffResult, cu
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
 func ScheduleReconcileLoadBalancerNodePools(
+	useProxy bool,
 	current *spec.ClustersV2,
 	desired *spec.ClustersV2,
 	currentId LoadBalancerIdentifier,
@@ -175,6 +198,109 @@ func ScheduleReconcileLoadBalancerNodePools(
 	}
 
 	if added {
+		// Addition Stages
+		var (
+			tf = spec.Stage_Terraformer{
+				Terraformer: &spec.StageTerraformer{
+					Description: &spec.StageDescription{
+						About:      "Reconciling infrastructure for the load balancer",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+					SubPasses: []*spec.StageTerraformer_SubPass{
+						{
+							Kind: spec.StageTerraformer_UPDATE_INFRASTRUCTURE,
+							Description: &spec.StageDescription{
+								About:      "Reconciling firewalls and VMs for new nodes/nodepools",
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+						},
+					},
+				},
+			}
+
+			ans = spec.Stage_Ansibler{
+				Ansibler: &spec.StageAnsibler{
+					Description: &spec.StageDescription{
+						About:      "Configuring nodes of the reconciled load balancer",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+					SubPasses: []*spec.StageAnsibler_SubPass{
+						{
+							Kind: spec.StageAnsibler_INSTALL_VPN,
+							Description: &spec.StageDescription{
+								About:      "Installing VPN and interconnect new nodes/nodepools with existing infrastructure",
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+						},
+						{
+							Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
+							Description: &spec.StageDescription{
+								About:      "Refreshing/Deploying envoy services for new nodes/nodepools",
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+						},
+					},
+				},
+			}
+
+			ansProxy = spec.Stage_Ansibler{
+				Ansibler: &spec.StageAnsibler{
+					Description: &spec.StageDescription{
+						About:      "Configuring nodes of the reconciled load balancer",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+					SubPasses: []*spec.StageAnsibler_SubPass{
+						{
+							Kind: spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES,
+							Description: &spec.StageDescription{
+								About:      "Updating HttpProxy,NoProxy environment variables to be used by the package manager",
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+						},
+						{
+							Kind: spec.StageAnsibler_INSTALL_VPN,
+							Description: &spec.StageDescription{
+								About:      "Installing VPN and interconnect new nodes/nodepools with existing infrastructure",
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+						},
+						{
+							Kind: spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES,
+							Description: &spec.StageDescription{
+								About:      "Updating HttpProxy,NoProxy environment variables, after populating private addresses on nodes",
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+						},
+						{
+							Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
+							Description: &spec.StageDescription{
+								About:      "Refreshing/Deploying envoy services for new nodes/nodepools",
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+						},
+						{
+							Kind: spec.StageAnsibler_COMMIT_PROXY_ENVS,
+							Description: &spec.StageDescription{
+								About:      "Commiting proxy environment variables",
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+						},
+					},
+				},
+			}
+		)
+
+		pipeline := []*spec.Stage{
+			{StageKind: &tf},
+			{StageKind: nil},
+		}
+
+		if useProxy {
+			pipeline[1].StageKind = &ansProxy
+		} else {
+			pipeline[1].StageKind = &ans
+		}
+
 		updateOp := spec.TaskV2_Update{
 			Update: &spec.UpdateV2{
 				State: &spec.UpdateV2_State{
@@ -195,53 +321,7 @@ func ScheduleReconcileLoadBalancerNodePools(
 			Event:       spec.EventV2_UPDATE_V2,
 			Task:        &spec.TaskV2{Do: &updateOp},
 			Description: fmt.Sprintf("Reconciling load balancer %q", currentId.Id),
-			Pipeline: []*spec.Stage{
-				{
-					StageKind: &spec.Stage_Terraformer{
-						Terraformer: &spec.StageTerraformer{
-							Description: &spec.StageDescription{
-								About:      "Reconciling infrastructure for the load balancer",
-								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-							},
-							SubPasses: []*spec.StageTerraformer_SubPass{
-								{
-									Kind: spec.StageTerraformer_UPDATE_INFRASTRUCTURE,
-									Description: &spec.StageDescription{
-										About:      "Reconciling firewalls and nodepools for new nodes/nodepools",
-										ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-									},
-								},
-							},
-						},
-					},
-				},
-				{
-					StageKind: &spec.Stage_Ansibler{
-						Ansibler: &spec.StageAnsibler{
-							Description: &spec.StageDescription{
-								About:      "Configuring nodes of the reconciled load balancer",
-								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-							},
-							SubPasses: []*spec.StageAnsibler_SubPass{
-								{
-									Kind: spec.StageAnsibler_INSTALL_VPN,
-									Description: &spec.StageDescription{
-										About:      "Installing VPN and interconnect new nodes/nodepools with existing infrastructure",
-										ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-									},
-								},
-								{
-									Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
-									Description: &spec.StageDescription{
-										About:      "Refreshing/Deploying envoy services for new nodes/nodepools",
-										ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
+			Pipeline:    pipeline,
 		}
 	}
 
@@ -252,6 +332,82 @@ func ScheduleReconcileLoadBalancerNodePools(
 
 	for np := range diff.Deleted {
 		toReconcile.ClusterInfo.NodePools = nodepools.DeleteByName(toReconcile.ClusterInfo.NodePools, np)
+	}
+
+	// Deletion Stages
+	var (
+		tf = spec.Stage_Terraformer{
+			Terraformer: &spec.StageTerraformer{
+				Description: &spec.StageDescription{
+					About:      "Reconciling infrastructure for the load balancer",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+				SubPasses: []*spec.StageTerraformer_SubPass{
+					{
+						Kind: spec.StageTerraformer_UPDATE_INFRASTRUCTURE,
+						Description: &spec.StageDescription{
+							About:      "Remvoing firewalls and nodepools",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+				},
+			},
+		}
+
+		ansProxy = spec.Stage_Ansibler{
+			Ansibler: &spec.StageAnsibler{
+				Description: &spec.StageDescription{
+					About:      "Configuring nodes of the reconciled load balancer",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+				SubPasses: []*spec.StageAnsibler_SubPass{
+					{
+						Kind: spec.StageAnsibler_INSTALL_VPN,
+						Description: &spec.StageDescription{
+							About:      "Refreshing VPN on nodes of the cluster after nodes/nodepool deletion",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
+						Kind: spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES,
+						Description: &spec.StageDescription{
+							About:      "Updating HttpProxy,NoProxy environment variables, after node/nodepool removal",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
+						Kind: spec.StageAnsibler_COMMIT_PROXY_ENVS,
+						Description: &spec.StageDescription{
+							About:      "Commiting proxy environment variables",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+				},
+			},
+		}
+	)
+
+	// For deletion, the Ansible stage does not need to be executed
+	// as there is no need to refresh/reconcile the modified loadbalancer
+	// as the deletion deletes the infrastructure and leaves the remaining
+	// infrastructure unchanged. Does not affect the roles or the target pools
+	// of the loadbalancers in any way.
+	//
+	// The healthcheck within the reconciliation loop will trigger a refresh
+	// of the VPN.
+	pipeline := []*spec.Stage{
+		{StageKind: &tf},
+	}
+
+	// Unless the proxy is in use, in which case the task needs to also
+	// update proxy environemnt variables after deletion, in which case
+	// the task will also bundle the update of the VPN as there is a call
+	// to be made to the Ansibler stage.
+	if useProxy {
+		next := &spec.Stage{
+			StageKind: &ansProxy,
+		}
+		pipeline = append(pipeline, next)
 	}
 
 	updateOp := spec.TaskV2_Update{
@@ -268,38 +424,13 @@ func ScheduleReconcileLoadBalancerNodePools(
 		},
 	}
 
-	// For deletion, the Ansible stage does not need to be executed
-	// as there is no need to refresh/reconcile the modified loadbalancer
-	// as the deletion deletes the infrastructure and leaves the remaining
-	// infrastructure unchanged. For the Wireguard reconciliation the
-	// healthcheck will take care of that.
 	return &spec.TaskEventV2{
 		Id:          uuid.New().String(),
 		Timestamp:   timestamppb.New(time.Now().UTC()),
 		Event:       spec.EventV2_UPDATE_V2,
 		Task:        &spec.TaskV2{Do: &updateOp},
 		Description: fmt.Sprintf("Reconciling load balancer %q", currentId.Id),
-		Pipeline: []*spec.Stage{
-			{
-				StageKind: &spec.Stage_Terraformer{
-					Terraformer: &spec.StageTerraformer{
-						Description: &spec.StageDescription{
-							About:      "Reconciling infrastructure for the load balancer",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-						SubPasses: []*spec.StageTerraformer_SubPass{
-							{
-								Kind: spec.StageTerraformer_UPDATE_INFRASTRUCTURE,
-								Description: &spec.StageDescription{
-									About:      "Remvoing firewalls and nodepools",
-									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-								},
-							},
-						},
-					},
-				},
-			},
-		},
+		Pipeline:    pipeline,
 	}
 }
 
@@ -309,52 +440,37 @@ func ScheduleReconcileLoadBalancerNodePools(
 // to the new [spec.DNS.Endpoint].
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
-func ScheduleReplaceDns(current, desired *spec.ClustersV2, currentId, desiredId LoadBalancerIdentifier, apiEndpoint bool) *spec.TaskEventV2 {
+func ScheduleReplaceDns(
+	useProxy bool,
+	current *spec.ClustersV2,
+	desired *spec.ClustersV2,
+	cid LoadBalancerIdentifier,
+	did LoadBalancerIdentifier,
+	apiEndpoint bool,
+) *spec.TaskEventV2 {
 	var (
-		dns      = proto.Clone(desired.LoadBalancers.Clusters[desiredId.Index].Dns).(*spec.DNS)
-		inFlight = proto.Clone(current).(*spec.ClustersV2)
+		dns       = proto.Clone(desired.LoadBalancers.Clusters[did.Index].Dns).(*spec.DNS)
+		inFlight  = proto.Clone(current).(*spec.ClustersV2)
+		toReplace = spec.UpdateV2_TerraformerReplaceDns{
+			Handle: cid.Id,
+			Dns:    dns,
+		}
 	)
 
-	updateOp := spec.UpdateV2{
-		State: &spec.UpdateV2_State{
-			K8S:           inFlight.K8S,
-			LoadBalancers: inFlight.LoadBalancers.Clusters,
-		},
-		Delta: &spec.UpdateV2_TfReplaceDns{
-			TfReplaceDns: &spec.UpdateV2_TerraformerReplaceDns{
-				Handle: currentId.Id,
-				Dns:    dns,
-			},
-		},
-	}
-
-	// For non API endpoint DNS, it is sufficient only refresh/rebuilt
-	// the dns in the Terraformer stage.
-	task := spec.TaskEventV2{
-		Id:        uuid.New().String(),
-		Timestamp: timestamppb.New(time.Now().UTC()),
-		Event:     spec.EventV2_UPDATE_V2,
-		Task: &spec.TaskV2{
-			Do: &spec.TaskV2_Update{
-				Update: &updateOp,
-			},
-		},
-		Description: fmt.Sprintf("Reconciling DNS for load balancer %q", currentId.Id),
-		Pipeline: []*spec.Stage{
-			{
-				StageKind: &spec.Stage_Terraformer{
-					Terraformer: &spec.StageTerraformer{
-						Description: &spec.StageDescription{
-							About:      "Reconciling infrastructure",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-						SubPasses: []*spec.StageTerraformer_SubPass{
-							{
-								Kind: spec.StageTerraformer_UPDATE_INFRASTRUCTURE,
-								Description: &spec.StageDescription{
-									About:      "Replacing old DNS infrastructure with new",
-									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-								},
+	pipeline := []*spec.Stage{
+		{
+			StageKind: &spec.Stage_Terraformer{
+				Terraformer: &spec.StageTerraformer{
+					Description: &spec.StageDescription{
+						About:      "Reconciling infrastructure",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+					SubPasses: []*spec.StageTerraformer_SubPass{
+						{
+							Kind: spec.StageTerraformer_UPDATE_INFRASTRUCTURE,
+							Description: &spec.StageDescription{
+								About:      "Replacing old DNS infrastructure with new",
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 							},
 						},
 					},
@@ -363,11 +479,38 @@ func ScheduleReplaceDns(current, desired *spec.ClustersV2, currentId, desiredId 
 		},
 	}
 
-	if desired.LoadBalancers.Clusters[desiredId.Index].IsApiEndpoint() && apiEndpoint {
-		pst := current.LoadBalancers.Clusters[currentId.Index].Dns
-		updateOp.Delta.(*spec.UpdateV2_TfReplaceDns).TfReplaceDns.OldApiEndpoint = &pst.Endpoint
+	if useProxy {
+		pipeline = append(pipeline, &spec.Stage{StageKind: &spec.Stage_Ansibler{
+			Ansibler: &spec.StageAnsibler{
+				Description: &spec.StageDescription{
+					About:      "Configuring nodes after DNS change",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+				SubPasses: []*spec.StageAnsibler_SubPass{
+					{
+						Kind: spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES,
+						Description: &spec.StageDescription{
+							About:      "Updating HttpProxy,NoProxy environment variables",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
+						Kind: spec.StageAnsibler_COMMIT_PROXY_ENVS,
+						Description: &spec.StageDescription{
+							About:      "Commiting proxy environment variables",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+				},
+			},
+		}})
+	}
 
-		task.Pipeline = append(task.Pipeline, &spec.Stage{
+	if desired.LoadBalancers.Clusters[did.Index].IsApiEndpoint() && apiEndpoint {
+		pst := current.LoadBalancers.Clusters[cid.Index].Dns
+		toReplace.OldApiEndpoint = &pst.Endpoint
+
+		pipeline = append(pipeline, &spec.Stage{
 			StageKind: &spec.Stage_Ansibler{
 				Ansibler: &spec.StageAnsibler{
 					Description: &spec.StageDescription{
@@ -387,7 +530,7 @@ func ScheduleReplaceDns(current, desired *spec.ClustersV2, currentId, desiredId 
 			},
 		})
 
-		task.Pipeline = append(task.Pipeline, &spec.Stage{
+		pipeline = append(pipeline, &spec.Stage{
 			StageKind: &spec.Stage_KubeEleven{
 				KubeEleven: &spec.StageKubeEleven{
 					Description: &spec.StageDescription{
@@ -406,6 +549,70 @@ func ScheduleReplaceDns(current, desired *spec.ClustersV2, currentId, desiredId 
 				},
 			},
 		})
+
+		pipeline = append(pipeline, &spec.Stage{
+			StageKind: &spec.Stage_Kuber{
+				Kuber: &spec.StageKuber{
+					Description: &spec.StageDescription{
+						About:      "Updating Config Maps after endpoint change",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+					SubPasses: []*spec.StageKuber_SubPass{
+						{
+							Kind: spec.StageKuber_PATCH_CLUSTER_INFO_CM,
+							Description: &spec.StageDescription{
+								About:      "Updating cluster-info cluster map with new endpoint",
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+						},
+						{
+							Kind: spec.StageKuber_PATCH_KUBE_PROXY,
+							Description: &spec.StageDescription{
+								About:      "Updating Kube-Proxy cluster map with new endpoint",
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+						},
+						{
+							Kind: spec.StageKuber_PATCH_KUBEADM,
+							Description: &spec.StageDescription{
+								About:      "Updating Kubeadm cluster map with new endpoint",
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+						},
+						{
+							Kind: spec.StageKuber_CILIUM_RESTART,
+							Description: &spec.StageDescription{
+								About:      "Performing rollout restart for cilium after changes",
+								ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+							},
+						},
+					},
+				},
+			},
+		})
+	}
+
+	updateOp := spec.UpdateV2{
+		State: &spec.UpdateV2_State{
+			K8S:           inFlight.K8S,
+			LoadBalancers: inFlight.LoadBalancers.Clusters,
+		},
+		Delta: &spec.UpdateV2_TfReplaceDns{
+			TfReplaceDns: &toReplace,
+		},
+	}
+
+	task := spec.TaskEventV2{
+		Id:        uuid.New().String(),
+		Timestamp: timestamppb.New(time.Now().UTC()),
+		Event:     spec.EventV2_UPDATE_V2,
+		Task: &spec.TaskV2{
+			Do: &spec.TaskV2_Update{
+				Update: &updateOp,
+			},
+		},
+		Description: fmt.Sprintf("Reconciling DNS for load balancer %q", cid.Id),
+		Pipeline:    pipeline,
 	}
 
 	return &task
@@ -540,6 +747,46 @@ func ScheduleMoveApiEndpoint(
 					},
 				},
 			},
+			{
+				StageKind: &spec.Stage_Kuber{
+					Kuber: &spec.StageKuber{
+						Description: &spec.StageDescription{
+							About:      "Updating Config Maps after endpoint change",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+						SubPasses: []*spec.StageKuber_SubPass{
+							{
+								Kind: spec.StageKuber_PATCH_CLUSTER_INFO_CM,
+								Description: &spec.StageDescription{
+									About:      "Updating cluster-info cluster map with new endpoint",
+									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+								},
+							},
+							{
+								Kind: spec.StageKuber_PATCH_KUBE_PROXY,
+								Description: &spec.StageDescription{
+									About:      "Updating Kube-Proxy cluster map with new endpoint",
+									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+								},
+							},
+							{
+								Kind: spec.StageKuber_PATCH_KUBEADM,
+								Description: &spec.StageDescription{
+									About:      "Updating Kubeadm cluster map with new endpoint",
+									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+								},
+							},
+							{
+								Kind: spec.StageKuber_CILIUM_RESTART,
+								Description: &spec.StageDescription{
+									About:      "Performing rollout restart for cilium after changes",
+									ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -547,7 +794,7 @@ func ScheduleMoveApiEndpoint(
 // Deletes the loadbalancer with the id specified in the passed in lb from the [spec.Clusters] state.
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
-func ScheduleDeleteLoadBalancer(current *spec.ClustersV2, i LoadBalancerIdentifier) *spec.TaskEventV2 {
+func ScheduleDeleteLoadBalancer(useProxy bool, current *spec.ClustersV2, cid LoadBalancerIdentifier) *spec.TaskEventV2 {
 	inFlight := proto.Clone(current).(*spec.ClustersV2)
 	updateOp := spec.UpdateV2{
 		State: &spec.UpdateV2_State{
@@ -556,9 +803,77 @@ func ScheduleDeleteLoadBalancer(current *spec.ClustersV2, i LoadBalancerIdentifi
 		},
 		Delta: &spec.UpdateV2_DeleteLoadBalancer_{
 			DeleteLoadBalancer: &spec.UpdateV2_DeleteLoadBalancer{
-				Handle: i.Id,
+				Handle: cid.Id,
 			},
 		},
+	}
+
+	// For deletion, the Ansible stage does not need to be executed
+	// as there is no need to refresh/reconcile the deleted loadbalancer
+	// as the deletion deletes the infrastructure and leaves the remaining
+	// infrastructure unchanged. Does not affect the roles or the target pools
+	// of the loadbalancers in any way.
+	//
+	// The healthcheck within the reconciliation loop will trigger a refresh
+	// of the VPN.
+	pipeline := []*spec.Stage{
+		{
+			StageKind: &spec.Stage_Terraformer{
+				Terraformer: &spec.StageTerraformer{
+					Description: &spec.StageDescription{
+						About:      "Reconciling infrastructure",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+					SubPasses: []*spec.StageTerraformer_SubPass{
+						{
+							Kind: spec.StageTerraformer_UPDATE_INFRASTRUCTURE,
+							Description: &spec.StageDescription{
+								About:      "Destroying infrastructure",
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Unless the proxy is in use, in which case the task needs to also
+	// update proxy environemnt variables after deletion, in which case
+	// the task will also bundle the update of the VPN as there is a call
+	// to be made to the Ansibler stage.
+	if useProxy {
+		pipeline = append(pipeline, &spec.Stage{StageKind: &spec.Stage_Ansibler{
+			Ansibler: &spec.StageAnsibler{
+				Description: &spec.StageDescription{
+					About:      "Configuring nodes after Load Balancer deletion",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+				SubPasses: []*spec.StageAnsibler_SubPass{
+					{
+						Kind: spec.StageAnsibler_INSTALL_VPN,
+						Description: &spec.StageDescription{
+							About:      "Refreshing VPN on nodes of the cluster",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
+						Kind: spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES,
+						Description: &spec.StageDescription{
+							About:      "Updating HttpProxy,NoProxy environment variables",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
+						Kind: spec.StageAnsibler_COMMIT_PROXY_ENVS,
+						Description: &spec.StageDescription{
+							About:      "Commiting proxy environment variables",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+				},
+			},
+		}})
 	}
 
 	return &spec.TaskEventV2{
@@ -570,28 +885,8 @@ func ScheduleDeleteLoadBalancer(current *spec.ClustersV2, i LoadBalancerIdentifi
 				Update: &updateOp,
 			},
 		},
-		Description: fmt.Sprintf("Removing load balancer %q", i.Id),
-		Pipeline: []*spec.Stage{
-			{
-				StageKind: &spec.Stage_Terraformer{
-					Terraformer: &spec.StageTerraformer{
-						Description: &spec.StageDescription{
-							About:      "Reconciling infrastructure",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-						SubPasses: []*spec.StageTerraformer_SubPass{
-							{
-								Kind: spec.StageTerraformer_UPDATE_INFRASTRUCTURE,
-								Description: &spec.StageDescription{
-									About:      "Destroying infrastructure",
-									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-								},
-							},
-						},
-					},
-				},
-			},
-		},
+		Description: fmt.Sprintf("Removing load balancer %q", cid.Id),
+		Pipeline:    pipeline,
 	}
 }
 
@@ -599,10 +894,102 @@ func ScheduleDeleteLoadBalancer(current *spec.ClustersV2, i LoadBalancerIdentifi
 // into the existing current infrastructure of [spec.Clusters].
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
-func ScheduleJoinLoadBalancer(current, desired *spec.ClustersV2, desiredId LoadBalancerIdentifier) *spec.TaskEventV2 {
+func ScheduleJoinLoadBalancer(useProxy bool, current, desired *spec.ClustersV2, did LoadBalancerIdentifier) *spec.TaskEventV2 {
 	var (
-		toJoin   = proto.Clone(desired.LoadBalancers.Clusters[desiredId.Index]).(*spec.LBclusterV2)
+		toJoin   = proto.Clone(desired.LoadBalancers.Clusters[did.Index]).(*spec.LBclusterV2)
 		inFlight = proto.Clone(current).(*spec.ClustersV2)
+	)
+
+	// Pipeline stages
+	var (
+		tf = spec.Stage_Terraformer{
+			Terraformer: &spec.StageTerraformer{
+				Description: &spec.StageDescription{
+					About:      "Creating infrastructure for newly added loadbalancer",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+				SubPasses: []*spec.StageTerraformer_SubPass{
+					{
+						Kind: spec.StageTerraformer_UPDATE_INFRASTRUCTURE,
+						Description: &spec.StageDescription{
+							About:      "Spawning infrastructure",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+				},
+			},
+		}
+
+		ans = spec.Stage_Ansibler{
+			Ansibler: &spec.StageAnsibler{
+				Description: &spec.StageDescription{
+					About:      "Configuring newly spawned infrastructure",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+				SubPasses: []*spec.StageAnsibler_SubPass{
+					{
+						Kind: spec.StageAnsibler_INSTALL_VPN,
+						Description: &spec.StageDescription{
+							About:      "Installing VPN and interconnect with existing infrastructure",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
+						Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
+						Description: &spec.StageDescription{
+							About:      "Setup envoy for roles of the loadbalancer",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+				},
+			},
+		}
+
+		ansProxy = spec.Stage_Ansibler{
+			Ansibler: &spec.StageAnsibler{
+				Description: &spec.StageDescription{
+					About:      "Configuring newly spawned infrastructure",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+				SubPasses: []*spec.StageAnsibler_SubPass{
+					{
+						Kind: spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES,
+						Description: &spec.StageDescription{
+							About:      "Updating HttpProxy,NoProxy environment variables to be used by the package manager",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
+						Kind: spec.StageAnsibler_INSTALL_VPN,
+						Description: &spec.StageDescription{
+							About:      "Installing VPN and interconnect with existing infrastructure",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
+						Kind: spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES,
+						Description: &spec.StageDescription{
+							About:      "Updating HttpProxy,NoProxy environment variables, after populating private addresses on nodes",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
+						Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
+						Description: &spec.StageDescription{
+							About:      "Setup envoy for roles of the loadbalancer",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
+						Kind: spec.StageAnsibler_COMMIT_PROXY_ENVS,
+						Description: &spec.StageDescription{
+							About:      "Commiting proxy environment variables",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+				},
+			},
+		}
 	)
 
 	updateOp := spec.UpdateV2{
@@ -617,6 +1004,17 @@ func ScheduleJoinLoadBalancer(current, desired *spec.ClustersV2, desiredId LoadB
 		},
 	}
 
+	pipeline := []*spec.Stage{
+		{StageKind: &tf},
+		{StageKind: nil},
+	}
+
+	if useProxy {
+		pipeline[1].StageKind = &ansProxy
+	} else {
+		pipeline[1].StageKind = &ans
+	}
+
 	return &spec.TaskEventV2{
 		Id:        uuid.New().String(),
 		Timestamp: timestamppb.New(time.Now().UTC()),
@@ -626,54 +1024,8 @@ func ScheduleJoinLoadBalancer(current, desired *spec.ClustersV2, desiredId LoadB
 				Update: &updateOp,
 			},
 		},
-		Description: fmt.Sprintf("Joining loadbalancer %q into existing infrastructure", desiredId.Id),
-		Pipeline: []*spec.Stage{
-			{
-				StageKind: &spec.Stage_Terraformer{
-					Terraformer: &spec.StageTerraformer{
-						Description: &spec.StageDescription{
-							About:      "Creating infrastructure for newly added loadbalancer",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-						SubPasses: []*spec.StageTerraformer_SubPass{
-							{
-								Kind: spec.StageTerraformer_UPDATE_INFRASTRUCTURE,
-								Description: &spec.StageDescription{
-									About:      "Spawning infrastructure",
-									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-								},
-							},
-						},
-					},
-				},
-			},
-			{
-				StageKind: &spec.Stage_Ansibler{
-					Ansibler: &spec.StageAnsibler{
-						Description: &spec.StageDescription{
-							About:      "Configuring newly spawned infrastructure",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-						SubPasses: []*spec.StageAnsibler_SubPass{
-							{
-								Kind: spec.StageAnsibler_INSTALL_VPN,
-								Description: &spec.StageDescription{
-									About:      "Installing VPN and interconnect with existing infrastructure",
-									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-								},
-							},
-							{
-								Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
-								Description: &spec.StageDescription{
-									About:      "Setup envoy for roles of the loadbalancer",
-									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-								},
-							},
-						},
-					},
-				},
-			},
-		},
+		Description: fmt.Sprintf("Joining loadbalancer %q into existing infrastructure", did.Id),
+		Pipeline:    pipeline,
 	}
 }
 
@@ -833,11 +1185,19 @@ func ScheduleAddRoles(current, desired *spec.ClustersV2, currentId, desiredId Lo
 	}
 }
 
-// Reconciles the TargetPools in roles from the loadbalancer with the id identified from the passed
-// in lb string, from the desired [spec.Clusters] state into the current [spec.Clusters] state.
+// Reconciles the TargetPools in roles from the loadbalancer
+// with the id identified from the passed in lb string, from
+// the desired [spec.Clusters] state into the current [spec.Clusters]
+// state.
 //
-// The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
-func ScheduleReconcileRoleTargetPools(current, desired *spec.ClustersV2, currentId, desiredId LoadBalancerIdentifier) *spec.TaskEventV2 {
+// The returned [spec.TaskEvent] does not point to or share any
+// memory with the two passed in states.
+func ScheduleReconcileRoleTargetPools(
+	current *spec.ClustersV2,
+	desired *spec.ClustersV2,
+	currentId LoadBalancerIdentifier,
+	desiredId LoadBalancerIdentifier,
+) *spec.TaskEventV2 {
 	var (
 		desiredLb   = desired.LoadBalancers.Clusters[desiredId.Index]
 		toReconcile = proto.Clone(current.LoadBalancers.Clusters[currentId.Index]).(*spec.LBclusterV2)
@@ -847,7 +1207,7 @@ func ScheduleReconcileRoleTargetPools(current, desired *spec.ClustersV2, current
 	for _, cr := range toReconcile.Roles {
 		for _, dr := range desiredLb.Roles {
 			if cr.Name == dr.Name {
-				cr.TargetPools = dr.TargetPools
+				cr.TargetPools = slices.Clone(dr.TargetPools)
 				break
 			}
 		}

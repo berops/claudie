@@ -83,6 +83,8 @@ func MoveApiEndpoint(
 	update.Kubernetes(action.Update.State.K8S)
 	update.Loadbalancers(action.Update.State.LoadBalancers...)
 	update.Commit()
+
+	logger.Info().Msg("Successfully moved API endpoint")
 }
 
 func determineApiChanges(

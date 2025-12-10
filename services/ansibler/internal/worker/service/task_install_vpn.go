@@ -89,6 +89,8 @@ func InstallVPN(
 	update.Kubernetes(k8s)
 	update.Loadbalancers(lbs...)
 	update.Commit()
+
+	logger.Info().Msg("Finished Installing VPN")
 }
 
 // installWireguardVPN install wireguard VPN for all nodes in the infrastructure.

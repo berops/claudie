@@ -106,13 +106,19 @@ func (te *TaskV2) ConsumeUpdateResult(result *TaskResult_Update) error {
 		case *UpdateV2_DeleteLoadBalancer_:
 			// nothing to consume.
 		case *UpdateV2_None_:
-		// nothing to consume.
-		case *UpdateV2_Proxy:
 			// nothing to consume.
 		case *UpdateV2_ReconciledLoadBalancer_:
 			// nothing to consume.
 		case *UpdateV2_ReplacedDns_:
-			// nothing to consume.
+		// nothing to consume.
+		case *UpdateV2_KpatchNodes:
+			update.Delta = &UpdateV2_PatchedNodes_{
+				PatchedNodes: new(UpdateV2_PatchedNodes),
+			}
+		case *UpdateV2_AnsReplaceProxy:
+			update.Delta = &UpdateV2_ReplacedProxy{
+				ReplacedProxy: new(UpdateV2_ReplacedProxySettings),
+			}
 		case *UpdateV2_TfAddLoadBalancer:
 			update.Delta = &UpdateV2_AddedLoadBalancer_{
 				AddedLoadBalancer: &UpdateV2_AddedLoadBalancer{

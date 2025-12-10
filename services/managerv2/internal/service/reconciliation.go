@@ -1,17 +1,13 @@
 package service
 
 import (
-	"time"
-
 	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/managerv2/internal/service/managementcluster"
-	"github.com/google/uuid"
 
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ScheduleResult describes what has happened during the
@@ -23,6 +19,10 @@ type ScheduleResult uint8
 // TODO: with a failed inFlight state there needs to be a decision to be made if a task
 // with a higher priority is to be scheduled what happens in that case ?
 // TODO: maybe restrucurize the workers project directory ?
+// TODO: the diff should be always between the committed current state and the desired state
+// if we have an inflight state the scheduled task should be merged with that inFlight state.
+// But then what if we add a loadbalancer and it fails in the ansible stage and then delete it
+// from the desired state ? the diff will miss this...
 const (
 	// Reschedule describes the case where the manifest should be rescheduled again
 	// after either error-ing or completing.
@@ -211,32 +211,8 @@ func reconciliate(pending *spec.ConfigV2, desired map[string]*spec.ClustersV2) S
 				break
 			}
 
-			k8s := KubernetesDiff(current.K8S, desired.K8S)
-			lbs := LoadBalancersDiff(current.LoadBalancers, desired.LoadBalancers)
-
-			if state.InFlight = PreKubernetesDiff(&hc, &lbs, current, desired); state.InFlight != nil {
+			if state.InFlight = handleUpdate(hc, current, desired); state.InFlight != nil {
 				result = Reschedule
-				break
-			}
-
-			if state.InFlight = KubernetesModifications(&hc, &k8s, current, desired); state.InFlight != nil {
-				result = Reschedule
-				break
-			}
-
-			if state.InFlight = PostKubernetesDiff(&hc, &lbs, current, desired); state.InFlight != nil {
-				result = Reschedule
-				break
-			}
-
-			if state.InFlight = KubernetesDeletions(&hc, &k8s, current, desired); state.InFlight != nil {
-				result = Reschedule
-				break
-			}
-
-			if hc.Cluster.VpnDrift {
-				result = Reschedule
-				state.InFlight = ScheduleRefreshVPN(current)
 			}
 		}
 
@@ -276,315 +252,6 @@ func PopulateEntriesForNewClusters(
 		}
 	}
 }
-
-// Schedules a [spec.TaskEvent] task for reconciling the VPN across the nodes of the clusters in the
-// passed in [spec.Clusters].
-//
-// The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
-func ScheduleRefreshVPN(current *spec.ClustersV2) *spec.TaskEventV2 {
-	inFlight := proto.Clone(current).(*spec.ClustersV2)
-	return &spec.TaskEventV2{
-		Id:        uuid.New().String(),
-		Timestamp: timestamppb.New(time.Now().UTC()),
-		Event:     spec.EventV2_UPDATE_V2,
-		Task: &spec.TaskV2{
-			Do: &spec.TaskV2_Update{
-				Update: &spec.UpdateV2{
-					State: &spec.UpdateV2_State{
-						K8S:           inFlight.K8S,
-						LoadBalancers: inFlight.LoadBalancers.Clusters,
-					},
-					Delta: &spec.UpdateV2_None_{},
-				},
-			},
-		},
-		Description: "Refreshing VPN",
-		Pipeline: []*spec.Stage{
-			{
-				StageKind: &spec.Stage_Ansibler{
-					Ansibler: &spec.StageAnsibler{
-						Description: &spec.StageDescription{
-							About:      "Configuring infrastructure",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-						SubPasses: []*spec.StageAnsibler_SubPass{
-							{
-								Kind: spec.StageAnsibler_INSTALL_VPN,
-								Description: &spec.StageDescription{
-									About:      "Fixing drift in VPN across nodes of the kuberentes and loadbalancer clusters",
-									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
-// Schedules a [spec.TaskEvent] task for creating the clusters in the passed in desired [spec.Clusters].
-//
-// The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
-func ScheduleCreateCluster(desired *spec.ClustersV2) *spec.TaskEventV2 {
-	// Stages
-	var (
-		tf = spec.Stage_Terraformer{
-			Terraformer: &spec.StageTerraformer{
-				Description: &spec.StageDescription{
-					About:      "Creating infrastructure for the new cluster",
-					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-				},
-				SubPasses: []*spec.StageTerraformer_SubPass{
-					{
-						Kind: spec.StageTerraformer_BUILD_INFRASTRUCTURE,
-						Description: &spec.StageDescription{
-							About:      "Building desired state infrastructure",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-				},
-			},
-		}
-
-		ansProxy = spec.Stage_Ansibler{
-			Ansibler: &spec.StageAnsibler{
-				Description: &spec.StageDescription{
-					About:      "Configuring newly spawned cluster infrastructure",
-					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-				},
-				SubPasses: []*spec.StageAnsibler_SubPass{
-					{
-						Kind: spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES,
-						Description: &spec.StageDescription{
-							About:      "Updating HttpProxy,NoProxy environment variables based on proxy specification",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-					{
-						Kind: spec.StageAnsibler_INSTALL_NODE_REQUIREMENTS,
-						Description: &spec.StageDescription{
-							About:      "Installing pre-requisites on all of the nodes of the cluster",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-					{
-						Kind: spec.StageAnsibler_INSTALL_VPN,
-						Description: &spec.StageDescription{
-							About:      "Setting up VPN across the nodes of the kuberentes and loadbalancer clusters",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-					{
-						Kind: spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES,
-						Description: &spec.StageDescription{
-							About:      "Updating HttpProxy,NoProxy environment variables based on proxy specification, after populating Private addresses",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-					{
-						Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
-						Description: &spec.StageDescription{
-							About:      "Reconciling Envoy service across the loadbalancer nodes",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-				},
-			},
-		}
-
-		ansNoProxy = spec.Stage_Ansibler{
-			Ansibler: &spec.StageAnsibler{
-				Description: &spec.StageDescription{
-					About:      "Configuring newly spawned cluster infrastructure",
-					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-				},
-				SubPasses: []*spec.StageAnsibler_SubPass{
-					{
-						Kind: spec.StageAnsibler_INSTALL_NODE_REQUIREMENTS,
-						Description: &spec.StageDescription{
-							About:      "Installing pre-requisites on all of the nodes of the cluster",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-					{
-						Kind: spec.StageAnsibler_INSTALL_VPN,
-						Description: &spec.StageDescription{
-							About:      "Setting up VPN across the nodes of the kuberentes and loadbalancer clusters",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-					{
-						Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
-						Description: &spec.StageDescription{
-							About:      "Reconciling Envoy service across the loadbalancer nodes",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-				},
-			},
-		}
-
-		kubeeleven = spec.Stage_KubeEleven{
-			KubeEleven: &spec.StageKubeEleven{
-				Description: &spec.StageDescription{
-					About:      "Building kubernetes cluster out of the spawned infrastructure",
-					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-				},
-				SubPasses: []*spec.StageKubeEleven_SubPass{
-					{
-						Kind: spec.StageKubeEleven_RECONCILE_CLUSTER,
-						Description: &spec.StageDescription{
-							About:      "Creating kubernetes cluster from the set up infrastructure",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-				},
-			},
-		}
-
-		// TODO: will we need this ?
-		// This could be handled by the reconciliation loop ??
-		// {
-		// 	StageKind: &spec.Stage_Kuber{
-		// 		Kuber: &spec.StageKuber{
-		// 			Description: &spec.StageDescription{
-		// 				About:      "Finalizing cluster configuration",
-		// 				ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-		// 			},
-		// 		},
-		// 	},
-		// },
-	)
-
-	var proxy spec.Proxy
-	useProxy := desired.K8S.InstallationProxy.Mode == ProxyDefaultMode && hasHetznerNode(desired)
-	useProxy = useProxy || desired.K8S.InstallationProxy.Mode == ProxyOnMode
-	if useProxy {
-		proxy.Op = spec.Proxy_MODIFIED
-		proxy.HttpProxyUrl, proxy.NoProxyList = httpProxyUrlAndNoProxyList(desired)
-	}
-
-	var (
-		createK8s = proto.Clone(desired.GetK8S()).(*spec.K8SclusterV2)
-		createLbs = proto.Clone(desired.GetLoadBalancers()).(*spec.LoadBalancersV2)
-		createOp  = spec.CreateV2{
-			K8S:           createK8s,
-			LoadBalancers: createLbs.GetClusters(),
-		}
-	)
-
-	pipeline := []*spec.Stage{
-		{StageKind: &tf},
-		{StageKind: nil},
-		{StageKind: &kubeeleven},
-	}
-
-	if useProxy {
-		createOp.Proxy = &proxy
-		pipeline[1].StageKind = &ansProxy
-	} else {
-		pipeline[1].StageKind = &ansNoProxy
-	}
-
-	return &spec.TaskEventV2{
-		Id:        uuid.New().String(),
-		Timestamp: timestamppb.New(time.Now().UTC()),
-		Event:     spec.EventV2_CREATE_V2,
-		Task: &spec.TaskV2{
-			Do: &spec.TaskV2_Create{
-				Create: &createOp,
-			},
-		},
-		Description: "creating cluster",
-		Pipeline:    pipeline,
-	}
-}
-
-// Schedules a [spec.TaskEvent] task for deleting the clusters in the passed in current [spec.Clusters].
-//
-// The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
-func ScheduleDeleteCluster(current *spec.ClustersV2) *spec.TaskEventV2 {
-	var pipeline []*spec.Stage
-
-	if static := nodepools.Static(current.K8S.ClusterInfo.NodePools); len(static) > 0 {
-		// The idea is to continue during the destruction of these two stages even if the
-		// kube-eleven stage fails. The static nodes could already be unreachable, for
-		// example when credits on a provider expired and there is no way to reach those
-		// VMs anymore.
-		ke := &spec.Stage{
-			StageKind: &spec.Stage_KubeEleven{
-				KubeEleven: &spec.StageKubeEleven{
-					Description: &spec.StageDescription{
-						About:      "Destroying kubernetes cluster and related binaries",
-						ErrorLevel: spec.ErrorLevel_ERROR_WARN,
-					},
-				},
-			},
-		}
-
-		ans := &spec.Stage{
-			StageKind: &spec.Stage_Ansibler{
-				Ansibler: &spec.StageAnsibler{
-					Description: &spec.StageDescription{
-						About:      "Removing claudie installed utilities across nodes",
-						ErrorLevel: spec.ErrorLevel_ERROR_WARN,
-					},
-				},
-			},
-		}
-
-		pipeline = append(pipeline, ke)
-		pipeline = append(pipeline, ans)
-	}
-
-	pipeline = append(pipeline, &spec.Stage{
-		StageKind: &spec.Stage_Terraformer{
-			Terraformer: &spec.StageTerraformer{
-				Description: &spec.StageDescription{
-					About:      "Destroying infrastructure of the cluster",
-					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-				},
-				SubPasses: []*spec.StageTerraformer_SubPass{
-					{
-						Kind: spec.StageTerraformer_DESTROY_INFRASTRUCTURE,
-						Description: &spec.StageDescription{
-							About:      "Destroying current state",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-				},
-			},
-		},
-	})
-
-	var (
-		deleteK8s = proto.Clone(current.GetK8S()).(*spec.K8SclusterV2)
-		deleteLbs = proto.Clone(current.GetLoadBalancers()).(*spec.LoadBalancersV2)
-		deleteOp  = spec.DeleteV2{
-			K8S:           deleteK8s,
-			LoadBalancers: deleteLbs.GetClusters(),
-		}
-	)
-
-	return &spec.TaskEventV2{
-		Id:        uuid.New().String(),
-		Timestamp: timestamppb.New(time.Now().UTC()),
-		Event:     spec.EventV2_DELETE_V2,
-		Task: &spec.TaskV2{
-			Do: &spec.TaskV2_Delete{
-				Delete: &deleteOp,
-			},
-		},
-		Description: "deleting cluster and its attached loadbalancers",
-		Pipeline:    pipeline,
-	}
-}
-
-// TODO: the diff should be always between the committed current state and the desired state
-// if we have an inflight state the scheduled task should be merged with that inFlight state.
-// But then what if we add a loadbalancer and it fails in the ansible stage and then delete it
-// from the desired state ? the diff will miss this...
 
 // Creates an union that is the combination of the two passed in states.
 // The returned union does not point to or share any memory with the two passed in states.
@@ -700,4 +367,49 @@ func clustersUnion(old, modified *spec.ClustersV2) *spec.ClustersV2 {
 	}
 
 	return ir
+}
+
+// Handles reconciliation for updating existing clusters.
+func handleUpdate(hc HealthCheckStatus, current, desired *spec.ClustersV2) *spec.TaskEventV2 {
+	var (
+		k8s = KubernetesDiff(current.K8S, desired.K8S)
+		lbs = LoadBalancersDiff(current.LoadBalancers, desired.LoadBalancers)
+		lbr = LoadBalancersReconciliate{
+			Hc:      &hc,
+			Diff:    &lbs,
+			Proxy:   &k8s.Proxy,
+			Current: current,
+			Desired: desired,
+		}
+	)
+
+	// NOTE:
+	// The follwing are executed in specific order, changing the order may/will
+	// affect the outcome of building/reconciling the cluster including lbs.
+
+	if next := PreKubernetesDiff(lbr); next != nil {
+		return next
+	}
+
+	if next := KubernetesModifications(&hc, &k8s, current, desired); next != nil {
+		return next
+	}
+
+	if next := PostKubernetesDiff(lbr); next != nil {
+		return next
+	}
+
+	if next := KubernetesDeletions(&hc, &k8s, current, desired); next != nil {
+		return next
+	}
+
+	if hc.Cluster.VpnDrift {
+		return ScheduleRefreshVPN(current)
+	}
+
+	if next := KubernetesLowPriority(&k8s, current, desired); next != nil {
+		return next
+	}
+
+	return nil
 }

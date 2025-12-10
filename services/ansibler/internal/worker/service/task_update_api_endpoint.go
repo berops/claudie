@@ -25,7 +25,7 @@ func UpdateApiEndpoint(
 	processLimit *semaphore.Weighted,
 	tracker Tracker,
 ) {
-	logger.Info().Msg("Updating API endpoint")
+	logger.Info().Msg("Updating Api endpoint")
 
 	update, ok := tracker.Task.Do.(*spec.TaskV2_Update)
 	if !ok {
@@ -53,6 +53,8 @@ func UpdateApiEndpoint(
 	u := tracker.Result.Update()
 	u.Kubernetes(k8s)
 	u.Commit()
+
+	logger.Info().Msg("Successfully updated Api endpoint")
 }
 
 // updateAPIEndpoint handles the case where the ApiEndpoint node is removed from

@@ -26,7 +26,9 @@ func InstallNodeRequirements(
 	processLimit *semaphore.Weighted,
 	tracker Tracker,
 ) {
-	logger.Info().Msg("Installing node requirements")
+	logger.
+		Info().
+		Msg("Installing node requirements")
 
 	var k8s *spec.K8SclusterV2
 
@@ -56,6 +58,10 @@ func InstallNodeRequirements(
 		tracker.Diagnostics.Push(err)
 		return
 	}
+
+	logger.
+		Info().
+		Msg("Successfully installed node requirements")
 }
 
 // installLonghornRequirements installs pre-requisite tools for LongHorn in all the nodes
