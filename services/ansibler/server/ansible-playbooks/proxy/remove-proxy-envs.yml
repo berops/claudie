@@ -14,15 +14,9 @@
         - docker
         - containerd
         - kubelet
-    - name: Delete HTTP,HTTPS,NO_PROXY from /etc/environmennt
-      ansible.builtin.lineinfile:
+
+    - name: Remove proxy variables block from /etc/environment
+      ansible.builtin.blockinfile:
         path: /etc/environment
-        regexp: "^{{ item.key }}=.*$"
+        marker: "# {mark} ANSIBLE MANAGED PROXY SETTINGS"
         state: absent
-      loop:
-        - { key: "HTTP_PROXY" }
-        - { key: "http_proxy" }
-        - { key: "HTTPS_PROXY" }
-        - { key: "https_proxy" }
-        - { key: "NO_PROXY" }
-        - { key: "no_proxy" }
