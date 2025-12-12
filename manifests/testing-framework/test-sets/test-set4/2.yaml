@@ -39,7 +39,7 @@ spec:
           region: eu-frankfurt-1
           zone: hsVQ:EU-FRANKFURT-1-AD-1
         count: 1
-        serverType: VM.Standard1.1
+        serverType: VM.Standard1.2
         # https://docs.oracle.com/en-us/iaas/images/ubuntu-2404/canonical-ubuntu-24-04-2024-08-28-0.htm
         image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaa7hxwyz4qiasffo7n7s4ep5lywpzwgkc2am65frqrqinoyitmxxla
         storageDiskSize: 50

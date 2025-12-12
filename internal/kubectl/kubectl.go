@@ -27,11 +27,14 @@ type Kubectl struct {
 
 const (
 	defaultMaxKubectlRetries = 10
-	getEtcdPodsCmd           = "get pods -n kube-system --no-headers -o custom-columns=\":metadata.name\" | grep etcd"
-	exportEtcdEnvsCmd        = `export ETCDCTL_API=3 &&
+
+	getEtcdPodsCmd = "get pods -n kube-system --no-headers -o custom-columns=\":metadata.name\" | grep etcd"
+
+	exportEtcdEnvsCmd = `
 		export ETCDCTL_CACERT=/etc/kubernetes/pki/etcd/ca.crt &&
 		export ETCDCTL_CERT=/etc/kubernetes/pki/etcd/healthcheck-client.crt &&
 		export ETCDCTL_KEY=/etc/kubernetes/pki/etcd/healthcheck-client.key`
+
 	kubectlTimeout = 3 * 60 // cancel kubectl command after kubectlTimeout seconds
 )
 

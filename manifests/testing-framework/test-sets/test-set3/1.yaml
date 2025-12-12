@@ -82,7 +82,7 @@ spec:
           region: eu-west-2
           zone: eu-west-2a
         count: 1
-        serverType: t3.small
+        serverType: t3.medium
         #ubuntu
         image: ami-0e8d228ad90af673b
         storageDiskSize: 50
@@ -93,7 +93,7 @@ spec:
           region: nbg1
           zone: nbg1-dc3
         count: 2
-        serverType: cpx11
+        serverType: cpx22
         image: ubuntu-24.04
         storageDiskSize: 50
 
@@ -112,7 +112,7 @@ spec:
           region: europe-west1
           zone: europe-west1-b
         count: 2
-        serverType: e2-small
+        serverType: e2-medium
         image: ubuntu-2404-noble-amd64-v20251001
         storageDiskSize: 50
 

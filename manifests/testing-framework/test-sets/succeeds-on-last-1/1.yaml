@@ -21,7 +21,7 @@ spec:
           region: eu-west-3
           zone: eu-west-3a
         count: 1
-        serverType: t3.small
+        serverType: t3.medium
         #ubuntu - doesnt exists
         image: ami-00000000000000001
         storageDiskSize: 50

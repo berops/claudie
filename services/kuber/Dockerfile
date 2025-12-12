@@ -3,8 +3,8 @@ FROM docker.io/library/golang:1.25.3 AS build
 ARG TARGETARCH
 
 #Install kubectl
-RUN KC_VERSION=v1.27.0 && \
-    wget -q https://storage.googleapis.com/kubernetes-release/release/${KC_VERSION}/bin/linux/$TARGETARCH/kubectl
+RUN KC_VERSION=v1.33.0 && \
+    wget -q https://dl.k8s.io/release/${KC_VERSION}/bin/linux/$TARGETARCH/kubectl
 
 #Unset the GOPATH
 ENV GOPATH=
@@ -36,7 +36,10 @@ LABEL org.opencontainers.image.description="Image for Kuber from Claudie"
 COPY --from=build /go/kubectl /usr/local/bin/kubectl
 COPY --from=build /go/services/kuber/server/server /bin/services/kuber/server/server
 COPY --from=build /go/services/kuber/server/manifests /bin/services/kuber/server/manifests
-RUN chmod +x /usr/local/bin/kubectl && apk add -q bash
+RUN chmod +x /usr/local/bin/kubectl \
+    && apk update \
+    && apk add -q bash \
+    && rm -rf /var/cache/apk/*
 
 #Run server
 WORKDIR /bin
