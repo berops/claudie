@@ -23,7 +23,7 @@ spec:
         namespace: e2e-secrets
   nodePools:
     dynamic:
-      - name: gcp-ctrl-nodes
+      - name: htz-ctrl-nodes
         providerSpec:
           name: hetzner-1
           region: fsn1
@@ -61,6 +61,6 @@ spec:
           endpoint: http://proxy.claudie.io:8880
         pools:
           control:
-            - gcp-ctrl-nodes
+            - htz-ctrl-nodes
           compute:
             - htz-cmpt-nodes
