@@ -81,6 +81,9 @@ func NodeCount(nodepools []*spec.NodePool) int {
 // nodes, such that they do not keep any pointers or shared
 // memory with the original. The type of the nodepool of the
 // `src` and `dst` must be the same, otherwise no copying is done.
+//
+// The affected src [NodePool] is modified with adjusted counts from
+// the newly copied over nodes.
 func CopyNodes(dst, src *spec.NodePool, nodes []string) {
 	noop := src.GetDynamicNodePool() != nil && dst.GetDynamicNodePool() == nil
 	noop = noop || (src.GetStaticNodePool() != nil && dst.GetStaticNodePool() == nil)
@@ -103,6 +106,23 @@ func CopyNodes(dst, src *spec.NodePool, nodes []string) {
 			dst.GetStaticNodePool().NodeKeys[n.Public] = src.StaticNodePool.NodeKeys[n.Public]
 		}
 	}
+}
+
+// Clones all of the nodes from [spec.NodePool] which have a
+// matching name in the passed in nodes slice.
+func CloneTargetNodes(n *spec.NodePool, nodes []string) []*spec.Node {
+	var out []*spec.Node
+
+	for _, n := range n.Nodes {
+		if !slices.Contains(nodes, n.Name) {
+			continue
+		}
+
+		n := proto.Clone(n).(*spec.Node)
+		out = append(out, n)
+	}
+
+	return out
 }
 
 // Deletes any matching `nodes` in the passed in `nodepool`

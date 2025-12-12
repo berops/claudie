@@ -41,6 +41,8 @@ func reconcileInfrastructure(
 	case *spec.UpdateV2_TfReplaceDns:
 		dns := delta.TfReplaceDns
 		replaceDns(logger, projectName, processLimit, state, dns, tracker)
+	case *spec.UpdateV2_DeleteK8SNodes_:
+		panic("todo")
 	default:
 		logger.
 			Warn().

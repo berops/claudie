@@ -24,6 +24,11 @@ const (
 )
 
 type (
+	DiffResult struct {
+		Kubernetes    KubernetesDiffResult
+		LoadBalancers LoadBalancersDiffResult
+	}
+
 	ProxyDiffResult struct {
 		// Whether the proxy is in use in current state.
 		CurrentUsed bool
@@ -52,7 +57,7 @@ type (
 	// KubernetesDiffResult holds all of the changes between two different [spec.K8Scluster]
 	KubernetesDiffResult struct {
 		// Whether the kubernetes version changed.
-		KubernetesVersion bool
+		Version bool
 
 		// Whether proxy settings changed.
 		Proxy ProxyDiffResult
@@ -67,11 +72,6 @@ type (
 		// If the kubernetes cluster has no api endpoint, but it
 		// is in one of the loadbalancers attached to the cluster
 		// both of the values will be empty.
-		//
-		// This is only here to be checked if the endpoint should
-		// be moved to another control node, if the current on is
-		// being deleted. If this is the case both of the values
-		// will not be empty and will have different Node ids.
 		ApiEndpoint struct {
 			// ID of the node which is used for the API server in the
 			// current state. If there is no, the value will be empty.
@@ -323,6 +323,15 @@ func NodePoolsView(info *spec.ClusterInfoV2) (dynamic NodePoolsViewType, static 
 	return
 }
 
+func Diff(old, new *spec.ClustersV2) DiffResult {
+	var result DiffResult
+
+	result.Kubernetes = KubernetesDiff(old.K8S, new.K8S)
+	result.LoadBalancers = LoadBalancersDiff(old.LoadBalancers, new.LoadBalancers)
+
+	return result
+}
+
 func KubernetesDiff(old, new *spec.K8SclusterV2) KubernetesDiffResult {
 	var (
 		result KubernetesDiffResult
@@ -348,61 +357,63 @@ func KubernetesDiff(old, new *spec.K8SclusterV2) KubernetesDiffResult {
 	}
 
 	result.Proxy = proxyDiff
-	result.KubernetesVersion = old.Kubernetes != new.Kubernetes
+	result.Version = old.Kubernetes != new.Kubernetes
 	result.Dynamic = dynamicDiff
 	result.Static = staticDiff
 
-	// Check if Api endpoint is deleted, based on the nodepools diff.
+	// Check if the api endpoint is in the k8s cluster.
+api:
 	for _, np := range old.ClusterInfo.NodePools {
-		if del, ok := result.Dynamic.Deleted[np.Name]; ok {
-			if m := matchApiEndpoint(np, del); m != "" {
-				result.ApiEndpoint.Current = m
-				result.ApiEndpoint.CurrentNodePool = np.Name
+		if np.IsControl {
+			for _, node := range np.Nodes {
+				if node.NodeType == spec.NodeType_apiEndpoint {
+					result.ApiEndpoint.Current = node.Name
+					result.ApiEndpoint.CurrentNodePool = np.Name
 
+					// Assume here that the desired state keeps the
+					// Api server, if this will not be the case, then
+					// the below check if handle that.
+
+					result.ApiEndpoint.Desired = node.Name
+					result.ApiEndpoint.DesiredNodePool = np.Name
+
+					break api
+				}
+			}
+		}
+	}
+
+	// Check if Api endpoint is deleted, based on the nodepools diff.
+	if result.ApiEndpoint.Current != "" {
+		if del, ok := result.Dynamic.Deleted[result.ApiEndpoint.CurrentNodePool]; ok {
+			if slices.Contains(del, result.ApiEndpoint.Current) {
 				np, ep := newAPIEndpointNodeCandidate(new.ClusterInfo.NodePools)
 				result.ApiEndpoint.Desired = ep
 				result.ApiEndpoint.DesiredNodePool = np
-
-				break
 			}
 		}
 
-		if del, ok := result.Dynamic.PartiallyDeleted[np.Name]; ok {
-			if m := matchApiEndpoint(np, del); m != "" {
-				result.ApiEndpoint.Current = m
-				result.ApiEndpoint.CurrentNodePool = np.Name
-
+		if del, ok := result.Dynamic.PartiallyDeleted[result.ApiEndpoint.CurrentNodePool]; ok {
+			if slices.Contains(del, result.ApiEndpoint.Current) {
 				np, ep := newAPIEndpointNodeCandidate(new.ClusterInfo.NodePools)
 				result.ApiEndpoint.Desired = ep
 				result.ApiEndpoint.DesiredNodePool = np
-
-				break
 			}
 		}
 
-		if del, ok := result.Static.Deleted[np.Name]; ok {
-			if m := matchApiEndpoint(np, del); m != "" {
-				result.ApiEndpoint.Current = m
-				result.ApiEndpoint.CurrentNodePool = np.Name
-
+		if del, ok := result.Static.Deleted[result.ApiEndpoint.CurrentNodePool]; ok {
+			if slices.Contains(del, result.ApiEndpoint.Current) {
 				np, ep := newAPIEndpointNodeCandidate(new.ClusterInfo.NodePools)
 				result.ApiEndpoint.Desired = ep
 				result.ApiEndpoint.DesiredNodePool = np
-
-				break
 			}
 		}
 
-		if del, ok := result.Static.PartiallyDeleted[np.Name]; ok {
-			if m := matchApiEndpoint(np, del); m != "" {
-				result.ApiEndpoint.Current = m
-				result.ApiEndpoint.CurrentNodePool = np.Name
-
+		if del, ok := result.Static.PartiallyDeleted[result.ApiEndpoint.CurrentNodePool]; ok {
+			if slices.Contains(del, result.ApiEndpoint.Current) {
 				np, ep := newAPIEndpointNodeCandidate(new.ClusterInfo.NodePools)
 				result.ApiEndpoint.Desired = ep
 				result.ApiEndpoint.DesiredNodePool = np
-
-				break
 			}
 		}
 	}

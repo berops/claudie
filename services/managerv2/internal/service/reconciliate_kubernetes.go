@@ -12,27 +12,57 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// TODO: finish.
+// TODO: finish kuber and adjust the Consuming of the Update messages
+// with the newly added options. For example missing scrape configs...
+
+// Wraps data and diffs needed by the reconciliation
+// for kubernetes cluster.
+//
+// The Kubernetes reconciliation will only consider
+// fixing drifts in the passed [KubernetesDiffResult].
+//
+// Others will only be used for guiding the decisions
+// when scheduling the tasks and will not schedule tasks
+// that will fix the drift in other Diff Results.
+type KubernetesReconciliate struct {
+	Hc      *HealthCheckStatus
+	Diff    *KubernetesDiffResult
+	Current *spec.ClustersV2
+	Desired *spec.ClustersV2
+}
 
 // KubernetesModifications returns kubernetes cluster changes that can be done/executed before
 // handling any deletion changes of clusters either, kubernetes of loadbalancers. Assumes that
 // both the current and desired [spec.Clusters] were not modified since the [HealthCheckStatus]
 // and [KubernetesDiffResult] was computed, and that all of the Cached Indices within the
 // [KubernetesDiffResult] are not invalidated. This function does not modify the input in any
-// ay and also the returned [spec.TaskEvent] does not hold or share any memory to related to the input.
-func KubernetesModifications(
-	hc *HealthCheckStatus,
-	diff *KubernetesDiffResult,
-	current *spec.ClustersV2,
-	desired *spec.ClustersV2,
-) *spec.TaskEventV2 {
-	if diff.ApiEndpoint.Current != "" && diff.ApiEndpoint.Desired != "" {
+// way and also the returned [spec.TaskEvent] does not hold or share any memory to related to the input.
+func KubernetesModifications(r KubernetesReconciliate) *spec.TaskEventV2 {
+	if r.Diff.ApiEndpoint.Current != "" && r.Diff.ApiEndpoint.Desired != "" {
 		// make sure the desired node is already in the current state.
-		transfer := diff.ApiEndpoint.Current != diff.ApiEndpoint.Desired
-		transfer = transfer && nodepools.ContainsNode(current.K8S.ClusterInfo.NodePools, diff.ApiEndpoint.Desired)
+		transfer := r.Diff.ApiEndpoint.Current != r.Diff.ApiEndpoint.Desired
+		transfer = transfer && nodepools.ContainsNode(r.Current.K8S.ClusterInfo.NodePools, r.Diff.ApiEndpoint.Desired)
 		if transfer {
-			return ScheduleTransferApiEndpoint(current, diff.ApiEndpoint.DesiredNodePool, diff.ApiEndpoint.Desired)
+			return ScheduleTransferApiEndpoint(r.Current, r.Diff.ApiEndpoint.DesiredNodePool, r.Diff.ApiEndpoint.Desired)
 		}
+	}
+
+	if len(r.Diff.Dynamic.Added) > 0 || len(r.Diff.Dynamic.PartiallyAdded) > 0 {
+		opts := K8sNodeAdditionOptions{
+			UseProxy:     r.Diff.Proxy.CurrentUsed,
+			HasApiServer: r.Diff.ApiEndpoint.Current != "",
+			IsStatic:     false,
+		}
+		return ScheduleAdditionsInNodePools(r.Current, r.Desired, &r.Diff.Dynamic, opts)
+	}
+
+	if len(r.Diff.Static.Added) > 0 || len(r.Diff.Static.PartiallyAdded) > 0 {
+		opts := K8sNodeAdditionOptions{
+			UseProxy:     r.Diff.Proxy.CurrentUsed,
+			HasApiServer: r.Diff.ApiEndpoint.Current != "",
+			IsStatic:     true,
+		}
+		return ScheduleAdditionsInNodePools(r.Current, r.Desired, &r.Diff.Static, opts)
 	}
 
 	return nil
@@ -45,12 +75,25 @@ func KubernetesModifications(
 // Indices within the [KubernetesDiffResult] are not invalidated. This function does not modify
 // the input in any way and also the returned [spec.TaskEvent] does not hold or share any
 // memory to related to the input.
-func KubernetesDeletions(
-	hc *HealthCheckStatus,
-	diff *KubernetesDiffResult,
-	current *spec.ClustersV2,
-	desired *spec.ClustersV2,
-) *spec.TaskEventV2 {
+func KubernetesDeletions(r KubernetesReconciliate) *spec.TaskEventV2 {
+	if len(r.Diff.Dynamic.Deleted) > 0 || len(r.Diff.Dynamic.PartiallyDeleted) > 0 {
+		opts := K8sNodeDeletionOptions{
+			UseProxy:     r.Diff.Proxy.CurrentUsed,
+			HasApiServer: r.Diff.ApiEndpoint.Current != "",
+			IsStatic:     false,
+		}
+		return ScheduleDeletionsInNodePools(r.Current, r.Desired, &r.Diff.Dynamic, opts)
+	}
+
+	if len(r.Diff.Static.Deleted) > 0 || len(r.Diff.Static.PartiallyDeleted) > 0 {
+		opts := K8sNodeDeletionOptions{
+			UseProxy:     r.Diff.Proxy.CurrentUsed,
+			HasApiServer: r.Diff.ApiEndpoint.Current != "",
+			IsStatic:     true,
+		}
+		return ScheduleDeletionsInNodePools(r.Current, r.Desired, &r.Diff.Static, opts)
+	}
+
 	return nil
 }
 
@@ -60,33 +103,29 @@ func KubernetesDeletions(
 // and that all of the Cached Indices within the [KubernetesDiffResult] are not invalidated.
 // This function does not modify the input in any way and also the returned [spec.TaskEvent]
 // does not hold or share any memory to related to the input.
-func KubernetesLowPriority(
-	diff *KubernetesDiffResult,
-	current *spec.ClustersV2,
-	desired *spec.ClustersV2,
-) *spec.TaskEventV2 {
-	if diff.KubernetesVersion {
-		return ScheduleUpgradeKubernetesVersion(current, desired)
+func KubernetesLowPriority(r KubernetesReconciliate) *spec.TaskEventV2 {
+	if r.Diff.Version {
+		return ScheduleUpgradeKubernetesVersion(r.Current, r.Desired)
 	}
 
-	switch diff.Proxy.Change {
+	switch r.Diff.Proxy.Change {
 	case ProxyOff:
-		return ScheduleProxyOff(current, desired)
+		return ScheduleProxyOff(r.Current, r.Desired)
 	case ProxyOn:
-		return ScheduleProxyOn(current, desired)
+		return ScheduleProxyOn(r.Current, r.Desired)
 	}
 
-	labels := len(diff.LabelsTaintsAnnotations.Added.LabelKeys) > 0
-	labels = labels || len(diff.LabelsTaintsAnnotations.Deleted.LabelKeys) > 0
+	labels := len(r.Diff.LabelsTaintsAnnotations.Added.LabelKeys) > 0
+	labels = labels || len(r.Diff.LabelsTaintsAnnotations.Deleted.LabelKeys) > 0
 
-	annotations := len(diff.LabelsTaintsAnnotations.Added.AnnotationsKeys) > 0
-	annotations = annotations || len(diff.LabelsTaintsAnnotations.Deleted.AnnotationsKeys) > 0
+	annotations := len(r.Diff.LabelsTaintsAnnotations.Added.AnnotationsKeys) > 0
+	annotations = annotations || len(r.Diff.LabelsTaintsAnnotations.Deleted.AnnotationsKeys) > 0
 
-	taints := len(diff.LabelsTaintsAnnotations.Added.TaintKeys) > 0
-	taints = taints || len(diff.LabelsTaintsAnnotations.Deleted.TaintKeys) > 0
+	taints := len(r.Diff.LabelsTaintsAnnotations.Added.TaintKeys) > 0
+	taints = taints || len(r.Diff.LabelsTaintsAnnotations.Deleted.TaintKeys) > 0
 
 	if labels || annotations || taints {
-		return SchedulePatchNodes(current, diff.LabelsTaintsAnnotations)
+		return SchedulePatchNodes(r.Current, r.Diff.LabelsTaintsAnnotations)
 	}
 
 	return nil
@@ -462,4 +501,614 @@ func ScheduleTransferApiEndpoint(current *spec.ClustersV2, nodepool, node string
 			},
 		},
 	}
+}
+
+type K8sNodeAdditionOptions struct {
+	UseProxy     bool
+	HasApiServer bool
+	IsStatic     bool
+}
+
+// Schedules a task that will add new nodes/nodepools into the current state of the cluster.
+//
+// The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
+func ScheduleAdditionsInNodePools(
+	current *spec.ClustersV2,
+	desired *spec.ClustersV2,
+	diff *NodePoolsDiffResult,
+	opts K8sNodeAdditionOptions,
+) *spec.TaskEventV2 {
+	inFlight := proto.Clone(current).(*spec.ClustersV2)
+	pipeline := []*spec.Stage{}
+
+	if !opts.IsStatic {
+		pipeline = append(pipeline, &spec.Stage{
+			StageKind: &spec.Stage_Terraformer{
+				Terraformer: &spec.StageTerraformer{
+					Description: &spec.StageDescription{
+						About:      "Reconciling infrastructure for kubernetes cluster",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+					SubPasses: []*spec.StageTerraformer_SubPass{
+						{
+							Kind: spec.StageTerraformer_UPDATE_INFRASTRUCTURE,
+							Description: &spec.StageDescription{
+								About:      "Spawning VMs for new nodes",
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+						},
+					},
+				},
+			},
+		})
+	}
+
+	ans := spec.Stage_Ansibler{
+		Ansibler: &spec.StageAnsibler{
+			Description: &spec.StageDescription{
+				About:      "Configuring nodes of the cluster and its loadbalancers",
+				ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+			},
+			SubPasses: []*spec.StageAnsibler_SubPass{},
+		},
+	}
+
+	pipeline = append(pipeline, &spec.Stage{StageKind: &ans})
+
+	if opts.UseProxy {
+		ans.Ansibler.SubPasses = append(ans.Ansibler.SubPasses, []*spec.StageAnsibler_SubPass{
+			{
+				Kind: spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES,
+				Description: &spec.StageDescription{
+					About:      "Updating HttpProxy,NoProxy environment variables to be used by the package manager",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+			},
+			{
+				Kind: spec.StageAnsibler_INSTALL_NODE_REQUIREMENTS,
+				Description: &spec.StageDescription{
+					About:      "Installing node requirments for newly added nodes",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+			},
+			{
+				Kind: spec.StageAnsibler_INSTALL_VPN,
+				Description: &spec.StageDescription{
+					About:      "Installing VPN and interconnect new nodes with existing infrastructure",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+			},
+			{
+				Kind: spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES,
+				Description: &spec.StageDescription{
+					About:      "Updating HttpProxy,NoProxy environment variables, after populating private addresses on nodes",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+			},
+			{
+				Kind: spec.StageAnsibler_COMMIT_PROXY_ENVS,
+				Description: &spec.StageDescription{
+					About:      "Commiting proxy environment variables",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+			},
+		}...)
+	} else {
+		ans.Ansibler.SubPasses = append(ans.Ansibler.SubPasses, []*spec.StageAnsibler_SubPass{
+			{
+				Kind: spec.StageAnsibler_INSTALL_NODE_REQUIREMENTS,
+				Description: &spec.StageDescription{
+					About:      "Installing node requirments for newly added nodes",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+			},
+			{
+				Kind: spec.StageAnsibler_INSTALL_VPN,
+				Description: &spec.StageDescription{
+					About:      "Installing VPN and interconnect new nodes with existing infrastructure",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+			},
+		}...)
+	}
+
+	pipeline = append(pipeline, &spec.Stage{
+		StageKind: &spec.Stage_KubeEleven{
+			KubeEleven: &spec.StageKubeEleven{
+				Description: &spec.StageDescription{
+					About:      "Reconciling kubernetes cluster",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+				SubPasses: []*spec.StageKubeEleven_SubPass{
+					{
+						Kind: spec.StageKubeEleven_RECONCILE_CLUSTER,
+						Description: &spec.StageDescription{
+							About:      "Joining new nodes into the kubernetes cluster",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+				},
+			},
+		},
+	})
+
+	kuber := spec.Stage_Kuber{
+		Kuber: &spec.StageKuber{
+			Description: &spec.StageDescription{
+				About:      "Configuring kubernetes cluster",
+				ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+			},
+			SubPasses: []*spec.StageKuber_SubPass{
+				{
+					Kind: spec.StageKuber_PATCH_NODES,
+					Description: &spec.StageDescription{
+						About: "Patching newly added nodes",
+						// Failing to patch  nodes is not a fatal error.
+						ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+					},
+				},
+			},
+		},
+	}
+
+	pipeline = append(pipeline, &spec.Stage{StageKind: &kuber})
+
+	for np, nodes := range diff.PartiallyAdded {
+		// If the ApiServer is on the kubernetes cluster on addition of the
+		// control plane nodes the Kubeadm config map needs to be updated which
+		// is used during the join operation of new nodes.
+		if opts.HasApiServer && nodepools.FindByName(np, current.K8S.ClusterInfo.NodePools).IsControl {
+			kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, []*spec.StageKuber_SubPass{
+				{
+					Kind: spec.StageKuber_PATCH_KUBEADM,
+					Description: &spec.StageDescription{
+						About:      "Updating Kubeadm certSANs",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+				},
+				{
+					Kind: spec.StageKuber_CILIUM_RESTART,
+					Description: &spec.StageDescription{
+						About: "Rollout restart of cilium pods",
+						// Rollout restart failing is not a fatal error.
+						ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+					},
+				},
+			}...)
+		}
+
+		// If changes to the nodepool affects any loadbalancer
+		// also schedule a reconciliation of loadbalancers, as
+		// the envoy targets needs to be regenerated.
+		for _, lb := range current.LoadBalancers.Clusters {
+			for _, r := range lb.Roles {
+				for _, tg := range r.TargetPools {
+					// Need to match againts only the nodepool name without the hash.
+					if n, _ := nodepools.MatchNameAndHashWithTemplate(tg, np); n != "" {
+						ans.Ansibler.SubPasses = append(ans.Ansibler.SubPasses, &spec.StageAnsibler_SubPass{
+							Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
+							Description: &spec.StageDescription{
+								About:      "Reconciling Envoy settings after changes to nodepool",
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+						})
+					}
+				}
+			}
+		}
+
+		update := spec.TaskV2_Update{
+			Update: &spec.UpdateV2{
+				State: &spec.UpdateV2_State{
+					K8S:           inFlight.K8S,
+					LoadBalancers: inFlight.LoadBalancers.Clusters,
+				},
+				Delta: nil,
+			},
+		}
+
+		if opts.IsStatic {
+			// For static nodes, merge the nodes already into the inFlight state,
+			// as they do not need to be build, contrary to dynamic nodes.
+			dst := nodepools.FindByName(np, inFlight.K8S.ClusterInfo.NodePools)
+			src := nodepools.FindByName(np, desired.K8S.ClusterInfo.NodePools)
+			nodepools.CopyNodes(dst, src, nodes)
+			update.Update.Delta = &spec.UpdateV2_AddedK8SNodes_{
+				AddedK8SNodes: &spec.UpdateV2_AddedK8SNodes{
+					Nodepool:    np,
+					Nodes:       nodes,
+					NewNodePool: false,
+				},
+			}
+		} else {
+			src := nodepools.FindByName(np, desired.K8S.ClusterInfo.NodePools)
+			toAdd := nodepools.CloneTargetNodes(src, nodes)
+			update.Update.Delta = &spec.UpdateV2_TfAddK8SNodes{
+				TfAddK8SNodes: &spec.UpdateV2_TerraformerAddK8SNodes{
+					Kind: &spec.UpdateV2_TerraformerAddK8SNodes_Existing_{
+						Existing: &spec.UpdateV2_TerraformerAddK8SNodes_Existing{
+							Nodepool: np,
+							Nodes:    toAdd,
+						},
+					},
+				},
+			}
+		}
+
+		return &spec.TaskEventV2{
+			Id:        uuid.New().String(),
+			Timestamp: timestamppb.New(time.Now().UTC()),
+			Event:     spec.EventV2_UPDATE_V2,
+			Task: &spec.TaskV2{
+				Do: &update,
+			},
+			Description: fmt.Sprintf("Adding %v nodes into nodepool %s", len(nodes), np),
+			Pipeline:    pipeline,
+		}
+	}
+
+	for np, nodes := range diff.Added {
+		toAdd := nodepools.FindByName(np, desired.K8S.ClusterInfo.NodePools)
+		toAdd = proto.Clone(toAdd).(*spec.NodePool)
+
+		// If the ApiServer is on the kubernetes cluster on addition of the
+		// control plane nodes the Kubeadm config map needs to be updated which
+		// is used during the join operation of new nodes.
+		if opts.HasApiServer && toAdd.IsControl {
+			kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, []*spec.StageKuber_SubPass{
+				{
+					Kind: spec.StageKuber_PATCH_KUBEADM,
+					Description: &spec.StageDescription{
+						About:      "Updating Kubeadm certSANs",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+				},
+				{
+					Kind: spec.StageKuber_CILIUM_RESTART,
+					Description: &spec.StageDescription{
+						About: "Rollout restart of cilium pods",
+						// Rollout restart failing is not a fatal error.
+						ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+					},
+				},
+			}...)
+		}
+
+		// If changes to the nodepool affects any loadbalancer
+		// also schedule a reconciliation of loadbalancers, as
+		// the envoy targets needs to be regenerated.
+		for _, lb := range current.LoadBalancers.Clusters {
+			for _, r := range lb.Roles {
+				for _, tg := range r.TargetPools {
+					// Need to match againts only the nodepool name without the hash.
+					if n, _ := nodepools.MatchNameAndHashWithTemplate(tg, np); n != "" {
+						ans.Ansibler.SubPasses = append(ans.Ansibler.SubPasses, &spec.StageAnsibler_SubPass{
+							Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
+							Description: &spec.StageDescription{
+								About:      "Reconciling Envoy settings after changes to nodepool",
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+						})
+					}
+				}
+			}
+		}
+
+		update := spec.TaskV2_Update{
+			Update: &spec.UpdateV2{
+				State: &spec.UpdateV2_State{
+					K8S:           inFlight.K8S,
+					LoadBalancers: inFlight.LoadBalancers.Clusters,
+				},
+				Delta: nil,
+			},
+		}
+
+		if opts.IsStatic {
+			// For static nodes, merge the nodes already into the inFlight state,
+			// as they do not need to be build, contrary to dynamic nodes.
+			inFlight.K8S.ClusterInfo.NodePools = append(inFlight.K8S.ClusterInfo.NodePools, toAdd)
+			update.Update.Delta = &spec.UpdateV2_AddedK8SNodes_{
+				AddedK8SNodes: &spec.UpdateV2_AddedK8SNodes{
+					NewNodePool: true,
+					Nodepool:    np,
+					Nodes:       nodes,
+				},
+			}
+		} else {
+			update.Update.Delta = &spec.UpdateV2_TfAddK8SNodes{
+				TfAddK8SNodes: &spec.UpdateV2_TerraformerAddK8SNodes{
+					Kind: &spec.UpdateV2_TerraformerAddK8SNodes_New_{
+						New: &spec.UpdateV2_TerraformerAddK8SNodes_New{
+							Nodepool: toAdd,
+						},
+					},
+				},
+			}
+		}
+
+		return &spec.TaskEventV2{
+			Id:        uuid.New().String(),
+			Timestamp: timestamppb.New(time.Now().UTC()),
+			Event:     spec.EventV2_UPDATE_V2,
+			Task: &spec.TaskV2{
+				Do: &update,
+			},
+			Description: fmt.Sprintf("Adding nodepool %s", np),
+			Pipeline:    pipeline,
+		}
+	}
+
+	return nil
+}
+
+type K8sNodeDeletionOptions struct {
+	UseProxy     bool
+	HasApiServer bool
+	IsStatic     bool
+}
+
+// Schedules a task that will delete nodes/nodepools from the current state of the cluster.
+//
+// The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
+func ScheduleDeletionsInNodePools(
+	current *spec.ClustersV2,
+	desired *spec.ClustersV2,
+	diff *NodePoolsDiffResult,
+	opts K8sNodeDeletionOptions,
+) *spec.TaskEventV2 {
+	inFlight := proto.Clone(current).(*spec.ClustersV2)
+
+	kuber := spec.Stage_Kuber{
+		Kuber: &spec.StageKuber{
+			Description: &spec.StageDescription{
+				About:      "Reconciling cluster configuration",
+				ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+			},
+			SubPasses: []*spec.StageKuber_SubPass{
+				{
+					Kind: spec.StageKuber_DELETE_NODES,
+					Description: &spec.StageDescription{
+						About:      "Deleting nodes from kubernetes cluster",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+				},
+			},
+		},
+	}
+
+	// For deletion, the Ansible stage does not need to be executed
+	// as there is no need to refresh/reconcile the modified nodepools
+	// as the deletion deletes the infrastructure and leaves the remaining
+	// infrastructure unchanged. Does not affect the cluster or the loadbalancers
+	// in any way.
+	//
+	// The healthcheck within the reconciliation loop will trigger a refresh
+	// of the VPN, which is the only action to do on deletion, but leaving it
+	// to the healthcheck may buffer more nodes in a single update.
+	pipeline := []*spec.Stage{
+		{StageKind: &kuber},
+	}
+
+	ans := spec.Stage_Ansibler{
+		Ansibler: &spec.StageAnsibler{
+			Description: &spec.StageDescription{
+				About:      "Configuring nodes of the cluster and its loadbalancers",
+				ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+			},
+		},
+	}
+
+	// Unless static nodes are being deleted in which case a cleanup
+	// needs to be executed that removes claudie installed utilities.
+	if opts.IsStatic {
+		ans.Ansibler.SubPasses = append(ans.Ansibler.SubPasses, &spec.StageAnsibler_SubPass{
+			Kind: spec.StageAnsibler_REMOVE_CLAUDIE_UTILITIES,
+			Description: &spec.StageDescription{
+				About: "Removing claudie install utilities",
+				// Failing to remove the utilities is not considered as a fatal error.
+				ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+			},
+		})
+	}
+
+	// Unless the proxy is in use, in which case the task needs to also
+	// update proxy environemnt variables after deletion, in which case
+	// the task will also bundle the update of the VPN as there is a call
+	// to be made to the Ansibler stage.
+	if opts.UseProxy {
+		ans.Ansibler.SubPasses = append(ans.Ansibler.SubPasses, []*spec.StageAnsibler_SubPass{
+			{
+				Kind: spec.StageAnsibler_INSTALL_VPN,
+				Description: &spec.StageDescription{
+					About:      "Refreshing VPN on nodes after deletion",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+			},
+			{
+				Kind: spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES,
+				Description: &spec.StageDescription{
+					About:      "Updating HttpProxy,NoProxy environment variables",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+			},
+			{
+				Kind: spec.StageAnsibler_COMMIT_PROXY_ENVS,
+				Description: &spec.StageDescription{
+					About:      "Commiting proxy environment variables",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+			},
+		}...)
+	}
+
+	if len(ans.Ansibler.SubPasses) > 0 {
+		pipeline = append(pipeline, &spec.Stage{StageKind: &ans})
+	}
+
+	// Only send the data through the terraformer stage if deletion is
+	// for dynamic nodes.
+	if !opts.IsStatic {
+		pipeline = append(pipeline, &spec.Stage{
+			StageKind: &spec.Stage_Terraformer{
+				Terraformer: &spec.StageTerraformer{
+					Description: &spec.StageDescription{
+						About:      "Reconciling infrastructure for kubernetes cluster",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+					SubPasses: []*spec.StageTerraformer_SubPass{
+						{
+							Kind: spec.StageTerraformer_UPDATE_INFRASTRUCTURE,
+							Description: &spec.StageDescription{
+								About:      "Destroying VMs for deleted nodes",
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+						},
+					},
+				},
+			},
+		})
+	}
+
+	for np, nodes := range diff.PartiallyDeleted {
+		// If the ApiServer is on the kubernetes cluster on deletion of the
+		// control plane nodes the Kubeadm config map needs to be updated which
+		// is used during the join operation of new nodes.
+		if opts.HasApiServer && nodepools.FindByName(np, current.K8S.ClusterInfo.NodePools).IsControl {
+			kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, []*spec.StageKuber_SubPass{
+				{
+					Kind: spec.StageKuber_PATCH_KUBEADM,
+					Description: &spec.StageDescription{
+						About:      "Updating Kubeadm certSANs",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+				},
+				{
+					Kind: spec.StageKuber_CILIUM_RESTART,
+					Description: &spec.StageDescription{
+						About: "Rollout restart of cilium pods",
+						// Rollout restart failing is not a fatal error.
+						ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+					},
+				},
+			}...)
+		}
+
+		// If changes to the nodepool affects any loadbalancer
+		// also schedule a reconciliation of loadbalancers, as
+		// the envoy targets needs to be regenerated.
+		for _, lb := range current.LoadBalancers.Clusters {
+			for _, r := range lb.Roles {
+				for _, tg := range r.TargetPools {
+					// Need to match againts only the nodepool name without the hash.
+					if n, _ := nodepools.MatchNameAndHashWithTemplate(tg, np); n != "" {
+						ans.Ansibler.SubPasses = append(ans.Ansibler.SubPasses, &spec.StageAnsibler_SubPass{
+							Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
+							Description: &spec.StageDescription{
+								About:      "Reconciling Envoy settings after changes to nodepool",
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+						})
+					}
+				}
+			}
+		}
+
+		return &spec.TaskEventV2{
+			Id:        uuid.New().String(),
+			Timestamp: timestamppb.New(time.Now().UTC()),
+			Event:     spec.EventV2_UPDATE_V2,
+			Task: &spec.TaskV2{
+				Do: &spec.TaskV2_Update{
+					Update: &spec.UpdateV2{
+						State: &spec.UpdateV2_State{
+							K8S:           inFlight.K8S,
+							LoadBalancers: inFlight.LoadBalancers.Clusters,
+						},
+						Delta: &spec.UpdateV2_DeleteK8SNodes_{
+							DeleteK8SNodes: &spec.UpdateV2_DeleteK8SNodes{
+								Nodepool:     np,
+								Nodes:        nodes,
+								WithNodePool: false,
+							},
+						},
+					},
+				},
+			},
+			Description: fmt.Sprintf("Deleting %v nodes from nodepool %s", len(nodes), np),
+			Pipeline:    pipeline,
+		}
+	}
+
+	for np, nodes := range diff.Deleted {
+		// If the ApiServer is on the kubernetes cluster on deletion of the
+		// control plane nodes the Kubeadm config map needs to be updated which
+		// is used during the join operation of new nodes.
+		if opts.HasApiServer && nodepools.FindByName(np, current.K8S.ClusterInfo.NodePools).IsControl {
+			kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, []*spec.StageKuber_SubPass{
+				{
+					Kind: spec.StageKuber_PATCH_KUBEADM,
+					Description: &spec.StageDescription{
+						About:      "Updating Kubeadm certSANs",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+				},
+				{
+					Kind: spec.StageKuber_CILIUM_RESTART,
+					Description: &spec.StageDescription{
+						About: "Rollout restart of cilium pods",
+						// Rollout restart failing is not a fatal error.
+						ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+					},
+				},
+			}...)
+		}
+
+		// If changes to the nodepool affects any loadbalancer
+		// also schedule a reconciliation of loadbalancers, as
+		// the envoy targets needs to be regenerated.
+		for _, lb := range current.LoadBalancers.Clusters {
+			for _, r := range lb.Roles {
+				for _, tg := range r.TargetPools {
+					// Need to match againts only the nodepool name without the hash.
+					if n, _ := nodepools.MatchNameAndHashWithTemplate(tg, np); n != "" {
+						ans.Ansibler.SubPasses = append(ans.Ansibler.SubPasses, &spec.StageAnsibler_SubPass{
+							Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
+							Description: &spec.StageDescription{
+								About:      "Reconciling Envoy settings after changes to nodepool",
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+						})
+					}
+				}
+			}
+		}
+
+		return &spec.TaskEventV2{
+			Id:        uuid.New().String(),
+			Timestamp: timestamppb.New(time.Now().UTC()),
+			Event:     spec.EventV2_UPDATE_V2,
+			Task: &spec.TaskV2{
+				Do: &spec.TaskV2_Update{
+					Update: &spec.UpdateV2{
+						State: &spec.UpdateV2_State{
+							K8S:           inFlight.K8S,
+							LoadBalancers: inFlight.LoadBalancers.Clusters,
+						},
+						Delta: &spec.UpdateV2_DeleteK8SNodes_{
+							DeleteK8SNodes: &spec.UpdateV2_DeleteK8SNodes{
+								Nodepool:     np,
+								Nodes:        nodes,
+								WithNodePool: true,
+							},
+						},
+					},
+				},
+			},
+			Description: fmt.Sprintf("Deleting nodepool %s", np),
+			Pipeline:    pipeline,
+		}
+	}
+
+	return nil
 }

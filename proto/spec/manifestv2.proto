@@ -289,17 +289,90 @@ message UpdateV2 {
     message TerraformerAddLoadBalancer { LBclusterV2 handle = 1; }
     message AddedLoadBalancer { string handle = 1; }
 
-    // TerraformerReconcileLoadBalancer is a message that once processed
-    // by the Terraformer service and a result is send back to the Manager,
-    // it will consume the message and further stages will only have a
-    // [ReconciledLoadBalancer] message to process.
+
+    // DeleteLoadBalancerNodes works with the [State] that is part of
+    // the [Update] message, thus no "message consuming" needs to happen.
+    message DeleteLoadBalancerNodes {
+        // Id of the loadbalancer.
+        string handle = 1;
+
+        // Whether the NodePool itself
+        // was deleted from the cluster.
+        // Meaning that all nodes of the
+        // nodepool were deleted.
+        bool withNodePool = 2;
+
+        // Affected Nodepool.
+        string nodepool = 3;
+
+        // Nodes that were deleted.
+        repeated string nodes = 4;
+    }
+
+    // TerraformerAddLoadBalancerNodes is a message that is processed by the
+    // Terraformer service and a result is send back to the Manager, it will
+    // consume the message and further stages will only have a [AddedLoadBalancerNodes]
+    // message to process.
     //
-    // New, "desired", state needs only to be present in the terraformer
-    // stage and all other services need to only see what has been done and
-    // occasionally index the loadbalancer, which will already be present
-    // in the [State] of the [Update] message.
-    message TerraformerReconcileLoadBalancer { LBclusterV2 handle = 2; }
-    message ReconciledLoadBalancer { string handle = 1; }
+    // New, "desired", state needs only to be present in the Terraformer stage and
+    // all other services need to only see what has been done which will already
+    // be present in the [State] of the [Update] message.
+    message TerraformerAddLoadBalancerNodes {
+        message Existing {
+            // The nodepool which is to be modified with the
+            // addition of new nodes, which is already present
+            // in the [State] passed along the [Update] msg.
+            string nodepool = 1;
+
+            // Nodes to be added.
+            repeated Node nodes = 2;
+        }
+
+        message New {
+            // The new nodepool which is to be added to the
+            // [State] passed along the [Update] msg.
+            NodePool nodepool = 1;
+        }
+
+        // Id of the loadbalancer.
+        string handle = 1;
+
+        oneof Kind {
+            Existing existing = 2;
+            New new = 3;
+        }
+    }
+    message AddedLoadBalancerNodes {
+        string handle = 1;
+        bool newNodePool = 2;
+        string nodePool = 3;
+        repeated string nodes = 4;
+    }
+
+    // DeleteLoadBalnacerRoles works with the [State] that is part of
+    // the [Update] message, thus no "message consuming" needs to happen.
+    message DeleteLoadBalancerRoles {
+        string handle = 1;
+        repeated string roles = 2;
+    }
+
+
+    // TerraformerAddLoadBalancerRoles is a message that is processed by the
+    // Terraformer service and a result is send back to the Manager, it will
+    // consume the message and further stages will only have a [AddedLoadBalancerRoles]
+    // message to process.
+    //
+    // New, "desired", state needs only to be present in the Terraformer stage and
+    // all other services need to only see what has been done which will already
+    // be present in the [State] of the [Update] message.
+    message TerraformerAddLoadBalancerRoles {
+        string handle = 1;
+        repeated RoleV2 roles = 2;
+    }
+    message AddedLoadBalancerRoles {
+        string handle = 1;
+        repeated string roles = 2;
+    }
 
     // TerraformerReplaceDns is a message that once processed by the
     // Terraformer service and a result is send back to the Manager,
@@ -352,7 +425,7 @@ message UpdateV2 {
     message ApiPortOnCluster { bool open = 1; }
 
     // AnsiblerReplaceProxySettings is a message that once processed
-    // by the Ansibler service and a result is send back to the Manager,
+    // by the Ansibler service a result is send back to the Manager,
     // it will consume the message and further stages will only have
     // a [ReplacedProxySettings] message to process.
     //
@@ -362,6 +435,33 @@ message UpdateV2 {
     message AnsiblerReplaceProxySettings { InstallationProxyV2 proxy = 1; }
     message ReplacedProxySettings {}
 
+
+    // AnsiblerReplaceProxySettings is a message that once processed
+    // by the Ansibler service a result is send back to the Manager,
+    // it will consume the message and further stages will only have
+    // a [ReplacedProxySettings] message to process.
+    //
+    // New, "desired", state needs only to be present in the ansibler
+    // stage and all other services need to only see what has been done
+    // which will already be present in the [State] of the [Update] message.
+    message AnsiblerReplaceTargetPools {
+        message TargetPools {
+            repeated string pools = 1;
+        }
+        string handle = 1;
+
+        // Role to target pools
+        map<string, TargetPools> roles = 2;
+    }
+    message ReplacedTargetPools {
+        message TargetPools {
+            repeated string pools = 1;
+        }
+        string handle = 1;
+
+        // Role to target pools.
+        map<string, TargetPools> roles = 2;
+    }
 
     // UpgradeVersion works with the [State] that is part of the [Update]
     // message, thus no "message consuming" needs to happen.
@@ -395,6 +495,63 @@ message UpdateV2 {
     }
     message PatchedNodes {}
 
+    // DeleteK8sNodes works with the [State] that is part of the [Update]
+    // message, thus no "message consuming" needs to happen.
+    message DeleteK8sNodes {
+        // Whether the NodePool itself
+        // was deleted from the cluster.
+        // Meaning that all nodes of the
+        // nodepool were deleted.
+        //
+        // Note that with autoscaling its
+        // possible to have a zero sized
+        // nodepool so this is only set
+        // if the nodepool is removed from
+        // the cluster.
+        bool withNodePool = 1;
+
+        // Affected Nodepool.
+        string nodepool = 2;
+
+        // Nodes that were deleted.
+        repeated string nodes = 3;
+    }
+
+
+    // TerraformerAddK8sNodes is a message that is processed by the Terraformer service
+    // and a result is send back to the Manager, it will consume the message
+    // and further stages will only have a [AddedK8sNodes] message to process.
+    //
+    // New, "desired", state needs only to be present in the Terraformer stage and
+    // all other services need to only see what has been done which will already
+    // be present in the [State] of the [Update] message.
+    message TerraformerAddK8sNodes {
+        message Existing {
+            // The nodepool which is to be modified with the
+            // addition of new nodes, which is already present
+            // in the [State] passed along the [Update] msg.
+            string nodepool = 1;
+
+            // Nodes to be added.
+            repeated Node nodes = 2;
+        }
+        message New {
+            // The new nodepool which is to be added to the
+            // [State] passed along the [Update] msg.
+            NodePool nodepool = 1;
+        }
+
+        oneof Kind {
+            Existing existing = 1;
+            New new = 2;
+        }
+    }
+    message AddedK8sNodes {
+        bool newNodePool = 1;
+        string nodepool = 2;
+        repeated string nodes = 3;
+    }
+
     // State that gets continiously updated as the task gets processed.
     State state = 1;
 
@@ -404,27 +561,41 @@ message UpdateV2 {
     oneof Delta {
         None none = 2;
 
+        // Terraformer messages to consume
         TerraformerAddLoadBalancer tfAddLoadBalancer = 3;
-        TerraformerReconcileLoadBalancer tfReconcileLoadBalancer = 4;
+        TerraformerAddLoadBalancerNodes tfAddLoadBalancerNodes = 4;
         TerraformerReplaceDns tfReplaceDns = 5;
+        TerraformerAddK8sNodes tfAddK8sNodes = 6;
+        TerraformerAddLoadBalancerRoles tfAddLoadBalancerRoles = 7;
 
+        // Ansibler message to consume
         AnsiblerReplaceProxySettings ansReplaceProxy  = 10;
+        AnsiblerReplaceTargetPools ansReplaceTargetPools =  11;
 
+        // Kuber messages to consume
         KuberPatchNodes kpatchNodes = 13;
 
+        // Consumed messages.
         AddedLoadBalancer addedLoadBalancer = 15;
-        ReconciledLoadBalancer reconciledLoadBalancer = 16;
+        AddedLoadBalancerNodes addedLoadBalanacerNodes = 16;
         ReplacedDns replacedDns = 17;
-        ReplacedProxySettings replacedProxy = 18;
-        PatchedNodes patchedNodes = 19;
+        AddedK8sNodes addedK8sNodes = 18;
+        ReplacedProxySettings replacedProxy = 19;
+        PatchedNodes patchedNodes = 20;
+        AddedLoadBalancerRoles addedLoadBalancerRoles = 21;
+        ReplacedTargetPools replacedTargetPools = 22;
 
-        DeleteLoadBalancer deleteLoadBalancer = 20;
+        // Deletions.
+        DeleteLoadBalancer deleteLoadBalancer = 23;
+        DeleteK8sNodes deleteK8sNodes = 24;
+        DeleteLoadBalancerNodes deleteLoadBalancerNodes = 25;
+        DeleteLoadBalancerRoles deleteLoadBalancerRoles = 26;
 
-        ApiEndpoint apiEndpoint = 25;
-        ApiPortOnCluster clusterApiPort = 26;
-        K8sOnlyApiEndpoint k8sApiEndpoint = 27;
-        UpgradeVersion upgradeVersion = 28;
-
+        // Utilities.
+        ApiEndpoint apiEndpoint = 27;
+        ApiPortOnCluster clusterApiPort = 28;
+        K8sOnlyApiEndpoint k8sApiEndpoint = 29;
+        UpgradeVersion upgradeVersion = 30;
     }
 }
 

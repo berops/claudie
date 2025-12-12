@@ -372,12 +372,17 @@ func clustersUnion(old, modified *spec.ClustersV2) *spec.ClustersV2 {
 // Handles reconciliation for updating existing clusters.
 func handleUpdate(hc HealthCheckStatus, current, desired *spec.ClustersV2) *spec.TaskEventV2 {
 	var (
-		k8s = KubernetesDiff(current.K8S, desired.K8S)
-		lbs = LoadBalancersDiff(current.LoadBalancers, desired.LoadBalancers)
-		lbr = LoadBalancersReconciliate{
+		diff = Diff(current, desired)
+		lbr  = LoadBalancersReconciliate{
 			Hc:      &hc,
-			Diff:    &lbs,
-			Proxy:   &k8s.Proxy,
+			Diff:    &diff.LoadBalancers,
+			Proxy:   &diff.Kubernetes.Proxy,
+			Current: current,
+			Desired: desired,
+		}
+		kr = KubernetesReconciliate{
+			Hc:      &hc,
+			Diff:    &diff.Kubernetes,
 			Current: current,
 			Desired: desired,
 		}
@@ -391,7 +396,7 @@ func handleUpdate(hc HealthCheckStatus, current, desired *spec.ClustersV2) *spec
 		return next
 	}
 
-	if next := KubernetesModifications(&hc, &k8s, current, desired); next != nil {
+	if next := KubernetesModifications(kr); next != nil {
 		return next
 	}
 
@@ -399,7 +404,7 @@ func handleUpdate(hc HealthCheckStatus, current, desired *spec.ClustersV2) *spec
 		return next
 	}
 
-	if next := KubernetesDeletions(&hc, &k8s, current, desired); next != nil {
+	if next := KubernetesDeletions(kr); next != nil {
 		return next
 	}
 
@@ -407,7 +412,7 @@ func handleUpdate(hc HealthCheckStatus, current, desired *spec.ClustersV2) *spec
 		return ScheduleRefreshVPN(current)
 	}
 
-	if next := KubernetesLowPriority(&k8s, current, desired); next != nil {
+	if next := KubernetesLowPriority(kr); next != nil {
 		return next
 	}
 
