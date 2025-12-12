@@ -18,6 +18,7 @@ import (
 type Cmd struct {
 	Command        string
 	Options        []string
+	Env            []string
 	Dir            string
 	Stdout         io.Writer
 	Stderr         io.Writer
@@ -65,7 +66,9 @@ func (c *Cmd) RetryCommand(numOfRetries int) error {
 		log.Warn().Msgf("Error encountered while executing %s : %v", printSafeCmd, err)
 	}
 
-	log.Error().Msgf("Command %s was not successful after %d retries", printSafeCmd, numOfRetries)
+	if numOfRetries >= 0 {
+		log.Error().Msgf("Command %s was not successful after %d retries", printSafeCmd, numOfRetries)
+	}
 
 	return err
 }
@@ -185,6 +188,7 @@ func (c *Cmd) buildCmd() (*exec.Cmd, context.CancelFunc) {
 	cmd.Dir = c.Dir
 	cmd.Stdout = c.Stdout
 	cmd.Stderr = c.Stderr
+	cmd.Env = append(cmd.Environ(), c.Env...)
 	return cmd, cancelFun
 }
 
