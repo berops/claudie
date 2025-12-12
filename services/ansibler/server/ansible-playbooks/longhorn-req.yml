@@ -52,5 +52,5 @@
         jid: "{{ async_job.ansible_job_id }}"
       register: result
       until: result.finished
-      retries: 10
+      retries: 60
       delay: 5
