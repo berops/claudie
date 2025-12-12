@@ -159,7 +159,7 @@ spec:
           region: eu-north-1
           zone: eu-north-1a
         count: 2
-        serverType: t3.small
+        serverType: t3.medium
         #ubuntu
         image: ami-08eb150f611ca277f
         taints:
@@ -172,7 +172,7 @@ spec:
           region: eu-west-3
           zone: eu-west-3a
         count: 4
-        serverType: t3.small
+        serverType: t3.medium
         #ubuntu
         image: ami-045a8ab02aadf4f88
         storageDiskSize: 50
