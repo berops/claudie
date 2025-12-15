@@ -290,7 +290,7 @@ spec:
         version: "1.34.0"
         network: 192.168.2.0/24
         installationProxy:
-            mode: "on"
+          mode: "on"
         pools:
           control:
             - ovh-ctrl-nodes
