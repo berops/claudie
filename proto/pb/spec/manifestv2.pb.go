@@ -1475,7 +1475,7 @@ type UpdateV2 struct {
 	//	*UpdateV2_AnsReplaceTargetPools
 	//	*UpdateV2_KpatchNodes
 	//	*UpdateV2_AddedLoadBalancer_
-	//	*UpdateV2_AddedLoadBalanacerNodes
+	//	*UpdateV2_AddedLoadBalancerNodes_
 	//	*UpdateV2_ReplacedDns_
 	//	*UpdateV2_AddedK8SNodes_
 	//	*UpdateV2_ReplacedProxy
@@ -1629,10 +1629,10 @@ func (x *UpdateV2) GetAddedLoadBalancer() *UpdateV2_AddedLoadBalancer {
 	return nil
 }
 
-func (x *UpdateV2) GetAddedLoadBalanacerNodes() *UpdateV2_AddedLoadBalancerNodes {
+func (x *UpdateV2) GetAddedLoadBalancerNodes() *UpdateV2_AddedLoadBalancerNodes {
 	if x != nil {
-		if x, ok := x.Delta.(*UpdateV2_AddedLoadBalanacerNodes); ok {
-			return x.AddedLoadBalanacerNodes
+		if x, ok := x.Delta.(*UpdateV2_AddedLoadBalancerNodes_); ok {
+			return x.AddedLoadBalancerNodes
 		}
 	}
 	return nil
@@ -1812,8 +1812,8 @@ type UpdateV2_AddedLoadBalancer_ struct {
 	AddedLoadBalancer *UpdateV2_AddedLoadBalancer `protobuf:"bytes,15,opt,name=addedLoadBalancer,proto3,oneof"`
 }
 
-type UpdateV2_AddedLoadBalanacerNodes struct {
-	AddedLoadBalanacerNodes *UpdateV2_AddedLoadBalancerNodes `protobuf:"bytes,16,opt,name=addedLoadBalanacerNodes,proto3,oneof"`
+type UpdateV2_AddedLoadBalancerNodes_ struct {
+	AddedLoadBalancerNodes *UpdateV2_AddedLoadBalancerNodes `protobuf:"bytes,16,opt,name=addedLoadBalancerNodes,proto3,oneof"`
 }
 
 type UpdateV2_ReplacedDns_ struct {
@@ -1894,7 +1894,7 @@ func (*UpdateV2_KpatchNodes) isUpdateV2_Delta() {}
 
 func (*UpdateV2_AddedLoadBalancer_) isUpdateV2_Delta() {}
 
-func (*UpdateV2_AddedLoadBalanacerNodes) isUpdateV2_Delta() {}
+func (*UpdateV2_AddedLoadBalancerNodes_) isUpdateV2_Delta() {}
 
 func (*UpdateV2_ReplacedDns_) isUpdateV2_Delta() {}
 
@@ -4741,7 +4741,7 @@ const file_spec_manifestv2_proto_rawDesc = "" +
 	"\x02Do\"i\n" +
 	"\bCreateV2\x12$\n" +
 	"\x03k8s\x18\x02 \x01(\v2\x12.spec.K8sclusterV2R\x03k8s\x127\n" +
-	"\rloadBalancers\x18\x03 \x03(\v2\x11.spec.LBclusterV2R\rloadBalancers\"\xe1-\n" +
+	"\rloadBalancers\x18\x03 \x03(\v2\x11.spec.LBclusterV2R\rloadBalancers\"\xdf-\n" +
 	"\bUpdateV2\x12*\n" +
 	"\x05state\x18\x01 \x01(\v2\x14.spec.UpdateV2.StateR\x05state\x12)\n" +
 	"\x04none\x18\x02 \x01(\v2\x13.spec.UpdateV2.NoneH\x00R\x04none\x12Y\n" +
@@ -4754,8 +4754,8 @@ const file_spec_manifestv2_proto_rawDesc = "" +
 	" \x01(\v2+.spec.UpdateV2.AnsiblerReplaceProxySettingsH\x00R\x0fansReplaceProxy\x12a\n" +
 	"\x15ansReplaceTargetPools\x18\v \x01(\v2).spec.UpdateV2.AnsiblerReplaceTargetPoolsH\x00R\x15ansReplaceTargetPools\x12B\n" +
 	"\vkpatchNodes\x18\r \x01(\v2\x1e.spec.UpdateV2.KuberPatchNodesH\x00R\vkpatchNodes\x12P\n" +
-	"\x11addedLoadBalancer\x18\x0f \x01(\v2 .spec.UpdateV2.AddedLoadBalancerH\x00R\x11addedLoadBalancer\x12a\n" +
-	"\x17addedLoadBalanacerNodes\x18\x10 \x01(\v2%.spec.UpdateV2.AddedLoadBalancerNodesH\x00R\x17addedLoadBalanacerNodes\x12>\n" +
+	"\x11addedLoadBalancer\x18\x0f \x01(\v2 .spec.UpdateV2.AddedLoadBalancerH\x00R\x11addedLoadBalancer\x12_\n" +
+	"\x16addedLoadBalancerNodes\x18\x10 \x01(\v2%.spec.UpdateV2.AddedLoadBalancerNodesH\x00R\x16addedLoadBalancerNodes\x12>\n" +
 	"\vreplacedDns\x18\x11 \x01(\v2\x1a.spec.UpdateV2.ReplacedDnsH\x00R\vreplacedDns\x12D\n" +
 	"\raddedK8sNodes\x18\x12 \x01(\v2\x1c.spec.UpdateV2.AddedK8sNodesH\x00R\raddedK8sNodes\x12L\n" +
 	"\rreplacedProxy\x18\x13 \x01(\v2$.spec.UpdateV2.ReplacedProxySettingsH\x00R\rreplacedProxy\x12A\n" +
@@ -5087,7 +5087,7 @@ var file_spec_manifestv2_proto_depIdxs = []int32{
 	49, // 36: spec.UpdateV2.ansReplaceTargetPools:type_name -> spec.UpdateV2.AnsiblerReplaceTargetPools
 	52, // 37: spec.UpdateV2.kpatchNodes:type_name -> spec.UpdateV2.KuberPatchNodes
 	34, // 38: spec.UpdateV2.addedLoadBalancer:type_name -> spec.UpdateV2.AddedLoadBalancer
-	37, // 39: spec.UpdateV2.addedLoadBalanacerNodes:type_name -> spec.UpdateV2.AddedLoadBalancerNodes
+	37, // 39: spec.UpdateV2.addedLoadBalancerNodes:type_name -> spec.UpdateV2.AddedLoadBalancerNodes
 	42, // 40: spec.UpdateV2.replacedDns:type_name -> spec.UpdateV2.ReplacedDns
 	56, // 41: spec.UpdateV2.addedK8sNodes:type_name -> spec.UpdateV2.AddedK8sNodes
 	48, // 42: spec.UpdateV2.replacedProxy:type_name -> spec.UpdateV2.ReplacedProxySettings
@@ -5177,7 +5177,7 @@ func file_spec_manifestv2_proto_init() {
 		(*UpdateV2_AnsReplaceTargetPools)(nil),
 		(*UpdateV2_KpatchNodes)(nil),
 		(*UpdateV2_AddedLoadBalancer_)(nil),
-		(*UpdateV2_AddedLoadBalanacerNodes)(nil),
+		(*UpdateV2_AddedLoadBalancerNodes_)(nil),
 		(*UpdateV2_ReplacedDns_)(nil),
 		(*UpdateV2_AddedK8SNodes_)(nil),
 		(*UpdateV2_ReplacedProxy)(nil),

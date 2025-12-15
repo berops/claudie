@@ -29,20 +29,54 @@ func reconcileInfrastructure(
 	}
 
 	switch delta := action.Update.Delta.(type) {
+	case *spec.UpdateV2_TfAddLoadBalancer:
+		lb := delta.TfAddLoadBalancer.Handle
+		addLoadBalancer(logger, projectName, processLimit, lb, tracker)
+	case *spec.UpdateV2_DeleteLoadBalancerNodes_:
+		action := DeleteLoadBalancerNodes{
+			State:  state,
+			Delete: delta.DeleteLoadBalancerNodes,
+		}
+		deleteLoadBalancerNodes(logger, projectName, processLimit, action, tracker)
+	case *spec.UpdateV2_TfAddLoadBalancerNodes:
+		action := AddLoadBalancerNodes{
+			State: state,
+			Add:   delta.TfAddLoadBalancerNodes,
+		}
+		addLoadBalancerNodes(logger, projectName, processLimit, action, tracker)
+	case *spec.UpdateV2_DeleteLoadBalancerRoles_:
+		action := DeleteLoadBalancerRoles{
+			State:  state,
+			Delete: delta.DeleteLoadBalancerRoles,
+		}
+		deleteLoadBalancerRoles(logger, projectName, processLimit, action, tracker)
+	case *spec.UpdateV2_TfAddLoadBalancerRoles:
+		action := AddLoadBalancerRoles{
+			State: state,
+			Add:   delta.TfAddLoadBalancerRoles,
+		}
+		addLoadBalancerRoles(logger, projectName, processLimit, action, tracker)
+	case *spec.UpdateV2_TfReplaceDns:
+		action := ReplaceDns{
+			State:   state,
+			Replace: delta.TfReplaceDns,
+		}
+		replaceDns(logger, projectName, processLimit, action, tracker)
 	case *spec.UpdateV2_DeleteLoadBalancer_:
 		id := delta.DeleteLoadBalancer.Handle
 		destroyLoadBalancer(logger, projectName, id, state.LoadBalancers, processLimit, stores, tracker)
-	case *spec.UpdateV2_TfAddLoadBalancer:
-		lb := delta.TfAddLoadBalancer.Handle
-		reconcileLoadBalancer(logger, projectName, processLimit, lb, tracker)
-	case *spec.UpdateV2_TfReconcileLoadBalancer:
-		lb := delta.TfReconcileLoadBalancer.Handle
-		reconcileLoadBalancer(logger, projectName, processLimit, lb, tracker)
-	case *spec.UpdateV2_TfReplaceDns:
-		dns := delta.TfReplaceDns
-		replaceDns(logger, projectName, processLimit, state, dns, tracker)
 	case *spec.UpdateV2_DeleteK8SNodes_:
-		panic("todo")
+		action := DeleteKubernetesNodes{
+			State:  state,
+			Delete: delta.DeleteK8SNodes,
+		}
+		deleteKubernetesNodes(logger, projectName, processLimit, action, tracker)
+	case *spec.UpdateV2_TfAddK8SNodes:
+		action := AddKubernetesNodes{
+			State: state,
+			Add:   delta.TfAddK8SNodes,
+		}
+		addKubernetesNodes(logger, projectName, processLimit, action, tracker)
 	default:
 		logger.
 			Warn().

@@ -7,7 +7,10 @@ import (
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/processlimit"
 	"github.com/berops/claudie/proto/pb/spec"
+	"github.com/berops/claudie/services/terraformer/internal/worker/service/internal/kubernetes"
+	"github.com/berops/claudie/services/terraformer/internal/worker/service/internal/loadbalancer"
 	"github.com/berops/claudie/services/terraformer/internal/worker/store"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	"golang.org/x/sync/semaphore"
@@ -33,6 +36,20 @@ type (
 		Task *spec.TaskV2
 
 		// Result of the [Work.Task] as it is processed by the pipeline.
+		//
+		// Generally for the terraformer service, additions, even if partially
+		// succeded ones or failed ones, are fully commited back to the message
+		// queue to be picked up by the manager as there currently is no way of
+		// tracking partially build changes. By returning the updated state with
+		// the newly added items, even if failed, along the message an error is send
+		// and the manager should make out the diff to reconciliate back to the correct
+		// state by performing deletions, which when picked up by this service will be
+		// a noop if they were not build.
+		//
+		// For deletions, either it succeeds or not, on failure the new state is not
+		// reported back to the manager, contrary to the additions. This is so that
+		// there is now way currently to know which items were delete and which not
+		// thus again, leave the diff for the manager service.
 		Result *spec.TaskResult
 
 		// Diagnostics during the processing of the received [Work.Task]
@@ -133,4 +150,36 @@ passes:
 	}
 
 	return &result
+}
+
+// Builds the required infrastructure by looking at the difference between
+// the current and desired state based on the passed in [kubernetes.K8Scluster].
+// On success updates the [kubernetes.K8Scluster.CurrentState] to the desired state.
+// On failure, any desred infra is reverted back to current.
+func BuildK8Scluster(logger zerolog.Logger, state kubernetes.K8Scluster) error {
+	logger.Info().Msg("Creating infrastructure")
+
+	if err := state.Build(logger); err != nil {
+		logger.Err(err).Msg("failed to build cluster")
+		return err
+	}
+
+	logger.Info().Msg("Cluster build successfully")
+	return nil
+}
+
+// Builds the required infrastructure by looking at the difference between
+// the current and desired state based on the passed in [loadbalancer.LBcluster].
+// On success updates the [loadbalancer.LBcluster.CurrentState] to the desired state.
+// On failure, any desred infra is reverted back to current.
+func BuildLoadbalancers(logger zerolog.Logger, state loadbalancer.LBcluster) error {
+	logger.Info().Msg("Creating loadbalancer infrastructure")
+
+	if err := state.Build(logger); err != nil {
+		logger.Err(err).Msg("failed to build cluster")
+		return err
+	}
+
+	logger.Info().Msg("Loadbalancer infrastructure successfully created")
+	return nil
 }

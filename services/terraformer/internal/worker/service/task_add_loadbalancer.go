@@ -8,7 +8,7 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-func reconcileLoadBalancer(
+func addLoadBalancer(
 	logger zerolog.Logger,
 	projectName string,
 	processLimit *semaphore.Weighted,
@@ -23,11 +23,11 @@ func reconcileLoadBalancer(
 
 	buildLogger := logger.With().Str("cluster", lb.Cluster.ClusterInfo.Id()).Logger()
 	if err := BuildLoadbalancers(buildLogger, lb); err != nil {
-		logger.Err(err).Msg("Failed to reconcile loadbalancer")
+		buildLogger.Err(err).Msg("Failed to reconcile loadbalancer")
+		tracker.Diagnostics.Push(err)
 		// Some part of the loadbalancer infrastructure was not build successfully.
 		// Since we still want to report the partially build infrastructure back to the
 		// caller, fallthrough here.
-		tracker.Diagnostics.Push(err)
 	}
 
 	update := tracker.Result.Update()

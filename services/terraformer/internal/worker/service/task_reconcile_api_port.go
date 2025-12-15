@@ -22,26 +22,25 @@ func reconcileApiPort(
 		return
 	}
 
+	if action.Update.GetClusterApiPort() == nil {
+		logger.
+			Warn().
+			Msgf("Received update task with action %T, while wanting to reconcile Api port, assuming the task was misscheduled, ignoring", action.Update.Delta)
+		return
+	}
+
 	k8s := action.Update.State.K8S
 	cluster := kubernetes.K8Scluster{
 		ProjectName:       projectName,
 		Cluster:           k8s,
-		ExportPort6443:    action.Update.GetClusterApiPort().GetOpen(),
+		ExportPort6443:    action.Update.GetClusterApiPort().Open,
 		SpawnProcessLimit: processLimit,
 	}
 
 	buildLogger := logger.With().Str("cluster", cluster.Id()).Logger()
-
 	if err := BuildK8Scluster(buildLogger, cluster); err != nil {
-		logger.Err(err).Msg("Failed to reconcile cluster api port")
-
+		buildLogger.Err(err).Msg("Failed to reconcile cluster api port")
 		tracker.Diagnostics.Push(err)
-
-		possiblyUpdated := cluster.Cluster
-		update := tracker.Result.Update()
-		update.Kubernetes(possiblyUpdated)
-		update.Commit()
-
 		return
 	}
 

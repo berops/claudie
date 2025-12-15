@@ -97,27 +97,53 @@ func (te *TaskV2) ConsumeUpdateResult(result *TaskResult_Update) error {
 
 	if update := te.GetUpdate(); update != nil {
 		switch delta := update.Delta.(type) {
-		case *UpdateV2_AddedLoadBalancer_:
-			// nothing to consume.
-		case *UpdateV2_ApiEndpoint_:
-			// nothing to consume.
-		case *UpdateV2_ClusterApiPort:
-			// nothing to consume.
-		case *UpdateV2_DeleteLoadBalancer_:
-			// nothing to consume.
-		case *UpdateV2_None_:
-			// nothing to consume.
-		case *UpdateV2_ReconciledLoadBalancer_:
-			// nothing to consume.
-		case *UpdateV2_ReplacedDns_:
-		// nothing to consume.
-		case *UpdateV2_KpatchNodes:
-			update.Delta = &UpdateV2_PatchedNodes_{
-				PatchedNodes: new(UpdateV2_PatchedNodes),
-			}
 		case *UpdateV2_AnsReplaceProxy:
 			update.Delta = &UpdateV2_ReplacedProxy{
-				ReplacedProxy: new(UpdateV2_ReplacedProxySettings),
+				ReplacedProxy: &UpdateV2_ReplacedProxySettings{},
+			}
+		case *UpdateV2_AnsReplaceTargetPools:
+			consumed := &UpdateV2_ReplacedTargetPools{
+				Handle: delta.AnsReplaceTargetPools.Handle,
+				Roles:  map[string]*UpdateV2_ReplacedTargetPools_TargetPools{},
+			}
+
+			for k, v := range delta.AnsReplaceTargetPools.Roles {
+				consumed.Roles[k] = &UpdateV2_ReplacedTargetPools_TargetPools{
+					Pools: v.Pools,
+				}
+			}
+
+			update.Delta = &UpdateV2_ReplacedTargetPools_{
+				ReplacedTargetPools: consumed,
+			}
+		case *UpdateV2_KpatchNodes:
+			update.Delta = &UpdateV2_PatchedNodes_{
+				PatchedNodes: &UpdateV2_PatchedNodes{},
+			}
+		case *UpdateV2_TfAddK8SNodes:
+			consumed := &UpdateV2_AddedK8SNodes{
+				NewNodePool: false,
+				Nodepool:    "",
+				Nodes:       []string{},
+			}
+
+			switch kind := delta.TfAddK8SNodes.Kind.(type) {
+			case *UpdateV2_TerraformerAddK8SNodes_Existing_:
+				consumed.NewNodePool = false
+				consumed.Nodepool = kind.Existing.Nodepool
+				for _, n := range kind.Existing.Nodes {
+					consumed.Nodes = append(consumed.Nodes, n.Name)
+				}
+			case *UpdateV2_TerraformerAddK8SNodes_New_:
+				consumed.NewNodePool = true
+				consumed.Nodepool = kind.New.Nodepool.Name
+				for _, n := range kind.New.Nodepool.Nodes {
+					consumed.Nodes = append(consumed.Nodes, n.Name)
+				}
+			}
+
+			update.Delta = &UpdateV2_AddedK8SNodes_{
+				AddedK8SNodes: consumed,
 			}
 		case *UpdateV2_TfAddLoadBalancer:
 			update.Delta = &UpdateV2_AddedLoadBalancer_{
@@ -125,10 +151,41 @@ func (te *TaskV2) ConsumeUpdateResult(result *TaskResult_Update) error {
 					Handle: delta.TfAddLoadBalancer.Handle.ClusterInfo.Id(),
 				},
 			}
-		case *UpdateV2_TfReconcileLoadBalancer:
-			update.Delta = &UpdateV2_ReconciledLoadBalancer_{
-				ReconciledLoadBalancer: &UpdateV2_ReconciledLoadBalancer{
-					Handle: delta.TfReconcileLoadBalancer.Handle.ClusterInfo.Id(),
+		case *UpdateV2_TfAddLoadBalancerNodes:
+			consumed := &UpdateV2_AddedLoadBalancerNodes{
+				Handle:      delta.TfAddLoadBalancerNodes.Handle,
+				NewNodePool: false,
+				NodePool:    "",
+				Nodes:       []string{},
+			}
+
+			switch kind := delta.TfAddLoadBalancerNodes.Kind.(type) {
+			case *UpdateV2_TerraformerAddLoadBalancerNodes_Existing_:
+				consumed.NewNodePool = false
+				consumed.NodePool = kind.Existing.Nodepool
+				for _, n := range kind.Existing.Nodes {
+					consumed.Nodes = append(consumed.Nodes, n.Name)
+				}
+			case *UpdateV2_TerraformerAddLoadBalancerNodes_New_:
+				consumed.NewNodePool = true
+				consumed.NodePool = kind.New.Nodepool.Name
+				for _, n := range kind.New.Nodepool.Nodes {
+					consumed.Nodes = append(consumed.Nodes, n.Name)
+				}
+			}
+
+			update.Delta = &UpdateV2_AddedLoadBalancerNodes_{
+				AddedLoadBalancerNodes: consumed,
+			}
+		case *UpdateV2_TfAddLoadBalancerRoles:
+			roles := make([]string, 0, len(delta.TfAddLoadBalancerRoles.Roles))
+			for _, r := range delta.TfAddLoadBalancerRoles.Roles {
+				roles = append(roles, r.Name)
+			}
+			update.Delta = &UpdateV2_AddedLoadBalancerRoles_{
+				AddedLoadBalancerRoles: &UpdateV2_AddedLoadBalancerRoles{
+					Handle: delta.TfAddLoadBalancerRoles.Handle,
+					Roles:  roles,
 				},
 			}
 		case *UpdateV2_TfReplaceDns:
@@ -139,7 +196,7 @@ func (te *TaskV2) ConsumeUpdateResult(result *TaskResult_Update) error {
 				},
 			}
 		default:
-			panic(fmt.Sprintf("TODO: remove all panics: unexpected spec.isUpdateV2_Delta: %#v", delta))
+			// other messages are non-consumable, do nothing.
 		}
 	}
 

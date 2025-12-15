@@ -577,7 +577,7 @@ message UpdateV2 {
 
         // Consumed messages.
         AddedLoadBalancer addedLoadBalancer = 15;
-        AddedLoadBalancerNodes addedLoadBalanacerNodes = 16;
+        AddedLoadBalancerNodes addedLoadBalancerNodes = 16;
         ReplacedDns replacedDns = 17;
         AddedK8sNodes addedK8sNodes = 18;
         ReplacedProxySettings replacedProxy = 19;

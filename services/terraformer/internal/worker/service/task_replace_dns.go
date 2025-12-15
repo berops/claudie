@@ -10,23 +10,27 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
+type ReplaceDns struct {
+	State   *spec.UpdateV2_State
+	Replace *spec.UpdateV2_TerraformerReplaceDns
+}
+
 func replaceDns(
 	logger zerolog.Logger,
 	projectName string,
 	processLimit *semaphore.Weighted,
-	state *spec.UpdateV2_State,
-	delta *spec.UpdateV2_TerraformerReplaceDns,
+	action ReplaceDns,
 	tracker Tracker,
 ) {
-	idx := clusters.IndexLoadbalancerByIdV2(delta.Handle, state.LoadBalancers)
+	idx := clusters.IndexLoadbalancerByIdV2(action.Replace.Handle, action.State.LoadBalancers)
 	if idx < 0 {
 		logger.
 			Warn().
-			Msgf("Can't replace DNS for loadbalancer %q that is missing from the received state", delta.Handle)
+			Msgf("Can't replace DNS for loadbalancer %q that is missing from the received state", action.Replace.Handle)
 		return
 	}
 
-	lb := state.LoadBalancers[idx]
+	lb := action.State.LoadBalancers[idx]
 	if lb.Dns != nil {
 		dns := loadbalancer.DNS{
 			ProjectName:       projectName,
@@ -46,14 +50,14 @@ func replaceDns(
 		lb.Dns = nil
 	}
 
-	if delta.Dns == nil {
+	if action.Replace.Dns == nil {
 		update := tracker.Result.Update()
 		update.Loadbalancers(lb)
 		update.Commit()
 		return
 	}
 
-	lb.Dns = delta.Dns
+	lb.Dns = action.Replace.Dns
 	dns := loadbalancer.DNS{
 		ProjectName:       projectName,
 		ClusterName:       lb.ClusterInfo.Name,

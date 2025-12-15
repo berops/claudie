@@ -14,15 +14,10 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// TODO: scrape configs.
-// TODO: adjust the Consuming of the messages in managerv2
 // TODO: go through all the services and re-implement where
 // needed the changes made to the UpdateV2 type.
 // TODO: implement kuber.
-// TODO: on addition and removal of loadbalancers
-// we will need to patch the config maps and rollout restart cilium.
-// The addition and deletion should be done.
-// TODO: thing about the retries.
+// TODO: think about the retries.
 
 // Wraps data and diffs needed by the reconciliation
 // for loadbalancers attached to the kubernetes cluster.
@@ -478,7 +473,7 @@ func ScheduleAdditionLoadBalancerNodePools(
 		StageKind: &spec.Stage_Kuber{
 			Kuber: &spec.StageKuber{
 				Description: &spec.StageDescription{
-					About:      "Configuring kubernetes cluster",
+					About:      "Configuring cluster",
 					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 				},
 				SubPasses: []*spec.StageKuber_SubPass{
@@ -517,8 +512,8 @@ func ScheduleAdditionLoadBalancerNodePools(
 			src := nodepools.FindByName(np, srclb.ClusterInfo.NodePools)
 			nodepools.CopyNodes(dst, src, nodes)
 
-			update.Update.Delta = &spec.UpdateV2_AddedLoadBalanacerNodes{
-				AddedLoadBalanacerNodes: &spec.UpdateV2_AddedLoadBalancerNodes{
+			update.Update.Delta = &spec.UpdateV2_AddedLoadBalancerNodes_{
+				AddedLoadBalancerNodes: &spec.UpdateV2_AddedLoadBalancerNodes{
 					Handle:      cid.Id,
 					NewNodePool: false,
 					NodePool:    np,
@@ -575,8 +570,9 @@ func ScheduleAdditionLoadBalancerNodePools(
 			// as they do not need to be build, contrary to the dynamic nodes.
 			dstlb := inFlight.LoadBalancers.Clusters[cid.Index]
 			dstlb.ClusterInfo.NodePools = append(dstlb.ClusterInfo.NodePools, toAdd)
-			update.Update.Delta = &spec.UpdateV2_AddedLoadBalanacerNodes{
-				AddedLoadBalanacerNodes: &spec.UpdateV2_AddedLoadBalancerNodes{
+
+			update.Update.Delta = &spec.UpdateV2_AddedLoadBalancerNodes_{
+				AddedLoadBalancerNodes: &spec.UpdateV2_AddedLoadBalancerNodes{
 					Handle:      cid.Id,
 					NewNodePool: true,
 					NodePool:    np,
@@ -1053,6 +1049,29 @@ func ScheduleDeleteLoadBalancer(useProxy bool, current *spec.ClustersV2, cid Loa
 		}})
 	}
 
+	// If we are deleting the last loadbalancer delete scrape config.
+	if len(current.LoadBalancers.Clusters) == 1 {
+		pipeline = append(pipeline, &spec.Stage{
+			StageKind: &spec.Stage_Kuber{
+				Kuber: &spec.StageKuber{
+					Description: &spec.StageDescription{
+						About:      "Configuring cluster",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+					SubPasses: []*spec.StageKuber_SubPass{
+						{
+							Kind: spec.StageKuber_REMOVE_LB_SCRAPE_CONFIG,
+							Description: &spec.StageDescription{
+								About:      "Removing load balancer scrape config",
+								ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+							},
+						},
+					},
+				},
+			},
+		})
+	}
+
 	return &spec.TaskEventV2{
 		Id:        uuid.New().String(),
 		Timestamp: timestamppb.New(time.Now().UTC()),
@@ -1167,6 +1186,24 @@ func ScheduleJoinLoadBalancer(useProxy bool, current, desired *spec.ClustersV2, 
 				},
 			},
 		}
+
+		kuber = spec.Stage_Kuber{
+			Kuber: &spec.StageKuber{
+				Description: &spec.StageDescription{
+					About:      "Configuring cluster",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+				SubPasses: []*spec.StageKuber_SubPass{
+					{
+						Kind: spec.StageKuber_STORE_LB_SCRAPE_CONFIG,
+						Description: &spec.StageDescription{
+							About:      "Reconciling load balancer scrape config",
+							ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+						},
+					},
+				},
+			},
+		}
 	)
 
 	updateOp := spec.UpdateV2{
@@ -1184,6 +1221,7 @@ func ScheduleJoinLoadBalancer(useProxy bool, current, desired *spec.ClustersV2, 
 	pipeline := []*spec.Stage{
 		{StageKind: &tf},
 		{StageKind: nil},
+		{StageKind: &kuber},
 	}
 
 	if useProxy {
@@ -1272,6 +1310,25 @@ func ScheduleDeleteRoles(current *spec.ClustersV2, cid LoadBalancerIdentifier, r
 					},
 				},
 			},
+			{
+				StageKind: &spec.Stage_Kuber{
+					Kuber: &spec.StageKuber{
+						Description: &spec.StageDescription{
+							About:      "Configuring cluster",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+						SubPasses: []*spec.StageKuber_SubPass{
+							{
+								Kind: spec.StageKuber_STORE_LB_SCRAPE_CONFIG,
+								Description: &spec.StageDescription{
+									About:      "Reconciling load balancer scrape config",
+									ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -1349,6 +1406,25 @@ func ScheduleAddRoles(current, desired *spec.ClustersV2, cid, did LoadBalancerId
 					},
 				},
 			},
+			{
+				StageKind: &spec.Stage_Kuber{
+					Kuber: &spec.StageKuber{
+						Description: &spec.StageDescription{
+							About:      "Configuring cluster",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+						SubPasses: []*spec.StageKuber_SubPass{
+							{
+								Kind: spec.StageKuber_STORE_LB_SCRAPE_CONFIG,
+								Description: &spec.StageDescription{
+									About:      "Reconciling load balancer scrape config",
+									ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -1418,6 +1494,25 @@ func ScheduleReconcileRoleTargetPools(
 								Description: &spec.StageDescription{
 									About:      "Refreshing existing envoy services and deploy new for changed target pools of role",
 									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				StageKind: &spec.Stage_Kuber{
+					Kuber: &spec.StageKuber{
+						Description: &spec.StageDescription{
+							About:      "Configuring cluster",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+						SubPasses: []*spec.StageKuber_SubPass{
+							{
+								Kind: spec.StageKuber_STORE_LB_SCRAPE_CONFIG,
+								Description: &spec.StageDescription{
+									About:      "Reconciling load balancer scrape config",
+									ErrorLevel: spec.ErrorLevel_ERROR_WARN,
 								},
 							},
 						},

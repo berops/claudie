@@ -34,7 +34,7 @@ func destroyLoadBalancer(
 
 	buildLogger := logger.With().Str("cluster", lb.Cluster.ClusterInfo.Id()).Logger()
 	if err := DestroyCluster(buildLogger, projectName, &lb, stores.s3, stores.dynamo); err != nil {
-		logger.Err(err).Msg("Failed to destroy load balancer")
+		buildLogger.Err(err).Msg("Failed to destroy load balancer")
 		tracker.Diagnostics.Push(err)
 		return
 	}
