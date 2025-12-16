@@ -1142,86 +1142,6 @@ func (*CiliumRolloutRestartResponse) Descriptor() ([]byte, []int) {
 	return file_kuber_proto_rawDescGZIP(), []int{25}
 }
 
-type GpuOperatorRolloutRestartRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Cluster       *spec.K8Scluster       `protobuf:"bytes,1,opt,name=cluster,proto3" json:"cluster,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GpuOperatorRolloutRestartRequest) Reset() {
-	*x = GpuOperatorRolloutRestartRequest{}
-	mi := &file_kuber_proto_msgTypes[26]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GpuOperatorRolloutRestartRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GpuOperatorRolloutRestartRequest) ProtoMessage() {}
-
-func (x *GpuOperatorRolloutRestartRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_kuber_proto_msgTypes[26]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GpuOperatorRolloutRestartRequest.ProtoReflect.Descriptor instead.
-func (*GpuOperatorRolloutRestartRequest) Descriptor() ([]byte, []int) {
-	return file_kuber_proto_rawDescGZIP(), []int{26}
-}
-
-func (x *GpuOperatorRolloutRestartRequest) GetCluster() *spec.K8Scluster {
-	if x != nil {
-		return x.Cluster
-	}
-	return nil
-}
-
-type GpuOperatorRolloutRestartResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GpuOperatorRolloutRestartResponse) Reset() {
-	*x = GpuOperatorRolloutRestartResponse{}
-	mi := &file_kuber_proto_msgTypes[27]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GpuOperatorRolloutRestartResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GpuOperatorRolloutRestartResponse) ProtoMessage() {}
-
-func (x *GpuOperatorRolloutRestartResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_kuber_proto_msgTypes[27]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GpuOperatorRolloutRestartResponse.ProtoReflect.Descriptor instead.
-func (*GpuOperatorRolloutRestartResponse) Descriptor() ([]byte, []int) {
-	return file_kuber_proto_rawDescGZIP(), []int{27}
-}
-
 type PatchKubeProxyConfigMapRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	DesiredCluster *spec.K8Scluster       `protobuf:"bytes,1,opt,name=desiredCluster,proto3" json:"desiredCluster,omitempty"`
@@ -1231,7 +1151,7 @@ type PatchKubeProxyConfigMapRequest struct {
 
 func (x *PatchKubeProxyConfigMapRequest) Reset() {
 	*x = PatchKubeProxyConfigMapRequest{}
-	mi := &file_kuber_proto_msgTypes[28]
+	mi := &file_kuber_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1243,7 +1163,7 @@ func (x *PatchKubeProxyConfigMapRequest) String() string {
 func (*PatchKubeProxyConfigMapRequest) ProtoMessage() {}
 
 func (x *PatchKubeProxyConfigMapRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_kuber_proto_msgTypes[28]
+	mi := &file_kuber_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1256,7 +1176,7 @@ func (x *PatchKubeProxyConfigMapRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PatchKubeProxyConfigMapRequest.ProtoReflect.Descriptor instead.
 func (*PatchKubeProxyConfigMapRequest) Descriptor() ([]byte, []int) {
-	return file_kuber_proto_rawDescGZIP(), []int{28}
+	return file_kuber_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *PatchKubeProxyConfigMapRequest) GetDesiredCluster() *spec.K8Scluster {
@@ -1274,7 +1194,7 @@ type PatchKubeProxyConfigMapResponse struct {
 
 func (x *PatchKubeProxyConfigMapResponse) Reset() {
 	*x = PatchKubeProxyConfigMapResponse{}
-	mi := &file_kuber_proto_msgTypes[29]
+	mi := &file_kuber_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1286,7 +1206,7 @@ func (x *PatchKubeProxyConfigMapResponse) String() string {
 func (*PatchKubeProxyConfigMapResponse) ProtoMessage() {}
 
 func (x *PatchKubeProxyConfigMapResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_kuber_proto_msgTypes[29]
+	mi := &file_kuber_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1299,7 +1219,7 @@ func (x *PatchKubeProxyConfigMapResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PatchKubeProxyConfigMapResponse.ProtoReflect.Descriptor instead.
 func (*PatchKubeProxyConfigMapResponse) Descriptor() ([]byte, []int) {
-	return file_kuber_proto_rawDescGZIP(), []int{29}
+	return file_kuber_proto_rawDescGZIP(), []int{27}
 }
 
 type PatchKubeadmConfigMapRequest struct {
@@ -1312,7 +1232,7 @@ type PatchKubeadmConfigMapRequest struct {
 
 func (x *PatchKubeadmConfigMapRequest) Reset() {
 	*x = PatchKubeadmConfigMapRequest{}
-	mi := &file_kuber_proto_msgTypes[30]
+	mi := &file_kuber_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1324,7 +1244,7 @@ func (x *PatchKubeadmConfigMapRequest) String() string {
 func (*PatchKubeadmConfigMapRequest) ProtoMessage() {}
 
 func (x *PatchKubeadmConfigMapRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_kuber_proto_msgTypes[30]
+	mi := &file_kuber_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1337,7 +1257,7 @@ func (x *PatchKubeadmConfigMapRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PatchKubeadmConfigMapRequest.ProtoReflect.Descriptor instead.
 func (*PatchKubeadmConfigMapRequest) Descriptor() ([]byte, []int) {
-	return file_kuber_proto_rawDescGZIP(), []int{30}
+	return file_kuber_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *PatchKubeadmConfigMapRequest) GetDesiredCluster() *spec.K8Scluster {
@@ -1362,7 +1282,7 @@ type PatchKubeadmConfigMapResponse struct {
 
 func (x *PatchKubeadmConfigMapResponse) Reset() {
 	*x = PatchKubeadmConfigMapResponse{}
-	mi := &file_kuber_proto_msgTypes[31]
+	mi := &file_kuber_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1374,7 +1294,7 @@ func (x *PatchKubeadmConfigMapResponse) String() string {
 func (*PatchKubeadmConfigMapResponse) ProtoMessage() {}
 
 func (x *PatchKubeadmConfigMapResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_kuber_proto_msgTypes[31]
+	mi := &file_kuber_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1387,7 +1307,7 @@ func (x *PatchKubeadmConfigMapResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PatchKubeadmConfigMapResponse.ProtoReflect.Descriptor instead.
 func (*PatchKubeadmConfigMapResponse) Descriptor() ([]byte, []int) {
-	return file_kuber_proto_rawDescGZIP(), []int{31}
+	return file_kuber_proto_rawDescGZIP(), []int{29}
 }
 
 type PatchNodesRequest_ListOfTaintKeys struct {
@@ -1399,7 +1319,7 @@ type PatchNodesRequest_ListOfTaintKeys struct {
 
 func (x *PatchNodesRequest_ListOfTaintKeys) Reset() {
 	*x = PatchNodesRequest_ListOfTaintKeys{}
-	mi := &file_kuber_proto_msgTypes[33]
+	mi := &file_kuber_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1411,7 +1331,7 @@ func (x *PatchNodesRequest_ListOfTaintKeys) String() string {
 func (*PatchNodesRequest_ListOfTaintKeys) ProtoMessage() {}
 
 func (x *PatchNodesRequest_ListOfTaintKeys) ProtoReflect() protoreflect.Message {
-	mi := &file_kuber_proto_msgTypes[33]
+	mi := &file_kuber_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1443,7 +1363,7 @@ type PatchNodesRequest_ListOfLabelKeys struct {
 
 func (x *PatchNodesRequest_ListOfLabelKeys) Reset() {
 	*x = PatchNodesRequest_ListOfLabelKeys{}
-	mi := &file_kuber_proto_msgTypes[34]
+	mi := &file_kuber_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1455,7 +1375,7 @@ func (x *PatchNodesRequest_ListOfLabelKeys) String() string {
 func (*PatchNodesRequest_ListOfLabelKeys) ProtoMessage() {}
 
 func (x *PatchNodesRequest_ListOfLabelKeys) ProtoReflect() protoreflect.Message {
-	mi := &file_kuber_proto_msgTypes[34]
+	mi := &file_kuber_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1487,7 +1407,7 @@ type PatchNodesRequest_ListOfAnnotationKeys struct {
 
 func (x *PatchNodesRequest_ListOfAnnotationKeys) Reset() {
 	*x = PatchNodesRequest_ListOfAnnotationKeys{}
-	mi := &file_kuber_proto_msgTypes[35]
+	mi := &file_kuber_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1499,7 +1419,7 @@ func (x *PatchNodesRequest_ListOfAnnotationKeys) String() string {
 func (*PatchNodesRequest_ListOfAnnotationKeys) ProtoMessage() {}
 
 func (x *PatchNodesRequest_ListOfAnnotationKeys) ProtoReflect() protoreflect.Message {
-	mi := &file_kuber_proto_msgTypes[35]
+	mi := &file_kuber_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1533,7 +1453,7 @@ type PatchNodesRequest_LabelsTaintsAnnotationsToRemove struct {
 
 func (x *PatchNodesRequest_LabelsTaintsAnnotationsToRemove) Reset() {
 	*x = PatchNodesRequest_LabelsTaintsAnnotationsToRemove{}
-	mi := &file_kuber_proto_msgTypes[36]
+	mi := &file_kuber_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1545,7 +1465,7 @@ func (x *PatchNodesRequest_LabelsTaintsAnnotationsToRemove) String() string {
 func (*PatchNodesRequest_LabelsTaintsAnnotationsToRemove) ProtoMessage() {}
 
 func (x *PatchNodesRequest_LabelsTaintsAnnotationsToRemove) ProtoReflect() protoreflect.Message {
-	mi := &file_kuber_proto_msgTypes[36]
+	mi := &file_kuber_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1657,10 +1577,7 @@ const file_kuber_proto_rawDesc = "" +
 	"!PatchClusterInfoConfigMapResponse\"I\n" +
 	"\x1bCiliumRolloutRestartRequest\x12*\n" +
 	"\acluster\x18\x01 \x01(\v2\x10.spec.K8sclusterR\acluster\"\x1e\n" +
-	"\x1cCiliumRolloutRestartResponse\"N\n" +
-	" GpuOperatorRolloutRestartRequest\x12*\n" +
-	"\acluster\x18\x01 \x01(\v2\x10.spec.K8sclusterR\acluster\"#\n" +
-	"!GpuOperatorRolloutRestartResponse\"Z\n" +
+	"\x1cCiliumRolloutRestartResponse\"Z\n" +
 	"\x1ePatchKubeProxyConfigMapRequest\x128\n" +
 	"\x0edesiredCluster\x18\x01 \x01(\v2\x10.spec.K8sclusterR\x0edesiredCluster\"!\n" +
 	"\x1fPatchKubeProxyConfigMapResponse\"x\n" +
@@ -1669,7 +1586,7 @@ const file_kuber_proto_rawDesc = "" +
 	"\n" +
 	"lbEndpoint\x18\x02 \x01(\tR\n" +
 	"lbEndpoint\"\x1f\n" +
-	"\x1dPatchKubeadmConfigMapResponse2\xae\f\n" +
+	"\x1dPatchKubeadmConfigMapResponse2\xba\v\n" +
 	"\fKuberService\x12c\n" +
 	"\x14RemoveLBScrapeConfig\x12$.claudie.RemoveLBScrapeConfigRequest\x1a%.claudie.RemoveLBScrapeConfigResponse\x12`\n" +
 	"\x13StoreLBScrapeConfig\x12#.claudie.StoreLBScrapeConfigRequest\x1a$.claudie.StoreLBScrapeConfigResponse\x12c\n" +
@@ -1686,8 +1603,7 @@ const file_kuber_proto_rawDesc = "" +
 	"\x19PatchClusterInfoConfigMap\x12).claudie.PatchClusterInfoConfigMapRequest\x1a*.claudie.PatchClusterInfoConfigMapResponse\x12l\n" +
 	"\x17PatchKubeProxyConfigMap\x12'.claudie.PatchKubeProxyConfigMapRequest\x1a(.claudie.PatchKubeProxyConfigMapResponse\x12f\n" +
 	"\x15PatchKubeadmConfigMap\x12%.claudie.PatchKubeadmConfigMapRequest\x1a&.claudie.PatchKubeadmConfigMapResponse\x12c\n" +
-	"\x14CiliumRolloutRestart\x12$.claudie.CiliumRolloutRestartRequest\x1a%.claudie.CiliumRolloutRestartResponse\x12r\n" +
-	"\x19GpuOperatorRolloutRestart\x12).claudie.GpuOperatorRolloutRestartRequest\x1a*.claudie.GpuOperatorRolloutRestartResponseB\n" +
+	"\x14CiliumRolloutRestart\x12$.claudie.CiliumRolloutRestartRequest\x1a%.claudie.CiliumRolloutRestartResponseB\n" +
 	"Z\bproto/pbb\x06proto3"
 
 var (
@@ -1702,7 +1618,7 @@ func file_kuber_proto_rawDescGZIP() []byte {
 	return file_kuber_proto_rawDescData
 }
 
-var file_kuber_proto_msgTypes = make([]protoimpl.MessageInfo, 40)
+var file_kuber_proto_msgTypes = make([]protoimpl.MessageInfo, 38)
 var file_kuber_proto_goTypes = []any{
 	(*SetUpStorageRequest)(nil),                               // 0: claudie.SetUpStorageRequest
 	(*SetUpStorageResponse)(nil),                              // 1: claudie.SetUpStorageResponse
@@ -1730,93 +1646,88 @@ var file_kuber_proto_goTypes = []any{
 	(*PatchClusterInfoConfigMapResponse)(nil),                 // 23: claudie.PatchClusterInfoConfigMapResponse
 	(*CiliumRolloutRestartRequest)(nil),                       // 24: claudie.CiliumRolloutRestartRequest
 	(*CiliumRolloutRestartResponse)(nil),                      // 25: claudie.CiliumRolloutRestartResponse
-	(*GpuOperatorRolloutRestartRequest)(nil),                  // 26: claudie.GpuOperatorRolloutRestartRequest
-	(*GpuOperatorRolloutRestartResponse)(nil),                 // 27: claudie.GpuOperatorRolloutRestartResponse
-	(*PatchKubeProxyConfigMapRequest)(nil),                    // 28: claudie.PatchKubeProxyConfigMapRequest
-	(*PatchKubeProxyConfigMapResponse)(nil),                   // 29: claudie.PatchKubeProxyConfigMapResponse
-	(*PatchKubeadmConfigMapRequest)(nil),                      // 30: claudie.PatchKubeadmConfigMapRequest
-	(*PatchKubeadmConfigMapResponse)(nil),                     // 31: claudie.PatchKubeadmConfigMapResponse
-	nil,                                                       // 32: claudie.DeleteNodesRequest.NodepoolsEntry
-	(*PatchNodesRequest_ListOfTaintKeys)(nil),                 // 33: claudie.PatchNodesRequest.ListOfTaintKeys
-	(*PatchNodesRequest_ListOfLabelKeys)(nil),                 // 34: claudie.PatchNodesRequest.ListOfLabelKeys
-	(*PatchNodesRequest_ListOfAnnotationKeys)(nil),            // 35: claudie.PatchNodesRequest.ListOfAnnotationKeys
-	(*PatchNodesRequest_LabelsTaintsAnnotationsToRemove)(nil), // 36: claudie.PatchNodesRequest.LabelsTaintsAnnotationsToRemove
-	nil,                       // 37: claudie.PatchNodesRequest.LabelsTaintsAnnotationsToRemove.LabelsEntry
-	nil,                       // 38: claudie.PatchNodesRequest.LabelsTaintsAnnotationsToRemove.AnnotationsEntry
-	nil,                       // 39: claudie.PatchNodesRequest.LabelsTaintsAnnotationsToRemove.TaintsEntry
-	(*spec.K8Scluster)(nil),   // 40: spec.K8scluster
-	(*spec.LBcluster)(nil),    // 41: spec.LBcluster
-	(*spec.DeletedNodes)(nil), // 42: spec.DeletedNodes
-	(*spec.Taint)(nil),        // 43: spec.Taint
+	(*PatchKubeProxyConfigMapRequest)(nil),                    // 26: claudie.PatchKubeProxyConfigMapRequest
+	(*PatchKubeProxyConfigMapResponse)(nil),                   // 27: claudie.PatchKubeProxyConfigMapResponse
+	(*PatchKubeadmConfigMapRequest)(nil),                      // 28: claudie.PatchKubeadmConfigMapRequest
+	(*PatchKubeadmConfigMapResponse)(nil),                     // 29: claudie.PatchKubeadmConfigMapResponse
+	nil,                                                       // 30: claudie.DeleteNodesRequest.NodepoolsEntry
+	(*PatchNodesRequest_ListOfTaintKeys)(nil),                 // 31: claudie.PatchNodesRequest.ListOfTaintKeys
+	(*PatchNodesRequest_ListOfLabelKeys)(nil),                 // 32: claudie.PatchNodesRequest.ListOfLabelKeys
+	(*PatchNodesRequest_ListOfAnnotationKeys)(nil),            // 33: claudie.PatchNodesRequest.ListOfAnnotationKeys
+	(*PatchNodesRequest_LabelsTaintsAnnotationsToRemove)(nil), // 34: claudie.PatchNodesRequest.LabelsTaintsAnnotationsToRemove
+	nil,                       // 35: claudie.PatchNodesRequest.LabelsTaintsAnnotationsToRemove.LabelsEntry
+	nil,                       // 36: claudie.PatchNodesRequest.LabelsTaintsAnnotationsToRemove.AnnotationsEntry
+	nil,                       // 37: claudie.PatchNodesRequest.LabelsTaintsAnnotationsToRemove.TaintsEntry
+	(*spec.K8Scluster)(nil),   // 38: spec.K8scluster
+	(*spec.LBcluster)(nil),    // 39: spec.LBcluster
+	(*spec.DeletedNodes)(nil), // 40: spec.DeletedNodes
+	(*spec.Taint)(nil),        // 41: spec.Taint
 }
 var file_kuber_proto_depIdxs = []int32{
-	40, // 0: claudie.SetUpStorageRequest.desiredCluster:type_name -> spec.K8scluster
-	40, // 1: claudie.SetUpStorageResponse.desiredCluster:type_name -> spec.K8scluster
-	40, // 2: claudie.StoreKubeconfigRequest.cluster:type_name -> spec.K8scluster
-	40, // 3: claudie.DeleteKubeconfigRequest.cluster:type_name -> spec.K8scluster
-	40, // 4: claudie.DeleteNodesRequest.cluster:type_name -> spec.K8scluster
-	32, // 5: claudie.DeleteNodesRequest.nodepools:type_name -> claudie.DeleteNodesRequest.NodepoolsEntry
-	40, // 6: claudie.DeleteNodesResponse.cluster:type_name -> spec.K8scluster
-	40, // 7: claudie.StoreClusterMetadataRequest.cluster:type_name -> spec.K8scluster
-	41, // 8: claudie.StoreClusterMetadataRequest.loadbalancers:type_name -> spec.LBcluster
-	40, // 9: claudie.StoreLBScrapeConfigRequest.cluster:type_name -> spec.K8scluster
-	41, // 10: claudie.StoreLBScrapeConfigRequest.desiredLoadbalancers:type_name -> spec.LBcluster
-	40, // 11: claudie.RemoveLBScrapeConfigRequest.cluster:type_name -> spec.K8scluster
-	40, // 12: claudie.DeleteClusterMetadataRequest.cluster:type_name -> spec.K8scluster
-	40, // 13: claudie.PatchNodesRequest.cluster:type_name -> spec.K8scluster
-	36, // 14: claudie.PatchNodesRequest.toRemove:type_name -> claudie.PatchNodesRequest.LabelsTaintsAnnotationsToRemove
-	40, // 15: claudie.SetUpClusterAutoscalerRequest.cluster:type_name -> spec.K8scluster
-	40, // 16: claudie.DestroyClusterAutoscalerRequest.cluster:type_name -> spec.K8scluster
-	40, // 17: claudie.PatchClusterInfoConfigMapRequest.desiredCluster:type_name -> spec.K8scluster
-	40, // 18: claudie.CiliumRolloutRestartRequest.cluster:type_name -> spec.K8scluster
-	40, // 19: claudie.GpuOperatorRolloutRestartRequest.cluster:type_name -> spec.K8scluster
-	40, // 20: claudie.PatchKubeProxyConfigMapRequest.desiredCluster:type_name -> spec.K8scluster
-	40, // 21: claudie.PatchKubeadmConfigMapRequest.desiredCluster:type_name -> spec.K8scluster
-	42, // 22: claudie.DeleteNodesRequest.NodepoolsEntry.value:type_name -> spec.DeletedNodes
-	43, // 23: claudie.PatchNodesRequest.ListOfTaintKeys.taints:type_name -> spec.Taint
-	37, // 24: claudie.PatchNodesRequest.LabelsTaintsAnnotationsToRemove.labels:type_name -> claudie.PatchNodesRequest.LabelsTaintsAnnotationsToRemove.LabelsEntry
-	38, // 25: claudie.PatchNodesRequest.LabelsTaintsAnnotationsToRemove.annotations:type_name -> claudie.PatchNodesRequest.LabelsTaintsAnnotationsToRemove.AnnotationsEntry
-	39, // 26: claudie.PatchNodesRequest.LabelsTaintsAnnotationsToRemove.taints:type_name -> claudie.PatchNodesRequest.LabelsTaintsAnnotationsToRemove.TaintsEntry
-	34, // 27: claudie.PatchNodesRequest.LabelsTaintsAnnotationsToRemove.LabelsEntry.value:type_name -> claudie.PatchNodesRequest.ListOfLabelKeys
-	35, // 28: claudie.PatchNodesRequest.LabelsTaintsAnnotationsToRemove.AnnotationsEntry.value:type_name -> claudie.PatchNodesRequest.ListOfAnnotationKeys
-	33, // 29: claudie.PatchNodesRequest.LabelsTaintsAnnotationsToRemove.TaintsEntry.value:type_name -> claudie.PatchNodesRequest.ListOfTaintKeys
-	12, // 30: claudie.KuberService.RemoveLBScrapeConfig:input_type -> claudie.RemoveLBScrapeConfigRequest
-	10, // 31: claudie.KuberService.StoreLBScrapeConfig:input_type -> claudie.StoreLBScrapeConfigRequest
-	8,  // 32: claudie.KuberService.StoreClusterMetadata:input_type -> claudie.StoreClusterMetadataRequest
-	14, // 33: claudie.KuberService.DeleteClusterMetadata:input_type -> claudie.DeleteClusterMetadataRequest
-	0,  // 34: claudie.KuberService.SetUpStorage:input_type -> claudie.SetUpStorageRequest
-	2,  // 35: claudie.KuberService.StoreKubeconfig:input_type -> claudie.StoreKubeconfigRequest
-	4,  // 36: claudie.KuberService.DeleteKubeconfig:input_type -> claudie.DeleteKubeconfigRequest
-	6,  // 37: claudie.KuberService.DeleteNodes:input_type -> claudie.DeleteNodesRequest
-	16, // 38: claudie.KuberService.PatchNodes:input_type -> claudie.PatchNodesRequest
-	18, // 39: claudie.KuberService.SetUpClusterAutoscaler:input_type -> claudie.SetUpClusterAutoscalerRequest
-	20, // 40: claudie.KuberService.DestroyClusterAutoscaler:input_type -> claudie.DestroyClusterAutoscalerRequest
-	22, // 41: claudie.KuberService.PatchClusterInfoConfigMap:input_type -> claudie.PatchClusterInfoConfigMapRequest
-	28, // 42: claudie.KuberService.PatchKubeProxyConfigMap:input_type -> claudie.PatchKubeProxyConfigMapRequest
-	30, // 43: claudie.KuberService.PatchKubeadmConfigMap:input_type -> claudie.PatchKubeadmConfigMapRequest
-	24, // 44: claudie.KuberService.CiliumRolloutRestart:input_type -> claudie.CiliumRolloutRestartRequest
-	26, // 45: claudie.KuberService.GpuOperatorRolloutRestart:input_type -> claudie.GpuOperatorRolloutRestartRequest
-	13, // 46: claudie.KuberService.RemoveLBScrapeConfig:output_type -> claudie.RemoveLBScrapeConfigResponse
-	11, // 47: claudie.KuberService.StoreLBScrapeConfig:output_type -> claudie.StoreLBScrapeConfigResponse
-	9,  // 48: claudie.KuberService.StoreClusterMetadata:output_type -> claudie.StoreClusterMetadataResponse
-	15, // 49: claudie.KuberService.DeleteClusterMetadata:output_type -> claudie.DeleteClusterMetadataResponse
-	1,  // 50: claudie.KuberService.SetUpStorage:output_type -> claudie.SetUpStorageResponse
-	3,  // 51: claudie.KuberService.StoreKubeconfig:output_type -> claudie.StoreKubeconfigResponse
-	5,  // 52: claudie.KuberService.DeleteKubeconfig:output_type -> claudie.DeleteKubeconfigResponse
-	7,  // 53: claudie.KuberService.DeleteNodes:output_type -> claudie.DeleteNodesResponse
-	17, // 54: claudie.KuberService.PatchNodes:output_type -> claudie.PatchNodesResponse
-	19, // 55: claudie.KuberService.SetUpClusterAutoscaler:output_type -> claudie.SetUpClusterAutoscalerResponse
-	21, // 56: claudie.KuberService.DestroyClusterAutoscaler:output_type -> claudie.DestroyClusterAutoscalerResponse
-	23, // 57: claudie.KuberService.PatchClusterInfoConfigMap:output_type -> claudie.PatchClusterInfoConfigMapResponse
-	29, // 58: claudie.KuberService.PatchKubeProxyConfigMap:output_type -> claudie.PatchKubeProxyConfigMapResponse
-	31, // 59: claudie.KuberService.PatchKubeadmConfigMap:output_type -> claudie.PatchKubeadmConfigMapResponse
-	25, // 60: claudie.KuberService.CiliumRolloutRestart:output_type -> claudie.CiliumRolloutRestartResponse
-	27, // 61: claudie.KuberService.GpuOperatorRolloutRestart:output_type -> claudie.GpuOperatorRolloutRestartResponse
-	46, // [46:62] is the sub-list for method output_type
-	30, // [30:46] is the sub-list for method input_type
-	30, // [30:30] is the sub-list for extension type_name
-	30, // [30:30] is the sub-list for extension extendee
-	0,  // [0:30] is the sub-list for field type_name
+	38, // 0: claudie.SetUpStorageRequest.desiredCluster:type_name -> spec.K8scluster
+	38, // 1: claudie.SetUpStorageResponse.desiredCluster:type_name -> spec.K8scluster
+	38, // 2: claudie.StoreKubeconfigRequest.cluster:type_name -> spec.K8scluster
+	38, // 3: claudie.DeleteKubeconfigRequest.cluster:type_name -> spec.K8scluster
+	38, // 4: claudie.DeleteNodesRequest.cluster:type_name -> spec.K8scluster
+	30, // 5: claudie.DeleteNodesRequest.nodepools:type_name -> claudie.DeleteNodesRequest.NodepoolsEntry
+	38, // 6: claudie.DeleteNodesResponse.cluster:type_name -> spec.K8scluster
+	38, // 7: claudie.StoreClusterMetadataRequest.cluster:type_name -> spec.K8scluster
+	39, // 8: claudie.StoreClusterMetadataRequest.loadbalancers:type_name -> spec.LBcluster
+	38, // 9: claudie.StoreLBScrapeConfigRequest.cluster:type_name -> spec.K8scluster
+	39, // 10: claudie.StoreLBScrapeConfigRequest.desiredLoadbalancers:type_name -> spec.LBcluster
+	38, // 11: claudie.RemoveLBScrapeConfigRequest.cluster:type_name -> spec.K8scluster
+	38, // 12: claudie.DeleteClusterMetadataRequest.cluster:type_name -> spec.K8scluster
+	38, // 13: claudie.PatchNodesRequest.cluster:type_name -> spec.K8scluster
+	34, // 14: claudie.PatchNodesRequest.toRemove:type_name -> claudie.PatchNodesRequest.LabelsTaintsAnnotationsToRemove
+	38, // 15: claudie.SetUpClusterAutoscalerRequest.cluster:type_name -> spec.K8scluster
+	38, // 16: claudie.DestroyClusterAutoscalerRequest.cluster:type_name -> spec.K8scluster
+	38, // 17: claudie.PatchClusterInfoConfigMapRequest.desiredCluster:type_name -> spec.K8scluster
+	38, // 18: claudie.CiliumRolloutRestartRequest.cluster:type_name -> spec.K8scluster
+	38, // 19: claudie.PatchKubeProxyConfigMapRequest.desiredCluster:type_name -> spec.K8scluster
+	38, // 20: claudie.PatchKubeadmConfigMapRequest.desiredCluster:type_name -> spec.K8scluster
+	40, // 21: claudie.DeleteNodesRequest.NodepoolsEntry.value:type_name -> spec.DeletedNodes
+	41, // 22: claudie.PatchNodesRequest.ListOfTaintKeys.taints:type_name -> spec.Taint
+	35, // 23: claudie.PatchNodesRequest.LabelsTaintsAnnotationsToRemove.labels:type_name -> claudie.PatchNodesRequest.LabelsTaintsAnnotationsToRemove.LabelsEntry
+	36, // 24: claudie.PatchNodesRequest.LabelsTaintsAnnotationsToRemove.annotations:type_name -> claudie.PatchNodesRequest.LabelsTaintsAnnotationsToRemove.AnnotationsEntry
+	37, // 25: claudie.PatchNodesRequest.LabelsTaintsAnnotationsToRemove.taints:type_name -> claudie.PatchNodesRequest.LabelsTaintsAnnotationsToRemove.TaintsEntry
+	32, // 26: claudie.PatchNodesRequest.LabelsTaintsAnnotationsToRemove.LabelsEntry.value:type_name -> claudie.PatchNodesRequest.ListOfLabelKeys
+	33, // 27: claudie.PatchNodesRequest.LabelsTaintsAnnotationsToRemove.AnnotationsEntry.value:type_name -> claudie.PatchNodesRequest.ListOfAnnotationKeys
+	31, // 28: claudie.PatchNodesRequest.LabelsTaintsAnnotationsToRemove.TaintsEntry.value:type_name -> claudie.PatchNodesRequest.ListOfTaintKeys
+	12, // 29: claudie.KuberService.RemoveLBScrapeConfig:input_type -> claudie.RemoveLBScrapeConfigRequest
+	10, // 30: claudie.KuberService.StoreLBScrapeConfig:input_type -> claudie.StoreLBScrapeConfigRequest
+	8,  // 31: claudie.KuberService.StoreClusterMetadata:input_type -> claudie.StoreClusterMetadataRequest
+	14, // 32: claudie.KuberService.DeleteClusterMetadata:input_type -> claudie.DeleteClusterMetadataRequest
+	0,  // 33: claudie.KuberService.SetUpStorage:input_type -> claudie.SetUpStorageRequest
+	2,  // 34: claudie.KuberService.StoreKubeconfig:input_type -> claudie.StoreKubeconfigRequest
+	4,  // 35: claudie.KuberService.DeleteKubeconfig:input_type -> claudie.DeleteKubeconfigRequest
+	6,  // 36: claudie.KuberService.DeleteNodes:input_type -> claudie.DeleteNodesRequest
+	16, // 37: claudie.KuberService.PatchNodes:input_type -> claudie.PatchNodesRequest
+	18, // 38: claudie.KuberService.SetUpClusterAutoscaler:input_type -> claudie.SetUpClusterAutoscalerRequest
+	20, // 39: claudie.KuberService.DestroyClusterAutoscaler:input_type -> claudie.DestroyClusterAutoscalerRequest
+	22, // 40: claudie.KuberService.PatchClusterInfoConfigMap:input_type -> claudie.PatchClusterInfoConfigMapRequest
+	26, // 41: claudie.KuberService.PatchKubeProxyConfigMap:input_type -> claudie.PatchKubeProxyConfigMapRequest
+	28, // 42: claudie.KuberService.PatchKubeadmConfigMap:input_type -> claudie.PatchKubeadmConfigMapRequest
+	24, // 43: claudie.KuberService.CiliumRolloutRestart:input_type -> claudie.CiliumRolloutRestartRequest
+	13, // 44: claudie.KuberService.RemoveLBScrapeConfig:output_type -> claudie.RemoveLBScrapeConfigResponse
+	11, // 45: claudie.KuberService.StoreLBScrapeConfig:output_type -> claudie.StoreLBScrapeConfigResponse
+	9,  // 46: claudie.KuberService.StoreClusterMetadata:output_type -> claudie.StoreClusterMetadataResponse
+	15, // 47: claudie.KuberService.DeleteClusterMetadata:output_type -> claudie.DeleteClusterMetadataResponse
+	1,  // 48: claudie.KuberService.SetUpStorage:output_type -> claudie.SetUpStorageResponse
+	3,  // 49: claudie.KuberService.StoreKubeconfig:output_type -> claudie.StoreKubeconfigResponse
+	5,  // 50: claudie.KuberService.DeleteKubeconfig:output_type -> claudie.DeleteKubeconfigResponse
+	7,  // 51: claudie.KuberService.DeleteNodes:output_type -> claudie.DeleteNodesResponse
+	17, // 52: claudie.KuberService.PatchNodes:output_type -> claudie.PatchNodesResponse
+	19, // 53: claudie.KuberService.SetUpClusterAutoscaler:output_type -> claudie.SetUpClusterAutoscalerResponse
+	21, // 54: claudie.KuberService.DestroyClusterAutoscaler:output_type -> claudie.DestroyClusterAutoscalerResponse
+	23, // 55: claudie.KuberService.PatchClusterInfoConfigMap:output_type -> claudie.PatchClusterInfoConfigMapResponse
+	27, // 56: claudie.KuberService.PatchKubeProxyConfigMap:output_type -> claudie.PatchKubeProxyConfigMapResponse
+	29, // 57: claudie.KuberService.PatchKubeadmConfigMap:output_type -> claudie.PatchKubeadmConfigMapResponse
+	25, // 58: claudie.KuberService.CiliumRolloutRestart:output_type -> claudie.CiliumRolloutRestartResponse
+	44, // [44:59] is the sub-list for method output_type
+	29, // [29:44] is the sub-list for method input_type
+	29, // [29:29] is the sub-list for extension type_name
+	29, // [29:29] is the sub-list for extension extendee
+	0,  // [0:29] is the sub-list for field type_name
 }
 
 func init() { file_kuber_proto_init() }
@@ -1830,7 +1741,7 @@ func file_kuber_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_kuber_proto_rawDesc), len(file_kuber_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   40,
+			NumMessages:   38,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

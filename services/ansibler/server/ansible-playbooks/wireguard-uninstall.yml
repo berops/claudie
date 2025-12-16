@@ -9,6 +9,16 @@
       ansible.builtin.setup:
 
   tasks:
+    - name: Remove /opt/claudie/bin
+      ansible.builtin.file:
+        path: /opt/claudie/bin
+        state: absent
+
+    - name: Remove /etc/profile.d/claudie_path.sh
+      ansible.builtin.file:
+        path: /etc/profile.d/claudie_path.sh
+        state: absent
+
     - name: Run kubeadm reset
       shell: |
         kubeadm reset -f

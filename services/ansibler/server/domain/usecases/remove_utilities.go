@@ -52,6 +52,7 @@ func (u *Usecases) RemoveUtilities(req *pb.RemoveClaudieUtilitiesRequest) (*pb.R
 		return nil, fmt.Errorf("failed to remove wiregaurd from nodes: %w", err)
 	}
 
+	logger.Info().Msgf("The process to remove Claudie installed utilities has finished")
 	return &pb.RemoveClaudieUtilitiesResponse{}, nil
 }
 

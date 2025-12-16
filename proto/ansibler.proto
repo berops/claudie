@@ -81,6 +81,13 @@ message RemoveClaudieUtilitiesRequest {
 
 message RemoveClaudieUtilitiesResponse {}
 
+message InstallTeeOverrideRequest {
+  spec.K8scluster desired = 1;
+  string projectName = 2;
+}
+
+message InstallTeeOverrideResponse{}
+
 service AnsiblerService {
   // InstallNodeRequirements installs any requirements there are on all of the nodes.
   rpc InstallNodeRequirements(InstallRequest) returns (InstallResponse);
@@ -100,4 +107,6 @@ service AnsiblerService {
   rpc UpdateProxyEnvsK8sServices(UpdateProxyEnvsK8sServicesRequest) returns (UpdateProxyEnvsK8sServicesResponse);
   // Removes utilities installed by claudie via ansible playbooks.
   rpc RemoveClaudieUtilities(RemoveClaudieUtilitiesRequest) returns (RemoveClaudieUtilitiesResponse);
+  // InstallTeeOverride installs tee binary override on nodes.
+  rpc InstallTeeOverride(InstallTeeOverrideRequest) returns (InstallTeeOverrideResponse);
 }

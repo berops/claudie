@@ -83,14 +83,6 @@ func (u *Usecases) reconcileK8sConfiguration(ctx context.Context, work *builder.
 			description: "patching kubeadm and restarting cilium",
 		},
 		{
-			do: func(ctx context.Context, work *builder.Context, logger *zerolog.Logger) error {
-				return u.Kuber.GpuOperatorRolloutRestart(work.DesiredCluster, u.Kuber.GetClient())
-			},
-			stage:           spec.Workflow_KUBER,
-			description:     "performing rollout of NVIDIA container toolkit, if present",
-			continueOnError: true,
-		},
-		{
 			do: func(_ context.Context, work *builder.Context, _ *zerolog.Logger) error {
 				return u.Kuber.RemoveLBScrapeConfig(work, u.Kuber.GetClient())
 			},
