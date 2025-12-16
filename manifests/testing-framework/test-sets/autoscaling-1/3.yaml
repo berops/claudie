@@ -41,7 +41,7 @@ spec:
         autoscaler:
           min: 1
           max: 5
-        serverType: e2-small
+        serverType: e2-medium
         image: ubuntu-2404-noble-amd64-v20251001
         storageDiskSize: 50
 
