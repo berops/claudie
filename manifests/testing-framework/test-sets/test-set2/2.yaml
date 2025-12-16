@@ -94,7 +94,12 @@ spec:
           region: eu-frankfurt-1
           zone: hsVQ:EU-FRANKFURT-1-AD-1
         count: 1
-        serverType: VM.Standard1.4
+        serverType: VM.Standard.E4.Flex
+        machineSpec:
+          # use 4 ocpus.
+          cpuCount: 4
+          # use 4 gb of memory.
+          memory: 4
         # https://docs.oracle.com/en-us/iaas/images/ubuntu-2404/canonical-ubuntu-24-04-2024-08-28-0.htm
         image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaa7hxwyz4qiasffo7n7s4ep5lywpzwgkc2am65frqrqinoyitmxxla
         storageDiskSize: 50
@@ -126,7 +131,12 @@ spec:
           region: eu-frankfurt-1
           zone: hsVQ:EU-FRANKFURT-1-AD-2
         count: 1
-        serverType: VM.Standard2.1
+        serverType: VM.Standard.E4.Flex
+        machineSpec:
+          # use 4 ocpus.
+          cpuCount: 4
+          # use 4 gb of memory.
+          memory: 4
         # https://docs.oracle.com/en-us/iaas/images/ubuntu-2404/canonical-ubuntu-24-04-2024-08-28-0.htm
         image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaa7hxwyz4qiasffo7n7s4ep5lywpzwgkc2am65frqrqinoyitmxxla
         storageDiskSize: 50
