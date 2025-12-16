@@ -30,7 +30,7 @@ spec:
           region: Germany West Central
           zone: "3"
         count: 1
-        serverType: Standard_B2s
+        serverType: Standard_B4pls_v2
         image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
         storageDiskSize: 50
   kubernetes:

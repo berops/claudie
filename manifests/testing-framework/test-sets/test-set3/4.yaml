@@ -39,7 +39,7 @@ spec:
           region: nbg1
           zone: nbg1-dc3
         count: 1
-        serverType: cpx22
+        serverType: cpx32
         image: ubuntu-24.04
         storageDiskSize: 50
 

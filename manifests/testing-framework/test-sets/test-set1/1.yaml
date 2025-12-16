@@ -84,7 +84,7 @@ spec:
           region: nbg1
           zone: nbg1-dc3
         count: 1
-        serverType: cpx22
+        serverType: cpx32
         image: ubuntu-24.04
         labels:
           test-set: test-set1
@@ -97,7 +97,7 @@ spec:
           region: nbg1
           zone: nbg1-dc3
         count: 1
-        serverType: cpx22
+        serverType: cpx32
         image: ubuntu-24.04
         storageDiskSize: 50
         labels:
@@ -112,7 +112,7 @@ spec:
           region: europe-west2
           zone: europe-west2-c
         count: 3
-        serverType: e2-medium
+        serverType: c2d-highcpu-4
         image: ubuntu-2404-noble-amd64-v20251001
         labels:
           test-set: test-set1
@@ -137,7 +137,7 @@ spec:
           region: eu-frankfurt-1
           zone: hsVQ:EU-FRANKFURT-1-AD-1
         count: 3
-        serverType: VM.Standard2.1
+        serverType: VM.Standard1.4
         # https://docs.oracle.com/en-us/iaas/images/ubuntu-2404/canonical-ubuntu-24-04-2024-08-28-0.htm
         image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaa7hxwyz4qiasffo7n7s4ep5lywpzwgkc2am65frqrqinoyitmxxla
         taints:
@@ -149,7 +149,7 @@ spec:
           region: eu-frankfurt-1
           zone: hsVQ:EU-FRANKFURT-1-AD-1
         count: 3
-        serverType: VM.Standard1.2
+        serverType: VM.Standard1.4
         # https://docs.oracle.com/en-us/iaas/images/ubuntu-2404/canonical-ubuntu-24-04-2024-08-28-0.htm
         image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaa7hxwyz4qiasffo7n7s4ep5lywpzwgkc2am65frqrqinoyitmxxla
         storageDiskSize: 50
@@ -160,7 +160,7 @@ spec:
           region: eu-north-1
           zone: eu-north-1a
         count: 3
-        serverType: t3.medium
+        serverType: t4g.xlarge
         #ubuntu
         image: ami-08eb150f611ca277f
         taints:
@@ -173,7 +173,7 @@ spec:
           region: eu-west-3
           zone: eu-west-3a
         count: 3
-        serverType: t3.medium
+        serverType: t4g.xlarge
         #ubuntu
         image: ami-045a8ab02aadf4f88
         storageDiskSize: 50
@@ -184,7 +184,7 @@ spec:
           region: Germany West Central
           zone: "1"
         count: 2
-        serverType: Standard_B2s
+        serverType: Standard_B4pls_v2
         image: Canonical:ubuntu-24_04-lts:server:24.04.202510010
         taints:
           - key: test
@@ -201,7 +201,7 @@ spec:
           region: Germany West Central
           zone: "1"
         count: 2
-        serverType: Standard_B2s
+        serverType: Standard_B4pls_v2
         image: Canonical:ubuntu-24_04-lts:server:24.04.202510010
         storageDiskSize: 50
         labels:
