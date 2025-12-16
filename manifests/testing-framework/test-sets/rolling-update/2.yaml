@@ -75,7 +75,7 @@ spec:
           region: Germany West Central
           zone: "1"
         count: 2
-        serverType: Standard_B4pls_v2
+        serverType: Standard_B4ls_v2
         image: Canonical:ubuntu-24_04-lts:server:24.04.202510010
         labels:
           test-set: rolling-update-test
