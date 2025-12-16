@@ -40,8 +40,7 @@ func CommitProxyEnvs(
 	}
 
 	state := update.Update.State
-	proxy := utils.HttpProxyUrlAndNoProxyList(state.K8S, state.LoadBalancers)
-	if err := commitProxyEnvs(state.K8S, proxy, processLimit); err != nil {
+	if err := commitProxyEnvs(state.K8S, processLimit); err != nil {
 		logger.Err(err).Msg("Failed to commit proxy envs")
 		tracker.Diagnostics.Push(err)
 		return
@@ -64,7 +63,7 @@ func CommitProxyEnvs(
 
 // commitProxyEnvs updates NO_PROXY and no_proxy envs across k8s services on nodes and restarts necessary
 // services so that the changes will be propagated to them.
-func commitProxyEnvs(cluster *spec.K8SclusterV2, proxy utils.Proxy, processLimit *semaphore.Weighted) error {
+func commitProxyEnvs(cluster *spec.K8SclusterV2, processLimit *semaphore.Weighted) error {
 	clusterID := cluster.ClusterInfo.Id()
 
 	// This is the directory where files (Ansible inventory files, SSH keys etc.) will be generated.
@@ -100,9 +99,7 @@ func commitProxyEnvs(cluster *spec.K8SclusterV2, proxy utils.Proxy, processLimit
 				Dynamic: nodepools.Dynamic(cluster.ClusterInfo.NodePools),
 				Static:  nodepools.Static(cluster.ClusterInfo.NodePools),
 			},
-			ClusterID:    clusterID,
-			NoProxyList:  proxy.NoProxyList,
-			HttpProxyUrl: proxy.HttpProxyUrl,
+			ClusterID: clusterID,
 		},
 	)
 	if err != nil {

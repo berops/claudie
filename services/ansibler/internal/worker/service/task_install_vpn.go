@@ -82,7 +82,7 @@ func InstallVPN(
 	if err := installWireguardVPN(k8s.ClusterInfo.Id(), &vi, processLimit); err != nil {
 		logger.Err(err).Msg("Failed to install VPN")
 		tracker.Diagnostics.Push(err)
-		// as there could be partial results, fallthrough.
+		return
 	}
 
 	update := tracker.Result.Update()

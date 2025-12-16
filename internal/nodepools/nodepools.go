@@ -91,6 +91,53 @@ func DynamicAddNodes(dst *spec.NodePool, nodes []*spec.Node) {
 	dyn.Count += int32(len(nodes))
 }
 
+// For each node in the nodepool that is found inside the passed in
+// nodes slice, returns a shallow copy of the nodepool, meaning that
+// all of the memory is still shared among the original and returned
+// nodepool, but will only have the filtered nodes.
+//
+// **Caution** the Node Type itself is deep cloned as the node counts
+// need to change to reflect the filered nodes.
+func PartialCopyWithNodeFilter(np *spec.NodePool, nodes []string) *spec.NodePool {
+	cp := &spec.NodePool{
+		Type:        nil,
+		Name:        np.Name,
+		Nodes:       []*spec.Node{},
+		IsControl:   np.IsControl,
+		Labels:      np.Labels,
+		Taints:      np.Taints,
+		Annotations: np.Annotations,
+	}
+
+	for _, n := range np.Nodes {
+		if slices.Contains(nodes, n.Name) {
+			cp.Nodes = append(cp.Nodes, n)
+		}
+	}
+
+	// To avoid issues with possible node counts, deep clone
+	// the node type itself.
+	switch typ := np.Type.(type) {
+	case *spec.NodePool_DynamicNodePool:
+		d := proto.Clone(typ.DynamicNodePool).(*spec.DynamicNodePool)
+		d.Count = int32(len(cp.Nodes))
+		cp.Type = &spec.NodePool_DynamicNodePool{
+			DynamicNodePool: d,
+		}
+	case *spec.NodePool_StaticNodePool:
+		s := proto.Clone(typ.StaticNodePool).(*spec.StaticNodePool)
+		clear(s.NodeKeys)
+		for _, n := range cp.Nodes {
+			s.NodeKeys[n.Public] = np.GetStaticNodePool().NodeKeys[n.Public]
+		}
+		cp.Type = &spec.NodePool_StaticNodePool{
+			StaticNodePool: s,
+		}
+	}
+
+	return cp
+}
+
 // Copies the nodes from `src` into `dst` cloning the invidivual
 // nodes, such that they do not keep any pointers or shared
 // memory with the original. The type of the nodepool of the

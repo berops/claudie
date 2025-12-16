@@ -6,6 +6,7 @@ import (
 
 	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/loggerutils"
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/internal/processlimit"
 	"github.com/berops/claudie/proto/pb/spec"
 	utils "github.com/berops/claudie/services/ansibler/internal/worker/service/internal"
@@ -155,35 +156,112 @@ passes:
 	return &result
 }
 
-// If the task is of [spec.Update_AddedLoadBalancer] or [spec.Update_ReconciledLoadBalancer]
-// instead of keeping all of the loadbalancers in lbs slices, only the loadbalancer for
-// which the reconciliation is called is kept in the lbs slice.
-func DefaultToSingleLoadBalancerIfPossible(task *spec.TaskV2, lbs []*spec.LBclusterV2) []*spec.LBclusterV2 {
-	if len(lbs) == 0 {
-		return lbs
-	}
+// For the update task, looks inside the Delta and if its load balancer related, returns only
+// the loadbalancer for which the task is to be processed for, if not found returns nil.
+func DefaultToSingleLoadBalancerIfPossible(task *spec.TaskV2_Update) *spec.LBclusterV2 {
+	lbs := task.Update.State.LoadBalancers
 
-	u, ok := task.Do.(*spec.TaskV2_Update)
-	if !ok {
-		return lbs
-	}
+	var targetHandle string
 
-	switch delta := u.Update.Delta.(type) {
+	switch delta := task.Update.Delta.(type) {
+	case *spec.UpdateV2_AddedLoadBalancerNodes_:
+		targetHandle = delta.AddedLoadBalancerNodes.Handle
+	case *spec.UpdateV2_AddedLoadBalancerRoles_:
+		targetHandle = delta.AddedLoadBalancerRoles.Handle
 	case *spec.UpdateV2_AddedLoadBalancer_:
-		if i := clusters.IndexLoadbalancerByIdV2(delta.AddedLoadBalancer.Handle, lbs); i >= 0 {
-			lb := lbs[i]
-			clear(lbs)
-			lbs = lbs[:0]
-			return append(lbs, lb)
-		}
-	case *spec.UpdateV2_ReconciledLoadBalancer_:
-		if i := clusters.IndexLoadbalancerByIdV2(delta.ReconciledLoadBalancer.Handle, lbs); i >= 0 {
-			lb := lbs[i]
-			clear(lbs)
-			lbs = lbs[:0]
-			return append(lbs, lb)
-		}
+		targetHandle = delta.AddedLoadBalancer.Handle
+	case *spec.UpdateV2_AnsReplaceTargetPools:
+		targetHandle = delta.AnsReplaceTargetPools.Handle
+	case *spec.UpdateV2_DeleteLoadBalancerNodes_:
+		targetHandle = delta.DeleteLoadBalancerNodes.Handle
+	case *spec.UpdateV2_DeleteLoadBalancerRoles_:
+		targetHandle = delta.DeleteLoadBalancerRoles.Handle
+	case *spec.UpdateV2_DeleteLoadBalancer_:
+		targetHandle = delta.DeleteLoadBalancer.Handle
+	case *spec.UpdateV2_ReplacedDns_:
+		targetHandle = delta.ReplacedDns.Handle
+	case *spec.UpdateV2_ReplacedTargetPools_:
+		targetHandle = delta.ReplacedTargetPools.Handle
 	}
 
-	return lbs
+	if targetHandle == "" {
+		return nil
+	}
+
+	idx := clusters.IndexLoadbalancerByIdV2(targetHandle, lbs)
+	if idx < 0 {
+		return nil
+	}
+
+	return lbs[idx]
+}
+
+// If the task is related to adding new nodes, this function will return
+// a shallow copy of the nodepool with only the new additions. The original
+// nodepool is not modified. All of the fields of the new shallow copy are still
+// shared with the original nodepool.
+//
+// **Caution** the counts of the nodes are not changed, thus
+//
+// If the function can't default to new nodes only, nil is returned.
+func DefaultKubernetesToNewNodesIfPossible(task *spec.TaskV2_Update) *spec.NodePool {
+	var (
+		npId  string
+		nodes []string
+	)
+
+	switch delta := task.Update.Delta.(type) {
+	case *spec.UpdateV2_AddedK8SNodes_:
+		npId = delta.AddedK8SNodes.Nodepool
+		nodes = delta.AddedK8SNodes.Nodes
+	case *spec.UpdateV2_DeleteK8SNodes_:
+		npId = delta.DeleteK8SNodes.Nodepool
+		nodes = delta.DeleteK8SNodes.Nodes
+	}
+
+	if npId == "" || len(nodes) == 0 {
+		return nil
+	}
+
+	np := nodepools.FindByName(npId, task.Update.State.K8S.ClusterInfo.NodePools)
+	if np == nil {
+		return nil
+	}
+	return nodepools.PartialCopyWithNodeFilter(np, nodes)
+}
+
+// Same as [DefaultKubernetesToNewNodesIfPossible] but for load balancer clusters.
+func DefaultLoadBalancerToNewNodesIfPossible(task *spec.TaskV2_Update) *spec.NodePool {
+	var (
+		targetHandle string
+		npId         string
+		nodes        []string
+	)
+
+	switch delta := task.Update.Delta.(type) {
+	case *spec.UpdateV2_AddedLoadBalancerNodes_:
+		targetHandle = delta.AddedLoadBalancerNodes.Handle
+		npId = delta.AddedLoadBalancerNodes.NodePool
+		nodes = delta.AddedLoadBalancerNodes.Nodes
+	case *spec.UpdateV2_DeleteLoadBalancerNodes_:
+		targetHandle = delta.DeleteLoadBalancerNodes.Handle
+		npId = delta.DeleteLoadBalancerNodes.Nodepool
+		nodes = delta.DeleteLoadBalancerNodes.Nodes
+	}
+
+	if targetHandle == "" || npId == "" || len(nodes) == 0 {
+		return nil
+	}
+
+	idx := clusters.IndexLoadbalancerByIdV2(targetHandle, task.Update.State.LoadBalancers)
+	if idx < 0 {
+		return nil
+	}
+
+	np := nodepools.FindByName(npId, task.Update.State.LoadBalancers[idx].ClusterInfo.NodePools)
+	if np == nil {
+		return nil
+	}
+
+	return nodepools.PartialCopyWithNodeFilter(np, nodes)
 }

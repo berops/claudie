@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/nodepools"
@@ -20,6 +21,10 @@ import (
 const wireguardUninstall = "../../ansible-playbooks/wireguard-uninstall.yml"
 
 // RemoveUtilities removes claudie installed utilities.
+//
+// The cleaning will only be performed on static nodepools
+// as dynamic nodepools are transient and managed by claudie
+// and can be replaced any time by claudie itself.
 func RemoveUtilities(
 	logger zerolog.Logger,
 	projectName string,
@@ -28,45 +33,37 @@ func RemoveUtilities(
 ) {
 	logger.Info().Msg("Removing Claudie utilities")
 
-	delete, ok := tracker.Task.Do.(*spec.TaskV2_Delete)
-	if !ok {
+	var (
+		npi          []*NodepoolsInfo
+		k8sClusterId string
+	)
+
+	switch do := tracker.Task.Do.(type) {
+	case *spec.TaskV2_Update:
+		n, ok := nodepoolsInfoUpdate(logger, do)
+		if !ok {
+			return
+		}
+		npi = append(npi, n...)
+		k8sClusterId = do.Update.State.K8S.ClusterInfo.Id()
+	case *spec.TaskV2_Delete:
+		npi = append(npi, nodepoolsInfoDelete(do)...)
+		k8sClusterId = do.Delete.K8S.ClusterInfo.Id()
+	default:
 		logger.
 			Warn().
-			Msgf("Received task with action %T while wanting to remove claudie utilities, assuming task was misscheduled, ignoring", tracker.Task.GetDo())
+			Msgf("Received task with action %T while wanting to remove claudie utilities, assuming task was misscheduled, ignoring", do)
 		return
 	}
 
-	k8s := delete.Delete.K8S
-	lbs := delete.Delete.LoadBalancers
-
-	vpnInfo := VPNInfo{
-		ClusterNetwork: k8s.Network,
-		NodepoolsInfos: []*NodepoolsInfo{
-			{
-				Nodepools: utils.NodePools{
-					Dynamic: nodepools.Dynamic(k8s.ClusterInfo.NodePools),
-					Static:  nodepools.Static(k8s.ClusterInfo.NodePools),
-				},
-				ClusterID:      k8s.ClusterInfo.Id(),
-				ClusterNetwork: k8s.Network,
-			},
-		},
-	}
-
-	for _, lb := range lbs {
-		vpnInfo.NodepoolsInfos = append(vpnInfo.NodepoolsInfos, &NodepoolsInfo{
-			Nodepools: utils.NodePools{
-				Dynamic: nodepools.Dynamic(lb.ClusterInfo.NodePools),
-				Static:  nodepools.Static(lb.ClusterInfo.NodePools),
-			},
-			ClusterID:      lb.ClusterInfo.Id(),
-			ClusterNetwork: k8s.Network,
-		})
+	if len(npi) == 0 {
+		// No static nodes to cleanup.
+		return
 	}
 
 	logger.Info().Msgf("Starting cleanup of utilities installed by Claudie, may take a while")
 
-	if err := removeUtilities(k8s.ClusterInfo.Id(), &vpnInfo, processLimit); err != nil {
+	if err := removeUtilities(k8sClusterId, npi, processLimit); err != nil {
 		logger.Err(err).Msg("Failed to remove claudie utilities from nodes of the cluster")
 		tracker.Diagnostics.Push(err)
 		return
@@ -75,7 +72,7 @@ func RemoveUtilities(
 	logger.Info().Msg("Successfully removed claudie utilities")
 }
 
-func removeUtilities(clusterID string, vpnInfo *VPNInfo, processLimit *semaphore.Weighted) error {
+func removeUtilities(clusterID string, npi []*NodepoolsInfo, processLimit *semaphore.Weighted) error {
 	clusterDirectory := filepath.Join(
 		BaseDirectory,
 		OutputDirectory,
@@ -96,19 +93,19 @@ func removeUtilities(clusterID string, vpnInfo *VPNInfo, processLimit *semaphore
 		templates.AllNodesInventoryTemplate,
 		clusterDirectory,
 		AllNodesInventoryData{
-			NodepoolsInfo: vpnInfo.NodepoolsInfos,
+			NodepoolsInfo: npi,
 		},
 	)
 	if err != nil {
 		return fmt.Errorf("error while creating inventory file for %s: %w", clusterDirectory, err)
 	}
 
-	for _, nodepoolInfo := range vpnInfo.NodepoolsInfos {
-		if err := nodepools.DynamicGenerateKeys(nodepoolInfo.Nodepools.Dynamic, clusterDirectory); err != nil {
+	for _, npi := range npi {
+		if err := nodepools.DynamicGenerateKeys(npi.Nodepools.Dynamic, clusterDirectory); err != nil {
 			return fmt.Errorf("failed to create key file(s) for dynamic nodepools : %w", err)
 		}
 
-		if err := nodepools.StaticGenerateKeys(nodepoolInfo.Nodepools.Static, clusterDirectory); err != nil {
+		if err := nodepools.StaticGenerateKeys(npi.Nodepools.Static, clusterDirectory); err != nil {
 			return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 		}
 	}
@@ -134,4 +131,144 @@ func removeUtilities(clusterID string, vpnInfo *VPNInfo, processLimit *semaphore
 	}
 
 	return nil
+}
+
+func nodepoolsInfoDelete(task *spec.TaskV2_Delete) []*NodepoolsInfo {
+	var npi []*NodepoolsInfo
+
+	k8s := &NodepoolsInfo{
+		Nodepools: utils.NodePools{
+			// ignore dynamic nodepools, as they're managed by claudie and not externally.
+			Dynamic: []*spec.NodePool{},
+			Static:  nodepools.Static(task.Delete.K8S.ClusterInfo.NodePools),
+		},
+		ClusterID:      task.Delete.K8S.ClusterInfo.Id(),
+		ClusterNetwork: task.Delete.K8S.Network,
+	}
+
+	if len(k8s.Nodepools.Static) > 0 {
+		npi = append(npi, k8s)
+	}
+
+	for _, lb := range task.Delete.LoadBalancers {
+		lb := &NodepoolsInfo{
+			Nodepools: utils.NodePools{
+				// ignore dynamic nodepools, as they're managed by claudie and not externally.
+				Dynamic: []*spec.NodePool{},
+				Static:  nodepools.Static(lb.ClusterInfo.NodePools),
+			},
+			ClusterID:      lb.ClusterInfo.Id(),
+			ClusterNetwork: task.Delete.K8S.Network,
+		}
+
+		if len(lb.Nodepools.Static) > 0 {
+			npi = append(npi, lb)
+		}
+	}
+
+	return npi
+}
+
+func nodepoolsInfoUpdate(logger zerolog.Logger, task *spec.TaskV2_Update) ([]*NodepoolsInfo, bool) {
+	var npi []*NodepoolsInfo
+
+	switch delta := task.Update.Delta.(type) {
+	case *spec.UpdateV2_DeleteK8SNodes_:
+		np := DefaultKubernetesToNewNodesIfPossible(task)
+
+		// On validly scheduled messages, the nodepool from which
+		// nodes are to be deleted, should always be present in the
+		// provided state.
+		if np == nil {
+			log.
+				Warn().
+				Msgf("Received update task for removal of claudie installed utilities on deleted nodes of the cluster %q, but the nodepool %q is not in the provided state, ignoring",
+					task.Update.State.K8S.ClusterInfo.Id(),
+					delta.DeleteK8SNodes.Nodepool,
+				)
+			return nil, false
+		}
+
+		k8s := &NodepoolsInfo{
+			Nodepools: utils.NodePools{
+				// ignore dynamic nodepools, as they're managed by claudie and not externally.
+				Dynamic: []*spec.NodePool{},
+				Static:  nodepools.Static([]*spec.NodePool{np}),
+			},
+			ClusterID:      task.Update.State.K8S.ClusterInfo.Id(),
+			ClusterNetwork: task.Update.State.K8S.Network,
+		}
+
+		if len(k8s.Nodepools.Static) > 0 {
+			npi = append(npi, k8s)
+		}
+	case *spec.UpdateV2_DeleteLoadBalancerNodes_:
+		idx := clusters.IndexLoadbalancerByIdV2(delta.DeleteLoadBalancerNodes.Handle, task.Update.State.LoadBalancers)
+		if idx < 0 {
+			log.
+				Warn().
+				Msgf("Received update task for removal of claudie installed utilities on deleted loadbalancer nodes but the loadbalancer %q is not in the provided state, ignoring", delta.DeleteLoadBalancerNodes.Handle)
+			return nil, false
+		}
+
+		lb := task.Update.State.LoadBalancers[idx]
+		np := DefaultLoadBalancerToNewNodesIfPossible(task)
+
+		// On validly scheduled messages, the nodepool from which
+		// nodes are to be deleted, should always be present in the
+		// provided state.
+		if np == nil {
+			log.
+				Warn().
+				Msgf("Received update task for removal of claudie installed utilities on deleted nodes of the cluster %q, but the nodepool %q is not in the provided state, ignoring",
+					lb.ClusterInfo.Id(),
+					delta.DeleteLoadBalancerNodes.Nodepool,
+				)
+			return nil, false
+		}
+
+		lbi := &NodepoolsInfo{
+			Nodepools: utils.NodePools{
+				// ignore dynamic nodepools, as they're managed by claudie and not externally.
+				Dynamic: []*spec.NodePool{},
+				Static:  nodepools.Static([]*spec.NodePool{np}),
+			},
+			ClusterID:      lb.ClusterInfo.Id(),
+			ClusterNetwork: task.Update.State.K8S.Network,
+		}
+
+		if len(lbi.Nodepools.Static) > 0 {
+			npi = append(npi, lbi)
+		}
+	case *spec.UpdateV2_DeleteLoadBalancer_:
+		idx := clusters.IndexLoadbalancerByIdV2(delta.DeleteLoadBalancer.Handle, task.Update.State.LoadBalancers)
+		if idx < 0 {
+			log.
+				Warn().
+				Msgf("Received update task for removal of claudie installed utilities on deleted loadbalancer but the loadbalancer %q is not in the provided state, ignoring", delta.DeleteLoadBalancer.Handle)
+			return nil, false
+		}
+
+		lb := task.Update.State.LoadBalancers[idx]
+		lbi := &NodepoolsInfo{
+			Nodepools: utils.NodePools{
+				// ignore dynamic nodepools, as they're managed by claudie and not externally.
+				Dynamic: []*spec.NodePool{},
+				Static:  nodepools.Static(lb.ClusterInfo.NodePools),
+			},
+			ClusterID:      lb.ClusterInfo.Id(),
+			ClusterNetwork: task.Update.State.K8S.Network,
+		}
+
+		if len(lbi.Nodepools.Static) > 0 {
+			npi = append(npi, lbi)
+		}
+	default:
+		logger.
+			Warn().
+			Msgf("Received update task with delta %T while wanting to remove claudie utilities, assuming task was misscheduled, ignoring", delta)
+		return nil, false
+	}
+
+	return npi, true
 }

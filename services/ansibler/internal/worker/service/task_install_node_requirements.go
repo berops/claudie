@@ -13,6 +13,7 @@ import (
 	"github.com/berops/claudie/services/ansibler/templates"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+
 	"golang.org/x/sync/semaphore"
 )
 
@@ -30,13 +31,29 @@ func InstallNodeRequirements(
 		Info().
 		Msg("Installing node requirements")
 
-	var k8s *spec.K8SclusterV2
+	var (
+		nps       []*spec.NodePool
+		clusterId string
+		network   string
+	)
 
 	switch do := tracker.Task.Do.(type) {
 	case *spec.TaskV2_Create:
-		k8s = do.Create.K8S
+		nps = do.Create.K8S.ClusterInfo.NodePools
+		clusterId = do.Create.K8S.ClusterInfo.Id()
+		network = do.Create.K8S.Network
 	case *spec.TaskV2_Update:
-		k8s = do.Update.State.K8S
+		clusterId = do.Update.State.K8S.ClusterInfo.Id()
+		network = do.Update.State.K8S.Network
+
+		// Try to only launch the playbook on new nodes, if possible.
+		// This is done to minimize the time for adding new nodes to
+		// an existing cluster.
+		if np := DefaultKubernetesToNewNodesIfPossible(do); np != nil {
+			nps = []*spec.NodePool{np}
+		} else {
+			nps = do.Update.State.K8S.ClusterInfo.NodePools
+		}
 	default:
 		logger.
 			Warn().
@@ -46,11 +63,11 @@ func InstallNodeRequirements(
 
 	ni := NodepoolsInfo{
 		Nodepools: utils.NodePools{
-			Dynamic: nodepools.Dynamic(k8s.ClusterInfo.NodePools),
-			Static:  nodepools.Static(k8s.ClusterInfo.NodePools),
+			Dynamic: nodepools.Dynamic(nps),
+			Static:  nodepools.Static(nps),
 		},
-		ClusterID:      k8s.ClusterInfo.Id(),
-		ClusterNetwork: k8s.Network,
+		ClusterID:      clusterId,
+		ClusterNetwork: network,
 	}
 
 	if err := installLonghornRequirements(&ni, processLimit); err != nil {

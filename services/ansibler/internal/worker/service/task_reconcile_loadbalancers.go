@@ -63,7 +63,18 @@ func ReconcileLoadBalancers(
 		lbs = do.Create.LoadBalancers
 	case *spec.TaskV2_Update:
 		k8s = do.Update.State.K8S
-		lbs = do.Update.State.LoadBalancers
+
+		// Will default to only reconciling a single loadbalancer, if possible.
+		// But will reconcile all of the nodepools of that loadbalancer.
+		//
+		// This could be further, changed to only consider changes within
+		// a nodepool of the loadbalancer and ignore others unchanged, for
+		// now leave this as is.
+		if lb := DefaultToSingleLoadBalancerIfPossible(do); lb != nil {
+			lbs = []*spec.LBclusterV2{lb}
+		} else {
+			lbs = do.Update.State.LoadBalancers
+		}
 	default:
 		logger.
 			Warn().
@@ -75,7 +86,7 @@ func ReconcileLoadBalancers(
 	}
 
 	li := utils.LBClustersInfo{
-		Lbs:               DefaultToSingleLoadBalancerIfPossible(tracker.Task, lbs),
+		Lbs:               lbs,
 		TargetK8sNodepool: k8s.ClusterInfo.NodePools,
 		ClusterID:         k8s.ClusterInfo.Id(),
 	}

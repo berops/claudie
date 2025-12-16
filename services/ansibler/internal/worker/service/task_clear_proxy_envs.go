@@ -40,8 +40,7 @@ func ClearProxyEnvs(
 	}
 
 	state := update.Update.State
-	proxy := utils.HttpProxyUrlAndNoProxyList(state.K8S, state.LoadBalancers)
-	if err := clearProxyEnvsOnNodes(state.K8S, proxy, processLimit); err != nil {
+	if err := clearProxyEnvsOnNodes(state.K8S, processLimit); err != nil {
 		logger.Err(err).Msg("Failed to clear proxy envs")
 		tracker.Diagnostics.Push(err)
 		return
@@ -52,7 +51,7 @@ func ClearProxyEnvs(
 		Msgf("Successfully cleared proxy envs for nodes in cluster")
 }
 
-func clearProxyEnvsOnNodes(cluster *spec.K8SclusterV2, proxy utils.Proxy, processLimit *semaphore.Weighted) error {
+func clearProxyEnvsOnNodes(cluster *spec.K8SclusterV2, processLimit *semaphore.Weighted) error {
 	clusterID := cluster.ClusterInfo.Id()
 
 	// This is the directory where files (Ansible inventory files, SSH keys etc.) will be generated.
@@ -85,9 +84,7 @@ func clearProxyEnvsOnNodes(cluster *spec.K8SclusterV2, proxy utils.Proxy, proces
 			Dynamic: nodepools.Dynamic(cluster.ClusterInfo.NodePools),
 			Static:  nodepools.Static(cluster.ClusterInfo.NodePools),
 		},
-		ClusterID:    clusterID,
-		NoProxyList:  proxy.NoProxyList,
-		HttpProxyUrl: proxy.HttpProxyUrl,
+		ClusterID: clusterID,
 	}); err != nil {
 		return fmt.Errorf("failed to generate inventory file for updating proxy envs in /etc/environment using playbook in %s : %w", clusterDirectory, err)
 	}
