@@ -215,7 +215,7 @@ spec:
           zone: nova
           externalNetworkName: Ext-Net
         count: 2
-        serverType: c3-4-flex
+        serverType: c3-8-flex
         image: "Ubuntu 24.04"
         taints:
           - key: test
