@@ -31,7 +31,7 @@ spec:
           region: eu-central-1
           zone: eu-central-1c
         count: 1
-        serverType: t4g.xlarge
+        serverType: t3.xlarge
         #ubuntu
         image: ami-0084a47cc718c111a
         storageDiskSize: 50

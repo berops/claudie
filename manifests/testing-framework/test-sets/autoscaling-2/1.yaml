@@ -30,7 +30,7 @@ spec:
           region: eu-north-1
           zone: eu-north-1a
         count: 1
-        serverType: t4g.xlarge
+        serverType: t3.xlarge
         #ubuntu
         image: ami-08eb150f611ca277f
         taints:
@@ -46,7 +46,7 @@ spec:
         autoscaler:
           min: 1
           max: 5
-        serverType: t4g.xlarge
+        serverType: t3.xlarge
         #ubuntu
         image: ami-045a8ab02aadf4f88
         storageDiskSize: 50
