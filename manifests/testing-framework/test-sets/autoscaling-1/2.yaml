@@ -30,7 +30,7 @@ spec:
           region: europe-west1
           zone: europe-west1-c
         count: 1
-        serverType: c2d-highcpu-4
+        serverType: e2-highcpu-4
         image: ubuntu-2404-noble-amd64-v20251001
         storageDiskSize: 50
       - name: gcp-cmpt-nodes
@@ -39,7 +39,7 @@ spec:
           region: europe-west2
           zone: europe-west2-a
         count: 1
-        serverType: c2d-highcpu-4
+        serverType: e2-highcpu-4
         image: ubuntu-2404-noble-amd64-v20251001
         storageDiskSize: 50
         labels:

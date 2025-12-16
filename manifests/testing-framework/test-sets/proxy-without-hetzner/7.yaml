@@ -21,7 +21,7 @@ spec:
           region: europe-west2
           zone: europe-west2-c
         count: 1
-        serverType: c2d-highcpu-4
+        serverType: e2-highcpu-4
         image: ubuntu-2404-noble-amd64-v20251001
         labels:
           test-set: proxy-without-hetzner
@@ -34,7 +34,7 @@ spec:
           region: europe-west1
           zone: europe-west1-b
         count: 2
-        serverType: c2d-highcpu-4
+        serverType: e2-highcpu-4
         image: ubuntu-2404-noble-amd64-v20251001
         storageDiskSize: 50
         labels:

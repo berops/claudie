@@ -111,7 +111,7 @@ spec:
           region: europe-west2
           zone: europe-west2-c
         count: 2
-        serverType: c2d-highcpu-4
+        serverType: e2-highcpu-4
         image: ubuntu-2404-noble-amd64-v20251001
         labels:
           test-set: test-set1-new
