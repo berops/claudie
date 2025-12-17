@@ -83,7 +83,8 @@ spec:
         count: 1
         serverType: VM.Standard.E4.Flex
         machineSpec:
-          # use 2 ocpus.
+          # use 1 ocpu is equal to 2 vCPUs
+          # https://docs.oracle.com/en-us/iaas/Content/Compute/References/computeshapes.htm
           cpuCount: 2
           # use 4 gb of memory.
           memory: 4

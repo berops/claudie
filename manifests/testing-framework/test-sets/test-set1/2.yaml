@@ -141,8 +141,9 @@ spec:
         count: 2
         serverType: VM.Standard.E4.Flex
         machineSpec:
-          # use 4 ocpus.
-          cpuCount: 4
+          # use 2 ocpus are equal to 4 vCPUs
+          # https://docs.oracle.com/en-us/iaas/Content/Compute/References/computeshapes.htm
+          cpuCount: 2
           # use 4 gb of memory.
           memory: 4
         # https://docs.oracle.com/en-us/iaas/images/ubuntu-2404/canonical-ubuntu-24-04-2024-08-28-0.htm
@@ -155,8 +156,9 @@ spec:
         count: 4
         serverType: VM.Standard.E4.Flex
         machineSpec:
-          # use 4 ocpus.
-          cpuCount: 4
+          # use 2 ocpus are equal to 4 vCPUs
+          # https://docs.oracle.com/en-us/iaas/Content/Compute/References/computeshapes.htm
+          cpuCount: 2
           # use 4 gb of memory.
           memory: 4
         # https://docs.oracle.com/en-us/iaas/images/ubuntu-2404/canonical-ubuntu-24-04-2024-08-28-0.htm
