@@ -64,7 +64,13 @@ spec:
           region: eu-frankfurt-1
           zone: hsVQ:EU-FRANKFURT-1-AD-2
         count: 1
-        serverType: VM.Standard2.1
+        serverType: VM.Standard.E4.Flex
+        machineSpec:
+          # use 1 ocpu is equal to 2 vCPUs
+          # https://docs.oracle.com/en-us/iaas/Content/Compute/References/computeshapes.htm
+          cpuCount: 2
+          # use 4 gb of memory.
+          memory: 4
         # https://docs.oracle.com/en-us/iaas/images/ubuntu-2404/canonical-ubuntu-24-04-2024-08-28-0.htm
         image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaa7hxwyz4qiasffo7n7s4ep5lywpzwgkc2am65frqrqinoyitmxxla
         storageDiskSize: 50
@@ -75,7 +81,7 @@ spec:
           region: Germany West Central
           zone: "1"
         count: 2
-        serverType: Standard_B2s
+        serverType: Standard_B4ls_v2
         image: Canonical:ubuntu-24_04-lts:server:24.04.202510010
         labels:
           test-set: rolling-update-test
@@ -89,7 +95,7 @@ spec:
           region: nbg1
           zone: nbg1-dc3
         count: 1
-        serverType: cpx22
+        serverType: cpx32
         image: ubuntu-24.04
         storageDiskSize: 50
 

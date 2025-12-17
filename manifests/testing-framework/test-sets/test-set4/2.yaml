@@ -37,9 +37,15 @@ spec:
         providerSpec:
           name: oci-1
           region: eu-frankfurt-1
-          zone: hsVQ:EU-FRANKFURT-1-AD-1
+          zone: hsVQ:EU-FRANKFURT-1-AD-3
         count: 1
-        serverType: VM.Standard1.2
+        serverType: VM.Standard.E4.Flex
+        machineSpec:
+          # use 2 ocpus are equal to 4 vCPUs
+          # https://docs.oracle.com/en-us/iaas/Content/Compute/References/computeshapes.htm
+          cpuCount: 2
+          # use 4 gb of memory.
+          memory: 4
         # https://docs.oracle.com/en-us/iaas/images/ubuntu-2404/canonical-ubuntu-24-04-2024-08-28-0.htm
         image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaa7hxwyz4qiasffo7n7s4ep5lywpzwgkc2am65frqrqinoyitmxxla
         storageDiskSize: 50
@@ -50,7 +56,7 @@ spec:
           region: europe-west2
           zone: europe-west2-c
         count: 1
-        serverType: e2-medium
+        serverType: e2-highcpu-4
         image: ubuntu-2404-noble-amd64-v20251001
         storageDiskSize: 50
 
