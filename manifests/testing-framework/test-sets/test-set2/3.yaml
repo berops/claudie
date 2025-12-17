@@ -83,7 +83,7 @@ spec:
         providerSpec:
           name: oci-1
           region: eu-frankfurt-1
-          zone: hsVQ:EU-FRANKFURT-1-AD-1
+          zone: hsVQ:EU-FRANKFURT-1-AD-2
         count: 1
         serverType: VM.Standard.E4.Flex
         machineSpec:
