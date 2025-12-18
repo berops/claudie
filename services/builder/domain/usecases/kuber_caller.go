@@ -156,6 +156,13 @@ func (u *Usecases) reconcileK8sConfiguration(ctx context.Context, work *builder.
 				return work.CurrentCluster.AnyAutoscaledNodePools() && !work.DesiredCluster.AnyAutoscaledNodePools()
 			},
 		},
+		{
+			do: func(_ context.Context, work *builder.Context, _ *zerolog.Logger) error {
+				return u.Kuber.DeployKubeletCSRApprover(work, u.Kuber.GetClient())
+			},
+			stage:       spec.Workflow_KUBER,
+			description: "deploying kubelet-csr-approver",
+		},
 	}
 
 	return u.processTasks(ctx, work, logger, tasks)
