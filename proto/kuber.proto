@@ -98,6 +98,13 @@ message PatchKubeProxyConfigMapResponse {}
 message PatchKubeadmConfigMapRequest {spec.K8scluster desiredCluster = 1; string lbEndpoint = 2;}
 message PatchKubeadmConfigMapResponse {}
 
+message DeployKubeletCSRApproverRequest {
+  string projectName = 1;
+  spec.K8scluster cluster = 2;
+}
+
+message DeployKubeletCSRApproverResponse {}
+
 service KuberService {
   // RemoveLBScrapeConfig removes scrape config for every LB detached from this
   // cluster.
@@ -156,4 +163,6 @@ service KuberService {
   // CiliumRolloutRestart performs a rollout restart of the cilium daemonset.
   rpc CiliumRolloutRestart(CiliumRolloutRestartRequest)
       returns (CiliumRolloutRestartResponse);
+  rpc DeployKubeletCSRApprover(DeployKubeletCSRApproverRequest)
+      returns (DeployKubeletCSRApproverResponse);
 }
