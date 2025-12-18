@@ -1,0 +1,53 @@
+syntax = "proto3";
+package claudie;
+
+import "spec/manifest.proto";
+
+option go_package = "proto/pb";
+
+message UpsertManifestRequest {
+  string name = 1;
+  spec.KubernetesContext k8sCtx = 2;
+  spec.Manifest manifest = 3;
+}
+message UpsertManifestResponse {
+  string name = 1;
+  uint64 version = 2;
+}
+
+message MarkForDeletionRequest {
+  string name = 1;
+  uint64 version = 2;
+}
+message MarkForDeletionResponse {
+  string name = 1;
+  uint64 version = 2;
+}
+
+message ListConfigRequest {}
+message ListConfigResponse {
+  repeated spec.Config configs = 1;
+}
+
+message GetConfigRequest {
+  string name = 1;
+}
+message GetConfigResponse {
+  spec.Config config = 1;
+}
+
+service ManagerService {
+  // UpsertManifest will process the request by either creating a new configuration for the
+  // given input manifest or updating an existing one.
+  rpc UpsertManifest(UpsertManifestRequest) returns (UpsertManifestResponse);
+
+  // MarkForDeletion will mark the requested configuration to be deleted. Once the
+  // manager determines the configuration can be deleted it will be deleted.
+  rpc MarkForDeletion(MarkForDeletionRequest) returns (MarkForDeletionResponse);
+
+  // ListConfigs will list all stored configuration that the manager manages.
+  rpc ListConfigs(ListConfigRequest) returns (ListConfigResponse);
+
+  // GetConfig will retrieve the requested configuration by name.
+  rpc GetConfig(GetConfigRequest) returns (GetConfigResponse);
+}
