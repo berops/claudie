@@ -123,3 +123,12 @@ func PatchKubeadmConfigMap(c pb.KuberServiceClient, req *pb.PatchKubeadmConfigMa
 	_, err := c.PatchKubeadmConfigMap(context.Background(), req)
 	return err
 }
+
+func DeployKubeletCSRApprover(c pb.KuberServiceClient, req *pb.DeployKubeletCSRApproverRequest) error {
+	_, err := c.DeployKubeletCSRApprover(context.Background(), req)
+	if err != nil {
+		return fmt.Errorf("error while calling DeployKubeletCSRApprover: %w", err)
+	}
+
+	return nil
+}

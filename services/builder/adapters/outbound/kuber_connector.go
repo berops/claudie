@@ -172,6 +172,14 @@ func (k *KuberConnector) PatchKubeadmConfigMap(builderCtx *builder.Context, lbEn
 	})
 }
 
+func (k *KuberConnector) DeployKubeletCSRApprover(builderCtx *builder.Context, kuberGrpcClient pb.KuberServiceClient) error {
+	return kuber.DeployKubeletCSRApprover(
+		kuberGrpcClient, &pb.DeployKubeletCSRApproverRequest{
+			Cluster:     builderCtx.DesiredCluster,
+			ProjectName: builderCtx.ProjectName,
+		})
+}
+
 // Disconnect closes the underlying gRPC connection to kuber microservice.
 func (k *KuberConnector) Disconnect() {
 	grpcutils.CloseClientConnection(k.Connection)
