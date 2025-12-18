@@ -1,0 +1,114 @@
+# the configurations were taken from https://github.com/postfinance/kubelet-csr-approver/tree/v1.2.12/deploy/k8s
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubelet-csr-approver
+rules:
+- apiGroups:
+  - certificates.k8s.io
+  resources:
+  - certificatesigningrequests
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - create
+  - get
+  - update
+- apiGroups:
+  - certificates.k8s.io
+  resources:
+  - certificatesigningrequests/approval
+  verbs:
+  - update
+- apiGroups:
+  - certificates.k8s.io
+  resourceNames:
+  - kubernetes.io/kubelet-serving
+  resources:
+  - signers
+  verbs:
+  - approve
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubelet-csr-approver
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubelet-csr-approver
+subjects:
+- kind: ServiceAccount
+  name: kubelet-csr-approver
+  namespace: kube-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubelet-csr-approver
+  namespace: kube-system
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kubelet-csr-approver
+  namespace: kube-system
+  managed-by: claudie
+spec:
+  activeDeadlineSeconds: 1800
+  backoffLimit: 0
+  template:
+    metadata:
+      annotations:
+        prometheus.io/port: "8080"
+        prometheus.io/scrape: "true"
+      labels:
+        app: kubelet-csr-approver
+        managed-by: claudie
+    spec:
+      serviceAccountName: kubelet-csr-approver
+      restartPolicy: Never
+      containers:
+        - name: kubelet-csr-approver
+          image: postfinance/kubelet-csr-approver:v1.2.12
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          args:
+            - -metrics-bind-address
+            - ":8080"
+            - -health-probe-bind-address
+            - ":8081"
+            - -leader-election
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+          env:
+            - name: PROVIDER_REGEX
+              value: {{ .ProviderRegex }}
+              value: ^[abcdef]\.test\.ch$
+            - name: PROVIDER_IP_PREFIXES
+              value: {{ .ProviderIPPrefixes }}
+              value: "0.0.0.0/0,::/0"
+            - name: MAX_EXPIRATION_SEC
+              value: "31622400"
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Equal
+          effect: NoSchedule
