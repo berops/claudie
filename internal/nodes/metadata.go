@@ -10,6 +10,8 @@ import (
 
 type LabelKey string
 
+const ProviderIdFormat = "claudie://%s"
+
 // To properly escape / in JSONPatch,
 // it has to be replaced with ~1
 // https://jsonpatch.com/#json-pointer

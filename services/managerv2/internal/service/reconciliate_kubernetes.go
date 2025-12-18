@@ -12,9 +12,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// TODO: finish kuber and adjust the Consuming of the Update messages
-// with the newly added options. For example missing scrape configs...
-
 // Wraps data and diffs needed by the reconciliation
 // for kubernetes cluster.
 //
@@ -774,6 +771,15 @@ func ScheduleAdditionsInNodePools(
 			}...)
 		}
 
+		// On Addition of a new nodepool, reconcile the storage classes for longhorn.
+		kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, &spec.StageKuber_SubPass{
+			Kind: spec.StageKuber_RECONCILE_LONGHORN_STORAGE_CLASSES,
+			Description: &spec.StageDescription{
+				About:      "Reconciling claudie longhorn storage classes after new nodepool",
+				ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+			},
+		})
+
 		// If changes to the nodepool affects any loadbalancer
 		// also schedule a reconciliation of loadbalancers, as
 		// the envoy targets needs to be regenerated.
@@ -1063,6 +1069,29 @@ func ScheduleDeletionsInNodePools(
 				},
 			}...)
 		}
+
+		// If the deletion of the last autoscaled nodepools is to be scheduled. Also remove
+		// the CA requirement for the cluster.
+		if a := nodepools.Autoscaled(current.K8S.ClusterInfo.NodePools); len(a) == 1 {
+			if a[0].Name == np {
+				kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, &spec.StageKuber_SubPass{
+					Kind: spec.StageKuber_DISABLE_LONGHORN_CA,
+					Description: &spec.StageDescription{
+						About:      "Disabling Longhorn cluster autoscaler setting",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+				})
+			}
+		}
+
+		// On deletion of the whole nodepool, reconcile the storage classes for longhorn.
+		kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, &spec.StageKuber_SubPass{
+			Kind: spec.StageKuber_RECONCILE_LONGHORN_STORAGE_CLASSES,
+			Description: &spec.StageDescription{
+				About:      "Reconciling claudie longhorn storage classes after nodepool deletion",
+				ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+			},
+		})
 
 		// If changes to the nodepool affects any loadbalancer
 		// also schedule a reconciliation of loadbalancers, as

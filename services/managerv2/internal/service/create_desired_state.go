@@ -246,7 +246,7 @@ func createLBClustersFromManifest(from *manifest.Manifest, into *map[string]*spe
 		lbs[newLbCluster.TargetedK8S].Clusters = append(lbs[newLbCluster.TargetedK8S].Clusters, newLbCluster)
 	}
 
-	// 2. Marshal and match with respective clusters.
+	// 2. Match with respective clusters.
 	for k8sCluster := range *into {
 		lbs, ok := lbs[k8sCluster]
 		if !ok {

@@ -14,11 +14,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// TODO: go through all the services and re-implement where
-// needed the changes made to the UpdateV2 type.
-// TODO: implement kuber.
-// TODO: think about the retries.
-
 // Wraps data and diffs needed by the reconciliation
 // for loadbalancers attached to the kubernetes cluster.
 //

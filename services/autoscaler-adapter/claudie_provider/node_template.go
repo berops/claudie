@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/berops/claudie/internal/nodes"
-	kuberNodes "github.com/berops/claudie/services/kuber/server/domain/utils/nodes"
 	k8sV1 "k8s.io/api/core/v1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -33,7 +32,7 @@ func (c *ClaudieCloudProvider) getNodeGroupTemplateNodeInfo(nodeGroupId string) 
 		node.Spec.Taints = nodes.GetAllTaints(ngc.nodepool)
 		node.Status.Capacity = c.nodeManager.GetCapacity(ngc.nodepool)
 		node.Status.Allocatable = node.Status.Capacity
-		node.Spec.ProviderID = fmt.Sprintf(kuberNodes.ProviderIdFormat, fmt.Sprintf("%s-N", ngc.nodepool.Name))
+		node.Spec.ProviderID = fmt.Sprintf(nodes.ProviderIdFormat, fmt.Sprintf("%s-N", ngc.nodepool.Name))
 		return &node, nil
 	}
 	return nil, nil

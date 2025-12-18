@@ -14,6 +14,7 @@ import (
 // scheduling of the tasks.
 type ScheduleResult uint8
 
+// TODO: think about the retries.
 // TODO: kubernetes cluster
 // TODO: endless reconciliation... double check the control flow such that it will never stop reconciling.
 // TODO: with a failed inFlight state there needs to be a decision to be made if a task
@@ -77,7 +78,8 @@ func reconciliate(pending *spec.ConfigV2, desired map[string]*spec.ClustersV2) S
 
 		switch {
 		case noop:
-			// nothing to do (desired state was not build).
+			// there is no desired state and no current state.
+			// the cluster if deleted, stop rescheduling.
 			result = NoReschedule
 		case isCreate:
 			if hasInFlightState {
@@ -144,7 +146,7 @@ func reconciliate(pending *spec.ConfigV2, desired map[string]*spec.ClustersV2) S
 				logger.Err(err).Msg("Failed to delete metadata secret in the management cluster")
 			}
 
-			if nodepools.AnyAutoscaled(del.K8S.ClusterInfo.NodePools) {
+			if len(nodepools.Autoscaled(del.K8S.ClusterInfo.NodePools)) > 0 {
 				if err := managementcluster.DestroyClusterAutoscaler(pending.Name, del); err != nil {
 					logger.Err(err).Msg("Failed to destroy autoscaler pods")
 				}
@@ -188,7 +190,7 @@ func reconciliate(pending *spec.ConfigV2, desired map[string]*spec.ClustersV2) S
 					Msg("Failed to store cluster metadata secret in the management cluster")
 			}
 
-			updateAutoscalerPods := nodepools.AnyAutoscaled(state.Current.K8S.ClusterInfo.NodePools)
+			updateAutoscalerPods := len(nodepools.Autoscaled(state.Current.K8S.ClusterInfo.NodePools)) > 0
 			updateAutoscalerPods = updateAutoscalerPods && managementcluster.DriftInAutoscalerPods(pending.Name, current)
 			if updateAutoscalerPods {
 				if err := managementcluster.SetUpClusterAutoscaler(pending.Name, current); err != nil {
@@ -199,6 +201,12 @@ func reconciliate(pending *spec.ConfigV2, desired map[string]*spec.ClustersV2) S
 			}
 
 			result = Noop
+
+			// TODO split the healthcheck into two parts.
+			// The second part where the pings are happening
+			// should be executed only if a task is to be
+			// scheduled, there is no need to continiously
+			// ping in a loop every reconciliation loop.
 
 			// After the [HealthCheckStatus] and the [KubernetesDiff], [LoadBalancersDiff]
 			// is made all of the current,desired [spec.Clusters] state is considered
@@ -368,6 +376,11 @@ func clustersUnion(old, modified *spec.ClustersV2) *spec.ClustersV2 {
 
 	return ir
 }
+
+// TODO: don't ping on every reconciliation iteration
+// only when we're about to schedule a task and if the
+// pinging fails that will have to replace that task as
+// it will have a higher priority.
 
 // Handles reconciliation for updating existing clusters.
 func handleUpdate(hc HealthCheckStatus, current, desired *spec.ClustersV2) *spec.TaskEventV2 {

@@ -10,7 +10,7 @@ import (
 	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/proto/pb/spec"
-	managerclient "github.com/berops/claudie/services/manager/client"
+	managerclient "github.com/berops/claudie/services/managerv2/client"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/rs/zerolog/log"

@@ -1,92 +1,95 @@
 syntax = "proto3";
 package spec;
+
 option go_package = "github.com/berops/claudie/proto/pb/spec";
 
 enum ErrorLevel {
-    ERROR_FATAL = 0;
-    ERROR_WARN = 1;
+  ERROR_FATAL = 0;
+  ERROR_WARN = 1;
 }
 
 message StageDescription {
-    string about = 1;
-    ErrorLevel errorLevel = 2;
+  string about = 1;
+  ErrorLevel errorLevel = 2;
 }
 
 message StageTerraformer {
-    enum SubPassKind {
-        BUILD_INFRASTRUCTURE = 0;
-        UPDATE_INFRASTRUCTURE = 1;
-        DESTROY_INFRASTRUCTURE = 2;
-        API_PORT_ON_KUBERNETES = 3;
-    }
-    message SubPass {
-        SubPassKind kind = 1;
-        StageDescription description = 2;
-    }
+  enum SubPassKind {
+    BUILD_INFRASTRUCTURE = 0;
+    UPDATE_INFRASTRUCTURE = 1;
+    DESTROY_INFRASTRUCTURE = 2;
+    API_PORT_ON_KUBERNETES = 3;
+  }
+  message SubPass {
+    SubPassKind kind = 1;
+    StageDescription description = 2;
+  }
 
-    StageDescription description = 1;
-    repeated SubPass subPasses = 2;
+  StageDescription description = 1;
+  repeated SubPass subPasses = 2;
 }
 
 message StageAnsibler {
-    enum SubPassKind {
-        INSTALL_NODE_REQUIREMENTS = 0;
-        INSTALL_VPN = 1;
-        DETERMINE_API_ENDPOINT_CHANGE = 2;
-        RECONCILE_LOADBALANCERS = 3;
-        REMOVE_CLAUDIE_UTILITIES = 4;
-        UPDATE_API_ENDPOINT = 5;
-        COMMIT_PROXY_ENVS = 6;
-        UPDATE_PROXY_ENVS_ON_NODES = 7;
-        CLEAR_PROXY_ENVS_ON_NODES = 8;
-    }
-    message SubPass {
-        SubPassKind kind = 1;
-        StageDescription description = 2;
-    }
-    StageDescription description = 1;
-    repeated SubPass subPasses = 2;
+  enum SubPassKind {
+    INSTALL_NODE_REQUIREMENTS = 0;
+    INSTALL_VPN = 1;
+    DETERMINE_API_ENDPOINT_CHANGE = 2;
+    RECONCILE_LOADBALANCERS = 3;
+    REMOVE_CLAUDIE_UTILITIES = 4;
+    UPDATE_API_ENDPOINT = 5;
+    COMMIT_PROXY_ENVS = 6;
+    UPDATE_PROXY_ENVS_ON_NODES = 7;
+    CLEAR_PROXY_ENVS_ON_NODES = 8;
+  }
+  message SubPass {
+    SubPassKind kind = 1;
+    StageDescription description = 2;
+  }
+  StageDescription description = 1;
+  repeated SubPass subPasses = 2;
 }
 
 message StageKubeEleven {
-    enum SubPassKind {
-        RECONCILE_CLUSTER = 0;
-        DESTROY_CLUSTER = 1;
-    }
-    message SubPass {
-        SubPassKind kind = 1;
-        StageDescription description = 2;
-    }
-    StageDescription description = 1;
-    repeated SubPass subPasses = 2;
+  enum SubPassKind {
+    RECONCILE_CLUSTER = 0;
+    DESTROY_CLUSTER = 1;
+  }
+  message SubPass {
+    SubPassKind kind = 1;
+    StageDescription description = 2;
+  }
+  StageDescription description = 1;
+  repeated SubPass subPasses = 2;
 }
 
 message StageKuber {
-    enum SubPassKind {
-        CILIUM_RESTART = 0;
-        DELETE_NODES = 1;
-        GPU_OPERATOR_RESTART = 2;
-        PATCH_CLUSTER_INFO_CM = 3;
-        PATCH_KUBE_PROXY = 4;
-        PATCH_KUBEADM = 5;
-        REMOVE_LB_SCRAPE_CONFIG = 6;
-        SETUP_STORAGE = 7;
-        STORE_LB_SCRAPE_CONFIG = 8;
-        PATCH_NODES = 9;
-    }
-    message SubPass {
-        SubPassKind kind = 1;
-        StageDescription description = 2;
-    }
-    StageDescription description = 1;
-    repeated SubPass subPasses = 2;
+  enum SubPassKind {
+    CILIUM_RESTART = 0;
+    DELETE_NODES = 1;
+    PATCH_CLUSTER_INFO_CM = 2;
+    PATCH_KUBE_PROXY = 3;
+    PATCH_KUBEADM = 4;
+    REMOVE_LB_SCRAPE_CONFIG = 5;
+    STORE_LB_SCRAPE_CONFIG = 6;
+    PATCH_NODES = 7;
+    DEPLOY_LONGHORN = 8;
+    ENABLE_LONGHORN_CA = 9;
+    DISABLE_LONGHORN_CA = 10;
+    RECONCILE_LONGHORN_STORAGE_CLASSES = 11;
+  }
+  message SubPass {
+    SubPassKind kind = 1;
+    StageDescription description = 2;
+  }
+  StageDescription description = 1;
+  repeated SubPass subPasses = 2;
 }
 
 message Stage {
-    oneof StageKind {
-        StageTerraformer terraformer = 1;
-        StageAnsibler ansibler = 2;
-        StageKubeEleven kubeEleven = 3;
-        StageKuber kuber = 4;
-    }
+  oneof StageKind {
+    StageTerraformer terraformer = 1;
+    StageAnsibler ansibler = 2;
+    StageKubeEleven kubeEleven = 3;
+    StageKuber kuber = 4;
+  }
 }

@@ -5,7 +5,6 @@ import (
 	"slices"
 
 	"github.com/berops/claudie/internal/clusters"
-	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 
 	"google.golang.org/protobuf/proto"
@@ -647,42 +646,42 @@ func LoadBalancersDiff(old, new *spec.LoadBalancersV2) LoadBalancersDiffResult {
 	return result
 }
 
-func apiNodePoolsDeleted(k8sdiff *KubernetesDiffResult, old *spec.LoadBalancersV2) bool {
-	search := make(map[string]struct{})
+// func apiNodePoolsDeleted(k8sdiff *KubernetesDiffResult, old *spec.LoadBalancersV2) bool {
+// 	search := make(map[string]struct{})
 
-	for np := range k8sdiff.Dynamic.Deleted {
-		search[np] = struct{}{}
-	}
+// 	for np := range k8sdiff.Dynamic.Deleted {
+// 		search[np] = struct{}{}
+// 	}
 
-	for np := range k8sdiff.Static.Deleted {
-		search[np] = struct{}{}
-	}
+// 	for np := range k8sdiff.Static.Deleted {
+// 		search[np] = struct{}{}
+// 	}
 
-	ep := clusters.FindAssignedLbApiEndpointV2(old.Clusters)
-	for _, role := range ep.GetRoles() {
-		if role.RoleType != spec.RoleTypeV2_ApiServer_V2 {
-			continue
-		}
+// 	ep := clusters.FindAssignedLbApiEndpointV2(old.Clusters)
+// 	for _, role := range ep.GetRoles() {
+// 		if role.RoleType != spec.RoleTypeV2_ApiServer_V2 {
+// 			continue
+// 		}
 
-		matched := 0
-		for _, tp := range role.TargetPools {
-			for np := range search {
-				if name, _ := nodepools.MatchNameAndHashWithTemplate(tp, np); name == tp {
-					matched += 1
-					break
-				}
-			}
-		}
+// 		matched := 0
+// 		for _, tp := range role.TargetPools {
+// 			for np := range search {
+// 				if name, _ := nodepools.MatchNameAndHashWithTemplate(tp, np); name == tp {
+// 					matched += 1
+// 					break
+// 				}
+// 			}
+// 		}
 
-		if matched == len(role.TargetPools) {
-			return true
-		}
+// 		if matched == len(role.TargetPools) {
+// 			return true
+// 		}
 
-		break
-	}
+// 		break
+// 	}
 
-	return false
-}
+// 	return false
+// }
 
 func determineLBApiEndpointChangeV2(
 	currentLbs,
@@ -728,18 +727,6 @@ func determineLBApiEndpointChangeV2(
 
 		return none, first.ClusterInfo.Id(), spec.ApiEndpointChangeStateV2_AttachingLoadBalancerV2
 	}
-}
-
-// matchApiEndpoint goes over the nodes of the nodepool, look for the api endpoint node, if any
-// and looks if its name matches the one in the provided slice. If no match is found the empty
-// string is returned.
-func matchApiEndpoint(np *spec.NodePool, names []string) string {
-	for _, node := range np.Nodes {
-		if node.NodeType == spec.NodeType_apiEndpoint && slices.Contains(names, node.Name) {
-			return node.Name
-		}
-	}
-	return ""
 }
 
 func newAPIEndpointNodeCandidate(desired []*spec.NodePool) (string, string) {

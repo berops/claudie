@@ -9,8 +9,8 @@ import (
 
 	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider/externalgrpc/protos"
 
+	"github.com/berops/claudie/internal/nodes"
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/berops/claudie/services/kuber/server/domain/utils/nodes"
 	managerclient "github.com/berops/claudie/services/manager/client"
 	"github.com/rs/zerolog/log"
 

@@ -100,7 +100,7 @@ outer:
 			// in the current state, regenerate node names to be unique
 			// and do not collide with the names in the current state.
 			//
-			// If the names of the nodes that exist in both current and desired
+			// If the names of the nodes that exist in both current and desired,
 			// based on a public endpoint match, do not match this should not be
 			// handled in this function and should instead be handled with [transferStaticNodePool]
 			// which trasnfers also the Name, that is considered "Immutable" once assigned.
@@ -249,7 +249,9 @@ func transferK8sState(current, desired *spec.K8SclusterV2) {
 
 // transferDynamicNodePool transfers state that should be "Immutable" from the
 // `current` into the `desired` state. Immutable state must stay unchanged once
-// it is assigned assigned to a dynamic NodePool,
+// it is assigned assigned to a dynamic NodePool. Note that nodes that are assigned
+// to the current state are immutable once build, but may be destroyed on changes
+// to the desired state, but that is not handled here.
 func transferDynamicNodePool(current, desired *spec.NodePool) {
 	cnp := current.GetDynamicNodePool()
 	dnp := desired.GetDynamicNodePool()

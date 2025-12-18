@@ -132,18 +132,30 @@ func ScheduleCreateCluster(desired *spec.ClustersV2) *spec.TaskEventV2 {
 			},
 		}
 
-		// TODO: will we need this ?
-		// This could be handled by the reconciliation loop ??
-		// {
-		// 	StageKind: &spec.Stage_Kuber{
-		// 		Kuber: &spec.StageKuber{
-		// 			Description: &spec.StageDescription{
-		// 				About:      "Finalizing cluster configuration",
-		// 				ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-		// 			},
-		// 		},
-		// 	},
-		// },
+		kuber = spec.Stage_Kuber{
+			Kuber: &spec.StageKuber{
+				Description: &spec.StageDescription{
+					About:      "Configuring cluster",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+				SubPasses: []*spec.StageKuber_SubPass{
+					{
+						Kind: spec.StageKuber_DEPLOY_LONGHORN,
+						Description: &spec.StageDescription{
+							About:      "Deploying longhorn for storage",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
+						Kind: spec.StageKuber_RECONCILE_LONGHORN_STORAGE_CLASSES,
+						Description: &spec.StageDescription{
+							About:      "Reconciling longhorn claudie storage classes",
+							ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+						},
+					},
+				},
+			},
+		}
 	)
 
 	var (
@@ -155,16 +167,45 @@ func ScheduleCreateCluster(desired *spec.ClustersV2) *spec.TaskEventV2 {
 		}
 	)
 
+	// These are handled by the reconciliation loop and
+	// are not "breaking" in the creation of the cluster.
+	for _, np := range createK8s.ClusterInfo.NodePools {
+		np.Annotations = nil
+		np.Taints = nil
+		np.Labels = nil
+	}
+
 	pipeline := []*spec.Stage{
 		{StageKind: &tf},
 		{StageKind: nil},
 		{StageKind: &kubeeleven},
+		{StageKind: &kuber},
 	}
 
 	if UsesProxy(desired.K8S) {
 		pipeline[1].StageKind = &ansProxy
 	} else {
 		pipeline[1].StageKind = &ansNoProxy
+	}
+
+	if len(nodepools.Autoscaled(createK8s.ClusterInfo.NodePools)) > 0 {
+		kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, &spec.StageKuber_SubPass{
+			Kind: spec.StageKuber_ENABLE_LONGHORN_CA,
+			Description: &spec.StageDescription{
+				About:      "Enabling cluster-autoscaler support in longhorn",
+				ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+			},
+		})
+	}
+
+	if len(createLbs.Clusters) > 0 {
+		kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, &spec.StageKuber_SubPass{
+			Kind: spec.StageKuber_STORE_LB_SCRAPE_CONFIG,
+			Description: &spec.StageDescription{
+				About:      "Storing scrape config for loadbalancers",
+				ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+			},
+		})
 	}
 
 	return &spec.TaskEventV2{
@@ -218,25 +259,27 @@ func ScheduleDeleteCluster(current *spec.ClustersV2) *spec.TaskEventV2 {
 		pipeline = append(pipeline, ans)
 	}
 
-	pipeline = append(pipeline, &spec.Stage{
-		StageKind: &spec.Stage_Terraformer{
-			Terraformer: &spec.StageTerraformer{
-				Description: &spec.StageDescription{
-					About:      "Destroying infrastructure of the cluster",
-					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-				},
-				SubPasses: []*spec.StageTerraformer_SubPass{
-					{
-						Kind: spec.StageTerraformer_DESTROY_INFRASTRUCTURE,
-						Description: &spec.StageDescription{
-							About:      "Destroying current state",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+	if dyn := nodepools.Dynamic(current.K8S.ClusterInfo.NodePools); len(dyn) > 0 {
+		pipeline = append(pipeline, &spec.Stage{
+			StageKind: &spec.Stage_Terraformer{
+				Terraformer: &spec.StageTerraformer{
+					Description: &spec.StageDescription{
+						About:      "Destroying infrastructure of the cluster",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+					SubPasses: []*spec.StageTerraformer_SubPass{
+						{
+							Kind: spec.StageTerraformer_DESTROY_INFRASTRUCTURE,
+							Description: &spec.StageDescription{
+								About:      "Destroying current state",
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
 						},
 					},
 				},
 			},
-		},
-	})
+		})
+	}
 
 	var (
 		deleteK8s = proto.Clone(current.GetK8S()).(*spec.K8SclusterV2)

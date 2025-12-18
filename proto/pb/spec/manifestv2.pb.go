@@ -4633,7 +4633,7 @@ var File_spec_manifestv2_proto protoreflect.FileDescriptor
 
 const file_spec_manifestv2_proto_rawDesc = "" +
 	"\n" +
-	"\x15spec/manifestv2.proto\x12\x04spec\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x19google/protobuf/any.proto\x1a\x13spec/nodepool.proto\x1a\x0espec/dns.proto\x1a\x0fspec/pass.proto\"\xa6\x02\n" +
+	"\x15spec/manifestv2.proto\x12\x04spec\x1a\x19google/protobuf/any.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x0espec/dns.proto\x1a\x13spec/nodepool.proto\x1a\x0fspec/pass.proto\"\xa6\x02\n" +
 	"\bConfigV2\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\x04R\aversion\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x121\n" +
@@ -5159,8 +5159,8 @@ func file_spec_manifestv2_proto_init() {
 	if File_spec_manifestv2_proto != nil {
 		return
 	}
-	file_spec_nodepool_proto_init()
 	file_spec_dns_proto_init()
+	file_spec_nodepool_proto_init()
 	file_spec_pass_proto_init()
 	file_spec_manifestv2_proto_msgTypes[13].OneofWrappers = []any{
 		(*RetryV2_Repeat_)(nil),

@@ -235,43 +235,49 @@ func (StageKubeEleven_SubPassKind) EnumDescriptor() ([]byte, []int) {
 type StageKuber_SubPassKind int32
 
 const (
-	StageKuber_CILIUM_RESTART          StageKuber_SubPassKind = 0
-	StageKuber_DELETE_NODES            StageKuber_SubPassKind = 1
-	StageKuber_GPU_OPERATOR_RESTART    StageKuber_SubPassKind = 2
-	StageKuber_PATCH_CLUSTER_INFO_CM   StageKuber_SubPassKind = 3
-	StageKuber_PATCH_KUBE_PROXY        StageKuber_SubPassKind = 4
-	StageKuber_PATCH_KUBEADM           StageKuber_SubPassKind = 5
-	StageKuber_REMOVE_LB_SCRAPE_CONFIG StageKuber_SubPassKind = 6
-	StageKuber_SETUP_STORAGE           StageKuber_SubPassKind = 7
-	StageKuber_STORE_LB_SCRAPE_CONFIG  StageKuber_SubPassKind = 8
-	StageKuber_PATCH_NODES             StageKuber_SubPassKind = 9
+	StageKuber_CILIUM_RESTART                     StageKuber_SubPassKind = 0
+	StageKuber_DELETE_NODES                       StageKuber_SubPassKind = 1
+	StageKuber_PATCH_CLUSTER_INFO_CM              StageKuber_SubPassKind = 2
+	StageKuber_PATCH_KUBE_PROXY                   StageKuber_SubPassKind = 3
+	StageKuber_PATCH_KUBEADM                      StageKuber_SubPassKind = 4
+	StageKuber_REMOVE_LB_SCRAPE_CONFIG            StageKuber_SubPassKind = 5
+	StageKuber_STORE_LB_SCRAPE_CONFIG             StageKuber_SubPassKind = 6
+	StageKuber_PATCH_NODES                        StageKuber_SubPassKind = 7
+	StageKuber_DEPLOY_LONGHORN                    StageKuber_SubPassKind = 8
+	StageKuber_ENABLE_LONGHORN_CA                 StageKuber_SubPassKind = 9
+	StageKuber_DISABLE_LONGHORN_CA                StageKuber_SubPassKind = 10
+	StageKuber_RECONCILE_LONGHORN_STORAGE_CLASSES StageKuber_SubPassKind = 11
 )
 
 // Enum value maps for StageKuber_SubPassKind.
 var (
 	StageKuber_SubPassKind_name = map[int32]string{
-		0: "CILIUM_RESTART",
-		1: "DELETE_NODES",
-		2: "GPU_OPERATOR_RESTART",
-		3: "PATCH_CLUSTER_INFO_CM",
-		4: "PATCH_KUBE_PROXY",
-		5: "PATCH_KUBEADM",
-		6: "REMOVE_LB_SCRAPE_CONFIG",
-		7: "SETUP_STORAGE",
-		8: "STORE_LB_SCRAPE_CONFIG",
-		9: "PATCH_NODES",
+		0:  "CILIUM_RESTART",
+		1:  "DELETE_NODES",
+		2:  "PATCH_CLUSTER_INFO_CM",
+		3:  "PATCH_KUBE_PROXY",
+		4:  "PATCH_KUBEADM",
+		5:  "REMOVE_LB_SCRAPE_CONFIG",
+		6:  "STORE_LB_SCRAPE_CONFIG",
+		7:  "PATCH_NODES",
+		8:  "DEPLOY_LONGHORN",
+		9:  "ENABLE_LONGHORN_CA",
+		10: "DISABLE_LONGHORN_CA",
+		11: "RECONCILE_LONGHORN_STORAGE_CLASSES",
 	}
 	StageKuber_SubPassKind_value = map[string]int32{
-		"CILIUM_RESTART":          0,
-		"DELETE_NODES":            1,
-		"GPU_OPERATOR_RESTART":    2,
-		"PATCH_CLUSTER_INFO_CM":   3,
-		"PATCH_KUBE_PROXY":        4,
-		"PATCH_KUBEADM":           5,
-		"REMOVE_LB_SCRAPE_CONFIG": 6,
-		"SETUP_STORAGE":           7,
-		"STORE_LB_SCRAPE_CONFIG":  8,
-		"PATCH_NODES":             9,
+		"CILIUM_RESTART":                     0,
+		"DELETE_NODES":                       1,
+		"PATCH_CLUSTER_INFO_CM":              2,
+		"PATCH_KUBE_PROXY":                   3,
+		"PATCH_KUBEADM":                      4,
+		"REMOVE_LB_SCRAPE_CONFIG":            5,
+		"STORE_LB_SCRAPE_CONFIG":             6,
+		"PATCH_NODES":                        7,
+		"DEPLOY_LONGHORN":                    8,
+		"ENABLE_LONGHORN_CA":                 9,
+		"DISABLE_LONGHORN_CA":                10,
+		"RECONCILE_LONGHORN_STORAGE_CLASSES": 11,
 	}
 )
 
@@ -929,25 +935,28 @@ const file_spec_pass_proto_rawDesc = "" +
 	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"9\n" +
 	"\vSubPassKind\x12\x15\n" +
 	"\x11RECONCILE_CLUSTER\x10\x00\x12\x13\n" +
-	"\x0fDESTROY_CLUSTER\x10\x01\"\xe6\x03\n" +
+	"\x0fDESTROY_CLUSTER\x10\x01\"\xa7\x04\n" +
 	"\n" +
 	"StageKuber\x128\n" +
 	"\vdescription\x18\x01 \x01(\v2\x16.spec.StageDescriptionR\vdescription\x126\n" +
 	"\tsubPasses\x18\x02 \x03(\v2\x18.spec.StageKuber.SubPassR\tsubPasses\x1au\n" +
 	"\aSubPass\x120\n" +
 	"\x04kind\x18\x01 \x01(\x0e2\x1c.spec.StageKuber.SubPassKindR\x04kind\x128\n" +
-	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"\xee\x01\n" +
+	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"\xaf\x02\n" +
 	"\vSubPassKind\x12\x12\n" +
 	"\x0eCILIUM_RESTART\x10\x00\x12\x10\n" +
-	"\fDELETE_NODES\x10\x01\x12\x18\n" +
-	"\x14GPU_OPERATOR_RESTART\x10\x02\x12\x19\n" +
-	"\x15PATCH_CLUSTER_INFO_CM\x10\x03\x12\x14\n" +
-	"\x10PATCH_KUBE_PROXY\x10\x04\x12\x11\n" +
-	"\rPATCH_KUBEADM\x10\x05\x12\x1b\n" +
-	"\x17REMOVE_LB_SCRAPE_CONFIG\x10\x06\x12\x11\n" +
-	"\rSETUP_STORAGE\x10\a\x12\x1a\n" +
-	"\x16STORE_LB_SCRAPE_CONFIG\x10\b\x12\x0f\n" +
-	"\vPATCH_NODES\x10\t\"\xe6\x01\n" +
+	"\fDELETE_NODES\x10\x01\x12\x19\n" +
+	"\x15PATCH_CLUSTER_INFO_CM\x10\x02\x12\x14\n" +
+	"\x10PATCH_KUBE_PROXY\x10\x03\x12\x11\n" +
+	"\rPATCH_KUBEADM\x10\x04\x12\x1b\n" +
+	"\x17REMOVE_LB_SCRAPE_CONFIG\x10\x05\x12\x1a\n" +
+	"\x16STORE_LB_SCRAPE_CONFIG\x10\x06\x12\x0f\n" +
+	"\vPATCH_NODES\x10\a\x12\x13\n" +
+	"\x0fDEPLOY_LONGHORN\x10\b\x12\x16\n" +
+	"\x12ENABLE_LONGHORN_CA\x10\t\x12\x17\n" +
+	"\x13DISABLE_LONGHORN_CA\x10\n" +
+	"\x12&\n" +
+	"\"RECONCILE_LONGHORN_STORAGE_CLASSES\x10\v\"\xe6\x01\n" +
 	"\x05Stage\x12:\n" +
 	"\vterraformer\x18\x01 \x01(\v2\x16.spec.StageTerraformerH\x00R\vterraformer\x121\n" +
 	"\bansibler\x18\x02 \x01(\v2\x13.spec.StageAnsiblerH\x00R\bansibler\x127\n" +

@@ -282,17 +282,19 @@ func ExtractDynamic(nodepools []*spec.NodePool) []*spec.DynamicNodePool {
 	return dnps
 }
 
-// AnyAutoscaledNodePools returns true, if cluster has at least one nodepool with autoscaler config.
-func AnyAutoscaled(nodepools []*spec.NodePool) bool {
+// Autoscaled returns all autoscaled nodepools.
+func Autoscaled(nodepools []*spec.NodePool) []*spec.NodePool {
+	var autoscaled []*spec.NodePool
+
 	for _, np := range nodepools {
 		if n := np.GetDynamicNodePool(); n != nil {
 			if n.AutoscalerConfig != nil {
-				return true
+				autoscaled = append(autoscaled, np)
 			}
 		}
 	}
 
-	return false
+	return autoscaled
 }
 
 // Dynamic returns every dynamic nodepool.

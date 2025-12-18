@@ -56,6 +56,7 @@ func templatesUpdated(c *spec.ConfigV2) (bool, error) {
 	return false, nil
 }
 
+// Checks whether the templates for the provider has been updated.
 func commitHashUpdated(p *spec.Provider) (bool, error) {
 	t := proto.Clone(p.Templates).(*spec.TemplateRepository)
 	if err := manifest.FetchCommitHash(t); err != nil {
@@ -63,4 +64,20 @@ func commitHashUpdated(p *spec.Provider) (bool, error) {
 	}
 
 	return p.Templates.CommitHash != t.CommitHash, nil
+}
+
+// Fetches the latest commit hash for the NodePools which have a provider with the lates Tag option.
+// If the nodepool does not have such a privder false is returned, otherwise true to signal the commit
+// hash has ben fetched. On any error during the network calls the error is propagated to the caller.
+func syncWithRemoteRepo(np *spec.NodePool) (bool, error) {
+	n := np.GetDynamicNodePool()
+	if n == nil || n.Provider.Templates.Tag != nil {
+		return false, nil
+	}
+
+	if err := manifest.FetchCommitHash(n.Provider.Templates); err != nil {
+		return false, err
+	}
+
+	return true, nil
 }

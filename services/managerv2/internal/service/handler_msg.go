@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"math/rand/v2"
+	"strings"
 	"time"
 
 	"github.com/berops/claudie/internal/loggerutils"
@@ -39,11 +41,14 @@ func handlerInner(
 	stores Stores,
 ) {
 	var (
-		msgID             = msg.Headers().Get(nats.MsgIdHdr)
+		// Messages are in the format (ID)-(SUBJECT), this is to avoid duplicate
+		// messageId catching as the task moves trough the pipeline, thus in here
+		// strip the suffix.
+		subject           = msg.Subject()
+		msgID             = strings.TrimSuffix(msg.Headers().Get(nats.MsgIdHdr), fmt.Sprintf("-%s", subject))
 		taskID            = msg.Headers().Get(natsutils.WorkID)
 		inputManifestName = msg.Headers().Get(natsutils.InputManifestName)
 		clusterName       = msg.Headers().Get(natsutils.ClusterName)
-		subject           = msg.Subject()
 
 		logger = log.With().
 			Str(natsutils.InputManifestName, inputManifestName).

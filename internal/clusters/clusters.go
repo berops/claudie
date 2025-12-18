@@ -85,3 +85,14 @@ func NodePublic(name string, cluster *spec.K8Scluster) string {
 	}
 	return ""
 }
+
+func NodePublicV2(name string, cluster *spec.K8SclusterV2) string {
+	for _, np := range cluster.GetClusterInfo().GetNodePools() {
+		for _, n := range np.Nodes {
+			if n.Name == name {
+				return n.Public
+			}
+		}
+	}
+	return ""
+}
