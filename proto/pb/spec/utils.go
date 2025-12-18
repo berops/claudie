@@ -11,26 +11,17 @@ import (
 	"path/filepath"
 	"slices"
 	"time"
+
+	"google.golang.org/protobuf/proto"
 )
+
+// TODO: remove any unsued functions after the refactor.
+// MergeTargetPools takes the target pools from the other role
+// and adds them to this role, ignoring duplicates.
 
 // ErrCloudflareAPIForbidden is returned when the response to the endpoint of cloudflare returns code 403,
 // which means that the endpoint cannot be reached with the current account-id/token pair.
 var ErrCloudflareAPIForbidden = errors.New("token/account-id pair with the cloudflare provider does not have acces for the necessary API")
-
-const (
-	// ForceExportPort6443OnControlPlane Forces to export the port 6443 on
-	// all the control plane nodes in the cluster when the workflow reaches
-	// the terraformer stage. This setting applies to the BuildInfrastructure RPC
-	// in terraformer.
-	ForceExportPort6443OnControlPlane = 1 << iota
-
-	// K8sOnlyRefresh gives a hint to the processing of the task that the task
-	// is related only to the k8s cluster infrastructure, thus unrelated infrastructure
-	// should be skipped.
-	K8sOnlyRefresh
-)
-
-func OptionIsSet(options uint64, option uint64) bool { return options&option != 0 }
 
 // Id returns the ID of the cluster.
 func (c *ClusterInfo) Id() string {
@@ -38,77 +29,6 @@ func (c *ClusterInfo) Id() string {
 		return ""
 	}
 	return fmt.Sprintf("%s-%s", c.Name, c.Hash)
-}
-
-// DynamicNodePools returns slice of dynamic node pools.
-func (c *ClusterInfo) DynamicNodePools() []*DynamicNodePool {
-	if c == nil {
-		return nil
-	}
-
-	nps := make([]*DynamicNodePool, 0, len(c.NodePools))
-	for _, np := range c.NodePools {
-		if n := np.GetDynamicNodePool(); n != nil {
-			nps = append(nps, n)
-		}
-	}
-
-	return nps
-}
-
-// AnyAutoscaledNodePools returns true, if cluster has at least one nodepool with autoscaler config.
-func (c *K8Scluster) AnyAutoscaledNodePools() bool {
-	if c == nil {
-		return false
-	}
-
-	for _, np := range c.ClusterInfo.NodePools {
-		if n := np.GetDynamicNodePool(); n != nil {
-			if n.AutoscalerConfig != nil {
-				return true
-			}
-		}
-	}
-
-	return false
-}
-
-func (c *K8Scluster) NodeCount() int {
-	var out int
-
-	if c == nil {
-		return out
-	}
-
-	for _, np := range c.ClusterInfo.NodePools {
-		switch i := np.Type.(type) {
-		case *NodePool_DynamicNodePool:
-			out += int(i.DynamicNodePool.Count)
-		case *NodePool_StaticNodePool:
-			out += len(i.StaticNodePool.NodeKeys)
-		}
-	}
-
-	return out
-}
-
-func (c *LBcluster) NodeCount() int {
-	var out int
-
-	if c == nil {
-		return out
-	}
-
-	for _, np := range c.ClusterInfo.NodePools {
-		switch i := np.Type.(type) {
-		case *NodePool_DynamicNodePool:
-			out += int(i.DynamicNodePool.Count)
-		case *NodePool_StaticNodePool:
-			// Lbs are only dynamic.
-		}
-	}
-
-	return out
 }
 
 // HasApiRole checks whether the LB has a role with port 6443.
@@ -220,18 +140,6 @@ func (n *NodePool) Zone() string {
 	return fmt.Sprintf("%s-zone", sn)
 }
 
-// MergeTargetPools takes the target pools from the other role
-// and adds them to this role, ignoring duplicates.
-func (r *Role) MergeTargetPools(o *Role) {
-	for _, o := range o.TargetPools {
-		found := slices.Contains(r.TargetPools, o)
-		if !found {
-			// append missing target pool.
-			r.TargetPools = append(r.TargetPools, o)
-		}
-	}
-}
-
 // GetSubscription checks if the Cloudflare account has a Load Balancing subscription.
 func (x *CloudflareProvider) GetSubscription() (bool, error) {
 	// the number of retries before returning an error on trying to
@@ -317,3 +225,339 @@ func getCloudflareAPIResponse(url string, apiToken string) ([]byte, error) {
 
 	return body, nil
 }
+
+// Consumes the [TaskResult_Clear] for the task.
+func (te *Task) ConsumeClearResult(result *TaskResult_Clear) {
+	var k8s **K8Scluster
+	var lbs *[]*LBcluster
+
+	switch task := te.Do.(type) {
+	case *Task_Create:
+		k8s = &task.Create.K8S
+		lbs = &task.Create.LoadBalancers
+	case *Task_Delete:
+		k8s = &task.Delete.K8S
+		lbs = &task.Delete.LoadBalancers
+	case *Task_Update:
+		k8s = &task.Update.State.K8S
+		lbs = &task.Update.State.LoadBalancers
+	default:
+		return
+	}
+
+	if result.Clear.K8S != nil && *result.Clear.K8S {
+		*k8s = nil
+		*lbs = nil
+		return
+	}
+
+	lbFilter := func(lb *LBcluster) bool {
+		return slices.Contains(result.Clear.LoadBalancersIDs, lb.GetClusterInfo().Id())
+	}
+	*lbs = slices.DeleteFunc(*lbs, lbFilter)
+}
+
+// Consumes the [TaskResult_Update] for the task.
+func (te *Task) ConsumeUpdateResult(result *TaskResult_Update) error {
+	var k8s **K8Scluster
+	var lbs *[]*LBcluster
+
+	switch task := te.Do.(type) {
+	case *Task_Create:
+		k8s = &task.Create.K8S
+		lbs = &task.Create.LoadBalancers
+	case *Task_Delete:
+		k8s = &task.Delete.K8S
+		lbs = &task.Delete.LoadBalancers
+	case *Task_Update:
+		k8s = &task.Update.State.K8S
+		lbs = &task.Update.State.LoadBalancers
+	default:
+		return nil
+	}
+
+	id := (*k8s).GetClusterInfo().Id()
+	name := (*k8s).GetClusterInfo().GetName()
+	if k := result.Update.K8S; k != nil {
+		if gotName := k.GetClusterInfo().Id(); gotName != id {
+			// Under normal circumstances this should never happen, this signals either
+			// malformed/corrupted data and/or mistake in the scheduling of tasks.
+			// Thus return an error rather than continuing with the merge.
+			return fmt.Errorf("Can't update cluster %q with received cluster %q", id, gotName)
+		}
+		(*k8s) = k
+		result.Update.K8S = nil
+	}
+
+	var toUpdate LoadBalancers
+	for _, lb := range result.Update.LoadBalancers.Clusters {
+		toUpdate.Clusters = append(toUpdate.Clusters, lb)
+	}
+	result.Update.LoadBalancers.Clusters = nil
+
+	toUpdate.Clusters = slices.DeleteFunc(toUpdate.Clusters, func(lb *LBcluster) bool {
+		return lb.TargetedK8S != name
+	})
+
+	// update existing ones.
+	for i := range *lbs {
+		lb := (*lbs)[i].ClusterInfo.Id()
+		for j := range toUpdate.Clusters {
+			if update := toUpdate.Clusters[j].ClusterInfo.Id(); lb == update {
+				(*lbs)[i] = toUpdate.Clusters[j]
+				toUpdate.Clusters = slices.Delete(toUpdate.Clusters, j, j+1)
+				break
+			}
+		}
+	}
+
+	// add new ones.
+	*lbs = append(*lbs, toUpdate.Clusters...)
+
+	if update := te.GetUpdate(); update != nil {
+		switch delta := update.Delta.(type) {
+		case *Update_AnsReplaceProxy:
+			update.Delta = &Update_ReplacedProxy{
+				ReplacedProxy: &Update_ReplacedProxySettings{},
+			}
+		case *Update_AnsReplaceTargetPools:
+			consumed := &Update_ReplacedTargetPools{
+				Handle: delta.AnsReplaceTargetPools.Handle,
+				Roles:  map[string]*Update_ReplacedTargetPools_TargetPools{},
+			}
+
+			for k, v := range delta.AnsReplaceTargetPools.Roles {
+				consumed.Roles[k] = &Update_ReplacedTargetPools_TargetPools{
+					Pools: v.Pools,
+				}
+			}
+
+			update.Delta = &Update_ReplacedTargetPools_{
+				ReplacedTargetPools: consumed,
+			}
+		case *Update_KpatchNodes:
+			update.Delta = &Update_PatchedNodes_{
+				PatchedNodes: &Update_PatchedNodes{},
+			}
+		case *Update_TfAddK8SNodes:
+			consumed := &Update_AddedK8SNodes{
+				NewNodePool: false,
+				Nodepool:    "",
+				Nodes:       []string{},
+			}
+
+			switch kind := delta.TfAddK8SNodes.Kind.(type) {
+			case *Update_TerraformerAddK8SNodes_Existing_:
+				consumed.NewNodePool = false
+				consumed.Nodepool = kind.Existing.Nodepool
+				for _, n := range kind.Existing.Nodes {
+					consumed.Nodes = append(consumed.Nodes, n.Name)
+				}
+			case *Update_TerraformerAddK8SNodes_New_:
+				consumed.NewNodePool = true
+				consumed.Nodepool = kind.New.Nodepool.Name
+				for _, n := range kind.New.Nodepool.Nodes {
+					consumed.Nodes = append(consumed.Nodes, n.Name)
+				}
+			}
+
+			update.Delta = &Update_AddedK8SNodes_{
+				AddedK8SNodes: consumed,
+			}
+		case *Update_TfAddLoadBalancer:
+			update.Delta = &Update_AddedLoadBalancer_{
+				AddedLoadBalancer: &Update_AddedLoadBalancer{
+					Handle: delta.TfAddLoadBalancer.Handle.ClusterInfo.Id(),
+				},
+			}
+		case *Update_TfAddLoadBalancerNodes:
+			consumed := &Update_AddedLoadBalancerNodes{
+				Handle:      delta.TfAddLoadBalancerNodes.Handle,
+				NewNodePool: false,
+				NodePool:    "",
+				Nodes:       []string{},
+			}
+
+			switch kind := delta.TfAddLoadBalancerNodes.Kind.(type) {
+			case *Update_TerraformerAddLoadBalancerNodes_Existing_:
+				consumed.NewNodePool = false
+				consumed.NodePool = kind.Existing.Nodepool
+				for _, n := range kind.Existing.Nodes {
+					consumed.Nodes = append(consumed.Nodes, n.Name)
+				}
+			case *Update_TerraformerAddLoadBalancerNodes_New_:
+				consumed.NewNodePool = true
+				consumed.NodePool = kind.New.Nodepool.Name
+				for _, n := range kind.New.Nodepool.Nodes {
+					consumed.Nodes = append(consumed.Nodes, n.Name)
+				}
+			}
+
+			update.Delta = &Update_AddedLoadBalancerNodes_{
+				AddedLoadBalancerNodes: consumed,
+			}
+		case *Update_TfAddLoadBalancerRoles:
+			roles := make([]string, 0, len(delta.TfAddLoadBalancerRoles.Roles))
+			for _, r := range delta.TfAddLoadBalancerRoles.Roles {
+				roles = append(roles, r.Name)
+			}
+			update.Delta = &Update_AddedLoadBalancerRoles_{
+				AddedLoadBalancerRoles: &Update_AddedLoadBalancerRoles{
+					Handle: delta.TfAddLoadBalancerRoles.Handle,
+					Roles:  roles,
+				},
+			}
+		case *Update_TfReplaceDns:
+			update.Delta = &Update_ReplacedDns_{
+				ReplacedDns: &Update_ReplacedDns{
+					Handle:         delta.TfReplaceDns.Handle,
+					OldApiEndpoint: delta.TfReplaceDns.OldApiEndpoint,
+				},
+			}
+		default:
+			// other messages are non-consumable, do nothing.
+		}
+	}
+
+	return nil
+}
+
+// Returns mutable references to the underlying [Clusters] state stored
+// within the [Task]. Any changes made to the returned [Clusters] will
+// be reflected in the individual [Task] state.
+//
+// Each [Task] is spawned with a valid [Clusters] state, thus the function
+// always returns fully valid data which was scheduled for the task.
+//
+// While this allows to directly mutate the returned [Clusters] it will not
+// allow Clearing, i.e setting to nil. For this consider using [Task.ConsumeClearResult]
+// or [Task.ConsumeUpdateResult]
+func (te *Task) MutableClusters() (*Clusters, error) {
+	state := Clusters{
+		LoadBalancers: &LoadBalancers{},
+	}
+
+	switch task := te.Do.(type) {
+	case *Task_Create:
+		state.K8S = task.Create.K8S
+		state.LoadBalancers.Clusters = task.Create.LoadBalancers
+	case *Task_Delete:
+		state.K8S = task.Delete.K8S
+		state.LoadBalancers.Clusters = task.Delete.LoadBalancers
+	case *Task_Update:
+		state.K8S = task.Update.State.K8S
+		state.LoadBalancers.Clusters = task.Update.State.LoadBalancers
+	default:
+		return nil, fmt.Errorf("unknown task %T", task)
+	}
+
+	return &state, nil
+}
+
+type InFlightUpdateState struct {
+	r     *TaskResult
+	state *TaskResult_UpdateState
+}
+
+func (s *InFlightUpdateState) Kubernetes(c *K8Scluster) *InFlightUpdateState {
+	if c != nil {
+		s.state.K8S = proto.Clone(c).(*K8Scluster)
+	}
+	return s
+}
+
+func (s *InFlightUpdateState) Loadbalancers(lbs ...*LBcluster) *InFlightUpdateState {
+	if len(lbs) > 0 {
+		s.state.LoadBalancers = new(LoadBalancers)
+		for _, lb := range lbs {
+			if lb != nil {
+				lb := proto.Clone(lb).(*LBcluster)
+				s.state.LoadBalancers.Clusters = append(s.state.LoadBalancers.Clusters, lb)
+			}
+		}
+	}
+	return s
+}
+
+// TODO: test me.
+func (s *InFlightUpdateState) Commit() {
+	switch prev := s.r.Result.(type) {
+	case *TaskResult_Update:
+		old := prev.Update
+		new := s.state
+
+		if new.K8S != nil {
+			old.K8S = new.K8S
+			new.K8S = nil
+		}
+
+		// update existing ones.
+		for i := range old.LoadBalancers.Clusters {
+			o := old.LoadBalancers.Clusters[i].ClusterInfo.Id()
+			for j := range new.LoadBalancers.Clusters {
+				if n := new.LoadBalancers.Clusters[j].ClusterInfo.Id(); n == o {
+					old.LoadBalancers.Clusters[i] = new.LoadBalancers.Clusters[j]
+					new.LoadBalancers.Clusters = slices.Delete(new.LoadBalancers.Clusters, j, j+1)
+					break
+				}
+			}
+		}
+
+		// add new ones
+		old.LoadBalancers.Clusters = append(old.LoadBalancers.Clusters, new.LoadBalancers.Clusters...)
+		s.state = nil
+	default:
+		s.r.Result = &TaskResult_Update{
+			Update: s.state,
+		}
+		s.state = nil
+	}
+}
+
+func (r *TaskResult) Update() *InFlightUpdateState {
+	return &InFlightUpdateState{
+		r: r,
+		state: &TaskResult_UpdateState{
+			LoadBalancers: &LoadBalancers{},
+		},
+	}
+}
+
+type InFlightClearState struct {
+	r     *TaskResult
+	state *TaskResult_ClearState
+}
+
+func (s *InFlightClearState) Commit() {
+	s.r.Result = &TaskResult_Clear{
+		Clear: s.state,
+	}
+	s.state = nil
+}
+
+func (s *InFlightClearState) Kubernetes() *InFlightClearState {
+	ok := true
+	s.state.K8S = &ok
+	return s
+}
+
+func (s *InFlightClearState) LoadBalancers(lbs ...string) *InFlightClearState {
+	if len(lbs) > 0 {
+		s.state.LoadBalancersIDs = []string{}
+		for _, lb := range lbs {
+			s.state.LoadBalancersIDs = append(s.state.LoadBalancersIDs, lb)
+		}
+	}
+	return s
+}
+
+func (r *TaskResult) Clear() *InFlightClearState {
+	return &InFlightClearState{
+		r:     r,
+		state: new(TaskResult_ClearState),
+	}
+}
+
+func (r *TaskResult) IsNone() bool   { return r.GetNone() != nil }
+func (r *TaskResult) IsUpdate() bool { return r.GetUpdate() != nil }
+func (r *TaskResult) IsClear() bool  { return r.GetClear() != nil }
