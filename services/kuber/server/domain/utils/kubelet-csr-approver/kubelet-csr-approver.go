@@ -8,7 +8,6 @@ import (
 	"text/template"
 
 	comm "github.com/berops/claudie/internal/command"
-	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -56,7 +55,8 @@ func (kca *KubeletCSRApprover) DeployKubeletCSRApprover() error {
 	kc.Stdout = comm.GetStdOut(kca.cluster.ClusterInfo.Id())
 	kc.Stderr = comm.GetStdErr(kca.cluster.ClusterInfo.Id())
 
-	if err := kc.KubectlApply(kubeletCSRApproverDeployment, "-n", envs.Namespace); err != nil {
+	// deploys to namespace defined in the template (should be kube-system by default)
+	if err := kc.KubectlApply(kubeletCSRApproverDeployment, ""); err != nil {
 		return fmt.Errorf("error while applying cluster autoscaler for cluster %s : %w", kca.cluster.ClusterInfo.Name, err)
 	}
 	return os.RemoveAll(kca.directory)
@@ -65,12 +65,12 @@ func (kca *KubeletCSRApprover) DeployKubeletCSRApprover() error {
 // generateFiles generates all manifests required for deploying Cluster Autoscaler.
 func (k *KubeletCSRApprover) generateFiles() error {
 	tpl := templateUtils.Templates{Directory: k.directory}
-	var kcaTemplate *template.Template
+	var kcrTemplate *template.Template
 	var err error
 
 	// Load templates
 	// The configuration files for templates were taken from https://github.com/postfinance/kubelet-csr-approver/tree/v1.2.12/deploy/k8s
-	if kcaTemplate, err = templateUtils.LoadTemplate(templates.KubeletCSRApproverTemplate); err != nil {
+	if kcrTemplate, err = templateUtils.LoadTemplate(templates.KubeletCSRApproverTemplate); err != nil {
 		return fmt.Errorf("error loading kubelet-csr-approver template : %w", err)
 	}
 
@@ -90,7 +90,7 @@ func (k *KubeletCSRApprover) generateFiles() error {
 		ProviderIPPrefixes: k.cluster.Network,
 	}
 
-	if err := tpl.Generate(kcaTemplate, kubeletCSRApproverDeployment, kubeletCSRApproverData); err != nil {
+	if err := tpl.Generate(kcrTemplate, kubeletCSRApproverDeployment, kubeletCSRApproverData); err != nil {
 		return fmt.Errorf("error generating kubelet-csr-approver deployment : %w", err)
 	}
 
