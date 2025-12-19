@@ -82,7 +82,7 @@ func (k *KubeletCSRApprover) generateFiles() error {
 		parts = append(parts, regexp.QuoteMeta(nodepool.Name))
 	}
 
-	regexPattern := fmt.Sprintf("^(%s)-.+$", strings.Join(parts, "|"))
+	regexPattern := fmt.Sprintf("%s", strings.Join(parts, "|"))
 	randomHash := hash.Create(4)
 
 	kubeletCSRApproverData := &kubeletCSRApproverDeploymentData{
@@ -90,7 +90,6 @@ func (k *KubeletCSRApprover) generateFiles() error {
 		ProjectName:        k.projectName,
 		ClusterID:          k.cluster.ClusterInfo.Id(),
 		ProviderRegex:      regexPattern,
-		ProviderIPPrefixes: k.cluster.Network,
 		Hash:               randomHash,
 	}
 
