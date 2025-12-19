@@ -13,7 +13,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func SetUpClusterAutoscaler(manifestName string, clusters *spec.ClustersV2) error {
+func SetUpClusterAutoscaler(manifestName string, clusters *spec.Clusters) error {
 	if envs.Namespace == "" {
 		return nil
 	}
@@ -43,7 +43,7 @@ func SetUpClusterAutoscaler(manifestName string, clusters *spec.ClustersV2) erro
 	return nil
 }
 
-func DriftInAutoscalerPods(manifestName string, clusters *spec.ClustersV2) bool {
+func DriftInAutoscalerPods(manifestName string, clusters *spec.Clusters) bool {
 	// TODO: read in the generated yaml file and compare it to the one stored
 	// in the management cluster.
 	return true

@@ -62,11 +62,11 @@ type HealthCheckStatus struct {
 }
 
 // HealthCheck performs healthcheck across the passed in [spec.Clusters] state.
-func HealthCheck(logger zerolog.Logger, state *spec.ClustersV2) (HealthCheckStatus, error) {
+func HealthCheck(logger zerolog.Logger, state *spec.Clusters) (HealthCheckStatus, error) {
 	var result HealthCheckStatus
 	result.Cluster.Nodes = make(map[string]struct{})
 
-	k, lb, err := clusters.PingNodesV2(logger, state)
+	k, lb, err := clusters.PingNodes(logger, state)
 	if err != nil {
 		if !errors.Is(err, clusters.ErrEchoTimeout) {
 			logger.Err(err).Msg("failed to determine if any nodes were unreachable")
@@ -128,7 +128,7 @@ func HealthCheck(logger zerolog.Logger, state *spec.ClustersV2) (HealthCheckStat
 // On any error with connecting to the node a non-nil error is returned, otherwise
 // there will always be a non-nil error. If the peers match the expected number true
 // is returned otherwise false.
-func healthCheckVPN(state *spec.ClustersV2) (bool, error) {
+func healthCheckVPN(state *spec.Clusters) (bool, error) {
 	nps := state.K8S.ClusterInfo.NodePools
 	for _, lb := range state.LoadBalancers.Clusters {
 		nps = append(nps, lb.ClusterInfo.NodePools...)

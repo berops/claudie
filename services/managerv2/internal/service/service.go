@@ -34,7 +34,7 @@ var (
 	AckWait = time.Duration(envs.GetOrDefaultInt("MANAGER_ACK_WAIT_TIME", 10)) * time.Minute
 )
 
-var _ pb.ManagerV2ServiceServer = (*Service)(nil)
+var _ pb.ManagerServiceServer = (*Service)(nil)
 
 type grpcServer struct {
 	tcpListener  net.Listener
@@ -50,7 +50,7 @@ type natsClient struct {
 }
 
 type Service struct {
-	pb.UnimplementedManagerV2ServiceServer
+	pb.UnimplementedManagerServiceServer
 
 	store store.Store
 
@@ -151,7 +151,7 @@ func New(ctx context.Context, opts ...grpc.ServerOption) (*Service, error) {
 		return nil, fmt.Errorf("failed to start nats consumer handler: %w", err)
 	}
 
-	pb.RegisterManagerV2ServiceServer(s.server.server, s)
+	pb.RegisterManagerServiceServer(s.server.server, s)
 
 	go s.watchPending()
 	go s.watchScheduled()

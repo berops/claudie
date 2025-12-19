@@ -26,8 +26,8 @@ type LoadBalancersReconciliate struct {
 	Hc      *HealthCheckStatus
 	Diff    *LoadBalancersDiffResult
 	Proxy   *ProxyDiffResult
-	Current *spec.ClustersV2
-	Desired *spec.ClustersV2
+	Current *spec.Clusters
+	Desired *spec.Clusters
 }
 
 // PreKubernetesDiff returns load balancer changes that can be done/executed before
@@ -37,28 +37,28 @@ type LoadBalancersReconciliate struct {
 // the [LoadBalancersDiffResult] are not invalidated. This function does not modify the
 // input in any way and also the returned [spec.TaskEvent] does not hold or share any
 // memory to related to the input.
-func PreKubernetesDiff(r LoadBalancersReconciliate) *spec.TaskEventV2 {
+func PreKubernetesDiff(r LoadBalancersReconciliate) *spec.TaskEvent {
 	switch r.Diff.ApiEndpoint.State {
-	case spec.ApiEndpointChangeStateV2_AttachingLoadBalancerV2:
+	case spec.ApiEndpointChangeState_AttachingLoadBalancer:
 		// make sure the new lb is already in the cluster.
-		if i := clusters.IndexLoadbalancerByIdV2(r.Diff.ApiEndpoint.New, r.Current.LoadBalancers.Clusters); i >= 0 {
+		if i := clusters.IndexLoadbalancerById(r.Diff.ApiEndpoint.New, r.Current.LoadBalancers.Clusters); i >= 0 {
 			return ScheduleMoveApiEndpoint(r.Current, r.Diff.ApiEndpoint.Current, r.Diff.ApiEndpoint.New, r.Diff.ApiEndpoint.State)
 		}
-	case spec.ApiEndpointChangeStateV2_DetachingLoadBalancerV2:
+	case spec.ApiEndpointChangeState_DetachingLoadBalancer:
 		if !r.Hc.Cluster.ControlNodesHave6443 {
 			return ScheduleControlNodesPort6443(r.Current, true)
 		}
 		return ScheduleMoveApiEndpoint(r.Current, r.Diff.ApiEndpoint.Current, r.Diff.ApiEndpoint.New, r.Diff.ApiEndpoint.State)
-	case spec.ApiEndpointChangeStateV2_MoveEndpointV2:
+	case spec.ApiEndpointChangeState_MoveEndpoint:
 		// make sure both are in the current cluster and that the roles have been synced.
-		old := clusters.IndexLoadbalancerByIdV2(r.Diff.ApiEndpoint.Current, r.Current.LoadBalancers.Clusters)
-		new := clusters.IndexLoadbalancerByIdV2(r.Diff.ApiEndpoint.New, r.Current.LoadBalancers.Clusters)
+		old := clusters.IndexLoadbalancerById(r.Diff.ApiEndpoint.Current, r.Current.LoadBalancers.Clusters)
+		new := clusters.IndexLoadbalancerById(r.Diff.ApiEndpoint.New, r.Current.LoadBalancers.Clusters)
 		oldRolesSynced := len(r.Diff.Modified[r.Diff.ApiEndpoint.Current].Roles.Added) == 0
 		newRolesSynced := len(r.Diff.Modified[r.Diff.ApiEndpoint.New].Roles.Added) == 0
 		if old >= 0 && new >= 0 && oldRolesSynced && newRolesSynced {
 			return ScheduleMoveApiEndpoint(r.Current, r.Diff.ApiEndpoint.Current, r.Diff.ApiEndpoint.New, r.Diff.ApiEndpoint.State)
 		}
-	case spec.ApiEndpointChangeStateV2_EndpointRenamedV2:
+	case spec.ApiEndpointChangeState_EndpointRenamed:
 		for lb, modified := range r.Diff.Modified {
 			if modified.DNS && lb == r.Diff.ApiEndpoint.Current {
 				cid := LoadBalancerIdentifier{
@@ -72,7 +72,7 @@ func PreKubernetesDiff(r LoadBalancersReconciliate) *spec.TaskEventV2 {
 				return ScheduleReplaceDns(r.Proxy.CurrentUsed, r.Current, r.Desired, cid, did, true)
 			}
 		}
-	case spec.ApiEndpointChangeStateV2_NoChangeV2:
+	case spec.ApiEndpointChangeState_NoChange:
 		// Nothing to do.
 	}
 
@@ -134,7 +134,7 @@ func PreKubernetesDiff(r LoadBalancersReconciliate) *spec.TaskEventV2 {
 // was computed, and that all of the Cached Indices within the [LoadBalancersDiffResult]
 // are not invalidated. This function does not modify the input in any way and also the
 // returned [spec.TaskEvent] does not hold or share any memory to related to the input.
-func PostKubernetesDiff(r LoadBalancersReconciliate) *spec.TaskEventV2 {
+func PostKubernetesDiff(r LoadBalancersReconciliate) *spec.TaskEvent {
 	for lb, modified := range r.Diff.Modified {
 		cid := LoadBalancerIdentifier{
 			Id:    lb,
@@ -177,7 +177,7 @@ func PostKubernetesDiff(r LoadBalancersReconciliate) *spec.TaskEventV2 {
 		return ScheduleDeleteLoadBalancer(r.Proxy.CurrentUsed, r.Current, lb)
 	}
 
-	if ep := clusters.FindAssignedLbApiEndpointV2(r.Current.LoadBalancers.Clusters); ep != nil {
+	if ep := clusters.FindAssignedLbApiEndpoint(r.Current.LoadBalancers.Clusters); ep != nil {
 		if r.Hc.Cluster.ControlNodesHave6443 {
 			return ScheduleControlNodesPort6443(r.Current, false)
 		}
@@ -195,13 +195,13 @@ type LoadBalancerNodePoolsOptions struct {
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
 func ScheduleDeletionLoadBalancerNodePools(
-	current *spec.ClustersV2,
-	desired *spec.ClustersV2,
+	current *spec.Clusters,
+	desired *spec.Clusters,
 	cid LoadBalancerIdentifier,
 	did LoadBalancerIdentifier,
 	diff *NodePoolsDiffResult,
 	opts LoadBalancerNodePoolsOptions,
-) *spec.TaskEventV2 {
+) *spec.TaskEvent {
 	pipeline := []*spec.Stage{}
 
 	if !opts.IsStatic {
@@ -296,16 +296,16 @@ func ScheduleDeletionLoadBalancerNodePools(
 		},
 	})
 
-	inFlight := proto.Clone(current).(*spec.ClustersV2)
+	inFlight := proto.Clone(current).(*spec.Clusters)
 	for np, nodes := range diff.PartiallyDeleted {
-		update := spec.TaskV2_Update{
-			Update: &spec.UpdateV2{
-				State: &spec.UpdateV2_State{
+		update := spec.Task_Update{
+			Update: &spec.Update{
+				State: &spec.Update_State{
 					K8S:           inFlight.K8S,
 					LoadBalancers: inFlight.LoadBalancers.Clusters,
 				},
-				Delta: &spec.UpdateV2_DeleteLoadBalancerNodes_{
-					DeleteLoadBalancerNodes: &spec.UpdateV2_DeleteLoadBalancerNodes{
+				Delta: &spec.Update_DeleteLoadBalancerNodes_{
+					DeleteLoadBalancerNodes: &spec.Update_DeleteLoadBalancerNodes{
 						Handle:       cid.Id,
 						WithNodePool: false,
 						Nodepool:     np,
@@ -315,11 +315,11 @@ func ScheduleDeletionLoadBalancerNodePools(
 			},
 		}
 
-		return &spec.TaskEventV2{
+		return &spec.TaskEvent{
 			Id:        uuid.New().String(),
 			Timestamp: timestamppb.New(time.Now().UTC()),
-			Event:     spec.EventV2_UPDATE_V2,
-			Task: &spec.TaskV2{
+			Event:     spec.Event_UPDATE,
+			Task: &spec.Task{
 				Do: &update,
 			},
 			Description: fmt.Sprintf("Deleting %v nodes from nodepool %q of load balancer %q", len(nodes), np, cid.Id),
@@ -328,14 +328,14 @@ func ScheduleDeletionLoadBalancerNodePools(
 	}
 
 	for np, nodes := range diff.Deleted {
-		update := spec.TaskV2_Update{
-			Update: &spec.UpdateV2{
-				State: &spec.UpdateV2_State{
+		update := spec.Task_Update{
+			Update: &spec.Update{
+				State: &spec.Update_State{
 					K8S:           inFlight.K8S,
 					LoadBalancers: inFlight.LoadBalancers.Clusters,
 				},
-				Delta: &spec.UpdateV2_DeleteLoadBalancerNodes_{
-					DeleteLoadBalancerNodes: &spec.UpdateV2_DeleteLoadBalancerNodes{
+				Delta: &spec.Update_DeleteLoadBalancerNodes_{
+					DeleteLoadBalancerNodes: &spec.Update_DeleteLoadBalancerNodes{
 						Handle:       cid.Id,
 						WithNodePool: true,
 						Nodepool:     np,
@@ -345,11 +345,11 @@ func ScheduleDeletionLoadBalancerNodePools(
 			},
 		}
 
-		return &spec.TaskEventV2{
+		return &spec.TaskEvent{
 			Id:        uuid.New().String(),
 			Timestamp: timestamppb.New(time.Now().UTC()),
-			Event:     spec.EventV2_UPDATE_V2,
-			Task: &spec.TaskV2{
+			Event:     spec.Event_UPDATE,
+			Task: &spec.Task{
 				Do: &update,
 			},
 			Description: fmt.Sprintf("Deleting nodepool %q from load balancer %q", np, cid.Id),
@@ -364,13 +364,13 @@ func ScheduleDeletionLoadBalancerNodePools(
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
 func ScheduleAdditionLoadBalancerNodePools(
-	current *spec.ClustersV2,
-	desired *spec.ClustersV2,
+	current *spec.Clusters,
+	desired *spec.Clusters,
 	cid LoadBalancerIdentifier,
 	did LoadBalancerIdentifier,
 	diff *NodePoolsDiffResult,
 	opts LoadBalancerNodePoolsOptions,
-) *spec.TaskEventV2 {
+) *spec.TaskEvent {
 	pipeline := []*spec.Stage{}
 
 	if !opts.IsStatic {
@@ -485,11 +485,11 @@ func ScheduleAdditionLoadBalancerNodePools(
 		},
 	})
 
-	inFlight := proto.Clone(current).(*spec.ClustersV2)
+	inFlight := proto.Clone(current).(*spec.Clusters)
 	for np, nodes := range diff.PartiallyAdded {
-		update := spec.TaskV2_Update{
-			Update: &spec.UpdateV2{
-				State: &spec.UpdateV2_State{
+		update := spec.Task_Update{
+			Update: &spec.Update{
+				State: &spec.Update_State{
 					K8S:           inFlight.K8S,
 					LoadBalancers: inFlight.LoadBalancers.Clusters,
 				},
@@ -507,8 +507,8 @@ func ScheduleAdditionLoadBalancerNodePools(
 			src := nodepools.FindByName(np, srclb.ClusterInfo.NodePools)
 			nodepools.CopyNodes(dst, src, nodes)
 
-			update.Update.Delta = &spec.UpdateV2_AddedLoadBalancerNodes_{
-				AddedLoadBalancerNodes: &spec.UpdateV2_AddedLoadBalancerNodes{
+			update.Update.Delta = &spec.Update_AddedLoadBalancerNodes_{
+				AddedLoadBalancerNodes: &spec.Update_AddedLoadBalancerNodes{
 					Handle:      cid.Id,
 					NewNodePool: false,
 					NodePool:    np,
@@ -520,11 +520,11 @@ func ScheduleAdditionLoadBalancerNodePools(
 			src := nodepools.FindByName(np, srclb.ClusterInfo.NodePools)
 			toAdd := nodepools.CloneTargetNodes(src, nodes)
 
-			update.Update.Delta = &spec.UpdateV2_TfAddLoadBalancerNodes{
-				TfAddLoadBalancerNodes: &spec.UpdateV2_TerraformerAddLoadBalancerNodes{
+			update.Update.Delta = &spec.Update_TfAddLoadBalancerNodes{
+				TfAddLoadBalancerNodes: &spec.Update_TerraformerAddLoadBalancerNodes{
 					Handle: cid.Id,
-					Kind: &spec.UpdateV2_TerraformerAddLoadBalancerNodes_Existing_{
-						Existing: &spec.UpdateV2_TerraformerAddLoadBalancerNodes_Existing{
+					Kind: &spec.Update_TerraformerAddLoadBalancerNodes_Existing_{
+						Existing: &spec.Update_TerraformerAddLoadBalancerNodes_Existing{
 							Nodepool: np,
 							Nodes:    toAdd,
 						},
@@ -533,11 +533,11 @@ func ScheduleAdditionLoadBalancerNodePools(
 			}
 		}
 
-		return &spec.TaskEventV2{
+		return &spec.TaskEvent{
 			Id:        uuid.New().String(),
 			Timestamp: timestamppb.New(time.Now().UTC()),
-			Event:     spec.EventV2_UPDATE_V2,
-			Task: &spec.TaskV2{
+			Event:     spec.Event_UPDATE,
+			Task: &spec.Task{
 				Do: &update,
 			},
 			Description: fmt.Sprintf("Adding %v nodes to nodepool %q for loadbalancer %q", len(nodes), np, cid.Id),
@@ -550,9 +550,9 @@ func ScheduleAdditionLoadBalancerNodePools(
 		src := nodepools.FindByName(np, srclb.ClusterInfo.NodePools)
 		toAdd := proto.Clone(src).(*spec.NodePool)
 
-		update := spec.TaskV2_Update{
-			Update: &spec.UpdateV2{
-				State: &spec.UpdateV2_State{
+		update := spec.Task_Update{
+			Update: &spec.Update{
+				State: &spec.Update_State{
 					K8S:           inFlight.K8S,
 					LoadBalancers: inFlight.LoadBalancers.Clusters,
 				},
@@ -566,8 +566,8 @@ func ScheduleAdditionLoadBalancerNodePools(
 			dstlb := inFlight.LoadBalancers.Clusters[cid.Index]
 			dstlb.ClusterInfo.NodePools = append(dstlb.ClusterInfo.NodePools, toAdd)
 
-			update.Update.Delta = &spec.UpdateV2_AddedLoadBalancerNodes_{
-				AddedLoadBalancerNodes: &spec.UpdateV2_AddedLoadBalancerNodes{
+			update.Update.Delta = &spec.Update_AddedLoadBalancerNodes_{
+				AddedLoadBalancerNodes: &spec.Update_AddedLoadBalancerNodes{
 					Handle:      cid.Id,
 					NewNodePool: true,
 					NodePool:    np,
@@ -575,11 +575,11 @@ func ScheduleAdditionLoadBalancerNodePools(
 				},
 			}
 		} else {
-			update.Update.Delta = &spec.UpdateV2_TfAddLoadBalancerNodes{
-				TfAddLoadBalancerNodes: &spec.UpdateV2_TerraformerAddLoadBalancerNodes{
+			update.Update.Delta = &spec.Update_TfAddLoadBalancerNodes{
+				TfAddLoadBalancerNodes: &spec.Update_TerraformerAddLoadBalancerNodes{
 					Handle: cid.Id,
-					Kind: &spec.UpdateV2_TerraformerAddLoadBalancerNodes_New_{
-						New: &spec.UpdateV2_TerraformerAddLoadBalancerNodes_New{
+					Kind: &spec.Update_TerraformerAddLoadBalancerNodes_New_{
+						New: &spec.Update_TerraformerAddLoadBalancerNodes_New{
 							Nodepool: toAdd,
 						},
 					},
@@ -587,11 +587,11 @@ func ScheduleAdditionLoadBalancerNodePools(
 			}
 		}
 
-		return &spec.TaskEventV2{
+		return &spec.TaskEvent{
 			Id:        uuid.New().String(),
 			Timestamp: timestamppb.New(time.Now().UTC()),
-			Event:     spec.EventV2_UPDATE_V2,
-			Task: &spec.TaskV2{
+			Event:     spec.Event_UPDATE,
+			Task: &spec.Task{
 				Do: &update,
 			},
 			Description: fmt.Sprintf("Adding nodepool %q for loadbalancer %q", np, cid.Id),
@@ -610,16 +610,16 @@ func ScheduleAdditionLoadBalancerNodePools(
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
 func ScheduleReplaceDns(
 	useProxy bool,
-	current *spec.ClustersV2,
-	desired *spec.ClustersV2,
+	current *spec.Clusters,
+	desired *spec.Clusters,
 	cid LoadBalancerIdentifier,
 	did LoadBalancerIdentifier,
 	apiEndpoint bool,
-) *spec.TaskEventV2 {
+) *spec.TaskEvent {
 	var (
 		dns       = proto.Clone(desired.LoadBalancers.Clusters[did.Index].Dns).(*spec.DNS)
-		inFlight  = proto.Clone(current).(*spec.ClustersV2)
-		toReplace = spec.UpdateV2_TerraformerReplaceDns{
+		inFlight  = proto.Clone(current).(*spec.Clusters)
+		toReplace = spec.Update_TerraformerReplaceDns{
 			Handle: cid.Id,
 			Dns:    dns,
 		}
@@ -760,22 +760,22 @@ func ScheduleReplaceDns(
 		})
 	}
 
-	updateOp := spec.UpdateV2{
-		State: &spec.UpdateV2_State{
+	updateOp := spec.Update{
+		State: &spec.Update_State{
 			K8S:           inFlight.K8S,
 			LoadBalancers: inFlight.LoadBalancers.Clusters,
 		},
-		Delta: &spec.UpdateV2_TfReplaceDns{
+		Delta: &spec.Update_TfReplaceDns{
 			TfReplaceDns: &toReplace,
 		},
 	}
 
-	task := spec.TaskEventV2{
+	task := spec.TaskEvent{
 		Id:        uuid.New().String(),
 		Timestamp: timestamppb.New(time.Now().UTC()),
-		Event:     spec.EventV2_UPDATE_V2,
-		Task: &spec.TaskV2{
-			Do: &spec.TaskV2_Update{
+		Event:     spec.Event_UPDATE,
+		Task: &spec.Task{
+			Do: &spec.Task_Update{
 				Update: &updateOp,
 			},
 		},
@@ -790,26 +790,26 @@ func ScheduleReplaceDns(
 // Based on the supplied value of open, the port is either opened or closed on all of the control nodes.
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
-func ScheduleControlNodesPort6443(current *spec.ClustersV2, open bool) *spec.TaskEventV2 {
-	inFlight := proto.Clone(current).(*spec.ClustersV2)
-	updateOp := spec.UpdateV2{
-		State: &spec.UpdateV2_State{
+func ScheduleControlNodesPort6443(current *spec.Clusters, open bool) *spec.TaskEvent {
+	inFlight := proto.Clone(current).(*spec.Clusters)
+	updateOp := spec.Update{
+		State: &spec.Update_State{
 			K8S:           inFlight.K8S,
 			LoadBalancers: inFlight.LoadBalancers.Clusters,
 		},
-		Delta: &spec.UpdateV2_ClusterApiPort{
-			ClusterApiPort: &spec.UpdateV2_ApiPortOnCluster{
+		Delta: &spec.Update_ClusterApiPort{
+			ClusterApiPort: &spec.Update_ApiPortOnCluster{
 				Open: open,
 			},
 		},
 	}
 
-	return &spec.TaskEventV2{
+	return &spec.TaskEvent{
 		Id:        uuid.New().String(),
 		Timestamp: timestamppb.New(time.Now().UTC()),
-		Event:     spec.EventV2_UPDATE_V2,
-		Task: &spec.TaskV2{
-			Do: &spec.TaskV2_Update{
+		Event:     spec.Event_UPDATE,
+		Task: &spec.Task{
+			Do: &spec.Task_Update{
 				Update: &updateOp,
 			},
 		},
@@ -846,19 +846,19 @@ func ScheduleControlNodesPort6443(current *spec.ClustersV2, open bool) *spec.Tas
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
 func ScheduleMoveApiEndpoint(
-	current *spec.ClustersV2,
+	current *spec.Clusters,
 	cid string,
 	did string,
-	change spec.ApiEndpointChangeStateV2,
-) *spec.TaskEventV2 {
-	inFlight := proto.Clone(current).(*spec.ClustersV2)
-	updateOp := spec.UpdateV2{
-		State: &spec.UpdateV2_State{
+	change spec.ApiEndpointChangeState,
+) *spec.TaskEvent {
+	inFlight := proto.Clone(current).(*spec.Clusters)
+	updateOp := spec.Update{
+		State: &spec.Update_State{
 			K8S:           inFlight.K8S,
 			LoadBalancers: inFlight.LoadBalancers.Clusters,
 		},
-		Delta: &spec.UpdateV2_ApiEndpoint_{
-			ApiEndpoint: &spec.UpdateV2_ApiEndpoint{
+		Delta: &spec.Update_ApiEndpoint_{
+			ApiEndpoint: &spec.Update_ApiEndpoint{
 				State:             change,
 				CurrentEndpointId: cid,
 				DesiredEndpointId: did,
@@ -866,12 +866,12 @@ func ScheduleMoveApiEndpoint(
 		},
 	}
 
-	return &spec.TaskEventV2{
+	return &spec.TaskEvent{
 		Id:        uuid.New().String(),
 		Timestamp: timestamppb.New(time.Now().UTC()),
-		Event:     spec.EventV2_UPDATE_V2,
-		Task: &spec.TaskV2{
-			Do: &spec.TaskV2_Update{
+		Event:     spec.Event_UPDATE,
+		Task: &spec.Task{
+			Do: &spec.Task_Update{
 				Update: &updateOp,
 			},
 		},
@@ -962,15 +962,15 @@ func ScheduleMoveApiEndpoint(
 // Deletes the loadbalancer with the id specified in the passed in lb from the [spec.Clusters] state.
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
-func ScheduleDeleteLoadBalancer(useProxy bool, current *spec.ClustersV2, cid LoadBalancerIdentifier) *spec.TaskEventV2 {
-	inFlight := proto.Clone(current).(*spec.ClustersV2)
-	updateOp := spec.UpdateV2{
-		State: &spec.UpdateV2_State{
+func ScheduleDeleteLoadBalancer(useProxy bool, current *spec.Clusters, cid LoadBalancerIdentifier) *spec.TaskEvent {
+	inFlight := proto.Clone(current).(*spec.Clusters)
+	updateOp := spec.Update{
+		State: &spec.Update_State{
 			K8S:           inFlight.K8S,
 			LoadBalancers: inFlight.LoadBalancers.Clusters,
 		},
-		Delta: &spec.UpdateV2_DeleteLoadBalancer_{
-			DeleteLoadBalancer: &spec.UpdateV2_DeleteLoadBalancer{
+		Delta: &spec.Update_DeleteLoadBalancer_{
+			DeleteLoadBalancer: &spec.Update_DeleteLoadBalancer{
 				Handle: cid.Id,
 			},
 		},
@@ -1067,12 +1067,12 @@ func ScheduleDeleteLoadBalancer(useProxy bool, current *spec.ClustersV2, cid Loa
 		})
 	}
 
-	return &spec.TaskEventV2{
+	return &spec.TaskEvent{
 		Id:        uuid.New().String(),
 		Timestamp: timestamppb.New(time.Now().UTC()),
-		Event:     spec.EventV2_UPDATE_V2,
-		Task: &spec.TaskV2{
-			Do: &spec.TaskV2_Update{
+		Event:     spec.Event_UPDATE,
+		Task: &spec.Task{
+			Do: &spec.Task_Update{
 				Update: &updateOp,
 			},
 		},
@@ -1085,10 +1085,10 @@ func ScheduleDeleteLoadBalancer(useProxy bool, current *spec.ClustersV2, cid Loa
 // into the existing current infrastructure of [spec.Clusters].
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
-func ScheduleJoinLoadBalancer(useProxy bool, current, desired *spec.ClustersV2, did LoadBalancerIdentifier) *spec.TaskEventV2 {
+func ScheduleJoinLoadBalancer(useProxy bool, current, desired *spec.Clusters, did LoadBalancerIdentifier) *spec.TaskEvent {
 	var (
-		toJoin   = proto.Clone(desired.LoadBalancers.Clusters[did.Index]).(*spec.LBclusterV2)
-		inFlight = proto.Clone(current).(*spec.ClustersV2)
+		toJoin   = proto.Clone(desired.LoadBalancers.Clusters[did.Index]).(*spec.LBcluster)
+		inFlight = proto.Clone(current).(*spec.Clusters)
 	)
 
 	// Pipeline stages
@@ -1201,13 +1201,13 @@ func ScheduleJoinLoadBalancer(useProxy bool, current, desired *spec.ClustersV2, 
 		}
 	)
 
-	updateOp := spec.UpdateV2{
-		State: &spec.UpdateV2_State{
+	updateOp := spec.Update{
+		State: &spec.Update_State{
 			K8S:           inFlight.K8S,
 			LoadBalancers: inFlight.LoadBalancers.Clusters,
 		},
-		Delta: &spec.UpdateV2_TfAddLoadBalancer{
-			TfAddLoadBalancer: &spec.UpdateV2_TerraformerAddLoadBalancer{
+		Delta: &spec.Update_TfAddLoadBalancer{
+			TfAddLoadBalancer: &spec.Update_TerraformerAddLoadBalancer{
 				Handle: toJoin,
 			},
 		},
@@ -1225,12 +1225,12 @@ func ScheduleJoinLoadBalancer(useProxy bool, current, desired *spec.ClustersV2, 
 		pipeline[1].StageKind = &ans
 	}
 
-	return &spec.TaskEventV2{
+	return &spec.TaskEvent{
 		Id:        uuid.New().String(),
 		Timestamp: timestamppb.New(time.Now().UTC()),
-		Event:     spec.EventV2_UPDATE_V2,
-		Task: &spec.TaskV2{
-			Do: &spec.TaskV2_Update{
+		Event:     spec.Event_UPDATE,
+		Task: &spec.Task{
+			Do: &spec.Task_Update{
 				Update: &updateOp,
 			},
 		},
@@ -1243,16 +1243,16 @@ func ScheduleJoinLoadBalancer(useProxy bool, current, desired *spec.ClustersV2, 
 // in lb string, from the current [spec.Clusters] state.
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
-func ScheduleDeleteRoles(current *spec.ClustersV2, cid LoadBalancerIdentifier, roles []string) *spec.TaskEventV2 {
-	inFlight := proto.Clone(current).(*spec.ClustersV2)
-	updateOp := spec.TaskV2_Update{
-		Update: &spec.UpdateV2{
-			State: &spec.UpdateV2_State{
+func ScheduleDeleteRoles(current *spec.Clusters, cid LoadBalancerIdentifier, roles []string) *spec.TaskEvent {
+	inFlight := proto.Clone(current).(*spec.Clusters)
+	updateOp := spec.Task_Update{
+		Update: &spec.Update{
+			State: &spec.Update_State{
 				K8S:           inFlight.K8S,
 				LoadBalancers: inFlight.LoadBalancers.Clusters,
 			},
-			Delta: &spec.UpdateV2_DeleteLoadBalancerRoles_{
-				DeleteLoadBalancerRoles: &spec.UpdateV2_DeleteLoadBalancerRoles{
+			Delta: &spec.Update_DeleteLoadBalancerRoles_{
+				DeleteLoadBalancerRoles: &spec.Update_DeleteLoadBalancerRoles{
 					Handle: cid.Id,
 					Roles:  roles,
 				},
@@ -1260,11 +1260,11 @@ func ScheduleDeleteRoles(current *spec.ClustersV2, cid LoadBalancerIdentifier, r
 		},
 	}
 
-	return &spec.TaskEventV2{
+	return &spec.TaskEvent{
 		Id:          uuid.New().String(),
 		Timestamp:   timestamppb.New(time.Now().UTC()),
-		Event:       spec.EventV2_UPDATE_V2,
-		Task:        &spec.TaskV2{Do: &updateOp},
+		Event:       spec.Event_UPDATE,
+		Task:        &spec.Task{Do: &updateOp},
 		Description: fmt.Sprintf("Reconciling load balancer %q", cid.Id),
 		Pipeline: []*spec.Stage{
 			{
@@ -1332,28 +1332,28 @@ func ScheduleDeleteRoles(current *spec.ClustersV2, cid LoadBalancerIdentifier, r
 // in lb string, from the desired [spec.Clusters] state into the current [spec.Clusters] state.
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
-func ScheduleAddRoles(current, desired *spec.ClustersV2, cid, did LoadBalancerIdentifier, roles []string) *spec.TaskEventV2 {
-	var toAdd []*spec.RoleV2
+func ScheduleAddRoles(current, desired *spec.Clusters, cid, did LoadBalancerIdentifier, roles []string) *spec.TaskEvent {
+	var toAdd []*spec.Role
 	for _, role := range desired.LoadBalancers.Clusters[did.Index].Roles {
 		if slices.Contains(roles, role.Name) {
-			toAdd = append(toAdd, proto.Clone(role).(*spec.RoleV2))
+			toAdd = append(toAdd, proto.Clone(role).(*spec.Role))
 		}
 	}
 
-	inFlight := proto.Clone(current).(*spec.ClustersV2)
-	return &spec.TaskEventV2{
+	inFlight := proto.Clone(current).(*spec.Clusters)
+	return &spec.TaskEvent{
 		Id:        uuid.New().String(),
 		Timestamp: timestamppb.New(time.Now().UTC()),
-		Event:     spec.EventV2_UPDATE_V2,
-		Task: &spec.TaskV2{
-			Do: &spec.TaskV2_Update{
-				Update: &spec.UpdateV2{
-					State: &spec.UpdateV2_State{
+		Event:     spec.Event_UPDATE,
+		Task: &spec.Task{
+			Do: &spec.Task_Update{
+				Update: &spec.Update{
+					State: &spec.Update_State{
 						K8S:           inFlight.K8S,
 						LoadBalancers: inFlight.LoadBalancers.Clusters,
 					},
-					Delta: &spec.UpdateV2_TfAddLoadBalancerRoles{
-						TfAddLoadBalancerRoles: &spec.UpdateV2_TerraformerAddLoadBalancerRoles{
+					Delta: &spec.Update_TfAddLoadBalancerRoles{
+						TfAddLoadBalancerRoles: &spec.Update_TerraformerAddLoadBalancerRoles{
 							Handle: cid.Id,
 							Roles:  toAdd,
 						},
@@ -1432,18 +1432,18 @@ func ScheduleAddRoles(current, desired *spec.ClustersV2, cid, did LoadBalancerId
 // The returned [spec.TaskEvent] does not point to or share any
 // memory with the two passed in states.
 func ScheduleReconcileRoleTargetPools(
-	current *spec.ClustersV2,
-	desired *spec.ClustersV2,
+	current *spec.Clusters,
+	desired *spec.Clusters,
 	cid LoadBalancerIdentifier,
 	did LoadBalancerIdentifier,
-) *spec.TaskEventV2 {
-	inFlight := proto.Clone(current).(*spec.ClustersV2)
-	toReconcile := make(map[string]*spec.UpdateV2_AnsiblerReplaceTargetPools_TargetPools)
+) *spec.TaskEvent {
+	inFlight := proto.Clone(current).(*spec.Clusters)
+	toReconcile := make(map[string]*spec.Update_AnsiblerReplaceTargetPools_TargetPools)
 
 	for _, cr := range inFlight.LoadBalancers.Clusters[cid.Index].Roles {
 		for _, dr := range desired.LoadBalancers.Clusters[did.Index].Roles {
 			if cr.Name == dr.Name {
-				toReconcile[cr.Name] = &spec.UpdateV2_AnsiblerReplaceTargetPools_TargetPools{
+				toReconcile[cr.Name] = &spec.Update_AnsiblerReplaceTargetPools_TargetPools{
 					Pools: slices.Clone(dr.TargetPools),
 				}
 				break
@@ -1453,20 +1453,20 @@ func ScheduleReconcileRoleTargetPools(
 
 	// For changing the TargetPools only the envoy services on the LoadBalancer
 	// need to be regenerated.
-	return &spec.TaskEventV2{
+	return &spec.TaskEvent{
 		Id:        uuid.New().String(),
 		Timestamp: timestamppb.New(time.Now().UTC()),
-		Event:     spec.EventV2_UPDATE_V2,
-		Task: &spec.TaskV2{
-			Do: &spec.TaskV2_Update{
-				Update: &spec.UpdateV2{
-					State: &spec.UpdateV2_State{
+		Event:     spec.Event_UPDATE,
+		Task: &spec.Task{
+			Do: &spec.Task_Update{
+				Update: &spec.Update{
+					State: &spec.Update_State{
 						K8S:           inFlight.K8S,
 						LoadBalancers: inFlight.LoadBalancers.Clusters,
 					},
 
-					Delta: &spec.UpdateV2_AnsReplaceTargetPools{
-						AnsReplaceTargetPools: &spec.UpdateV2_AnsiblerReplaceTargetPools{
+					Delta: &spec.Update_AnsReplaceTargetPools{
+						AnsReplaceTargetPools: &spec.Update_AnsiblerReplaceTargetPools{
 							Handle: cid.Id,
 							Roles:  toReconcile,
 						},

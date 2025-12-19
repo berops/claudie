@@ -12,7 +12,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func (s *Service) MarkForDeletion(ctx context.Context, request *pb.MarkForDeletionRequestV2) (*pb.MarkForDeletionResponseV2, error) {
+func (s *Service) MarkForDeletion(ctx context.Context, request *pb.MarkForDeletionRequest) (*pb.MarkForDeletionResponse, error) {
 	log.Debug().Msgf("Marking config %q with version %v for deletion", request.Name, request.Version)
 
 	if err := s.store.MarkForDeletion(ctx, request.Name, request.Version); err != nil {
@@ -33,5 +33,5 @@ func (s *Service) MarkForDeletion(ctx context.Context, request *pb.MarkForDeleti
 	}
 
 	log.Info().Msgf("Config %q with version %v successfully marked for deletion", request.Name, request.Version)
-	return &pb.MarkForDeletionResponseV2{Name: request.Name, Version: request.Version}, nil
+	return &pb.MarkForDeletionResponse{Name: request.Name, Version: request.Version}, nil
 }

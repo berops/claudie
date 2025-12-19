@@ -25,7 +25,7 @@ const (
 	defaultOctetToChange = 2
 )
 
-func createDesiredState(pending *spec.ConfigV2, result *map[string]*spec.ClustersV2) error {
+func createDesiredState(pending *spec.Config, result *map[string]*spec.Clusters) error {
 	if result == nil {
 		return errors.New("empty pointer to map for clusters desired state")
 	}
@@ -33,7 +33,7 @@ func createDesiredState(pending *spec.ConfigV2, result *map[string]*spec.Cluster
 	// 1. If the infrastructure was marked for deletion the InputManifest and the ManifestChecksum will be empty.
 	markedForDeletion := pending.Manifest.Raw == "" &&
 		pending.Manifest.Checksum == nil &&
-		pending.Manifest.State == spec.ManifestV2_Pending
+		pending.Manifest.State == spec.Manifest_Pending
 
 	if markedForDeletion {
 		// The result map will be empty, indicating there is no desired state.
@@ -47,7 +47,7 @@ func createDesiredState(pending *spec.ConfigV2, result *map[string]*spec.Cluster
 		return fmt.Errorf("error unmarshalling manifest for config %q: %w", pending.Name, err)
 	}
 
-	var desiredState map[string]*spec.ClustersV2
+	var desiredState map[string]*spec.Clusters
 	if err := createK8sClustersFromManifest(&m, &desiredState); err != nil {
 		return fmt.Errorf("failed to parse k8s clusters from manifest %q: %w", m.Name, err)
 	}
@@ -143,19 +143,19 @@ func createDesiredState(pending *spec.ConfigV2, result *map[string]*spec.Cluster
 // createK8sClustersFromManifest parses manifest and creates desired state for Kubernetes clusters.
 // The desired state of the clusters is filled into the passed in `into` map. It is then necessary
 // to compare the current state to the filled out desired state of the cluster to determine what changed.
-func createK8sClustersFromManifest(from *manifest.Manifest, into *map[string]*spec.ClustersV2) error {
+func createK8sClustersFromManifest(from *manifest.Manifest, into *map[string]*spec.Clusters) error {
 	if into == nil {
 		return errors.New("empty pointer to map for clusters desired state")
 	}
 	if *into == nil {
-		*into = make(map[string]*spec.ClustersV2)
+		*into = make(map[string]*spec.Clusters)
 	}
 	clear(*into)
 
 	// 1. traverse all clusters in the manifest
 	//    catching newly created or existing (updated).
 	for _, cluster := range from.Kubernetes.Clusters {
-		useInstallationProxy := &spec.InstallationProxyV2{
+		useInstallationProxy := &spec.InstallationProxy{
 			Mode: "default",
 		}
 
@@ -167,8 +167,8 @@ func createK8sClustersFromManifest(from *manifest.Manifest, into *map[string]*sp
 			useInstallationProxy.NoProxy = strings.Trim(useInstallationProxy.NoProxy, ",")
 		}
 
-		newCluster := &spec.K8SclusterV2{
-			ClusterInfo: &spec.ClusterInfoV2{
+		newCluster := &spec.K8Scluster{
+			ClusterInfo: &spec.ClusterInfo{
 				Name: strings.ToLower(cluster.Name),
 				Hash: hash.Create(hash.Length),
 			},
@@ -192,9 +192,9 @@ func createK8sClustersFromManifest(from *manifest.Manifest, into *map[string]*sp
 		// NOTE: the CIDR and SSH keys are not populated at this point in the pipeline. Here
 		// only the parsed skeleton of the passed in [manifest.Manifest] is created.
 
-		(*into)[newCluster.ClusterInfo.Name] = &spec.ClustersV2{
+		(*into)[newCluster.ClusterInfo.Name] = &spec.Clusters{
 			K8S:           newCluster,
-			LoadBalancers: new(spec.LoadBalancersV2),
+			LoadBalancers: new(spec.LoadBalancers),
 		}
 	}
 
@@ -203,13 +203,13 @@ func createK8sClustersFromManifest(from *manifest.Manifest, into *map[string]*sp
 
 // createLBClustersFromManifest reads the manifest and creates load balancer clusters based on it.
 // It continues to fill the map from the [createDesiredState] function with the matching loadbalancers.
-func createLBClustersFromManifest(from *manifest.Manifest, into *map[string]*spec.ClustersV2) error {
+func createLBClustersFromManifest(from *manifest.Manifest, into *map[string]*spec.Clusters) error {
 	if into == nil {
 		return errors.New("empty pointer to map for clusters desired state")
 	}
 
 	// 1. Collect all Lbs in the desired state for given K8s clusters.
-	lbs := make(map[string]*spec.LoadBalancersV2)
+	lbs := make(map[string]*spec.LoadBalancers)
 	for _, lbCluster := range from.LoadBalancer.Clusters {
 		dns, err := getDNS(lbCluster.DNS, from)
 		if err != nil {
@@ -219,8 +219,8 @@ func createLBClustersFromManifest(from *manifest.Manifest, into *map[string]*spe
 		// NOTE: do not populate roles.Settings.EnvoyAdminPort at this stage.
 		attachedRoles := getRolesAttachedToLBCluster(from.LoadBalancer.Roles, lbCluster.Roles)
 
-		newLbCluster := &spec.LBclusterV2{
-			ClusterInfo: &spec.ClusterInfoV2{
+		newLbCluster := &spec.LBcluster{
+			ClusterInfo: &spec.ClusterInfo{
 				Name: lbCluster.Name,
 				Hash: hash.Create(hash.Length),
 			},
@@ -241,7 +241,7 @@ func createLBClustersFromManifest(from *manifest.Manifest, into *map[string]*spe
 		// is created.
 
 		if _, ok := lbs[newLbCluster.TargetedK8S]; !ok {
-			lbs[newLbCluster.TargetedK8S] = new(spec.LoadBalancersV2)
+			lbs[newLbCluster.TargetedK8S] = new(spec.LoadBalancers)
 		}
 		lbs[newLbCluster.TargetedK8S].Clusters = append(lbs[newLbCluster.TargetedK8S].Clusters, newLbCluster)
 	}
@@ -286,21 +286,21 @@ func getDNS(dns manifest.DNS, from *manifest.Manifest) (*spec.DNS, error) {
 
 // getRolesAttachedToLBCluster will read roles attached to the LB cluster from the unmarshalled manifest and return them.
 // Returns slice of *[]pb.Roles if successful, error if Target from manifest state not found
-func getRolesAttachedToLBCluster(roles []manifest.Role, roleNames []string) []*spec.RoleV2 {
-	var matchingRoles []*spec.RoleV2
+func getRolesAttachedToLBCluster(roles []manifest.Role, roleNames []string) []*spec.Role {
+	var matchingRoles []*spec.Role
 
 	for _, roleName := range roleNames {
 		for _, role := range roles {
 			if role.Name == roleName {
-				var roleType spec.RoleTypeV2
+				var roleType spec.RoleType
 
 				// The manifest validation is handling the check if the target nodepools of the
 				// role are control nodepools and thus can be used as a valid API loadbalancer.
 				// Given this invariant we can simply check for the port.
 				if role.TargetPort == manifest.APIServerPort {
-					roleType = spec.RoleTypeV2_ApiServer_V2
+					roleType = spec.RoleType_ApiServer
 				} else {
-					roleType = spec.RoleTypeV2_Ingress_V2
+					roleType = spec.RoleType_Ingress
 				}
 
 				if role.Settings == nil {
@@ -309,14 +309,14 @@ func getRolesAttachedToLBCluster(roles []manifest.Role, roleNames []string) []*s
 					}
 				}
 
-				newRole := &spec.RoleV2{
+				newRole := &spec.Role{
 					Name:        role.Name,
 					Protocol:    strings.ToLower(role.Protocol),
 					Port:        role.Port,
 					TargetPort:  role.TargetPort,
 					TargetPools: role.TargetPools,
 					RoleType:    roleType,
-					Settings: &spec.RoleV2_Settings{
+					Settings: &spec.Role_Settings{
 						ProxyProtocol:  role.Settings.ProxyProtocol,
 						StickySessions: role.Settings.StickySessions,
 						// initially set as an invalid port, must be updated
@@ -333,7 +333,7 @@ func getRolesAttachedToLBCluster(roles []manifest.Role, roleNames []string) []*s
 	return matchingRoles
 }
 
-func generateMissingCIDR(current, desired *spec.ClustersV2) error {
+func generateMissingCIDR(current, desired *spec.Clusters) error {
 	// https://github.com/berops/claudie/issues/647
 	// 1. generate cidrs for k8s nodepools.
 	existing := make(map[string][]string)
@@ -352,7 +352,7 @@ func generateMissingCIDR(current, desired *spec.ClustersV2) error {
 	// 2. generate cidrs for each lb nodepool
 	for _, desired := range desired.GetLoadBalancers().GetClusters() {
 		existing := make(map[string][]string)
-		if i := clusters.IndexLoadbalancerByIdV2(desired.GetClusterInfo().Id(), current.GetLoadBalancers().GetClusters()); i >= 0 {
+		if i := clusters.IndexLoadbalancerById(desired.GetClusterInfo().Id(), current.GetLoadBalancers().GetClusters()); i >= 0 {
 			current := current.GetLoadBalancers().GetClusters()[i]
 			for p, nps := range nodepools.ByProviderRegion(current.GetClusterInfo().GetNodePools()) {
 				for _, np := range nodepools.ExtractDynamic(nps) {

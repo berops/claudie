@@ -11,7 +11,7 @@ import (
 
 // DeleteClusterMetadata deletes the K8s secret (from the management cluster) containing cluster
 // metadata for the given K8s cluster.
-func DeleteClusterMetadata(clusters *spec.ClustersV2) error {
+func DeleteClusterMetadata(clusters *spec.Clusters) error {
 	namespace := envs.Namespace
 	clusterID := clusters.K8S.ClusterInfo.Id()
 

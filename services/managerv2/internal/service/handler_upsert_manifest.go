@@ -18,7 +18,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func (s *Service) UpsertManifest(ctx context.Context, request *pb.UpsertManifestRequestV2) (*pb.UpsertManifestResponseV2, error) {
+func (s *Service) UpsertManifest(ctx context.Context, request *pb.UpsertManifestRequest) (*pb.UpsertManifestResponse, error) {
 	log.Debug().Msgf("Received Config to store: %v", request.Name)
 
 	if request.Manifest == nil {
@@ -57,7 +57,7 @@ func (s *Service) UpsertManifest(ctx context.Context, request *pb.UpsertManifest
 			return nil, status.Errorf(codes.Internal, "failed to create document for config %q: %v", newConfig.Name, err)
 		}
 
-		return &pb.UpsertManifestResponseV2{Name: newConfig.Name, Version: newConfig.Version}, nil
+		return &pb.UpsertManifestResponse{Name: newConfig.Name, Version: newConfig.Version}, nil
 	}
 
 	if !bytes.Equal(dbConfig.Manifest.Checksum, request.Manifest.Checksum) {
@@ -90,7 +90,7 @@ func (s *Service) UpsertManifest(ctx context.Context, request *pb.UpsertManifest
 
 	log.Info().Msgf("Config %q successfully saved", request.Name)
 
-	return &pb.UpsertManifestResponseV2{Name: dbConfig.Name, Version: dbConfig.Version}, nil
+	return &pb.UpsertManifestResponse{Name: dbConfig.Name, Version: dbConfig.Version}, nil
 }
 
 // Check if the new config has reference to already existing static nodes.

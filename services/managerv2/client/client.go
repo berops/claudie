@@ -20,7 +20,7 @@ var _ ClientAPI = (*Client)(nil)
 
 type Client struct {
 	conn   *grpc.ClientConn
-	client pb.ManagerV2ServiceClient
+	client pb.ManagerServiceClient
 	logger *zerolog.Logger
 }
 
@@ -29,7 +29,7 @@ func New(logger *zerolog.Logger) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Client{conn: conn, client: pb.NewManagerV2ServiceClient(conn), logger: logger}, nil
+	return &Client{conn: conn, client: pb.NewManagerServiceClient(conn), logger: logger}, nil
 }
 
 func (t *Client) Close() error { return t.conn.Close() }
@@ -45,9 +45,9 @@ func (t *Client) HealthCheck() error {
 
 func (t *Client) MarkForDeletion(ctx context.Context, request *MarkForDeletionRequest) error {
 	// fetch latest document version before marking for deletion.
-	current, err := t.client.GetConfig(ctx, &pb.GetConfigRequestV2{Name: request.Name})
+	current, err := t.client.GetConfig(ctx, &pb.GetConfigRequest{Name: request.Name})
 	if err == nil {
-		_, err := t.client.MarkForDeletion(ctx, &pb.MarkForDeletionRequestV2{Name: request.Name, Version: current.Config.Version})
+		_, err := t.client.MarkForDeletion(ctx, &pb.MarkForDeletionRequest{Name: request.Name, Version: current.Config.Version})
 		if err == nil {
 			return nil
 		}
@@ -74,12 +74,12 @@ func (t *Client) MarkForDeletion(ctx context.Context, request *MarkForDeletionRe
 }
 
 func (t *Client) UpsertManifest(ctx context.Context, request *UpsertManifestRequest) error {
-	req := &pb.UpsertManifestRequestV2{Name: request.Name}
+	req := &pb.UpsertManifestRequest{Name: request.Name}
 	if request.K8sCtx != nil {
-		req.K8SCtx = &spec.KubernetesContextV2{Name: request.K8sCtx.Name, Namespace: request.K8sCtx.Namespace}
+		req.K8SCtx = &spec.KubernetesContext{Name: request.K8sCtx.Name, Namespace: request.K8sCtx.Namespace}
 	}
 	if request.Manifest != nil {
-		req.Manifest = &spec.ManifestV2{Raw: request.Manifest.Raw}
+		req.Manifest = &spec.Manifest{Raw: request.Manifest.Raw}
 	}
 
 	_, err := t.client.UpsertManifest(ctx, req)
@@ -95,7 +95,7 @@ func (t *Client) UpsertManifest(ctx context.Context, request *UpsertManifestRequ
 }
 
 func (t *Client) ListConfigs(ctx context.Context, _ *ListConfigRequest) (*ListConfigResponse, error) {
-	resp, err := t.client.ListConfigs(ctx, new(pb.ListConfigRequestV2))
+	resp, err := t.client.ListConfigs(ctx, new(pb.ListConfigRequest))
 	if err == nil {
 		return &ListConfigResponse{Config: resp.Configs}, nil
 	}
@@ -104,7 +104,7 @@ func (t *Client) ListConfigs(ctx context.Context, _ *ListConfigRequest) (*ListCo
 }
 
 func (t *Client) GetConfig(ctx context.Context, request *GetConfigRequest) (*GetConfigResponse, error) {
-	resp, err := t.client.GetConfig(ctx, &pb.GetConfigRequestV2{Name: request.Name})
+	resp, err := t.client.GetConfig(ctx, &pb.GetConfigRequest{Name: request.Name})
 	if err == nil {
 		return &GetConfigResponse{Config: resp.Config}, nil
 	}

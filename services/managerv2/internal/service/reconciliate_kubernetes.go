@@ -24,8 +24,8 @@ import (
 type KubernetesReconciliate struct {
 	Hc      *HealthCheckStatus
 	Diff    *KubernetesDiffResult
-	Current *spec.ClustersV2
-	Desired *spec.ClustersV2
+	Current *spec.Clusters
+	Desired *spec.Clusters
 }
 
 // KubernetesModifications returns kubernetes cluster changes that can be done/executed before
@@ -34,7 +34,7 @@ type KubernetesReconciliate struct {
 // and [KubernetesDiffResult] was computed, and that all of the Cached Indices within the
 // [KubernetesDiffResult] are not invalidated. This function does not modify the input in any
 // way and also the returned [spec.TaskEvent] does not hold or share any memory to related to the input.
-func KubernetesModifications(r KubernetesReconciliate) *spec.TaskEventV2 {
+func KubernetesModifications(r KubernetesReconciliate) *spec.TaskEvent {
 	if r.Diff.ApiEndpoint.Current != "" && r.Diff.ApiEndpoint.Desired != "" {
 		// make sure the desired node is already in the current state.
 		transfer := r.Diff.ApiEndpoint.Current != r.Diff.ApiEndpoint.Desired
@@ -72,7 +72,7 @@ func KubernetesModifications(r KubernetesReconciliate) *spec.TaskEventV2 {
 // Indices within the [KubernetesDiffResult] are not invalidated. This function does not modify
 // the input in any way and also the returned [spec.TaskEvent] does not hold or share any
 // memory to related to the input.
-func KubernetesDeletions(r KubernetesReconciliate) *spec.TaskEventV2 {
+func KubernetesDeletions(r KubernetesReconciliate) *spec.TaskEvent {
 	if len(r.Diff.Dynamic.Deleted) > 0 || len(r.Diff.Dynamic.PartiallyDeleted) > 0 {
 		opts := K8sNodeDeletionOptions{
 			UseProxy:     r.Diff.Proxy.CurrentUsed,
@@ -100,7 +100,7 @@ func KubernetesDeletions(r KubernetesReconciliate) *spec.TaskEventV2 {
 // and that all of the Cached Indices within the [KubernetesDiffResult] are not invalidated.
 // This function does not modify the input in any way and also the returned [spec.TaskEvent]
 // does not hold or share any memory to related to the input.
-func KubernetesLowPriority(r KubernetesReconciliate) *spec.TaskEventV2 {
+func KubernetesLowPriority(r KubernetesReconciliate) *spec.TaskEvent {
 	if r.Diff.Version {
 		return ScheduleUpgradeKubernetesVersion(r.Current, r.Desired)
 	}
@@ -131,28 +131,28 @@ func KubernetesLowPriority(r KubernetesReconciliate) *spec.TaskEventV2 {
 // Schedules a task that will update the kubernetes version to the new desired version of the cluster.
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
-func ScheduleUpgradeKubernetesVersion(current, desired *spec.ClustersV2) *spec.TaskEventV2 {
+func ScheduleUpgradeKubernetesVersion(current, desired *spec.Clusters) *spec.TaskEvent {
 	// TODO: this cannot be rollbacked once the rollback mechanism is implemented.
 	// same way deletion shouldn't be rolled back on error. Same way The Change
 	// of the Api Endpoint shouldn't be rolled back, those should be tried
 	// infinitely or just ignore errors as some point ?
 
-	inFlight := proto.Clone(current).(*spec.ClustersV2)
+	inFlight := proto.Clone(current).(*spec.Clusters)
 	toReplace := desired.K8S.Kubernetes
 
-	return &spec.TaskEventV2{
+	return &spec.TaskEvent{
 		Id:        uuid.New().String(),
 		Timestamp: timestamppb.New(time.Now().UTC()),
-		Event:     spec.EventV2_UPDATE_V2,
-		Task: &spec.TaskV2{
-			Do: &spec.TaskV2_Update{
-				Update: &spec.UpdateV2{
-					State: &spec.UpdateV2_State{
+		Event:     spec.Event_UPDATE,
+		Task: &spec.Task{
+			Do: &spec.Task_Update{
+				Update: &spec.Update{
+					State: &spec.Update_State{
 						K8S:           inFlight.K8S,
 						LoadBalancers: inFlight.LoadBalancers.Clusters,
 					},
-					Delta: &spec.UpdateV2_UpgradeVersion_{
-						UpgradeVersion: &spec.UpdateV2_UpgradeVersion{
+					Delta: &spec.Update_UpgradeVersion_{
+						UpgradeVersion: &spec.Update_UpgradeVersion{
 							Version: toReplace,
 						},
 					},
@@ -188,23 +188,23 @@ func ScheduleUpgradeKubernetesVersion(current, desired *spec.ClustersV2) *spec.T
 // of the cluster.
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
-func ScheduleProxyOff(current, desired *spec.ClustersV2) *spec.TaskEventV2 {
-	toReplace := proto.Clone(desired.K8S.InstallationProxy).(*spec.InstallationProxyV2)
-	inFlight := proto.Clone(current).(*spec.ClustersV2)
+func ScheduleProxyOff(current, desired *spec.Clusters) *spec.TaskEvent {
+	toReplace := proto.Clone(desired.K8S.InstallationProxy).(*spec.InstallationProxy)
+	inFlight := proto.Clone(current).(*spec.Clusters)
 
-	return &spec.TaskEventV2{
+	return &spec.TaskEvent{
 		Id:        uuid.New().String(),
 		Timestamp: timestamppb.New(time.Now().UTC()),
-		Event:     spec.EventV2_UPDATE_V2,
-		Task: &spec.TaskV2{
-			Do: &spec.TaskV2_Update{
-				Update: &spec.UpdateV2{
-					State: &spec.UpdateV2_State{
+		Event:     spec.Event_UPDATE,
+		Task: &spec.Task{
+			Do: &spec.Task_Update{
+				Update: &spec.Update{
+					State: &spec.Update_State{
 						K8S:           inFlight.K8S,
 						LoadBalancers: inFlight.LoadBalancers.Clusters,
 					},
-					Delta: &spec.UpdateV2_AnsReplaceProxy{
-						AnsReplaceProxy: &spec.UpdateV2_AnsiblerReplaceProxySettings{
+					Delta: &spec.Update_AnsReplaceProxy{
+						AnsReplaceProxy: &spec.Update_AnsiblerReplaceProxySettings{
 							Proxy: toReplace,
 						},
 					},
@@ -247,23 +247,23 @@ func ScheduleProxyOff(current, desired *spec.ClustersV2) *spec.TaskEventV2 {
 // of the cluster.
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
-func ScheduleProxyOn(current, desired *spec.ClustersV2) *spec.TaskEventV2 {
-	toReplace := proto.Clone(desired.K8S.InstallationProxy).(*spec.InstallationProxyV2)
-	inFlight := proto.Clone(current).(*spec.ClustersV2)
+func ScheduleProxyOn(current, desired *spec.Clusters) *spec.TaskEvent {
+	toReplace := proto.Clone(desired.K8S.InstallationProxy).(*spec.InstallationProxy)
+	inFlight := proto.Clone(current).(*spec.Clusters)
 
-	return &spec.TaskEventV2{
+	return &spec.TaskEvent{
 		Id:        uuid.New().String(),
 		Timestamp: timestamppb.New(time.Now().UTC()),
-		Event:     spec.EventV2_UPDATE_V2,
-		Task: &spec.TaskV2{
-			Do: &spec.TaskV2_Update{
-				Update: &spec.UpdateV2{
-					State: &spec.UpdateV2_State{
+		Event:     spec.Event_UPDATE,
+		Task: &spec.Task{
+			Do: &spec.Task_Update{
+				Update: &spec.Update{
+					State: &spec.Update_State{
 						K8S:           inFlight.K8S,
 						LoadBalancers: inFlight.LoadBalancers.Clusters,
 					},
-					Delta: &spec.UpdateV2_AnsReplaceProxy{
-						AnsReplaceProxy: &spec.UpdateV2_AnsiblerReplaceProxySettings{
+					Delta: &spec.Update_AnsReplaceProxy{
+						AnsReplaceProxy: &spec.Update_AnsiblerReplaceProxySettings{
 							Proxy: toReplace,
 						},
 					},
@@ -306,60 +306,60 @@ func ScheduleProxyOn(current, desired *spec.ClustersV2) *spec.TaskEventV2 {
 // of the cluster.
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
-func SchedulePatchNodes(current *spec.ClustersV2, diff LabelsTaintsAnnotationsDiffResult) *spec.TaskEventV2 {
+func SchedulePatchNodes(current *spec.Clusters, diff LabelsTaintsAnnotationsDiffResult) *spec.TaskEvent {
 	var (
-		inFlight = proto.Clone(current).(*spec.ClustersV2)
-		toPatch  = spec.UpdateV2_KuberPatchNodes{}
+		inFlight = proto.Clone(current).(*spec.Clusters)
+		toPatch  = spec.Update_KuberPatchNodes{}
 	)
 
 	for np, keys := range diff.Added.LabelKeys {
-		toPatch.Add.Labels[np] = &spec.UpdateV2_KuberPatchNodes_ListOfLabelKeys{
+		toPatch.Add.Labels[np] = &spec.Update_KuberPatchNodes_ListOfLabelKeys{
 			Labels: keys,
 		}
 	}
 
 	for np, keys := range diff.Added.AnnotationsKeys {
-		toPatch.Add.Annotations[np] = &spec.UpdateV2_KuberPatchNodes_ListOfAnnotationKeys{
+		toPatch.Add.Annotations[np] = &spec.Update_KuberPatchNodes_ListOfAnnotationKeys{
 			Annotations: keys,
 		}
 	}
 
 	for np, taints := range diff.Added.TaintKeys {
-		toPatch.Add.Taints[np] = &spec.UpdateV2_KuberPatchNodes_ListOfTaintKeys{
+		toPatch.Add.Taints[np] = &spec.Update_KuberPatchNodes_ListOfTaintKeys{
 			Taints: taints,
 		}
 	}
 
 	for np, keys := range diff.Deleted.LabelKeys {
-		toPatch.Remove.Labels[np] = &spec.UpdateV2_KuberPatchNodes_ListOfLabelKeys{
+		toPatch.Remove.Labels[np] = &spec.Update_KuberPatchNodes_ListOfLabelKeys{
 			Labels: keys,
 		}
 	}
 
 	for np, keys := range diff.Deleted.AnnotationsKeys {
-		toPatch.Remove.Annotations[np] = &spec.UpdateV2_KuberPatchNodes_ListOfAnnotationKeys{
+		toPatch.Remove.Annotations[np] = &spec.Update_KuberPatchNodes_ListOfAnnotationKeys{
 			Annotations: keys,
 		}
 	}
 
 	for np, taints := range diff.Deleted.TaintKeys {
-		toPatch.Remove.Taints[np] = &spec.UpdateV2_KuberPatchNodes_ListOfTaintKeys{
+		toPatch.Remove.Taints[np] = &spec.Update_KuberPatchNodes_ListOfTaintKeys{
 			Taints: taints,
 		}
 	}
 
-	return &spec.TaskEventV2{
+	return &spec.TaskEvent{
 		Id:        uuid.New().String(),
 		Timestamp: timestamppb.New(time.Now().UTC()),
-		Event:     spec.EventV2_UPDATE_V2,
-		Task: &spec.TaskV2{
-			Do: &spec.TaskV2_Update{
-				Update: &spec.UpdateV2{
-					State: &spec.UpdateV2_State{
+		Event:     spec.Event_UPDATE,
+		Task: &spec.Task{
+			Do: &spec.Task_Update{
+				Update: &spec.Update{
+					State: &spec.Update_State{
 						K8S:           inFlight.K8S,
 						LoadBalancers: inFlight.LoadBalancers.Clusters,
 					},
-					Delta: &spec.UpdateV2_KpatchNodes{
+					Delta: &spec.Update_KpatchNodes{
 						KpatchNodes: &toPatch,
 					},
 				},
@@ -394,21 +394,21 @@ func SchedulePatchNodes(current *spec.ClustersV2, diff LabelsTaintsAnnotationsDi
 // cluster to the new desired node within the cluster
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
-func ScheduleTransferApiEndpoint(current *spec.ClustersV2, nodepool, node string) *spec.TaskEventV2 {
-	inFlight := proto.Clone(current).(*spec.ClustersV2)
-	return &spec.TaskEventV2{
+func ScheduleTransferApiEndpoint(current *spec.Clusters, nodepool, node string) *spec.TaskEvent {
+	inFlight := proto.Clone(current).(*spec.Clusters)
+	return &spec.TaskEvent{
 		Id:        uuid.New().String(),
 		Timestamp: timestamppb.New(time.Now().UTC()),
-		Event:     spec.EventV2_UPDATE_V2,
-		Task: &spec.TaskV2{
-			Do: &spec.TaskV2_Update{
-				Update: &spec.UpdateV2{
-					State: &spec.UpdateV2_State{
+		Event:     spec.Event_UPDATE,
+		Task: &spec.Task{
+			Do: &spec.Task_Update{
+				Update: &spec.Update{
+					State: &spec.Update_State{
 						K8S:           inFlight.K8S,
 						LoadBalancers: inFlight.LoadBalancers.Clusters,
 					},
-					Delta: &spec.UpdateV2_K8SApiEndpoint{
-						K8SApiEndpoint: &spec.UpdateV2_K8SOnlyApiEndpoint{
+					Delta: &spec.Update_K8SApiEndpoint{
+						K8SApiEndpoint: &spec.Update_K8SOnlyApiEndpoint{
 							Nodepool: nodepool,
 							Node:     node,
 						},
@@ -510,12 +510,12 @@ type K8sNodeAdditionOptions struct {
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
 func ScheduleAdditionsInNodePools(
-	current *spec.ClustersV2,
-	desired *spec.ClustersV2,
+	current *spec.Clusters,
+	desired *spec.Clusters,
 	diff *NodePoolsDiffResult,
 	opts K8sNodeAdditionOptions,
-) *spec.TaskEventV2 {
-	inFlight := proto.Clone(current).(*spec.ClustersV2)
+) *spec.TaskEvent {
+	inFlight := proto.Clone(current).(*spec.Clusters)
 	pipeline := []*spec.Stage{}
 
 	if !opts.IsStatic {
@@ -694,9 +694,9 @@ func ScheduleAdditionsInNodePools(
 			}
 		}
 
-		update := spec.TaskV2_Update{
-			Update: &spec.UpdateV2{
-				State: &spec.UpdateV2_State{
+		update := spec.Task_Update{
+			Update: &spec.Update{
+				State: &spec.Update_State{
 					K8S:           inFlight.K8S,
 					LoadBalancers: inFlight.LoadBalancers.Clusters,
 				},
@@ -710,8 +710,8 @@ func ScheduleAdditionsInNodePools(
 			dst := nodepools.FindByName(np, inFlight.K8S.ClusterInfo.NodePools)
 			src := nodepools.FindByName(np, desired.K8S.ClusterInfo.NodePools)
 			nodepools.CopyNodes(dst, src, nodes)
-			update.Update.Delta = &spec.UpdateV2_AddedK8SNodes_{
-				AddedK8SNodes: &spec.UpdateV2_AddedK8SNodes{
+			update.Update.Delta = &spec.Update_AddedK8SNodes_{
+				AddedK8SNodes: &spec.Update_AddedK8SNodes{
 					Nodepool:    np,
 					Nodes:       nodes,
 					NewNodePool: false,
@@ -720,10 +720,10 @@ func ScheduleAdditionsInNodePools(
 		} else {
 			src := nodepools.FindByName(np, desired.K8S.ClusterInfo.NodePools)
 			toAdd := nodepools.CloneTargetNodes(src, nodes)
-			update.Update.Delta = &spec.UpdateV2_TfAddK8SNodes{
-				TfAddK8SNodes: &spec.UpdateV2_TerraformerAddK8SNodes{
-					Kind: &spec.UpdateV2_TerraformerAddK8SNodes_Existing_{
-						Existing: &spec.UpdateV2_TerraformerAddK8SNodes_Existing{
+			update.Update.Delta = &spec.Update_TfAddK8SNodes{
+				TfAddK8SNodes: &spec.Update_TerraformerAddK8SNodes{
+					Kind: &spec.Update_TerraformerAddK8SNodes_Existing_{
+						Existing: &spec.Update_TerraformerAddK8SNodes_Existing{
 							Nodepool: np,
 							Nodes:    toAdd,
 						},
@@ -732,11 +732,11 @@ func ScheduleAdditionsInNodePools(
 			}
 		}
 
-		return &spec.TaskEventV2{
+		return &spec.TaskEvent{
 			Id:        uuid.New().String(),
 			Timestamp: timestamppb.New(time.Now().UTC()),
-			Event:     spec.EventV2_UPDATE_V2,
-			Task: &spec.TaskV2{
+			Event:     spec.Event_UPDATE,
+			Task: &spec.Task{
 				Do: &update,
 			},
 			Description: fmt.Sprintf("Adding %v nodes into nodepool %s", len(nodes), np),
@@ -800,9 +800,9 @@ func ScheduleAdditionsInNodePools(
 			}
 		}
 
-		update := spec.TaskV2_Update{
-			Update: &spec.UpdateV2{
-				State: &spec.UpdateV2_State{
+		update := spec.Task_Update{
+			Update: &spec.Update{
+				State: &spec.Update_State{
 					K8S:           inFlight.K8S,
 					LoadBalancers: inFlight.LoadBalancers.Clusters,
 				},
@@ -814,18 +814,18 @@ func ScheduleAdditionsInNodePools(
 			// For static nodes, merge the nodes already into the inFlight state,
 			// as they do not need to be build, contrary to dynamic nodes.
 			inFlight.K8S.ClusterInfo.NodePools = append(inFlight.K8S.ClusterInfo.NodePools, toAdd)
-			update.Update.Delta = &spec.UpdateV2_AddedK8SNodes_{
-				AddedK8SNodes: &spec.UpdateV2_AddedK8SNodes{
+			update.Update.Delta = &spec.Update_AddedK8SNodes_{
+				AddedK8SNodes: &spec.Update_AddedK8SNodes{
 					NewNodePool: true,
 					Nodepool:    np,
 					Nodes:       nodes,
 				},
 			}
 		} else {
-			update.Update.Delta = &spec.UpdateV2_TfAddK8SNodes{
-				TfAddK8SNodes: &spec.UpdateV2_TerraformerAddK8SNodes{
-					Kind: &spec.UpdateV2_TerraformerAddK8SNodes_New_{
-						New: &spec.UpdateV2_TerraformerAddK8SNodes_New{
+			update.Update.Delta = &spec.Update_TfAddK8SNodes{
+				TfAddK8SNodes: &spec.Update_TerraformerAddK8SNodes{
+					Kind: &spec.Update_TerraformerAddK8SNodes_New_{
+						New: &spec.Update_TerraformerAddK8SNodes_New{
 							Nodepool: toAdd,
 						},
 					},
@@ -833,11 +833,11 @@ func ScheduleAdditionsInNodePools(
 			}
 		}
 
-		return &spec.TaskEventV2{
+		return &spec.TaskEvent{
 			Id:        uuid.New().String(),
 			Timestamp: timestamppb.New(time.Now().UTC()),
-			Event:     spec.EventV2_UPDATE_V2,
-			Task: &spec.TaskV2{
+			Event:     spec.Event_UPDATE,
+			Task: &spec.Task{
 				Do: &update,
 			},
 			Description: fmt.Sprintf("Adding nodepool %s", np),
@@ -858,12 +858,12 @@ type K8sNodeDeletionOptions struct {
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
 func ScheduleDeletionsInNodePools(
-	current *spec.ClustersV2,
-	desired *spec.ClustersV2,
+	current *spec.Clusters,
+	desired *spec.Clusters,
 	diff *NodePoolsDiffResult,
 	opts K8sNodeDeletionOptions,
-) *spec.TaskEventV2 {
-	inFlight := proto.Clone(current).(*spec.ClustersV2)
+) *spec.TaskEvent {
+	inFlight := proto.Clone(current).(*spec.Clusters)
 
 	kuber := spec.Stage_Kuber{
 		Kuber: &spec.StageKuber{
@@ -1020,19 +1020,19 @@ func ScheduleDeletionsInNodePools(
 			}
 		}
 
-		return &spec.TaskEventV2{
+		return &spec.TaskEvent{
 			Id:        uuid.New().String(),
 			Timestamp: timestamppb.New(time.Now().UTC()),
-			Event:     spec.EventV2_UPDATE_V2,
-			Task: &spec.TaskV2{
-				Do: &spec.TaskV2_Update{
-					Update: &spec.UpdateV2{
-						State: &spec.UpdateV2_State{
+			Event:     spec.Event_UPDATE,
+			Task: &spec.Task{
+				Do: &spec.Task_Update{
+					Update: &spec.Update{
+						State: &spec.Update_State{
 							K8S:           inFlight.K8S,
 							LoadBalancers: inFlight.LoadBalancers.Clusters,
 						},
-						Delta: &spec.UpdateV2_DeleteK8SNodes_{
-							DeleteK8SNodes: &spec.UpdateV2_DeleteK8SNodes{
+						Delta: &spec.Update_DeleteK8SNodes_{
+							DeleteK8SNodes: &spec.Update_DeleteK8SNodes{
 								Nodepool:     np,
 								Nodes:        nodes,
 								WithNodePool: false,
@@ -1113,19 +1113,19 @@ func ScheduleDeletionsInNodePools(
 			}
 		}
 
-		return &spec.TaskEventV2{
+		return &spec.TaskEvent{
 			Id:        uuid.New().String(),
 			Timestamp: timestamppb.New(time.Now().UTC()),
-			Event:     spec.EventV2_UPDATE_V2,
-			Task: &spec.TaskV2{
-				Do: &spec.TaskV2_Update{
-					Update: &spec.UpdateV2{
-						State: &spec.UpdateV2_State{
+			Event:     spec.Event_UPDATE,
+			Task: &spec.Task{
+				Do: &spec.Task_Update{
+					Update: &spec.Update{
+						State: &spec.Update_State{
 							K8S:           inFlight.K8S,
 							LoadBalancers: inFlight.LoadBalancers.Clusters,
 						},
-						Delta: &spec.UpdateV2_DeleteK8SNodes_{
-							DeleteK8SNodes: &spec.UpdateV2_DeleteK8SNodes{
+						Delta: &spec.Update_DeleteK8SNodes_{
+							DeleteK8SNodes: &spec.Update_DeleteK8SNodes{
 								Nodepool:     np,
 								Nodes:        nodes,
 								WithNodePool: true,

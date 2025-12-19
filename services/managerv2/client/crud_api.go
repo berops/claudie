@@ -15,7 +15,7 @@ type CrudAPI interface {
 }
 
 type GetConfigRequest struct{ Name string }
-type GetConfigResponse struct{ Config *spec.ConfigV2 }
+type GetConfigResponse struct{ Config *spec.Config }
 
 type ListConfigRequest struct{}
-type ListConfigResponse struct{ Config []*spec.ConfigV2 }
+type ListConfigResponse struct{ Config []*spec.Config }

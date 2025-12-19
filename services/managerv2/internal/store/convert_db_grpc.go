@@ -185,20 +185,20 @@ func ConvertFromGRPCStages(stages []*spec.Stage) ([]Stage, error) {
 	return out, nil
 }
 
-func ConvertFromGRPCTask(t *spec.TaskV2) ([]byte, error) {
+func ConvertFromGRPCTask(t *spec.Task) ([]byte, error) {
 	marshaller := proto.MarshalOptions{Deterministic: true}
 	return marshaller.Marshal(t)
 }
 
-func ConvertToGRPCTask(t []byte) (*spec.TaskV2, error) {
-	var task spec.TaskV2
+func ConvertToGRPCTask(t []byte) (*spec.Task, error) {
+	var task spec.Task
 	if err := proto.Unmarshal(t, &task); err != nil {
 		return nil, err
 	}
 	return &task, nil
 }
 
-func ConvertFromGRPCTaskEvent(te *spec.TaskEventV2) (*TaskEvent, error) {
+func ConvertFromGRPCTaskEvent(te *spec.TaskEvent) (*TaskEvent, error) {
 	if te == nil {
 		return nil, nil
 	}
@@ -232,7 +232,7 @@ func ConvertFromGRPCTaskEvent(te *spec.TaskEventV2) (*TaskEvent, error) {
 	return &e, nil
 }
 
-func ConvertToGRPCTaskEvent(te *TaskEvent) (*spec.TaskEventV2, error) {
+func ConvertToGRPCTaskEvent(te *TaskEvent) (*spec.TaskEvent, error) {
 	if te == nil {
 		return nil, nil
 	}
@@ -247,15 +247,15 @@ func ConvertToGRPCTaskEvent(te *TaskEvent) (*spec.TaskEventV2, error) {
 		return nil, err
 	}
 
-	var strategy spec.RetryV2
+	var strategy spec.Retry
 	if err := proto.Unmarshal(te.OnError, &strategy); err != nil {
 		return nil, err
 	}
 
-	e := &spec.TaskEventV2{
+	e := &spec.TaskEvent{
 		Id:           te.Id,
 		Timestamp:    timestamppb.New(t),
-		Event:        spec.EventV2(spec.EventV2_value[te.Type]),
+		Event:        spec.Event(spec.Event_value[te.Type]),
 		Task:         task,
 		Description:  te.Description,
 		OnError:      &strategy,
@@ -272,7 +272,7 @@ func ConvertToGRPCTaskEvent(te *TaskEvent) (*spec.TaskEventV2, error) {
 }
 
 // ConvertFromGRPCWorkflow converts the workflow state data from GRPC to the database representation.
-func ConvertFromGRPCWorkflow(w *spec.WorkflowV2) Workflow {
+func ConvertFromGRPCWorkflow(w *spec.Workflow) Workflow {
 	return Workflow{
 		Status:      w.GetStatus().String(),
 		Description: w.GetDescription(),
@@ -281,15 +281,15 @@ func ConvertFromGRPCWorkflow(w *spec.WorkflowV2) Workflow {
 }
 
 // ConvertToGRPCWorkflow converts the database representation of the workflow state to GRPC.
-func ConvertToGRPCWorkflow(w Workflow) *spec.WorkflowV2 {
-	return &spec.WorkflowV2{
-		Status:      spec.WorkflowV2_Status(spec.WorkflowV2_Status_value[w.Status]),
+func ConvertToGRPCWorkflow(w Workflow) *spec.Workflow {
+	return &spec.Workflow{
+		Status:      spec.Workflow_Status(spec.Workflow_Status_value[w.Status]),
 		Description: w.Description,
 	}
 }
 
 // ConvertFromGRPC converts the grpc representation to the database representation.
-func ConvertFromGRPC(cfg *spec.ConfigV2) (*Config, error) {
+func ConvertFromGRPC(cfg *spec.Config) (*Config, error) {
 	db := Config{
 		Version: cfg.GetVersion(),
 		Name:    cfg.GetName(),
@@ -326,24 +326,24 @@ func ConvertFromGRPC(cfg *spec.ConfigV2) (*Config, error) {
 // ConvertToGRPC converts from database representation to GRPC representation.
 // For clusters, it mimics the GRPC unmarshalling style where if a field was
 // not set within a message it will be nil instead of a zero value for that type.
-func ConvertToGRPC(cfg *Config) (*spec.ConfigV2, error) {
-	grpc := spec.ConfigV2{
+func ConvertToGRPC(cfg *Config) (*spec.Config, error) {
+	grpc := spec.Config{
 		Version: cfg.Version,
 		Name:    cfg.Name,
-		K8SCtx: &spec.KubernetesContextV2{
+		K8SCtx: &spec.KubernetesContext{
 			Name:      cfg.K8SCtx.Name,
 			Namespace: cfg.K8SCtx.Namespace,
 		},
-		Manifest: &spec.ManifestV2{
+		Manifest: &spec.Manifest{
 			Raw:                 cfg.Manifest.Raw,
 			Checksum:            cfg.Manifest.Checksum,
 			LastAppliedChecksum: cfg.Manifest.LastAppliedChecksum,
-			State:               spec.ManifestV2_State(spec.ManifestV2_State_value[cfg.Manifest.State]),
+			State:               spec.Manifest_State(spec.Manifest_State_value[cfg.Manifest.State]),
 		},
 		Clusters: nil,
 	}
 
-	clusters := make(map[string]*spec.ClusterStateV2)
+	clusters := make(map[string]*spec.ClusterState)
 
 	for k8sName, cluster := range cfg.Clusters {
 		c, err := ConvertToGRPCClusterState(cluster)
@@ -365,10 +365,10 @@ func ConvertToGRPC(cfg *Config) (*spec.ConfigV2, error) {
 // representation will have a nil (essentially mimicking what the GRPC unmarshall does
 // if the respective value is not set) value as well when converted which simplifies
 // checking absence of a specific state (i.e. current, desired).
-func ConvertToGRPCClusters(cluster Clusters) (*spec.ClustersV2, error) {
-	out := spec.ClustersV2{
+func ConvertToGRPCClusters(cluster Clusters) (*spec.Clusters, error) {
+	out := spec.Clusters{
 		K8S:           nil,
-		LoadBalancers: &spec.LoadBalancersV2{},
+		LoadBalancers: &spec.LoadBalancers{},
 	}
 
 	if len(cluster.K8s) > 0 {
@@ -391,7 +391,7 @@ func ConvertToGRPCClusters(cluster Clusters) (*spec.ClustersV2, error) {
 	return &out, nil
 }
 
-func ConvertFromGRPCClusters(cluster *spec.ClustersV2) (Clusters, error) {
+func ConvertFromGRPCClusters(cluster *spec.Clusters) (Clusters, error) {
 	k8s, err := ConvertFromGRPCCluster(cluster.GetK8S())
 	if err != nil {
 		return Clusters{}, nil
@@ -411,8 +411,8 @@ func ConvertFromGRPCClusters(cluster *spec.ClustersV2) (Clusters, error) {
 }
 
 // ConvertToGRPCCluster converts the database representation to the GRPC representation.
-func ConvertToGRPCCluster(k8s []byte) (*spec.K8SclusterV2, error) {
-	var cluster spec.K8SclusterV2
+func ConvertToGRPCCluster(k8s []byte) (*spec.K8Scluster, error) {
+	var cluster spec.K8Scluster
 	if err := proto.Unmarshal(k8s, &cluster); err != nil {
 		return nil, fmt.Errorf("failed to unmarshall kuberentes cluster: %w", err)
 	}
@@ -420,8 +420,8 @@ func ConvertToGRPCCluster(k8s []byte) (*spec.K8SclusterV2, error) {
 }
 
 // ConvertToGRPCLoadBalancers converts the database representation to the GRPC representation.
-func ConvertToGRPCLoadBalancers(lbs []byte) (*spec.LoadBalancersV2, error) {
-	var loadbalancers spec.LoadBalancersV2
+func ConvertToGRPCLoadBalancers(lbs []byte) (*spec.LoadBalancers, error) {
+	var loadbalancers spec.LoadBalancers
 	if err := proto.Unmarshal(lbs, &loadbalancers); err != nil {
 		return nil, fmt.Errorf("failed to unmarshall load balancer clusters: %w", err)
 	}
@@ -429,7 +429,7 @@ func ConvertToGRPCLoadBalancers(lbs []byte) (*spec.LoadBalancersV2, error) {
 }
 
 // ConvertFromGRPCLoadBalancers deterministically converts the grpc representation to the database representation.
-func ConvertFromGRPCLoadBalancers(lbs *spec.LoadBalancersV2) ([]byte, error) {
+func ConvertFromGRPCLoadBalancers(lbs *spec.LoadBalancers) ([]byte, error) {
 	marshaller := proto.MarshalOptions{Deterministic: true}
 	b, err := marshaller.Marshal(lbs)
 	if err != nil {
@@ -439,7 +439,7 @@ func ConvertFromGRPCLoadBalancers(lbs *spec.LoadBalancersV2) ([]byte, error) {
 }
 
 // ConvertFromGRPCCluster deterministically converts the grpc representation to the database representation.
-func ConvertFromGRPCCluster(k8s *spec.K8SclusterV2) ([]byte, error) {
+func ConvertFromGRPCCluster(k8s *spec.K8Scluster) ([]byte, error) {
 	marshaller := proto.MarshalOptions{Deterministic: true}
 	b, err := marshaller.Marshal(k8s)
 	if err != nil {
@@ -448,7 +448,7 @@ func ConvertFromGRPCCluster(k8s *spec.K8SclusterV2) ([]byte, error) {
 	return b, nil
 }
 
-func ConvertToGRPCClusterState(cluster *ClusterState) (*spec.ClusterStateV2, error) {
+func ConvertToGRPCClusterState(cluster *ClusterState) (*spec.ClusterState, error) {
 	i, err := ConvertToGRPCTaskEvent(cluster.InFlight)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert db events back to grpc representation: %w", err)
@@ -466,7 +466,7 @@ func ConvertToGRPCClusterState(cluster *ClusterState) (*spec.ClusterStateV2, err
 		return nil, fmt.Errorf("failed to convert db clusters back to grpc representation: %w", err)
 	}
 
-	out := spec.ClusterStateV2{
+	out := spec.ClusterState{
 		Current:  current,
 		State:    ConvertToGRPCWorkflow(cluster.State),
 		InFlight: i,
@@ -475,7 +475,7 @@ func ConvertToGRPCClusterState(cluster *ClusterState) (*spec.ClusterStateV2, err
 	return &out, nil
 }
 
-func ConvertFromGRPCClusterState(cluster *spec.ClusterStateV2) (*ClusterState, error) {
+func ConvertFromGRPCClusterState(cluster *spec.ClusterState) (*ClusterState, error) {
 	clusters, err := ConvertFromGRPCClusters(cluster.GetCurrent())
 	if err != nil {
 		return nil, err

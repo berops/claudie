@@ -66,7 +66,7 @@ type (
 
 // StoreClusterMetadata constructs ClusterMetadata for the given K8s and Loadbalancer
 // clusters. The output is stored as a secret in the Claudie management cluster.
-func StoreClusterMetadata(manifestName string, clusters *spec.ClustersV2) error {
+func StoreClusterMetadata(manifestName string, clusters *spec.Clusters) error {
 	// local deployment
 	if envs.Namespace == "" {
 		return nil

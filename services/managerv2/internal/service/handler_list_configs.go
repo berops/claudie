@@ -11,13 +11,13 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (s *Service) ListConfigs(ctx context.Context, _ *pb.ListConfigRequestV2) (*pb.ListConfigResponseV2, error) {
+func (s *Service) ListConfigs(ctx context.Context, _ *pb.ListConfigRequest) (*pb.ListConfigResponse, error) {
 	cfgs, err := s.store.ListConfigs(ctx, nil)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to query all configs: %v", err)
 	}
 
-	var out []*spec.ConfigV2
+	var out []*spec.Config
 	for _, cfg := range cfgs {
 		grpc, err := store.ConvertToGRPC(cfg)
 		if err != nil {
@@ -26,5 +26,5 @@ func (s *Service) ListConfigs(ctx context.Context, _ *pb.ListConfigRequestV2) (*
 		out = append(out, grpc)
 	}
 
-	return &pb.ListConfigResponseV2{Configs: out}, nil
+	return &pb.ListConfigResponse{Configs: out}, nil
 }

@@ -12,7 +12,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func (s *Service) GetConfig(ctx context.Context, request *pb.GetConfigRequestV2) (*pb.GetConfigResponseV2, error) {
+func (s *Service) GetConfig(ctx context.Context, request *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
 	log.Debug().Msgf("Received request for config: %q", request.Name)
 
 	cfg, err := s.store.GetConfig(ctx, request.Name)
@@ -28,5 +28,5 @@ func (s *Service) GetConfig(ctx context.Context, request *pb.GetConfigRequestV2)
 		return nil, status.Errorf(codes.Internal, "failed to convert database representation for config %q to grpc: %v", request.Name, err)
 	}
 
-	return &pb.GetConfigResponseV2{Config: resp}, nil
+	return &pb.GetConfigResponse{Config: resp}, nil
 }

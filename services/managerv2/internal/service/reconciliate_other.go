@@ -14,7 +14,7 @@ import (
 // Schedules a [spec.TaskEvent] task for creating the clusters in the passed in desired [spec.Clusters].
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
-func ScheduleCreateCluster(desired *spec.ClustersV2) *spec.TaskEventV2 {
+func ScheduleCreateCluster(desired *spec.Clusters) *spec.TaskEvent {
 	// Stages
 	var (
 		tf = spec.Stage_Terraformer{
@@ -159,9 +159,9 @@ func ScheduleCreateCluster(desired *spec.ClustersV2) *spec.TaskEventV2 {
 	)
 
 	var (
-		createK8s = proto.Clone(desired.GetK8S()).(*spec.K8SclusterV2)
-		createLbs = proto.Clone(desired.GetLoadBalancers()).(*spec.LoadBalancersV2)
-		createOp  = spec.CreateV2{
+		createK8s = proto.Clone(desired.GetK8S()).(*spec.K8Scluster)
+		createLbs = proto.Clone(desired.GetLoadBalancers()).(*spec.LoadBalancers)
+		createOp  = spec.Create{
 			K8S:           createK8s,
 			LoadBalancers: createLbs.GetClusters(),
 		}
@@ -208,12 +208,12 @@ func ScheduleCreateCluster(desired *spec.ClustersV2) *spec.TaskEventV2 {
 		})
 	}
 
-	return &spec.TaskEventV2{
+	return &spec.TaskEvent{
 		Id:        uuid.New().String(),
 		Timestamp: timestamppb.New(time.Now().UTC()),
-		Event:     spec.EventV2_CREATE_V2,
-		Task: &spec.TaskV2{
-			Do: &spec.TaskV2_Create{
+		Event:     spec.Event_CREATE,
+		Task: &spec.Task{
+			Do: &spec.Task_Create{
 				Create: &createOp,
 			},
 		},
@@ -225,7 +225,7 @@ func ScheduleCreateCluster(desired *spec.ClustersV2) *spec.TaskEventV2 {
 // Schedules a [spec.TaskEvent] task for deleting the clusters in the passed in current [spec.Clusters].
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
-func ScheduleDeleteCluster(current *spec.ClustersV2) *spec.TaskEventV2 {
+func ScheduleDeleteCluster(current *spec.Clusters) *spec.TaskEvent {
 	var pipeline []*spec.Stage
 
 	if static := nodepools.Static(current.K8S.ClusterInfo.NodePools); len(static) > 0 {
@@ -282,20 +282,20 @@ func ScheduleDeleteCluster(current *spec.ClustersV2) *spec.TaskEventV2 {
 	}
 
 	var (
-		deleteK8s = proto.Clone(current.GetK8S()).(*spec.K8SclusterV2)
-		deleteLbs = proto.Clone(current.GetLoadBalancers()).(*spec.LoadBalancersV2)
-		deleteOp  = spec.DeleteV2{
+		deleteK8s = proto.Clone(current.GetK8S()).(*spec.K8Scluster)
+		deleteLbs = proto.Clone(current.GetLoadBalancers()).(*spec.LoadBalancers)
+		deleteOp  = spec.Delete{
 			K8S:           deleteK8s,
 			LoadBalancers: deleteLbs.GetClusters(),
 		}
 	)
 
-	return &spec.TaskEventV2{
+	return &spec.TaskEvent{
 		Id:        uuid.New().String(),
 		Timestamp: timestamppb.New(time.Now().UTC()),
-		Event:     spec.EventV2_DELETE_V2,
-		Task: &spec.TaskV2{
-			Do: &spec.TaskV2_Delete{
+		Event:     spec.Event_DELETE,
+		Task: &spec.Task{
+			Do: &spec.Task_Delete{
 				Delete: &deleteOp,
 			},
 		},
@@ -308,20 +308,20 @@ func ScheduleDeleteCluster(current *spec.ClustersV2) *spec.TaskEventV2 {
 // passed in [spec.Clusters].
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
-func ScheduleRefreshVPN(current *spec.ClustersV2) *spec.TaskEventV2 {
-	inFlight := proto.Clone(current).(*spec.ClustersV2)
-	return &spec.TaskEventV2{
+func ScheduleRefreshVPN(current *spec.Clusters) *spec.TaskEvent {
+	inFlight := proto.Clone(current).(*spec.Clusters)
+	return &spec.TaskEvent{
 		Id:        uuid.New().String(),
 		Timestamp: timestamppb.New(time.Now().UTC()),
-		Event:     spec.EventV2_UPDATE_V2,
-		Task: &spec.TaskV2{
-			Do: &spec.TaskV2_Update{
-				Update: &spec.UpdateV2{
-					State: &spec.UpdateV2_State{
+		Event:     spec.Event_UPDATE,
+		Task: &spec.Task{
+			Do: &spec.Task_Update{
+				Update: &spec.Update{
+					State: &spec.Update_State{
 						K8S:           inFlight.K8S,
 						LoadBalancers: inFlight.LoadBalancers.Clusters,
 					},
-					Delta: new(spec.UpdateV2_None_),
+					Delta: new(spec.Update_None_),
 				},
 			},
 		},

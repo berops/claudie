@@ -9,7 +9,7 @@ import (
 	"github.com/berops/claudie/proto/pb/spec"
 )
 
-func StoreKubeconfig(manifestName string, clusters *spec.ClustersV2) error {
+func StoreKubeconfig(manifestName string, clusters *spec.Clusters) error {
 	if envs.Namespace == "" {
 		return nil
 	}

@@ -53,7 +53,7 @@ const (
 // Schedules tasks based on the difference between the current and desired state.
 // No changes to the passed in values are done. The passed in `desired` and `pending`
 // states will not be modified in any way.
-func reconciliate(pending *spec.ConfigV2, desired map[string]*spec.ClustersV2) ScheduleResult {
+func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) ScheduleResult {
 	var result ScheduleResult
 
 	PopulateEntriesForNewClusters(&pending.Clusters, desired)
@@ -227,8 +227,8 @@ func reconciliate(pending *spec.ConfigV2, desired map[string]*spec.ClustersV2) S
 		switch result {
 		case Reschedule, NoReschedule, FinalRetry:
 			// Events are going to be worked on, thus clear the Error state, if any.
-			state.State = &spec.WorkflowV2{
-				Status: spec.WorkflowV2_WAIT_FOR_PICKUP,
+			state.State = &spec.Workflow{
+				Status: spec.Workflow_WAIT_FOR_PICKUP,
 			}
 		case NotReady, Noop:
 		}
@@ -238,11 +238,11 @@ func reconciliate(pending *spec.ConfigV2, desired map[string]*spec.ClustersV2) S
 }
 
 func PopulateEntriesForNewClusters(
-	current *map[string]*spec.ClusterStateV2,
-	desired map[string]*spec.ClustersV2,
+	current *map[string]*spec.ClusterState,
+	desired map[string]*spec.Clusters,
 ) {
 	if *current == nil {
-		*current = make(map[string]*spec.ClusterStateV2)
+		*current = make(map[string]*spec.ClusterState)
 	}
 
 	for desired := range desired {
@@ -250,10 +250,10 @@ func PopulateEntriesForNewClusters(
 			continue
 		}
 		// create an entry in the map but without any state at all.
-		(*current)[desired] = &spec.ClusterStateV2{
-			Current: &spec.ClustersV2{
+		(*current)[desired] = &spec.ClusterState{
+			Current: &spec.Clusters{
 				K8S:           nil,
-				LoadBalancers: &spec.LoadBalancersV2{},
+				LoadBalancers: &spec.LoadBalancers{},
 			},
 			State:    nil,
 			InFlight: nil,
@@ -265,23 +265,23 @@ func PopulateEntriesForNewClusters(
 // The returned union does not point to or share any memory with the two passed in states.
 // The only "place" where a union is not made is the DNS of a LoadBalancer if it differs
 // in the two passed in states, always the on in the old is used.
-func clustersUnion(old, modified *spec.ClustersV2) *spec.ClustersV2 {
+func clustersUnion(old, modified *spec.Clusters) *spec.Clusters {
 	// should be enough to test the k8s cluster presence, as there are
 	// no loadbalancers without a kubernetes cluster.
 	switch {
 	case old.GetK8S() == nil && modified.GetK8S() != nil:
-		return proto.Clone(modified).(*spec.ClustersV2)
+		return proto.Clone(modified).(*spec.Clusters)
 	case old.GetK8S() != nil && modified.GetK8S() == nil:
-		return proto.Clone(old).(*spec.ClustersV2)
+		return proto.Clone(old).(*spec.Clusters)
 	case old.GetK8S() == nil && modified.GetK8S() == nil:
-		return &spec.ClustersV2{
+		return &spec.Clusters{
 			K8S:           nil,
-			LoadBalancers: &spec.LoadBalancersV2{},
+			LoadBalancers: &spec.LoadBalancers{},
 		}
 	}
 
 	var (
-		ir  = proto.Clone(old).(*spec.ClustersV2)
+		ir  = proto.Clone(old).(*spec.Clusters)
 		k8s = KubernetesDiff(ir.GetK8S(), modified.GetK8S())
 		lbs = LoadBalancersDiff(ir.LoadBalancers, modified.LoadBalancers)
 	)
@@ -313,15 +313,15 @@ func clustersUnion(old, modified *spec.ClustersV2) *spec.ClustersV2 {
 
 	// 2. Same, but for loadbalancers.
 	for _, lb := range lbs.Added {
-		idx := clusters.IndexLoadbalancerByIdV2(lb.Id, modified.LoadBalancers.Clusters)
-		lb := proto.Clone(modified.LoadBalancers.Clusters[idx]).(*spec.LBclusterV2)
+		idx := clusters.IndexLoadbalancerById(lb.Id, modified.LoadBalancers.Clusters)
+		lb := proto.Clone(modified.LoadBalancers.Clusters[idx]).(*spec.LBcluster)
 		ir.LoadBalancers.Clusters = append(ir.LoadBalancers.Clusters, lb)
 	}
 
 	for lb, diff := range lbs.Modified {
 		var (
-			cidx = clusters.IndexLoadbalancerByIdV2(lb, ir.LoadBalancers.Clusters)
-			nidx = clusters.IndexLoadbalancerByIdV2(lb, modified.LoadBalancers.Clusters)
+			cidx = clusters.IndexLoadbalancerById(lb, ir.LoadBalancers.Clusters)
+			nidx = clusters.IndexLoadbalancerById(lb, modified.LoadBalancers.Clusters)
 
 			clb = ir.LoadBalancers.Clusters[cidx]
 			nlb = modified.LoadBalancers.Clusters[nidx]
@@ -356,7 +356,7 @@ func clustersUnion(old, modified *spec.ClustersV2) *spec.ClustersV2 {
 		for _, added := range diff.Roles.Added {
 			for _, r := range nlb.Roles {
 				if r.Name == added {
-					r := proto.Clone(r).(*spec.RoleV2)
+					r := proto.Clone(r).(*spec.Role)
 					clb.Roles = append(clb.Roles, r)
 					break
 				}
@@ -383,7 +383,7 @@ func clustersUnion(old, modified *spec.ClustersV2) *spec.ClustersV2 {
 // it will have a higher priority.
 
 // Handles reconciliation for updating existing clusters.
-func handleUpdate(hc HealthCheckStatus, current, desired *spec.ClustersV2) *spec.TaskEventV2 {
+func handleUpdate(hc HealthCheckStatus, current, desired *spec.Clusters) *spec.TaskEvent {
 	var (
 		diff = Diff(current, desired)
 		lbr  = LoadBalancersReconciliate{

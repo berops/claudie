@@ -129,7 +129,7 @@ func processTaskWithError(
 		isStageWarn    = stage.Description.ErrorLevel == spec.ErrorLevel_ERROR_WARN.String()
 	)
 
-	cluster.State.Status = spec.WorkflowV2_ERROR.String()
+	cluster.State.Status = spec.Workflow_ERROR.String()
 	cluster.State.Description = work.Result.Error.Description
 
 	if isErrorPartial {
@@ -176,7 +176,7 @@ func advanceToNextStage(logger zerolog.Logger, state *store.ClusterState) error 
 			Info().
 			Msgf("Advancing task to the next stage %s", state.InFlight.Pipeline[state.InFlight.CurrentStage].Kind)
 
-		state.State.Status = spec.WorkflowV2_WAIT_FOR_PICKUP.String()
+		state.State.Status = spec.Workflow_WAIT_FOR_PICKUP.String()
 		state.State.Description = state.InFlight.Pipeline[state.InFlight.CurrentStage].Description.About
 		return nil
 	}
@@ -186,7 +186,7 @@ func advanceToNextStage(logger zerolog.Logger, state *store.ClusterState) error 
 	}
 
 	state.InFlight = nil
-	state.State.Status = spec.WorkflowV2_DONE.String()
+	state.State.Status = spec.Workflow_DONE.String()
 	state.State.Description = ""
 
 	logger.Info().Msg("Task successfully finished moving to DONE")

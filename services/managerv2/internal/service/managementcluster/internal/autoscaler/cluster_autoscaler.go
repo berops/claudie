@@ -46,7 +46,7 @@ type AutoscalerManager struct {
 	projectName string
 
 	// K8s cluster.
-	cluster *spec.K8SclusterV2
+	cluster *spec.K8Scluster
 
 	// Output directory.
 	directory string
@@ -68,7 +68,7 @@ type TagsResponse struct {
 }
 
 // NewAutoscalerManager returns configured AutoscalerManager which can set up or remove Cluster Autoscaler.
-func NewAutoscalerManager(projectName string, cluster *spec.K8SclusterV2, directory string) *AutoscalerManager {
+func NewAutoscalerManager(projectName string, cluster *spec.K8Scluster, directory string) *AutoscalerManager {
 	return &AutoscalerManager{projectName: projectName, cluster: cluster, directory: directory}
 }
 

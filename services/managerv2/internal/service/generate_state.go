@@ -25,7 +25,7 @@ const HostnameHashLength = 17
 // PopulateDnsHostName generates a random [spec.Dns.Hostname] for all [spec.Clusters.LoadBalancers]
 // that have their [spec.Dns.Hostname] empty. The generated hostname is a random sequence of length
 // [HostnameHashLength]
-func PopulateDnsHostName(state *spec.ClustersV2) {
+func PopulateDnsHostName(state *spec.Clusters) {
 	for _, lb := range state.GetLoadBalancers().GetClusters() {
 		if lb.Dns.Hostname == "" {
 			lb.Dns.Hostname = hash.Create(HostnameHashLength)
@@ -34,7 +34,7 @@ func PopulateDnsHostName(state *spec.ClustersV2) {
 }
 
 // PopulateSSHKeys will generate SSH keypair for each nodepool that does not yet have a keypair assigned.
-func PopulateSSHKeys(state *spec.ClustersV2) error {
+func PopulateSSHKeys(state *spec.Clusters) error {
 	for _, np := range state.GetK8S().GetClusterInfo().GetNodePools() {
 		if err := generateSSHKeys(np); err != nil {
 			return err
@@ -54,14 +54,14 @@ func PopulateSSHKeys(state *spec.ClustersV2) error {
 
 // For each [spec.Clusters.Loadbalancers] adds a role with the [manifest.HealthcheckPort]
 // if it already is not present.
-func PopulateDefaultHealthcheckRole(state *spec.ClustersV2) {
+func PopulateDefaultHealthcheckRole(state *spec.Clusters) {
 	for _, lb := range state.GetLoadBalancers().GetClusters() {
-		healthcheck := func(r *spec.RoleV2) bool { return r.Port == manifest.HealthcheckPort }
+		healthcheck := func(r *spec.Role) bool { return r.Port == manifest.HealthcheckPort }
 		if slices.ContainsFunc(lb.Roles, healthcheck) {
 			continue
 		}
 
-		healthcheckRole := &spec.RoleV2{
+		healthcheckRole := &spec.Role{
 			Name:     "internal.claudie.healthcheck",
 			Protocol: "tcp",
 			Port:     manifest.HealthcheckPort,
@@ -75,8 +75,8 @@ func PopulateDefaultHealthcheckRole(state *spec.ClustersV2) {
 			// done.
 			TargetPort:  -1,
 			TargetPools: []string{},
-			RoleType:    spec.RoleTypeV2_Ingress_V2,
-			Settings: &spec.RoleV2_Settings{
+			RoleType:    spec.RoleType_Ingress,
+			Settings: &spec.Role_Settings{
 				ProxyProtocol:  false,
 				StickySessions: false,
 				EnvoyAdminPort: manifest.HealthcheckEnvoyPort,
@@ -89,7 +89,7 @@ func PopulateDefaultHealthcheckRole(state *spec.ClustersV2) {
 
 // For each [spec.Clusters.LoadBalancers] generates a port for the
 // envoy admin interface. The port is used from the claudie reserved range.
-func PopulateEnvoyAdminPorts(state *spec.ClustersV2) {
+func PopulateEnvoyAdminPorts(state *spec.Clusters) {
 	for _, lb := range state.GetLoadBalancers().GetClusters() {
 		used := make(map[int]struct{})
 		for _, r := range lb.Roles {
@@ -119,7 +119,7 @@ func PopulateEnvoyAdminPorts(state *spec.ClustersV2) {
 }
 
 // Same as [PopulateDynamicNodes] but goes over all of the clusters in `c`.
-func PopulateDynamicNodesForClusters(c *spec.ClustersV2) {
+func PopulateDynamicNodesForClusters(c *spec.Clusters) {
 	k8sID := c.GetK8S().GetClusterInfo().Id()
 	for _, np := range c.GetK8S().GetClusterInfo().GetNodePools() {
 		if np.GetDynamicNodePool() == nil {

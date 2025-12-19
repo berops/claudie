@@ -46,12 +46,12 @@ func (s *Service) WatchForScheduledDocuments(ctx context.Context) error {
 
 	clusters:
 		for cluster, state := range scheduled.Clusters {
-			if state.State.Status == spec.WorkflowV2_DONE.String() {
+			if state.State.Status == spec.Workflow_DONE.String() {
 				clustersDone++
 				continue clusters
 			}
 
-			if state.State.Status == spec.WorkflowV2_ERROR.String() {
+			if state.State.Status == spec.Workflow_ERROR.String() {
 				// We count as done as no further work will be done with
 				// this cluster even though the state is in error.
 				clustersDone++
@@ -68,7 +68,7 @@ func (s *Service) WatchForScheduledDocuments(ctx context.Context) error {
 				logger.Debug().Msgf("Nothing to be worked on for cluster %q, considering as done", cluster)
 
 				state.InFlight = nil
-				state.State.Status = spec.WorkflowV2_DONE.String()
+				state.State.Status = spec.Workflow_DONE.String()
 				state.State.Description = ""
 
 				if err := s.store.UpdateConfig(ctx, scheduled); err != nil {
@@ -92,7 +92,7 @@ func (s *Service) WatchForScheduledDocuments(ctx context.Context) error {
 			}
 
 			switch state.State.Status {
-			case spec.WorkflowV2_WAIT_FOR_PICKUP.String():
+			case spec.Workflow_WAIT_FOR_PICKUP.String():
 				msg, msgDescription, err := messageForStage(
 					scheduled.Name,
 					cluster,
@@ -132,7 +132,7 @@ func (s *Service) WatchForScheduledDocuments(ctx context.Context) error {
 						Msgf("event %q: %q, for cluster %q was submitted more than once but the duplication was caught, will move the task to the next stage, assuming the last try failed", event.Id, event.Description, cluster)
 				}
 
-				state.State.Status = spec.WorkflowV2_IN_PROGRESS.String()
+				state.State.Status = spec.Workflow_IN_PROGRESS.String()
 				state.State.Description = fmt.Sprintf("%s\n- %s", event.Description, msgDescription)
 
 				logger.Debug().Msgf("Moving event %q cluster %q state to InProgress", event.Id, cluster)
@@ -149,7 +149,7 @@ func (s *Service) WatchForScheduledDocuments(ctx context.Context) error {
 				// We break here as the config version was updated thus subsequent changes
 				// will error out anyways. On the run next changes will be worked on.
 				break clusters
-			case spec.WorkflowV2_IN_PROGRESS.String():
+			case spec.Workflow_IN_PROGRESS.String():
 				// Do nothing as the task is already in the queue.
 			default:
 				// This should only trigger if either, the databse entry got changed to
@@ -207,7 +207,7 @@ func (s *Service) WatchForPendingDocuments(ctx context.Context) error {
 			continue
 		}
 
-		var desiredState map[string]*spec.ClustersV2
+		var desiredState map[string]*spec.Clusters
 		if err := createDesiredState(pending, &desiredState); err != nil {
 			logger.Err(err).Msgf("Failed to create desired state, skipping.")
 			continue
@@ -228,11 +228,11 @@ func (s *Service) WatchForPendingDocuments(ctx context.Context) error {
 		case NotReady:
 			logger.Info().Msgf("manifest is not ready to be scheduled, retrying again later")
 		case Reschedule:
-			pending.Manifest.State = spec.ManifestV2_Scheduled
+			pending.Manifest.State = spec.Manifest_Scheduled
 			logger.Debug().Msgf("Scheduling for intermediate tasks after which the config will be rescheduled again")
 		case FinalRetry, NoReschedule:
 			logger.Debug().Msgf("Scheduling for tasks after which the config will not be rescheduled again")
-			pending.Manifest.State = spec.ManifestV2_Scheduled
+			pending.Manifest.State = spec.Manifest_Scheduled
 			pending.Manifest.LastAppliedChecksum = pending.Manifest.Checksum
 		}
 
@@ -370,7 +370,7 @@ func messageForStage(
 	stage *spec.Stage,
 ) (nats.Msg, string, error) {
 	var (
-		task         spec.TaskV2
+		task         spec.Task
 		work         spec.Work
 		subject      string
 		replySubject string

@@ -7,7 +7,7 @@ import (
 )
 
 // templatesUpdated checks if at least 1 used provider had their template repository updated.
-func templatesUpdated(c *spec.ConfigV2) (bool, error) {
+func templatesUpdated(c *spec.Config) (bool, error) {
 	for _, cluster := range c.Clusters {
 		for _, n := range cluster.Current.GetK8S().GetClusterInfo().GetNodePools() {
 			n := n.GetDynamicNodePool()

@@ -14,7 +14,7 @@ import (
 )
 
 // DestroyClusterAutoscaler removes deployment of Cluster Autoscaler from the management cluster for given k8s cluster.
-func DestroyClusterAutoscaler(manifestName string, clusters *spec.ClustersV2) error {
+func DestroyClusterAutoscaler(manifestName string, clusters *spec.Clusters) error {
 	if envs.Namespace == "" {
 		return nil
 	}

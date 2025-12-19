@@ -11,7 +11,7 @@ import (
 
 // DeleteKubeconfig deletes the K8s secret (in the management cluster) containing kubeconfig
 // for the given K8s cluster.
-func DeleteKubeconfig(clusters *spec.ClustersV2) error {
+func DeleteKubeconfig(clusters *spec.Clusters) error {
 	namespace := envs.Namespace
 	clusterID := clusters.K8S.ClusterInfo.Id()
 	if namespace == "" {

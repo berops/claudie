@@ -21,7 +21,7 @@ const (
 )
 
 // SecretMetadata returns metadata for secrets created in the management cluster.
-func SecretMetadata(ci *spec.ClusterInfoV2, projectName string, outputType OutputType) Metadata {
+func SecretMetadata(ci *spec.ClusterInfo, projectName string, outputType OutputType) Metadata {
 	return Metadata{
 		Name: fmt.Sprintf("%s-%s", ci.Id(), outputType),
 		Labels: map[string]string{

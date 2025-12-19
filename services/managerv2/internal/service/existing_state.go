@@ -13,7 +13,7 @@ import (
 
 // TODO: determin if we still need this with the reconciliation loop,
 // probably not.
-func backwardsCompatibility(c *spec.ConfigV2) {
+func backwardsCompatibility(c *spec.Config) {
 	// 	// TODO: remove in future versions, currently only for backwards compatibility.
 	// 	// version 0.9.3 moved selection of the api server to the manager service
 	// 	// and introduced a new field that selects which LB is used as the api endpoint.
@@ -36,7 +36,7 @@ func backwardsCompatibility(c *spec.ConfigV2) {
 	// 						Str("cluster", current.GetClusterInfo().Id()).
 	// 						Msg("detected loadbalancer build with version older than 0.9.7, settings default role settings for its current state")
 
-	// 					role.Settings = &spec.RoleV2_Settings{
+	// 					role.Settings = &spec.Role_Settings{
 	// 						ProxyProtocol: true,
 	// 					}
 	// 				}
@@ -71,7 +71,7 @@ func backwardsCompatibility(c *spec.ConfigV2) {
 // When used without the function just generates unique names for new Nodes that are not in `current`
 // so the `desired` state for static nodepools will be in "Intermediate State", until the existing
 // state is transferred to `desired`.
-func deduplicateStaticNodeNames(current, desired *spec.ClustersV2) {
+func deduplicateStaticNodeNames(current, desired *spec.Clusters) {
 outer:
 	for _, current := range current.GetK8S().GetClusterInfo().GetNodePools() {
 		for _, desired := range desired.GetK8S().GetClusterInfo().GetNodePools() {
@@ -121,7 +121,7 @@ outer:
 // by appending hashes to the names of the nodepools, in both k8s and loadbalancers. If `current` is empty
 // no transferring is done and the dynamic nodepools in `desired` are simply assigned a randomly generated
 // hash to their names.
-func deduplicateDynamicNodePoolNames(from *manifest.Manifest, current, desired *spec.ClustersV2) {
+func deduplicateDynamicNodePoolNames(from *manifest.Manifest, current, desired *spec.Clusters) {
 	desiredK8s := desired.GetK8S()
 	desiredLbs := desired.GetLoadBalancers().GetClusters()
 
@@ -151,7 +151,7 @@ func deduplicateDynamicNodePoolNames(from *manifest.Manifest, current, desired *
 }
 
 // copyLbNodePoolNamesFromCurrentState copies the generated hash from an existing reference in the current state to the desired state.
-func copyLbNodePoolNamesFromCurrentState(used map[string]struct{}, nodepool string, current, desired []*spec.LBclusterV2) {
+func copyLbNodePoolNamesFromCurrentState(used map[string]struct{}, nodepool string, current, desired []*spec.LBcluster) {
 	for _, desired := range desired {
 		references := nodepools.FindReferences(nodepool, desired.GetClusterInfo().GetNodePools())
 		switch {
@@ -184,7 +184,7 @@ func copyLbNodePoolNamesFromCurrentState(used map[string]struct{}, nodepool stri
 }
 
 // copyK8sNodePoolsNamesFromCurrentState copies the generated hash from an existing reference in the current state to the desired state.
-func copyK8sNodePoolsNamesFromCurrentState(used map[string]struct{}, nodepool string, current, desired *spec.K8SclusterV2) {
+func copyK8sNodePoolsNamesFromCurrentState(used map[string]struct{}, nodepool string, current, desired *spec.K8Scluster) {
 	references := nodepools.FindReferences(nodepool, desired.GetClusterInfo().GetNodePools())
 
 	switch {
@@ -233,14 +233,14 @@ func copyK8sNodePoolsNamesFromCurrentState(used map[string]struct{}, nodepool st
 //
 // If the passed in `current` state is nil, the function panics as it expects to work with the current state
 // and it is up to the caller to make sure the current state exists.
-func transferImmutableState(current, desired *spec.ClustersV2) {
+func transferImmutableState(current, desired *spec.Clusters) {
 	transferK8sState(current.K8S, desired.K8S)
 	transferLBState(current.LoadBalancers, desired.LoadBalancers)
 }
 
 // transferK8sState transfers only the kubernetes cluster relevant parts of `current` into `desired`.
 // The function transfer only the state that should be "Immutable" once assigned to the kubernetes state.
-func transferK8sState(current, desired *spec.K8SclusterV2) {
+func transferK8sState(current, desired *spec.K8Scluster) {
 	// TODO: what happens when I change the [spec.K8SclusterV2.Network] ?
 	// I think that should stay immutable as well... or maybe not ?
 	transferClusterInfo(current.ClusterInfo, desired.ClusterInfo)
@@ -301,7 +301,7 @@ func transferStaticNodePool(current, desired *spec.NodePool) {
 
 // transferClusterInfo transfers state that should be "Immutable" once assigned
 // from the `current` into the `desired` state.
-func transferClusterInfo(current, desired *spec.ClusterInfoV2) {
+func transferClusterInfo(current, desired *spec.ClusterInfo) {
 	desired.Name = current.Name
 	desired.Hash = current.Hash
 
@@ -338,7 +338,7 @@ outer:
 
 // transferLBState transfers the relevant parts of the `current` into `desired`.
 // The function transfer only the state that should be "Immutable" once assigned.
-func transferLBState(current, desired *spec.LoadBalancersV2) {
+func transferLBState(current, desired *spec.LoadBalancers) {
 	for _, current := range current.GetClusters() {
 		for _, desired := range desired.GetClusters() {
 			if current.ClusterInfo.Name != desired.ClusterInfo.Name {
@@ -354,7 +354,7 @@ func transferLBState(current, desired *spec.LoadBalancersV2) {
 	}
 }
 
-func transferRoles(current, desired []*spec.RoleV2) {
+func transferRoles(current, desired []*spec.Role) {
 	for _, current := range current {
 		for _, desired := range desired {
 			if current.Name == desired.Name {
@@ -364,7 +364,7 @@ func transferRoles(current, desired []*spec.RoleV2) {
 	}
 }
 
-func transferDns(current, desired *spec.LBclusterV2) {
+func transferDns(current, desired *spec.LBcluster) {
 	if current.Dns == nil {
 		return
 	}
