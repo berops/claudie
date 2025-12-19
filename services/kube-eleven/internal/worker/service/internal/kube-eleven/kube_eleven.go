@@ -32,7 +32,7 @@ type KubeEleven struct {
 	outputDirectory string
 
 	// Kubernetes cluster that will be set up.
-	K8sCluster *spec.K8SclusterV2
+	K8sCluster *spec.K8Scluster
 
 	// LoadBalancerEndpoint specifies the dns hostname
 	// that should be used as the endpoint for the K8sCluster.

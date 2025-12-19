@@ -17,7 +17,7 @@ func Destroy(
 	processLimit *semaphore.Weighted,
 	tracker Tracker,
 ) {
-	action, ok := tracker.Task.Do.(*spec.TaskV2_Delete)
+	action, ok := tracker.Task.Do.(*spec.Task_Delete)
 	if !ok {
 		logger.
 			Warn().
@@ -30,7 +30,7 @@ func Destroy(
 	logger.Info().Msgf("Destroying kubernetes cluster")
 
 	var loadbalancerApiEndpoint string
-	if ep := clusters.FindAssignedLbApiEndpointV2(delete.LoadBalancers); ep != nil {
+	if ep := clusters.FindAssignedLbApiEndpoint(delete.LoadBalancers); ep != nil {
 		loadbalancerApiEndpoint = ep.Dns.Endpoint
 	}
 

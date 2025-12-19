@@ -14,7 +14,7 @@ import (
 type (
 	Work struct {
 		InputManifestName string
-		Task              *spec.TaskV2
+		Task              *spec.Task
 
 		// Passes are the individual transformations
 		// that should be done with the task.
@@ -23,7 +23,7 @@ type (
 
 	Tracker struct {
 		// [Work.Task] worked on.
-		Task *spec.TaskV2
+		Task *spec.Task
 
 		// Result of the [Work.Task] as it is processed by the pipeline.
 		Result *spec.TaskResult
