@@ -13,12 +13,12 @@ func destroyLoadBalancer(
 	logger zerolog.Logger,
 	projectName string,
 	toDestroy string,
-	lbs []*spec.LBclusterV2,
+	lbs []*spec.LBcluster,
 	processLimit *semaphore.Weighted,
 	stores Stores,
 	tracker Tracker,
 ) {
-	idx := clusters.IndexLoadbalancerByIdV2(toDestroy, lbs)
+	idx := clusters.IndexLoadbalancerById(toDestroy, lbs)
 	if idx < 0 {
 		logger.
 			Warn().

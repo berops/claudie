@@ -11,8 +11,8 @@ import (
 )
 
 type DeleteLoadBalancerNodes struct {
-	State  *spec.UpdateV2_State
-	Delete *spec.UpdateV2_DeleteLoadBalancerNodes
+	State  *spec.Update_State
+	Delete *spec.Update_DeleteLoadBalancerNodes
 }
 
 func deleteLoadBalancerNodes(
@@ -26,7 +26,7 @@ func deleteLoadBalancerNodes(
 	// nodes of the loadbalancer as the whole cluster shares a
 	// single state file, thus simply just remove the node from
 	// the state and reconcile the cluster.
-	idx := clusters.IndexLoadbalancerByIdV2(action.Delete.Handle, action.State.LoadBalancers)
+	idx := clusters.IndexLoadbalancerById(action.Delete.Handle, action.State.LoadBalancers)
 	if idx < 0 {
 		logger.
 			Warn().

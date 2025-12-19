@@ -11,8 +11,8 @@ import (
 )
 
 type ReplaceDns struct {
-	State   *spec.UpdateV2_State
-	Replace *spec.UpdateV2_TerraformerReplaceDns
+	State   *spec.Update_State
+	Replace *spec.Update_TerraformerReplaceDns
 }
 
 func replaceDns(
@@ -22,7 +22,7 @@ func replaceDns(
 	action ReplaceDns,
 	tracker Tracker,
 ) {
-	idx := clusters.IndexLoadbalancerByIdV2(action.Replace.Handle, action.State.LoadBalancers)
+	idx := clusters.IndexLoadbalancerById(action.Replace.Handle, action.State.LoadBalancers)
 	if idx < 0 {
 		logger.
 			Warn().

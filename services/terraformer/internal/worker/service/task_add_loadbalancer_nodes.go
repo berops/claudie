@@ -11,8 +11,8 @@ import (
 )
 
 type AddLoadBalancerNodes struct {
-	State *spec.UpdateV2_State
-	Add   *spec.UpdateV2_TerraformerAddLoadBalancerNodes
+	State *spec.Update_State
+	Add   *spec.Update_TerraformerAddLoadBalancerNodes
 }
 
 func addLoadBalancerNodes(
@@ -26,7 +26,7 @@ func addLoadBalancerNodes(
 	// nodes of the loadbalancer as the whole cluster shares a
 	// single state file, thus simply just add the new nodes to
 	// the state and reconcile the cluster.
-	idx := clusters.IndexLoadbalancerByIdV2(action.Add.Handle, action.State.LoadBalancers)
+	idx := clusters.IndexLoadbalancerById(action.Add.Handle, action.State.LoadBalancers)
 	if idx < 0 {
 		logger.
 			Warn().
@@ -37,7 +37,7 @@ func addLoadBalancerNodes(
 	current := action.State.LoadBalancers[idx]
 
 	switch kind := action.Add.Kind.(type) {
-	case *spec.UpdateV2_TerraformerAddLoadBalancerNodes_Existing_:
+	case *spec.Update_TerraformerAddLoadBalancerNodes_Existing_:
 		np := nodepools.FindByName(kind.Existing.Nodepool, current.ClusterInfo.NodePools)
 		if np == nil {
 			logger.
@@ -65,7 +65,7 @@ func addLoadBalancerNodes(
 		}
 
 		nodepools.DynamicAddNodes(np, kind.Existing.Nodes)
-	case *spec.UpdateV2_TerraformerAddLoadBalancerNodes_New_:
+	case *spec.Update_TerraformerAddLoadBalancerNodes_New_:
 		current.ClusterInfo.NodePools = append(current.ClusterInfo.NodePools, kind.New.Nodepool)
 	default:
 		logger.

@@ -17,7 +17,7 @@ func build(
 	processLimit *semaphore.Weighted,
 	tracker Tracker,
 ) {
-	action, ok := tracker.Task.Do.(*spec.TaskV2_Create)
+	action, ok := tracker.Task.Do.(*spec.Task_Create)
 	if !ok {
 		logger.
 			Warn().
@@ -38,7 +38,7 @@ func build(
 	cluster := kubernetes.K8Scluster{
 		ProjectName:       projectName,
 		Cluster:           k8s,
-		ExportPort6443:    clusters.FindAssignedLbApiEndpointV2(lbs) == nil,
+		ExportPort6443:    clusters.FindAssignedLbApiEndpoint(lbs) == nil,
 		SpawnProcessLimit: processLimit,
 	}
 
@@ -82,7 +82,7 @@ func build(
 
 	var (
 		updatedK8s                   = k8s
-		possiblyUpdatedLoadBalancers []*spec.LBclusterV2
+		possiblyUpdatedLoadBalancers []*spec.LBcluster
 	)
 
 	for _, lb := range loadbalancers {

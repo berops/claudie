@@ -14,7 +14,7 @@ func reconcileApiPort(
 	processLimit *semaphore.Weighted,
 	tracker Tracker,
 ) {
-	action, ok := tracker.Task.Do.(*spec.TaskV2_Update)
+	action, ok := tracker.Task.Do.(*spec.Task_Update)
 	if !ok {
 		logger.
 			Warn().

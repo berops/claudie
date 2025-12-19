@@ -10,8 +10,8 @@ import (
 )
 
 type AddLoadBalancerRoles struct {
-	State *spec.UpdateV2_State
-	Add   *spec.UpdateV2_TerraformerAddLoadBalancerRoles
+	State *spec.Update_State
+	Add   *spec.Update_TerraformerAddLoadBalancerRoles
 }
 
 func addLoadBalancerRoles(
@@ -24,7 +24,7 @@ func addLoadBalancerRoles(
 	// Currently there is no special mechanism for just adding the
 	// roles of the loadbalancer, thus simply add them to the state
 	// and reconcile the cluster.
-	idx := clusters.IndexLoadbalancerByIdV2(action.Add.Handle, action.State.LoadBalancers)
+	idx := clusters.IndexLoadbalancerById(action.Add.Handle, action.State.LoadBalancers)
 	if idx < 0 {
 		logger.
 			Warn().

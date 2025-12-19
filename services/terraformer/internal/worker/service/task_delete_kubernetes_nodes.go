@@ -11,8 +11,8 @@ import (
 )
 
 type DeleteKubernetesNodes struct {
-	State  *spec.UpdateV2_State
-	Delete *spec.UpdateV2_DeleteK8SNodes
+	State  *spec.Update_State
+	Delete *spec.Update_DeleteK8SNodes
 }
 
 func deleteKubernetesNodes(
@@ -49,7 +49,7 @@ func deleteKubernetesNodes(
 	cluster := kubernetes.K8Scluster{
 		ProjectName:       projectName,
 		Cluster:           k8s,
-		ExportPort6443:    clusters.FindAssignedLbApiEndpointV2(action.State.LoadBalancers) == nil,
+		ExportPort6443:    clusters.FindAssignedLbApiEndpoint(action.State.LoadBalancers) == nil,
 		SpawnProcessLimit: processLimit,
 	}
 

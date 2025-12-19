@@ -11,8 +11,8 @@ import (
 )
 
 type AddKubernetesNodes struct {
-	State *spec.UpdateV2_State
-	Add   *spec.UpdateV2_TerraformerAddK8SNodes
+	State *spec.Update_State
+	Add   *spec.Update_TerraformerAddK8SNodes
 }
 
 func addKubernetesNodes(
@@ -29,7 +29,7 @@ func addKubernetesNodes(
 	k8s := action.State.K8S
 
 	switch kind := action.Add.Kind.(type) {
-	case *spec.UpdateV2_TerraformerAddK8SNodes_Existing_:
+	case *spec.Update_TerraformerAddK8SNodes_Existing_:
 		np := nodepools.FindByName(kind.Existing.Nodepool, k8s.ClusterInfo.NodePools)
 		if np == nil {
 			logger.
@@ -57,7 +57,7 @@ func addKubernetesNodes(
 		}
 
 		nodepools.DynamicAddNodes(np, kind.Existing.Nodes)
-	case *spec.UpdateV2_TerraformerAddK8SNodes_New_:
+	case *spec.Update_TerraformerAddK8SNodes_New_:
 		k8s.ClusterInfo.NodePools = append(k8s.ClusterInfo.NodePools, kind.New.Nodepool)
 	default:
 		logger.
@@ -69,7 +69,7 @@ func addKubernetesNodes(
 	cluster := kubernetes.K8Scluster{
 		ProjectName:       projectName,
 		Cluster:           k8s,
-		ExportPort6443:    clusters.FindAssignedLbApiEndpointV2(action.State.LoadBalancers) == nil,
+		ExportPort6443:    clusters.FindAssignedLbApiEndpoint(action.State.LoadBalancers) == nil,
 		SpawnProcessLimit: processLimit,
 	}
 

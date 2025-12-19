@@ -12,8 +12,8 @@ import (
 )
 
 type DeleteLoadBalancerRoles struct {
-	State  *spec.UpdateV2_State
-	Delete *spec.UpdateV2_DeleteLoadBalancerRoles
+	State  *spec.Update_State
+	Delete *spec.Update_DeleteLoadBalancerRoles
 }
 
 func deleteLoadBalancerRoles(
@@ -27,7 +27,7 @@ func deleteLoadBalancerRoles(
 	// roles of the loadbalancer, thus simply just remove them from the
 	// state and reconcile the cluster, on failures don't report any
 	// partial state.
-	idx := clusters.IndexLoadbalancerByIdV2(action.Delete.Handle, action.State.LoadBalancers)
+	idx := clusters.IndexLoadbalancerById(action.Delete.Handle, action.State.LoadBalancers)
 	if idx < 0 {
 		logger.
 			Warn().
@@ -36,7 +36,7 @@ func deleteLoadBalancerRoles(
 	}
 
 	current := action.State.LoadBalancers[idx]
-	current.Roles = slices.DeleteFunc(current.Roles, func(r *spec.RoleV2) bool {
+	current.Roles = slices.DeleteFunc(current.Roles, func(r *spec.Role) bool {
 		return slices.Contains(action.Delete.Roles, r.Name)
 	})
 

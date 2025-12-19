@@ -20,24 +20,32 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
+// Supported Cluster Type by the Cluster Builder.
+type ClusterType string
+
+const (
+	Kubernetes   ClusterType = "K8s"
+	LoadBalancer ClusterType = "LB"
+)
+
 const (
 	TemplatesRootDir = "services/terraformer/templates"
 	Output           = "services/terraformer/clusters"
 )
 
 type K8sInfo struct{ ExportPort6443 bool }
-type LBInfo struct{ Roles []*spec.RoleV2 }
+type LBInfo struct{ Roles []*spec.Role }
 
 type ClusterBuilder struct {
 	// Cluster to be reconciled.
-	ClusterInfo *spec.ClusterInfoV2
+	ClusterInfo *spec.ClusterInfo
 
 	// ProjectName is the name of the manifest.
 	ProjectName string
 
 	// ClusterType is the type of the cluster being build
 	// LoadBalancer or K8s.
-	ClusterType spec.ClusterType
+	ClusterType ClusterType
 
 	// K8sInfo contains additional data for when building kubernetes clusters.
 	K8sInfo K8sInfo
@@ -174,7 +182,7 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 	clusterData := templates.ClusterData{
 		ClusterName: c.ClusterInfo.Name,
 		ClusterHash: c.ClusterInfo.Hash,
-		ClusterType: c.ClusterType.String(),
+		ClusterType: string(c.ClusterType),
 	}
 
 	if err := c.generateProviderTemplates(clusterID, clusterDir, clusterData); err != nil {

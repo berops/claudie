@@ -12,7 +12,7 @@ func addLoadBalancer(
 	logger zerolog.Logger,
 	projectName string,
 	processLimit *semaphore.Weighted,
-	toReconcile *spec.LBclusterV2,
+	toReconcile *spec.LBcluster,
 	tracker Tracker,
 ) {
 	lb := loadbalancer.LBcluster{

@@ -23,7 +23,7 @@ var (
 
 type LBcluster struct {
 	ProjectName string
-	Cluster     *spec.LBclusterV2
+	Cluster     *spec.LBcluster
 
 	// SpawnProcessLimit  limits the number of spawned tofu processes.
 	SpawnProcessLimit *semaphore.Weighted
@@ -45,7 +45,7 @@ func (l *LBcluster) Build(logger zerolog.Logger) error {
 	clusterBuilder := cluster_builder.ClusterBuilder{
 		ClusterInfo: ci,
 		ProjectName: projectName,
-		ClusterType: spec.ClusterType_LB,
+		ClusterType: cluster_builder.LoadBalancer,
 		LBInfo: cluster_builder.LBInfo{
 			Roles: roles,
 		},
@@ -88,7 +88,7 @@ func (l *LBcluster) Destroy(logger zerolog.Logger) error {
 		cluster := cluster_builder.ClusterBuilder{
 			ClusterInfo:       ci,
 			ProjectName:       projectName,
-			ClusterType:       spec.ClusterType_LB,
+			ClusterType:       cluster_builder.LoadBalancer,
 			SpawnProcessLimit: processLimit,
 		}
 		return cluster.DestroyNodepools()

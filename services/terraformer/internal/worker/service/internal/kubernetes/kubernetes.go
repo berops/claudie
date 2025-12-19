@@ -18,7 +18,7 @@ var (
 
 type K8Scluster struct {
 	ProjectName string
-	Cluster     *spec.K8SclusterV2
+	Cluster     *spec.K8Scluster
 
 	// Signals whether to export port 6443 on the
 	// control plane nodes of the cluster.
@@ -39,7 +39,7 @@ func (k *K8Scluster) Build(logger zerolog.Logger) error {
 	cluster := cluster_builder.ClusterBuilder{
 		ClusterInfo: k.Cluster.ClusterInfo,
 		ProjectName: k.ProjectName,
-		ClusterType: spec.ClusterType_K8s,
+		ClusterType: cluster_builder.Kubernetes,
 		K8sInfo: cluster_builder.K8sInfo{
 			ExportPort6443: k.ExportPort6443,
 		},
@@ -58,7 +58,7 @@ func (k *K8Scluster) Destroy(logger zerolog.Logger) error {
 	cluster := cluster_builder.ClusterBuilder{
 		ClusterInfo:       k.Cluster.ClusterInfo,
 		ProjectName:       k.ProjectName,
-		ClusterType:       spec.ClusterType_K8s,
+		ClusterType:       cluster_builder.Kubernetes,
 		SpawnProcessLimit: k.SpawnProcessLimit,
 	}
 

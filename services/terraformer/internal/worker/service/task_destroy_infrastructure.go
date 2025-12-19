@@ -35,7 +35,7 @@ func destroy(
 ) {
 	var clusters []Cluster
 
-	action, ok := tracker.Task.Do.(*spec.TaskV2_Delete)
+	action, ok := tracker.Task.Do.(*spec.Task_Delete)
 	if !ok {
 		logger.
 			Warn().

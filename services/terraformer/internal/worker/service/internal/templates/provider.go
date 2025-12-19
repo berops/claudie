@@ -47,7 +47,7 @@ func (p UsedProviders) CreateUsedProviderDNS(dns *spec.DNS) error {
 }
 
 // CreateUsedProvider creates provider file used for infrastructure management.
-func (p UsedProviders) CreateUsedProvider(c *spec.ClusterInfoV2) error {
+func (p UsedProviders) CreateUsedProvider(c *spec.ClusterInfo) error {
 	template := templateUtils.Templates{Directory: p.Directory}
 
 	var data usedProvidersTemplateData
