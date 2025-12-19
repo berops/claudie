@@ -31,7 +31,7 @@ func ClearProxyEnvs(
 		Info().
 		Msg("Clearing Proxy Envs on cluster nodes")
 
-	update, ok := tracker.Task.Do.(*spec.TaskV2_Update)
+	update, ok := tracker.Task.Do.(*spec.Task_Update)
 	if !ok {
 		logger.
 			Warn().
@@ -51,7 +51,7 @@ func ClearProxyEnvs(
 		Msgf("Successfully cleared proxy envs for nodes in cluster")
 }
 
-func clearProxyEnvsOnNodes(cluster *spec.K8SclusterV2, processLimit *semaphore.Weighted) error {
+func clearProxyEnvsOnNodes(cluster *spec.K8Scluster, processLimit *semaphore.Weighted) error {
 	clusterID := cluster.ClusterInfo.Id()
 
 	// This is the directory where files (Ansible inventory files, SSH keys etc.) will be generated.

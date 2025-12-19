@@ -31,13 +31,13 @@ func UpdateProxyEnvs(
 ) {
 	logger.Info().Msg("Updating Proxy Envs on cluster nodes")
 
-	var k8s *spec.K8SclusterV2
-	var lbs []*spec.LBclusterV2
+	var k8s *spec.K8Scluster
+	var lbs []*spec.LBcluster
 
 	switch do := tracker.Task.Do.(type) {
-	case *spec.TaskV2_Create:
+	case *spec.Task_Create:
 		k8s, lbs = do.Create.K8S, do.Create.LoadBalancers
-	case *spec.TaskV2_Update:
+	case *spec.Task_Update:
 		k8s, lbs = do.Update.State.K8S, do.Update.State.LoadBalancers
 	default:
 		logger.
@@ -58,7 +58,7 @@ func UpdateProxyEnvs(
 		Msgf("Successfully updated proxy envs for nodes in cluster")
 }
 
-func updateProxyEnvsOnNodes(cluster *spec.K8SclusterV2, proxy utils.Proxy, processLimit *semaphore.Weighted) error {
+func updateProxyEnvsOnNodes(cluster *spec.K8Scluster, proxy utils.Proxy, processLimit *semaphore.Weighted) error {
 	clusterID := cluster.ClusterInfo.Id()
 
 	// This is the directory where files (Ansible inventory files, SSH keys etc.) will be generated.

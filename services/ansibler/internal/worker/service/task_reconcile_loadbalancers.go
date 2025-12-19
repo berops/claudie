@@ -54,14 +54,14 @@ func ReconcileLoadBalancers(
 ) {
 	logger.Info().Msg("Reconciling LoadBalancers")
 
-	var k8s *spec.K8SclusterV2
-	var lbs []*spec.LBclusterV2
+	var k8s *spec.K8Scluster
+	var lbs []*spec.LBcluster
 
 	switch do := tracker.Task.Do.(type) {
-	case *spec.TaskV2_Create:
+	case *spec.Task_Create:
 		k8s = do.Create.K8S
 		lbs = do.Create.LoadBalancers
-	case *spec.TaskV2_Update:
+	case *spec.Task_Update:
 		k8s = do.Update.State.K8S
 
 		// Will default to only reconciling a single loadbalancer, if possible.
@@ -71,7 +71,7 @@ func ReconcileLoadBalancers(
 		// a nodepool of the loadbalancer and ignore others unchanged, for
 		// now leave this as is.
 		if lb := DefaultToSingleLoadBalancerIfPossible(do); lb != nil {
-			lbs = []*spec.LBclusterV2{lb}
+			lbs = []*spec.LBcluster{lb}
 		} else {
 			lbs = do.Update.State.LoadBalancers
 		}
@@ -123,7 +123,7 @@ func setUpLoadbalancers(logger zerolog.Logger, processLimit *semaphore.Weighted,
 		return fmt.Errorf("error encountered while generating base files for %s : %w", info.ClusterID, err)
 	}
 
-	return concurrent.Exec(info.Lbs, func(_ int, lbCluster *spec.LBclusterV2) error {
+	return concurrent.Exec(info.Lbs, func(_ int, lbCluster *spec.LBcluster) error {
 		var (
 			loggerPrefix = "LB-cluster"
 			lbClusterId  = lbCluster.ClusterInfo.Id()
@@ -168,7 +168,7 @@ func setUpLoadbalancers(logger zerolog.Logger, processLimit *semaphore.Weighted,
 
 // setUpNodeExporter sets up node-exporter on each node of the LB cluster.
 // Returns error if not successful, nil otherwise.
-func setUpNodeExporter(lbCluster *spec.LBclusterV2, clusterDirectory string, processLimit *semaphore.Weighted) error {
+func setUpNodeExporter(lbCluster *spec.LBcluster, clusterDirectory string, processLimit *semaphore.Weighted) error {
 	playbookParameters := utils.NodeExporterTemplateParams{
 		LoadBalancer:     lbCluster.ClusterInfo.Name,
 		NodeExporterPort: manifest.NodeExporterPort,
@@ -198,7 +198,7 @@ func setUpNodeExporter(lbCluster *spec.LBclusterV2, clusterDirectory string, pro
 }
 
 func uninstallNginx(
-	lbCluster *spec.LBclusterV2,
+	lbCluster *spec.LBcluster,
 	clusterDirectory string,
 	processLimit *semaphore.Weighted,
 ) error {
@@ -240,7 +240,7 @@ func uninstallNginx(
 //
 // Based on https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/configuration-dynamic-filesystem
 func setupEnvoyProxyViaDocker(
-	lbCluster *spec.LBclusterV2,
+	lbCluster *spec.LBcluster,
 	targetK8sNodePool []*spec.NodePool,
 	clusterDirectory string,
 	processLimit *semaphore.Weighted,
@@ -344,7 +344,7 @@ func setupEnvoyProxyViaDocker(
 	return nil
 }
 
-func targetPools(lbCluster *spec.LBclusterV2, targetK8sNodepool []*spec.NodePool) []utils.LBClusterRolesInfo {
+func targetPools(lbCluster *spec.LBcluster, targetK8sNodepool []*spec.NodePool) []utils.LBClusterRolesInfo {
 	var lbClusterRolesInfo []utils.LBClusterRolesInfo
 	for _, role := range lbCluster.Roles {
 		lbClusterRolesInfo = append(lbClusterRolesInfo, utils.LBClusterRolesInfo{

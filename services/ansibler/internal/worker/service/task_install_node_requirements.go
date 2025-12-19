@@ -38,11 +38,11 @@ func InstallNodeRequirements(
 	)
 
 	switch do := tracker.Task.Do.(type) {
-	case *spec.TaskV2_Create:
+	case *spec.Task_Create:
 		nps = do.Create.K8S.ClusterInfo.NodePools
 		clusterId = do.Create.K8S.ClusterInfo.Id()
 		network = do.Create.K8S.Network
-	case *spec.TaskV2_Update:
+	case *spec.Task_Update:
 		clusterId = do.Update.State.K8S.ClusterInfo.Id()
 		network = do.Update.State.K8S.Network
 

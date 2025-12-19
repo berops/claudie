@@ -31,7 +31,7 @@ func CommitProxyEnvs(
 		Info().
 		Msg("Updating kube-proxy DaemonSet and static pods with new Proxy envs")
 
-	update, ok := tracker.Task.Do.(*spec.TaskV2_Update)
+	update, ok := tracker.Task.Do.(*spec.Task_Update)
 	if !ok {
 		logger.
 			Warn().
@@ -48,7 +48,7 @@ func CommitProxyEnvs(
 
 	// Optionally, if  the task currently processed, needs to update the state,
 	// update it with the passed in desired proxy setting.
-	if updateProxy, ok := update.Update.Delta.(*spec.UpdateV2_AnsReplaceProxy); ok {
+	if updateProxy, ok := update.Update.Delta.(*spec.Update_AnsReplaceProxy); ok {
 		state.K8S.InstallationProxy = updateProxy.AnsReplaceProxy.Proxy
 
 		update := tracker.Result.Update()
@@ -63,7 +63,7 @@ func CommitProxyEnvs(
 
 // commitProxyEnvs updates NO_PROXY and no_proxy envs across k8s services on nodes and restarts necessary
 // services so that the changes will be propagated to them.
-func commitProxyEnvs(cluster *spec.K8SclusterV2, processLimit *semaphore.Weighted) error {
+func commitProxyEnvs(cluster *spec.K8Scluster, processLimit *semaphore.Weighted) error {
 	clusterID := cluster.ClusterInfo.Id()
 
 	// This is the directory where files (Ansible inventory files, SSH keys etc.) will be generated.

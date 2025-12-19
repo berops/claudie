@@ -39,14 +39,14 @@ func RemoveUtilities(
 	)
 
 	switch do := tracker.Task.Do.(type) {
-	case *spec.TaskV2_Update:
+	case *spec.Task_Update:
 		n, ok := nodepoolsInfoUpdate(logger, do)
 		if !ok {
 			return
 		}
 		npi = append(npi, n...)
 		k8sClusterId = do.Update.State.K8S.ClusterInfo.Id()
-	case *spec.TaskV2_Delete:
+	case *spec.Task_Delete:
 		npi = append(npi, nodepoolsInfoDelete(do)...)
 		k8sClusterId = do.Delete.K8S.ClusterInfo.Id()
 	default:
@@ -133,7 +133,7 @@ func removeUtilities(clusterID string, npi []*NodepoolsInfo, processLimit *semap
 	return nil
 }
 
-func nodepoolsInfoDelete(task *spec.TaskV2_Delete) []*NodepoolsInfo {
+func nodepoolsInfoDelete(task *spec.Task_Delete) []*NodepoolsInfo {
 	var npi []*NodepoolsInfo
 
 	k8s := &NodepoolsInfo{
@@ -169,11 +169,11 @@ func nodepoolsInfoDelete(task *spec.TaskV2_Delete) []*NodepoolsInfo {
 	return npi
 }
 
-func nodepoolsInfoUpdate(logger zerolog.Logger, task *spec.TaskV2_Update) ([]*NodepoolsInfo, bool) {
+func nodepoolsInfoUpdate(logger zerolog.Logger, task *spec.Task_Update) ([]*NodepoolsInfo, bool) {
 	var npi []*NodepoolsInfo
 
 	switch delta := task.Update.Delta.(type) {
-	case *spec.UpdateV2_DeleteK8SNodes_:
+	case *spec.Update_DeleteK8SNodes_:
 		np := DefaultKubernetesToNewNodesIfPossible(task)
 
 		// On validly scheduled messages, the nodepool from which
@@ -202,8 +202,8 @@ func nodepoolsInfoUpdate(logger zerolog.Logger, task *spec.TaskV2_Update) ([]*No
 		if len(k8s.Nodepools.Static) > 0 {
 			npi = append(npi, k8s)
 		}
-	case *spec.UpdateV2_DeleteLoadBalancerNodes_:
-		idx := clusters.IndexLoadbalancerByIdV2(delta.DeleteLoadBalancerNodes.Handle, task.Update.State.LoadBalancers)
+	case *spec.Update_DeleteLoadBalancerNodes_:
+		idx := clusters.IndexLoadbalancerById(delta.DeleteLoadBalancerNodes.Handle, task.Update.State.LoadBalancers)
 		if idx < 0 {
 			log.
 				Warn().
@@ -240,8 +240,8 @@ func nodepoolsInfoUpdate(logger zerolog.Logger, task *spec.TaskV2_Update) ([]*No
 		if len(lbi.Nodepools.Static) > 0 {
 			npi = append(npi, lbi)
 		}
-	case *spec.UpdateV2_DeleteLoadBalancer_:
-		idx := clusters.IndexLoadbalancerByIdV2(delta.DeleteLoadBalancer.Handle, task.Update.State.LoadBalancers)
+	case *spec.Update_DeleteLoadBalancer_:
+		idx := clusters.IndexLoadbalancerById(delta.DeleteLoadBalancer.Handle, task.Update.State.LoadBalancers)
 		if idx < 0 {
 			log.
 				Warn().

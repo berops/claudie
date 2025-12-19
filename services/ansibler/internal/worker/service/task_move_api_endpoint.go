@@ -25,7 +25,7 @@ func MoveApiEndpoint(
 	tracker Tracker,
 ) {
 	logger.Info().Msg("Moving API endpoint")
-	action, ok := tracker.Task.Do.(*spec.TaskV2_Update)
+	action, ok := tracker.Task.Do.(*spec.Task_Update)
 	if !ok {
 		logger.
 			Warn().
@@ -33,14 +33,14 @@ func MoveApiEndpoint(
 		return
 	}
 
-	var ep spec.UpdateV2_ApiEndpoint
+	var ep spec.Update_ApiEndpoint
 
 	switch delta := action.Update.Delta.(type) {
-	case *spec.UpdateV2_ApiEndpoint_:
+	case *spec.Update_ApiEndpoint_:
 		ep.State = delta.ApiEndpoint.State
 		ep.CurrentEndpointId = delta.ApiEndpoint.CurrentEndpointId
 		ep.DesiredEndpointId = delta.ApiEndpoint.DesiredEndpointId
-	case *spec.UpdateV2_ReplacedDns_:
+	case *spec.Update_ReplacedDns_:
 		if delta.ReplacedDns.OldApiEndpoint == nil {
 			logger.
 				Warn().
@@ -48,10 +48,10 @@ func MoveApiEndpoint(
 			return
 		}
 
-		idx := clusters.IndexLoadbalancerByIdV2(delta.ReplacedDns.Handle, action.Update.State.LoadBalancers)
+		idx := clusters.IndexLoadbalancerById(delta.ReplacedDns.Handle, action.Update.State.LoadBalancers)
 		lb := action.Update.State.LoadBalancers[idx]
 
-		ep.State = spec.ApiEndpointChangeStateV2_EndpointRenamedV2
+		ep.State = spec.ApiEndpointChangeState_EndpointRenamed
 		ep.CurrentEndpointId = *delta.ReplacedDns.OldApiEndpoint
 		ep.DesiredEndpointId = lb.Dns.Endpoint // this should have been build by now.
 
@@ -90,8 +90,8 @@ func MoveApiEndpoint(
 
 func determineApiChanges(
 	logger zerolog.Logger,
-	state *spec.UpdateV2_State,
-	change *spec.UpdateV2_ApiEndpoint,
+	state *spec.Update_State,
+	change *spec.Update_ApiEndpoint,
 	processLimit *semaphore.Weighted,
 ) error {
 	clusterDirectory := filepath.Join(
@@ -137,28 +137,28 @@ func determineApiChanges(
 
 func handleAPIEndpointChange(
 	logger zerolog.Logger,
-	state *spec.UpdateV2_State,
-	change *spec.UpdateV2_ApiEndpoint,
+	state *spec.Update_State,
+	change *spec.Update_ApiEndpoint,
 	outputDirectory string,
 	processLimit *semaphore.Weighted,
 ) error {
 	var oldEndpoint, newEndpoint string
 
 	switch change.State {
-	case spec.ApiEndpointChangeStateV2_NoChangeV2:
+	case spec.ApiEndpointChangeState_NoChange:
 		return nil
-	case spec.ApiEndpointChangeStateV2_EndpointRenamedV2:
+	case spec.ApiEndpointChangeState_EndpointRenamed:
 		// There does not need to by any change in the [spec.LBcluster.UsedApiEndpoint]
 		// as it's the same loadbalancer just the dns hostname has changed.
 		oldEndpoint = change.CurrentEndpointId
 		newEndpoint = change.DesiredEndpointId
-	case spec.ApiEndpointChangeStateV2_AttachingLoadBalancerV2:
+	case spec.ApiEndpointChangeState_AttachingLoadBalancer:
 		_, n := nodepools.FindApiEndpoint(state.K8S.ClusterInfo.NodePools)
 		if n == nil {
 			return fmt.Errorf("failed to find APIEndpoint k8s node, couldn't update Api server endpoint")
 		}
 
-		lb := clusters.IndexLoadbalancerByIdV2(change.DesiredEndpointId, state.LoadBalancers)
+		lb := clusters.IndexLoadbalancerById(change.DesiredEndpointId, state.LoadBalancers)
 		if lb < 0 {
 			return fmt.Errorf("failed to find requested loadbalancer %s to move api endpoint to", change.DesiredEndpointId)
 		}
@@ -168,8 +168,8 @@ func handleAPIEndpointChange(
 
 		state.LoadBalancers[lb].UsedApiEndpoint = true
 		newEndpoint = state.LoadBalancers[lb].Dns.Endpoint
-	case spec.ApiEndpointChangeStateV2_DetachingLoadBalancerV2:
-		lb := clusters.IndexLoadbalancerByIdV2(change.CurrentEndpointId, state.LoadBalancers)
+	case spec.ApiEndpointChangeState_DetachingLoadBalancer:
+		lb := clusters.IndexLoadbalancerById(change.CurrentEndpointId, state.LoadBalancers)
 		if lb < 0 {
 			return fmt.Errorf("failed to find requested loadbalancer %s from which to move the api endpoint from", change.CurrentEndpointId)
 		}
@@ -184,9 +184,9 @@ func handleAPIEndpointChange(
 
 		n.NodeType = spec.NodeType_apiEndpoint
 		newEndpoint = n.Public
-	case spec.ApiEndpointChangeStateV2_MoveEndpointV2:
-		lbc := clusters.IndexLoadbalancerByIdV2(change.CurrentEndpointId, state.LoadBalancers)
-		lbd := clusters.IndexLoadbalancerByIdV2(change.DesiredEndpointId, state.LoadBalancers)
+	case spec.ApiEndpointChangeState_MoveEndpoint:
+		lbc := clusters.IndexLoadbalancerById(change.CurrentEndpointId, state.LoadBalancers)
+		lbd := clusters.IndexLoadbalancerById(change.DesiredEndpointId, state.LoadBalancers)
 
 		if lbc < 0 {
 			return fmt.Errorf("failed to find requested loadbalancer %s from which to move the api endpoint from", change.CurrentEndpointId)

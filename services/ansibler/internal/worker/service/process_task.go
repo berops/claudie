@@ -25,7 +25,7 @@ const (
 type (
 	Work struct {
 		InputManifestName string
-		Task              *spec.TaskV2
+		Task              *spec.Task
 
 		// Passes are the individual transformations
 		// that should be done with the task.
@@ -34,7 +34,7 @@ type (
 
 	Tracker struct {
 		// [Work.Task] worked on.
-		Task *spec.TaskV2
+		Task *spec.Task
 
 		// Result of the [Work.Task] as it is processed by the pipeline.
 		Result *spec.TaskResult
@@ -158,29 +158,29 @@ passes:
 
 // For the update task, looks inside the Delta and if its load balancer related, returns only
 // the loadbalancer for which the task is to be processed for, if not found returns nil.
-func DefaultToSingleLoadBalancerIfPossible(task *spec.TaskV2_Update) *spec.LBclusterV2 {
+func DefaultToSingleLoadBalancerIfPossible(task *spec.Task_Update) *spec.LBcluster {
 	lbs := task.Update.State.LoadBalancers
 
 	var targetHandle string
 
 	switch delta := task.Update.Delta.(type) {
-	case *spec.UpdateV2_AddedLoadBalancerNodes_:
+	case *spec.Update_AddedLoadBalancerNodes_:
 		targetHandle = delta.AddedLoadBalancerNodes.Handle
-	case *spec.UpdateV2_AddedLoadBalancerRoles_:
+	case *spec.Update_AddedLoadBalancerRoles_:
 		targetHandle = delta.AddedLoadBalancerRoles.Handle
-	case *spec.UpdateV2_AddedLoadBalancer_:
+	case *spec.Update_AddedLoadBalancer_:
 		targetHandle = delta.AddedLoadBalancer.Handle
-	case *spec.UpdateV2_AnsReplaceTargetPools:
+	case *spec.Update_AnsReplaceTargetPools:
 		targetHandle = delta.AnsReplaceTargetPools.Handle
-	case *spec.UpdateV2_DeleteLoadBalancerNodes_:
+	case *spec.Update_DeleteLoadBalancerNodes_:
 		targetHandle = delta.DeleteLoadBalancerNodes.Handle
-	case *spec.UpdateV2_DeleteLoadBalancerRoles_:
+	case *spec.Update_DeleteLoadBalancerRoles_:
 		targetHandle = delta.DeleteLoadBalancerRoles.Handle
-	case *spec.UpdateV2_DeleteLoadBalancer_:
+	case *spec.Update_DeleteLoadBalancer_:
 		targetHandle = delta.DeleteLoadBalancer.Handle
-	case *spec.UpdateV2_ReplacedDns_:
+	case *spec.Update_ReplacedDns_:
 		targetHandle = delta.ReplacedDns.Handle
-	case *spec.UpdateV2_ReplacedTargetPools_:
+	case *spec.Update_ReplacedTargetPools_:
 		targetHandle = delta.ReplacedTargetPools.Handle
 	}
 
@@ -188,7 +188,7 @@ func DefaultToSingleLoadBalancerIfPossible(task *spec.TaskV2_Update) *spec.LBclu
 		return nil
 	}
 
-	idx := clusters.IndexLoadbalancerByIdV2(targetHandle, lbs)
+	idx := clusters.IndexLoadbalancerById(targetHandle, lbs)
 	if idx < 0 {
 		return nil
 	}
@@ -204,17 +204,17 @@ func DefaultToSingleLoadBalancerIfPossible(task *spec.TaskV2_Update) *spec.LBclu
 // **Caution** the counts of the nodes are not changed, thus
 //
 // If the function can't default to new nodes only, nil is returned.
-func DefaultKubernetesToNewNodesIfPossible(task *spec.TaskV2_Update) *spec.NodePool {
+func DefaultKubernetesToNewNodesIfPossible(task *spec.Task_Update) *spec.NodePool {
 	var (
 		npId  string
 		nodes []string
 	)
 
 	switch delta := task.Update.Delta.(type) {
-	case *spec.UpdateV2_AddedK8SNodes_:
+	case *spec.Update_AddedK8SNodes_:
 		npId = delta.AddedK8SNodes.Nodepool
 		nodes = delta.AddedK8SNodes.Nodes
-	case *spec.UpdateV2_DeleteK8SNodes_:
+	case *spec.Update_DeleteK8SNodes_:
 		npId = delta.DeleteK8SNodes.Nodepool
 		nodes = delta.DeleteK8SNodes.Nodes
 	}
@@ -231,7 +231,7 @@ func DefaultKubernetesToNewNodesIfPossible(task *spec.TaskV2_Update) *spec.NodeP
 }
 
 // Same as [DefaultKubernetesToNewNodesIfPossible] but for load balancer clusters.
-func DefaultLoadBalancerToNewNodesIfPossible(task *spec.TaskV2_Update) *spec.NodePool {
+func DefaultLoadBalancerToNewNodesIfPossible(task *spec.Task_Update) *spec.NodePool {
 	var (
 		targetHandle string
 		npId         string
@@ -239,11 +239,11 @@ func DefaultLoadBalancerToNewNodesIfPossible(task *spec.TaskV2_Update) *spec.Nod
 	)
 
 	switch delta := task.Update.Delta.(type) {
-	case *spec.UpdateV2_AddedLoadBalancerNodes_:
+	case *spec.Update_AddedLoadBalancerNodes_:
 		targetHandle = delta.AddedLoadBalancerNodes.Handle
 		npId = delta.AddedLoadBalancerNodes.NodePool
 		nodes = delta.AddedLoadBalancerNodes.Nodes
-	case *spec.UpdateV2_DeleteLoadBalancerNodes_:
+	case *spec.Update_DeleteLoadBalancerNodes_:
 		targetHandle = delta.DeleteLoadBalancerNodes.Handle
 		npId = delta.DeleteLoadBalancerNodes.Nodepool
 		nodes = delta.DeleteLoadBalancerNodes.Nodes
@@ -253,7 +253,7 @@ func DefaultLoadBalancerToNewNodesIfPossible(task *spec.TaskV2_Update) *spec.Nod
 		return nil
 	}
 
-	idx := clusters.IndexLoadbalancerByIdV2(targetHandle, task.Update.State.LoadBalancers)
+	idx := clusters.IndexLoadbalancerById(targetHandle, task.Update.State.LoadBalancers)
 	if idx < 0 {
 		return nil
 	}

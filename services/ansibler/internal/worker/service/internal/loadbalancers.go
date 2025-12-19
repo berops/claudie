@@ -51,7 +51,7 @@ type (
 	// LBClustersInfo wraps all Load-balancers and Nodepools used for a single K8s cluster.
 	LBClustersInfo struct {
 		// LbClusters are Load-Balancers that share the targeted k8s cluster.
-		Lbs []*spec.LBclusterV2
+		Lbs []*spec.LBcluster
 		// TargetK8sNodepool are all nodepools used by the targeted k8s cluster.
 		TargetK8sNodepool []*spec.NodePool
 		// ClusterID contains the ClusterName-Hash- prefix of the kubernetes cluster
@@ -59,7 +59,7 @@ type (
 	}
 
 	LBClusterRolesInfo struct {
-		Role        *spec.RoleV2
+		Role        *spec.Role
 		TargetNodes []*spec.Node
 	}
 

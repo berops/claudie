@@ -27,7 +27,7 @@ func UpdateApiEndpoint(
 ) {
 	logger.Info().Msg("Updating Api endpoint")
 
-	update, ok := tracker.Task.Do.(*spec.TaskV2_Update)
+	update, ok := tracker.Task.Do.(*spec.Task_Update)
 	if !ok {
 		logger.
 			Warn().
@@ -35,7 +35,7 @@ func UpdateApiEndpoint(
 		return
 	}
 
-	change, ok := update.Update.Delta.(*spec.UpdateV2_K8SApiEndpoint)
+	change, ok := update.Update.Delta.(*spec.Update_K8SApiEndpoint)
 	if !ok {
 		logger.
 			Warn().
@@ -61,8 +61,8 @@ func UpdateApiEndpoint(
 // the desired state. Thus, a new control node needs to be selected among the existing
 // control nodes. This new control node will then represent the ApiEndpoint of the cluster.
 func updateApiEndpoint(
-	endpoint *spec.UpdateV2_K8SOnlyApiEndpoint,
-	cluster *spec.K8SclusterV2,
+	endpoint *spec.Update_K8SOnlyApiEndpoint,
+	cluster *spec.K8Scluster,
 	processLimit *semaphore.Weighted,
 ) error {
 	clusterID := cluster.ClusterInfo.Id()

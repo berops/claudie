@@ -26,7 +26,7 @@ type Proxy struct {
 	NoProxyList  string
 }
 
-func HttpProxyUrlAndNoProxyList(k8s *spec.K8SclusterV2, lbs []*spec.LBclusterV2) Proxy {
+func HttpProxyUrlAndNoProxyList(k8s *spec.K8Scluster, lbs []*spec.LBcluster) Proxy {
 	httpProxyUrl, noProxyList := defaultHttpProxyUrl, createNoProxyList(k8s, lbs)
 	if k8s.InstallationProxy.Endpoint != "" {
 		httpProxyUrl = k8s.InstallationProxy.Endpoint
@@ -37,7 +37,7 @@ func HttpProxyUrlAndNoProxyList(k8s *spec.K8SclusterV2, lbs []*spec.LBclusterV2)
 	}
 }
 
-func createNoProxyList(k8s *spec.K8SclusterV2, lbs []*spec.LBclusterV2) string {
+func createNoProxyList(k8s *spec.K8Scluster, lbs []*spec.LBcluster) string {
 	noProxyList := noProxyDefault
 	if userNoProxy := k8s.InstallationProxy.NoProxy; userNoProxy != "" {
 		noProxyList = fmt.Sprintf("%v,%v", noProxyList, userNoProxy)
