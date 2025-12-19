@@ -15,12 +15,10 @@ import (
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/proto/pb/spec"
-	managerclient "github.com/berops/claudie/services/manager/client"
+	managerclient "github.com/berops/claudie/services/managerv2/client"
 	"github.com/rs/zerolog/log"
 
 	"golang.org/x/sync/errgroup"
-
-	"google.golang.org/protobuf/proto"
 )
 
 const testDir = "test-sets"
@@ -271,8 +269,8 @@ func processTestSet(
 		}
 
 		for cluster, state := range done.Clusters {
-			if !proto.Equal(state.Current, state.Desired) {
-				err := fmt.Errorf("cluster %q from config %q has current and desired state that diverge after all tasks have been build successfully", cluster, manifestName)
+			if state.InFlight != nil {
+				err := fmt.Errorf("cluster %q from config %q is considered done, but still has an InFlight state", cluster, manifestName)
 				return cleanup, err
 			}
 		}

@@ -9,6 +9,7 @@ import (
 
 	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/kubectl"
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	managerclient "github.com/berops/claudie/services/managerv2/client"
 	"github.com/google/go-cmp/cmp"
@@ -30,6 +31,16 @@ var (
 	errInterrupt = errors.New("interrupt")
 
 	opts = cmpopts.IgnoreUnexported(
+		spec.Stage{},
+		spec.StageDescription{},
+		spec.StageTerraformer{},
+		spec.StageTerraformer_SubPass{},
+		spec.StageAnsibler{},
+		spec.StageAnsibler_SubPass{},
+		spec.StageKubeEleven{},
+		spec.StageKubeEleven_SubPass{},
+		spec.StageKuber{},
+		spec.StageKuber_SubPass{},
 		spec.DNS{},
 		spec.Config{},
 		spec.Manifest{},
@@ -42,7 +53,6 @@ var (
 		spec.LBcluster{},
 		spec.ClusterInfo{},
 		spec.Role{},
-		spec.Events{},
 		spec.TaskEvent{},
 		spec.Retry{},
 		spec.Retry_Rollback_{},
@@ -50,19 +60,53 @@ var (
 		spec.Retry_Repeat_{},
 		spec.Retry_Repeat{},
 		spec.Task{},
-		spec.CreateState{},
-		spec.UpdateState{},
+		spec.Create{},
+		spec.Update{},
 		spec.InstallationProxy{},
-		spec.UpdateState_NewControlEndpoint{},
-		spec.UpdateState_LbEndpointChange{},
-		spec.UpdateState_K8SEndpoint{},
-		spec.UpdateState_NewControlEndpoint{},
-		spec.UpdateState_LbEndpoint{},
-		spec.UpdateState_LbEndpointChange{},
-		spec.DeleteState{},
-		spec.DeleteState_K8S{},
-		spec.DeleteState_LoadBalancer{},
-		spec.DeletedNodes{},
+		spec.Update{},
+		spec.Update_State{},
+		spec.Update_None{},
+		spec.Update_TerraformerAddLoadBalancer{},
+		spec.Update_AddedLoadBalancer{},
+		spec.Update_DeleteLoadBalancerNodes{},
+		spec.Update_TerraformerAddLoadBalancerNodes{},
+		spec.Update_TerraformerAddLoadBalancerNodes_Existing{},
+		spec.Update_TerraformerAddLoadBalancerNodes_New{},
+		spec.Update_AddedLoadBalancerNodes{},
+		spec.Update_DeleteLoadBalancerRoles{},
+		spec.Update_TerraformerAddLoadBalancerRoles{},
+		spec.Update_AddedLoadBalancerRoles{},
+		spec.Update_TerraformerReplaceDns{},
+		spec.Update_ReplacedDns{},
+		spec.Update_DeleteLoadBalancer{},
+		spec.Update_ApiEndpoint{},
+		spec.Update_K8SOnlyApiEndpoint{},
+		spec.Update_ApiPortOnCluster{},
+		spec.Update_AnsiblerReplaceProxySettings{},
+		spec.Update_ReplacedProxySettings{},
+		spec.Update_AnsiblerReplaceTargetPools{},
+		spec.Update_AnsiblerReplaceTargetPools_TargetPools{},
+		spec.Update_ReplacedTargetPools{},
+		spec.Update_ReplacedTargetPools_TargetPools{},
+		spec.Update_UpgradeVersion{},
+		spec.Update_KuberPatchNodes{},
+		spec.Update_KuberPatchNodes_ListOfTaintKeys{},
+		spec.Update_KuberPatchNodes_ListOfLabelKeys{},
+		spec.Update_KuberPatchNodes_ListOfAnnotationKeys{},
+		spec.Update_KuberPatchNodes_Batch{},
+		spec.Update_PatchedNodes{},
+		spec.Update_DeleteK8SNodes{},
+		spec.Update_TerraformerAddK8SNodes{},
+		spec.Update_TerraformerAddK8SNodes_Existing{},
+		spec.Update_TerraformerAddK8SNodes_New{},
+		spec.Update_AddedK8SNodes{},
+		spec.Delete{},
+		spec.TaskResult{},
+		spec.TaskResult_Error{},
+		spec.TaskResult_None{},
+		spec.TaskResult_UpdateState{},
+		spec.TaskResult_ClearState{},
+		spec.Work{},
 		spec.NodePool{},
 		spec.NodePool_DynamicNodePool{},
 		spec.NodePool_StaticNodePool{},
@@ -161,7 +205,7 @@ func getAutoscaledClusters(c *spec.Config) []*spec.K8Scluster {
 	clusters := make([]*spec.K8Scluster, 0, len(c.Clusters))
 
 	for _, s := range c.Clusters {
-		if s.Current != nil && s.Current.K8S.AnyAutoscaledNodePools() {
+		if s.Current != nil && len(nodepools.Autoscaled(s.Current.K8S.ClusterInfo.NodePools)) > 0 {
 			clusters = append(clusters, s.Current.GetK8S())
 		}
 	}
