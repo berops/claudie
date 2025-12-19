@@ -65,7 +65,7 @@ metadata:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: kubelet-csr-approver
+  name: kubelet-csr-approver-{{ .Hash }}
   namespace: kube-system
   labels:
     managed-by: claudie
