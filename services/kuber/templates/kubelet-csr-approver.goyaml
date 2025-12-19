@@ -67,7 +67,8 @@ kind: Job
 metadata:
   name: kubelet-csr-approver
   namespace: kube-system
-  managed-by: claudie
+  labels:
+    managed-by: claudie
 spec:
   activeDeadlineSeconds: 1800
   backoffLimit: 0
