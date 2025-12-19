@@ -70,44 +70,53 @@ metadata:
   labels:
     managed-by: claudie
 spec:
-  activeDeadlineSeconds: 600
-  ttlSecondsAfterFinished: 300
-  backoffLimit: 0
+  activeDeadlineSeconds: 600 # 10 minutes
+  ttlSecondsAfterFinished: 300 # 5 minutes
   template:
     metadata:
-      annotations:
-        prometheus.io/port: "8080"
-        prometheus.io/scrape: "true"
       labels:
-        app: kubelet-csr-approver
+        app: kubelet-csr-approver-{{ .Hash }}
         managed-by: claudie
     spec:
       serviceAccountName: kubelet-csr-approver
       restartPolicy: Never
       containers:
-        - name: kubelet-csr-approver
-          image: postfinance/kubelet-csr-approver:v1.2.12
-          resources:
-            limits:
-              memory: "128Mi"
-              cpu: "500m"
-          args:
-            - -metrics-bind-address
-            - ":8080"
-            - -health-probe-bind-address
-            - ":8081"
-            - -leader-election
-          livenessProbe:
-            httpGet:
-              path: /healthz
-              port: 8081
-          env:
-            - name: PROVIDER_REGEX
-              value: {{ .ProviderRegex }}
-            - name: PROVIDER_IP_PREFIXES
-              value: {{ .ProviderIPPrefixes }}
-            - name: MAX_EXPIRATION_SEC
-              value: "31622400"
+      - command:
+        - sh
+        - -c
+        - |
+          #!/bin/sh
+          END=$((SECONDS+300))  # 5 minutes = 300 seconds
+          while [ $SECONDS -lt $END ]; do
+            CSRS=$(kubectl get csr -o json | jq -r '.items[] | 
+              select(
+                .spec.signerName=="kubernetes.io/kubelet-serving" and 
+                (.status.conditions == null) and
+                (.spec.username | test("{{ .ProviderRegex }}"))
+              ) | .metadata.name')
+            
+            if [ -z "$CSRS" ]; then
+              echo "No matching Pending CSRs with kubernetes.io/kubelet-serving signer name found at $(date)"
+            else
+              for csr in $CSRS; do
+                echo "Approving CSR: $csr"
+                kubectl certificate approve "$csr"
+              done
+            fi
+            
+            sleep 30
+          done
+          echo "Finished after 5 minutes."
+          exit 0
+        image: bitnami/kubectl:latest
+        imagePullPolicy: IfNotPresent
+        name: kubelet-csr-approver
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
       tolerations:
         - key: node-role.kubernetes.io/control-plane
           operator: Equal
