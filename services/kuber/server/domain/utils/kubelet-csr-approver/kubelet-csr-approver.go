@@ -57,7 +57,7 @@ func (kca *KubeletCSRApprover) DeployKubeletCSRApprover() error {
 
 	// deploys to namespace defined in the template (should be kube-system by default)
 	if err := kc.KubectlApply(kubeletCSRApproverDeployment, ""); err != nil {
-		return fmt.Errorf("error while applying cluster autoscaler for cluster %s : %w", kca.cluster.ClusterInfo.Name, err)
+		return fmt.Errorf("error while applying kubelet-csr-approver for cluster %s : %w", kca.cluster.ClusterInfo.Name, err)
 	}
 	return os.RemoveAll(kca.directory)
 }
