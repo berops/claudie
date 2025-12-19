@@ -103,10 +103,8 @@ spec:
           env:
             - name: PROVIDER_REGEX
               value: {{ .ProviderRegex }}
-              value: ^[abcdef]\.test\.ch$
             - name: PROVIDER_IP_PREFIXES
               value: {{ .ProviderIPPrefixes }}
-              value: "0.0.0.0/0,::/0"
             - name: MAX_EXPIRATION_SEC
               value: "31622400"
       tolerations:
