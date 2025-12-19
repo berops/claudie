@@ -8,7 +8,7 @@ import (
 )
 
 func DeleteNodes(logger zerolog.Logger, tracker Tracker) {
-	action, ok := tracker.Task.Do.(*spec.TaskV2_Update)
+	action, ok := tracker.Task.Do.(*spec.Task_Update)
 	if !ok {
 		logger.
 			Warn().
@@ -16,7 +16,7 @@ func DeleteNodes(logger zerolog.Logger, tracker Tracker) {
 		return
 	}
 
-	d, ok := action.Update.Delta.(*spec.UpdateV2_DeleteK8SNodes_)
+	d, ok := action.Update.Delta.(*spec.Update_DeleteK8SNodes_)
 	if !ok {
 		logger.
 			Warn().

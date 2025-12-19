@@ -33,7 +33,7 @@ type nodeInfo struct {
 type Deleter struct {
 	masterNodes   []nodeInfo
 	workerNodes   []nodeInfo
-	cluster       *spec.K8SclusterV2
+	cluster       *spec.K8Scluster
 	clusterPrefix string
 	keepNodePools map[string]struct{}
 
@@ -43,7 +43,7 @@ type Deleter struct {
 // New returns new Deleter struct, used for node deletion from a k8s cluster
 // masterNodes - master nodes to DELETE
 // workerNodes - worker nodes to DELETE
-func NewDeleter(masterNodes, workerNodes []string, cluster *spec.K8SclusterV2, keepNodePools map[string]struct{}) *Deleter {
+func NewDeleter(masterNodes, workerNodes []string, cluster *spec.K8Scluster, keepNodePools map[string]struct{}) *Deleter {
 	clusterID := cluster.ClusterInfo.Id()
 	var mn, wn []nodeInfo
 
@@ -51,7 +51,7 @@ func NewDeleter(masterNodes, workerNodes []string, cluster *spec.K8SclusterV2, k
 		mn = append(mn, nodeInfo{
 			fullname:       masterNodes[i],
 			k8sName:        strings.TrimPrefix(masterNodes[i], fmt.Sprintf("%s-", clusterID)),
-			publicEndpoint: clusters.NodePublicV2(masterNodes[i], cluster),
+			publicEndpoint: clusters.NodePublic(masterNodes[i], cluster),
 		})
 	}
 
@@ -59,7 +59,7 @@ func NewDeleter(masterNodes, workerNodes []string, cluster *spec.K8SclusterV2, k
 		wn = append(wn, nodeInfo{
 			fullname:       workerNodes[i],
 			k8sName:        strings.TrimPrefix(workerNodes[i], fmt.Sprintf("%s-", clusterID)),
-			publicEndpoint: clusters.NodePublicV2(workerNodes[i], cluster),
+			publicEndpoint: clusters.NodePublic(workerNodes[i], cluster),
 		})
 	}
 

@@ -48,8 +48,8 @@ type Patcher struct {
 
 func NewPatcher(
 	logger zerolog.Logger,
-	cluster *spec.K8SclusterV2,
-	patch *spec.UpdateV2_KuberPatchNodes,
+	cluster *spec.K8Scluster,
+	patch *spec.Update_KuberPatchNodes,
 	processLimit *semaphore.Weighted,
 	workersLimit int,
 ) *Patcher {

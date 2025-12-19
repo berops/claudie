@@ -13,8 +13,8 @@ import (
 )
 
 type ScrapeConfig struct {
-	Cluster    *spec.K8SclusterV2
-	LBClusters []*spec.LBclusterV2
+	Cluster    *spec.K8Scluster
+	LBClusters []*spec.LBcluster
 	Directory  string
 }
 
@@ -24,7 +24,7 @@ type SCData struct {
 
 type LBcluster struct {
 	NodePools *NodePools
-	Roles     []*spec.RoleV2
+	Roles     []*spec.Role
 }
 
 type NodePools struct {

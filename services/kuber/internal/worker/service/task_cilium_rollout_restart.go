@@ -12,9 +12,9 @@ func CiliumRolloutRestart(logger zerolog.Logger, tracker Tracker) {
 	var kubeconfig string
 
 	switch do := tracker.Task.Do.(type) {
-	case *spec.TaskV2_Create:
+	case *spec.Task_Create:
 		kubeconfig = do.Create.K8S.Kubeconfig
-	case *spec.TaskV2_Update:
+	case *spec.Task_Update:
 		kubeconfig = do.Update.State.K8S.Kubeconfig
 	default:
 		logger.

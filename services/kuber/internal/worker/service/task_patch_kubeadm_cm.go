@@ -21,7 +21,7 @@ const ReadKubeadmConfigRetries = 3
 func PatchKubeadmCM(logger zerolog.Logger, tracker Tracker) {
 	logger.Info().Msg("Patching kubeadm config-map")
 
-	action, ok := tracker.Task.Do.(*spec.TaskV2_Update)
+	action, ok := tracker.Task.Do.(*spec.Task_Update)
 	if !ok {
 		logger.
 			Warn().
@@ -31,7 +31,7 @@ func PatchKubeadmCM(logger zerolog.Logger, tracker Tracker) {
 	}
 
 	var lbApiEndpoint string
-	if ep := clusters.FindAssignedLbApiEndpointV2(action.Update.State.LoadBalancers); ep != nil {
+	if ep := clusters.FindAssignedLbApiEndpoint(action.Update.State.LoadBalancers); ep != nil {
 		lbApiEndpoint = ep.Dns.Endpoint
 	}
 

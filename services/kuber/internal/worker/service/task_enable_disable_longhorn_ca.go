@@ -22,12 +22,12 @@ type enableCA struct {
 func EnableLonghornCA(logger zerolog.Logger, tracker Tracker) {
 	logger.Info().Msg("Enabling cluster autoscaler support for longhorn")
 
-	var k8s *spec.K8SclusterV2
+	var k8s *spec.K8Scluster
 
 	switch do := tracker.Task.Do.(type) {
-	case *spec.TaskV2_Create:
+	case *spec.Task_Create:
 		k8s = do.Create.K8S
-	case *spec.TaskV2_Update:
+	case *spec.Task_Update:
 		k8s = do.Update.State.K8S
 	default:
 		logger.
@@ -94,12 +94,12 @@ func EnableLonghornCA(logger zerolog.Logger, tracker Tracker) {
 func DisableLonghornCA(logger zerolog.Logger, tracker Tracker) {
 	logger.Info().Msg("Disabling cluster autoscaler support for longhorn")
 
-	var k8s *spec.K8SclusterV2
+	var k8s *spec.K8Scluster
 
 	switch do := tracker.Task.Do.(type) {
-	case *spec.TaskV2_Create:
+	case *spec.Task_Create:
 		k8s = do.Create.K8S
-	case *spec.TaskV2_Update:
+	case *spec.Task_Update:
 		k8s = do.Update.State.K8S
 	default:
 		logger.

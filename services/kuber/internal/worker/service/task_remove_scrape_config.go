@@ -13,7 +13,7 @@ import (
 func RemoveScrapeConfig(logger zerolog.Logger, tracker Tracker) {
 	logger.Info().Msg("Deleting scrape-config")
 
-	update, ok := tracker.Task.Do.(*spec.TaskV2_Update)
+	update, ok := tracker.Task.Do.(*spec.Task_Update)
 	if !ok {
 		logger.
 			Warn().

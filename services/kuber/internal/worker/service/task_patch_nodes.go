@@ -8,7 +8,7 @@ import (
 )
 
 func PatchNodes(logger zerolog.Logger, processlimit *semaphore.Weighted, workersLimit int, tracker Tracker) {
-	update, ok := tracker.Task.Do.(*spec.TaskV2_Update)
+	update, ok := tracker.Task.Do.(*spec.Task_Update)
 	if !ok {
 		logger.
 			Warn().
@@ -16,7 +16,7 @@ func PatchNodes(logger zerolog.Logger, processlimit *semaphore.Weighted, workers
 		return
 	}
 
-	delta, ok := update.Update.Delta.(*spec.UpdateV2_KpatchNodes)
+	delta, ok := update.Update.Delta.(*spec.Update_KpatchNodes)
 	if !ok {
 		logger.
 			Warn().

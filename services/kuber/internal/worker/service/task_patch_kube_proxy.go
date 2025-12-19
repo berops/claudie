@@ -14,7 +14,7 @@ import (
 func PatchKubeProxy(logger zerolog.Logger, tracker Tracker) {
 	logger.Info().Msg("Patching kube proxy")
 
-	action, ok := tracker.Task.Do.(*spec.TaskV2_Update)
+	action, ok := tracker.Task.Do.(*spec.Task_Update)
 	if !ok {
 		logger.
 			Warn().

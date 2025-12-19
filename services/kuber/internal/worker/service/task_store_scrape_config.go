@@ -13,14 +13,14 @@ import (
 func StoreScrapeConfig(logger zerolog.Logger, tracker Tracker) {
 	logger.Info().Msg("Storing scrape config")
 
-	var k8s *spec.K8SclusterV2
-	var lbs []*spec.LBclusterV2
+	var k8s *spec.K8Scluster
+	var lbs []*spec.LBcluster
 
 	switch do := tracker.Task.Do.(type) {
-	case *spec.TaskV2_Create:
+	case *spec.Task_Create:
 		k8s = do.Create.K8S
 		lbs = do.Create.LoadBalancers
-	case *spec.TaskV2_Update:
+	case *spec.Task_Update:
 		k8s = do.Update.State.K8S
 		lbs = do.Update.State.LoadBalancers
 	default:
