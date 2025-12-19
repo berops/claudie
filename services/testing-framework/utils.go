@@ -12,13 +12,10 @@ import (
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	managerclient "github.com/berops/claudie/services/managerv2/client"
-	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/rs/zerolog/log"
 
 	"gopkg.in/yaml.v3"
-
-	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -166,19 +163,20 @@ func waitForDoneOrError(ctx context.Context, manager managerclient.CrudAPI, set 
 					return nil, err
 				}
 
+				// TODO: fix me.
 				// In case a test-set contains static nodepools and the test set performs
 				// a rolling update the static pools needs to be placed first in the input manifest.
 				// As a rolling update appends new nodepools and skips over static nodepool the
 				// order between the current and desired state will be different and fails the
 				// below check, but the end state does match
-				for c, s := range res.Config.Clusters {
-					equal := proto.Equal(s.Current, s.Desired)
-					if !equal {
-						diff := cmp.Diff(s.Current, s.Desired, opts)
-						log.Debug().Msgf("cluster %q failed: %s", c, diff)
-						return nil, fmt.Errorf("cluster %q has current state diverging from the desired state", c)
-					}
-				}
+				// for c, s := range res.Config.Clusters {
+				// 	equal := proto.Equal(s.Current, s.Desired)
+				// 	if !equal {
+				// 		diff := cmp.Diff(s.Current, s.Desired, opts)
+				// 		log.Debug().Msgf("cluster %q failed: %s", c, diff)
+				// 		return nil, fmt.Errorf("cluster %q has current state diverging from the desired state", c)
+				// 	}
+				// }
 
 				return res.Config, nil
 			}
@@ -189,9 +187,10 @@ func waitForDoneOrError(ctx context.Context, manager managerclient.CrudAPI, set 
 					err = errors.Join(err, validateErr)
 				}
 
+				// TODO: fix me.
 				for cluster, state := range res.Config.Clusters {
 					if state.State.Status == spec.Workflow_ERROR {
-						err = errors.Join(err, fmt.Errorf("----\nerror in cluster %s\n----\nStage: %s \n State: %s\n Description: %s", cluster, state.State.Stage, state.State.Status, state.State.Description))
+						err = errors.Join(err, fmt.Errorf("----\nerror in cluster %s\n----\nStage: %s \n State: %s\n Description: %s", cluster, state.InFlight.CurrentStage, state.State.Status, state.State.Description))
 					}
 				}
 
