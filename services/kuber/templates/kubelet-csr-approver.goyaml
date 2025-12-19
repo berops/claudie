@@ -70,7 +70,8 @@ metadata:
   labels:
     managed-by: claudie
 spec:
-  activeDeadlineSeconds: 1800
+  activeDeadlineSeconds: 600
+  ttlSecondsAfterFinished: 300
   backoffLimit: 0
   template:
     metadata:
