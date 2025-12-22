@@ -5,32 +5,42 @@
     state: directory
   register: wg_conf_dir
 
-- name: Generate wireguard keypair
-  ansible.builtin.shell: umask 077 && wg genkey | tee {{ wg_conf_dir.path }}/privatekey | wg pubkey > {{ wg_conf_dir.path }}/publickey
+- name: Generate WireGuard keypair if not existing
+  ansible.builtin.shell: |
+    umask 077 && wg genkey | tee {{ wg_conf_dir.path }}/privatekey | wg pubkey > {{ wg_conf_dir.path }}/publickey
+  args:
+    creates: "{{ wg_conf_dir.path }}/privatekey"
 
-- name: Save privatekey
-  ansible.builtin.shell: cat {{ wg_conf_dir.path }}/privatekey
+- name: Read private key
+  ansible.builtin.slurp:
+    src: "{{ wg_conf_dir.path }}/privatekey"
   register: privatekey
 
-- name: Save publickey
-  ansible.builtin.shell: cat {{ wg_conf_dir.path }}/publickey
+- name: Read public key
+  ansible.builtin.slurp:
+    src: "{{ wg_conf_dir.path }}/publickey"
   register: publickey
 
 - name: Check if wireguard interface exists
-  ansible.builtin.shell: ip a
-  register: ipa_contents
+  ansible.builtin.stat:
+    path: /sys/class/net/wg0
+  register: wg0_stat
 
 - name: Create wireguard interface
-  ansible.builtin.shell: ip link add dev wg0 type wireguard
-  when: ipa_contents.stdout.find('wg0') == -1
+  ansible.builtin.command:
+    cmd: ip link add dev wg0 type wireguard
+  when: not wg0_stat.stat.exists
 
-- name: Check if wireguard interface has IP address
-  ansible.builtin.shell: ip a
-  register: ipa_contents
+- name: Check if interface already has the IP
+  ansible.builtin.command:
+    cmd: ip -o addr show dev wg0
+  register: wg0_ip_info
+  changed_when: false 
 
-- name: Configure an IP address for an interface
-  ansible.builtin.shell: "ip address add dev wg0 {{ private_ip }}/{{ netmask }}"
-  when: "ipa_contents.stdout.find( private_ip ) == -1"
+- name: Assign IP address
+  ansible.builtin.command:
+    cmd: ip address add dev wg0 {{ private_ip }}/{{ netmask }}
+  when: private_ip not in wg0_ip_info.stdout
 
 - name: Template wireguard config file to a node
   ansible.builtin.template:
@@ -46,18 +56,13 @@
   ansible.builtin.shell: ip link set up dev wg0
 
 - name: Set MTU size for wg0
-  ansible.builtin.shell: ifconfig {{ wg_interface_name }} mtu {{ mtu_size }}
+  ansible.builtin.shell: ip link set mtu {{ mtu_size }} dev {{ wg_interface_name }}
 
-- name: Ensure file /etc/dhcp/dhclient.conf exists
-  ansible.builtin.copy:
-    content: ""
-    dest: /etc/dhcp/dhclient.conf
-    force: false
-
-- name: Make MTU change persistent across reboots
+- name: Ensure file /etc/dhcp/dhclient.conf exists and make MTU change persistent across reboots
   ansible.builtin.blockinfile:
     path: /etc/dhcp/dhclient.conf
-    insertbefore: "request"
+    create: yes
+    insertbefore: "^request"
     block: |
       interface "{{ wg_interface_name }}" {
          default interface-mtu {{ mtu_size }};
