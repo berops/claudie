@@ -56,7 +56,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
 - name: ghcr.io/berops/claudie/ansibler
-  newTag: 1c37703-3774
+  newTag: 24bd046-3775
 - name: ghcr.io/berops/claudie/autoscaler-adapter
   newTag: 322cee7-3768
 - name: ghcr.io/berops/claudie/builder
