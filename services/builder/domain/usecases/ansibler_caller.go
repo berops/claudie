@@ -100,6 +100,11 @@ func (u *Usecases) configureInfrastructure(ctx context.Context, work *builder.Co
 			stage:       spec.Workflow_ANSIBLER,
 			description: "updating proxy environment variables for kuberentes services",
 		},
+		{
+			do:          u.installTeeOverride,
+			stage:       spec.Workflow_ANSIBLER,
+			description: "installing tee binary override",
+		},
 	}
 
 	return u.processTasks(ctx, work, logger, tasks)
@@ -134,4 +139,11 @@ func (u *Usecases) updateControlPlaneApiEndpoint(nodepool, node string) Task {
 		stage:       spec.Workflow_ANSIBLER,
 		description: "changing api endpoint to a new control plane node",
 	}
+}
+
+func (u *Usecases) installTeeOverride(_ context.Context, work *builder.Context, _ *zerolog.Logger) error {
+	if err := u.Ansibler.InstallTeeOverride(work, u.Ansibler.GetClient()); err != nil {
+		return err
+	}
+	return nil
 }
