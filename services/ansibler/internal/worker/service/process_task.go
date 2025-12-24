@@ -172,8 +172,8 @@ func DefaultToSingleLoadBalancerIfPossible(task *spec.Task_Update) *spec.LBclust
 		targetHandle = delta.AddedLoadBalancer.Handle
 	case *spec.Update_AnsReplaceTargetPools:
 		targetHandle = delta.AnsReplaceTargetPools.Handle
-	case *spec.Update_DeleteLoadBalancerNodes_:
-		targetHandle = delta.DeleteLoadBalancerNodes.Handle
+	case *spec.Update_DeletedLoadBalancerNodes_:
+		targetHandle = delta.DeletedLoadBalancerNodes.Handle
 	case *spec.Update_DeleteLoadBalancerRoles_:
 		targetHandle = delta.DeleteLoadBalancerRoles.Handle
 	case *spec.Update_DeleteLoadBalancer_:
@@ -199,9 +199,8 @@ func DefaultToSingleLoadBalancerIfPossible(task *spec.Task_Update) *spec.LBclust
 // If the task is related to adding new nodes, this function will return
 // a shallow copy of the nodepool with only the new additions. The original
 // nodepool is not modified. All of the fields of the new shallow copy are still
-// shared with the original nodepool.
-//
-// **Caution** the counts of the nodes are not changed, thus
+// shared with the original nodepool. The shallow copy will have its node count
+// adjusted to reflect the filtered out nodes, use with **caution**.
 //
 // If the function can't default to new nodes only, nil is returned.
 func DefaultKubernetesToNewNodesIfPossible(task *spec.Task_Update) *spec.NodePool {
@@ -214,9 +213,6 @@ func DefaultKubernetesToNewNodesIfPossible(task *spec.Task_Update) *spec.NodePoo
 	case *spec.Update_AddedK8SNodes_:
 		npId = delta.AddedK8SNodes.Nodepool
 		nodes = delta.AddedK8SNodes.Nodes
-	case *spec.Update_DeleteK8SNodes_:
-		npId = delta.DeleteK8SNodes.Nodepool
-		nodes = delta.DeleteK8SNodes.Nodes
 	}
 
 	if npId == "" || len(nodes) == 0 {
@@ -243,10 +239,6 @@ func DefaultLoadBalancerToNewNodesIfPossible(task *spec.Task_Update) *spec.NodeP
 		targetHandle = delta.AddedLoadBalancerNodes.Handle
 		npId = delta.AddedLoadBalancerNodes.NodePool
 		nodes = delta.AddedLoadBalancerNodes.Nodes
-	case *spec.Update_DeleteLoadBalancerNodes_:
-		targetHandle = delta.DeleteLoadBalancerNodes.Handle
-		npId = delta.DeleteLoadBalancerNodes.Nodepool
-		nodes = delta.DeleteLoadBalancerNodes.Nodes
 	}
 
 	if targetHandle == "" || npId == "" || len(nodes) == 0 {
@@ -264,4 +256,42 @@ func DefaultLoadBalancerToNewNodesIfPossible(task *spec.Task_Update) *spec.NodeP
 	}
 
 	return nodepools.PartialCopyWithNodeFilter(np, nodes)
+}
+
+// If the task is related to deleted nodes within the kubernetes cluster, will return
+// a shallow copy of the affected nodepool with only the deleted nodes. The original
+// nodepool is not modified. All of the fields of the new shallow copy are still shared
+// with the original nodepool. The shallow copy will have its node count adjusted to
+// reflect the filtered out nodes, use with **caution**.
+//
+// If the function can't default to the deleted nodes, nil is returned.
+func DefaultKubernetesToDeletedNodesOnly(k8s *spec.K8Scluster, del *spec.Update_DeletedK8SNodes) *spec.NodePool {
+	var n *spec.NodePool
+	switch kind := del.Kind.(type) {
+	case *spec.Update_DeletedK8SNodes_Partial_:
+		np := nodepools.FindByName(kind.Partial.Nodepool, k8s.ClusterInfo.NodePools)
+		if np == nil {
+			break
+		}
+		n = nodepools.PartialCopyWithReplacedNodes(np, kind.Partial.Nodes, kind.Partial.StaticNodeKeys)
+	case *spec.Update_DeletedK8SNodes_Whole:
+		n = kind.Whole.Nodepool
+	}
+	return n
+}
+
+// Same as [DefaultKubernetesToDeletedNodesOnly] but with loadbalancer deletions.
+func DefaultLoadBalancerToDeletedNodesOnly(lb *spec.LBcluster, del *spec.Update_DeletedLoadBalancerNodes) *spec.NodePool {
+	var n *spec.NodePool
+	switch kind := del.Kind.(type) {
+	case *spec.Update_DeletedLoadBalancerNodes_Partial_:
+		np := nodepools.FindByName(kind.Partial.Nodepool, lb.ClusterInfo.NodePools)
+		if np == nil {
+			break
+		}
+		n = nodepools.PartialCopyWithReplacedNodes(np, kind.Partial.Nodes, kind.Partial.StaticNodeKeys)
+	case *spec.Update_DeletedLoadBalancerNodes_Whole:
+		n = kind.Whole.Nodepool
+	}
+	return n
 }

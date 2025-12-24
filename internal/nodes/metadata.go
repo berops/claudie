@@ -1,6 +1,8 @@
 package nodes
 
 import (
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/berops/claudie/internal/sanitise"
@@ -31,8 +33,13 @@ const (
 	ControlPlane = "node-role.kubernetes.io/control-plane"
 )
 
-// GetAllLabels returns default labels with their theoretical values for the specified nodepool.
-func GetAllLabels(np *spec.NodePool, resolver ArchResolver) (map[string]string, error) {
+// GetAllLabels returns default labels with their theoretical values for the specified nodepool,
+// While also allowing to pass in additional labels to be set together with the [spec.NodePool.Labels].
+func GetAllLabels(
+	np *spec.NodePool,
+	resolver ArchResolver,
+	additionalLabels map[string]string,
+) (map[string]string, error) {
 	m := make(map[string]string, len(np.Labels)+9)
 
 	// Apply default static nodepool labels.
@@ -47,6 +54,9 @@ func GetAllLabels(np *spec.NodePool, resolver ArchResolver) (map[string]string, 
 	// In case of dynamic nodepools, apply them first, so that if the user tries
 	// to overwrite some of the claudie default related it will not allow it.
 	for k, v := range np.Labels {
+		m[escape(sanitise.String(k))] = sanitise.String(v)
+	}
+	for k, v := range additionalLabels {
 		m[escape(sanitise.String(k))] = sanitise.String(v)
 	}
 
@@ -83,23 +93,40 @@ func GetAllLabels(np *spec.NodePool, resolver ArchResolver) (map[string]string, 
 }
 
 // GetAllTaints returns default taints with their theoretical values for the specified nodepool.
-func GetAllTaints(np *spec.NodePool) []k8sV1.Taint {
-	taints := make([]k8sV1.Taint, 0, len(np.Taints)+1)
+func GetAllTaints(np *spec.NodePool, additionalTaints []*spec.Taint) []k8sV1.Taint {
+	uniq := make(map[k8sV1.Taint]struct{}, len(np.Taints)+1)
+
 	// Add custom user defined taints.
 	for _, t := range np.Taints {
-		if t.Key == ControlPlane && t.Effect == string(k8sV1.TaintEffectNoSchedule) && t.Value == "" {
-			// Skipping as this is Claudie default taint
-			continue
+		t := k8sV1.Taint{
+			Key:    t.Key,
+			Value:  t.Value,
+			Effect: k8sV1.TaintEffect(t.Effect),
 		}
-		taints = append(taints, k8sV1.Taint{Key: t.Key, Value: t.Value, Effect: k8sV1.TaintEffect(t.Effect)})
+		uniq[t] = struct{}{}
+	}
+
+	for _, t := range additionalTaints {
+		t := k8sV1.Taint{
+			Key:    t.Key,
+			Value:  t.Value,
+			Effect: k8sV1.TaintEffect(t.Effect),
+		}
+		uniq[t] = struct{}{}
 	}
 
 	// Claudie assigned taints.
 	if np.IsControl {
-		taints = append(taints, k8sV1.Taint{Key: ControlPlane, Value: "", Effect: k8sV1.TaintEffectNoSchedule})
+		t := k8sV1.Taint{
+			Key:    ControlPlane,
+			Value:  "",
+			Effect: k8sV1.TaintEffectNoSchedule,
+		}
+
+		uniq[t] = struct{}{}
 	}
 
-	return taints
+	return slices.Collect(maps.Keys(uniq))
 }
 
 // getNodeType returns node type as a string value.

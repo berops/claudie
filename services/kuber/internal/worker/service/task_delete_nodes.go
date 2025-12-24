@@ -7,6 +7,9 @@ import (
 	"github.com/rs/zerolog"
 )
 
+// TODO: the deletion needs to be reworked...
+// for just the k8s clusters I believe.
+
 func DeleteNodes(logger zerolog.Logger, tracker Tracker) {
 	action, ok := tracker.Task.Do.(*spec.Task_Update)
 	if !ok {
@@ -16,7 +19,7 @@ func DeleteNodes(logger zerolog.Logger, tracker Tracker) {
 		return
 	}
 
-	d, ok := action.Update.Delta.(*spec.Update_DeleteK8SNodes_)
+	d, ok := action.Update.Delta.(*spec.Update_KDeleteNodes)
 	if !ok {
 		logger.
 			Warn().
@@ -24,36 +27,26 @@ func DeleteNodes(logger zerolog.Logger, tracker Tracker) {
 		return
 	}
 
-	np := nodepools.FindByName(d.DeleteK8SNodes.Nodepool, action.Update.State.K8S.ClusterInfo.NodePools)
+	k8s := action.Update.State.K8S
+	np := nodepools.FindByName(d.KDeleteNodes.Nodepool, k8s.ClusterInfo.NodePools)
 	if np == nil {
 		logger.
 			Warn().
 			Msgf("Received valid task for deleting nodes, but the nodepools %q from which nodes are "+
-				"to be deleted is missing from the provided state, ignoring", d.DeleteK8SNodes.Nodepool)
+				"to be deleted is missing from the provided state, ignoring", d.KDeleteNodes.Nodepool)
 		return
 	}
 
 	var (
-		master        []string
-		worker        []string
-		keepNodepools = make(map[string]struct{})
+		master []string
+		worker []string
 	)
 
 	if np.IsControl {
-		master = append(master, d.DeleteK8SNodes.Nodes...)
-	} else {
-		worker = append(worker, d.DeleteK8SNodes.Nodes...)
-	}
-
-	if !d.DeleteK8SNodes.WithNodePool {
-		keepNodepools[d.DeleteK8SNodes.Nodepool] = struct{}{}
-	}
-
-	if len(master) > 0 {
+		master = append(master, d.KDeleteNodes.Nodes...)
 		logger.Info().Msgf("Deleting %v control nodes", len(master))
-	}
-
-	if len(worker) > 0 {
+	} else {
+		worker = append(worker, d.KDeleteNodes.Nodes...)
 		logger.Info().Msgf("Deleting %v worker nodes", len(worker))
 	}
 
@@ -61,12 +54,28 @@ func DeleteNodes(logger zerolog.Logger, tracker Tracker) {
 		return
 	}
 
-	deleter := nodes.NewDeleter(master, worker, action.Update.State.K8S, keepNodepools)
-	if err := deleter.DeleteNodes(); err != nil {
+	deleter, err := nodes.NewDeleter(master, worker, k8s)
+	if err != nil {
+		logger.Err(err).Msg("Failed to prepare node deletion")
+		tracker.Diagnostics.Push(err)
+		return
+	}
+
+	if err := deleter.DeleteNodes(logger); err != nil {
 		logger.Err(err).Msg("Failed to delete nodes")
 		tracker.Diagnostics.Push(err)
 		return
 	}
+
+	if d.KDeleteNodes.WithNodePool {
+		k8s.ClusterInfo.NodePools = nodepools.DeleteByName(k8s.ClusterInfo.NodePools, d.KDeleteNodes.Nodepool)
+	} else {
+		nodepools.DeleteNodes(np, d.KDeleteNodes.Nodes)
+	}
+
+	update := tracker.Result.Update()
+	update.Kubernetes(k8s)
+	update.Commit()
 
 	logger.Info().Msg("Nodes successfully deleted")
 }

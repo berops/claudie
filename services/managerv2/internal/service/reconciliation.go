@@ -1,6 +1,8 @@
 package service
 
 import (
+	"fmt"
+
 	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/nodepools"
@@ -34,14 +36,13 @@ const (
 	NoReschedule
 
 	// Noop describes the case where from the reconciliation of the current and desired
-	// state no new tasks were identified thus no changes are to be worked on and no
-	// need to update the representation in the external storage.
+	// state no new tasks were identified, or an error occured during the process, thus
+	// no changes are to be worked on and no need to update the representation in the external
+	// storage.
 	Noop
 
 	// NotReady describes the case where the manifest is not ready to be scheduled yet,
-	// this is mostly related to the retry policies which can vary. For example if
-	// an exponential retry policy is used the manifest will not be ready to be scheduled
-	// until the specified number of Tick pass.
+	// But needs to update its Database representation as changes have been made to it.
 	NotReady
 
 	// FinalRetry describes the case where a manifest had a retry policy to retry
@@ -76,6 +77,7 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 			isDestroy = (!isCurrentNil || hasInFlightState) && isDesiredNil
 		)
 
+	event_switch:
 		switch {
 		case noop:
 			// there is no desired state and no current state.
@@ -202,25 +204,80 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 
 			result = Noop
 
-			// TODO split the healthcheck into two parts.
-			// The second part where the pings are happening
-			// should be executed only if a task is to be
-			// scheduled, there is no need to continiously
-			// ping in a loop every reconciliation loop.
-
 			// After the [HealthCheckStatus] and the [KubernetesDiff], [LoadBalancersDiff]
 			// is made all of the current,desired [spec.Clusters] state is considered
 			// immutable and is not modified to not invalidate cached indices for the
 			// returned diffs.
 			logger.Info().Msg("Health checking current state")
-			hc, err := HealthCheck(logger, current)
-			if err != nil {
-				logger.Err(err).Msg("Failed to fully healthcheck cluster")
-				break
-			}
-
+			hc := HealthCheck(logger, current)
 			if state.InFlight = handleUpdate(hc, current, desired); state.InFlight != nil {
 				result = Reschedule
+
+				// Before scheduling any new task, healthcheck the reachability of the
+				// build infrastructure to avoid any issues with unreachable nodes during
+				// the building of the task, in which case this takes a higher priority
+				// then the scheduled task.
+				rhc, err := HealthCheckNodeReachability(logger, current)
+				if err != nil {
+					result = NotReady
+
+					state.InFlight = nil
+					state.State.Status = spec.Workflow_ERROR
+					state.State.Description = fmt.Sprintf(
+						"Can't schedule task, failed to determine reachability of nodes of the clusters: %v",
+						err,
+					)
+
+					logger.Error().Msg(state.State.Description)
+					break
+				}
+
+				switch HandleKubernetesUnreachableNodes(logger, hc, rhc.Kubernetes, state, desired) {
+				case UnreachableNodesModifiedCurrentState:
+					logger.Debug().Msg("Propagating change to current state after static node removal on the kubernetes level")
+					state.InFlight = nil
+					result = NotReady
+					break event_switch
+				case UnreachableNodesPropagateError:
+					// Higher priority task can't be scheduled due to wait on user
+					// input on the unreachable nodes.
+					//
+					// If the user did not delete the unreachable nodes via kubectl or the user
+					// did not remove the whole nodepool with the unreachable nodes from the
+					// desired state we cannot proceed further as we need to remove all the
+					// nodes with connectivity issues to avoid problems when executing tasks
+					// to move the current state towards the desired state, as the workflow will
+					// get stuck in ansibler which connects to the nodes via ssh. Thus propagate
+					// the error to the user.
+					logger.Debug().Msg("Propagating error for unreachable nodes on the kubernetes level without working on any task")
+					state.InFlight = nil
+					result = NotReady
+					break event_switch
+				case UnreachableNodesScheduledTask:
+					logger.Debug().Msg("Scheduled Task with higher priority for unreachable nodes on the kubernetes level")
+					break event_switch
+				case UnreachableNodesNoop:
+					// Nothing to do.
+				}
+
+				// Same as with the kubernetes unreachable nodes.
+				switch HandleLoadBalancerUnreachableNodes(logger, rhc.LoadBalancers, state, desired) {
+				case UnreachableNodesModifiedCurrentState:
+					logger.Debug().Msg("Propagating change to current state after static node removal on the loadbalancer level")
+					state.InFlight = nil
+					result = NotReady
+					break event_switch
+				case UnreachableNodesPropagateError:
+					logger.Debug().Msg("Propagating error for unreachable nodes on the loadbalancer level without working on any task")
+					state.InFlight = nil
+					result = NotReady
+					break event_switch
+				case UnreachableNodesScheduledTask:
+					logger.Debug().Msg("Scheduled Task with higher priority for unreachable nodes on the loadbalancer level")
+					break event_switch
+				case UnreachableNodesNoop:
+					// Nothing to do.
+				}
 			}
 		}
 

@@ -2,7 +2,6 @@ package service
 
 import (
 	"github.com/berops/claudie/internal/clusters"
-	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/terraformer/internal/worker/service/internal/kubernetes"
 	"github.com/rs/zerolog"
@@ -12,7 +11,7 @@ import (
 
 type DeleteKubernetesNodes struct {
 	State  *spec.Update_State
-	Delete *spec.Update_DeleteK8SNodes
+	Delete *spec.Update_DeletedK8SNodes
 }
 
 func deleteKubernetesNodes(
@@ -22,30 +21,16 @@ func deleteKubernetesNodes(
 	action DeleteKubernetesNodes,
 	tracker Tracker,
 ) {
-	// Currently there is no special mechanism for just deleting the
-	// nodes of the kubernetes cluster, thus simply just remove them
-	// from the state and reconcile the cluster, as there is just one
-	// state file for the whole cluster.
+	// The deletion of the nodes for the kubernetes cluster is handled by the
+	// kuber service, in here we only destroy the spawned infrastructure for the
+	// dynamic nodepools.
+	//
+	// The state has already been modified and does not include the deleted nodes
+	// thus simply refresh the state file with opentofu, as we currently share a
+	// single state file within the cluster, which will take care of the deletions
+	// of the infrastructure.
 
 	k8s := action.State.K8S
-
-	if action.Delete.WithNodePool {
-		k8s.ClusterInfo.NodePools = nodepools.DeleteByName(k8s.ClusterInfo.NodePools, action.Delete.Nodepool)
-	} else {
-		np := nodepools.FindByName(action.Delete.Nodepool, k8s.ClusterInfo.NodePools)
-		if np == nil {
-			logger.
-				Warn().
-				Msgf(
-					"Can't delete nodes from nodepool %q of kubernetes cluster %q as the nodepool is missing form the received state",
-					action.Delete.Nodepool,
-					k8s.ClusterInfo.Id(),
-				)
-			return
-		}
-		nodepools.DeleteNodes(np, action.Delete.Nodes)
-	}
-
 	cluster := kubernetes.K8Scluster{
 		ProjectName:       projectName,
 		Cluster:           k8s,

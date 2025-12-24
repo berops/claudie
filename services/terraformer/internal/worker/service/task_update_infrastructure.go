@@ -32,10 +32,10 @@ func reconcileInfrastructure(
 	case *spec.Update_TfAddLoadBalancer:
 		lb := delta.TfAddLoadBalancer.Handle
 		addLoadBalancer(logger, projectName, processLimit, lb, tracker)
-	case *spec.Update_DeleteLoadBalancerNodes_:
+	case *spec.Update_TfDeleteLoadBalancerNodes:
 		action := DeleteLoadBalancerNodes{
 			State:  state,
-			Delete: delta.DeleteLoadBalancerNodes,
+			Delete: delta.TfDeleteLoadBalancerNodes,
 		}
 		deleteLoadBalancerNodes(logger, projectName, processLimit, action, tracker)
 	case *spec.Update_TfAddLoadBalancerNodes:
@@ -65,10 +65,10 @@ func reconcileInfrastructure(
 	case *spec.Update_DeleteLoadBalancer_:
 		id := delta.DeleteLoadBalancer.Handle
 		destroyLoadBalancer(logger, projectName, id, state.LoadBalancers, processLimit, stores, tracker)
-	case *spec.Update_DeleteK8SNodes_:
+	case *spec.Update_DeletedK8SNodes_:
 		action := DeleteKubernetesNodes{
 			State:  state,
-			Delete: delta.DeleteK8SNodes,
+			Delete: delta.DeletedK8SNodes,
 		}
 		deleteKubernetesNodes(logger, projectName, processLimit, action, tracker)
 	case *spec.Update_TfAddK8SNodes:

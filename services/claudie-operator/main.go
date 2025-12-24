@@ -29,7 +29,7 @@ import (
 	"github.com/berops/claudie/services/claudie-operator/pkg/controller"
 	"github.com/berops/claudie/services/claudie-operator/server/adapters/inbound/grpc"
 	"github.com/berops/claudie/services/claudie-operator/server/domain/usecases"
-	managerclient "github.com/berops/claudie/services/manager/client"
+	managerclient "github.com/berops/claudie/services/managerv2/client"
 	"github.com/go-logr/zerologr"
 	"github.com/rs/zerolog/log"
 )

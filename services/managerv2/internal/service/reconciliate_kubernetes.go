@@ -12,6 +12,11 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+// TODO: the loadbalancer deletion will also not work here...
+// cause it was already deleted from the state....
+// TODO: re-check the deletion in the manager...
+// TODO: recheck the deletion everywhere.
+
 // Wraps data and diffs needed by the reconciliation
 // for kubernetes cluster.
 //
@@ -112,13 +117,13 @@ func KubernetesLowPriority(r KubernetesReconciliate) *spec.TaskEvent {
 		return ScheduleProxyOn(r.Current, r.Desired)
 	}
 
-	labels := len(r.Diff.LabelsTaintsAnnotations.Added.LabelKeys) > 0
+	labels := len(r.Diff.LabelsTaintsAnnotations.Added.Labels) > 0
 	labels = labels || len(r.Diff.LabelsTaintsAnnotations.Deleted.LabelKeys) > 0
 
-	annotations := len(r.Diff.LabelsTaintsAnnotations.Added.AnnotationsKeys) > 0
+	annotations := len(r.Diff.LabelsTaintsAnnotations.Added.Annotations) > 0
 	annotations = annotations || len(r.Diff.LabelsTaintsAnnotations.Deleted.AnnotationsKeys) > 0
 
-	taints := len(r.Diff.LabelsTaintsAnnotations.Added.TaintKeys) > 0
+	taints := len(r.Diff.LabelsTaintsAnnotations.Added.Taints) > 0
 	taints = taints || len(r.Diff.LabelsTaintsAnnotations.Deleted.TaintKeys) > 0
 
 	if labels || annotations || taints {
@@ -312,20 +317,20 @@ func SchedulePatchNodes(current *spec.Clusters, diff LabelsTaintsAnnotationsDiff
 		toPatch  = spec.Update_KuberPatchNodes{}
 	)
 
-	for np, keys := range diff.Added.LabelKeys {
-		toPatch.Add.Labels[np] = &spec.Update_KuberPatchNodes_ListOfLabelKeys{
-			Labels: keys,
+	for np, labels := range diff.Added.Labels {
+		toPatch.Add.Labels[np] = &spec.Update_KuberPatchNodes_MapOfLabels{
+			Labels: labels,
 		}
 	}
 
-	for np, keys := range diff.Added.AnnotationsKeys {
-		toPatch.Add.Annotations[np] = &spec.Update_KuberPatchNodes_ListOfAnnotationKeys{
-			Annotations: keys,
+	for np, annotations := range diff.Added.Annotations {
+		toPatch.Add.Annotations[np] = &spec.Update_KuberPatchNodes_MapOfAnnotations{
+			Annotations: annotations,
 		}
 	}
 
-	for np, taints := range diff.Added.TaintKeys {
-		toPatch.Add.Taints[np] = &spec.Update_KuberPatchNodes_ListOfTaintKeys{
+	for np, taints := range diff.Added.Taints {
+		toPatch.Add.Taints[np] = &spec.Update_KuberPatchNodes_ListOfTaints{
 			Taints: taints,
 		}
 	}
@@ -343,7 +348,7 @@ func SchedulePatchNodes(current *spec.Clusters, diff LabelsTaintsAnnotationsDiff
 	}
 
 	for np, taints := range diff.Deleted.TaintKeys {
-		toPatch.Remove.Taints[np] = &spec.Update_KuberPatchNodes_ListOfTaintKeys{
+		toPatch.Remove.Taints[np] = &spec.Update_KuberPatchNodes_ListOfTaints{
 			Taints: taints,
 		}
 	}
@@ -379,7 +384,7 @@ func SchedulePatchNodes(current *spec.Clusters, diff LabelsTaintsAnnotationsDiff
 								Kind: spec.StageKuber_PATCH_NODES,
 								Description: &spec.StageDescription{
 									About:      "Reconciling changes",
-									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+									ErrorLevel: spec.ErrorLevel_ERROR_WARN,
 								},
 							},
 						},
@@ -769,6 +774,18 @@ func ScheduleAdditionsInNodePools(
 					},
 				},
 			}...)
+		}
+
+		enableCA := len(nodepools.Autoscaled(current.K8S.ClusterInfo.NodePools)) == 0
+		enableCA = enableCA && nodepools.IsAutoscaled(toAdd)
+		if enableCA {
+			kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, &spec.StageKuber_SubPass{
+				Kind: spec.StageKuber_ENABLE_LONGHORN_CA,
+				Description: &spec.StageDescription{
+					About:      "Enable cluster-autoscaler support for longhorn",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+			})
 		}
 
 		// On Addition of a new nodepool, reconcile the storage classes for longhorn.

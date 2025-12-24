@@ -36,7 +36,6 @@ func DeleteNodeByName(
 	nodepools []*spec.NodePool,
 	nodeName string,
 	keepNodePools map[string]struct{},
-	// TODO: do we need to return a slice in here ?
 ) []*spec.NodePool {
 	for n, np := range nodepools {
 		j := slices.IndexFunc(np.Nodes, func(n *spec.Node) bool { return n.Name == nodeName })
@@ -138,6 +137,44 @@ func PartialCopyWithNodeFilter(np *spec.NodePool, nodes []string) *spec.NodePool
 	return cp
 }
 
+// All of the nodes in the nodepool are replaced with the passed in nodes slice.
+// The function will then create a shallow copy of the nodepool, meaning that
+// all of the memory is still shared among the original and returned nodepool,
+// but will only have the replaced nodes. If the nodes are static nodes it is
+// expected that the passed in nodeKeys map will be filled with the required
+// data.
+//
+// **Caution** the node Type itself is deep cloned as the node counts need
+// to change to reflect the filtered nodes.
+func PartialCopyWithReplacedNodes(np *spec.NodePool, nodes []*spec.Node, nodeKeys map[string]string) *spec.NodePool {
+	cp := &spec.NodePool{
+		Type:        nil,
+		Name:        np.Name,
+		Nodes:       nodes,
+		IsControl:   np.IsControl,
+		Labels:      np.Labels,
+		Taints:      np.Taints,
+		Annotations: np.Annotations,
+	}
+
+	// To avoid issues with possible node counts, deep clone
+	// the node type itself.
+	switch typ := np.Type.(type) {
+	case *spec.NodePool_DynamicNodePool:
+		d := proto.Clone(typ.DynamicNodePool).(*spec.DynamicNodePool)
+		d.Count = int32(len(cp.Nodes))
+		cp.Type = &spec.NodePool_DynamicNodePool{
+			DynamicNodePool: d,
+		}
+	case *spec.NodePool_StaticNodePool:
+		s := proto.Clone(typ.StaticNodePool).(*spec.StaticNodePool)
+		clear(s.NodeKeys)
+		maps.Copy(s.NodeKeys, nodeKeys)
+	}
+
+	return cp
+}
+
 // Copies the nodes from `src` into `dst` cloning the invidivual
 // nodes, such that they do not keep any pointers or shared
 // memory with the original. The type of the nodepool of the
@@ -225,13 +262,13 @@ func ContainsNode(nodepools []*spec.NodePool, nodeName string) bool {
 	return false
 }
 
-func FindNode(nodepools []*spec.NodePool, nodeName string) (static bool, node *spec.Node) {
+func FindNode(nodepools []*spec.NodePool, nodeName string) (nodepool *spec.NodePool, node *spec.Node) {
 	for _, np := range nodepools {
 		i := slices.IndexFunc(np.Nodes, func(n *spec.Node) bool { return n.Name == nodeName })
 		if i < 0 {
 			continue
 		}
-		static = np.GetStaticNodePool() != nil
+		nodepool = np
 		node = np.Nodes[i]
 		return
 	}
@@ -295,6 +332,16 @@ func Autoscaled(nodepools []*spec.NodePool) []*spec.NodePool {
 	}
 
 	return autoscaled
+}
+
+// Returns true if the nodepool is autoscaled.
+func IsAutoscaled(np *spec.NodePool) bool {
+	if n := np.GetDynamicNodePool(); n != nil {
+		if n.AutoscalerConfig != nil {
+			return true
+		}
+	}
+	return false
 }
 
 // Dynamic returns every dynamic nodepool.

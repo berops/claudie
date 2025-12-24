@@ -293,9 +293,16 @@ message Update {
     string handle = 1;
   }
 
-  // DeleteLoadBalancerNodes works with the [State] that is part of
-  // the [Update] message, thus no "message consuming" needs to happen.
-  message DeleteLoadBalancerNodes {
+  // TerraformerDeleteLoadBalancerNodes is a message that is processed by the
+  // Terraformer service and a result is send back to the Manager, it will consume
+  // the message and further stages will only have a [DeletedLoadBalancerNodes]
+  // message to process.
+  //
+  // Old, "current", state needs to only be present in the Terraformer stage and
+  // all other services need to only see the changes after the deletion for
+  // reconciliation which will already be present in the [State] of the [Update]
+  // message.
+  message TerraformerDeleteLoadBalancerNodes {
     // Id of the loadbalancer.
     string handle = 1;
 
@@ -310,6 +317,35 @@ message Update {
 
     // Nodes that were deleted.
     repeated string nodes = 4;
+  }
+  message DeletedLoadBalancerNodes {
+    message WholeNodePool {
+      // The nodepool that was deleted from the current
+      // state along with all of its nodes.
+      NodePool nodepool = 1;
+    }
+    message Partial {
+      // The nodepool which was modified with the
+      // deletion of the nodes, which is still present
+      // in the [State] passed along the [Update] msg.
+      string nodepool = 1;
+
+      // The nodes that were deleted.
+      repeated Node nodes = 2;
+
+      // Map of keys for each node.
+      // Will only be set if the partially
+      // deleted nodes were part of a static
+      // nodepool.
+      // [<Node Endpoint>]<Key>.
+      map<string, string> staticNodeKeys = 3;
+    }
+
+    string handle = 1;
+    oneof Kind {
+      WholeNodePool whole = 2;
+      Partial partial = 3;
+    }
   }
 
   // TerraformerAddLoadBalancerNodes is a message that is processed by the
@@ -484,7 +520,7 @@ message Update {
   // all other services need to only see what has been done which will already
   // be present in the [State] of the [Update] message.
   message KuberPatchNodes {
-    message ListOfTaintKeys {
+    message ListOfTaints {
       repeated spec.Taint taints = 1;
     }
     message ListOfLabelKeys {
@@ -493,20 +529,37 @@ message Update {
     message ListOfAnnotationKeys {
       repeated string annotations = 1;
     }
-    message Batch {
-      map<string, ListOfTaintKeys> taints = 1;
+    message MapOfLabels {
+      map<string, string> labels = 1;
+    }
+    message MapOfAnnotations {
+      map<string, string> annotations = 1;
+    }
+    message RemoveBatch {
+      map<string, ListOfTaints> taints = 1;
       map<string, ListOfAnnotationKeys> annotations = 2;
       map<string, ListOfLabelKeys> labels = 3;
     }
+    message AddBatch {
+      map<string, ListOfTaints> taints = 1;
+      map<string, MapOfLabels> labels = 2;
+      map<string, MapOfAnnotations> annotations = 3;
+    }
 
-    Batch add = 1;
-    Batch remove = 2;
+    AddBatch add = 1;
+    RemoveBatch remove = 2;
   }
   message PatchedNodes {}
 
-  // DeleteK8sNodes works with the [State] that is part of the [Update]
-  // message, thus no "message consuming" needs to happen.
-  message DeleteK8sNodes {
+  // KuberDeleteK8sNodes is a message that is processed by the Kuber service
+  // and a result is send back to the Manager, it will consume the message
+  // and further stages will only have a [DeletedK8sNodes] message to process.
+  //
+  // Old, "current", state needs to only be present in the Kuber stage and
+  // all other services need to only see the changes after the deletion for
+  // reconciliation which will already be present in the [State] of the [Update]
+  // message.
+  message KuberDeleteK8sNodes {
     // Whether the NodePool itself
     // was deleted from the cluster.
     // Meaning that all nodes of the
@@ -524,6 +577,34 @@ message Update {
 
     // Nodes that were deleted.
     repeated string nodes = 3;
+  }
+  message DeletedK8sNodes {
+    message WholeNodePool {
+      // The nodepool that was deleted from the current
+      // state along with all of its nodes.
+      NodePool nodepool = 1;
+    }
+    message Partial {
+      // The nodepool which was modified with the
+      // deletion of the nodes, which is still present
+      // in the [State] passed along the [Update] msg.
+      string nodepool = 1;
+
+      // Nodes that were deleted.
+      repeated Node nodes = 2;
+
+      // Map of keys for each node.
+      // Will only be set if the partially
+      // deleted nodes were part of a static
+      // nodepool.
+      // [<Node Endpoint>]<Key>.
+      map<string, string> staticNodeKeys = 3;
+    }
+
+    oneof Kind {
+      WholeNodePool whole = 1;
+      Partial partial = 2;
+    }
   }
 
   // TerraformerAddK8sNodes is a message that is processed by the Terraformer service
@@ -575,6 +656,7 @@ message Update {
     TerraformerReplaceDns tfReplaceDns = 5;
     TerraformerAddK8sNodes tfAddK8sNodes = 6;
     TerraformerAddLoadBalancerRoles tfAddLoadBalancerRoles = 7;
+    TerraformerDeleteLoadBalancerNodes tfDeleteLoadBalancerNodes = 8;
 
     // Ansibler message to consume
     AnsiblerReplaceProxySettings ansReplaceProxy = 10;
@@ -582,6 +664,7 @@ message Update {
 
     // Kuber messages to consume
     KuberPatchNodes kpatchNodes = 13;
+    KuberDeleteK8sNodes kDeleteNodes = 14;
 
     // Consumed messages.
     AddedLoadBalancer addedLoadBalancer = 15;
@@ -595,8 +678,8 @@ message Update {
 
     // Deletions.
     DeleteLoadBalancer deleteLoadBalancer = 23;
-    DeleteK8sNodes deleteK8sNodes = 24;
-    DeleteLoadBalancerNodes deleteLoadBalancerNodes = 25;
+    DeletedK8sNodes deletedK8sNodes = 24;
+    DeletedLoadBalancerNodes deletedLoadBalancerNodes = 25;
     DeleteLoadBalancerRoles deleteLoadBalancerRoles = 26;
 
     // Utilities.

@@ -25,6 +25,15 @@ const sshPort = "22"
 // that nodepool that are unreachable via a Ping on the IPv4 public endpoint.
 type UnreachableIPv4Map = map[string][]string
 
+type UnreachableNodes struct {
+	// Nodepools and their unreachable nodes in the kubernetes cluster.
+	Kubernetes UnreachableIPv4Map
+
+	// Loadbalancers attached to the kubernetes cluster and for each
+	// of them Nodepools with the unreachable node within each.
+	LoadBalancers map[string]UnreachableIPv4Map
+}
+
 // HealthCheckStatus report the status of the Infrastructure.
 type HealthCheckStatus struct {
 	// HealthCheck on the 6443 port, which is used for the API server
@@ -39,16 +48,6 @@ type HealthCheckStatus struct {
 		Unreachable bool
 	}
 
-	// Describes unreachable nodes across a [spec.Clusters].
-	UnreachableNodes struct {
-		// Nodepools and their unreachable nodes in the kubernetes cluster.
-		Kubernetes UnreachableIPv4Map
-
-		// Loadbalancers attached to the kubernetes cluster and for each
-		// of them Nodepools with the unreachable node within each.
-		LoadBalancers map[string]UnreachableIPv4Map
-	}
-
 	Cluster struct {
 		// Nodes, as returned by kubectl get nodes.
 		Nodes map[string]struct{}
@@ -61,25 +60,42 @@ type HealthCheckStatus struct {
 	}
 }
 
-// HealthCheck performs healthcheck across the passed in [spec.Clusters] state.
-func HealthCheck(logger zerolog.Logger, state *spec.Clusters) (HealthCheckStatus, error) {
-	var result HealthCheckStatus
-	result.Cluster.Nodes = make(map[string]struct{})
+// HealthCheckNodeReachability performs healthches across the nodes of the passed in [spec.Clusters] state.
+// If there are any issues with the pinging of the nodes a non-nil error is returned which can be interpreted
+// as failing to fully determine if a node is reachable or not.
+func HealthCheckNodeReachability(logger zerolog.Logger, state *spec.Clusters) (UnreachableNodes, error) {
+	var (
+		err error
 
-	k, lb, err := clusters.PingNodes(logger, state)
+		result = UnreachableNodes{
+			Kubernetes:    make(UnreachableIPv4Map),
+			LoadBalancers: make(map[string]UnreachableIPv4Map),
+		}
+	)
+
+	result.Kubernetes, result.LoadBalancers, err = clusters.PingNodes(logger, state)
 	if err != nil {
 		if !errors.Is(err, clusters.ErrEchoTimeout) {
-			logger.Err(err).Msg("failed to determine if any nodes were unreachable")
+			logger.
+				Err(err).
+				Msg("Failed to determine if any nodes were unreachable")
+
 			// Return error here, as the Pinging could fail due to permissions issues
 			// in which case the healthcheck cannot be interpreted properly.
 			return result, err
 		}
+
 		// If there is a [clusters.ErrEchoTimeout], fallthrough as the
 		// returned k, lb values will have unreachable nodes.
 	}
 
-	result.UnreachableNodes.Kubernetes = k
-	result.UnreachableNodes.LoadBalancers = lb
+	return result, nil
+}
+
+// HealthCheck performs healthcheck across the kubernetes cluster of the passed in [spec.Clusters] state.
+func HealthCheck(logger zerolog.Logger, state *spec.Clusters) HealthCheckStatus {
+	var result HealthCheckStatus
+	result.Cluster.Nodes = make(map[string]struct{})
 
 	kc := kubectl.Kubectl{
 		MaxKubectlRetries: -1,
@@ -87,13 +103,17 @@ func HealthCheck(logger zerolog.Logger, state *spec.Clusters) (HealthCheckStatus
 
 	n, err := kc.KubectlGetNodeNames()
 	if err != nil {
+		logger.Warn().Msgf("Failed to retrieve nodes of the cluster via `kubectl`: %v", err)
 		// Does not necessarily mean the cluster is down
 		// the management cluster could have network issues.
+		n = []byte{}
 		result.ApiEndpoint.Unreachable = true
 	}
 
 	for node := range strings.SplitSeq(string(n), "\n") {
-		result.Cluster.Nodes[node] = struct{}{}
+		if node := strings.TrimSpace(node); node != "" {
+			result.Cluster.Nodes[node] = struct{}{}
+		}
 	}
 
 	// Test a random control node if the 6443 port is reachable.
@@ -120,8 +140,7 @@ func HealthCheck(logger zerolog.Logger, state *spec.Clusters) (HealthCheckStatus
 	}
 
 	result.Cluster.VpnDrift = !ok
-
-	return result, nil
+	return result
 }
 
 // HealthChecks the number of Peers of the wireguard network of a random Node.

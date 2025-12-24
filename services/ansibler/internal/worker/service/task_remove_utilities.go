@@ -173,8 +173,8 @@ func nodepoolsInfoUpdate(logger zerolog.Logger, task *spec.Task_Update) ([]*Node
 	var npi []*NodepoolsInfo
 
 	switch delta := task.Update.Delta.(type) {
-	case *spec.Update_DeleteK8SNodes_:
-		np := DefaultKubernetesToNewNodesIfPossible(task)
+	case *spec.Update_DeletedK8SNodes_:
+		np := DefaultKubernetesToDeletedNodesOnly(task.Update.State.K8S, delta.DeletedK8SNodes)
 
 		// On validly scheduled messages, the nodepool from which
 		// nodes are to be deleted, should always be present in the
@@ -182,9 +182,8 @@ func nodepoolsInfoUpdate(logger zerolog.Logger, task *spec.Task_Update) ([]*Node
 		if np == nil {
 			log.
 				Warn().
-				Msgf("Received update task for removal of claudie installed utilities on deleted nodes of the cluster %q, but the nodepool %q is not in the provided state, ignoring",
+				Msgf("Received update task for removal of claudie installed utilities on deleted nodes of the cluster %q, but the nodepool from which nodes were deleted is not in the provided state, ignoring",
 					task.Update.State.K8S.ClusterInfo.Id(),
-					delta.DeleteK8SNodes.Nodepool,
 				)
 			return nil, false
 		}
@@ -202,17 +201,17 @@ func nodepoolsInfoUpdate(logger zerolog.Logger, task *spec.Task_Update) ([]*Node
 		if len(k8s.Nodepools.Static) > 0 {
 			npi = append(npi, k8s)
 		}
-	case *spec.Update_DeleteLoadBalancerNodes_:
-		idx := clusters.IndexLoadbalancerById(delta.DeleteLoadBalancerNodes.Handle, task.Update.State.LoadBalancers)
+	case *spec.Update_DeletedLoadBalancerNodes_:
+		idx := clusters.IndexLoadbalancerById(delta.DeletedLoadBalancerNodes.Handle, task.Update.State.LoadBalancers)
 		if idx < 0 {
 			log.
 				Warn().
-				Msgf("Received update task for removal of claudie installed utilities on deleted loadbalancer nodes but the loadbalancer %q is not in the provided state, ignoring", delta.DeleteLoadBalancerNodes.Handle)
+				Msgf("Received update task for removal of claudie installed utilities on deleted loadbalancer nodes but the loadbalancer %q is not in the provided state, ignoring", delta.DeletedLoadBalancerNodes.Handle)
 			return nil, false
 		}
 
 		lb := task.Update.State.LoadBalancers[idx]
-		np := DefaultLoadBalancerToNewNodesIfPossible(task)
+		np := DefaultLoadBalancerToDeletedNodesOnly(lb, delta.DeletedLoadBalancerNodes)
 
 		// On validly scheduled messages, the nodepool from which
 		// nodes are to be deleted, should always be present in the
@@ -220,9 +219,8 @@ func nodepoolsInfoUpdate(logger zerolog.Logger, task *spec.Task_Update) ([]*Node
 		if np == nil {
 			log.
 				Warn().
-				Msgf("Received update task for removal of claudie installed utilities on deleted nodes of the cluster %q, but the nodepool %q is not in the provided state, ignoring",
+				Msgf("Received update task for removal of claudie installed utilities on deleted nodes of the cluster %q, but the nodepool from which nodes were deleted is not in the provided state, ignoring",
 					lb.ClusterInfo.Id(),
-					delta.DeleteLoadBalancerNodes.Nodepool,
 				)
 			return nil, false
 		}

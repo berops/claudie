@@ -11,7 +11,7 @@ import (
 
 	"github.com/berops/claudie/internal/nodes"
 	"github.com/berops/claudie/proto/pb/spec"
-	managerclient "github.com/berops/claudie/services/manager/client"
+	managerclient "github.com/berops/claudie/services/managerv2/client"
 	"github.com/rs/zerolog/log"
 
 	"google.golang.org/protobuf/proto"

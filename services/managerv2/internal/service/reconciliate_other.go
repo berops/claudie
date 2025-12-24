@@ -136,9 +136,16 @@ func ScheduleCreateCluster(desired *spec.Clusters) *spec.TaskEvent {
 			Kuber: &spec.StageKuber{
 				Description: &spec.StageDescription{
 					About:      "Configuring cluster",
-					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					ErrorLevel: spec.ErrorLevel_ERROR_WARN,
 				},
 				SubPasses: []*spec.StageKuber_SubPass{
+					{
+						Kind: spec.StageKuber_PATCH_NODES,
+						Description: &spec.StageDescription{
+							About:      "Patching nodes",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
 					{
 						Kind: spec.StageKuber_DEPLOY_LONGHORN,
 						Description: &spec.StageDescription{
@@ -166,14 +173,6 @@ func ScheduleCreateCluster(desired *spec.Clusters) *spec.TaskEvent {
 			LoadBalancers: createLbs.GetClusters(),
 		}
 	)
-
-	// These are handled by the reconciliation loop and
-	// are not "breaking" in the creation of the cluster.
-	for _, np := range createK8s.ClusterInfo.NodePools {
-		np.Annotations = nil
-		np.Taints = nil
-		np.Labels = nil
-	}
 
 	pipeline := []*spec.Stage{
 		{StageKind: &tf},

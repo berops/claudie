@@ -12,7 +12,7 @@ import (
 
 type DeleteLoadBalancerNodes struct {
 	State  *spec.Update_State
-	Delete *spec.Update_DeleteLoadBalancerNodes
+	Delete *spec.Update_TerraformerDeleteLoadBalancerNodes
 }
 
 func deleteLoadBalancerNodes(

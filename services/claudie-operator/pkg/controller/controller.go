@@ -16,7 +16,7 @@ import (
 	"github.com/berops/claudie/internal/api/manifest"
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/proto/pb/spec"
-	managerclient "github.com/berops/claudie/services/manager/client"
+	managerclient "github.com/berops/claudie/services/managerv2/client"
 )
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to

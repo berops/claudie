@@ -22,6 +22,10 @@ const (
 	ProxyOn
 )
 
+type Labels = map[string]string
+type Annotations = map[string]string
+type Taints = []*spec.Taint
+
 type (
 	DiffResult struct {
 		Kubernetes    KubernetesDiffResult
@@ -47,9 +51,9 @@ type (
 			TaintKeys       map[string][]*spec.Taint
 		}
 		Added struct {
-			LabelKeys       map[string][]string
-			AnnotationsKeys map[string][]string
-			TaintKeys       map[string][]*spec.Taint
+			Labels      map[string]Labels
+			Annotations map[string]Annotations
+			Taints      map[string]Taints
 		}
 	}
 
@@ -89,7 +93,6 @@ type (
 		Autoscaler struct { /* TODO */
 		}
 
-		// TODO move the diff from nodepools.go into here...
 		LabelsTaintsAnnotations LabelsTaintsAnnotationsDiffResult
 	}
 
@@ -417,6 +420,14 @@ api:
 		}
 	}
 
+	result.LabelsTaintsAnnotations.Deleted.AnnotationsKeys = make(map[string][]string)
+	result.LabelsTaintsAnnotations.Deleted.LabelKeys = make(map[string][]string)
+	result.LabelsTaintsAnnotations.Deleted.TaintKeys = make(map[string][]*spec.Taint)
+
+	result.LabelsTaintsAnnotations.Added.Annotations = make(map[string]Annotations)
+	result.LabelsTaintsAnnotations.Added.Labels = make(map[string]Labels)
+	result.LabelsTaintsAnnotations.Added.Taints = make(map[string]Taints)
+
 	// labels,taints,annotaions diff.
 	for _, c := range old.ClusterInfo.NodePools {
 		for _, n := range new.ClusterInfo.NodePools {
@@ -456,15 +467,23 @@ api:
 			}
 
 			// added
-			for k := range n.Labels {
-				if _, ok := c.Labels[k]; !ok {
-					diff.Added.LabelKeys[c.Name] = append(diff.Added.LabelKeys[c.Name], k)
+			for k, nv := range n.Labels {
+				if ov, ok := c.Labels[k]; !ok || nv != ov {
+					if _, ok := diff.Added.Labels[c.Name]; !ok {
+						diff.Added.Labels[c.Name] = make(Labels)
+					}
+
+					diff.Added.Labels[c.Name][k] = nv
 				}
 			}
 
-			for k := range n.Annotations {
-				if _, ok := c.Annotations[k]; !ok {
-					diff.Added.AnnotationsKeys[c.Name] = append(diff.Added.AnnotationsKeys[c.Name], k)
+			for k, nv := range n.Annotations {
+				if ov, ok := c.Annotations[k]; !ok || nv != ov {
+					if _, ok := diff.Added.Annotations[c.Name]; !ok {
+						diff.Added.Annotations[c.Name] = make(Annotations)
+					}
+
+					diff.Added.Annotations[c.Name][k] = nv
 				}
 			}
 
@@ -473,7 +492,7 @@ api:
 					return other.Key == t.Key && other.Value == t.Value && other.Effect == t.Effect
 				})
 				if !ok {
-					diff.Added.TaintKeys[c.Name] = append(diff.Added.TaintKeys[c.Name], &spec.Taint{
+					diff.Added.Taints[c.Name] = append(diff.Added.Taints[c.Name], &spec.Taint{
 						Key:    t.Key,
 						Value:  t.Value,
 						Effect: t.Effect,
