@@ -304,11 +304,79 @@ func ScheduleDeleteCluster(current *spec.Clusters) *spec.TaskEvent {
 }
 
 // Schedules a [spec.TaskEvent] task for reconciling the VPN across the nodes of the clusters in the
-// passed in [spec.Clusters].
+// passed in [spec.Clusters]. If proxy is used within the cluster the proxy Envs will also be refreshed.
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
-func ScheduleRefreshVPN(current *spec.Clusters) *spec.TaskEvent {
-	// TODO: maybe refresh the Proxy envs in here aswell ?
+func ScheduleRefreshVPN(usesProxy bool, current *spec.Clusters) *spec.TaskEvent {
+	var (
+		ans = spec.Stage_Ansibler{
+			Ansibler: &spec.StageAnsibler{
+				Description: &spec.StageDescription{
+					About:      "Configuring infrastructure, after drift detection",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+				SubPasses: []*spec.StageAnsibler_SubPass{
+					{
+						Kind: spec.StageAnsibler_INSTALL_VPN,
+						Description: &spec.StageDescription{
+							About:      "Fixing drift in VPN across nodes of the kuberentes and loadbalancer clusters",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+				},
+			},
+		}
+
+		ansProxy = spec.Stage_Ansibler{
+			Ansibler: &spec.StageAnsibler{
+				Description: &spec.StageDescription{
+					About:      "Configuring infrastructure, after drift detection",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+				SubPasses: []*spec.StageAnsibler_SubPass{
+					{
+						Kind: spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES,
+						Description: &spec.StageDescription{
+							About:      "Updating HttpProxy,NoProxy environment variables to be used by the package manager",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
+						Kind: spec.StageAnsibler_INSTALL_VPN,
+						Description: &spec.StageDescription{
+							About:      "Fixing drift in VPN across nodes of the kuberentes and loadbalancer clusters",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
+						Kind: spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES,
+						Description: &spec.StageDescription{
+							About:      "Updating HttpProxy,NoProxy environment variables, after populating private addresses on nodes",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
+						Kind: spec.StageAnsibler_COMMIT_PROXY_ENVS,
+						Description: &spec.StageDescription{
+							About:      "Commiting proxy environment variables",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+				},
+			},
+		}
+	)
+
+	pipeline := []*spec.Stage{
+		{StageKind: nil},
+	}
+
+	if usesProxy {
+		pipeline[0].StageKind = &ansProxy
+	} else {
+		pipeline[0].StageKind = &ans
+	}
+
 	inFlight := proto.Clone(current).(*spec.Clusters)
 	return &spec.TaskEvent{
 		Id:        uuid.New().String(),
@@ -326,26 +394,6 @@ func ScheduleRefreshVPN(current *spec.Clusters) *spec.TaskEvent {
 			},
 		},
 		Description: "Refreshing VPN",
-		Pipeline: []*spec.Stage{
-			{
-				StageKind: &spec.Stage_Ansibler{
-					Ansibler: &spec.StageAnsibler{
-						Description: &spec.StageDescription{
-							About:      "Configuring infrastructure",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-						SubPasses: []*spec.StageAnsibler_SubPass{
-							{
-								Kind: spec.StageAnsibler_INSTALL_VPN,
-								Description: &spec.StageDescription{
-									About:      "Fixing drift in VPN across nodes of the kuberentes and loadbalancer clusters",
-									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-								},
-							},
-						},
-					},
-				},
-			},
-		},
+		Pipeline:    pipeline,
 	}
 }

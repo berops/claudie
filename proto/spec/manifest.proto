@@ -186,42 +186,12 @@ message TaskEvent {
   Task task = 4;
   string description = 5;
 
-  Retry onError = 7;
-
   // Pipeline stages of the task through which it has to pass
   // to be considered as done.
   repeated Stage pipeline = 8;
 
   // Index into the currently to be worked on pipeline stage.
   uint32 currentStage = 9;
-}
-
-message Retry {
-  message Repeat {
-    enum Kind {
-      ENDLESS = 0;
-      EXPONENTIAL = 1;
-    }
-    Kind kind = 1;
-    // currentTick specifies the current number of ticks.
-    // A tick is an regular interval at which manifests are being checked.
-    // to check the Tick timeout see: manager/internal/service/watchers.go
-    uint32 currentTick = 2;
-    // stopAfter specifies the maximum number of ticks, after reaching this value the manifest will be rescheduled
-    // for the last time before giving up.
-    uint32 stopAfter = 3;
-    // retryAfter specifies the number of ticks to wait before rescheduling the manifest again.
-    // this value will be set to the value of currentTick after it is updated.
-    uint32 retryAfter = 4;
-  }
-  message Rollback {
-    repeated TaskEvent tasks = 1;
-  }
-
-  oneof Do {
-    Repeat repeat = 3;
-    Rollback rollback = 4;
-  }
 }
 
 enum ApiEndpointChangeState {
@@ -248,6 +218,23 @@ enum ApiEndpointChangeState {
   // LB cluster attached, but it will be switched to a different LB cluster
   // in the desired state.
   MoveEndpoint = 4;
+}
+
+// Unreachable are the nodes of the kubernetes cluster
+// and all of its loadbalancer clusters which are
+// unreachable. If this is included in some message, one
+// should omit connecting to those nodes during the processing
+// of the pipeline, if relevant.
+message Unreachable {
+  message ListOfNodes {
+    repeated string nodes = 1;
+  }
+  message UnreachableNodePools {
+    map<string, ListOfNodes> nodepools = 1;
+  }
+
+  UnreachableNodePools kubernetes = 1;
+  map<string, UnreachableNodePools> loadbalancers = 2;
 }
 
 // Creates a new kubernetes cluster with the attached [LBcluster], if any.
@@ -341,10 +328,12 @@ message Update {
       map<string, string> staticNodeKeys = 3;
     }
 
+    // id of the loadbalancer.
     string handle = 1;
+
     oneof Kind {
-      WholeNodePool whole = 2;
-      Partial partial = 3;
+      WholeNodePool whole = 3;
+      Partial partial = 4;
     }
   }
 
@@ -577,6 +566,11 @@ message Update {
 
     // Nodes that were deleted.
     repeated string nodes = 3;
+
+    // Unreachable infrastructure that is optionally set
+    // for the deletion process, in which presense, connecting
+    // to the unreachable infrastructure should be omitted.
+    optional Unreachable unreachable = 4;
   }
   message DeletedK8sNodes {
     message WholeNodePool {
@@ -601,9 +595,14 @@ message Update {
       map<string, string> staticNodeKeys = 3;
     }
 
+    // Unreachable infrastructure that is optionally set
+    // for the deletion process, in which presense, connecting
+    // to the unreachable infrastructure should be omitted.
+    optional Unreachable unreachable = 1;
+
     oneof Kind {
-      WholeNodePool whole = 1;
-      Partial partial = 2;
+      WholeNodePool whole = 2;
+      Partial partial = 3;
     }
   }
 

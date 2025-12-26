@@ -14,6 +14,7 @@ import (
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/rs/zerolog"
+
 	"golang.org/x/crypto/ssh"
 )
 
@@ -210,6 +211,6 @@ func healthCheckVPN(state *spec.Clusters) (bool, error) {
 	}
 	nodeCount := nodepools.NodeCount(nps)
 
-	// exempt the connect to node.
+	// exempt the connected to node.
 	return peers == nodeCount-1, nil
 }

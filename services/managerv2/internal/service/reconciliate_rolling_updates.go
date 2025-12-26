@@ -9,5 +9,6 @@ import (
 // an updated commit hashes was found, After each addition of a new nodepool the old one is remove from the cluster
 // and this is done gradually as the rolling update is processed.
 func ClustersRollingUpdate(current, desired *spec.Clusters) *spec.TaskEvent {
+	// TODO:
 	return nil
 }

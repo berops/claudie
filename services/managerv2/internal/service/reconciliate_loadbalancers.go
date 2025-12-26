@@ -113,7 +113,7 @@ func PreKubernetesDiff(r LoadBalancersReconciliate) *spec.TaskEvent {
 				UseProxy: r.Proxy.CurrentUsed,
 				IsStatic: false,
 			}
-			return ScheduleDeletionLoadBalancerNodePools(r.Current, r.Desired, cid, did, &modified.Dynamic, opts)
+			return ScheduleDeletionLoadBalancerNodePools(r.Current, cid, &modified.Dynamic, opts)
 		}
 
 		if len(modified.Static.Deleted) > 0 || len(modified.Static.PartiallyDeleted) > 0 {
@@ -121,7 +121,7 @@ func PreKubernetesDiff(r LoadBalancersReconciliate) *spec.TaskEvent {
 				UseProxy: r.Proxy.CurrentUsed,
 				IsStatic: true,
 			}
-			return ScheduleDeletionLoadBalancerNodePools(r.Current, r.Desired, cid, did, &modified.Static, opts)
+			return ScheduleDeletionLoadBalancerNodePools(r.Current, cid, &modified.Static, opts)
 		}
 	}
 
@@ -196,9 +196,7 @@ type LoadBalancerNodePoolsOptions struct {
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
 func ScheduleDeletionLoadBalancerNodePools(
 	current *spec.Clusters,
-	desired *spec.Clusters,
 	cid LoadBalancerIdentifier,
-	did LoadBalancerIdentifier,
 	diff *NodePoolsDiffResult,
 	opts LoadBalancerNodePoolsOptions,
 ) *spec.TaskEvent {

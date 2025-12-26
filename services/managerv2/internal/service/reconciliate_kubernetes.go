@@ -79,7 +79,7 @@ func KubernetesDeletions(r KubernetesReconciliate) *spec.TaskEvent {
 			HasApiServer: r.Diff.ApiEndpoint.Current != "",
 			IsStatic:     false,
 		}
-		return ScheduleDeletionsInNodePools(r.Current, r.Desired, &r.Diff.Dynamic, opts)
+		return ScheduleDeletionsInNodePools(r.Current, &r.Diff.Dynamic, opts)
 	}
 
 	if len(r.Diff.Static.Deleted) > 0 || len(r.Diff.Static.PartiallyDeleted) > 0 {
@@ -88,7 +88,7 @@ func KubernetesDeletions(r KubernetesReconciliate) *spec.TaskEvent {
 			HasApiServer: r.Diff.ApiEndpoint.Current != "",
 			IsStatic:     true,
 		}
-		return ScheduleDeletionsInNodePools(r.Current, r.Desired, &r.Diff.Static, opts)
+		return ScheduleDeletionsInNodePools(r.Current, &r.Diff.Static, opts)
 	}
 
 	return nil
@@ -864,6 +864,10 @@ type K8sNodeDeletionOptions struct {
 	UseProxy     bool
 	HasApiServer bool
 	IsStatic     bool
+
+	// Optional unreachable infrastructure that will
+	// be passed along the scheduled deletion [spec.TaskEvent]
+	Unreachable *spec.Unreachable
 }
 
 // Schedules a task that will delete nodes/nodepools from the current state of the cluster.
@@ -871,7 +875,6 @@ type K8sNodeDeletionOptions struct {
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
 func ScheduleDeletionsInNodePools(
 	current *spec.Clusters,
-	desired *spec.Clusters,
 	diff *NodePoolsDiffResult,
 	opts K8sNodeDeletionOptions,
 ) *spec.TaskEvent {
@@ -1048,6 +1051,7 @@ func ScheduleDeletionsInNodePools(
 								WithNodePool: false,
 								Nodepool:     np,
 								Nodes:        nodes,
+								Unreachable:  opts.Unreachable,
 							},
 						},
 					},
@@ -1141,6 +1145,7 @@ func ScheduleDeletionsInNodePools(
 								WithNodePool: true,
 								Nodepool:     np,
 								Nodes:        nodes,
+								Unreachable:  opts.Unreachable,
 							},
 						},
 					},

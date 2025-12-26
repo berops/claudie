@@ -16,8 +16,9 @@ import (
 // scheduling of the tasks.
 type ScheduleResult uint8
 
-// TODO: think about the retries.
-// TODO: kubernetes cluster
+// TODO: handle the Unreachable optional in the relevant pipeline stages.
+// Priority.
+//
 // TODO: endless reconciliation... double check the control flow such that it will never stop reconciling.
 // TODO: with a failed inFlight state there needs to be a decision to be made if a task
 // with a higher priority is to be scheduled what happens in that case ?
@@ -151,6 +152,7 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 
 			state.InFlight = ScheduleDeleteCluster(del)
 		default:
+
 			// TODO: the autoscaler desired state could be
 			// read from the POD directly instead of the
 			// pod making requests to the manager. The manager
@@ -211,13 +213,21 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 
 			result = Noop
 
+			if shouldRescheduleInFlight(state.InFlight) {
+				result = Reschedule
+				break
+			}
+
 			// After the [HealthCheckStatus] and the [KubernetesDiff], [LoadBalancersDiff]
 			// is made all of the current,desired [spec.Clusters] state is considered
 			// immutable and is not modified to not invalidate cached indices for the
 			// returned diffs.
 			logger.Info().Msg("Health checking current state")
+
 			hc := HealthCheck(logger, current)
-			if state.InFlight = handleUpdate(hc, current, desired); state.InFlight != nil {
+			diff := Diff(current, desired)
+
+			if state.InFlight = handleUpdate(hc, diff, current, desired); state.InFlight != nil {
 				result = Reschedule
 
 				// Before scheduling any new task, healthcheck the reachability of the
@@ -239,9 +249,20 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 					break
 				}
 
-				switch HandleKubernetesUnreachableNodes(logger, hc, rhc.Kubernetes, state, desired) {
+				kr := KubernetesUnreachableNodes{
+					Hc:          hc,
+					Unreachable: rhc,
+					Diff:        &diff.Kubernetes,
+					State:       state,
+					Desired:     desired,
+				}
+
+				switch HandleKubernetesUnreachableNodes(logger, kr) {
 				case UnreachableNodesModifiedCurrentState:
-					logger.Debug().Msg("Propagating change to current state after static node removal on the kubernetes level")
+					logger.
+						Debug().
+						Msg("Propagating change to current state after static node removal on the kubernetes level")
+
 					state.InFlight = nil
 					result = NotReady
 					break event_switch
@@ -256,7 +277,10 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 					// to move the current state towards the desired state, as the workflow will
 					// get stuck in ansibler which connects to the nodes via ssh. Thus propagate
 					// the error to the user.
-					logger.Debug().Msg("Propagating error for unreachable nodes on the kubernetes level without working on any task")
+					logger.
+						Debug().
+						Msg("Propagating error for unreachable nodes on the kubernetes level without working on any task")
+
 					state.InFlight = nil
 					result = NotReady
 					break event_switch
@@ -268,19 +292,33 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 				}
 
 				// Same as with the kubernetes unreachable nodes.
-				switch HandleLoadBalancerUnreachableNodes(logger, rhc.LoadBalancers, state, desired) {
+				lbr := LoadBalancerUnreachableNodes{
+					unreachable: rhc.LoadBalancers,
+					State:       state,
+					Desired:     desired,
+				}
+				switch HandleLoadBalancerUnreachableNodes(logger, lbr) {
 				case UnreachableNodesModifiedCurrentState:
-					logger.Debug().Msg("Propagating change to current state after static node removal on the loadbalancer level")
+					logger.
+						Debug().
+						Msg("Propagating change to current state after static node removal on the loadbalancer level")
+
 					state.InFlight = nil
 					result = NotReady
 					break event_switch
 				case UnreachableNodesPropagateError:
-					logger.Debug().Msg("Propagating error for unreachable nodes on the loadbalancer level without working on any task")
+					logger.
+						Debug().
+						Msg("Propagating error for unreachable nodes on the loadbalancer level without working on any task")
+
 					state.InFlight = nil
 					result = NotReady
 					break event_switch
 				case UnreachableNodesScheduledTask:
-					logger.Debug().Msg("Scheduled Task with higher priority for unreachable nodes on the loadbalancer level")
+					logger.
+						Debug().
+						Msg("Scheduled Task with higher priority for unreachable nodes on the loadbalancer level")
+
 					break event_switch
 				case UnreachableNodesNoop:
 					// Nothing to do.
@@ -442,10 +480,9 @@ func clustersUnion(old, modified *spec.Clusters) *spec.Clusters {
 }
 
 // Handles reconciliation for updating existing clusters.
-func handleUpdate(hc HealthCheckStatus, current, desired *spec.Clusters) *spec.TaskEvent {
+func handleUpdate(hc HealthCheckStatus, diff DiffResult, current, desired *spec.Clusters) *spec.TaskEvent {
 	var (
-		diff = Diff(current, desired)
-		lbr  = LoadBalancersReconciliate{
+		lbr = LoadBalancersReconciliate{
 			Hc:      &hc,
 			Diff:    &diff.LoadBalancers,
 			Proxy:   &diff.Kubernetes.Proxy,
@@ -481,7 +518,7 @@ func handleUpdate(hc HealthCheckStatus, current, desired *spec.Clusters) *spec.T
 	}
 
 	if hc.Cluster.VpnDrift {
-		return ScheduleRefreshVPN(current)
+		return ScheduleRefreshVPN(kr.Diff.Proxy.CurrentUsed, current)
 	}
 
 	if next := KubernetesLowPriority(kr); next != nil {
@@ -489,4 +526,38 @@ func handleUpdate(hc HealthCheckStatus, current, desired *spec.Clusters) *spec.T
 	}
 
 	return nil
+}
+
+// Checks whether the inFlight task should be rescheduled again.
+func shouldRescheduleInFlight(inFlight *spec.TaskEvent) bool {
+	if inFlight == nil {
+		return false
+	}
+
+	update, ok := inFlight.Task.Do.(*spec.Task_Update)
+	if !ok {
+		// only updates inFlights can be rescheduled.
+		return false
+	}
+
+	// Anything related to deletion, api endpoint or version upgrades
+	// needs to be rescheduled again as these tasks cannot be rolled back.
+	switch update.Update.Delta.(type) {
+	case
+		// TODO: make the Update task names better.
+		*spec.Update_ApiEndpoint_,
+		*spec.Update_DeleteLoadBalancerRoles_,
+		*spec.Update_DeleteLoadBalancer_,
+		*spec.Update_DeletedK8SNodes_,
+		*spec.Update_DeletedLoadBalancerNodes_,
+		*spec.Update_K8SApiEndpoint,
+		*spec.Update_KDeleteNodes,
+		*spec.Update_ReplacedDns_,
+		*spec.Update_TfDeleteLoadBalancerNodes,
+		*spec.Update_TfReplaceDns,
+		*spec.Update_UpgradeVersion_:
+		return true
+	default:
+		return false
+	}
 }
