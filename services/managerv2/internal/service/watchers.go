@@ -230,7 +230,7 @@ func (s *Service) WatchForPendingDocuments(ctx context.Context) error {
 		case Reschedule:
 			pending.Manifest.State = spec.Manifest_Scheduled
 			logger.Debug().Msgf("Scheduling for intermediate tasks after which the config will be rescheduled again")
-		case FinalRetry, NoReschedule:
+		case NoReschedule:
 			logger.Debug().Msgf("Scheduling for tasks after which the config will not be rescheduled again")
 			pending.Manifest.State = spec.Manifest_Scheduled
 			pending.Manifest.LastAppliedChecksum = pending.Manifest.Checksum
@@ -254,7 +254,7 @@ func (s *Service) WatchForPendingDocuments(ctx context.Context) error {
 		switch result {
 		case NotReady:
 			// do nothing.
-		case Reschedule, FinalRetry, NoReschedule:
+		case Reschedule, NoReschedule:
 			logger.Info().Msgf("Config has been successfully processed and moved to the %q state", manifest.Scheduled.String())
 		}
 	}

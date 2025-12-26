@@ -276,14 +276,150 @@ func (te *Task) ConsumeUpdateResult(result *TaskResult_Update) error {
 		return nil
 	}
 
-	id := (*k8s).GetClusterInfo().Id()
-	name := (*k8s).GetClusterInfo().GetName()
+	id := (*k8s).ClusterInfo.Id()
+	name := (*k8s).ClusterInfo.Name
+
+	// Consume delete updates, if any.
+	if update := te.GetUpdate(); update != nil {
+		switch delta := update.Delta.(type) {
+		case *Update_KDeleteNodes:
+			idx := slices.IndexFunc((*k8s).ClusterInfo.NodePools, func(n *NodePool) bool {
+				return n.Name == delta.KDeleteNodes.Nodepool
+			})
+			if idx < 0 {
+				// Under normal circumstances this should never happen, this signals
+				// either malformed/corrupted data and/or mistake in the schedule of
+				// tasks. Thus rather return an error than continiung with the merge.
+				return fmt.Errorf("can't update cluster %q received update result with invalid deleted nodepool %q", id, delta.KDeleteNodes.Nodepool)
+			}
+
+			affected := (*k8s).ClusterInfo.NodePools[idx]
+
+			if delta.KDeleteNodes.WithNodePool {
+				// Below, with the replacement of the kuberentes
+				// cluster it should no longer reference this nodepool
+				// and this should be the only owner of it afterwards.
+				update.Delta = &Update_DeletedK8SNodes_{
+					DeletedK8SNodes: &Update_DeletedK8SNodes{
+						Kind: &Update_DeletedK8SNodes_Whole{
+							Whole: &Update_DeletedK8SNodes_WholeNodePool{
+								Nodepool: affected,
+							},
+						},
+					},
+				}
+			} else {
+				// Below, with the replacement of the kubernetes
+				// cluster it should no longer reference these nodes
+				// and this should be the only owner of them afterwards.
+				d := &Update_DeletedK8SNodes_Partial_{
+					Partial: &Update_DeletedK8SNodes_Partial{
+						Nodepool:       delta.KDeleteNodes.Nodepool,
+						Nodes:          []*Node{},
+						StaticNodeKeys: map[string]string{},
+					},
+				}
+
+				for _, n := range affected.Nodes {
+					if slices.Contains(delta.KDeleteNodes.Nodes, n.Name) {
+						d.Partial.Nodes = append(d.Partial.Nodes, n)
+					}
+				}
+
+				if stt := affected.GetStaticNodePool(); stt != nil {
+					for _, n := range d.Partial.Nodes {
+						key := n.Public
+						d.Partial.StaticNodeKeys[key] = stt.NodeKeys[key]
+					}
+				}
+
+				update.Delta = &Update_DeletedK8SNodes_{
+					DeletedK8SNodes: &Update_DeletedK8SNodes{
+						Kind: d,
+					},
+				}
+			}
+		case *Update_TfDeleteLoadBalancerNodes:
+			handle := delta.TfDeleteLoadBalancerNodes.Handle
+			lbi := slices.IndexFunc(*lbs, func(lb *LBcluster) bool {
+				return lb.ClusterInfo.Id() == handle
+			})
+			if lbi < 0 {
+				// Under normal circumstances this should never happen, this signals
+				// either malformed/corrupted data and/or mistake in the schedule of
+				// tasks. Thus rather return an error than continiung with the merge.
+				return fmt.Errorf("can't update loadbalancer %q received update result with invalid loadbalancer id", id)
+			}
+
+			lb := (*lbs)[lbi]
+
+			npi := slices.IndexFunc(lb.ClusterInfo.NodePools, func(n *NodePool) bool {
+				return n.Name == delta.TfDeleteLoadBalancerNodes.Nodepool
+			})
+			if npi < 0 {
+				// Under normal circumstances this should never happen, this signals
+				// either malformed/corrupted data and/or mistake in the schedule of
+				// tasks. Thus rather return an error than continiung with the merge.
+				return fmt.Errorf("can't update loadbalancer %q received update result with invalid deleted nodepool %q", id, delta.TfDeleteLoadBalancerNodes.Nodepool)
+			}
+
+			affected := lb.ClusterInfo.NodePools[npi]
+
+			if delta.TfDeleteLoadBalancerNodes.WithNodePool {
+				// Below, with the replacement of the loadbalancer
+				// clsuter it should no longer reference this nodepool
+				// and this should be the only owner of it afterwards.
+				update.Delta = &Update_DeletedLoadBalancerNodes_{
+					DeletedLoadBalancerNodes: &Update_DeletedLoadBalancerNodes{
+						Handle: handle,
+						Kind: &Update_DeletedLoadBalancerNodes_Whole{
+							Whole: &Update_DeletedLoadBalancerNodes_WholeNodePool{
+								Nodepool: affected,
+							},
+						},
+					},
+				}
+			} else {
+				// Below, with the replacement of the loadbalancer cluster
+				// it should no longer reference these nodes and this should
+				// be the only owner of them afterwards.
+				d := &Update_DeletedLoadBalancerNodes_Partial_{
+					Partial: &Update_DeletedLoadBalancerNodes_Partial{
+						Nodepool:       delta.TfDeleteLoadBalancerNodes.Nodepool,
+						Nodes:          []*Node{},
+						StaticNodeKeys: map[string]string{},
+					},
+				}
+
+				for _, n := range affected.Nodes {
+					if slices.Contains(delta.TfDeleteLoadBalancerNodes.Nodes, n.Name) {
+						d.Partial.Nodes = append(d.Partial.Nodes, n)
+					}
+				}
+
+				if stt := affected.GetStaticNodePool(); stt != nil {
+					for _, n := range d.Partial.Nodes {
+						key := n.Public
+						d.Partial.StaticNodeKeys[key] = stt.NodeKeys[key]
+					}
+				}
+
+				update.Delta = &Update_DeletedLoadBalancerNodes_{
+					DeletedLoadBalancerNodes: &Update_DeletedLoadBalancerNodes{
+						Handle: handle,
+						Kind:   d,
+					},
+				}
+			}
+		}
+	}
+
 	if k := result.Update.K8S; k != nil {
 		if gotName := k.GetClusterInfo().Id(); gotName != id {
 			// Under normal circumstances this should never happen, this signals either
 			// malformed/corrupted data and/or mistake in the scheduling of tasks.
 			// Thus return an error rather than continuing with the merge.
-			return fmt.Errorf("Can't update cluster %q with received cluster %q", id, gotName)
+			return fmt.Errorf("can't update cluster %q with received cluster %q", id, gotName)
 		}
 		(*k8s) = k
 		result.Update.K8S = nil
@@ -314,6 +450,7 @@ func (te *Task) ConsumeUpdateResult(result *TaskResult_Update) error {
 	// add new ones.
 	*lbs = append(*lbs, toUpdate.Clusters...)
 
+	// Consume replace updates, if any.
 	if update := te.GetUpdate(); update != nil {
 		switch delta := update.Delta.(type) {
 		case *Update_AnsReplaceProxy:

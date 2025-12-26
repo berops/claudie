@@ -1,21 +1,31 @@
 package autoscaler
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"regexp"
 	"strings"
 
+	_ "embed"
+
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/berops/claudie/services/kuber/templates"
 	"github.com/rs/zerolog/log"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/util/yaml"
+)
+
+var (
+	//go:embed cluster-autoscaler.goyaml
+	ClusterAutoscalerTemplate string
 )
 
 var (
@@ -116,7 +126,7 @@ func (a *AutoscalerManager) DestroyClusterAutoscaler() error {
 
 // generateFiles generates all manifests required for deploying Cluster Autoscaler.
 func (a *AutoscalerManager) generateFiles() error {
-	ca, err := templateUtils.LoadTemplate(templates.ClusterAutoscalerTemplate)
+	ca, err := templateUtils.LoadTemplate(ClusterAutoscalerTemplate)
 	if err != nil {
 		return fmt.Errorf("error loading cluster autoscaler template: %w", err)
 	}
@@ -249,4 +259,56 @@ func getClusterAutoscaleVersions() ([]string, error) {
 	}
 
 	return semverList, nil
+}
+
+func Manifests(projectName string, c *spec.K8Scluster) ([]unstructured.Unstructured, error) {
+	ca, err := templateUtils.LoadTemplate(ClusterAutoscalerTemplate)
+	if err != nil {
+		return nil, fmt.Errorf("error loading cluster autoscaler template: %w", err)
+	}
+
+	version, err := getK8sVersion(c.Kubernetes)
+	if err != nil {
+		return nil, err
+	}
+
+	var (
+		clusterId = c.ClusterInfo.Id()
+
+		caData = &autoscalerDeploymentData{
+			ClusterName:       c.ClusterInfo.Name,
+			ProjectName:       projectName,
+			ClusterID:         clusterId,
+			AdapterPort:       defaultAdapterPort,
+			KubernetesVersion: version,
+			OperatorHostname:  operatorHostname,
+			OperatorPort:      operatorPort,
+		}
+
+		tpl = templateUtils.Templates{}
+	)
+
+	yamls, err := tpl.GenerateToString(ca, caData)
+	if err != nil {
+		return nil, fmt.Errorf("error generating cluster autoscaler deployment : %w", err)
+	}
+
+	var (
+		reader  = bufio.NewReader(strings.NewReader(yamls))
+		decoder = yaml.NewYAMLToJSONDecoder(reader)
+		out     []unstructured.Unstructured
+	)
+
+	for {
+		var doc unstructured.Unstructured
+		if err := decoder.Decode(&doc); err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return nil, fmt.Errorf("failed to decode next yaml encoded value: %w", err)
+		}
+		out = append(out, doc)
+	}
+
+	return out, nil
 }

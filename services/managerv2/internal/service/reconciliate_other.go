@@ -308,6 +308,7 @@ func ScheduleDeleteCluster(current *spec.Clusters) *spec.TaskEvent {
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
 func ScheduleRefreshVPN(current *spec.Clusters) *spec.TaskEvent {
+	// TODO: maybe refresh the Proxy envs in here aswell ?
 	inFlight := proto.Clone(current).(*spec.Clusters)
 	return &spec.TaskEvent{
 		Id:        uuid.New().String(),

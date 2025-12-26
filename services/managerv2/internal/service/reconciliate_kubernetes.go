@@ -12,11 +12,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// TODO: the loadbalancer deletion will also not work here...
-// cause it was already deleted from the state....
-// TODO: re-check the deletion in the manager...
-// TODO: recheck the deletion everywhere.
-
 // Wraps data and diffs needed by the reconciliation
 // for kubernetes cluster.
 //
@@ -1048,11 +1043,11 @@ func ScheduleDeletionsInNodePools(
 							K8S:           inFlight.K8S,
 							LoadBalancers: inFlight.LoadBalancers.Clusters,
 						},
-						Delta: &spec.Update_DeleteK8SNodes_{
-							DeleteK8SNodes: &spec.Update_DeleteK8SNodes{
+						Delta: &spec.Update_KDeleteNodes{
+							KDeleteNodes: &spec.Update_KuberDeleteK8SNodes{
+								WithNodePool: false,
 								Nodepool:     np,
 								Nodes:        nodes,
-								WithNodePool: false,
 							},
 						},
 					},
@@ -1141,11 +1136,11 @@ func ScheduleDeletionsInNodePools(
 							K8S:           inFlight.K8S,
 							LoadBalancers: inFlight.LoadBalancers.Clusters,
 						},
-						Delta: &spec.Update_DeleteK8SNodes_{
-							DeleteK8SNodes: &spec.Update_DeleteK8SNodes{
+						Delta: &spec.Update_KDeleteNodes{
+							KDeleteNodes: &spec.Update_KuberDeleteK8SNodes{
+								WithNodePool: true,
 								Nodepool:     np,
 								Nodes:        nodes,
-								WithNodePool: true,
 							},
 						},
 					},

@@ -44,11 +44,6 @@ const (
 	// NotReady describes the case where the manifest is not ready to be scheduled yet,
 	// But needs to update its Database representation as changes have been made to it.
 	NotReady
-
-	// FinalRetry describes the case where a manifest had a retry policy to retry
-	// rescheduling the manifest N times before giving up. FinalRetry states that
-	// the manifest should be retried one last time before giving up.
-	FinalRetry
 )
 
 // Schedules tasks based on the difference between the current and desired state.
@@ -193,12 +188,24 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 			}
 
 			updateAutoscalerPods := len(nodepools.Autoscaled(state.Current.K8S.ClusterInfo.NodePools)) > 0
-			updateAutoscalerPods = updateAutoscalerPods && managementcluster.DriftInAutoscalerPods(pending.Name, current)
 			if updateAutoscalerPods {
-				if err := managementcluster.SetUpClusterAutoscaler(pending.Name, current); err != nil {
+				drift, err := managementcluster.DriftInAutoscalerPods(logger, pending.Name, current)
+				if err != nil {
 					logger.
 						Err(err).
-						Msg("Failed to refresh autoscaler pods in the management cluster")
+						Msg("Failed to detect drift in autoscaler deployments")
+				}
+
+				if drift {
+					logger.
+						Info().
+						Msg("Detected drift in autoscaler deployments")
+
+					if err := managementcluster.SetUpClusterAutoscaler(pending.Name, current); err != nil {
+						logger.
+							Err(err).
+							Msg("Failed to refresh autoscaler pods in the management cluster")
+					}
 				}
 			}
 
@@ -282,7 +289,7 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 		}
 
 		switch result {
-		case Reschedule, NoReschedule, FinalRetry:
+		case Reschedule, NoReschedule:
 			// Events are going to be worked on, thus clear the Error state, if any.
 			state.State = &spec.Workflow{
 				Status: spec.Workflow_WAIT_FOR_PICKUP,
@@ -433,11 +440,6 @@ func clustersUnion(old, modified *spec.Clusters) *spec.Clusters {
 
 	return ir
 }
-
-// TODO: don't ping on every reconciliation iteration
-// only when we're about to schedule a task and if the
-// pinging fails that will have to replace that task as
-// it will have a higher priority.
 
 // Handles reconciliation for updating existing clusters.
 func handleUpdate(hc HealthCheckStatus, current, desired *spec.Clusters) *spec.TaskEvent {

@@ -4,7 +4,8 @@ import (
 	"testing"
 
 	"github.com/berops/claudie/internal/templateUtils"
-	"github.com/berops/claudie/services/kuber/templates"
+	"github.com/berops/claudie/proto/pb/spec"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -61,7 +62,7 @@ spec:
       securityContext:
         runAsUser: 1000
         runAsGroup: 3000
-        fsGroup: 2000    
+        fsGroup: 2000
       containers:
         - name: autoscaler-adapter
           imagePullPolicy: IfNotPresent
@@ -69,10 +70,10 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
-            readOnlyRootFilesystem: true                    
+            readOnlyRootFilesystem: true
             capabilities:
               drop:
-                - all                 
+                - all
           env:
             - name: ADAPTER_PORT
               value: "50000"
@@ -81,7 +82,7 @@ spec:
             - name: PROJECT_NAME
               value: Project1
             - name: OPERATOR_HOSTNAME
-              value: 
+              value: ""
             - name: OPERATOR_PORT
               value: ""
           resources:
@@ -127,10 +128,28 @@ spec:
 func TestAutoscalerTemplate(t *testing.T) {
 	// Load
 	tpl := templateUtils.Templates{Directory: "."}
-	ca, err := templateUtils.LoadTemplate(templates.ClusterAutoscalerTemplate)
+	ca, err := templateUtils.LoadTemplate(ClusterAutoscalerTemplate)
 	require.NoError(t, err)
 	// Check Autoscaler
 	out, err := tpl.GenerateToString(ca, caData)
 	require.NoError(t, err)
 	require.Equal(t, out, caDeployment)
+}
+
+func TestManifests(t *testing.T) {
+	k8s := &spec.K8Scluster{
+		ClusterInfo: &spec.ClusterInfo{
+			Name: "Test",
+			Hash: "Test",
+		},
+		Kubernetes: "v1.34.0",
+	}
+	manifestName := "Test"
+
+	yamls, err := Manifests(manifestName, k8s)
+	assert.Nil(t, err)
+
+	for _, y := range yamls {
+		println(y.GetKind())
+	}
 }

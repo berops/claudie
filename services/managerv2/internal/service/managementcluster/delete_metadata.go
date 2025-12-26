@@ -21,9 +21,9 @@ func DeleteClusterMetadata(clusters *spec.Clusters) error {
 
 	kc := kubectl.Kubectl{
 		MaxKubectlRetries: -1,
+		Stdout:            comm.GetStdOut(clusterID),
+		Stderr:            comm.GetStdErr(clusterID),
 	}
-	kc.Stdout = comm.GetStdOut(clusterID)
-	kc.Stderr = comm.GetStdErr(clusterID)
 
 	return kc.KubectlDeleteResource("secret", fmt.Sprintf("%s-metadata", clusterID), "-n", namespace)
 }

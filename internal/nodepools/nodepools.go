@@ -12,6 +12,7 @@ import (
 	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/proto/pb/spec"
+
 	"google.golang.org/protobuf/proto"
 )
 

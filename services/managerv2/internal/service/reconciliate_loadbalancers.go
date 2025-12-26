@@ -304,8 +304,8 @@ func ScheduleDeletionLoadBalancerNodePools(
 					K8S:           inFlight.K8S,
 					LoadBalancers: inFlight.LoadBalancers.Clusters,
 				},
-				Delta: &spec.Update_DeleteLoadBalancerNodes_{
-					DeleteLoadBalancerNodes: &spec.Update_DeleteLoadBalancerNodes{
+				Delta: &spec.Update_TfDeleteLoadBalancerNodes{
+					TfDeleteLoadBalancerNodes: &spec.Update_TerraformerDeleteLoadBalancerNodes{
 						Handle:       cid.Id,
 						WithNodePool: false,
 						Nodepool:     np,
@@ -334,8 +334,8 @@ func ScheduleDeletionLoadBalancerNodePools(
 					K8S:           inFlight.K8S,
 					LoadBalancers: inFlight.LoadBalancers.Clusters,
 				},
-				Delta: &spec.Update_DeleteLoadBalancerNodes_{
-					DeleteLoadBalancerNodes: &spec.Update_DeleteLoadBalancerNodes{
+				Delta: &spec.Update_TfDeleteLoadBalancerNodes{
+					TfDeleteLoadBalancerNodes: &spec.Update_TerraformerDeleteLoadBalancerNodes{
 						Handle:       cid.Id,
 						WithNodePool: true,
 						Nodepool:     np,

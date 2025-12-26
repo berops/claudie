@@ -43,7 +43,7 @@ spec:
       securityContext:
         runAsUser: 1000
         runAsGroup: 3000
-        fsGroup: 2000    
+        fsGroup: 2000
       containers:
         - name: autoscaler-adapter
           imagePullPolicy: IfNotPresent
@@ -51,10 +51,10 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
-            readOnlyRootFilesystem: true                    
+            readOnlyRootFilesystem: true
             capabilities:
               drop:
-                - all                 
+                - all
           env:
             - name: ADAPTER_PORT
               value: "{{ .AdapterPort }}"
@@ -63,7 +63,7 @@ spec:
             - name: PROJECT_NAME
               value: {{ .ProjectName }}
             - name: OPERATOR_HOSTNAME
-              value: {{ .OperatorHostname }}
+              value: "{{ .OperatorHostname }}"
             - name: OPERATOR_PORT
               value: "{{ .OperatorPort }}"
           resources:

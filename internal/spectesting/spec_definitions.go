@@ -598,7 +598,7 @@ func GenerateFakeK8SCluster(willHaveLbApiEndpoint bool) *spec.K8Scluster {
 		WithK8SClusterInfo(GenerateFakeK8SClusterInfo(willHaveLbApiEndpoint, privateNetwork, publicNetwork)),
 		WithK8SNetwork(privateNetwork),
 		WithK8SKubeconfig(string(kubeconfig)),
-		WithK8SKubernetes("v1.30"),
+		WithK8SKubernetes("v1.34.0"),
 		WithK8SInstallationProxy(nil),
 	)
 }
