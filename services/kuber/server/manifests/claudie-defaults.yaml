@@ -21,3 +21,10 @@ metadata:
   name: default-data-path
   namespace: longhorn-system
 value: /opt/claudie/data
+---
+apiVersion: longhorn.io/v1beta1
+kind: Setting
+metadata:
+  name: default-data-locality
+  namespace: longhorn-system
+value: best-effort
