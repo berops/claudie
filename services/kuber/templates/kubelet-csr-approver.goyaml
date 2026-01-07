@@ -68,7 +68,7 @@ metadata:
   name: kubelet-csr-approver
   namespace: kube-system
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: kubelet-csr-approver
