@@ -45,6 +45,7 @@ func (g *GrpcAdapter) Init(usecases *usecases.Usecases, opts ...grpc.ServerOptio
 
 	// Add health service to gRPC
 	g.HealthServer = health.NewServer()
+
 	// Kuber does not have any custom health check functions, thus always serving.
 	g.HealthServer.SetServingStatus("kuber-liveness", grpc_health_v1.HealthCheckResponse_SERVING)
 	g.HealthServer.SetServingStatus("kuber-readiness", grpc_health_v1.HealthCheckResponse_SERVING)

@@ -22,6 +22,7 @@ metadata:
   namespace: longhorn-system
 value: /opt/claudie/data
 ---
+# Default data locality setting to use best-effort
 apiVersion: longhorn.io/v1beta1
 kind: Setting
 metadata:
