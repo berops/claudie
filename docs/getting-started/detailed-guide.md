@@ -339,7 +339,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
                 name: hetzner-1   # use your new hetzner provider hetzner-1 to create these nodes
                 region: hel1
                 zone: hel1-dc2
-            serverType: cpx51
+            serverType: cpx52
             image: ubuntu-22.04
             autoscaler:           # this node pool uses a claudie autoscaler instead of static count of nodes
                 min: 1

@@ -108,7 +108,7 @@ spec:
           region: hel1
           zone: hel1-dc2
         count: 3
-        serverType: cpx11
+        serverType: cpx22
         image: ubuntu-24.04
         labels:
           country: finland
@@ -126,7 +126,7 @@ spec:
           region: hel1
           zone: hel1-dc2
         count: 2
-        serverType: cpx11
+        serverType: cpx22
         image: ubuntu-24.04
         storageDiskSize: 50
         labels:
@@ -140,7 +140,7 @@ spec:
           name: hetzner-1
           region: hel1
           zone: hel1-dc2
-        serverType: cpx11
+        serverType: cpx22
         image: ubuntu-24.04
         storageDiskSize: 50
         autoscaler:
@@ -258,7 +258,7 @@ spec:
           region: hel1
           zone: hel1-dc2
         count: 2
-        serverType: cpx11
+        serverType: cpx22
         image: ubuntu-24.04
 
     # Static nodepools are created by user beforehand.

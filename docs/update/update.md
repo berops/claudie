@@ -51,7 +51,7 @@ Nodepools specified in the InputManifest are immutable. Once created, they canno
     region: fsn1
     zone: fsn1-dc14
   count: 1
-  serverType: cpx11
+  serverType: cpx22
   image: ubuntu-22.04
 ...
 ```
@@ -65,7 +65,7 @@ Nodepools specified in the InputManifest are immutable. Once created, they canno
     region: fsn1
     zone: fsn1-dc14
   count: 1
-  serverType: cpx11
+  serverType: cpx22
   image: ubuntu-24.04
 ...
 ```
@@ -85,7 +85,7 @@ The same concept applies to changing the server type of a dynamic nodepool.
     region: fsn1
     zone: fsn1-dc14
   count: 1
-  serverType: cpx11
+  serverType: cpx22
   image: ubuntu-22.04
 ...
 ```
@@ -99,7 +99,7 @@ The same concept applies to changing the server type of a dynamic nodepool.
     region: fsn1
     zone: fsn1-dc14
   count: 1
-  serverType: cpx21
+  serverType: cpx22
   image: ubuntu-22.04
 ...
 ```
