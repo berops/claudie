@@ -9,7 +9,10 @@ import (
 )
 
 // ErrNotFoundOrDirty is returned when the requested document couldn't be found inside the database or a Dirty Write occurred.
-var ErrNotFoundOrDirty = errors.New("failed to find requested document. It is possible that this operation was a Dirty Write. Consider fetching the latest version of the requested document to repeat the read-write cycle")
+var ErrNotFoundOrDirty = errors.New(
+	"failed to find requested document. It is possible that this operation was a Dirty Write." +
+		"Consider fetching the latest version of the requested document to repeat the read-write cycle",
+)
 
 // ListFilter wraps supported filters for listing configs.
 type ListFilter struct {
@@ -118,9 +121,12 @@ type TaskEvent struct {
 	Type         string  `bson:"event"`
 	Task         []byte  `bson:"task"`
 	Description  string  `bson:"description"`
-	OnError      []byte  `bson:"onError"`
 	Pipeline     []Stage `bson:"pipeline"`
 	CurrentStage uint32  `bson:"currentStage"`
+
+	// Deprecated.
+	// TODO: remove in future versions.
+	OnError []byte `bson:"onError"`
 }
 
 type Workflow struct {

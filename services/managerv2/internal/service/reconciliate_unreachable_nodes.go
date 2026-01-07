@@ -110,7 +110,7 @@ func HandleKubernetesUnreachableNodes(
 		errUnreachable error
 
 		// the known unreachable infrastructure
-		unreachable = spec.Unreachable{
+		unreachableInfra = spec.Unreachable{
 			Kubernetes: &spec.Unreachable_UnreachableNodePools{
 				Nodepools: map[string]*spec.Unreachable_ListOfNodes{},
 			},
@@ -119,17 +119,17 @@ func HandleKubernetesUnreachableNodes(
 	)
 
 	for np, nodes := range r.Unreachable.Kubernetes {
-		unreachable.Kubernetes.Nodepools[np] = &spec.Unreachable_ListOfNodes{
+		unreachableInfra.Kubernetes.Nodepools[np] = &spec.Unreachable_ListOfNodes{
 			Nodes: nodes,
 		}
 	}
 
 	for lb, nps := range r.Unreachable.LoadBalancers {
-		unreachable.Loadbalancers[lb] = &spec.Unreachable_UnreachableNodePools{
+		unreachableInfra.Loadbalancers[lb] = &spec.Unreachable_UnreachableNodePools{
 			Nodepools: map[string]*spec.Unreachable_ListOfNodes{},
 		}
 		for np, nodes := range nps {
-			unreachable.Loadbalancers[lb].Nodepools[np] = &spec.Unreachable_ListOfNodes{
+			unreachableInfra.Loadbalancers[lb].Nodepools[np] = &spec.Unreachable_ListOfNodes{
 				Nodes: nodes,
 			}
 		}
@@ -180,7 +180,7 @@ func HandleKubernetesUnreachableNodes(
 				UseProxy:     r.Diff.Proxy.CurrentUsed,
 				HasApiServer: r.Diff.ApiEndpoint.Current != "",
 				IsStatic:     cnp.GetStaticNodePool() != nil,
-				Unreachable:  &unreachable,
+				Unreachable:  &unreachableInfra,
 			}
 
 			diff := NodePoolsDiffResult{
@@ -298,7 +298,7 @@ Failed to retrieve actuall nodes present in the cluster via 'kubectl'.
 			UseProxy:     r.Diff.Proxy.CurrentUsed,
 			HasApiServer: r.Diff.ApiEndpoint.Current != "",
 			IsStatic:     info.static,
-			Unreachable:  &unreachable,
+			Unreachable:  &unreachableInfra,
 		}
 
 		diff := NodePoolsDiffResult{
@@ -342,12 +342,12 @@ Fix the unreachable nodes by either:
 }
 
 type LoadBalancerUnreachableNodes struct {
-	unreachable map[string]UnreachableIPv4Map
+	Unreachable UnreachableNodes
 	State       *spec.ClusterState
 	Desired     *spec.Clusters
 }
 
-// Similar as [HandleKubernetesUnreachableNodes] but work with the loadbalancer nodes.
+// Similar as [HandleKubernetesUnreachableNodes] but works with the loadbalancer nodes.
 func HandleLoadBalancerUnreachableNodes(
 	logger zerolog.Logger,
 	r LoadBalancerUnreachableNodes,
@@ -358,9 +358,37 @@ func HandleLoadBalancerUnreachableNodes(
 	//
 	// We do not allow deleting of a single node from a loadbalancer nodepool at this time, as it is the
 	// case for kuberentes nodes.
-	var errUnreachable error
+	var (
+		// error that is gradually populated with the unreachable nodes info.
+		errUnreachable error
 
-	for lb, unreachable := range r.unreachable {
+		// the known unreachable infrastructure
+		unreachableInfra = spec.Unreachable{
+			Kubernetes: &spec.Unreachable_UnreachableNodePools{
+				Nodepools: map[string]*spec.Unreachable_ListOfNodes{},
+			},
+			Loadbalancers: map[string]*spec.Unreachable_UnreachableNodePools{},
+		}
+	)
+
+	for np, nodes := range r.Unreachable.Kubernetes {
+		unreachableInfra.Kubernetes.Nodepools[np] = &spec.Unreachable_ListOfNodes{
+			Nodes: nodes,
+		}
+	}
+
+	for lb, nps := range r.Unreachable.LoadBalancers {
+		unreachableInfra.Loadbalancers[lb] = &spec.Unreachable_UnreachableNodePools{
+			Nodepools: map[string]*spec.Unreachable_ListOfNodes{},
+		}
+		for np, nodes := range nps {
+			unreachableInfra.Loadbalancers[lb].Nodepools[np] = &spec.Unreachable_ListOfNodes{
+				Nodes: nodes,
+			}
+		}
+	}
+
+	for lb, unreachable := range r.Unreachable.LoadBalancers {
 		cid := clusters.IndexLoadbalancerById(lb, r.State.Current.LoadBalancers.Clusters)
 		did := clusters.IndexLoadbalancerById(lb, r.Desired.LoadBalancers.Clusters)
 
@@ -390,7 +418,7 @@ func HandleLoadBalancerUnreachableNodes(
 			}
 
 			// If any other parts of the infra is unresponsive this task will not be blocked by it.
-			next := ScheduleRawDeleteLoadBalancer(r.State.Current, id)
+			next := ScheduleRawDeleteLoadBalancer(r.State.Current, id, &unreachableInfra)
 			r.State.InFlight = next
 			return UnreachableNodesScheduledTask
 		}
@@ -417,6 +445,7 @@ func HandleLoadBalancerUnreachableNodes(
 						},
 						np,
 						nodes,
+						&unreachableInfra,
 					)
 					r.State.InFlight = next
 					return UnreachableNodesScheduledTask
@@ -483,7 +512,11 @@ Fix the unreachable nodes by either:
 // should be other mechanisms in place to reconcile the ansible stage.
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
-func ScheduleRawDeleteLoadBalancer(current *spec.Clusters, cid LoadBalancerIdentifier) *spec.TaskEvent {
+func ScheduleRawDeleteLoadBalancer(
+	current *spec.Clusters,
+	cid LoadBalancerIdentifier,
+	unreachable *spec.Unreachable,
+) *spec.TaskEvent {
 	inFlight := proto.Clone(current).(*spec.Clusters)
 	updateOp := spec.Update{
 		State: &spec.Update_State{
@@ -492,7 +525,8 @@ func ScheduleRawDeleteLoadBalancer(current *spec.Clusters, cid LoadBalancerIdent
 		},
 		Delta: &spec.Update_DeleteLoadBalancer_{
 			DeleteLoadBalancer: &spec.Update_DeleteLoadBalancer{
-				Handle: cid.Id,
+				Handle:      cid.Id,
+				Unreachable: unreachable,
 			},
 		},
 	}
@@ -574,6 +608,7 @@ func ScheduleRawDeletionLoadBalancerNodePool(
 	cid LoadBalancerIdentifier,
 	nodepool string,
 	nodes []string, // all of the nodes of the deleted nodepool.
+	unreachable *spec.Unreachable,
 ) *spec.TaskEvent {
 	pipeline := []*spec.Stage{
 		{
@@ -636,6 +671,7 @@ func ScheduleRawDeletionLoadBalancerNodePool(
 							WithNodePool: true,
 							Nodepool:     nodepool,
 							Nodes:        nodes,
+							Unreachable:  unreachable,
 						},
 					},
 				},

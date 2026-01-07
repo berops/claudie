@@ -93,14 +93,15 @@ func updateApiEndpoint(
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}
 
-	err := utils.GenerateInventoryFile(templates.LoadbalancerInventoryTemplate, clusterDirectory, utils.LBInventoryFileParameters{
-		K8sNodepools: utils.NodePools{
+	idata := KubernetesInventoryParameters{
+		K8sNodepools: NodePools{
 			Dynamic: dyn,
 			Static:  stc,
 		},
-		LBClusters: nil,
-		ClusterID:  clusterID,
-	})
+		ClusterID: clusterID,
+	}
+
+	err := utils.GenerateInventoryFile(templates.KubernetesInventoryTemplate, clusterDirectory, idata)
 	if err != nil {
 		return fmt.Errorf("error while creating inventory file for %s : %w", clusterDirectory, err)
 	}

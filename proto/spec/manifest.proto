@@ -304,6 +304,11 @@ message Update {
 
     // Nodes that were deleted.
     repeated string nodes = 4;
+
+    // Unreachable infrastructure that is optionally set
+    // for the deletion process, in which presense, connecting
+    // to the unreachable infrastructure should be omitted.
+    optional Unreachable unreachable = 5;
   }
   message DeletedLoadBalancerNodes {
     message WholeNodePool {
@@ -328,8 +333,13 @@ message Update {
       map<string, string> staticNodeKeys = 3;
     }
 
+    // Unreachable infrastructure that is optionally set
+    // for the deletion process, in which presense, connecting
+    // to the unreachable infrastructure should be omitted.
+    optional Unreachable unreachable = 1;
+
     // id of the loadbalancer.
-    string handle = 1;
+    string handle = 2;
 
     oneof Kind {
       WholeNodePool whole = 3;
@@ -432,6 +442,11 @@ message Update {
   // message, thus no "message consuming" needs to happen.
   message DeleteLoadBalancer {
     string handle = 1;
+
+    // Unreachable infrastructure that is optionally set
+    // for the deletion process, in which presense, connecting
+    // to the unreachable infrastructure should be omitted.
+    optional Unreachable unreachable = 2;
   }
 
   // ApiEndpoint works with the [State] that is part of the [Update] message

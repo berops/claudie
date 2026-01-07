@@ -208,11 +208,6 @@ func ConvertFromGRPCTaskEvent(te *spec.TaskEvent) (*TaskEvent, error) {
 		return nil, err
 	}
 
-	retry, err := proto.Marshal(te.OnError)
-	if err != nil {
-		return nil, err
-	}
-
 	var e TaskEvent
 	{
 		e.Id = te.Id
@@ -220,7 +215,6 @@ func ConvertFromGRPCTaskEvent(te *spec.TaskEvent) (*TaskEvent, error) {
 		e.Type = te.Event.String()
 		e.Task = task
 		e.Description = te.Description
-		e.OnError = retry
 		e.CurrentStage = te.CurrentStage
 
 		e.Pipeline, err = ConvertFromGRPCStages(te.Pipeline)
@@ -247,18 +241,12 @@ func ConvertToGRPCTaskEvent(te *TaskEvent) (*spec.TaskEvent, error) {
 		return nil, err
 	}
 
-	var strategy spec.Retry
-	if err := proto.Unmarshal(te.OnError, &strategy); err != nil {
-		return nil, err
-	}
-
 	e := &spec.TaskEvent{
 		Id:           te.Id,
 		Timestamp:    timestamppb.New(t),
 		Event:        spec.Event(spec.Event_value[te.Type]),
 		Task:         task,
 		Description:  te.Description,
-		OnError:      &strategy,
 		Pipeline:     nil,
 		CurrentStage: te.CurrentStage,
 	}

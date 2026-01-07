@@ -14,13 +14,6 @@ const (
 	noProxyDefault = "127.0.0.1/8,localhost,cluster.local,10.244.0.0/16,10.96.0.0/12"
 )
 
-type ProxyInventoryFileParameters struct {
-	K8sNodepools NodePools
-	ClusterID    string
-	NoProxyList  string
-	HttpProxyUrl string
-}
-
 type Proxy struct {
 	HttpProxyUrl string
 	NoProxyList  string

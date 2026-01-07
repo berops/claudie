@@ -46,6 +46,45 @@ const (
 	envoyLDS = "lds_temp.yml"
 )
 
+type (
+	LoadBalancersData struct {
+		Clusters             []*spec.LBcluster
+		TargetedK8sNodePools []*spec.NodePool
+		K8sClusterId         string
+	}
+
+	LBcluster struct {
+		Name        string
+		Hash        string
+		LBnodepools NodePools
+	}
+
+	UninstallNginxParams struct {
+		LoadBalancer string
+	}
+
+	NodeExporterTemplateParams struct {
+		LoadBalancer     string
+		NodeExporterPort int
+	}
+
+	RolesTemplateParams struct {
+		Role        *spec.Role
+		TargetNodes []*spec.Node
+	}
+
+	EnvoyConfigTemplateParams struct {
+		LoadBalancer string
+		Roles        []RolesTemplateParams
+	}
+
+	EnvoyTemplateParams struct {
+		LoadBalancer   string
+		Role           string
+		EnvoyAdminPort int32
+	}
+)
+
 func ReconcileLoadBalancers(
 	logger zerolog.Logger,
 	projectName string,
@@ -54,8 +93,14 @@ func ReconcileLoadBalancers(
 ) {
 	logger.Info().Msg("Reconciling LoadBalancers")
 
-	var k8s *spec.K8Scluster
-	var lbs []*spec.LBcluster
+	var (
+		k8s *spec.K8Scluster
+		lbs []*spec.LBcluster
+
+		// unreachable infrastructure, if any, that will be skipped
+		// during the installation of the VPN.
+		unreachable *spec.Unreachable
+	)
 
 	switch do := tracker.Task.Do.(type) {
 	case *spec.Task_Create:
@@ -63,7 +108,6 @@ func ReconcileLoadBalancers(
 		lbs = do.Create.LoadBalancers
 	case *spec.Task_Update:
 		k8s = do.Update.State.K8S
-
 		// Will default to only reconciling a single loadbalancer, if possible.
 		// But will reconcile all of the nodepools of that loadbalancer.
 		//
@@ -75,6 +119,8 @@ func ReconcileLoadBalancers(
 		} else {
 			lbs = do.Update.State.LoadBalancers
 		}
+
+		unreachable = UnreachableInfrastructure(do)
 	default:
 		logger.
 			Warn().
@@ -85,13 +131,14 @@ func ReconcileLoadBalancers(
 		return
 	}
 
-	li := utils.LBClustersInfo{
-		Lbs:               lbs,
-		TargetK8sNodepool: k8s.ClusterInfo.NodePools,
-		ClusterID:         k8s.ClusterInfo.Id(),
+	clusterId := k8s.ClusterInfo.Id()
+	data := LoadBalancersData{
+		Clusters:             lbs,
+		TargetedK8sNodePools: k8s.ClusterInfo.NodePools,
+		K8sClusterId:         clusterId,
 	}
 
-	if err := setUpLoadbalancers(logger, processLimit, &li); err != nil {
+	if err := setUpLoadbalancers(logger, data, unreachable, processLimit); err != nil {
 		logger.Err(err).Msg("Failed to setup loadbalancers")
 		tracker.Diagnostics.Push(err)
 		return
@@ -99,19 +146,28 @@ func ReconcileLoadBalancers(
 
 	// Changes to TargetPools could have been done.
 	update := tracker.Result.Update()
-	update.Loadbalancers(li.Lbs...)
+	update.Loadbalancers(lbs...)
 	update.Commit()
 
 	logger.Info().Msg("Sucessfully reconciled LoadBalancers")
 }
 
 // setUpLoadbalancers sets up the loadbalancers along with DNS and verifies their configuration
-func setUpLoadbalancers(logger zerolog.Logger, processLimit *semaphore.Weighted, info *utils.LBClustersInfo) error {
+func setUpLoadbalancers(
+	logger zerolog.Logger,
+	ci LoadBalancersData,
+	unreachable *spec.Unreachable,
+	processLimit *semaphore.Weighted,
+) error {
 	clusterBaseDirectory := filepath.Join(
 		BaseDirectory,
 		OutputDirectory,
-		fmt.Sprintf("%s-%s-lbs", info.ClusterID, hash.Create(hash.Length)),
+		fmt.Sprintf("%s-%s-lbs", ci.K8sClusterId, hash.Create(hash.Length)),
 	)
+
+	if err := fileutils.CreateDirectory(clusterBaseDirectory); err != nil {
+		return fmt.Errorf("failed to create directory %s : %w", clusterBaseDirectory, err)
+	}
 
 	defer func() {
 		if err := os.RemoveAll(clusterBaseDirectory); err != nil {
@@ -119,15 +175,12 @@ func setUpLoadbalancers(logger zerolog.Logger, processLimit *semaphore.Weighted,
 		}
 	}()
 
-	if err := utils.GenerateLBBaseFiles(clusterBaseDirectory, info); err != nil {
-		return fmt.Errorf("error encountered while generating base files for %s : %w", info.ClusterID, err)
-	}
-
-	return concurrent.Exec(info.Lbs, func(_ int, lbCluster *spec.LBcluster) error {
+	return concurrent.Exec(ci.Clusters, func(_ int, lbCluster *spec.LBcluster) error {
 		var (
 			loggerPrefix = "LB-cluster"
 			lbClusterId  = lbCluster.ClusterInfo.Id()
 			logger       = logger.With().Str(loggerPrefix, lbClusterId).Logger()
+			lbnps        = lbCluster.ClusterInfo.NodePools
 		)
 
 		logger.Info().Msg("Setting up the loadbalancer cluster")
@@ -137,11 +190,34 @@ func setUpLoadbalancers(logger zerolog.Logger, processLimit *semaphore.Weighted,
 			return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
 		}
 
-		if err := nodepools.DynamicGenerateKeys(nodepools.Dynamic(lbCluster.ClusterInfo.NodePools), clusterDirectory); err != nil {
+		if unreachable != nil {
+			lbnps = DefaultNodePoolsToReachableInfrastructureOnly(
+				lbnps,
+				unreachable.Loadbalancers[lbClusterId],
+			)
+		}
+
+		dynamic := nodepools.Dynamic(lbnps)
+		static := nodepools.Static(lbnps)
+		data := LBcluster{
+			Name: lbCluster.ClusterInfo.Name,
+			Hash: lbCluster.ClusterInfo.Hash,
+			LBnodepools: NodePools{
+				Dynamic: dynamic,
+				Static:  static,
+			},
+		}
+
+		err := utils.GenerateInventoryFile(templates.LoadbalancerInventoryTemplate, clusterDirectory, data)
+		if err != nil {
+			return fmt.Errorf("error while generating inventory file for %s : %w", clusterDirectory, err)
+		}
+
+		if err := nodepools.DynamicGenerateKeys(dynamic, clusterDirectory); err != nil {
 			return fmt.Errorf("failed to create key file(s) for dynamic nodepools : %w", err)
 		}
 
-		if err := nodepools.StaticGenerateKeys(nodepools.Static(lbCluster.ClusterInfo.NodePools), clusterDirectory); err != nil {
+		if err := nodepools.StaticGenerateKeys(static, clusterDirectory); err != nil {
 			return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 		}
 
@@ -157,7 +233,7 @@ func setUpLoadbalancers(logger zerolog.Logger, processLimit *semaphore.Weighted,
 			return err
 		}
 
-		if err := setupEnvoyProxyViaDocker(lbCluster, info.TargetK8sNodepool, clusterDirectory, processLimit); err != nil {
+		if err := setupEnvoyProxyViaDocker(lbCluster, ci.TargetedK8sNodePools, clusterDirectory, processLimit); err != nil {
 			return err
 		}
 
@@ -167,9 +243,8 @@ func setUpLoadbalancers(logger zerolog.Logger, processLimit *semaphore.Weighted,
 }
 
 // setUpNodeExporter sets up node-exporter on each node of the LB cluster.
-// Returns error if not successful, nil otherwise.
 func setUpNodeExporter(lbCluster *spec.LBcluster, clusterDirectory string, processLimit *semaphore.Weighted) error {
-	playbookParameters := utils.NodeExporterTemplateParams{
+	playbookParameters := NodeExporterTemplateParams{
 		LoadBalancer:     lbCluster.ClusterInfo.Name,
 		NodeExporterPort: manifest.NodeExporterPort,
 	}
@@ -187,7 +262,7 @@ func setUpNodeExporter(lbCluster *spec.LBcluster, clusterDirectory string, proce
 	ansible := utils.Ansible{
 		Directory:         clusterDirectory,
 		Playbook:          nodeExporterPlaybookName,
-		Inventory:         filepath.Join("..", utils.InventoryFileName),
+		Inventory:         utils.InventoryFileName,
 		SpawnProcessLimit: processLimit,
 	}
 
@@ -208,7 +283,7 @@ func uninstallNginx(
 		return fmt.Errorf("error while loading nginx uninstall file for %s: %w", lbCluster.ClusterInfo.Id(), err)
 	}
 
-	data := utils.UninstallNginxParams{
+	data := UninstallNginxParams{
 		LoadBalancer: lbCluster.ClusterInfo.Name,
 	}
 	if err := tpl.Generate(uninstall, uninstallNginxPlaybookName, data); err != nil {
@@ -218,7 +293,7 @@ func uninstallNginx(
 	ansible := utils.Ansible{
 		RetryCount:        2,
 		Playbook:          uninstallNginxPlaybookName,
-		Inventory:         filepath.Join("..", utils.InventoryFileName),
+		Inventory:         utils.InventoryFileName,
 		Directory:         clusterDirectory,
 		SpawnProcessLimit: processLimit,
 	}
@@ -226,6 +301,7 @@ func uninstallNginx(
 	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("LB - %s", lbCluster.ClusterInfo.Id())); err != nil {
 		return fmt.Errorf("error while running ansible for %s: %w", lbCluster.ClusterInfo.Name, err)
 	}
+
 	return nil
 }
 
@@ -245,12 +321,14 @@ func setupEnvoyProxyViaDocker(
 	clusterDirectory string,
 	processLimit *semaphore.Weighted,
 ) error {
-	targets := targetPools(lbCluster, targetK8sNodePool)
+	clusterId := lbCluster.ClusterInfo.Id()
+	targets := roleTargetPools(lbCluster, targetK8sNodePool)
+
 	// generate per-role dynamic configs
 	for _, tg := range targets {
 		dir := filepath.Join(clusterDirectory, tg.Role.Name)
 		if err := fileutils.CreateDirectory(dir); err != nil {
-			return fmt.Errorf("failed to create directory for envoy config for role %s for cluster %s: %w", tg.Role.Name, lbCluster.ClusterInfo.Id(), err)
+			return fmt.Errorf("failed to create directory for envoy config for role %s for cluster %s: %w", tg.Role.Name, clusterId, err)
 		}
 
 		cds := templates.EnvoyDynamicClusters
@@ -258,43 +336,50 @@ func setupEnvoyProxyViaDocker(
 
 		dynClusters, err := templateUtils.LoadTemplate(cds)
 		if err != nil {
-			return fmt.Errorf("error while loading dynamic clusters config template for %s: %w", lbCluster.ClusterInfo.Id(), err)
+			return fmt.Errorf("error while loading dynamic clusters config template for %s: %w", clusterId, err)
 		}
 
 		dynListeners, err := templateUtils.LoadTemplate(lds)
 		if err != nil {
-			return fmt.Errorf("error while loading dynamic listeners config template for %s: %w", lbCluster.ClusterInfo.Id(), err)
+			return fmt.Errorf("error while loading dynamic listeners config template for %s: %w", clusterId, err)
 		}
 
 		envoy, err := templateUtils.LoadTemplate(templates.EnvoyConfig)
 		if err != nil {
-			return fmt.Errorf("error while loading envoy config template for %s: %w", lbCluster.ClusterInfo.Id(), err)
+			return fmt.Errorf("error while loading envoy config template for %s: %w", clusterId, err)
 		}
 
-		tpl := templateUtils.Templates{Directory: dir}
-		err = tpl.Generate(dynClusters, envoyCDS, utils.LBClusterRolesInfo{
+		rolesData := RolesTemplateParams{
 			Role:        tg.Role,
 			TargetNodes: tg.TargetNodes,
-		})
-		if err != nil {
-			return fmt.Errorf("error while generating envoy dynamic clusters config for %s: %w", lbCluster.ClusterInfo.Id(), err)
 		}
 
-		err = tpl.Generate(dynListeners, envoyLDS, utils.LBClusterRolesInfo{
-			Role:        tg.Role,
-			TargetNodes: tg.TargetNodes,
-		})
-		if err != nil {
-			return fmt.Errorf("error while generating envoy dynamic listeners config for %s: %w", lbCluster.ClusterInfo.Id(), err)
-		}
-
-		err = tpl.Generate(envoy, envoyConfig, utils.EnvoyTemplateParams{
+		envoyData := EnvoyTemplateParams{
 			LoadBalancer:   lbCluster.ClusterInfo.Name,
 			Role:           tg.Role.Name,
 			EnvoyAdminPort: tg.Role.Settings.EnvoyAdminPort,
-		})
-		if err != nil {
-			return fmt.Errorf("error while generatingf envoy config for %s: %w", lbCluster.ClusterInfo.Id(), err)
+		}
+
+		tpl := templateUtils.Templates{Directory: dir}
+
+		if err := tpl.Generate(dynClusters, envoyCDS, rolesData); err != nil {
+			return fmt.Errorf(
+				"error while generating envoy dynamic clusters config for %s: %w",
+				clusterId,
+				err,
+			)
+		}
+
+		if err := tpl.Generate(dynListeners, envoyLDS, rolesData); err != nil {
+			return fmt.Errorf(
+				"error while generating envoy dynamic listeners config for %s: %w",
+				clusterId,
+				err,
+			)
+		}
+
+		if err := tpl.Generate(envoy, envoyConfig, envoyData); err != nil {
+			return fmt.Errorf("error while generatingf envoy config for %s: %w", clusterId, err)
 		}
 	}
 
@@ -303,15 +388,7 @@ func setupEnvoyProxyViaDocker(
 	// generate compose file.
 	compose, err := templateUtils.LoadTemplate(templates.EnvoyDockerCompose)
 	if err != nil {
-		return fmt.Errorf("error while loading envoy compose file for %s: %w", lbCluster.ClusterInfo.Id(), err)
-	}
-
-	err = tpl.Generate(compose, envoyDockerCompose, utils.EnvoyConfigTemplateParams{
-		LoadBalancer: lbCluster.ClusterInfo.Name,
-		Roles:        targets,
-	})
-	if err != nil {
-		return fmt.Errorf("error while generating envoy docker compose file for %s: %w", lbCluster.ClusterInfo.Id(), err)
+		return fmt.Errorf("error while loading envoy compose file for %s: %w", clusterId, err)
 	}
 
 	// install docker/docker-compose on the nodes, upload the config and deploy envoy.
@@ -320,18 +397,23 @@ func setupEnvoyProxyViaDocker(
 		return fmt.Errorf("error while loading docker template: %w", err)
 	}
 
-	err = tpl.Generate(envoyPlayBook, envoyPlaybookName, utils.EnvoyConfigTemplateParams{
+	envoyData := EnvoyConfigTemplateParams{
 		LoadBalancer: lbCluster.ClusterInfo.Name,
 		Roles:        targets,
-	})
-	if err != nil {
-		return fmt.Errorf("error while generating  %s for %s: %w", envoyPlaybookName, lbCluster.ClusterInfo.Name, err)
+	}
+
+	if err := tpl.Generate(compose, envoyDockerCompose, envoyData); err != nil {
+		return fmt.Errorf("error while generating envoy docker compose file for %s: %w", clusterId, err)
+	}
+
+	if err := tpl.Generate(envoyPlayBook, envoyPlaybookName, envoyData); err != nil {
+		return fmt.Errorf("error while generating  %s for %s: %w", envoyPlaybookName, clusterId, err)
 	}
 
 	ansible := utils.Ansible{
 		RetryCount:        2,
 		Playbook:          envoyPlaybookName,
-		Inventory:         filepath.Join("..", utils.InventoryFileName),
+		Inventory:         utils.InventoryFileName,
 		Directory:         clusterDirectory,
 		SpawnProcessLimit: processLimit,
 	}
@@ -344,15 +426,14 @@ func setupEnvoyProxyViaDocker(
 	return nil
 }
 
-func targetPools(lbCluster *spec.LBcluster, targetK8sNodepool []*spec.NodePool) []utils.LBClusterRolesInfo {
-	var lbClusterRolesInfo []utils.LBClusterRolesInfo
+func roleTargetPools(lbCluster *spec.LBcluster, targetK8sNodepool []*spec.NodePool) (ri []RolesTemplateParams) {
 	for _, role := range lbCluster.Roles {
-		lbClusterRolesInfo = append(lbClusterRolesInfo, utils.LBClusterRolesInfo{
+		ri = append(ri, RolesTemplateParams{
 			Role:        role,
 			TargetNodes: targetNodes(role.TargetPools, targetK8sNodepool),
 		})
 	}
-	return lbClusterRolesInfo
+	return
 }
 
 func targetNodes(targetPools []string, targetk8sPools []*spec.NodePool) (nodes []*spec.Node) {

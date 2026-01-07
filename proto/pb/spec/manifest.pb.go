@@ -2561,7 +2561,11 @@ type Update_TerraformerDeleteLoadBalancerNodes struct {
 	// Affected Nodepool.
 	Nodepool string `protobuf:"bytes,3,opt,name=nodepool,proto3" json:"nodepool,omitempty"`
 	// Nodes that were deleted.
-	Nodes         []string `protobuf:"bytes,4,rep,name=nodes,proto3" json:"nodes,omitempty"`
+	Nodes []string `protobuf:"bytes,4,rep,name=nodes,proto3" json:"nodes,omitempty"`
+	// Unreachable infrastructure that is optionally set
+	// for the deletion process, in which presense, connecting
+	// to the unreachable infrastructure should be omitted.
+	Unreachable   *Unreachable `protobuf:"bytes,5,opt,name=unreachable,proto3,oneof" json:"unreachable,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2624,10 +2628,21 @@ func (x *Update_TerraformerDeleteLoadBalancerNodes) GetNodes() []string {
 	return nil
 }
 
+func (x *Update_TerraformerDeleteLoadBalancerNodes) GetUnreachable() *Unreachable {
+	if x != nil {
+		return x.Unreachable
+	}
+	return nil
+}
+
 type Update_DeletedLoadBalancerNodes struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
+	// Unreachable infrastructure that is optionally set
+	// for the deletion process, in which presense, connecting
+	// to the unreachable infrastructure should be omitted.
+	Unreachable *Unreachable `protobuf:"bytes,1,opt,name=unreachable,proto3,oneof" json:"unreachable,omitempty"`
 	// id of the loadbalancer.
-	Handle string `protobuf:"bytes,1,opt,name=handle,proto3" json:"handle,omitempty"`
+	Handle string `protobuf:"bytes,2,opt,name=handle,proto3" json:"handle,omitempty"`
 	// Types that are valid to be assigned to Kind:
 	//
 	//	*Update_DeletedLoadBalancerNodes_Whole
@@ -2665,6 +2680,13 @@ func (x *Update_DeletedLoadBalancerNodes) ProtoReflect() protoreflect.Message {
 // Deprecated: Use Update_DeletedLoadBalancerNodes.ProtoReflect.Descriptor instead.
 func (*Update_DeletedLoadBalancerNodes) Descriptor() ([]byte, []int) {
 	return file_spec_manifest_proto_rawDescGZIP(), []int{15, 5}
+}
+
+func (x *Update_DeletedLoadBalancerNodes) GetUnreachable() *Unreachable {
+	if x != nil {
+		return x.Unreachable
+	}
+	return nil
 }
 
 func (x *Update_DeletedLoadBalancerNodes) GetHandle() string {
@@ -3179,8 +3201,12 @@ func (x *Update_ReplacedDns) GetOldApiEndpoint() string {
 // DeleteLoadBalancer works with the [State] that is part of the [Update]
 // message, thus no "message consuming" needs to happen.
 type Update_DeleteLoadBalancer struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Handle        string                 `protobuf:"bytes,1,opt,name=handle,proto3" json:"handle,omitempty"`
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	Handle string                 `protobuf:"bytes,1,opt,name=handle,proto3" json:"handle,omitempty"`
+	// Unreachable infrastructure that is optionally set
+	// for the deletion process, in which presense, connecting
+	// to the unreachable infrastructure should be omitted.
+	Unreachable   *Unreachable `protobuf:"bytes,2,opt,name=unreachable,proto3,oneof" json:"unreachable,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3220,6 +3246,13 @@ func (x *Update_DeleteLoadBalancer) GetHandle() string {
 		return x.Handle
 	}
 	return ""
+}
+
+func (x *Update_DeleteLoadBalancer) GetUnreachable() *Unreachable {
+	if x != nil {
+		return x.Unreachable
+	}
+	return nil
 }
 
 // ApiEndpoint works with the [State] that is part of the [Update] message
@@ -5246,7 +5279,7 @@ const file_spec_manifest_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\v2&.spec.Unreachable.UnreachableNodePoolsR\x05value:\x028\x01\"c\n" +
 	"\x06Create\x12\"\n" +
 	"\x03k8s\x18\x01 \x01(\v2\x10.spec.K8sclusterR\x03k8s\x125\n" +
-	"\rloadBalancers\x18\x02 \x03(\v2\x0f.spec.LBclusterR\rloadBalancers\"\xdb>\n" +
+	"\rloadBalancers\x18\x02 \x03(\v2\x0f.spec.LBclusterR\rloadBalancers\"\xb9@\n" +
 	"\x06Update\x12(\n" +
 	"\x05state\x18\x01 \x01(\v2\x12.spec.Update.StateR\x05state\x12'\n" +
 	"\x04none\x18\x02 \x01(\v2\x11.spec.Update.NoneH\x00R\x04none\x12W\n" +
@@ -5284,14 +5317,17 @@ const file_spec_manifest_proto_rawDesc = "" +
 	"\x1aTerraformerAddLoadBalancer\x12'\n" +
 	"\x06handle\x18\x01 \x01(\v2\x0f.spec.LBclusterR\x06handle\x1a+\n" +
 	"\x11AddedLoadBalancer\x12\x16\n" +
-	"\x06handle\x18\x01 \x01(\tR\x06handle\x1a\x92\x01\n" +
+	"\x06handle\x18\x01 \x01(\tR\x06handle\x1a\xdc\x01\n" +
 	"\"TerraformerDeleteLoadBalancerNodes\x12\x16\n" +
 	"\x06handle\x18\x01 \x01(\tR\x06handle\x12\"\n" +
 	"\fwithNodePool\x18\x02 \x01(\bR\fwithNodePool\x12\x1a\n" +
 	"\bnodepool\x18\x03 \x01(\tR\bnodepool\x12\x14\n" +
-	"\x05nodes\x18\x04 \x03(\tR\x05nodes\x1a\x87\x04\n" +
-	"\x18DeletedLoadBalancerNodes\x12\x16\n" +
-	"\x06handle\x18\x01 \x01(\tR\x06handle\x12K\n" +
+	"\x05nodes\x18\x04 \x03(\tR\x05nodes\x128\n" +
+	"\vunreachable\x18\x05 \x01(\v2\x11.spec.UnreachableH\x00R\vunreachable\x88\x01\x01B\x0e\n" +
+	"\f_unreachable\x1a\xd1\x04\n" +
+	"\x18DeletedLoadBalancerNodes\x128\n" +
+	"\vunreachable\x18\x01 \x01(\v2\x11.spec.UnreachableH\x01R\vunreachable\x88\x01\x01\x12\x16\n" +
+	"\x06handle\x18\x02 \x01(\tR\x06handle\x12K\n" +
 	"\x05whole\x18\x03 \x01(\v23.spec.Update.DeletedLoadBalancerNodes.WholeNodePoolH\x00R\x05whole\x12I\n" +
 	"\apartial\x18\x04 \x01(\v2-.spec.Update.DeletedLoadBalancerNodes.PartialH\x00R\apartial\x1a;\n" +
 	"\rWholeNodePool\x12*\n" +
@@ -5304,7 +5340,8 @@ const file_spec_manifest_proto_rawDesc = "" +
 	"\x13StaticNodeKeysEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x06\n" +
-	"\x04Kind\x1a\xd9\x02\n" +
+	"\x04KindB\x0e\n" +
+	"\f_unreachable\x1a\xd9\x02\n" +
 	"\x1fTerraformerAddLoadBalancerNodes\x12\x16\n" +
 	"\x06handle\x18\x01 \x01(\tR\x06handle\x12S\n" +
 	"\bexisting\x18\x02 \x01(\v25.spec.Update.TerraformerAddLoadBalancerNodes.ExistingH\x00R\bexisting\x12D\n" +
@@ -5339,9 +5376,11 @@ const file_spec_manifest_proto_rawDesc = "" +
 	"\vReplacedDns\x12\x16\n" +
 	"\x06handle\x18\x01 \x01(\tR\x06handle\x12+\n" +
 	"\x0eoldApiEndpoint\x18\x02 \x01(\tH\x00R\x0eoldApiEndpoint\x88\x01\x01B\x11\n" +
-	"\x0f_oldApiEndpoint\x1a,\n" +
+	"\x0f_oldApiEndpoint\x1av\n" +
 	"\x12DeleteLoadBalancer\x12\x16\n" +
-	"\x06handle\x18\x01 \x01(\tR\x06handle\x1a\x9d\x01\n" +
+	"\x06handle\x18\x01 \x01(\tR\x06handle\x128\n" +
+	"\vunreachable\x18\x02 \x01(\v2\x11.spec.UnreachableH\x00R\vunreachable\x88\x01\x01B\x0e\n" +
+	"\f_unreachable\x1a\x9d\x01\n" +
 	"\vApiEndpoint\x122\n" +
 	"\x05state\x18\x01 \x01(\x0e2\x1c.spec.ApiEndpointChangeStateR\x05state\x12,\n" +
 	"\x11currentEndpointId\x18\x02 \x01(\tR\x11currentEndpointId\x12,\n" +
@@ -5702,59 +5741,62 @@ var file_spec_manifest_proto_depIdxs = []int32{
 	13,  // 70: spec.Update.State.k8s:type_name -> spec.K8scluster
 	14,  // 71: spec.Update.State.loadBalancers:type_name -> spec.LBcluster
 	14,  // 72: spec.Update.TerraformerAddLoadBalancer.handle:type_name -> spec.LBcluster
-	60,  // 73: spec.Update.DeletedLoadBalancerNodes.whole:type_name -> spec.Update.DeletedLoadBalancerNodes.WholeNodePool
-	61,  // 74: spec.Update.DeletedLoadBalancerNodes.partial:type_name -> spec.Update.DeletedLoadBalancerNodes.Partial
-	63,  // 75: spec.Update.TerraformerAddLoadBalancerNodes.existing:type_name -> spec.Update.TerraformerAddLoadBalancerNodes.Existing
-	64,  // 76: spec.Update.TerraformerAddLoadBalancerNodes.new:type_name -> spec.Update.TerraformerAddLoadBalancerNodes.New
-	17,  // 77: spec.Update.TerraformerAddLoadBalancerRoles.roles:type_name -> spec.Role
-	93,  // 78: spec.Update.TerraformerReplaceDns.dns:type_name -> spec.DNS
-	2,   // 79: spec.Update.ApiEndpoint.state:type_name -> spec.ApiEndpointChangeState
-	16,  // 80: spec.Update.AnsiblerReplaceProxySettings.proxy:type_name -> spec.InstallationProxy
-	66,  // 81: spec.Update.AnsiblerReplaceTargetPools.roles:type_name -> spec.Update.AnsiblerReplaceTargetPools.RolesEntry
-	68,  // 82: spec.Update.ReplacedTargetPools.roles:type_name -> spec.Update.ReplacedTargetPools.RolesEntry
-	75,  // 83: spec.Update.KuberPatchNodes.add:type_name -> spec.Update.KuberPatchNodes.AddBatch
-	74,  // 84: spec.Update.KuberPatchNodes.remove:type_name -> spec.Update.KuberPatchNodes.RemoveBatch
-	19,  // 85: spec.Update.KuberDeleteK8sNodes.unreachable:type_name -> spec.Unreachable
-	19,  // 86: spec.Update.DeletedK8sNodes.unreachable:type_name -> spec.Unreachable
-	84,  // 87: spec.Update.DeletedK8sNodes.whole:type_name -> spec.Update.DeletedK8sNodes.WholeNodePool
-	85,  // 88: spec.Update.DeletedK8sNodes.partial:type_name -> spec.Update.DeletedK8sNodes.Partial
-	87,  // 89: spec.Update.TerraformerAddK8sNodes.existing:type_name -> spec.Update.TerraformerAddK8sNodes.Existing
-	88,  // 90: spec.Update.TerraformerAddK8sNodes.new:type_name -> spec.Update.TerraformerAddK8sNodes.New
-	94,  // 91: spec.Update.DeletedLoadBalancerNodes.WholeNodePool.nodepool:type_name -> spec.NodePool
-	98,  // 92: spec.Update.DeletedLoadBalancerNodes.Partial.nodes:type_name -> spec.Node
-	62,  // 93: spec.Update.DeletedLoadBalancerNodes.Partial.staticNodeKeys:type_name -> spec.Update.DeletedLoadBalancerNodes.Partial.StaticNodeKeysEntry
-	98,  // 94: spec.Update.TerraformerAddLoadBalancerNodes.Existing.nodes:type_name -> spec.Node
-	94,  // 95: spec.Update.TerraformerAddLoadBalancerNodes.New.nodepool:type_name -> spec.NodePool
-	65,  // 96: spec.Update.AnsiblerReplaceTargetPools.RolesEntry.value:type_name -> spec.Update.AnsiblerReplaceTargetPools.TargetPools
-	67,  // 97: spec.Update.ReplacedTargetPools.RolesEntry.value:type_name -> spec.Update.ReplacedTargetPools.TargetPools
-	99,  // 98: spec.Update.KuberPatchNodes.ListOfTaints.taints:type_name -> spec.Taint
-	76,  // 99: spec.Update.KuberPatchNodes.MapOfLabels.labels:type_name -> spec.Update.KuberPatchNodes.MapOfLabels.LabelsEntry
-	77,  // 100: spec.Update.KuberPatchNodes.MapOfAnnotations.annotations:type_name -> spec.Update.KuberPatchNodes.MapOfAnnotations.AnnotationsEntry
-	78,  // 101: spec.Update.KuberPatchNodes.RemoveBatch.taints:type_name -> spec.Update.KuberPatchNodes.RemoveBatch.TaintsEntry
-	79,  // 102: spec.Update.KuberPatchNodes.RemoveBatch.annotations:type_name -> spec.Update.KuberPatchNodes.RemoveBatch.AnnotationsEntry
-	80,  // 103: spec.Update.KuberPatchNodes.RemoveBatch.labels:type_name -> spec.Update.KuberPatchNodes.RemoveBatch.LabelsEntry
-	81,  // 104: spec.Update.KuberPatchNodes.AddBatch.taints:type_name -> spec.Update.KuberPatchNodes.AddBatch.TaintsEntry
-	82,  // 105: spec.Update.KuberPatchNodes.AddBatch.labels:type_name -> spec.Update.KuberPatchNodes.AddBatch.LabelsEntry
-	83,  // 106: spec.Update.KuberPatchNodes.AddBatch.annotations:type_name -> spec.Update.KuberPatchNodes.AddBatch.AnnotationsEntry
-	69,  // 107: spec.Update.KuberPatchNodes.RemoveBatch.TaintsEntry.value:type_name -> spec.Update.KuberPatchNodes.ListOfTaints
-	71,  // 108: spec.Update.KuberPatchNodes.RemoveBatch.AnnotationsEntry.value:type_name -> spec.Update.KuberPatchNodes.ListOfAnnotationKeys
-	70,  // 109: spec.Update.KuberPatchNodes.RemoveBatch.LabelsEntry.value:type_name -> spec.Update.KuberPatchNodes.ListOfLabelKeys
-	69,  // 110: spec.Update.KuberPatchNodes.AddBatch.TaintsEntry.value:type_name -> spec.Update.KuberPatchNodes.ListOfTaints
-	72,  // 111: spec.Update.KuberPatchNodes.AddBatch.LabelsEntry.value:type_name -> spec.Update.KuberPatchNodes.MapOfLabels
-	73,  // 112: spec.Update.KuberPatchNodes.AddBatch.AnnotationsEntry.value:type_name -> spec.Update.KuberPatchNodes.MapOfAnnotations
-	94,  // 113: spec.Update.DeletedK8sNodes.WholeNodePool.nodepool:type_name -> spec.NodePool
-	98,  // 114: spec.Update.DeletedK8sNodes.Partial.nodes:type_name -> spec.Node
-	86,  // 115: spec.Update.DeletedK8sNodes.Partial.staticNodeKeys:type_name -> spec.Update.DeletedK8sNodes.Partial.StaticNodeKeysEntry
-	98,  // 116: spec.Update.TerraformerAddK8sNodes.Existing.nodes:type_name -> spec.Node
-	94,  // 117: spec.Update.TerraformerAddK8sNodes.New.nodepool:type_name -> spec.NodePool
-	5,   // 118: spec.TaskResult.Error.kind:type_name -> spec.TaskResult.Error.Kind
-	13,  // 119: spec.TaskResult.UpdateState.k8s:type_name -> spec.K8scluster
-	10,  // 120: spec.TaskResult.UpdateState.loadBalancers:type_name -> spec.LoadBalancers
-	121, // [121:121] is the sub-list for method output_type
-	121, // [121:121] is the sub-list for method input_type
-	121, // [121:121] is the sub-list for extension type_name
-	121, // [121:121] is the sub-list for extension extendee
-	0,   // [0:121] is the sub-list for field type_name
+	19,  // 73: spec.Update.TerraformerDeleteLoadBalancerNodes.unreachable:type_name -> spec.Unreachable
+	19,  // 74: spec.Update.DeletedLoadBalancerNodes.unreachable:type_name -> spec.Unreachable
+	60,  // 75: spec.Update.DeletedLoadBalancerNodes.whole:type_name -> spec.Update.DeletedLoadBalancerNodes.WholeNodePool
+	61,  // 76: spec.Update.DeletedLoadBalancerNodes.partial:type_name -> spec.Update.DeletedLoadBalancerNodes.Partial
+	63,  // 77: spec.Update.TerraformerAddLoadBalancerNodes.existing:type_name -> spec.Update.TerraformerAddLoadBalancerNodes.Existing
+	64,  // 78: spec.Update.TerraformerAddLoadBalancerNodes.new:type_name -> spec.Update.TerraformerAddLoadBalancerNodes.New
+	17,  // 79: spec.Update.TerraformerAddLoadBalancerRoles.roles:type_name -> spec.Role
+	93,  // 80: spec.Update.TerraformerReplaceDns.dns:type_name -> spec.DNS
+	19,  // 81: spec.Update.DeleteLoadBalancer.unreachable:type_name -> spec.Unreachable
+	2,   // 82: spec.Update.ApiEndpoint.state:type_name -> spec.ApiEndpointChangeState
+	16,  // 83: spec.Update.AnsiblerReplaceProxySettings.proxy:type_name -> spec.InstallationProxy
+	66,  // 84: spec.Update.AnsiblerReplaceTargetPools.roles:type_name -> spec.Update.AnsiblerReplaceTargetPools.RolesEntry
+	68,  // 85: spec.Update.ReplacedTargetPools.roles:type_name -> spec.Update.ReplacedTargetPools.RolesEntry
+	75,  // 86: spec.Update.KuberPatchNodes.add:type_name -> spec.Update.KuberPatchNodes.AddBatch
+	74,  // 87: spec.Update.KuberPatchNodes.remove:type_name -> spec.Update.KuberPatchNodes.RemoveBatch
+	19,  // 88: spec.Update.KuberDeleteK8sNodes.unreachable:type_name -> spec.Unreachable
+	19,  // 89: spec.Update.DeletedK8sNodes.unreachable:type_name -> spec.Unreachable
+	84,  // 90: spec.Update.DeletedK8sNodes.whole:type_name -> spec.Update.DeletedK8sNodes.WholeNodePool
+	85,  // 91: spec.Update.DeletedK8sNodes.partial:type_name -> spec.Update.DeletedK8sNodes.Partial
+	87,  // 92: spec.Update.TerraformerAddK8sNodes.existing:type_name -> spec.Update.TerraformerAddK8sNodes.Existing
+	88,  // 93: spec.Update.TerraformerAddK8sNodes.new:type_name -> spec.Update.TerraformerAddK8sNodes.New
+	94,  // 94: spec.Update.DeletedLoadBalancerNodes.WholeNodePool.nodepool:type_name -> spec.NodePool
+	98,  // 95: spec.Update.DeletedLoadBalancerNodes.Partial.nodes:type_name -> spec.Node
+	62,  // 96: spec.Update.DeletedLoadBalancerNodes.Partial.staticNodeKeys:type_name -> spec.Update.DeletedLoadBalancerNodes.Partial.StaticNodeKeysEntry
+	98,  // 97: spec.Update.TerraformerAddLoadBalancerNodes.Existing.nodes:type_name -> spec.Node
+	94,  // 98: spec.Update.TerraformerAddLoadBalancerNodes.New.nodepool:type_name -> spec.NodePool
+	65,  // 99: spec.Update.AnsiblerReplaceTargetPools.RolesEntry.value:type_name -> spec.Update.AnsiblerReplaceTargetPools.TargetPools
+	67,  // 100: spec.Update.ReplacedTargetPools.RolesEntry.value:type_name -> spec.Update.ReplacedTargetPools.TargetPools
+	99,  // 101: spec.Update.KuberPatchNodes.ListOfTaints.taints:type_name -> spec.Taint
+	76,  // 102: spec.Update.KuberPatchNodes.MapOfLabels.labels:type_name -> spec.Update.KuberPatchNodes.MapOfLabels.LabelsEntry
+	77,  // 103: spec.Update.KuberPatchNodes.MapOfAnnotations.annotations:type_name -> spec.Update.KuberPatchNodes.MapOfAnnotations.AnnotationsEntry
+	78,  // 104: spec.Update.KuberPatchNodes.RemoveBatch.taints:type_name -> spec.Update.KuberPatchNodes.RemoveBatch.TaintsEntry
+	79,  // 105: spec.Update.KuberPatchNodes.RemoveBatch.annotations:type_name -> spec.Update.KuberPatchNodes.RemoveBatch.AnnotationsEntry
+	80,  // 106: spec.Update.KuberPatchNodes.RemoveBatch.labels:type_name -> spec.Update.KuberPatchNodes.RemoveBatch.LabelsEntry
+	81,  // 107: spec.Update.KuberPatchNodes.AddBatch.taints:type_name -> spec.Update.KuberPatchNodes.AddBatch.TaintsEntry
+	82,  // 108: spec.Update.KuberPatchNodes.AddBatch.labels:type_name -> spec.Update.KuberPatchNodes.AddBatch.LabelsEntry
+	83,  // 109: spec.Update.KuberPatchNodes.AddBatch.annotations:type_name -> spec.Update.KuberPatchNodes.AddBatch.AnnotationsEntry
+	69,  // 110: spec.Update.KuberPatchNodes.RemoveBatch.TaintsEntry.value:type_name -> spec.Update.KuberPatchNodes.ListOfTaints
+	71,  // 111: spec.Update.KuberPatchNodes.RemoveBatch.AnnotationsEntry.value:type_name -> spec.Update.KuberPatchNodes.ListOfAnnotationKeys
+	70,  // 112: spec.Update.KuberPatchNodes.RemoveBatch.LabelsEntry.value:type_name -> spec.Update.KuberPatchNodes.ListOfLabelKeys
+	69,  // 113: spec.Update.KuberPatchNodes.AddBatch.TaintsEntry.value:type_name -> spec.Update.KuberPatchNodes.ListOfTaints
+	72,  // 114: spec.Update.KuberPatchNodes.AddBatch.LabelsEntry.value:type_name -> spec.Update.KuberPatchNodes.MapOfLabels
+	73,  // 115: spec.Update.KuberPatchNodes.AddBatch.AnnotationsEntry.value:type_name -> spec.Update.KuberPatchNodes.MapOfAnnotations
+	94,  // 116: spec.Update.DeletedK8sNodes.WholeNodePool.nodepool:type_name -> spec.NodePool
+	98,  // 117: spec.Update.DeletedK8sNodes.Partial.nodes:type_name -> spec.Node
+	86,  // 118: spec.Update.DeletedK8sNodes.Partial.staticNodeKeys:type_name -> spec.Update.DeletedK8sNodes.Partial.StaticNodeKeysEntry
+	98,  // 119: spec.Update.TerraformerAddK8sNodes.Existing.nodes:type_name -> spec.Node
+	94,  // 120: spec.Update.TerraformerAddK8sNodes.New.nodepool:type_name -> spec.NodePool
+	5,   // 121: spec.TaskResult.Error.kind:type_name -> spec.TaskResult.Error.Kind
+	13,  // 122: spec.TaskResult.UpdateState.k8s:type_name -> spec.K8scluster
+	10,  // 123: spec.TaskResult.UpdateState.loadBalancers:type_name -> spec.LoadBalancers
+	124, // [124:124] is the sub-list for method output_type
+	124, // [124:124] is the sub-list for method input_type
+	124, // [124:124] is the sub-list for extension type_name
+	124, // [124:124] is the sub-list for extension extendee
+	0,   // [0:124] is the sub-list for field type_name
 }
 
 func init() { file_spec_manifest_proto_init() }
@@ -5804,6 +5846,7 @@ func file_spec_manifest_proto_init() {
 		(*TaskResult_Update)(nil),
 		(*TaskResult_Clear)(nil),
 	}
+	file_spec_manifest_proto_msgTypes[30].OneofWrappers = []any{}
 	file_spec_manifest_proto_msgTypes[31].OneofWrappers = []any{
 		(*Update_DeletedLoadBalancerNodes_Whole)(nil),
 		(*Update_DeletedLoadBalancerNodes_Partial_)(nil),
@@ -5814,6 +5857,7 @@ func file_spec_manifest_proto_init() {
 	}
 	file_spec_manifest_proto_msgTypes[37].OneofWrappers = []any{}
 	file_spec_manifest_proto_msgTypes[38].OneofWrappers = []any{}
+	file_spec_manifest_proto_msgTypes[39].OneofWrappers = []any{}
 	file_spec_manifest_proto_msgTypes[50].OneofWrappers = []any{}
 	file_spec_manifest_proto_msgTypes[51].OneofWrappers = []any{
 		(*Update_DeletedK8SNodes_Whole)(nil),

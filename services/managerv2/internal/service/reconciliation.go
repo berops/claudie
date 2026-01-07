@@ -293,7 +293,7 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 
 				// Same as with the kubernetes unreachable nodes.
 				lbr := LoadBalancerUnreachableNodes{
-					unreachable: rhc.LoadBalancers,
+					Unreachable: rhc,
 					State:       state,
 					Desired:     desired,
 				}
@@ -544,17 +544,23 @@ func shouldRescheduleInFlight(inFlight *spec.TaskEvent) bool {
 	// needs to be rescheduled again as these tasks cannot be rolled back.
 	switch update.Update.Delta.(type) {
 	case
-		// TODO: make the Update task names better.
 		*spec.Update_ApiEndpoint_,
+
 		*spec.Update_DeleteLoadBalancerRoles_,
+
 		*spec.Update_DeleteLoadBalancer_,
-		*spec.Update_DeletedK8SNodes_,
-		*spec.Update_DeletedLoadBalancerNodes_,
-		*spec.Update_K8SApiEndpoint,
-		*spec.Update_KDeleteNodes,
-		*spec.Update_ReplacedDns_,
+
 		*spec.Update_TfDeleteLoadBalancerNodes,
+		*spec.Update_DeletedLoadBalancerNodes_,
+
+		*spec.Update_K8SApiEndpoint,
+
+		*spec.Update_KDeleteNodes,
+		*spec.Update_DeletedK8SNodes_,
+
 		*spec.Update_TfReplaceDns,
+		*spec.Update_ReplacedDns_,
+
 		*spec.Update_UpgradeVersion_:
 		return true
 	default:

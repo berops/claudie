@@ -62,7 +62,7 @@ func InstallNodeRequirements(
 	}
 
 	ni := NodepoolsInfo{
-		Nodepools: utils.NodePools{
+		Nodepools: NodePools{
 			Dynamic: nodepools.Dynamic(nps),
 			Static:  nodepools.Static(nps),
 		},

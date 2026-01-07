@@ -24,12 +24,12 @@ func (c *ClaudieCloudProvider) getNodeGroupTemplateNodeInfo(nodeGroupId string) 
 		// Create a new node struct.s
 		node := defaultNodeTemplate
 		// Fill dynamic fields.
-		l, err := nodes.GetAllLabels(ngc.nodepool, c.nodeManager)
+		l, err := nodes.GetAllLabels(ngc.nodepool, c.nodeManager, nil)
 		if err != nil {
 			return nil, err
 		}
 		node.Labels = l
-		node.Spec.Taints = nodes.GetAllTaints(ngc.nodepool)
+		node.Spec.Taints = nodes.GetAllTaints(ngc.nodepool, nil)
 		node.Status.Capacity = c.nodeManager.GetCapacity(ngc.nodepool)
 		node.Status.Allocatable = node.Status.Capacity
 		node.Spec.ProviderID = fmt.Sprintf(nodes.ProviderIdFormat, fmt.Sprintf("%s-N", ngc.nodepool.Name))

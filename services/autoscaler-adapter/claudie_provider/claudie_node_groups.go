@@ -203,21 +203,22 @@ func (c *ClaudieCloudProvider) updateNodepool(ctx context.Context, nodepool *spe
 		}
 	}
 
-	description := fmt.Sprintf("UpdateNodePoolRequest cluster %q config %q", c.configCluster.ClusterInfo.Name, resp.Config.Name)
+	// TODO: fix me.
+	// description := fmt.Sprintf("UpdateNodePoolRequest cluster %q config %q", c.configCluster.ClusterInfo.Name, resp.Config.Name)
 
-	err = managerclient.Retry(&log.Logger, description, func() error {
-		err := manager.UpdateNodePool(ctx, &managerclient.UpdateNodePoolRequest{
-			Config:   c.projectName,
-			Cluster:  c.configCluster.ClusterInfo.Name,
-			NodePool: nodepool,
-		})
-		if errors.Is(err, managerclient.ErrNotFound) {
-			log.Warn().Msgf("can't update nodepool %q cluster %q config %q: %v", nodepool.Name, c.configCluster.ClusterInfo.Name, c.projectName, err)
-		}
-		return err
-	})
-	if err != nil {
-		return fmt.Errorf("error while updating the state in the Claudie : %w", err)
-	}
+	// err = managerclient.Retry(&log.Logger, description, func() error {
+	// 	err := manager.UpdateNodePool(ctx, &managerclient.UpdateNodePoolRequest{
+	// 		Config:   c.projectName,
+	// 		Cluster:  c.configCluster.ClusterInfo.Name,
+	// 		NodePool: nodepool,
+	// 	})
+	// 	if errors.Is(err, managerclient.ErrNotFound) {
+	// 		log.Warn().Msgf("can't update nodepool %q cluster %q config %q: %v", nodepool.Name, c.configCluster.ClusterInfo.Name, c.projectName, err)
+	// 	}
+	// 	return err
+	// })
+	// if err != nil {
+	// 	return fmt.Errorf("error while updating the state in the Claudie : %w", err)
+	// }
 	return nil
 }

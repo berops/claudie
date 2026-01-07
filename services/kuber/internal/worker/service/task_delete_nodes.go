@@ -7,9 +7,6 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// TODO: the deletion needs to be reworked...
-// for just the k8s clusters I believe.
-
 func DeleteNodes(logger zerolog.Logger, tracker Tracker) {
 	action, ok := tracker.Task.Do.(*spec.Task_Update)
 	if !ok {

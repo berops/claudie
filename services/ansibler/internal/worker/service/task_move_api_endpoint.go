@@ -17,6 +17,11 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
+type KubernetesInventoryParameters struct {
+	K8sNodepools NodePools
+	ClusterID    string
+}
+
 // MoveApiEndpoint moves the api endpoint to another node/loadbalancer within the specified cluster.
 func MoveApiEndpoint(
 	logger zerolog.Logger,
@@ -100,15 +105,15 @@ func determineApiChanges(
 		fmt.Sprintf("%s-%s-lbs", state.K8S.ClusterInfo.Id(), hash.Create(hash.Length)),
 	)
 
+	if err := fileutils.CreateDirectory(clusterDirectory); err != nil {
+		return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
+	}
+
 	defer func() {
 		if err := os.RemoveAll(clusterDirectory); err != nil {
 			logger.Err(err).Msgf("failed to cleanup clusterdir %s for teardown loadbalancers", clusterDirectory)
 		}
 	}()
-
-	if err := fileutils.CreateDirectory(clusterDirectory); err != nil {
-		return fmt.Errorf("failed to create directory %s : %w", clusterDirectory, err)
-	}
 
 	dyn := nodepools.Dynamic(state.K8S.ClusterInfo.NodePools)
 	stc := nodepools.Static(state.K8S.ClusterInfo.NodePools)
@@ -121,17 +126,19 @@ func determineApiChanges(
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}
 
-	err := utils.GenerateInventoryFile(templates.LoadbalancerInventoryTemplate, clusterDirectory, utils.LBInventoryFileParameters{
-		K8sNodepools: utils.NodePools{
+	idata := KubernetesInventoryParameters{
+		K8sNodepools: NodePools{
 			Dynamic: dyn,
 			Static:  stc,
 		},
-		LBClusters: nil,
-		ClusterID:  state.K8S.ClusterInfo.Id(),
-	})
+		ClusterID: state.K8S.ClusterInfo.Id(),
+	}
+
+	err := utils.GenerateInventoryFile(templates.KubernetesInventoryTemplate, clusterDirectory, idata)
 	if err != nil {
 		return fmt.Errorf("error while creating inventory file for %s : %w", clusterDirectory, err)
 	}
+
 	return handleAPIEndpointChange(logger, state, change, clusterDirectory, processLimit)
 }
 

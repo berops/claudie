@@ -40,7 +40,20 @@ func CommitProxyEnvs(
 	}
 
 	state := update.Update.State
-	if err := commitProxyEnvs(state.K8S, processLimit); err != nil {
+	clusterId := state.K8S.ClusterInfo.Id()
+	nps := state.K8S.ClusterInfo.NodePools
+
+	// This task may be called during the deletion of unreachable nodes
+	// thus filter them out when processing.
+	if unreachable := UnreachableInfrastructure(update); unreachable != nil {
+		logger.Error().Msg("HERE, TODO: remove me after testing")
+		nps = DefaultNodePoolsToReachableInfrastructureOnly(
+			nps,
+			unreachable.Kubernetes,
+		)
+	}
+
+	if err := commitProxyEnvs(clusterId, nps, processLimit); err != nil {
 		logger.Err(err).Msg("Failed to commit proxy envs")
 		tracker.Diagnostics.Push(err)
 		return
@@ -63,14 +76,12 @@ func CommitProxyEnvs(
 
 // commitProxyEnvs updates NO_PROXY and no_proxy envs across k8s services on nodes and restarts necessary
 // services so that the changes will be propagated to them.
-func commitProxyEnvs(cluster *spec.K8Scluster, processLimit *semaphore.Weighted) error {
-	clusterID := cluster.ClusterInfo.Id()
-
+func commitProxyEnvs(clusterId string, nps []*spec.NodePool, processLimit *semaphore.Weighted) error {
 	// This is the directory where files (Ansible inventory files, SSH keys etc.) will be generated.
 	clusterDirectory := filepath.Join(
 		BaseDirectory,
 		OutputDirectory,
-		fmt.Sprintf("%s-%s", clusterID, hash.Create(hash.Length)),
+		fmt.Sprintf("%s-%s", clusterId, hash.Create(hash.Length)),
 	)
 
 	if err := fileutils.CreateDirectory(clusterDirectory); err != nil {
@@ -83,23 +94,23 @@ func commitProxyEnvs(cluster *spec.K8Scluster, processLimit *semaphore.Weighted)
 		}
 	}()
 
-	if err := nodepools.DynamicGenerateKeys(nodepools.Dynamic(cluster.ClusterInfo.NodePools), clusterDirectory); err != nil {
+	if err := nodepools.DynamicGenerateKeys(nodepools.Dynamic(nps), clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for dynamic nodepools : %w", err)
 	}
 
-	if err := nodepools.StaticGenerateKeys(nodepools.Static(cluster.ClusterInfo.NodePools), clusterDirectory); err != nil {
+	if err := nodepools.StaticGenerateKeys(nodepools.Static(nps), clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}
 
 	err := utils.GenerateInventoryFile(
 		templates.ProxyEnvsInventoryTemplate,
 		clusterDirectory,
-		utils.ProxyInventoryFileParameters{
-			K8sNodepools: utils.NodePools{
-				Dynamic: nodepools.Dynamic(cluster.ClusterInfo.NodePools),
-				Static:  nodepools.Static(cluster.ClusterInfo.NodePools),
+		ProxyInventoryFileParameters{
+			K8sNodepools: NodePools{
+				Dynamic: nodepools.Dynamic(nps),
+				Static:  nodepools.Static(nps),
 			},
-			ClusterID: clusterID,
+			ClusterID: clusterId,
 		},
 	)
 	if err != nil {
@@ -113,7 +124,7 @@ func commitProxyEnvs(cluster *spec.K8Scluster, processLimit *semaphore.Weighted)
 		SpawnProcessLimit: processLimit,
 	}
 
-	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("Update proxy envs - %s", clusterID)); err != nil {
+	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("Update proxy envs - %s", clusterId)); err != nil {
 		return fmt.Errorf("error while running ansible to update proxy envs in %s : %w", clusterDirectory, err)
 	}
 

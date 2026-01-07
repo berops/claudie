@@ -115,8 +115,7 @@ func PartialCopyWithNodeFilter(np *spec.NodePool, nodes []string) *spec.NodePool
 		}
 	}
 
-	// To avoid issues with possible node counts, deep clone
-	// the node type itself.
+	// To avoid issues with possible node counts, deep clone the node type itself.
 	switch typ := np.Type.(type) {
 	case *spec.NodePool_DynamicNodePool:
 		d := proto.Clone(typ.DynamicNodePool).(*spec.DynamicNodePool)
@@ -139,11 +138,10 @@ func PartialCopyWithNodeFilter(np *spec.NodePool, nodes []string) *spec.NodePool
 }
 
 // All of the nodes in the nodepool are replaced with the passed in nodes slice.
-// The function will then create a shallow copy of the nodepool, meaning that
-// all of the memory is still shared among the original and returned nodepool,
-// but will only have the replaced nodes. If the nodes are static nodes it is
-// expected that the passed in nodeKeys map will be filled with the required
-// data.
+// The function will create a shallow copy of the nodepool, meaning that all of
+// the memory is still shared among the original and returned nodepool, but will
+// only have the replaced nodes. If the nodes are static nodes it is expected that
+// the passed in nodeKeys map will be filled with the required data.
 //
 // **Caution** the node Type itself is deep cloned as the node counts need
 // to change to reflect the filtered nodes.
@@ -158,8 +156,7 @@ func PartialCopyWithReplacedNodes(np *spec.NodePool, nodes []*spec.Node, nodeKey
 		Annotations: np.Annotations,
 	}
 
-	// To avoid issues with possible node counts, deep clone
-	// the node type itself.
+	// To avoid issues with possible node counts, deep clone the node type itself.
 	switch typ := np.Type.(type) {
 	case *spec.NodePool_DynamicNodePool:
 		d := proto.Clone(typ.DynamicNodePool).(*spec.DynamicNodePool)

@@ -38,8 +38,18 @@ func InstallVPN(
 ) {
 	logger.Info().Msg("Installing VPN")
 
-	var k8s *spec.K8Scluster
-	var lbs []*spec.LBcluster
+	var (
+		k8s *spec.K8Scluster
+		lbs []*spec.LBcluster
+
+		// unreachable infrastructure, if any, that will be skipped
+		// during the installation of the VPN.
+		//
+		//
+		// This task may be called during the deletion of unreachable nodes
+		// thus filter them out when processing.
+		unreachable *spec.Unreachable
+	)
 
 	switch do := tracker.Task.Do.(type) {
 	case *spec.Task_Create:
@@ -48,6 +58,7 @@ func InstallVPN(
 	case *spec.Task_Update:
 		k8s = do.Update.State.K8S
 		lbs = do.Update.State.LoadBalancers
+		unreachable = UnreachableInfrastructure(do)
 	default:
 		logger.
 			Warn().
@@ -55,13 +66,22 @@ func InstallVPN(
 		return
 	}
 
+	k8snps := k8s.ClusterInfo.NodePools
+	if unreachable != nil {
+		logger.Error().Msg("HERE, TODO: remove me after testing")
+		k8snps = DefaultNodePoolsToReachableInfrastructureOnly(
+			k8snps,
+			unreachable.Kubernetes,
+		)
+	}
+
 	vi := VPNInfo{
 		ClusterNetwork: k8s.Network,
 		NodepoolsInfos: []*NodepoolsInfo{
 			{
-				Nodepools: utils.NodePools{
-					Dynamic: nodepools.Dynamic(k8s.ClusterInfo.NodePools),
-					Static:  nodepools.Static(k8s.ClusterInfo.NodePools),
+				Nodepools: NodePools{
+					Dynamic: nodepools.Dynamic(k8snps),
+					Static:  nodepools.Static(k8snps),
 				},
 				ClusterID:      k8s.ClusterInfo.Id(),
 				ClusterNetwork: k8s.Network,
@@ -70,12 +90,22 @@ func InstallVPN(
 	}
 
 	for _, lb := range lbs {
+		handle := lb.ClusterInfo.Id()
+		lbnps := lb.ClusterInfo.NodePools
+		if unreachable != nil {
+			logger.Error().Msg("HERE, TODO: remove me after testing, lb")
+			lbnps = DefaultNodePoolsToReachableInfrastructureOnly(
+				lbnps,
+				unreachable.Loadbalancers[handle],
+			)
+		}
+
 		vi.NodepoolsInfos = append(vi.NodepoolsInfos, &NodepoolsInfo{
-			Nodepools: utils.NodePools{
-				Dynamic: nodepools.Dynamic(lb.ClusterInfo.NodePools),
-				Static:  nodepools.Static(lb.ClusterInfo.NodePools),
+			Nodepools: NodePools{
+				Dynamic: nodepools.Dynamic(lbnps),
+				Static:  nodepools.Static(lbnps),
 			},
-			ClusterID:      lb.ClusterInfo.Id(),
+			ClusterID:      handle,
 			ClusterNetwork: k8s.Network,
 		})
 	}
@@ -132,6 +162,7 @@ func installWireguardVPN(clusterID string, vpnInfo *VPNInfo, processLimit *semap
 			return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 		}
 	}
+
 	ansible := utils.Ansible{
 		Playbook:          wireguardPlaybook,
 		Inventory:         utils.InventoryFileName,
@@ -146,7 +177,7 @@ func installWireguardVPN(clusterID string, vpnInfo *VPNInfo, processLimit *semap
 	return nil
 }
 
-// getAllNodepools flattens []*DesiredClusterNodepoolsInfo to []*pb.NodePool.
+// getAllNodepools flattens []*NodepoolsInfo to []*pb.NodePool.
 // Returns a slice of all the nodepools.
 func getAllNodepools(nodepoolsInfo []*NodepoolsInfo) []*spec.NodePool {
 	var nodepools []*spec.NodePool

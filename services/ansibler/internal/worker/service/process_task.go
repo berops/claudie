@@ -3,14 +3,15 @@ package service
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/internal/processlimit"
 	"github.com/berops/claudie/proto/pb/spec"
-	utils "github.com/berops/claudie/services/ansibler/internal/worker/service/internal"
 	"github.com/rs/zerolog/log"
+
 	"golang.org/x/sync/semaphore"
 )
 
@@ -45,9 +46,14 @@ type (
 
 	Diagnostics []error
 
+	NodePools struct {
+		Dynamic []*spec.NodePool
+		Static  []*spec.NodePool
+	}
+
 	// Utility types while processing the messages.
 	NodepoolsInfo struct {
-		Nodepools      utils.NodePools
+		Nodepools      NodePools
 		ClusterID      string
 		ClusterNetwork string
 	}
@@ -294,4 +300,50 @@ func DefaultLoadBalancerToDeletedNodesOnly(lb *spec.LBcluster, del *spec.Update_
 		n = kind.Whole.Nodepool
 	}
 	return n
+}
+
+// Goes over the unreachable nodepools and their nodes and filters them out from the passed in nodepools.
+// The original nodepools are not modified in any way, shallow copies are made that only contain reachable
+// nodes, which are then returned. The returned nodepools still share memory with the original nodepools as
+// only a shallow copy is made. The copies will have their node counts adjusted to reflect the filtered out
+// nodes, if any. Use with **caution**.
+//
+// The return is always non-nil here, if there are is no unreachable infrastructure simply unmodified shallow
+// copies of the passed in nodepools are returned.
+func DefaultNodePoolsToReachableInfrastructureOnly(
+	nps []*spec.NodePool,
+	unreachable *spec.Unreachable_UnreachableNodePools,
+) []*spec.NodePool {
+	var result []*spec.NodePool
+
+	for _, np := range nps {
+		unreachable := unreachable.GetNodepools()[np.Name].GetNodes()
+		var reachable []string
+
+		for _, n := range np.Nodes {
+			if !slices.Contains(unreachable, n.Name) {
+				reachable = append(reachable, n.Name)
+			}
+		}
+
+		cpy := nodepools.PartialCopyWithNodeFilter(np, reachable)
+		result = append(result, cpy)
+	}
+
+	return result
+}
+
+// Looks into the update type of the message and if it has possible unreachable
+// infrastructure attached to it returns it. Otherwise nil is returned
+func UnreachableInfrastructure(u *spec.Task_Update) *spec.Unreachable {
+	switch delta := u.Update.Delta.(type) {
+	case *spec.Update_DeletedK8SNodes_:
+		return delta.DeletedK8SNodes.Unreachable
+	case *spec.Update_DeleteLoadBalancer_:
+		return delta.DeleteLoadBalancer.Unreachable
+	case *spec.Update_DeletedLoadBalancerNodes_:
+		return delta.DeletedLoadBalancerNodes.Unreachable
+	default:
+		return nil
+	}
 }

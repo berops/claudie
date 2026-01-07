@@ -13,6 +13,7 @@ import (
 	"github.com/berops/claudie/services/ansibler/templates"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+
 	"golang.org/x/sync/semaphore"
 )
 
@@ -39,8 +40,12 @@ func ClearProxyEnvs(
 		return
 	}
 
-	state := update.Update.State
-	if err := clearProxyEnvsOnNodes(state.K8S, processLimit); err != nil {
+	var (
+		clusterId = update.Update.State.K8S.ClusterInfo.Id()
+		nps       = update.Update.State.K8S.ClusterInfo.NodePools
+	)
+
+	if err := clearProxyEnvsOnNodePools(clusterId, nps, processLimit); err != nil {
 		logger.Err(err).Msg("Failed to clear proxy envs")
 		tracker.Diagnostics.Push(err)
 		return
@@ -51,14 +56,16 @@ func ClearProxyEnvs(
 		Msgf("Successfully cleared proxy envs for nodes in cluster")
 }
 
-func clearProxyEnvsOnNodes(cluster *spec.K8Scluster, processLimit *semaphore.Weighted) error {
-	clusterID := cluster.ClusterInfo.Id()
-
+func clearProxyEnvsOnNodePools(
+	clusterId string,
+	nps []*spec.NodePool,
+	processLimit *semaphore.Weighted,
+) error {
 	// This is the directory where files (Ansible inventory files, SSH keys etc.) will be generated.
 	clusterDirectory := filepath.Join(
 		BaseDirectory,
 		OutputDirectory,
-		fmt.Sprintf("%s-%s", clusterID, hash.Create(hash.Length)),
+		fmt.Sprintf("%s-%s", clusterId, hash.Create(hash.Length)),
 	)
 
 	if err := fileutils.CreateDirectory(clusterDirectory); err != nil {
@@ -71,22 +78,31 @@ func clearProxyEnvsOnNodes(cluster *spec.K8Scluster, processLimit *semaphore.Wei
 		}
 	}()
 
-	if err := nodepools.DynamicGenerateKeys(nodepools.Dynamic(cluster.ClusterInfo.NodePools), clusterDirectory); err != nil {
+	dynamic := nodepools.Dynamic(nps)
+	static := nodepools.Static(nps)
+
+	if err := nodepools.DynamicGenerateKeys(dynamic, clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for dynamic nodepools : %w", err)
 	}
 
-	if err := nodepools.StaticGenerateKeys(nodepools.Static(cluster.ClusterInfo.NodePools), clusterDirectory); err != nil {
+	if err := nodepools.StaticGenerateKeys(static, clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 	}
 
-	if err := utils.GenerateInventoryFile(templates.ProxyEnvsInventoryTemplate, clusterDirectory, utils.ProxyInventoryFileParameters{
-		K8sNodepools: utils.NodePools{
-			Dynamic: nodepools.Dynamic(cluster.ClusterInfo.NodePools),
-			Static:  nodepools.Static(cluster.ClusterInfo.NodePools),
+	proxyData := ProxyInventoryFileParameters{
+		K8sNodepools: NodePools{
+			Dynamic: dynamic,
+			Static:  static,
 		},
-		ClusterID: clusterID,
-	}); err != nil {
-		return fmt.Errorf("failed to generate inventory file for updating proxy envs in /etc/environment using playbook in %s : %w", clusterDirectory, err)
+		ClusterID: clusterId,
+	}
+
+	if err := utils.GenerateInventoryFile(templates.ProxyEnvsInventoryTemplate, clusterDirectory, proxyData); err != nil {
+		return fmt.Errorf(
+			"failed to generate inventory file for updating proxy envs in /etc/environment using playbook in %s : %w",
+			clusterDirectory,
+			err,
+		)
 	}
 
 	ansible := utils.Ansible{
@@ -96,7 +112,7 @@ func clearProxyEnvsOnNodes(cluster *spec.K8Scluster, processLimit *semaphore.Wei
 		Playbook:          removeProxy,
 	}
 
-	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("Update proxy envs in /etc/environment - %s", clusterID)); err != nil {
+	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("Update proxy envs in /etc/environment - %s", clusterId)); err != nil {
 		return fmt.Errorf("error while running ansible to update proxy envs /etc/environment in %s : %w", clusterDirectory, err)
 	}
 

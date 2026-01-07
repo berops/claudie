@@ -9,15 +9,20 @@ import (
 
 const (
 	SEPARATOR = "/"
+
 	// Claudie cluster statuses
-	// IN_PROGRESS is a helper status that indicates that the cluster is currently being build.
+	// IN_PROGRESS is a helper status that indicates that the resource is currently being worked on to match the desired state.
 	STATUS_IN_PROGRESS = "IN_PROGRESS"
-	// ERROR indicates that an error occurred while building the cluster.
+
+	// ERROR indicates that an error occurred while building the resource.
 	STATUS_ERROR = "ERROR"
-	// DONE indicates that the workflow has finished.
+
+	// DONE indicates that the workflow has finished and there are no more tasks to be worked on.
 	STATUS_DONE = "DONE"
-	// STATUS_NEW is a helper status that indicates that the resource was recently created
+
+	// STATUS_NEW is a helper status that indicates that the reconciliation loop was initiated for the resource.
 	STATUS_NEW = "NEW"
+
 	// SCHEDULED_FOR_DELETION
 	STATUS_SCHEDULED_FOR_DELETION = "SCHEDULED_FOR_DELETION"
 )

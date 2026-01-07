@@ -137,7 +137,7 @@ func nodepoolsInfoDelete(task *spec.Task_Delete) []*NodepoolsInfo {
 	var npi []*NodepoolsInfo
 
 	k8s := &NodepoolsInfo{
-		Nodepools: utils.NodePools{
+		Nodepools: NodePools{
 			// ignore dynamic nodepools, as they're managed by claudie and not externally.
 			Dynamic: []*spec.NodePool{},
 			Static:  nodepools.Static(task.Delete.K8S.ClusterInfo.NodePools),
@@ -152,7 +152,7 @@ func nodepoolsInfoDelete(task *spec.Task_Delete) []*NodepoolsInfo {
 
 	for _, lb := range task.Delete.LoadBalancers {
 		lb := &NodepoolsInfo{
-			Nodepools: utils.NodePools{
+			Nodepools: NodePools{
 				// ignore dynamic nodepools, as they're managed by claudie and not externally.
 				Dynamic: []*spec.NodePool{},
 				Static:  nodepools.Static(lb.ClusterInfo.NodePools),
@@ -176,7 +176,7 @@ func nodepoolsInfoUpdate(logger zerolog.Logger, task *spec.Task_Update) ([]*Node
 	case *spec.Update_DeletedK8SNodes_:
 		np := DefaultKubernetesToDeletedNodesOnly(task.Update.State.K8S, delta.DeletedK8SNodes)
 
-		// On validly scheduled messages, the nodepool from which
+		// On valid scheduled messages, the nodepool from which
 		// nodes are to be deleted, should always be present in the
 		// provided state.
 		if np == nil {
@@ -188,11 +188,22 @@ func nodepoolsInfoUpdate(logger zerolog.Logger, task *spec.Task_Update) ([]*Node
 			return nil, false
 		}
 
+		static := nodepools.Static([]*spec.NodePool{np})
+
+		// This task may be called during the deletion of unreachable nodes
+		// thus filter them out when processing.
+		if delta.DeletedK8SNodes.Unreachable != nil {
+			static = DefaultNodePoolsToReachableInfrastructureOnly(
+				static,
+				delta.DeletedK8SNodes.Unreachable.Kubernetes,
+			)
+		}
+
 		k8s := &NodepoolsInfo{
-			Nodepools: utils.NodePools{
+			Nodepools: NodePools{
 				// ignore dynamic nodepools, as they're managed by claudie and not externally.
 				Dynamic: []*spec.NodePool{},
-				Static:  nodepools.Static([]*spec.NodePool{np}),
+				Static:  static,
 			},
 			ClusterID:      task.Update.State.K8S.ClusterInfo.Id(),
 			ClusterNetwork: task.Update.State.K8S.Network,
@@ -202,18 +213,19 @@ func nodepoolsInfoUpdate(logger zerolog.Logger, task *spec.Task_Update) ([]*Node
 			npi = append(npi, k8s)
 		}
 	case *spec.Update_DeletedLoadBalancerNodes_:
-		idx := clusters.IndexLoadbalancerById(delta.DeletedLoadBalancerNodes.Handle, task.Update.State.LoadBalancers)
+		handle := delta.DeletedLoadBalancerNodes.Handle
+		idx := clusters.IndexLoadbalancerById(handle, task.Update.State.LoadBalancers)
 		if idx < 0 {
 			log.
 				Warn().
-				Msgf("Received update task for removal of claudie installed utilities on deleted loadbalancer nodes but the loadbalancer %q is not in the provided state, ignoring", delta.DeletedLoadBalancerNodes.Handle)
+				Msgf("Received update task for removal of claudie installed utilities on deleted loadbalancer nodes but the loadbalancer %q is not in the provided state, ignoring", handle)
 			return nil, false
 		}
 
 		lb := task.Update.State.LoadBalancers[idx]
 		np := DefaultLoadBalancerToDeletedNodesOnly(lb, delta.DeletedLoadBalancerNodes)
 
-		// On validly scheduled messages, the nodepool from which
+		// On valid scheduled messages, the nodepool from which
 		// nodes are to be deleted, should always be present in the
 		// provided state.
 		if np == nil {
@@ -225,11 +237,22 @@ func nodepoolsInfoUpdate(logger zerolog.Logger, task *spec.Task_Update) ([]*Node
 			return nil, false
 		}
 
+		static := nodepools.Static([]*spec.NodePool{np})
+
+		// This task may be called during the deletion of unreachable nodes
+		// thus filter them out when processing.
+		if delta.DeletedLoadBalancerNodes.Unreachable != nil {
+			static = DefaultNodePoolsToReachableInfrastructureOnly(
+				static,
+				delta.DeletedLoadBalancerNodes.Unreachable.Loadbalancers[handle],
+			)
+		}
+
 		lbi := &NodepoolsInfo{
-			Nodepools: utils.NodePools{
+			Nodepools: NodePools{
 				// ignore dynamic nodepools, as they're managed by claudie and not externally.
 				Dynamic: []*spec.NodePool{},
-				Static:  nodepools.Static([]*spec.NodePool{np}),
+				Static:  static,
 			},
 			ClusterID:      lb.ClusterInfo.Id(),
 			ClusterNetwork: task.Update.State.K8S.Network,
@@ -239,20 +262,32 @@ func nodepoolsInfoUpdate(logger zerolog.Logger, task *spec.Task_Update) ([]*Node
 			npi = append(npi, lbi)
 		}
 	case *spec.Update_DeleteLoadBalancer_:
-		idx := clusters.IndexLoadbalancerById(delta.DeleteLoadBalancer.Handle, task.Update.State.LoadBalancers)
+		handle := delta.DeleteLoadBalancer.Handle
+		idx := clusters.IndexLoadbalancerById(handle, task.Update.State.LoadBalancers)
 		if idx < 0 {
 			log.
 				Warn().
-				Msgf("Received update task for removal of claudie installed utilities on deleted loadbalancer but the loadbalancer %q is not in the provided state, ignoring", delta.DeleteLoadBalancer.Handle)
+				Msgf("Received update task for removal of claudie installed utilities on deleted loadbalancer but the loadbalancer %q is not in the provided state, ignoring", handle)
 			return nil, false
 		}
 
 		lb := task.Update.State.LoadBalancers[idx]
+		static := nodepools.Static(lb.ClusterInfo.NodePools)
+
+		// This task may be called during the deletion of unreachable nodes
+		// thus filter them out when processing.
+		if delta.DeleteLoadBalancer.Unreachable != nil {
+			static = DefaultNodePoolsToReachableInfrastructureOnly(
+				static,
+				delta.DeleteLoadBalancer.Unreachable.Loadbalancers[handle],
+			)
+		}
+
 		lbi := &NodepoolsInfo{
-			Nodepools: utils.NodePools{
+			Nodepools: NodePools{
 				// ignore dynamic nodepools, as they're managed by claudie and not externally.
 				Dynamic: []*spec.NodePool{},
-				Static:  nodepools.Static(lb.ClusterInfo.NodePools),
+				Static:  static,
 			},
 			ClusterID:      lb.ClusterInfo.Id(),
 			ClusterNetwork: task.Update.State.K8S.Network,
