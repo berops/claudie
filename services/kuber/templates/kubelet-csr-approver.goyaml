@@ -105,6 +105,9 @@ spec:
               value: {{ .ProviderIPPrefixes }}
             - name: MAX_EXPIRATION_SEC
               value: "31622400" # 366 days
+            # the CSR approval doesn't work without bypassing because the node name doesn't resolve to an IP in the PROVIDER_IP_PREFIXES range
+            - name: BYPASS_DNS_RESOLUTION
+              value: "true"
       tolerations:
         - effect: NoSchedule
           key: node-role.kubernetes.io/control-plane
