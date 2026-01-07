@@ -105,7 +105,7 @@ spec:
           region: fsn1
           zone: fsn1-dc14
         count: 3
-        serverType: cpx11
+        serverType: cpx22
         image: ubuntu-24.04
 
     static:

@@ -121,7 +121,7 @@ spec:
           zone: hel1-dc2
         count: 1
         # Machine type name.
-        serverType: cpx11
+        serverType: cpx22
         # OS image name.
         image: ubuntu-22.04
 
@@ -135,7 +135,7 @@ spec:
           zone: fsn1-dc14
         count: 2
         # Machine type name.
-        serverType: cpx11
+        serverType: cpx22
         # OS image name.
         image: ubuntu-22.04
         storageDiskSize: 50
@@ -150,7 +150,7 @@ spec:
           zone: nbg1-dc3
         count: 2
         # Machine type name.
-        serverType: cpx11
+        serverType: cpx22
         # OS image name.
         image: ubuntu-22.04
         storageDiskSize: 50
