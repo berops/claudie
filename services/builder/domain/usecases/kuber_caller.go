@@ -105,6 +105,14 @@ func (u *Usecases) reconcileK8sConfiguration(ctx context.Context, work *builder.
 			},
 		},
 		{
+			// Deploy kubelet-csr-approver before Longhorn setup
+			do: func(_ context.Context, work *builder.Context, _ *zerolog.Logger) error {
+				return u.Kuber.DeployKubeletCSRApprover(work, u.Kuber.GetClient())
+			},
+			stage:       spec.Workflow_KUBER,
+			description: "deploying kubelet-csr-approver",
+		},
+		{
 			do: func(_ context.Context, work *builder.Context, _ *zerolog.Logger) error {
 				resStorage, err := u.Kuber.SetUpStorage(work, u.Kuber.GetClient())
 				if err != nil {
@@ -155,13 +163,6 @@ func (u *Usecases) reconcileK8sConfiguration(ctx context.Context, work *builder.
 				// Destroy Autoscaler if current state is autoscaled, but desired is not.
 				return work.CurrentCluster.AnyAutoscaledNodePools() && !work.DesiredCluster.AnyAutoscaledNodePools()
 			},
-		},
-		{
-			do: func(_ context.Context, work *builder.Context, _ *zerolog.Logger) error {
-				return u.Kuber.DeployKubeletCSRApprover(work, u.Kuber.GetClient())
-			},
-			stage:       spec.Workflow_KUBER,
-			description: "deploying kubelet-csr-approver",
 		},
 	}
 
