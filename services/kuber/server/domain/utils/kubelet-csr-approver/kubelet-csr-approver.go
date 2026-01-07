@@ -8,7 +8,6 @@ import (
 	"text/template"
 
 	comm "github.com/berops/claudie/internal/command"
-	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -35,7 +34,6 @@ type kubeletCSRApproverDeploymentData struct {
 	ClusterID          string
 	ProviderRegex      string
 	ProviderIPPrefixes string
-	Hash               string
 }
 
 // NewKubeletCSRApprover returns configured KubeletCSRApprover which can set up deploy or delete kubelet-csr-approver.
@@ -82,15 +80,14 @@ func (k *KubeletCSRApprover) generateFiles() error {
 		parts = append(parts, regexp.QuoteMeta(nodepool.Name))
 	}
 
-	regexPattern := fmt.Sprintf("%s", strings.Join(parts, "|"))
-	randomHash := hash.Create(4)
+	regexPattern := fmt.Sprintf("^(%s)-.+$", strings.Join(parts, "|"))
 
 	kubeletCSRApproverData := &kubeletCSRApproverDeploymentData{
 		ClusterName:        k.cluster.ClusterInfo.Name,
 		ProjectName:        k.projectName,
 		ClusterID:          k.cluster.ClusterInfo.Id(),
 		ProviderRegex:      regexPattern,
-		Hash:               randomHash,
+		ProviderIPPrefixes: k.cluster.Network,
 	}
 
 	if err := tpl.Generate(kcrTemplate, kubeletCSRApproverDeployment, kubeletCSRApproverData); err != nil {
