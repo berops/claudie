@@ -110,7 +110,7 @@ nodePools:
         region: nbg1
         zone: nbg1-dc3
       count: 1
-      serverType: cpx11
+      serverType: cpx22
       image: ubuntu-22.04
       storageDiskSize: 50
 
@@ -120,7 +120,7 @@ nodePools:
         region: nbg1
         zone: nbg1-dc3
       count: 1
-      serverType: cpx11
+      serverType: cpx22
       image: ubuntu-22.04
 
   static:
