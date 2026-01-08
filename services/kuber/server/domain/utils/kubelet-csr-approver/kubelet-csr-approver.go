@@ -2,7 +2,6 @@ package kubeletcsrapprover
 
 import (
 	"fmt"
-	"os"
 	"regexp"
 	"strings"
 	"text/template"
@@ -59,7 +58,7 @@ func (kca *KubeletCSRApprover) DeployKubeletCSRApprover() error {
 	if err := kc.KubectlApply(kubeletCSRApproverDeployment, ""); err != nil {
 		return fmt.Errorf("error while applying kubelet-csr-approver for cluster %s : %w", kca.cluster.ClusterInfo.Name, err)
 	}
-	return os.RemoveAll(kca.directory)
+	return nil
 }
 
 // generateFiles generates all manifests required for deploying kubelet-csr-approver.

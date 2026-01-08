@@ -3,6 +3,7 @@ package usecases
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/berops/claudie/internal/fileutils"
@@ -23,6 +24,7 @@ func (u *Usecases) DeployKubeletCSRApprover(ctx context.Context, request *pb.Dep
 		logger.Err(err).Msgf("Error while creating directory %s when deploying kubelet-csr-approver", clusterDir)
 		return nil, fmt.Errorf("error while creating directory %s when deploying kubelet-csr-approver : %w", clusterDir, err)
 	}
+	defer os.RemoveAll(clusterDir)
 
 	// Deploy kubelet-csr-approver
 	kubeletCSRApprover := kca.NewKubeletCSRApprover(request.ProjectName, request.Cluster, clusterDir)
