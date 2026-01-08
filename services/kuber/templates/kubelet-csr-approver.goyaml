@@ -101,6 +101,9 @@ spec:
           env:
             - name: PROVIDER_REGEX
               value: {{ .ProviderRegex }}
+            # could be anything (even 0.0.0.0/0) to make it work,
+            # since we are bypassing the DNS resolution
+            # but using the VPN CIDR should make it more secure
             - name: PROVIDER_IP_PREFIXES
               value: {{ .ProviderIPPrefixes }}
             - name: MAX_EXPIRATION_SEC
