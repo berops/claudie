@@ -99,17 +99,21 @@ spec:
               path: /healthz
               port: 8081
           env:
+            # PROVIDER_REGEX must remain permissive (".*") because kuber deploys after kube-eleven.
+            # A stricter regex (e.g., matching only existing nodepool names) would deny CSRs from
+            # newly added nodepools. kube-eleven proceeds on Approved or missing CSRs, but blocks on Denied
             - name: PROVIDER_REGEX
-              value: {{ .ProviderRegex }}
-            # could be anything (even 0.0.0.0/0) to make it work,
-            # since we are bypassing the DNS resolution
-            # but using the VPN CIDR should make it more secure
+              value: ".*"
+            # the kubelet-csr-approver still checks the SAN IP of the CSR even though the bypassing of the DNS resolution is turned on
             - name: PROVIDER_IP_PREFIXES
               value: {{ .ProviderIPPrefixes }}
             - name: MAX_EXPIRATION_SEC
               value: "31622400" # 366 days
             # the CSR approval doesn't work without bypassing because the node name doesn't resolve to an IP in the PROVIDER_IP_PREFIXES range
             - name: BYPASS_DNS_RESOLUTION
+              value: "true"
+            # permits ignoring CSRs with a Username different than system:node:......
+            - name: IGNORE_NON_SYSTEM_NODE
               value: "true"
       tolerations:
         - effect: NoSchedule

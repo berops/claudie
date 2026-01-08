@@ -3,7 +3,6 @@ package kubeletcsrapprover
 import (
 	"fmt"
 	"regexp"
-	"strings"
 	"text/template"
 
 	comm "github.com/berops/claudie/internal/command"
@@ -31,7 +30,6 @@ type kubeletCSRApproverDeploymentData struct {
 	ClusterName        string
 	ProjectName        string
 	ClusterID          string
-	ProviderRegex      string
 	ProviderIPPrefixes string
 }
 
@@ -79,13 +77,10 @@ func (k *KubeletCSRApprover) generateFiles() error {
 		parts = append(parts, regexp.QuoteMeta(nodepool.Name))
 	}
 
-	regexPattern := fmt.Sprintf("^(%s)-.+$", strings.Join(parts, "|"))
-
 	kubeletCSRApproverData := &kubeletCSRApproverDeploymentData{
 		ClusterName:        k.cluster.ClusterInfo.Name,
 		ProjectName:        k.projectName,
 		ClusterID:          k.cluster.ClusterInfo.Id(),
-		ProviderRegex:      regexPattern,
 		ProviderIPPrefixes: k.cluster.Network,
 	}
 
