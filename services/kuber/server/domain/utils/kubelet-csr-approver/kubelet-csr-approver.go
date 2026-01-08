@@ -62,7 +62,7 @@ func (kca *KubeletCSRApprover) DeployKubeletCSRApprover() error {
 	return os.RemoveAll(kca.directory)
 }
 
-// generateFiles generates all manifests required for deploying Cluster Autoscaler.
+// generateFiles generates all manifests required for deploying kubelet-csr-approver.
 func (k *KubeletCSRApprover) generateFiles() error {
 	tpl := templateUtils.Templates{Directory: k.directory}
 	var kcrTemplate *template.Template
