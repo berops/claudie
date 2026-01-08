@@ -719,7 +719,7 @@ In this example, two AWS providers are used — one with access to compute resou
             name: hetzner-1   # use your new hetzner provider hetzner-1 to create these nodes
             region: hel1
             zone: hel1-dc2
-        serverType: cpx51
+        serverType: cpx52
         image: ubuntu-22.04
         autoscaler:           # this node pool uses a claudie autoscaler instead of static count of nodes
             min: 1
@@ -2100,7 +2100,7 @@ spec:
           zone: hel1-dc2
         count: 1
         # Machine type name.
-        serverType: cpx11
+        serverType: cpx22
         # OS image name.
         image: ubuntu-24.04
 
@@ -2114,7 +2114,7 @@ spec:
           zone: fsn1-dc14
         count: 2
         # Machine type name.
-        serverType: cpx11
+        serverType: cpx22
         # OS image name.
         image: ubuntu-24.04
         storageDiskSize: 50
@@ -2129,7 +2129,7 @@ spec:
           zone: nbg1-dc3
         count: 2
         # Machine type name.
-        serverType: cpx11
+        serverType: cpx22
         # OS image name.
         image: ubuntu-24.04
         storageDiskSize: 50
@@ -2192,7 +2192,7 @@ spec:
           zone: hel1-dc2
         count: 1
         # Machine type name.
-        serverType: cpx11
+        serverType: cpx22
         # OS image name.
         image: ubuntu-24.04
 
@@ -2206,7 +2206,7 @@ spec:
           zone: fsn1-dc14
         count: 2
         # Machine type name.
-        serverType: cpx11
+        serverType: cpx22
         # OS image name.
         image: ubuntu-24.04
 
@@ -2220,7 +2220,7 @@ spec:
           zone: fsn1-dc14
         count: 2
         # Machine type name.
-        serverType: cpx11
+        serverType: cpx22
         # OS image name.
         image: ubuntu-24.04
         storageDiskSize: 50
@@ -2235,7 +2235,7 @@ spec:
           zone: nbg1-dc3
         count: 2
         # Machine type name.
-        serverType: cpx11
+        serverType: cpx22
         # OS image name.
         image: ubuntu-24.04
         storageDiskSize: 50
@@ -2798,7 +2798,7 @@ spec:
           region: fsn1
           zone: fsn1-dc14
         count: 3
-        serverType: cpx11
+        serverType: cpx22
         image: ubuntu-24.04
 
     static:
@@ -2943,7 +2943,7 @@ spec:
           region: hel1
           zone: hel1-dc2
         count: 3
-        serverType: cpx11
+        serverType: cpx22
         image: ubuntu-24.04
         labels:
           country: finland
@@ -2961,7 +2961,7 @@ spec:
           region: hel1
           zone: hel1-dc2
         count: 2
-        serverType: cpx11
+        serverType: cpx22
         image: ubuntu-24.04
         storageDiskSize: 50
         labels:
@@ -2975,7 +2975,7 @@ spec:
           name: hetzner-1
           region: hel1
           zone: hel1-dc2
-        serverType: cpx11
+        serverType: cpx22
         image: ubuntu-24.04
         storageDiskSize: 50
         autoscaler:
@@ -3093,7 +3093,7 @@ spec:
           region: hel1
           zone: hel1-dc2
         count: 2
-        serverType: cpx11
+        serverType: cpx22
         image: ubuntu-24.04
 
     # Static nodepools are created by user beforehand.
@@ -3574,7 +3574,7 @@ spec:
           zone: hel1-dc2
         count: 1
         # Machine type name.
-        serverType: cpx11
+        serverType: cpx22
         # OS image name.
         image: ubuntu-22.04
 
@@ -3588,7 +3588,7 @@ spec:
           zone: fsn1-dc14
         count: 2
         # Machine type name.
-        serverType: cpx11
+        serverType: cpx22
         # OS image name.
         image: ubuntu-22.04
         storageDiskSize: 50
@@ -3603,7 +3603,7 @@ spec:
           zone: nbg1-dc3
         count: 2
         # Machine type name.
-        serverType: cpx11
+        serverType: cpx22
         # OS image name.
         image: ubuntu-22.04
         storageDiskSize: 50
@@ -4059,7 +4059,7 @@ Name of the Kubernetes cluster. The name is limited by 28 characters. Each clust
 
 Kubernetes version of the cluster.
 
-Version should be defined in format `vX.Y`. In terms of supported versions of Kubernetes, Claudie follows `kubeone` releases and their supported versions. The current `kubeone` version used in Claudie is `1.10.0`. To see the list of supported versions, please refer to `kubeone` [documentation](https://docs.kubermatic.com/kubeone/v1.10/architecture/compatibility/supported-versions/).
+Version should be defined in format `vX.Y`. In terms of supported versions of Kubernetes, Claudie follows `kubeone` releases and their supported versions. The current `kubeone` version used in Claudie is `1.12.0`. To see the list of supported versions, please refer to `kubeone` [documentation](https://docs.kubermatic.com/kubeone/v1.12/architecture/compatibility/supported-versions/).
 
 - `network`
 
@@ -4487,7 +4487,7 @@ spec:
             region: hel1
             zone: hel1-dc2
           count: 3
-          serverType: cpx21
+          serverType: cpx22
           image: ubuntu-22.04
 
         - name: datastore
@@ -4496,7 +4496,7 @@ spec:
             region: hel1
             zone: hel1-dc2
           count: 5
-          serverType: cpx21
+          serverType: cpx22
           image: ubuntu-22.04
           storageDiskSize: 800
           taints:
@@ -4510,7 +4510,7 @@ spec:
             region: hel1
             zone: hel1-dc2
           count: 10
-          serverType: cpx41
+          serverType: cpx42
           image: ubuntu-22.04
           taints:
             - key: node-type
@@ -4523,7 +4523,7 @@ spec:
             region: hel1
             zone: hel1-dc2
           count: 1
-          serverType: cpx21
+          serverType: cpx22
           image: ubuntu-22.04
 
   kubernetes:
@@ -5351,7 +5351,7 @@ Nodepools specified in the InputManifest are immutable. Once created, they canno
     region: fsn1
     zone: fsn1-dc14
   count: 1
-  serverType: cpx11
+  serverType: cpx22
   image: ubuntu-22.04
 ...
 
@@ -5366,7 +5366,7 @@ Nodepools specified in the InputManifest are immutable. Once created, they canno
     region: fsn1
     zone: fsn1-dc14
   count: 1
-  serverType: cpx11
+  serverType: cpx22
   image: ubuntu-24.04
 ...
 
@@ -5387,7 +5387,7 @@ The same concept applies to changing the server type of a dynamic nodepool.
     region: fsn1
     zone: fsn1-dc14
   count: 1
-  serverType: cpx11
+  serverType: cpx22
   image: ubuntu-22.04
 ...
 
@@ -5402,7 +5402,7 @@ The same concept applies to changing the server type of a dynamic nodepool.
     region: fsn1
     zone: fsn1-dc14
   count: 1
-  serverType: cpx21
+  serverType: cpx22
   image: ubuntu-22.04
 ...
 
