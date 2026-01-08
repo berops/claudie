@@ -2,7 +2,6 @@ package kubeletcsrapprover
 
 import (
 	"fmt"
-	"regexp"
 	"text/template"
 
 	comm "github.com/berops/claudie/internal/command"
@@ -69,12 +68,6 @@ func (k *KubeletCSRApprover) generateFiles() error {
 	// The configuration files for templates were taken from https://github.com/postfinance/kubelet-csr-approver/tree/v1.2.12/deploy/k8s
 	if kcrTemplate, err = templateUtils.LoadTemplate(templates.KubeletCSRApproverTemplate); err != nil {
 		return fmt.Errorf("error loading kubelet-csr-approver template : %w", err)
-	}
-
-	var parts []string
-	nodepools := k.cluster.ClusterInfo.GetNodePools()
-	for _, nodepool := range nodepools {
-		parts = append(parts, regexp.QuoteMeta(nodepool.Name))
 	}
 
 	kubeletCSRApproverData := &kubeletCSRApproverDeploymentData{
