@@ -34,6 +34,7 @@ const (
 	KuberService_PatchKubeProxyConfigMap_FullMethodName   = "/claudie.KuberService/PatchKubeProxyConfigMap"
 	KuberService_PatchKubeadmConfigMap_FullMethodName     = "/claudie.KuberService/PatchKubeadmConfigMap"
 	KuberService_CiliumRolloutRestart_FullMethodName      = "/claudie.KuberService/CiliumRolloutRestart"
+	KuberService_DeployKubeletCSRApprover_FullMethodName  = "/claudie.KuberService/DeployKubeletCSRApprover"
 )
 
 // KuberServiceClient is the client API for KuberService service.
@@ -86,6 +87,7 @@ type KuberServiceClient interface {
 	PatchKubeadmConfigMap(ctx context.Context, in *PatchKubeadmConfigMapRequest, opts ...grpc.CallOption) (*PatchKubeadmConfigMapResponse, error)
 	// CiliumRolloutRestart performs a rollout restart of the cilium daemonset.
 	CiliumRolloutRestart(ctx context.Context, in *CiliumRolloutRestartRequest, opts ...grpc.CallOption) (*CiliumRolloutRestartResponse, error)
+	DeployKubeletCSRApprover(ctx context.Context, in *DeployKubeletCSRApproverRequest, opts ...grpc.CallOption) (*DeployKubeletCSRApproverResponse, error)
 }
 
 type kuberServiceClient struct {
@@ -246,6 +248,16 @@ func (c *kuberServiceClient) CiliumRolloutRestart(ctx context.Context, in *Ciliu
 	return out, nil
 }
 
+func (c *kuberServiceClient) DeployKubeletCSRApprover(ctx context.Context, in *DeployKubeletCSRApproverRequest, opts ...grpc.CallOption) (*DeployKubeletCSRApproverResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeployKubeletCSRApproverResponse)
+	err := c.cc.Invoke(ctx, KuberService_DeployKubeletCSRApprover_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // KuberServiceServer is the server API for KuberService service.
 // All implementations must embed UnimplementedKuberServiceServer
 // for forward compatibility.
@@ -296,6 +308,7 @@ type KuberServiceServer interface {
 	PatchKubeadmConfigMap(context.Context, *PatchKubeadmConfigMapRequest) (*PatchKubeadmConfigMapResponse, error)
 	// CiliumRolloutRestart performs a rollout restart of the cilium daemonset.
 	CiliumRolloutRestart(context.Context, *CiliumRolloutRestartRequest) (*CiliumRolloutRestartResponse, error)
+	DeployKubeletCSRApprover(context.Context, *DeployKubeletCSRApproverRequest) (*DeployKubeletCSRApproverResponse, error)
 	mustEmbedUnimplementedKuberServiceServer()
 }
 
@@ -350,6 +363,9 @@ func (UnimplementedKuberServiceServer) PatchKubeadmConfigMap(context.Context, *P
 }
 func (UnimplementedKuberServiceServer) CiliumRolloutRestart(context.Context, *CiliumRolloutRestartRequest) (*CiliumRolloutRestartResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CiliumRolloutRestart not implemented")
+}
+func (UnimplementedKuberServiceServer) DeployKubeletCSRApprover(context.Context, *DeployKubeletCSRApproverRequest) (*DeployKubeletCSRApproverResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeployKubeletCSRApprover not implemented")
 }
 func (UnimplementedKuberServiceServer) mustEmbedUnimplementedKuberServiceServer() {}
 func (UnimplementedKuberServiceServer) testEmbeddedByValue()                      {}
@@ -642,6 +658,24 @@ func _KuberService_CiliumRolloutRestart_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _KuberService_DeployKubeletCSRApprover_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeployKubeletCSRApproverRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KuberServiceServer).DeployKubeletCSRApprover(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KuberService_DeployKubeletCSRApprover_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KuberServiceServer).DeployKubeletCSRApprover(ctx, req.(*DeployKubeletCSRApproverRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // KuberService_ServiceDesc is the grpc.ServiceDesc for KuberService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -708,6 +742,10 @@ var KuberService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CiliumRolloutRestart",
 			Handler:    _KuberService_CiliumRolloutRestart_Handler,
+		},
+		{
+			MethodName: "DeployKubeletCSRApprover",
+			Handler:    _KuberService_DeployKubeletCSRApprover_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
