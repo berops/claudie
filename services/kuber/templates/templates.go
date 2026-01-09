@@ -8,6 +8,9 @@ var (
 	//go:embed cluster-autoscaler.goyaml
 	ClusterAutoscalerTemplate string
 
+	//go:embed kubelet-csr-approver.goyaml
+	KubeletCSRApproverTemplate string
+
 	//go:embed enable-ca.goyaml
 	EnableClusterAutoscalerTemplate string
 
