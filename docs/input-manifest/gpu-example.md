@@ -33,7 +33,7 @@ spec:
       # Make sure to update it according to the region.
       image: ami-07eef52105e8a2059
 
-    - name: compute-gpu-aws
+    - name: gpu-aws
       providerSpec:
         name: aws-1
         region: eu-central-1
@@ -54,7 +54,7 @@ spec:
           control:
             - control-aws
           compute:
-            - compute-gpu-aws
+            - gpu-aws
 ```
 
 After the `InputManifest` has been successfully built by Claudie, deploy the `gpu-operator` to the `gpu-example` Kubernetes cluster.
