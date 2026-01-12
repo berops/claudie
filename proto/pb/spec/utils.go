@@ -170,8 +170,6 @@ func (pr *Provider) Credentials() string {
 		return p.Azure.ClientSecret
 	case *Provider_Cloudflare:
 		return p.Cloudflare.Token
-	case *Provider_Genesiscloud:
-		return p.Genesiscloud.Token
 	case *Provider_Openstack:
 		return p.Openstack.ApplicationCredentialSecret
 	default:

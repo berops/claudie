@@ -42,12 +42,6 @@ terraform {
       version = "2.2.0"
     }
     {{- end }}
-    {{- if .GenesisCloud }}
-    genesiscloud = {
-        source = "genesiscloud/genesiscloud"
-        version = "1.1.14"
-    }
-    {{- end }}
     {{- if .Openstack }}
     openstack = {
         source = "terraform-provider-openstack/openstack"

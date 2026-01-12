@@ -78,17 +78,6 @@ func (p *Provider) Validate() error {
 		names[c.Name] = true
 	}
 
-	for _, c := range p.GenesisCloud {
-		if err := c.Validate(); err != nil {
-			return fmt.Errorf("failed to validate proder %q: %w", c.Name, err)
-		}
-
-		if _, ok := names[c.Name]; ok {
-			return fmt.Errorf("name %q is used across multiple providers, must be unique", c.Name)
-		}
-		names[c.Name] = true
-	}
-
 	for _, c := range p.Cloudflare {
 		if err := c.Validate(); err != nil {
 			return fmt.Errorf("failed to validate provider %q: %w", c.Name, err)
@@ -125,15 +114,14 @@ func (p *Provider) Validate() error {
 	return nil
 }
 
-func (c *GCP) Validate() error          { return validateProvider(c) }
-func (c *Hetzner) Validate() error      { return validateProvider(c) }
-func (c *OCI) Validate() error          { return validateProvider(c) }
-func (c *Azure) Validate() error        { return validateProvider(c) }
-func (c *AWS) Validate() error          { return validateProvider(c) }
-func (c *GenesisCloud) Validate() error { return validateProvider(c) }
-func (c *Cloudflare) Validate() error   { return validateProvider(c) }
-func (c *HetznerDNS) Validate() error   { return validateProvider(c) }
-func (c *Openstack) Validate() error    { return validateProvider(c) }
+func (c *GCP) Validate() error        { return validateProvider(c) }
+func (c *Hetzner) Validate() error    { return validateProvider(c) }
+func (c *OCI) Validate() error        { return validateProvider(c) }
+func (c *Azure) Validate() error      { return validateProvider(c) }
+func (c *AWS) Validate() error        { return validateProvider(c) }
+func (c *Cloudflare) Validate() error { return validateProvider(c) }
+func (c *HetznerDNS) Validate() error { return validateProvider(c) }
+func (c *Openstack) Validate() error  { return validateProvider(c) }
 
 func validateSemver2(fl validator.FieldLevel) bool {
 	semverString := fl.Field().String()

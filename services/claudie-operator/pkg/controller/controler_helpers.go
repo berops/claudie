@@ -71,17 +71,6 @@ func constructInputManifest(
 				SecretKey: strings.TrimSpace(awsSecretkey),
 				Templates: p.Templates,
 			})
-		case v1beta1manifest.GENESIS_CLOUD:
-			gcToken, err := p.GetSecretField(v1beta1manifest.GEN_C_API_TOKEN)
-			if err != nil {
-				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
-			}
-			var genCloud = manifest.GenesisCloud{
-				Name:      p.ProviderName,
-				ApiToken:  strings.TrimSpace(gcToken),
-				Templates: p.Templates,
-			}
-			providers.GenesisCloud = append(providers.GenesisCloud, genCloud)
 		case v1beta1manifest.HETZNER:
 			hetzner_key, err := p.GetSecretField(v1beta1manifest.HETZNER_CREDENTIALS)
 			if err != nil {

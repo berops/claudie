@@ -508,7 +508,6 @@ spec:
                       - azure
                       - cloudflare
                       - hetznerdns
-                      - genesiscloud
                       - openstack
                       type: string
                     secretRef:

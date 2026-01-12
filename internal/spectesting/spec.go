@@ -7,9 +7,8 @@ import (
 type (
 	FakeRoleOption                 func(r *spec.Role)
 	FakeDnsOption                  func(d *spec.DNS)
-	FakeInstalltionProxyOption     func(ip *spec.InstallationProxy)
-	FakeProviderGenesisCloudOption func(gcp *spec.Provider_Genesiscloud)
-	FakeProviderCloudflareOption   func(gcp *spec.Provider_Cloudflare)
+	FakeInstalltionProxyOption   func(ip *spec.InstallationProxy)
+	FakeProviderCloudflareOption func(gcp *spec.Provider_Cloudflare)
 	FakeProviderAzureOption        func(gcp *spec.Provider_Azure)
 	FakeProviderAWSOption          func(gcp *spec.Provider_Aws)
 	FakeProviderOciOption          func(gcp *spec.Provider_Oci)
@@ -128,12 +127,6 @@ func WithInstallationProxyMode(m string) FakeInstalltionProxyOption {
 func WithInstallationProxyEndpoint(m string) FakeInstalltionProxyOption {
 	return func(ip *spec.InstallationProxy) {
 		ip.Endpoint = m
-	}
-}
-
-func WithProviderGenesisCloudToken(k string) FakeProviderGenesisCloudOption {
-	return func(a *spec.Provider_Genesiscloud) {
-		a.Genesiscloud.Token = k
 	}
 }
 
@@ -294,12 +287,6 @@ func WithProviderAzure(typ *spec.Provider_Azure) FakeProviderOption {
 }
 
 func WithProviderCloudflare(typ *spec.Provider_Cloudflare) FakeProviderOption {
-	return func(a *spec.Provider) {
-		a.ProviderType = typ
-	}
-}
-
-func WithProviderGenesiscloud(typ *spec.Provider_Genesiscloud) FakeProviderOption {
 	return func(a *spec.Provider) {
 		a.ProviderType = typ
 	}
@@ -565,16 +552,6 @@ func CreateFakeInstallationProxy(opts ...FakeInstalltionProxyOption) *spec.Insta
 		o(ip)
 	}
 	return ip
-}
-
-func CreateFakeProviderGenesisCloud(opts ...FakeProviderGenesisCloudOption) *spec.Provider_Genesiscloud {
-	gcp := &spec.Provider_Genesiscloud{
-		Genesiscloud: &spec.GenesisCloudProvider{},
-	}
-	for _, o := range opts {
-		o(gcp)
-	}
-	return gcp
 }
 
 func CreateFakeProviderCloudflare(opts ...FakeProviderCloudflareOption) *spec.Provider_Cloudflare {
