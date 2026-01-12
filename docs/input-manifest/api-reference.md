@@ -48,7 +48,6 @@ needs to be defined.
   | `hetzner`      | [Hetzner](#hetzner) provider type           |
   | `hetznerdns`   | [Hetzner](#hetznerdns) DNS provider type    |
   | `oci`          | [OCI](#oci) provider type                   |
-  | `genesiscloud` | [GenesisCloud](#genesiscloud) provider type |
 
 - `secretRef` [SecretRef](#secretref)
 
@@ -110,20 +109,6 @@ To find out how to configure GCP provider and service account, follow the instru
 - `gcpproject`
 
   Project id of an already existing GCP project where the infrastructure is to be created.
-
-- `templates`
-  - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
-  - `tag`: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.
-  - `path`: specifies the path for a specific provider within the `repository` where the source template files are located.
-
-### GenesisCloud
-
-The fields that need to be included in a Kubernetes Secret resource to utilize the Genesis Cloud provider.
-To find out how to configure Genesis Cloud provider, follow the instructions [here](./providers/genesiscloud.md).
-
-- `apitoken`
-
-  API token for the provider.
 
 - `templates`
   - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.

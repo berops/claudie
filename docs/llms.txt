@@ -13,7 +13,6 @@
 - [Azure](https://docs.claudie.io/latest/input-manifest/providers/azure/) Step-by-step guide to configure Azure credentials and input manifests.
 - [Cloudflare](https://docs.claudie.io/latest/input-manifest/providers/cloudflare/) Step-by-step guide to configure Cloudflare credentials and input manifests.
 - [GCP](https://docs.claudie.io/latest/input-manifest/providers/gcp/) Step-by-step guide to configure GCP credentials and input manifests.
-- [Genesis](https://docs.claudie.io/latest/input-manifest/providers/genesiscloud/) Guide to using Genesis Cloud API token and input manifest.
 - [Hetzner](https://docs.claudie.io/latest/input-manifest/providers/hetzner/) Step-by-step guide to configure Hetzner credentials and input manifests.
 - [OCI](https://docs.claudie.io/latest/input-manifest/providers/oci/) Step-by-step guide to configure Oracle credentials and input manifests.
 - [On Premise](https://docs.claudie.io/latest/input-manifest/providers/on-prem/) Step-by-step guide to configure on premise hardware and input manifests.
