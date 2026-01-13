@@ -20,15 +20,14 @@ type Manifest struct {
 }
 
 type Provider struct {
-	GCP          []GCP          `yaml:"gcp"`
-	Hetzner      []Hetzner      `yaml:"hetzner"`
-	AWS          []AWS          `yaml:"aws"`
-	OCI          []OCI          `yaml:"oci"`
-	Azure        []Azure        `yaml:"azure"`
-	Cloudflare   []Cloudflare   `yaml:"cloudflare"`
-	HetznerDNS   []HetznerDNS   `yaml:"hetznerdns"`
-	GenesisCloud []GenesisCloud `yaml:"genesiscloud"`
-	Openstack    []Openstack    `yaml:"openstack"`
+	GCP        []GCP        `yaml:"gcp"`
+	Hetzner    []Hetzner    `yaml:"hetzner"`
+	AWS        []AWS        `yaml:"aws"`
+	OCI        []OCI        `yaml:"oci"`
+	Azure      []Azure      `yaml:"azure"`
+	Cloudflare []Cloudflare `yaml:"cloudflare"`
+	HetznerDNS []HetznerDNS `yaml:"hetznerdns"`
+	Openstack  []Openstack  `yaml:"openstack"`
 }
 
 type HetznerDNS struct {
@@ -63,12 +62,6 @@ type Hetzner struct {
 	// https://docs.hetzner.com/cloud/technical-details/faq#how-are-api-tokens-stored
 	Credentials string              `validate:"required,alphanum,len=64" yaml:"credentials"`
 	Templates   *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
-}
-
-type GenesisCloud struct {
-	Name      string              `validate:"required,max=15" yaml:"name"`
-	ApiToken  string              `validate:"required,alphanum" yaml:"apiToken"`
-	Templates *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
 }
 
 type AWS struct {

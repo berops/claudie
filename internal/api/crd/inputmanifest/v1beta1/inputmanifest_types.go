@@ -27,15 +27,14 @@ import (
 type ProviderType string
 
 const (
-	AWS           ProviderType = "aws"
-	AZURE         ProviderType = "azure"
-	CLOUDFLARE    ProviderType = "cloudflare"
-	GCP           ProviderType = "gcp"
-	GENESIS_CLOUD ProviderType = "genesiscloud"
-	HETZNER       ProviderType = "hetzner"
-	HETZNER_DNS   ProviderType = "hetznerdns"
-	OCI           ProviderType = "oci"
-	OPENSTACK     ProviderType = "openstack"
+	AWS         ProviderType = "aws"
+	AZURE       ProviderType = "azure"
+	CLOUDFLARE  ProviderType = "cloudflare"
+	GCP         ProviderType = "gcp"
+	HETZNER     ProviderType = "hetzner"
+	HETZNER_DNS ProviderType = "hetznerdns"
+	OCI         ProviderType = "oci"
+	OPENSTACK   ProviderType = "openstack"
 )
 
 type SecretField string
@@ -59,7 +58,6 @@ const (
 	OCI_USER_OCID                    SecretField = "userocid"
 	OCI_COMPARTMENT_OCID             SecretField = "compartmentocid"
 	PRIVATE_KEY                      SecretField = "privatekey"
-	GEN_C_API_TOKEN                  SecretField = "apitoken"
 	OS_AUTH_URL                      SecretField = "authurl"
 	OS_DOMAIN_ID                     SecretField = "domainid"
 	OS_PROJECT_ID                    SecretField = "projectid"
@@ -89,7 +87,7 @@ type Provider struct {
 	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:MinLength=1
 	ProviderName string `json:"name"`
-	// +kubebuilder:validation:Enum=gcp;hetzner;aws;oci;azure;cloudflare;hetznerdns;genesiscloud;openstack;
+	// +kubebuilder:validation:Enum=gcp;hetzner;aws;oci;azure;cloudflare;hetznerdns;openstack;
 	ProviderType ProviderType           `json:"providerType"`
 	SecretRef    corev1.SecretReference `json:"secretRef"`
 	// External templates for building the cluster infrastructure.

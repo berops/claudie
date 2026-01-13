@@ -4,19 +4,19 @@ Claudie allows to plug in your own templates for spawning the infrastructure. Sp
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
-  name: genesis-example
+  name: hetzner-example
   labels:
     app.kubernetes.io/part-of: claudie
 spec:
   providers:
-    - name: genesiscloud
-      providerType: genesiscloud
+    - name: hetzner-1
+      providerType: hetzner
       templates:
         repository: "https://github.com/berops/claudie-config"
         tag: "v0.9.8" # optional
-        path: "templates/terraformer/genesiscloud"
+        path: "templates/terraformer/hetzner"
       secretRef:
-        name: genesiscloud-secret
+        name: hetzner-secret
         namespace: secrets
 ...
 ```

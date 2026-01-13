@@ -85,12 +85,6 @@ func init() {
 	ProviderTypeOption["cloudflare"] = func(a any) FakeProviderOption {
 		return WithProviderCloudflare(a.(*spec.Provider_Cloudflare))
 	}
-	KnownProviderTypes["genesiscloud"] = CreateFakeProviderGenesisCloud(
-		WithProviderGenesisCloudToken("token"),
-	)
-	ProviderTypeOption["genesiscloud"] = func(a any) FakeProviderOption {
-		return WithProviderGenesiscloud(a.(*spec.Provider_Genesiscloud))
-	}
 }
 
 func GenerateFakeProvider() *spec.Provider {

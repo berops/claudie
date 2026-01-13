@@ -1,47 +1,48 @@
 We will follow the guide
 from [Nvidia](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html#operator-install-guide)
-to deploy the `gpu-operator` into a claudie build kubernetes cluster. Make sure you fulfill the necessary listed
+to deploy the `gpu-operator` into a Claudie-built Kubernetes cluster. Make sure you fulfill the necessary listed
 requirements in prerequisites before continuing, if you decide to use a different cloud provider.
 
-In this example we will be using [GenesisCloud](providers/genesiscloud.md) as our provider, with the following config:
+In this example we will be using [AWS](providers/aws.md) as our provider, with the following config:
 
 ```yaml
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
-  name: genesis-example
+  name: aws-gpu-example
   labels:
     app.kubernetes.io/part-of: claudie
 spec:
   providers:
-    - name: genesiscloud
-      providerType: genesiscloud
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.8"
-        path: "templates/terraformer/genesiscloud"
+    - name: aws-1
+      providerType: aws
       secretRef:
-        name: genesiscloud-secret
+        name: aws-secret
         namespace: secrets
 
   nodePools:
     dynamic:
-    - name: gencloud-cpu
+    - name: control-aws
       providerSpec:
-        name: genesiscloud
-        region: ARC-IS-HAF-1
+        name: aws-1
+        region: eu-central-1
+        zone: eu-central-1a
       count: 1
-      serverType: vcpu-2_memory-4g_disk-80g
-      image: "Ubuntu 22.04"
-      storageDiskSize: 50
+      serverType: t3.medium
+      # AMI ID of the image Ubuntu 24.04.
+      # Make sure to update it according to the region.
+      image: ami-07eef52105e8a2059
 
-    - name: gencloud-gpu
+    - name: gpu-aws
       providerSpec:
-        name: genesiscloud
-        region: ARC-IS-HAF-1
+        name: aws-1
+        region: eu-central-1
+        zone: eu-central-1a
       count: 2
-      serverType: vcpu-4_memory-12g_disk-80g_nvidia3080-1
-      image: "Ubuntu 22.04"
+      serverType: g4dn.xlarge
+      # AMI ID of the image Ubuntu 24.04.
+      # Make sure to update it according to the region.
+      image: ami-07eef52105e8a2059
       storageDiskSize: 50
 
   kubernetes:
@@ -51,12 +52,12 @@ spec:
         network: 172.16.2.0/24
         pools:
           control:
-            - gencloud-cpu
+            - control-aws
           compute:
-            - gencloud-gpu
+            - gpu-aws
 ```
 
-After the `InputManifest` was successfully build by claudie, we deploy the `gpu-operator` to the `gpu-examepl`kubernetes cluster.
+After the `InputManifest` has been successfully built by Claudie, deploy the `gpu-operator` to the `gpu-example` Kubernetes cluster.
 
 1. Create a namespace for the gpu-operator.
 
@@ -109,7 +110,7 @@ nvidia-operator-validator-jbc7r                                   1/1     Runnin
 nvidia-operator-validator-q59mc                                   1/1     Running     0              10m
 ```
 
-When all pods are ready you should be able to verify if the GPUs can be used
+When all pods are ready, you should be able to verify if the GPUs can be used.
 
 ```bash
 kubectl get nodes -o json | jq -r '.items[] | {name:.metadata.name, gpus:.status.capacity."nvidia.com/gpu"}'

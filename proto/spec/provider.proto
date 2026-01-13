@@ -40,10 +40,6 @@ message CloudflareProvider {
   string accountID = 2;
 }
 
-message GenesisCloudProvider {
-  string token = 1;
-}
-
 message OpenstackProvider {
   string authURL = 1;
   string domainID = 2;
@@ -65,7 +61,6 @@ message Provider {
     AWSProvider aws = 7;
     AzureProvider azure = 8;
     CloudflareProvider cloudflare = 9;
-    GenesisCloudProvider genesiscloud = 10;
     OpenstackProvider openstack = 11;
   }
 

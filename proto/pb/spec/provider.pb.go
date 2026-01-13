@@ -409,50 +409,6 @@ func (x *CloudflareProvider) GetAccountID() string {
 	return ""
 }
 
-type GenesisCloudProvider struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GenesisCloudProvider) Reset() {
-	*x = GenesisCloudProvider{}
-	mi := &file_spec_provider_proto_msgTypes[7]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GenesisCloudProvider) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GenesisCloudProvider) ProtoMessage() {}
-
-func (x *GenesisCloudProvider) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_provider_proto_msgTypes[7]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GenesisCloudProvider.ProtoReflect.Descriptor instead.
-func (*GenesisCloudProvider) Descriptor() ([]byte, []int) {
-	return file_spec_provider_proto_rawDescGZIP(), []int{7}
-}
-
-func (x *GenesisCloudProvider) GetToken() string {
-	if x != nil {
-		return x.Token
-	}
-	return ""
-}
-
 type OpenstackProvider struct {
 	state                       protoimpl.MessageState `protogen:"open.v1"`
 	AuthURL                     string                 `protobuf:"bytes,1,opt,name=authURL,proto3" json:"authURL,omitempty"`
@@ -466,7 +422,7 @@ type OpenstackProvider struct {
 
 func (x *OpenstackProvider) Reset() {
 	*x = OpenstackProvider{}
-	mi := &file_spec_provider_proto_msgTypes[8]
+	mi := &file_spec_provider_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -478,7 +434,7 @@ func (x *OpenstackProvider) String() string {
 func (*OpenstackProvider) ProtoMessage() {}
 
 func (x *OpenstackProvider) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_provider_proto_msgTypes[8]
+	mi := &file_spec_provider_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -491,7 +447,7 @@ func (x *OpenstackProvider) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OpenstackProvider.ProtoReflect.Descriptor instead.
 func (*OpenstackProvider) Descriptor() ([]byte, []int) {
-	return file_spec_provider_proto_rawDescGZIP(), []int{8}
+	return file_spec_provider_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *OpenstackProvider) GetAuthURL() string {
@@ -542,7 +498,6 @@ type Provider struct {
 	//	*Provider_Aws
 	//	*Provider_Azure
 	//	*Provider_Cloudflare
-	//	*Provider_Genesiscloud
 	//	*Provider_Openstack
 	ProviderType  isProvider_ProviderType `protobuf_oneof:"ProviderType"`
 	Templates     *TemplateRepository     `protobuf:"bytes,13,opt,name=templates,proto3" json:"templates,omitempty"`
@@ -552,7 +507,7 @@ type Provider struct {
 
 func (x *Provider) Reset() {
 	*x = Provider{}
-	mi := &file_spec_provider_proto_msgTypes[9]
+	mi := &file_spec_provider_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -564,7 +519,7 @@ func (x *Provider) String() string {
 func (*Provider) ProtoMessage() {}
 
 func (x *Provider) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_provider_proto_msgTypes[9]
+	mi := &file_spec_provider_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -577,7 +532,7 @@ func (x *Provider) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Provider.ProtoReflect.Descriptor instead.
 func (*Provider) Descriptor() ([]byte, []int) {
-	return file_spec_provider_proto_rawDescGZIP(), []int{9}
+	return file_spec_provider_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *Provider) GetSpecName() string {
@@ -664,15 +619,6 @@ func (x *Provider) GetCloudflare() *CloudflareProvider {
 	return nil
 }
 
-func (x *Provider) GetGenesiscloud() *GenesisCloudProvider {
-	if x != nil {
-		if x, ok := x.ProviderType.(*Provider_Genesiscloud); ok {
-			return x.Genesiscloud
-		}
-	}
-	return nil
-}
-
 func (x *Provider) GetOpenstack() *OpenstackProvider {
 	if x != nil {
 		if x, ok := x.ProviderType.(*Provider_Openstack); ok {
@@ -721,10 +667,6 @@ type Provider_Cloudflare struct {
 	Cloudflare *CloudflareProvider `protobuf:"bytes,9,opt,name=cloudflare,proto3,oneof"`
 }
 
-type Provider_Genesiscloud struct {
-	Genesiscloud *GenesisCloudProvider `protobuf:"bytes,10,opt,name=genesiscloud,proto3,oneof"`
-}
-
 type Provider_Openstack struct {
 	Openstack *OpenstackProvider `protobuf:"bytes,11,opt,name=openstack,proto3,oneof"`
 }
@@ -743,8 +685,6 @@ func (*Provider_Azure) isProvider_ProviderType() {}
 
 func (*Provider_Cloudflare) isProvider_ProviderType() {}
 
-func (*Provider_Genesiscloud) isProvider_ProviderType() {}
-
 func (*Provider_Openstack) isProvider_ProviderType() {}
 
 type TemplateRepository struct {
@@ -759,7 +699,7 @@ type TemplateRepository struct {
 
 func (x *TemplateRepository) Reset() {
 	*x = TemplateRepository{}
-	mi := &file_spec_provider_proto_msgTypes[10]
+	mi := &file_spec_provider_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -771,7 +711,7 @@ func (x *TemplateRepository) String() string {
 func (*TemplateRepository) ProtoMessage() {}
 
 func (x *TemplateRepository) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_provider_proto_msgTypes[10]
+	mi := &file_spec_provider_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -784,7 +724,7 @@ func (x *TemplateRepository) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TemplateRepository.ProtoReflect.Descriptor instead.
 func (*TemplateRepository) Descriptor() ([]byte, []int) {
-	return file_spec_provider_proto_rawDescGZIP(), []int{10}
+	return file_spec_provider_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *TemplateRepository) GetRepository() string {
@@ -845,15 +785,13 @@ const file_spec_provider_proto_rawDesc = "" +
 	"\fclientSecret\x18\x04 \x01(\tR\fclientSecret\"H\n" +
 	"\x12CloudflareProvider\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12\x1c\n" +
-	"\taccountID\x18\x02 \x01(\tR\taccountID\",\n" +
-	"\x14GenesisCloudProvider\x12\x14\n" +
-	"\x05token\x18\x01 \x01(\tR\x05token\"\xe3\x01\n" +
+	"\taccountID\x18\x02 \x01(\tR\taccountID\"\xe3\x01\n" +
 	"\x11OpenstackProvider\x12\x18\n" +
 	"\aauthURL\x18\x01 \x01(\tR\aauthURL\x12\x1a\n" +
 	"\bdomainID\x18\x02 \x01(\tR\bdomainID\x12\x1c\n" +
 	"\tprojectID\x18\x03 \x01(\tR\tprojectID\x128\n" +
 	"\x17applicationCredentialID\x18\x04 \x01(\tR\x17applicationCredentialID\x12@\n" +
-	"\x1bapplicationCredentialSecret\x18\x05 \x01(\tR\x1bapplicationCredentialSecret\"\xe4\x04\n" +
+	"\x1bapplicationCredentialSecret\x18\x05 \x01(\tR\x1bapplicationCredentialSecret\"\xa2\x04\n" +
 	"\bProvider\x12\x1a\n" +
 	"\bspecName\x18\x01 \x01(\tR\bspecName\x12,\n" +
 	"\x11cloudProviderName\x18\x02 \x01(\tR\x11cloudProviderName\x12%\n" +
@@ -867,9 +805,7 @@ const file_spec_provider_proto_rawDesc = "" +
 	"\x05azure\x18\b \x01(\v2\x13.spec.AzureProviderH\x00R\x05azure\x12:\n" +
 	"\n" +
 	"cloudflare\x18\t \x01(\v2\x18.spec.CloudflareProviderH\x00R\n" +
-	"cloudflare\x12@\n" +
-	"\fgenesiscloud\x18\n" +
-	" \x01(\v2\x1a.spec.GenesisCloudProviderH\x00R\fgenesiscloud\x127\n" +
+	"cloudflare\x127\n" +
 	"\topenstack\x18\v \x01(\v2\x17.spec.OpenstackProviderH\x00R\topenstack\x126\n" +
 	"\ttemplates\x18\r \x01(\v2\x18.spec.TemplateRepositoryR\ttemplatesB\x0e\n" +
 	"\fProviderType\"\x87\x01\n" +
@@ -896,36 +832,34 @@ func file_spec_provider_proto_rawDescGZIP() []byte {
 	return file_spec_provider_proto_rawDescData
 }
 
-var file_spec_provider_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_spec_provider_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_spec_provider_proto_goTypes = []any{
-	(*GCPProvider)(nil),          // 0: spec.GCPProvider
-	(*HetznerProvider)(nil),      // 1: spec.HetznerProvider
-	(*HetznerDNSProvider)(nil),   // 2: spec.HetznerDNSProvider
-	(*OCIProvider)(nil),          // 3: spec.OCIProvider
-	(*AWSProvider)(nil),          // 4: spec.AWSProvider
-	(*AzureProvider)(nil),        // 5: spec.AzureProvider
-	(*CloudflareProvider)(nil),   // 6: spec.CloudflareProvider
-	(*GenesisCloudProvider)(nil), // 7: spec.GenesisCloudProvider
-	(*OpenstackProvider)(nil),    // 8: spec.OpenstackProvider
-	(*Provider)(nil),             // 9: spec.Provider
-	(*TemplateRepository)(nil),   // 10: spec.TemplateRepository
+	(*GCPProvider)(nil),        // 0: spec.GCPProvider
+	(*HetznerProvider)(nil),    // 1: spec.HetznerProvider
+	(*HetznerDNSProvider)(nil), // 2: spec.HetznerDNSProvider
+	(*OCIProvider)(nil),        // 3: spec.OCIProvider
+	(*AWSProvider)(nil),        // 4: spec.AWSProvider
+	(*AzureProvider)(nil),      // 5: spec.AzureProvider
+	(*CloudflareProvider)(nil), // 6: spec.CloudflareProvider
+	(*OpenstackProvider)(nil),  // 7: spec.OpenstackProvider
+	(*Provider)(nil),           // 8: spec.Provider
+	(*TemplateRepository)(nil), // 9: spec.TemplateRepository
 }
 var file_spec_provider_proto_depIdxs = []int32{
-	0,  // 0: spec.Provider.gcp:type_name -> spec.GCPProvider
-	1,  // 1: spec.Provider.hetzner:type_name -> spec.HetznerProvider
-	2,  // 2: spec.Provider.hetznerdns:type_name -> spec.HetznerDNSProvider
-	3,  // 3: spec.Provider.oci:type_name -> spec.OCIProvider
-	4,  // 4: spec.Provider.aws:type_name -> spec.AWSProvider
-	5,  // 5: spec.Provider.azure:type_name -> spec.AzureProvider
-	6,  // 6: spec.Provider.cloudflare:type_name -> spec.CloudflareProvider
-	7,  // 7: spec.Provider.genesiscloud:type_name -> spec.GenesisCloudProvider
-	8,  // 8: spec.Provider.openstack:type_name -> spec.OpenstackProvider
-	10, // 9: spec.Provider.templates:type_name -> spec.TemplateRepository
-	10, // [10:10] is the sub-list for method output_type
-	10, // [10:10] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	0, // 0: spec.Provider.gcp:type_name -> spec.GCPProvider
+	1, // 1: spec.Provider.hetzner:type_name -> spec.HetznerProvider
+	2, // 2: spec.Provider.hetznerdns:type_name -> spec.HetznerDNSProvider
+	3, // 3: spec.Provider.oci:type_name -> spec.OCIProvider
+	4, // 4: spec.Provider.aws:type_name -> spec.AWSProvider
+	5, // 5: spec.Provider.azure:type_name -> spec.AzureProvider
+	6, // 6: spec.Provider.cloudflare:type_name -> spec.CloudflareProvider
+	7, // 7: spec.Provider.openstack:type_name -> spec.OpenstackProvider
+	9, // 8: spec.Provider.templates:type_name -> spec.TemplateRepository
+	9, // [9:9] is the sub-list for method output_type
+	9, // [9:9] is the sub-list for method input_type
+	9, // [9:9] is the sub-list for extension type_name
+	9, // [9:9] is the sub-list for extension extendee
+	0, // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_spec_provider_proto_init() }
@@ -933,7 +867,7 @@ func file_spec_provider_proto_init() {
 	if File_spec_provider_proto != nil {
 		return
 	}
-	file_spec_provider_proto_msgTypes[9].OneofWrappers = []any{
+	file_spec_provider_proto_msgTypes[8].OneofWrappers = []any{
 		(*Provider_Gcp)(nil),
 		(*Provider_Hetzner)(nil),
 		(*Provider_Hetznerdns)(nil),
@@ -941,17 +875,16 @@ func file_spec_provider_proto_init() {
 		(*Provider_Aws)(nil),
 		(*Provider_Azure)(nil),
 		(*Provider_Cloudflare)(nil),
-		(*Provider_Genesiscloud)(nil),
 		(*Provider_Openstack)(nil),
 	}
-	file_spec_provider_proto_msgTypes[10].OneofWrappers = []any{}
+	file_spec_provider_proto_msgTypes[9].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_spec_provider_proto_rawDesc), len(file_spec_provider_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   11,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
