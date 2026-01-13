@@ -638,29 +638,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../providers/genesiscloud/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Genesis
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../providers/hetzner/" class="md-nav__link">
         
   
@@ -938,15 +915,6 @@
   <a href="#gcp" class="md-nav__link">
     <span class="md-ellipsis">
       GCP
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#genesiscloud" class="md-nav__link">
-    <span class="md-ellipsis">
-      GenesisCloud
     </span>
   </a>
   
@@ -1952,15 +1920,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#genesiscloud" class="md-nav__link">
-    <span class="md-ellipsis">
-      GenesisCloud
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#hetzner" class="md-nav__link">
     <span class="md-ellipsis">
       Hetzner
@@ -2221,10 +2180,6 @@ needs to be defined.</p>
 <td><code>oci</code></td>
 <td><a href="#oci">OCI</a> provider type</td>
 </tr>
-<tr>
-<td><code>genesiscloud</code></td>
-<td><a href="#genesiscloud">GenesisCloud</a> provider type</td>
-</tr>
 </tbody>
 </table>
 <ul>
@@ -2282,19 +2237,6 @@ To find out how to configure GCP provider and service account, follow the instru
 <li><code>gcpproject</code></li>
 </ul>
 <p>Project id of an already existing GCP project where the infrastructure is to be created.</p>
-<ul>
-<li><code>templates</code></li>
-<li><code>repository</code>: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.</li>
-<li><code>tag</code>: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.</li>
-<li><code>path</code>: specifies the path for a specific provider within the <code>repository</code> where the source template files are located.</li>
-</ul>
-<h3 id="genesiscloud">GenesisCloud<a class="headerlink" href="#genesiscloud" title="Permanent link">&para;</a></h3>
-<p>The fields that need to be included in a Kubernetes Secret resource to utilize the Genesis Cloud provider.
-To find out how to configure Genesis Cloud provider, follow the instructions <a href="../providers/genesiscloud/">here</a>.</p>
-<ul>
-<li><code>apitoken</code></li>
-</ul>
-<p>API token for the provider.</p>
 <ul>
 <li><code>templates</code></li>
 <li><code>repository</code>: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.</li>
