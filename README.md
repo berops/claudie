@@ -81,12 +81,14 @@ Before you begin, please make sure you have the following prerequisites installe
    | Supported Provider                                                                | Node Pools         | DNS                | DNS healthchecks  | GPU                |
    | --------------------------------------------------------------------------------- | ------------------ | ------------------ |------------------ | ------------------ |
    | [AWS](https://docs.claudie.io/latest/input-manifest/providers/aws/)               | :heavy_check_mark: | :heavy_check_mark: |:heavy_check_mark: | :heavy_check_mark: |
-   | [Azure](https://docs.claudie.io/latest/input-manifest/providers/azure/)           | :heavy_check_mark: | :heavy_check_mark: |:heavy_check_mark: | :x:                |
+   | [Azure](https://docs.claudie.io/latest/input-manifest/providers/azure/)           | :heavy_check_mark: | :heavy_check_mark: |:heavy_check_mark: | :heavy_check_mark: |
    | [GCP](https://docs.claudie.io/latest/input-manifest/providers/gcp/)               | :heavy_check_mark: | :heavy_check_mark: |:heavy_check_mark: | :x:                |
-   | [OCI](https://docs.claudie.io/latest/input-manifest/providers/oci/)               | :heavy_check_mark: | :heavy_check_mark: |:heavy_check_mark: | :x:                |
+   | [OCI](https://docs.claudie.io/latest/input-manifest/providers/oci/)               | :heavy_check_mark: | :heavy_check_mark: |:heavy_check_mark: | N/A                |
    | [Hetzner](https://docs.claudie.io/latest/input-manifest/providers/hetzner/)       | :heavy_check_mark: | :heavy_check_mark: | N/A               | N/A                |
    | [Cloudflare](https://docs.claudie.io/latest/input-manifest/providers/cloudflare/) | N/A                | :heavy_check_mark: |:heavy_check_mark: | N/A                |
-   | [Openstack](https://docs.claudie.io/latest/input-manifest/providers/openstack/)   | :heavy_check_mark: | N/A                | N/A               | :x:                |
+   | [Openstack](https://docs.claudie.io/latest/input-manifest/providers/openstack/)   | :heavy_check_mark: | N/A                | N/A               | N/A                |
+
+> **Note:** `N/A` indicates that the given feature is not applicable for the provider or has not been tested yet.
 
 For adding support for other cloud providers, open an issue or propose a PR.
 
