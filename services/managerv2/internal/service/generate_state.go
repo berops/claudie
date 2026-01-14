@@ -162,6 +162,7 @@ func PopulateDynamicNodes(clusterID string, nodepool *spec.NodePool) {
 		nodepool.Nodes = append(nodepool.Nodes, &spec.Node{
 			Name:     next,
 			NodeType: typ,
+			Status:   spec.NodeStatus_Preparing,
 		})
 
 		log.

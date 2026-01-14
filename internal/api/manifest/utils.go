@@ -306,8 +306,26 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.Nod
 				autoscalerConf = &spec.AutoscalerConf{
 					Min: nodePool.AutoscalerConfig.Min,
 					Max: nodePool.AutoscalerConfig.Max,
+
+					// TargetSize is the desired capacity of
+					// the autoscaled nodepool and the `count`
+					// of the dynamic nodepool should slowly
+					// approach this value as the nodepool is
+					// reconciled with time.
+					TargetSize: nodePool.AutoscalerConfig.Min,
 				}
-				count = nodePool.AutoscalerConfig.Min
+
+				// For fresh autoscaled nodepools keep the count
+				// equal to the `TargetSize`. The target Size is
+				// not managed by the InputManifest and is actually
+				// managed by the 'cluster-autoscaler' service that
+				// is external to the Manager, thus the `TargetSize`
+				// is externally managed and the correct `TargetSize`
+				// will be resolved at a later stage when merging with
+				// existing state is done, if it already exists.
+				//
+				// See existing_state.go:[transferDynamicNodePool]
+				count = autoscalerConf.TargetSize
 			}
 
 			// Set default disk size if not defined. (Value only used in compute nodepools)
@@ -445,6 +463,7 @@ func staticNodes(np *StaticNodePool, isControl bool) []*spec.Node {
 			Name:     fmt.Sprintf("%s-%02x", np.Name, uint8(i+1)),
 			Public:   node.Endpoint,
 			NodeType: nodeType,
+			Status:   spec.NodeStatus_Preparing,
 			Username: node.Username,
 		})
 	}

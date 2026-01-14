@@ -32,22 +32,16 @@ const (
 	// Unreachable Nodes Scheduled Task specifies that a task was scheduled
 	// which addresses part or the whole issue with the unreachable nodes.
 	//
-	// Any task that was alreaady in part of the current state is overwritten
-	// and this newly scheduled task should be worked on with a higher priority.
+	// Any task, if any at all, that was already scheduled is overwritten and
+	// this newly scheduled task should be worked on with a higher priority.
 	UnreachableNodesScheduledTask
 
 	// Unreachable Nodes Modified Current State specifies that the current state
 	// was modified and that any indices into it were invalidated and should no
 	// longer be considered valid.
 	//
-	// The current state is modified mostly related to handling unrechable static
-	// nodes to which no pipeline needs to be executed as they're unreachable and
-	// they're simply 'forgot' from the current state.
-	//
-	// Before any new changes/Task are to be worked, should be processed after
-	// propagating the the current making the change persistent.
-	//
-	// Any existing scheduled task is removed.
+	// Any task, if any at all, that was already scheduled is overwritten and
+	// this newly scheduled task should be worked on with a higher priority.
 	UnreachableNodesModifiedCurrentState
 
 	// Unreachable Nodes Propagate Error specifies that the error status with a
@@ -208,11 +202,10 @@ func HandleKubernetesUnreachableNodes(
 				nodepool: np,
 			}
 
-			errMsg.WriteString(fmt.Sprintf("node: %q, public endpoint: %q, static: %v;",
+			fmt.Fprintf(&errMsg, "node: %q, public endpoint: %q, static: %v;",
 				cnp.Nodes[ci].Name,
 				cnp.Nodes[ci].Public,
-				cnp.GetStaticNodePool() != nil,
-			))
+				cnp.GetStaticNodePool() != nil)
 		}
 
 		errMsg.WriteByte(']')
@@ -469,11 +462,11 @@ func HandleLoadBalancerUnreachableNodes(
 			errMsg.WriteString("[")
 			for _, ip := range ips {
 				ci := slices.IndexFunc(cnp.Nodes, func(n *spec.Node) bool { return n.Public == ip })
-				errMsg.WriteString(fmt.Sprintf("node: %q, public endpoint: %q, static: %v;",
+				fmt.Fprintf(&errMsg, "node: %q, public endpoint: %q, static: %v;",
 					cnp.Nodes[ci].Name,
 					cnp.Nodes[ci].Public,
 					cnp.GetStaticNodePool() != nil,
-				))
+				)
 			}
 			errMsg.WriteByte(']')
 			errUnreachable = errors.Join(

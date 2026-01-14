@@ -123,6 +123,40 @@ func PreKubernetesDiff(r LoadBalancersReconciliate) *spec.TaskEvent {
 			}
 			return ScheduleDeletionLoadBalancerNodePools(r.Current, cid, &modified.Static, opts)
 		}
+
+		if len(modified.PendingDynamicDeletions) > 0 {
+			opts := LoadBalancerNodePoolsOptions{
+				UseProxy: r.Proxy.CurrentUsed,
+				IsStatic: false,
+			}
+
+			// Only schedule one node deletion at a time.
+			for np, nodes := range modified.PendingDynamicDeletions {
+				diff := NodePoolsDiffResult{
+					PartiallyDeleted: NodePoolsViewType{
+						np: []string{nodes[0]},
+					},
+				}
+				return ScheduleDeletionLoadBalancerNodePools(r.Current, cid, &diff, opts)
+			}
+		}
+
+		if len(modified.PendingStaticDeletions) > 0 {
+			opts := LoadBalancerNodePoolsOptions{
+				UseProxy: r.Proxy.CurrentUsed,
+				IsStatic: true,
+			}
+
+			// Only schedule on node deletion at a time.
+			for np, nodes := range modified.PendingStaticDeletions {
+				diff := NodePoolsDiffResult{
+					PartiallyDeleted: NodePoolsViewType{
+						np: []string{nodes[0]},
+					},
+				}
+				return ScheduleDeletionLoadBalancerNodePools(r.Current, cid, &diff, opts)
+			}
+		}
 	}
 
 	return nil

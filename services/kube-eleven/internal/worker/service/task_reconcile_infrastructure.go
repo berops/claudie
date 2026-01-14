@@ -59,7 +59,14 @@ func Reconcile(
 
 	logger.Info().Msg("Successfully reconciled kubernetes cluster")
 
+	// Mark all of the nodes with status Joined.
+	for _, np := range k.K8sCluster.ClusterInfo.NodePools {
+		for _, n := range np.Nodes {
+			n.Status = spec.NodeStatus_Joined
+		}
+	}
+
 	update := tracker.Result.Update()
-	update.Kubernetes(k8s)
+	update.Kubernetes(k.K8sCluster)
 	update.Commit()
 }

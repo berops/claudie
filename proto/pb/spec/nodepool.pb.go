@@ -74,6 +74,64 @@ func (NodeType) EnumDescriptor() ([]byte, []int) {
 	return file_spec_nodepool_proto_rawDescGZIP(), []int{0}
 }
 
+type NodeStatus int32
+
+const (
+	// Preparing states that the node is not joined into the cluster yet
+	// but is in the creation process whether spawning the infrastructure
+	// or configuring it or simply pending to be scheduled for creation.
+	NodeStatus_Preparing NodeStatus = 0
+	// Joined states that the node's infrastructure is spawned and configured
+	// and was successfully joined into the cluster.
+	NodeStatus_Joined NodeStatus = 1
+	// MarkedForDeletion states that the nodes will at some point in the future
+	// be deleted from the current state of the cluster, Depending on the target
+	// size of the nodepool the node may be replaced by claudie or may simply
+	// be deleted.
+	NodeStatus_MarkedForDeletion NodeStatus = 2
+)
+
+// Enum value maps for NodeStatus.
+var (
+	NodeStatus_name = map[int32]string{
+		0: "Preparing",
+		1: "Joined",
+		2: "MarkedForDeletion",
+	}
+	NodeStatus_value = map[string]int32{
+		"Preparing":         0,
+		"Joined":            1,
+		"MarkedForDeletion": 2,
+	}
+)
+
+func (x NodeStatus) Enum() *NodeStatus {
+	p := new(NodeStatus)
+	*p = x
+	return p
+}
+
+func (x NodeStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (NodeStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_spec_nodepool_proto_enumTypes[1].Descriptor()
+}
+
+func (NodeStatus) Type() protoreflect.EnumType {
+	return &file_spec_nodepool_proto_enumTypes[1]
+}
+
+func (x NodeStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use NodeStatus.Descriptor instead.
+func (NodeStatus) EnumDescriptor() ([]byte, []int) {
+	return file_spec_nodepool_proto_rawDescGZIP(), []int{1}
+}
+
 // Enum used to replace data not present in static nodepools.
 type StaticNodepoolInfo int32
 
@@ -108,11 +166,11 @@ func (x StaticNodepoolInfo) String() string {
 }
 
 func (StaticNodepoolInfo) Descriptor() protoreflect.EnumDescriptor {
-	return file_spec_nodepool_proto_enumTypes[1].Descriptor()
+	return file_spec_nodepool_proto_enumTypes[2].Descriptor()
 }
 
 func (StaticNodepoolInfo) Type() protoreflect.EnumType {
-	return &file_spec_nodepool_proto_enumTypes[1]
+	return &file_spec_nodepool_proto_enumTypes[2]
 }
 
 func (x StaticNodepoolInfo) Number() protoreflect.EnumNumber {
@@ -121,7 +179,7 @@ func (x StaticNodepoolInfo) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use StaticNodepoolInfo.Descriptor instead.
 func (StaticNodepoolInfo) EnumDescriptor() ([]byte, []int) {
-	return file_spec_nodepool_proto_rawDescGZIP(), []int{1}
+	return file_spec_nodepool_proto_rawDescGZIP(), []int{2}
 }
 
 // NodePool represents a single node pool used in cluster.
@@ -339,7 +397,9 @@ type Node struct {
 	// Type of the node.
 	NodeType NodeType `protobuf:"varint,4,opt,name=nodeType,proto3,enum=spec.NodeType" json:"nodeType,omitempty"`
 	// Username of a user with root privileges. Also used in SSH connection
-	Username      string `protobuf:"bytes,5,opt,name=username,proto3" json:"username,omitempty"`
+	Username string `protobuf:"bytes,5,opt,name=username,proto3" json:"username,omitempty"`
+	// Status of the node.
+	Status        NodeStatus `protobuf:"varint,6,opt,name=status,proto3,enum=spec.NodeStatus" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -407,6 +467,13 @@ func (x *Node) GetUsername() string {
 		return x.Username
 	}
 	return ""
+}
+
+func (x *Node) GetStatus() NodeStatus {
+	if x != nil {
+		return x.Status
+	}
+	return NodeStatus_Preparing
 }
 
 // DynamicNodePool represents dynamic node pool used in cluster.
@@ -629,7 +696,11 @@ type AutoscalerConf struct {
 	// Minimum number of nodes in node pool.
 	Min int32 `protobuf:"varint,1,opt,name=min,proto3" json:"min,omitempty"`
 	// Maximum number of nodes in node pool.
-	Max           int32 `protobuf:"varint,2,opt,name=max,proto3" json:"max,omitempty"`
+	Max int32 `protobuf:"varint,2,opt,name=max,proto3" json:"max,omitempty"`
+	// Target size within the [Min, Max] range to which
+	// the number of nodes in the cluster should be matched
+	// againts to meet the compute demands.
+	TargetSize    int32 `protobuf:"varint,3,opt,name=targetSize,proto3" json:"targetSize,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -674,6 +745,13 @@ func (x *AutoscalerConf) GetMin() int32 {
 func (x *AutoscalerConf) GetMax() int32 {
 	if x != nil {
 		return x.Max
+	}
+	return 0
+}
+
+func (x *AutoscalerConf) GetTargetSize() int32 {
+	if x != nil {
+		return x.TargetSize
 	}
 	return 0
 }
@@ -749,13 +827,14 @@ const file_spec_nodepool_proto_rawDesc = "" +
 	"\x05Taint\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value\x12\x16\n" +
-	"\x06effect\x18\x03 \x01(\tR\x06effect\"\x94\x01\n" +
+	"\x06effect\x18\x03 \x01(\tR\x06effect\"\xbe\x01\n" +
 	"\x04Node\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
 	"\aprivate\x18\x02 \x01(\tR\aprivate\x12\x16\n" +
 	"\x06public\x18\x03 \x01(\tR\x06public\x12*\n" +
 	"\bnodeType\x18\x04 \x01(\x0e2\x0e.spec.NodeTypeR\bnodeType\x12\x1a\n" +
-	"\busername\x18\x05 \x01(\tR\busername\"\xda\x03\n" +
+	"\busername\x18\x05 \x01(\tR\busername\x12(\n" +
+	"\x06status\x18\x06 \x01(\x0e2\x10.spec.NodeStatusR\x06status\"\xda\x03\n" +
 	"\x0fDynamicNodePool\x12\x1e\n" +
 	"\n" +
 	"serverType\x18\x01 \x01(\tR\n" +
@@ -778,10 +857,13 @@ const file_spec_nodepool_proto_rawDesc = "" +
 	"\vMachineSpec\x12\x1a\n" +
 	"\bcpuCount\x18\x01 \x01(\x05R\bcpuCount\x12\x16\n" +
 	"\x06memory\x18\x02 \x01(\x05R\x06memory\x12\x1c\n" +
-	"\tnvidiaGpu\x18\x03 \x01(\x05R\tnvidiaGpu\"4\n" +
+	"\tnvidiaGpu\x18\x03 \x01(\x05R\tnvidiaGpu\"T\n" +
 	"\x0eAutoscalerConf\x12\x10\n" +
 	"\x03min\x18\x01 \x01(\x05R\x03min\x12\x10\n" +
-	"\x03max\x18\x02 \x01(\x05R\x03max\"\x8d\x01\n" +
+	"\x03max\x18\x02 \x01(\x05R\x03max\x12\x1e\n" +
+	"\n" +
+	"targetSize\x18\x03 \x01(\x05R\n" +
+	"targetSize\"\x8d\x01\n" +
 	"\x0eStaticNodePool\x12>\n" +
 	"\bnodeKeys\x18\x01 \x03(\v2\".spec.StaticNodePool.NodeKeysEntryR\bnodeKeys\x1a;\n" +
 	"\rNodeKeysEntry\x12\x10\n" +
@@ -792,7 +874,13 @@ const file_spec_nodepool_proto_rawDesc = "" +
 	"\x06worker\x10\x00\x12\n" +
 	"\n" +
 	"\x06master\x10\x01\x12\x0f\n" +
-	"\vapiEndpoint\x10\x02*M\n" +
+	"\vapiEndpoint\x10\x02*>\n" +
+	"\n" +
+	"NodeStatus\x12\r\n" +
+	"\tPreparing\x10\x00\x12\n" +
+	"\n" +
+	"\x06Joined\x10\x01\x12\x15\n" +
+	"\x11MarkedForDeletion\x10\x02*M\n" +
 	"\x12StaticNodepoolInfo\x12\x13\n" +
 	"\x0fSTATIC_PROVIDER\x10\x00\x12\x11\n" +
 	"\rSTATIC_REGION\x10\x01\x12\x0f\n" +
@@ -810,40 +898,42 @@ func file_spec_nodepool_proto_rawDescGZIP() []byte {
 	return file_spec_nodepool_proto_rawDescData
 }
 
-var file_spec_nodepool_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_spec_nodepool_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
 var file_spec_nodepool_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_spec_nodepool_proto_goTypes = []any{
 	(NodeType)(0),           // 0: spec.NodeType
-	(StaticNodepoolInfo)(0), // 1: spec.StaticNodepoolInfo
-	(*NodePool)(nil),        // 2: spec.NodePool
-	(*Taint)(nil),           // 3: spec.Taint
-	(*Node)(nil),            // 4: spec.Node
-	(*DynamicNodePool)(nil), // 5: spec.DynamicNodePool
-	(*MachineSpec)(nil),     // 6: spec.MachineSpec
-	(*AutoscalerConf)(nil),  // 7: spec.AutoscalerConf
-	(*StaticNodePool)(nil),  // 8: spec.StaticNodePool
-	nil,                     // 9: spec.NodePool.LabelsEntry
-	nil,                     // 10: spec.NodePool.AnnotationsEntry
-	nil,                     // 11: spec.StaticNodePool.NodeKeysEntry
-	(*Provider)(nil),        // 12: spec.Provider
+	(NodeStatus)(0),         // 1: spec.NodeStatus
+	(StaticNodepoolInfo)(0), // 2: spec.StaticNodepoolInfo
+	(*NodePool)(nil),        // 3: spec.NodePool
+	(*Taint)(nil),           // 4: spec.Taint
+	(*Node)(nil),            // 5: spec.Node
+	(*DynamicNodePool)(nil), // 6: spec.DynamicNodePool
+	(*MachineSpec)(nil),     // 7: spec.MachineSpec
+	(*AutoscalerConf)(nil),  // 8: spec.AutoscalerConf
+	(*StaticNodePool)(nil),  // 9: spec.StaticNodePool
+	nil,                     // 10: spec.NodePool.LabelsEntry
+	nil,                     // 11: spec.NodePool.AnnotationsEntry
+	nil,                     // 12: spec.StaticNodePool.NodeKeysEntry
+	(*Provider)(nil),        // 13: spec.Provider
 }
 var file_spec_nodepool_proto_depIdxs = []int32{
-	5,  // 0: spec.NodePool.dynamicNodePool:type_name -> spec.DynamicNodePool
-	8,  // 1: spec.NodePool.staticNodePool:type_name -> spec.StaticNodePool
-	4,  // 2: spec.NodePool.nodes:type_name -> spec.Node
-	9,  // 3: spec.NodePool.labels:type_name -> spec.NodePool.LabelsEntry
-	3,  // 4: spec.NodePool.taints:type_name -> spec.Taint
-	10, // 5: spec.NodePool.annotations:type_name -> spec.NodePool.AnnotationsEntry
+	6,  // 0: spec.NodePool.dynamicNodePool:type_name -> spec.DynamicNodePool
+	9,  // 1: spec.NodePool.staticNodePool:type_name -> spec.StaticNodePool
+	5,  // 2: spec.NodePool.nodes:type_name -> spec.Node
+	10, // 3: spec.NodePool.labels:type_name -> spec.NodePool.LabelsEntry
+	4,  // 4: spec.NodePool.taints:type_name -> spec.Taint
+	11, // 5: spec.NodePool.annotations:type_name -> spec.NodePool.AnnotationsEntry
 	0,  // 6: spec.Node.nodeType:type_name -> spec.NodeType
-	12, // 7: spec.DynamicNodePool.provider:type_name -> spec.Provider
-	7,  // 8: spec.DynamicNodePool.autoscalerConfig:type_name -> spec.AutoscalerConf
-	6,  // 9: spec.DynamicNodePool.machineSpec:type_name -> spec.MachineSpec
-	11, // 10: spec.StaticNodePool.nodeKeys:type_name -> spec.StaticNodePool.NodeKeysEntry
-	11, // [11:11] is the sub-list for method output_type
-	11, // [11:11] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	1,  // 7: spec.Node.status:type_name -> spec.NodeStatus
+	13, // 8: spec.DynamicNodePool.provider:type_name -> spec.Provider
+	8,  // 9: spec.DynamicNodePool.autoscalerConfig:type_name -> spec.AutoscalerConf
+	7,  // 10: spec.DynamicNodePool.machineSpec:type_name -> spec.MachineSpec
+	12, // 11: spec.StaticNodePool.nodeKeys:type_name -> spec.StaticNodePool.NodeKeysEntry
+	12, // [12:12] is the sub-list for method output_type
+	12, // [12:12] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_spec_nodepool_proto_init() }
@@ -861,7 +951,7 @@ func file_spec_nodepool_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_spec_nodepool_proto_rawDesc), len(file_spec_nodepool_proto_rawDesc)),
-			NumEnums:      2,
+			NumEnums:      3,
 			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   0,

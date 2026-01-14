@@ -96,6 +96,18 @@ func createDesiredState(pending *spec.Config, result *map[string]*spec.Clusters)
 			//
 			// The transfer may possibly overwrite any existing state in [desired].
 			transferImmutableState(current, desired)
+
+			// After transferring the current state, for autoscaled nodepools
+			// the `TargetSize` and `Counts` may not reconcile eventually
+			// thus look at autoscaled nodepools and resolve any `TargetSize < Count`
+			// by marking nodes for deletion to match the desired targetSize at
+			// some point.
+			//
+			// This needs to be called immediately after transferring the nodes
+			// and before populating the rest of the dynamic nodes as the desired
+			// nodepool currently has nodes that are in the current state and thus
+			// when marked for deletion, an existing node will actually be deleted.
+			fixupAutoscalerCounts(desired)
 		}
 
 		// Must follow after [transferImmutableState], Generates the CIDR for
@@ -409,5 +421,26 @@ func getCIDR(baseCIDR string, position int, existing []string) (string, error) {
 			continue
 		}
 		return fmt.Sprintf("%s/%d", ip.String(), ones), nil
+	}
+}
+
+// TODO: test.
+func fixupAutoscalerCounts(desired *spec.Clusters) {
+	// only k8s clusters have autoscaled nodepools.
+	for _, np := range nodepools.Autoscaled(desired.K8S.ClusterInfo.NodePools) {
+		dyn := np.GetDynamicNodePool()
+
+		// only check for a fixup when targetSize < count
+		if dyn.AutoscalerConfig.TargetSize >= dyn.Count {
+			continue
+		}
+
+		toBeMarked := dyn.Count - dyn.AutoscalerConfig.TargetSize
+		for i := 0; i < len(np.Nodes) && toBeMarked > 0; i++ {
+			if np.Nodes[i].Status != spec.NodeStatus_MarkedForDeletion {
+				np.Nodes[i].Status = spec.NodeStatus_MarkedForDeletion
+				toBeMarked -= 1
+			}
+		}
 	}
 }

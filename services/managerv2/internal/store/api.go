@@ -134,3 +134,13 @@ type Workflow struct {
 	Description string `bson:"description"`
 	Timestamp   string `bson:"timestamp"`
 }
+
+func (cs *ClusterState) Exists() bool {
+	// len(current.K8S) == 0 is here, as its possible the cluster was just deleted
+	// but its still in the store and will be deleted from the store on the next
+	// reconciliation loop.
+	//
+	// Its sufficient to check only for the kuberentes state presence as without
+	// a kuberentes cluster there are no loadbalancers.
+	return cs != nil && len(cs.Current.K8s) > 0
+}

@@ -50,37 +50,42 @@ func (k *KubeEleven) BuildCluster() error {
 	clusterID := k.K8sCluster.ClusterInfo.Id()
 
 	k.outputDirectory = filepath.Join(baseDirectory, outputDirectory, clusterID)
-	// Generate files which will be needed by Kubeone.
-	err := k.generateFiles()
-	if err != nil {
+	if err := k.generateFiles(); err != nil {
 		return fmt.Errorf("error while generating files for %s : %w", k.K8sCluster.ClusterInfo.Name, err)
 	}
+
+	defer func() {
+		if err := os.RemoveAll(k.outputDirectory); err != nil {
+			log.Err(err).Msgf("Failed to remove generated directory %v", k.outputDirectory)
+		}
+	}()
 
 	// Execute Kubeone apply
 	kubeone := kubeone.Kubeone{
 		ConfigDirectory:   k.outputDirectory,
 		SpawnProcessLimit: k.SpawnProcessLimit,
 	}
-	err = kubeone.Apply(clusterID)
-	if err != nil {
+
+	if err := kubeone.Apply(clusterID); err != nil {
 		return fmt.Errorf("error while running \"kubeone apply\" in %s : %w", k.outputDirectory, err)
 	}
 
 	// After executing Kubeone apply, the cluster kubeconfig is downloaded by kubeconfig
 	// into the cluster-kubeconfig file we generated before. Now from the cluster-kubeconfig
 	// we will be reading the kubeconfig of the cluster.
-	kubeconfigAsString, err := readKubeconfigFromFile(filepath.Join(k.outputDirectory, fmt.Sprintf("%s-kubeconfig", k.K8sCluster.ClusterInfo.Name)))
+	kubeconfigAsString, err := readKubeconfigFromFile(
+		filepath.Join(
+			k.outputDirectory,
+			fmt.Sprintf("%s-kubeconfig", k.K8sCluster.ClusterInfo.Name),
+		),
+	)
 	if err != nil {
 		return fmt.Errorf("error while reading cluster-config in %s : %w", k.outputDirectory, err)
 	}
+
 	if len(kubeconfigAsString) > 0 {
 		// Update kubeconfig in the target K8sCluster data structure.
 		k.K8sCluster.Kubeconfig = kubeconfigAsString
-	}
-
-	// Clean up - remove generated files
-	if err := os.RemoveAll(k.outputDirectory); err != nil {
-		return fmt.Errorf("error while removing files from %s: %w", k.outputDirectory, err)
 	}
 
 	return nil
@@ -90,10 +95,15 @@ func (k *KubeEleven) DestroyCluster() error {
 	clusterID := k.K8sCluster.ClusterInfo.Id()
 
 	k.outputDirectory = filepath.Join(baseDirectory, outputDirectory, clusterID)
-
 	if err := k.generateFiles(); err != nil {
 		return fmt.Errorf("error while generating files for %s: %w", k.K8sCluster.ClusterInfo.Name, err)
 	}
+
+	defer func() {
+		if err := os.RemoveAll(k.outputDirectory); err != nil {
+			log.Err(err).Msgf("Failed to remove generated directory: %v", k.outputDirectory)
+		}
+	}()
 
 	kubeone := kubeone.Kubeone{
 		ConfigDirectory:   k.outputDirectory,
@@ -104,10 +114,6 @@ func (k *KubeEleven) DestroyCluster() error {
 	// thus ignore the error.
 	if err := kubeone.Reset(clusterID); err != nil {
 		log.Warn().Msgf("failed to destroy cluster and remove binaries: %s, assuming they were deleted", err)
-	}
-
-	if err := os.RemoveAll(k.outputDirectory); err != nil {
-		return fmt.Errorf("error while removing files from %s: %w", k.outputDirectory, err)
 	}
 
 	return nil

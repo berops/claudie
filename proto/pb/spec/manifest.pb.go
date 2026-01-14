@@ -3505,10 +3505,10 @@ func (*Update_ReplacedProxySettings) Descriptor() ([]byte, []int) {
 	return file_spec_manifest_proto_rawDescGZIP(), []int{15, 18}
 }
 
-// AnsiblerReplaceProxySettings is a message that once processed
+// AnsiblerReplaceTargetPools is a message that once processed
 // by the Ansibler service a result is send back to the Manager,
 // it will consume the message and further stages will only have
-// a [ReplacedProxySettings] message to process.
+// a [ReplacedTargetPools] message to process.
 //
 // New, "desired", state needs only to be present in the ansibler
 // stage and all other services need to only see what has been done

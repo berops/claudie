@@ -46,18 +46,10 @@ type DynamicNodePoolResolver struct {
 	cache map[string]Arch
 }
 
-func NewDynamicNodePoolResolver(init []*spec.DynamicNodePool) (*DynamicNodePoolResolver, error) {
-	r := &DynamicNodePoolResolver{cache: make(map[string]Arch)}
-
-	for _, np := range init {
-		arch, err := r.resolve(np)
-		if err != nil {
-			return nil, err
-		}
-		r.cache[fmt.Sprintf("%s-%s", np.GetProvider().GetCloudProviderName(), np.GetServerType())] = arch
+func NewDynamicNodePoolResolver() *DynamicNodePoolResolver {
+	return &DynamicNodePoolResolver{
+		cache: make(map[string]Arch),
 	}
-
-	return r, nil
 }
 
 func (r *DynamicNodePoolResolver) Arch(np *spec.NodePool) (Arch, error) {

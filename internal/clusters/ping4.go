@@ -212,55 +212,6 @@ func PingNodes(logger zerolog.Logger, state *spec.Clusters) (map[string][]string
 	return k8sip, lbsip, err
 }
 
-// PingNodes pings nodes of the cluster, including loadbalancer nodes, using
-// the public IPv4 Address of the nodes.
-func PingNodesV2(logger zerolog.Logger, state *spec.ClustersV2) (map[string][]string, map[string]map[string][]string, error) {
-	type nodemap = map[string]string
-
-	k8sNodes := make(nodemap)
-	for _, np := range state.GetK8S().GetClusterInfo().GetNodePools() {
-		for _, n := range np.Nodes {
-			k8sNodes[n.Public] = np.Name
-		}
-	}
-
-	lbsNodes := make(map[string]nodemap)
-	for _, lb := range state.GetLoadBalancers().GetClusters() {
-		lbsNodes[lb.ClusterInfo.Id()] = make(nodemap)
-		for _, np := range lb.GetClusterInfo().GetNodePools() {
-			for _, n := range np.Nodes {
-				lbsNodes[lb.ClusterInfo.Id()][n.Public] = np.Name
-			}
-		}
-	}
-
-	ips := slices.Collect(maps.Keys(k8sNodes))
-	for _, lbs := range lbsNodes {
-		ips = slices.AppendSeq(ips, maps.Keys(lbs))
-	}
-
-	k8sip := make(map[string][]string)
-	lbsip := make(map[string]map[string][]string)
-
-	unreachable, err := pingAll(logger, pingConcurrentWorkers, ips, Ping)
-	for _, ip := range unreachable {
-		if np, ok := k8sNodes[ip]; ok {
-			k8sip[np] = append(k8sip[np], ip)
-		} else {
-			for lb, nodes := range lbsNodes {
-				if np, ok := nodes[ip]; ok {
-					if lbsip[lb] == nil {
-						lbsip[lb] = make(map[string][]string)
-					}
-					lbsip[lb][np] = append(lbsip[lb][np], ip)
-				}
-			}
-		}
-	}
-
-	return k8sip, lbsip, err
-}
-
 func pingAll(
 	logger zerolog.Logger,
 	goroutineCount int,

@@ -43,11 +43,82 @@ func (t *Client) HealthCheck() error {
 	}
 }
 
+func (t *Client) NodePoolUpdateTargetSize(ctx context.Context, request *NodePoolUpdateTargetSizeRequest) (*NodePoolUpdateTargetSizeResponse, error) {
+	req := pb.NodePoolUpdateTargetSizeRequest{
+		Config:       request.Config,
+		Cluster:      request.Cluster,
+		Nodepool:     request.NodePool,
+		Loadbalancer: request.LoadBalancer,
+		TargetSize:   request.TargetSize,
+	}
+
+	resp, err := t.client.NodePoolUpdateTargetSize(ctx, &req)
+	if err == nil {
+		return &NodePoolUpdateTargetSizeResponse{TargetSize: resp.TargetSize}, nil
+	}
+
+	if e, ok := status.FromError(err); ok {
+		switch e.Code() {
+		case codes.NotFound:
+			err = errors.Join(err, fmt.Errorf(
+				"config %q cluster %q nodepool %q: %w",
+				request.Config,
+				request.Cluster,
+				request.NodePool,
+				ErrNotFound,
+			))
+		case codes.Aborted:
+			err = errors.Join(err, fmt.Errorf("%w", ErrVersionMismatch))
+		}
+	}
+
+	t.logger.Debug().Msgf("Received error %v while calling NodePoolUpdateTargetSize", err)
+	return nil, err
+}
+
+func (t *Client) MarkNodeForDeletion(ctx context.Context, request *MarkNodeForDeletionRequest) (*MarkNodeForDeletionResponse, error) {
+	req := pb.MarkNodeForDeletionRequest{
+		Config:                         request.Config,
+		Cluster:                        request.Cluster,
+		Nodepool:                       request.NodePool,
+		Node:                           request.Node,
+		Loadbalancer:                   request.LoadBalancer,
+		ShouldDecrementDesiredCapacity: request.ShouldDecrementDesiredCapacity,
+	}
+
+	resp, err := t.client.MarkNodeForDeletion(ctx, &req)
+	if err == nil {
+		return &MarkNodeForDeletionResponse{TargetSize: resp.TargetSize}, nil
+	}
+
+	if e, ok := status.FromError(err); ok {
+		switch e.Code() {
+		case codes.NotFound:
+			err = errors.Join(err, fmt.Errorf(
+				"config %q cluster %q nodepool %q node %q: %w",
+				request.Config,
+				request.Cluster,
+				request.NodePool,
+				request.Node,
+				ErrNotFound,
+			))
+		case codes.Aborted:
+			err = errors.Join(err, fmt.Errorf("%w", ErrVersionMismatch))
+		}
+	}
+
+	t.logger.Debug().Msgf("Received error %v while calling MarkNodeForDeletion", err)
+	return nil, err
+}
+
 func (t *Client) MarkForDeletion(ctx context.Context, request *MarkForDeletionRequest) error {
 	// fetch latest document version before marking for deletion.
 	current, err := t.client.GetConfig(ctx, &pb.GetConfigRequest{Name: request.Name})
 	if err == nil {
-		_, err := t.client.MarkForDeletion(ctx, &pb.MarkForDeletionRequest{Name: request.Name, Version: current.Config.Version})
+		_, err := t.client.MarkForDeletion(ctx, &pb.MarkForDeletionRequest{
+			Name:    request.Name,
+			Version: current.Config.Version,
+		})
 		if err == nil {
 			return nil
 		}
@@ -95,7 +166,7 @@ func (t *Client) UpsertManifest(ctx context.Context, request *UpsertManifestRequ
 }
 
 func (t *Client) ListConfigs(ctx context.Context, _ *ListConfigRequest) (*ListConfigResponse, error) {
-	resp, err := t.client.ListConfigs(ctx, new(pb.ListConfigRequest))
+	resp, err := t.client.ListConfigs(ctx, new(pb.ListConfigsRequest))
 	if err == nil {
 		return &ListConfigResponse{Config: resp.Configs}, nil
 	}

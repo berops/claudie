@@ -241,15 +241,16 @@ func transferImmutableState(current, desired *spec.Clusters) {
 // transferK8sState transfers only the kubernetes cluster relevant parts of `current` into `desired`.
 // The function transfer only the state that should be "Immutable" once assigned to the kubernetes state.
 func transferK8sState(current, desired *spec.K8Scluster) {
-	// TODO: what happens when I change the [spec.K8SclusterV2.Network] ?
-	// I think that should stay immutable as well... or maybe not ?
 	transferClusterInfo(current.ClusterInfo, desired.ClusterInfo)
 	desired.Kubeconfig = current.Kubeconfig
+
+	// For now consider the network range for the VPN immutable as well, might change in the future.
+	desired.Network = current.Network
 }
 
 // transferDynamicNodePool transfers state that should be "Immutable" from the
 // `current` into the `desired` state. Immutable state must stay unchanged once
-// it is assigned assigned to a dynamic NodePool. Note that nodes that are assigned
+// it is assigned to a dynamic NodePool. Note that nodes that are assigned
 // to the current state are immutable once build, but may be destroyed on changes
 // to the desired state, but that is not handled here.
 func transferDynamicNodePool(current, desired *spec.NodePool) {
@@ -260,16 +261,114 @@ func transferDynamicNodePool(current, desired *spec.NodePool) {
 	dnp.PrivateKey = cnp.PrivateKey
 	dnp.Cidr = cnp.Cidr
 
-	clear(desired.Nodes)
-	desired.Nodes = desired.Nodes[:0]
-
 	// Nodes in dynamic nodepools are not matched like how Static Nodepools are.
 	// Within dynamic nodepools IP addresses can be recycled, so they can identify
 	// different nodes, not necessarily the same node. Thus any nodes in the
 	// desired state are cleared and the nodes of the current state are copied over
 	// to the desired state.
+	clear(desired.Nodes)
+	desired.Nodes = desired.Nodes[:0]
+
+	// To correctly transfer the existing state into the desired state three things
+	// needs to be considered:
+	//
+	// 1. The target Size of Autoscaled nodepools.
+	//    The target Size of Autoscaled is not managed by the InputManifest, so anything
+	//    that is in the desired state is not the actuall target Size, with the expection
+	//    when there is not current state, but in this function the expecation is that
+	//    the current state exists.
+	//
+	//    The targetSize is a desired state that is externally managed and neither the
+	//    manager nor the InputManifest state its desired value. The `cluster-autoscaler`
+	//    pod specifies this and updates the current state within the manager, Thus the
+	//    current State `TargetSize` actually states what the current desired capacity
+	//    of the autoscaled nodepool is.
+	if dnp.AutoscalerConfig != nil {
+		if cnp.AutoscalerConfig != nil {
+			switch {
+			case dnp.AutoscalerConfig.Min > cnp.AutoscalerConfig.TargetSize:
+				dnp.AutoscalerConfig.TargetSize = dnp.AutoscalerConfig.Min
+			case dnp.AutoscalerConfig.Max < cnp.AutoscalerConfig.TargetSize:
+				dnp.AutoscalerConfig.TargetSize = dnp.AutoscalerConfig.Max
+			default:
+				dnp.AutoscalerConfig.TargetSize = cnp.AutoscalerConfig.TargetSize
+			}
+		}
+
+		// To resolve the actuall desired count of the nodepool in the desired state
+		// consider the TargetSize of the nodepool.
+		//
+		// If the TargetSize is higher than what's currently in the cluster match the
+		// targetSize as this will indicate (TargetSize - cnp.Count) new nodes are needed
+		// in the desired state. Otherwise simply keep whatever is in the current state
+		// and clamp it within the new [Min, Max] range.
+		desiredCount := max(cnp.Count, dnp.AutoscalerConfig.TargetSize)
+
+		switch {
+		case dnp.AutoscalerConfig.Min > desiredCount:
+			dnp.Count = dnp.AutoscalerConfig.Min
+		case dnp.AutoscalerConfig.Max < desiredCount:
+			dnp.Count = dnp.AutoscalerConfig.Max
+		default:
+			dnp.Count = desiredCount
+		}
+	}
+
+	// 2. The count of both of the nodepools.
+	// 	  Whatever the counts are, transfering the current number of
+	//    nodes is limited by the minimum count of the possible nodes
+	//    within the nodepools of both states.
 	count := min(cnp.Count, dnp.Count)
+
+	// 3. While transfering nodes from the current state
+	//    consider ignoring nodes that were marked for
+	//    deletion. This node status indicates that at
+	//    some point in the future the nodes should be
+	//    deleted, and in here since we are transfering
+	//    existing state, we decide to also ignore nodes
+	//    that are MarkedForDeletion and omitting them
+	//    to be transferred to the desired state, which
+	//    when diffed should trigger a deletion of those
+	//    nodes, but **only if the count in the desired state is
+	//    less than the count in the current state, as
+	//    with this we have some place to get rid of some
+	//    or possibly all nodes marked for deletion, while
+	//    keeping running ok nodes within the 'count' range
+	//    of the desired nodepool nodes.**, otherwise simply
+	//    also transfer the MarkedForDeletion nodes into the
+	//    desired state as they're running ok, and other parts
+	//    of the code should at some point schedule it for
+	//    deletion.
+	//
+	// Arithmetic cannot underflow here as the count of the
+	// nodepool is limited to 255.
+	//
+	// If the `count` is `cnp.Count` then this will be 0.
+	// indicating that the desired state of the nodepool wants
+	// more nodes than there currently is, so we also keep
+	// the MarkedForDeletion in here at this stage.
+	//
+	// If the `count` is `dnp.Count` then this will be a
+	// positive number, indicating that the desired state
+	// of the nodepool has fewer number of nodes than the
+	// current state of the nodepool and we can decide at
+	// this point which nodes we omit transferring and the
+	// number below gives us how many nodes we can ommit altogether
+	// but we interpret that number as the maximum amount of
+	// MarkedForDeletion nodes that we can omit transferring
+	// while trying to keep the other nodes in the desired
+	// state. If there are more nodes that are MarkedForDeletion
+	// not all of them will be omitted at this stage.
+	skipMarkedForDeletion := max(cnp.Count-count, 0)
+
 	for _, node := range current.Nodes[:count] {
+		canSkip := skipMarkedForDeletion > 0
+		canSkip = canSkip && node.Status == spec.NodeStatus_MarkedForDeletion
+		if canSkip {
+			skipMarkedForDeletion -= 1
+			continue
+		}
+
 		n := proto.Clone(node).(*spec.Node)
 		desired.Nodes = append(desired.Nodes, n)
 	}
@@ -282,6 +381,16 @@ func transferStaticNodePool(current, desired *spec.NodePool) {
 	for _, cn := range current.Nodes {
 		for _, dn := range desired.Nodes {
 			// Static nodes are identified based on the Publicly reachable IP.
+			//
+			// In here for the static nodes the check for the MarkedForDeletion
+			// is not done, as static nodes are handled differently contrary to
+			// the dynamic node.
+			//
+			// If the static node is found in the desired NodePool even if it
+			// was marked for deletion it would be immediately rejoin as it
+			// exists in the desired state, thus the logic around MarkedForDeletion
+			// would be a Noop in here. Static nodes can still be MarkedForDeletion
+			// the status will simply not be considered at this stage.
 			if cn.Public != dn.Public {
 				continue
 			}

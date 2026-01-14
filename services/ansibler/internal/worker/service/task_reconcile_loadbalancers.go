@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/berops/claudie/internal/api/manifest"
+	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/concurrent"
 	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/hash"
@@ -108,6 +110,7 @@ func ReconcileLoadBalancers(
 		lbs = do.Create.LoadBalancers
 	case *spec.Task_Update:
 		k8s = do.Update.State.K8S
+
 		// Will default to only reconciling a single loadbalancer, if possible.
 		// But will reconcile all of the nodepools of that loadbalancer.
 		//
@@ -121,6 +124,21 @@ func ReconcileLoadBalancers(
 		}
 
 		unreachable = UnreachableInfrastructure(do)
+
+		// In case target pools are required to be replaced, replace them first
+		// before executing the ansible playbook which will result in updating
+		// the generated envoy configs for the new nodepools.
+		tg, ok := do.Update.Delta.(*spec.Update_AnsReplaceTargetPools)
+		if ok {
+			idx := clusters.IndexLoadbalancerById(tg.AnsReplaceTargetPools.Handle, lbs)
+			if idx >= 0 {
+				for _, role := range lbs[idx].Roles {
+					if n, ok := tg.AnsReplaceTargetPools.Roles[role.Name]; ok {
+						role.TargetPools = n.Pools
+					}
+				}
+			}
+		}
 	default:
 		logger.
 			Warn().
@@ -144,10 +162,12 @@ func ReconcileLoadBalancers(
 		return
 	}
 
-	// Changes to TargetPools could have been done.
-	update := tracker.Result.Update()
-	update.Loadbalancers(lbs...)
-	update.Commit()
+	// If replacement was done as part of a scheduled update, report back the changes.
+	if tracker.Task.GetUpdate().GetAnsReplaceTargetPools() != nil {
+		update := tracker.Result.Update()
+		update.Loadbalancers(lbs...)
+		update.Commit()
+	}
 
 	logger.Info().Msg("Sucessfully reconciled LoadBalancers")
 }
@@ -428,11 +448,20 @@ func setupEnvoyProxyViaDocker(
 
 func roleTargetPools(lbCluster *spec.LBcluster, targetK8sNodepool []*spec.NodePool) (ri []RolesTemplateParams) {
 	for _, role := range lbCluster.Roles {
+		pools := targetK8sNodepool
+		if role.RoleType == spec.RoleType_ApiServer {
+			// If the target pools of the role are also re-used
+			// in the worker nodepools for the api server only
+			// consider control pools.
+			pools = slices.Collect(nodepools.Control(pools))
+		}
+
 		ri = append(ri, RolesTemplateParams{
 			Role:        role,
-			TargetNodes: targetNodes(role.TargetPools, targetK8sNodepool),
+			TargetNodes: targetNodes(role.TargetPools, pools),
 		})
 	}
+
 	return
 }
 

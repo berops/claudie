@@ -152,33 +152,7 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 
 			state.InFlight = ScheduleDeleteCluster(del)
 		default:
-
-			// TODO: the autoscaler desired state could be
-			// read from the POD directly instead of the
-			// pod making requests to the manager. The manager
-			// should read the desired state of the autoscaler.
-			// errors should be handled gracefully. the autoscaler
-			// desired state should be passed when creating our desired state.
-			// so that the dynamic nodepools count is correct. But we also need
-			// to make sure that in the case the autoscaler is not reachable
-			// we will always keep the count from the current state.
 			// TODO: add diff with the in-flight state.
-			// TODO: handle this at this stage instead of the
-			// transfer_existing stage.
-			// This would Also mean that the desired state should be
-			// generated in here more as a "skeleton" and then the
-			// state should be transfered from current.
-			// if desired.AutoscalerConfig != nil {
-			// 	switch {
-			// 	case desired.AutoscalerConfig.Min > current.Count:
-			// 		dnp.Count = dnp.AutoscalerConfig.Min
-			// 	case desired.AutoscalerConfig.Max < current.Count:
-			// 		dnp.Count = dnp.AutoscalerConfig.Max
-			// 	default:
-			// 		dnp.Count = cnp.Count
-			// 	}
-			// }
-			// TODO: what if there is always an inflight in-between state ?
 			if err := managementcluster.StoreKubeconfig(pending.Name, current); err != nil {
 				logger.Err(err).Msg("Failed to store kubeconfig in the management cluster")
 			}

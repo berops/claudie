@@ -1,6 +1,7 @@
 package service
 
 import (
+	"maps"
 	"slices"
 
 	"github.com/berops/claudie/proto/pb/spec"
@@ -17,26 +18,33 @@ func PatchNodes(logger zerolog.Logger, processlimit *semaphore.Weighted, workers
 	switch do := tracker.Task.Do.(type) {
 	case *spec.Task_Create:
 		k8s = do.Create.K8S
+		patch = &spec.Update_KuberPatchNodes{
+			Add:    new(spec.Update_KuberPatchNodes_AddBatch),
+			Remove: new(spec.Update_KuberPatchNodes_RemoveBatch),
+		}
+
 		for _, np := range k8s.ClusterInfo.NodePools {
 			patch.Add = &spec.Update_KuberPatchNodes_AddBatch{
 				Taints: map[string]*spec.Update_KuberPatchNodes_ListOfTaints{
-					np.Name: &spec.Update_KuberPatchNodes_ListOfTaints{
+					np.Name: {
 						Taints: np.Taints,
 					},
 				},
 				Labels: map[string]*spec.Update_KuberPatchNodes_MapOfLabels{
-					np.Name: &spec.Update_KuberPatchNodes_MapOfLabels{
+					np.Name: {
 						Labels: np.Labels,
 					},
 				},
 				Annotations: map[string]*spec.Update_KuberPatchNodes_MapOfAnnotations{
-					np.Name: &spec.Update_KuberPatchNodes_MapOfAnnotations{
+					np.Name: {
 						Annotations: np.Annotations,
 					},
 				},
 			}
 		}
 	case *spec.Task_Update:
+		// TODO: allow also other messges in here... for example add k8s nodes.
+		// look in manager for which ones.
 		delta, ok := do.Update.Delta.(*spec.Update_KpatchNodes)
 		if !ok {
 			logger.
@@ -105,15 +113,17 @@ func removeAnnotationsLabelsTaints(k8s *spec.K8Scluster, remove *spec.Update_Kub
 func updateExistingAnnotationsLabelsTaints(k8s *spec.K8Scluster, add *spec.Update_KuberPatchNodes_AddBatch) {
 	for _, np := range k8s.ClusterInfo.NodePools {
 		if m, ok := add.Annotations[np.Name]; ok {
-			for k, v := range m.Annotations {
-				np.Annotations[k] = v
+			if np.Annotations == nil {
+				np.Annotations = make(map[string]string)
 			}
+			maps.Copy(np.Annotations, m.Annotations)
 		}
 
 		if m, ok := add.Labels[np.Name]; ok {
-			for k, v := range m.Labels {
-				np.Labels[k] = v
+			if np.Labels == nil {
+				np.Labels = make(map[string]string)
 			}
+			maps.Copy(np.Labels, m.Labels)
 		}
 
 		if m, ok := add.Taints[np.Name]; ok {

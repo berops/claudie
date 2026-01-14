@@ -3,8 +3,21 @@ package spec;
 
 option go_package = "github.com/berops/claudie/proto/pb/spec";
 
+// Different error levels supported by each scheduled 'Work' in
+// claudie.
 enum ErrorLevel {
+  // Error FATAL describes that whatever the operation/scheduled 'Work'
+  // failed in, no further work must be done on the state and whatever
+  // changes has been made, if any, must be reported back to be synced.
   ERROR_FATAL = 0;
+
+  // Error WARN describes that whatever the operation/scheduled 'Work'
+  // failed in, it may continue work on the state, even if partial changes
+  // were made into the state of the accepted 'Work' that is currently
+  // being processed.
+  //
+  // **Use with caution**, make sure that all of the function in the chain
+  // with this error level can handle partial state.
   ERROR_WARN = 1;
 }
 

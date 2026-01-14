@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/hash"
@@ -41,7 +42,29 @@ func CommitProxyEnvs(
 
 	state := update.Update.State
 	clusterId := state.K8S.ClusterInfo.Id()
-	nps := state.K8S.ClusterInfo.NodePools
+
+	// as the slice may be modified make a shallow copy of it,
+	// while still allowing changes to be propagated back to the
+	// state, if any.
+	nps := slices.Clone(state.K8S.ClusterInfo.NodePools)
+
+	if add := update.Update.GetAddedK8SNodes(); add != nil {
+		// On addition, only commit on the existing, established nodes
+		// as the new ones are not in the cluster yet.
+		logger.Error().Msg("HERE, TODO: remove me after testing, PROXY ADD")
+
+		if i := nodepools.IndexByName(add.Nodepool, nps); i >= 0 {
+			np := DefaultNodePoolToExistingInfrastructureOnly(nps[i], add.Nodes)
+
+			// The original nodepool won't be needed in this function, thus simply replace
+			// it at the index of the cloned slice.
+			nps[i] = np
+		} else {
+			logger.
+				Warn().
+				Msgf("Processing update for adding nodes to k8s cluster but the nodepool was not found, ignoring")
+		}
+	}
 
 	// This task may be called during the deletion of unreachable nodes
 	// thus filter them out when processing.

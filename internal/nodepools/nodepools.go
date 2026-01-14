@@ -91,6 +91,47 @@ func DynamicAddNodes(dst *spec.NodePool, nodes []*spec.Node) {
 	dyn.Count += int32(len(nodes))
 }
 
+// Behaves exactly the same as [PartialCopyWithNodeFilter] just that the
+// passed in nodes are excluded from ones in the nodepool if present.
+func PartialCopyWithNodeExclusion(np *spec.NodePool, nodes []string) *spec.NodePool {
+	cp := &spec.NodePool{
+		Type:        nil,
+		Name:        np.Name,
+		Nodes:       []*spec.Node{},
+		IsControl:   np.IsControl,
+		Labels:      np.Labels,
+		Taints:      np.Taints,
+		Annotations: np.Annotations,
+	}
+
+	for _, n := range np.Nodes {
+		if !slices.Contains(nodes, n.Name) {
+			cp.Nodes = append(cp.Nodes, n)
+		}
+	}
+
+	// To avoid issues with possible node counts, deep clone the node type itself.
+	switch typ := np.Type.(type) {
+	case *spec.NodePool_DynamicNodePool:
+		d := proto.Clone(typ.DynamicNodePool).(*spec.DynamicNodePool)
+		d.Count = int32(len(cp.Nodes))
+		cp.Type = &spec.NodePool_DynamicNodePool{
+			DynamicNodePool: d,
+		}
+	case *spec.NodePool_StaticNodePool:
+		s := proto.Clone(typ.StaticNodePool).(*spec.StaticNodePool)
+		clear(s.NodeKeys)
+		for _, n := range cp.Nodes {
+			s.NodeKeys[n.Public] = np.GetStaticNodePool().NodeKeys[n.Public]
+		}
+		cp.Type = &spec.NodePool_StaticNodePool{
+			StaticNodePool: s,
+		}
+	}
+
+	return cp
+}
+
 // For each node in the nodepool that is found inside the passed in
 // nodes slice, returns a shallow copy of the nodepool, meaning that
 // all of the memory is still shared among the original and returned
@@ -271,6 +312,17 @@ func FindNode(nodepools []*spec.NodePool, nodeName string) (nodepool *spec.NodeP
 		return
 	}
 	return
+}
+
+// IndexByName returns the position of the nodepool within the slice, if not found -1 is returned.
+func IndexByName(nodePoolName string, nodepools []*spec.NodePool) int {
+	for i, np := range nodepools {
+		if np.Name == nodePoolName {
+			return i
+		}
+	}
+
+	return -1
 }
 
 // FindByName returns the first Nodepool that will have same name as specified in parameters, nil otherwise.

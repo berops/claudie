@@ -19,10 +19,12 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ManagerService_UpsertManifest_FullMethodName  = "/claudie.ManagerService/UpsertManifest"
-	ManagerService_MarkForDeletion_FullMethodName = "/claudie.ManagerService/MarkForDeletion"
-	ManagerService_ListConfigs_FullMethodName     = "/claudie.ManagerService/ListConfigs"
-	ManagerService_GetConfig_FullMethodName       = "/claudie.ManagerService/GetConfig"
+	ManagerService_UpsertManifest_FullMethodName           = "/claudie.ManagerService/UpsertManifest"
+	ManagerService_MarkForDeletion_FullMethodName          = "/claudie.ManagerService/MarkForDeletion"
+	ManagerService_MarkNodeForDeletion_FullMethodName      = "/claudie.ManagerService/MarkNodeForDeletion"
+	ManagerService_ListConfigs_FullMethodName              = "/claudie.ManagerService/ListConfigs"
+	ManagerService_GetConfig_FullMethodName                = "/claudie.ManagerService/GetConfig"
+	ManagerService_NodePoolUpdateTargetSize_FullMethodName = "/claudie.ManagerService/NodePoolUpdateTargetSize"
 )
 
 // ManagerServiceClient is the client API for ManagerService service.
@@ -35,10 +37,16 @@ type ManagerServiceClient interface {
 	// MarkForDeletion will mark the requested configuration to be deleted. Once the
 	// manager determines the configuration can be deleted it will be deleted.
 	MarkForDeletion(ctx context.Context, in *MarkForDeletionRequest, opts ...grpc.CallOption) (*MarkForDeletionResponse, error)
+	// MarkNodeForDeletion will mark the request node for deletion. The node itself
+	// is not immediately deleted and the Manager service itself will decide when
+	// the approriate time for deletion will be.
+	MarkNodeForDeletion(ctx context.Context, in *MarkNodeForDeletionRequest, opts ...grpc.CallOption) (*MarkNodeForDeletionResponse, error)
 	// ListConfigs will list all stored configuration that the manager manages.
-	ListConfigs(ctx context.Context, in *ListConfigRequest, opts ...grpc.CallOption) (*ListConfigResponse, error)
+	ListConfigs(ctx context.Context, in *ListConfigsRequest, opts ...grpc.CallOption) (*ListConfigsResponse, error)
 	// GetConfig will retrieve the requested configuration by name.
 	GetConfig(ctx context.Context, in *GetConfigRequest, opts ...grpc.CallOption) (*GetConfigResponse, error)
+	// NodePoolUpdateTargetSize updates the target size of the nodepool.
+	NodePoolUpdateTargetSize(ctx context.Context, in *NodePoolUpdateTargetSizeRequest, opts ...grpc.CallOption) (*NodePoolUpdateTargetSizeResponse, error)
 }
 
 type managerServiceClient struct {
@@ -69,9 +77,19 @@ func (c *managerServiceClient) MarkForDeletion(ctx context.Context, in *MarkForD
 	return out, nil
 }
 
-func (c *managerServiceClient) ListConfigs(ctx context.Context, in *ListConfigRequest, opts ...grpc.CallOption) (*ListConfigResponse, error) {
+func (c *managerServiceClient) MarkNodeForDeletion(ctx context.Context, in *MarkNodeForDeletionRequest, opts ...grpc.CallOption) (*MarkNodeForDeletionResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListConfigResponse)
+	out := new(MarkNodeForDeletionResponse)
+	err := c.cc.Invoke(ctx, ManagerService_MarkNodeForDeletion_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *managerServiceClient) ListConfigs(ctx context.Context, in *ListConfigsRequest, opts ...grpc.CallOption) (*ListConfigsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListConfigsResponse)
 	err := c.cc.Invoke(ctx, ManagerService_ListConfigs_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -89,6 +107,16 @@ func (c *managerServiceClient) GetConfig(ctx context.Context, in *GetConfigReque
 	return out, nil
 }
 
+func (c *managerServiceClient) NodePoolUpdateTargetSize(ctx context.Context, in *NodePoolUpdateTargetSizeRequest, opts ...grpc.CallOption) (*NodePoolUpdateTargetSizeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(NodePoolUpdateTargetSizeResponse)
+	err := c.cc.Invoke(ctx, ManagerService_NodePoolUpdateTargetSize_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ManagerServiceServer is the server API for ManagerService service.
 // All implementations must embed UnimplementedManagerServiceServer
 // for forward compatibility.
@@ -99,10 +127,16 @@ type ManagerServiceServer interface {
 	// MarkForDeletion will mark the requested configuration to be deleted. Once the
 	// manager determines the configuration can be deleted it will be deleted.
 	MarkForDeletion(context.Context, *MarkForDeletionRequest) (*MarkForDeletionResponse, error)
+	// MarkNodeForDeletion will mark the request node for deletion. The node itself
+	// is not immediately deleted and the Manager service itself will decide when
+	// the approriate time for deletion will be.
+	MarkNodeForDeletion(context.Context, *MarkNodeForDeletionRequest) (*MarkNodeForDeletionResponse, error)
 	// ListConfigs will list all stored configuration that the manager manages.
-	ListConfigs(context.Context, *ListConfigRequest) (*ListConfigResponse, error)
+	ListConfigs(context.Context, *ListConfigsRequest) (*ListConfigsResponse, error)
 	// GetConfig will retrieve the requested configuration by name.
 	GetConfig(context.Context, *GetConfigRequest) (*GetConfigResponse, error)
+	// NodePoolUpdateTargetSize updates the target size of the nodepool.
+	NodePoolUpdateTargetSize(context.Context, *NodePoolUpdateTargetSizeRequest) (*NodePoolUpdateTargetSizeResponse, error)
 	mustEmbedUnimplementedManagerServiceServer()
 }
 
@@ -119,11 +153,17 @@ func (UnimplementedManagerServiceServer) UpsertManifest(context.Context, *Upsert
 func (UnimplementedManagerServiceServer) MarkForDeletion(context.Context, *MarkForDeletionRequest) (*MarkForDeletionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MarkForDeletion not implemented")
 }
-func (UnimplementedManagerServiceServer) ListConfigs(context.Context, *ListConfigRequest) (*ListConfigResponse, error) {
+func (UnimplementedManagerServiceServer) MarkNodeForDeletion(context.Context, *MarkNodeForDeletionRequest) (*MarkNodeForDeletionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MarkNodeForDeletion not implemented")
+}
+func (UnimplementedManagerServiceServer) ListConfigs(context.Context, *ListConfigsRequest) (*ListConfigsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListConfigs not implemented")
 }
 func (UnimplementedManagerServiceServer) GetConfig(context.Context, *GetConfigRequest) (*GetConfigResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetConfig not implemented")
+}
+func (UnimplementedManagerServiceServer) NodePoolUpdateTargetSize(context.Context, *NodePoolUpdateTargetSizeRequest) (*NodePoolUpdateTargetSizeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method NodePoolUpdateTargetSize not implemented")
 }
 func (UnimplementedManagerServiceServer) mustEmbedUnimplementedManagerServiceServer() {}
 func (UnimplementedManagerServiceServer) testEmbeddedByValue()                        {}
@@ -182,8 +222,26 @@ func _ManagerService_MarkForDeletion_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ManagerService_MarkNodeForDeletion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MarkNodeForDeletionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ManagerServiceServer).MarkNodeForDeletion(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ManagerService_MarkNodeForDeletion_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ManagerServiceServer).MarkNodeForDeletion(ctx, req.(*MarkNodeForDeletionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ManagerService_ListConfigs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListConfigRequest)
+	in := new(ListConfigsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -195,7 +253,7 @@ func _ManagerService_ListConfigs_Handler(srv interface{}, ctx context.Context, d
 		FullMethod: ManagerService_ListConfigs_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ManagerServiceServer).ListConfigs(ctx, req.(*ListConfigRequest))
+		return srv.(ManagerServiceServer).ListConfigs(ctx, req.(*ListConfigsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -218,6 +276,24 @@ func _ManagerService_GetConfig_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ManagerService_NodePoolUpdateTargetSize_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NodePoolUpdateTargetSizeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ManagerServiceServer).NodePoolUpdateTargetSize(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ManagerService_NodePoolUpdateTargetSize_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ManagerServiceServer).NodePoolUpdateTargetSize(ctx, req.(*NodePoolUpdateTargetSizeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ManagerService_ServiceDesc is the grpc.ServiceDesc for ManagerService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -234,12 +310,20 @@ var ManagerService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ManagerService_MarkForDeletion_Handler,
 		},
 		{
+			MethodName: "MarkNodeForDeletion",
+			Handler:    _ManagerService_MarkNodeForDeletion_Handler,
+		},
+		{
 			MethodName: "ListConfigs",
 			Handler:    _ManagerService_ListConfigs_Handler,
 		},
 		{
 			MethodName: "GetConfig",
 			Handler:    _ManagerService_GetConfig_Handler,
+		},
+		{
+			MethodName: "NodePoolUpdateTargetSize",
+			Handler:    _ManagerService_NodePoolUpdateTargetSize_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

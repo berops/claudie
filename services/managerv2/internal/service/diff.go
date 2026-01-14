@@ -71,6 +71,20 @@ type (
 		// Diff in the Static NodePools of the cluster.
 		Static NodePoolsDiffResult
 
+		// Dynamic nodes that are present in both the current and
+		// desired state and are marked with [spec.NodeStatus_MarkedForDeletion]
+		//
+		// Reason why its included in the diff, is mostly that its a
+		// pending diff to be handled at some point in the future.
+		PendingDynamicDeletions PendingDeletionsViewType
+
+		// Static nodes that are present in both the current and
+		// desired state and are marked with [spec.NodeStatus_MarkedForDeletion]
+		//
+		// Reason why its included in the diff, is mostly that its a
+		// pending diff to be handled at some point in the future.
+		PendingStaticDeletions PendingDeletionsViewType
+
 		// State of the Api endpoint for the kubernetes cluster.
 		// If the kubernetes cluster has no api endpoint, but it
 		// is in one of the loadbalancers attached to the cluster
@@ -85,12 +99,6 @@ type (
 			// desired state. If there is no, the value will be empty.
 			Desired         string
 			DesiredNodePool string
-		}
-
-		// TODO: should be done per nodepool below.
-		// Changes made to the autoscaler nodepools.
-		// TODO: possibly include autoscaling diff here ?
-		Autoscaler struct { /* TODO */
 		}
 
 		LabelsTaintsAnnotations LabelsTaintsAnnotationsDiffResult
@@ -134,6 +142,20 @@ type (
 
 		// Diff in the Static NodePools of the cluster.
 		Static NodePoolsDiffResult
+
+		// Dynamic nodes that are present in both the current and
+		// desired state and are marked with [spec.NodeStatus_MarkedForDeletion]
+		//
+		// Reason why its included in the diff, is mostly that its a
+		// pending diff to be handled at some point in the future.
+		PendingDynamicDeletions PendingDeletionsViewType
+
+		// Static nodes that are present in both the current and
+		// desired state and are marked with [spec.NodeStatus_MarkedForDeletion]
+		//
+		// Reason why its included in the diff, is mostly that its a
+		// pending diff to be handled at some point in the future.
+		PendingStaticDeletions PendingDeletionsViewType
 	}
 
 	LoadBalancerIdentifier struct {
@@ -172,13 +194,6 @@ type (
 
 			// What action should be done based on the difference for the [Current] and [Desired].
 			State spec.ApiEndpointChangeState
-
-			// Whether all of the nodepools in the kubernetes cluster's desired state
-			// are deleted which the ApiEndpoint targets. This field is
-			// mutually exclusive with all of the above [ApiEndpoint] fields.
-			// TODO: handle, I don't think we need this information.
-			// TODO: test this once kubernetes part is done.
-			// TargetPoolsDeleted bool
 		}
 	}
 
@@ -208,10 +223,16 @@ type (
 		Added NodePoolsViewType
 	}
 
-	// NodePoolsViewType is an unordered view into the nodepools and their nodes that are read from a [spec.K8Scluster].
+	// NodePoolsViewType is an unordered view into the nodepools and their
+	// nodes that are read from a [spec.K8Scluster].
 	NodePoolsViewType = map[string][]string
 
-	// TargetPoolsViewType is an unordered view into the diff for target pools that are from a [spec.Role].
+	// PendingNodeDeletions is an unordered view into the nodepools and their
+	// nodes that are marked with [spec.NodeStatus_MarkedForDeletion]
+	PendingDeletionsViewType = map[string][]string
+
+	// TargetPoolsViewType is an unordered view into the diff for target pools
+	// that are from a [spec.Role].
 	TargetPoolsViewType = map[string][]string
 )
 
@@ -345,6 +366,41 @@ func KubernetesDiff(old, new *spec.K8Scluster) KubernetesDiffResult {
 		staticDiff  = NodePoolsDiff(ostatic, nstatic)
 	)
 
+	// Check for [spec.NodeStatus_MarkedForDeletion] nodes.
+	//
+	// Alot of nested for loops here but its not expected in real usage
+	// to have a lot of nodepools in a cluster, along with a lot of nodes
+	// especially since a nodepool has a limit of 255 nodes.
+	//
+	// Note: can be improved upon.
+	result.PendingDynamicDeletions = make(PendingDeletionsViewType)
+	result.PendingStaticDeletions = make(PendingDeletionsViewType)
+	for _, cnp := range old.ClusterInfo.NodePools {
+		for _, dnp := range new.ClusterInfo.NodePools {
+			if cnp.Name != dnp.Name {
+				continue
+			}
+
+			for _, cn := range cnp.Nodes {
+				for _, dn := range dnp.Nodes {
+					if cn.Name != dn.Name {
+						continue
+					}
+
+					isPending := cn.Status == dn.Status
+					isPending = isPending && cn.Status == spec.NodeStatus_MarkedForDeletion
+					if isPending {
+						if dnp.GetDynamicNodePool() != nil {
+							result.PendingDynamicDeletions[dnp.Name] = append(result.PendingDynamicDeletions[dnp.Name], dn.Name)
+						} else {
+							result.PendingStaticDeletions[dnp.Name] = append(result.PendingStaticDeletions[dnp.Name], dn.Name)
+						}
+					}
+				}
+			}
+		}
+	}
+
 	proxyDiff := ProxyDiffResult{
 		CurrentUsed: UsesProxy(old),
 		DesiredUsed: UsesProxy(new),
@@ -374,7 +430,7 @@ api:
 
 					// Assume here that the desired state keeps the
 					// Api server, if this will not be the case, then
-					// the below check if handle that.
+					// the below check will handle that.
 
 					result.ApiEndpoint.Desired = node.Name
 					result.ApiEndpoint.DesiredNodePool = np.Name
@@ -607,6 +663,43 @@ func LoadBalancersDiff(old, new *spec.LoadBalancers) LoadBalancersDiffResult {
 			dnsChanged = true
 		}
 
+		// Pending deletions.
+		pendingDynamicDeletions := make(PendingDeletionsViewType)
+		pendingStaticDeletions := make(PendingDeletionsViewType)
+
+		// Check for [spec.NodeStatus_MarkedForDeletion] nodes.
+		//
+		// Alot of nested for loops here but its not expected in real usage
+		// to have a lot of nodepools in a cluster, along with a lot of nodes
+		// especially since a nodepool has a limit of 255 nodes.
+		//
+		// Note: can be improved upon.
+		for _, cnp := range old.ClusterInfo.NodePools {
+			for _, dnp := range new.ClusterInfo.NodePools {
+				if cnp.Name != dnp.Name {
+					continue
+				}
+
+				for _, cn := range cnp.Nodes {
+					for _, dn := range dnp.Nodes {
+						if cn.Name != dn.Name {
+							continue
+						}
+
+						isPending := cn.Status == dn.Status
+						isPending = isPending && cn.Status == spec.NodeStatus_MarkedForDeletion
+						if isPending {
+							if dnp.GetDynamicNodePool() != nil {
+								pendingDynamicDeletions[dnp.Name] = append(pendingDynamicDeletions[dnp.Name], dn.Name)
+							} else {
+								pendingStaticDeletions[dnp.Name] = append(pendingStaticDeletions[dnp.Name], dn.Name)
+							}
+						}
+					}
+				}
+			}
+		}
+
 		// Changes in NodePools.
 		oldDynamic, oldStatic := NodePoolsView(old.ClusterInfo)
 		newDynamic, newStatic := NodePoolsView(new.ClusterInfo)
@@ -617,6 +710,7 @@ func LoadBalancersDiff(old, new *spec.LoadBalancers) LoadBalancersDiffResult {
 		modified := len(rolesAdded) > 0 || len(rolesDeleted) > 0
 		modified = modified || len(targetPoolsAdded) > 0 || len(targetPoolsDeleted) > 0
 		modified = modified || dnsChanged
+		modified = modified || len(pendingDynamicDeletions) > 0 || len(pendingStaticDeletions) > 0
 		modified = modified || (!dynDiff.IsEmpty() || !sttDiff.IsEmpty())
 		if modified {
 			entry := struct {
@@ -631,6 +725,9 @@ func LoadBalancersDiff(old, new *spec.LoadBalancers) LoadBalancersDiffResult {
 				}
 				Dynamic NodePoolsDiffResult
 				Static  NodePoolsDiffResult
+
+				PendingDynamicDeletions PendingDeletionsViewType
+				PendingStaticDeletions  PendingDeletionsViewType
 			}{}
 
 			entry.CurrentIdx = oldIdx
@@ -641,6 +738,9 @@ func LoadBalancersDiff(old, new *spec.LoadBalancers) LoadBalancersDiffResult {
 			entry.Roles.Deleted = rolesDeleted
 			entry.Roles.TargetPoolsAdded = targetPoolsAdded
 			entry.Roles.TargetPoolsDeleted = targetPoolsDeleted
+
+			entry.PendingDynamicDeletions = pendingDynamicDeletions
+			entry.PendingStaticDeletions = pendingStaticDeletions
 
 			if !dynDiff.IsEmpty() {
 				entry.Dynamic = dynDiff
@@ -659,48 +759,9 @@ func LoadBalancersDiff(old, new *spec.LoadBalancers) LoadBalancersDiffResult {
 	result.ApiEndpoint.Current = cid
 	result.ApiEndpoint.New = did
 	result.ApiEndpoint.State = change
-	// TODO: remove me.
-	// result.ApiEndpoint.TargetPoolsDeleted = apiNodePoolsDeleted(k8sdiff, old)
 
 	return result
 }
-
-// func apiNodePoolsDeleted(k8sdiff *KubernetesDiffResult, old *spec.LoadBalancers) bool {
-// 	search := make(map[string]struct{})
-
-// 	for np := range k8sdiff.Dynamic.Deleted {
-// 		search[np] = struct{}{}
-// 	}
-
-// 	for np := range k8sdiff.Static.Deleted {
-// 		search[np] = struct{}{}
-// 	}
-
-// 	ep := clusters.FindAssignedLbApiEndpoint(old.Clusters)
-// 	for _, role := range ep.GetRoles() {
-// 		if role.RoleType != spec.RoleType_ApiServer {
-// 			continue
-// 		}
-
-// 		matched := 0
-// 		for _, tp := range role.TargetPools {
-// 			for np := range search {
-// 				if name, _ := nodepools.MatchNameAndHashWithTemplate(tp, np); name == tp {
-// 					matched += 1
-// 					break
-// 				}
-// 			}
-// 		}
-
-// 		if matched == len(role.TargetPools) {
-// 			return true
-// 		}
-
-// 		break
-// 	}
-
-// 	return false
-// }
 
 func determineLBApiEndpointChange(
 	currentLbs,

@@ -162,6 +162,16 @@ passes:
 	return &result
 }
 
+// From the passed in np all of the passed in nodes are excluded from it.
+// A shallow copy of the passed in nodepool is made from which the nodes are
+// then excluded from and the copy is returned. The original nodepool is not
+// modified at all and all of the fields of the new shallow copy are still
+// shared with the original nodepool. The shallow copy will have its node count
+// adjusted to reflect the filtered out nodes, use with **caution**.
+func DefaultNodePoolToExistingInfrastructureOnly(np *spec.NodePool, nodes []string) *spec.NodePool {
+	return nodepools.PartialCopyWithNodeExclusion(np, nodes)
+}
+
 // For the update task, looks inside the Delta and if its load balancer related, returns only
 // the loadbalancer for which the task is to be processed for, if not found returns nil.
 func DefaultToSingleLoadBalancerIfPossible(task *spec.Task_Update) *spec.LBcluster {

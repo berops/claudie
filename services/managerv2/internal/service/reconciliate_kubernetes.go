@@ -91,6 +91,42 @@ func KubernetesDeletions(r KubernetesReconciliate) *spec.TaskEvent {
 		return ScheduleDeletionsInNodePools(r.Current, &r.Diff.Static, opts)
 	}
 
+	if len(r.Diff.PendingDynamicDeletions) > 0 {
+		opts := K8sNodeDeletionOptions{
+			UseProxy:     r.Diff.Proxy.CurrentUsed,
+			HasApiServer: r.Diff.ApiEndpoint.Current != "",
+			IsStatic:     false,
+		}
+
+		// Only schedule one node deletion at a time.
+		for np, nodes := range r.Diff.PendingDynamicDeletions {
+			diff := NodePoolsDiffResult{
+				PartiallyDeleted: NodePoolsViewType{
+					np: []string{nodes[0]},
+				},
+			}
+			return ScheduleDeletionsInNodePools(r.Current, &diff, opts)
+		}
+	}
+
+	if len(r.Diff.PendingStaticDeletions) > 0 {
+		opts := K8sNodeDeletionOptions{
+			UseProxy:     r.Diff.Proxy.CurrentUsed,
+			HasApiServer: r.Diff.ApiEndpoint.Current != "",
+			IsStatic:     true,
+		}
+
+		// Only schedule one node deletion at a time.
+		for np, nodes := range r.Diff.PendingStaticDeletions {
+			diff := NodePoolsDiffResult{
+				PartiallyDeleted: NodePoolsViewType{
+					np: []string{nodes[0]},
+				},
+			}
+			return ScheduleDeletionsInNodePools(r.Current, &diff, opts)
+		}
+	}
+
 	return nil
 }
 
@@ -309,7 +345,18 @@ func ScheduleProxyOn(current, desired *spec.Clusters) *spec.TaskEvent {
 func SchedulePatchNodes(current *spec.Clusters, diff LabelsTaintsAnnotationsDiffResult) *spec.TaskEvent {
 	var (
 		inFlight = proto.Clone(current).(*spec.Clusters)
-		toPatch  = spec.Update_KuberPatchNodes{}
+		toPatch  = spec.Update_KuberPatchNodes{
+			Add: &spec.Update_KuberPatchNodes_AddBatch{
+				Taints:      make(map[string]*spec.Update_KuberPatchNodes_ListOfTaints),
+				Labels:      make(map[string]*spec.Update_KuberPatchNodes_MapOfLabels),
+				Annotations: make(map[string]*spec.Update_KuberPatchNodes_MapOfAnnotations),
+			},
+			Remove: &spec.Update_KuberPatchNodes_RemoveBatch{
+				Taints:      make(map[string]*spec.Update_KuberPatchNodes_ListOfTaints),
+				Annotations: make(map[string]*spec.Update_KuberPatchNodes_ListOfAnnotationKeys),
+				Labels:      make(map[string]*spec.Update_KuberPatchNodes_ListOfLabelKeys),
+			},
+		}
 	)
 
 	for np, labels := range diff.Added.Labels {

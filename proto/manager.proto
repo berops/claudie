@@ -24,9 +24,44 @@ message MarkForDeletionResponse {
   uint64 version = 2;
 }
 
-message ListConfigRequest {}
-message ListConfigResponse {
+message ListConfigsRequest {}
+message ListConfigsResponse {
   repeated spec.Config configs = 1;
+}
+
+message NodePoolUpdateTargetSizeRequest {
+  string config = 1;
+  string cluster = 2;
+  string nodepool = 3;
+
+  // If set the node will be searched for in this
+  // specified loadbalanacer. The passed in [Cluster]
+  // specifies the kuberentes cluster, but loadbalancers
+  // are attached to the kubernetes cluster thus the search
+  // requires the kubernetes cluster id but makes the loadbalancer
+  // id optional.
+  optional string loadbalancer = 4;
+
+  // Specifies the target size of the nodepool.
+  //
+  // For Dynamic and static nodepools this request or value
+  // will be ignored
+  //
+  // Why ?
+  //
+  // If this request would change the targetSize it would be
+  // overwritten on the next reconciliation loop by the desired
+  // state from the InputManifest which would result in a Noop.
+  //
+  // Only for autoscaled nodepools this will have an effect, which
+  // effectively sets the TargetSize within the [Min, Max] range of
+  // the autoscaled nodepool.
+  int32 targetSize = 5;
+}
+
+message NodePoolUpdateTargetSizeResponse {
+  // The new updated target size.
+  int32 targetSize = 1;
 }
 
 message GetConfigRequest {
@@ -34,6 +69,50 @@ message GetConfigRequest {
 }
 message GetConfigResponse {
   spec.Config config = 1;
+}
+
+message MarkNodeForDeletionRequest {
+  string config = 1;
+  string cluster = 2;
+  string nodepool = 3;
+  string node = 4;
+
+  // If set the node will be searched for in this
+  // specified loadbalanacer. The passed in [Cluster]
+  // specifies the kuberentes cluster, but loadbalancers
+  // are attached to the kubernetes cluster thus the search
+  // requires the kubernetes cluster id but makes the loadbalancer
+  // id optional.
+  optional string loadbalancer = 5;
+
+  // This flag only has effect with autoscaled dynamic nodepools,
+  // if any other nodepool is detected and this parameter is set
+  // it will be ignored.
+  //
+  // Why only for autoscaled nodepools ?
+  //
+  // Dynamic and Static nodepools have a fixed desired capacity that
+  // does not change until explicitly changed in the InputManifest.
+  // So even if this Api endpoint would allow to decrease the capacity
+  // for these nodepools on the next iteration of the reconciliation
+  // loop it would be overwritten by the desired count and effectively
+  // result in a Noop.
+  //
+  // Autoscaled nodepools work within a range of nodes [Min, Max] and
+  // works with two counters for nodes, 'count' which is the current number
+  // of nodes within the nodepool and 'targetSize' which is the Target Size
+  // within [Min, Max] that the NodePool should have. This parameter is
+  // externally managed, i.e. the desired state does not come from the
+  // InputManifest, for autoscaled nodepools and thus is also made
+  // available via this parameter.
+  //
+  // This parameter adjusts the 'targetSize' which will result of downscaling.
+  optional bool shouldDecrementDesiredCapacity = 6;
+}
+
+message MarkNodeForDeletionResponse {
+  // The new updated target size.
+  int64 targetSize = 1;
 }
 
 service ManagerService {
@@ -45,9 +124,17 @@ service ManagerService {
   // manager determines the configuration can be deleted it will be deleted.
   rpc MarkForDeletion(MarkForDeletionRequest) returns (MarkForDeletionResponse);
 
+  // MarkNodeForDeletion will mark the request node for deletion. The node itself
+  // is not immediately deleted and the Manager service itself will decide when
+  // the approriate time for deletion will be.
+  rpc MarkNodeForDeletion(MarkNodeForDeletionRequest) returns (MarkNodeForDeletionResponse);
+
   // ListConfigs will list all stored configuration that the manager manages.
-  rpc ListConfigs(ListConfigRequest) returns (ListConfigResponse);
+  rpc ListConfigs(ListConfigsRequest) returns (ListConfigsResponse);
 
   // GetConfig will retrieve the requested configuration by name.
   rpc GetConfig(GetConfigRequest) returns (GetConfigResponse);
+
+  // NodePoolUpdateTargetSize updates the target size of the nodepool.
+  rpc NodePoolUpdateTargetSize(NodePoolUpdateTargetSizeRequest) returns (NodePoolUpdateTargetSizeResponse);
 }

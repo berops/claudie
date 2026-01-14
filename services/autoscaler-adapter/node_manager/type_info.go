@@ -17,7 +17,7 @@ var (
 	genesisTypeInfoRe = regexp.MustCompile(`vcpu-(\d+)_memory-(\d+)g`)
 )
 
-func getTypeInfoGenesisCloud() (map[string]*typeInfo, error) {
+func getTypeInfoGenesisCloud() (map[string]*InstanceInfo, error) {
 	// TODO: once there is an api exposed via the genesiscloud-go client
 	// (https://github.com/genesiscloud/genesiscloud-go) rewrite this.
 	// Types fetched from: https://developers.genesiscloud.com/instance-types/
@@ -148,7 +148,7 @@ func getTypeInfoGenesisCloud() (map[string]*typeInfo, error) {
 		"vcpu-32_memory-96g_disk-80g_nvidia1080ti-8",
 	}
 
-	m := make(map[string]*typeInfo, len(instanceTypes))
+	m := make(map[string]*InstanceInfo, len(instanceTypes))
 	for _, typ := range instanceTypes {
 		serverName := typ
 		matched := genesisTypeInfoRe.FindStringSubmatch(serverName)
@@ -161,7 +161,7 @@ func getTypeInfoGenesisCloud() (map[string]*typeInfo, error) {
 			return nil, err
 		}
 
-		m[serverName] = &typeInfo{
+		m[serverName] = &InstanceInfo{
 			cpu:    vcpus,
 			memory: memoryGB * (1024 * 1024 * 1024), // convert to bytes,
 		}
@@ -171,12 +171,12 @@ func getTypeInfoGenesisCloud() (map[string]*typeInfo, error) {
 }
 
 // getTypeInfoHetzner converts []*hcloud.ServerType to typeInfo map of instances, where keys are instance types.
-func getTypeInfoHetzner(rawInfo []*hcloud.ServerType) map[string]*typeInfo {
-	m := make(map[string]*typeInfo, len(rawInfo))
+func getTypeInfoHetzner(rawInfo []*hcloud.ServerType) map[string]*InstanceInfo {
+	m := make(map[string]*InstanceInfo, len(rawInfo))
 	for _, server := range rawInfo {
 		// The cpx versions are called ccx in hcloud-go api.
 		serverName := strings.ReplaceAll(server.Name, "ccx", "cpx")
-		m[serverName] = &typeInfo{
+		m[serverName] = &InstanceInfo{
 			cpu:        int64(server.Cores),
 			memory:     int64(server.Memory * 1024 * 1024 * 1024), // Convert to bytes
 			disk:       int64(server.Disk * 1024 * 1024 * 1024),   // Convert to bytes
@@ -187,10 +187,10 @@ func getTypeInfoHetzner(rawInfo []*hcloud.ServerType) map[string]*typeInfo {
 }
 
 // getTypeInfoAws converts []types.InstanceTypeInfo to typeInfo map of instances, where keys are instance types.
-func getTypeInfoAws(rawInfo []types.InstanceTypeInfo) map[string]*typeInfo {
-	m := make(map[string]*typeInfo, len(rawInfo))
+func getTypeInfoAws(rawInfo []types.InstanceTypeInfo) map[string]*InstanceInfo {
+	m := make(map[string]*InstanceInfo, len(rawInfo))
 	for _, instance := range rawInfo {
-		info := &typeInfo{
+		info := &InstanceInfo{
 			cpu:        int64(*instance.VCpuInfo.DefaultCores),
 			memory:     *instance.MemoryInfo.SizeInMiB * 1024 * 1024, // Convert to bytes
 			nvidiaGpus: 0,
@@ -220,10 +220,10 @@ func getTypeInfoAws(rawInfo []types.InstanceTypeInfo) map[string]*typeInfo {
 }
 
 // getTypeInfoGcp converts []*computepb.MachineTypeto typeInfo map of instances, where keys are instance types.
-func getTypeInfoGcp(rawInfo []*computepb.MachineType) map[string]*typeInfo {
-	m := make(map[string]*typeInfo, len(rawInfo))
+func getTypeInfoGcp(rawInfo []*computepb.MachineType) map[string]*InstanceInfo {
+	m := make(map[string]*InstanceInfo, len(rawInfo))
 	for _, instance := range rawInfo {
-		info := &typeInfo{
+		info := &InstanceInfo{
 			cpu:        int64(*instance.GuestCpus),
 			memory:     int64(*instance.MemoryMb) * 1024 * 1024, // Convert to bytes
 			nvidiaGpus: 0,
@@ -258,10 +258,10 @@ func getTypeInfoGcp(rawInfo []*computepb.MachineType) map[string]*typeInfo {
 }
 
 // getTypeInfoAws converts []core.Shape to typeInfo map of instances, where keys are instance types.
-func getTypeInfoOci(rawInfo []core.Shape) map[string]*typeInfo {
-	m := make(map[string]*typeInfo, len(rawInfo))
+func getTypeInfoOci(rawInfo []core.Shape) map[string]*InstanceInfo {
+	m := make(map[string]*InstanceInfo, len(rawInfo))
 	for _, shape := range rawInfo {
-		info := &typeInfo{
+		info := &InstanceInfo{
 			cpu:    int64(*shape.Ocpus),
 			memory: int64(*shape.MemoryInGBs) * 1024 * 1024 * 1024, // Convert to bytes
 			// while the SKD does provide the number of GPUs attached to the instance via
@@ -275,10 +275,10 @@ func getTypeInfoOci(rawInfo []core.Shape) map[string]*typeInfo {
 }
 
 // getTypeInfoAws converts []*armcompute.VirtualMachineSize to typeInfo map of instances, where keys are instance types.
-func getTypeInfoAzure(rawInfo []*armcompute.VirtualMachineSize) map[string]*typeInfo {
-	m := make(map[string]*typeInfo, len(rawInfo))
+func getTypeInfoAzure(rawInfo []*armcompute.VirtualMachineSize) map[string]*InstanceInfo {
+	m := make(map[string]*InstanceInfo, len(rawInfo))
 	for _, vm := range rawInfo {
-		info := &typeInfo{
+		info := &InstanceInfo{
 			cpu:    int64(*vm.NumberOfCores),
 			memory: int64(*vm.MemoryInMB) * 1024 * 1024, // Convert to bytes
 			// while the SDK does provider an API for retrieving the number of GPUs for a type
@@ -291,10 +291,10 @@ func getTypeInfoAzure(rawInfo []*armcompute.VirtualMachineSize) map[string]*type
 	return m
 }
 
-func getTypeInfoOpenstack(rawInfo []flavors.Flavor) map[string]*typeInfo {
-	m := make(map[string]*typeInfo, len(rawInfo))
+func getTypeInfoOpenstack(rawInfo []flavors.Flavor) map[string]*InstanceInfo {
+	m := make(map[string]*InstanceInfo, len(rawInfo))
 	for _, flavor := range rawInfo {
-		m[flavor.Name] = &typeInfo{
+		m[flavor.Name] = &InstanceInfo{
 			cpu:    int64(flavor.VCPUs),
 			memory: int64(flavor.RAM) * 1024 * 1024, // Convert to bytes
 		}

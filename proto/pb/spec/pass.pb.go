@@ -21,11 +21,23 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Different error levels supported by each scheduled 'Work' in
+// claudie.
 type ErrorLevel int32
 
 const (
+	// Error FATAL describes that whatever the operation/scheduled 'Work'
+	// failed in, no further work must be done on the state and whatever
+	// changes has been made, if any, must be reported back to be synced.
 	ErrorLevel_ERROR_FATAL ErrorLevel = 0
-	ErrorLevel_ERROR_WARN  ErrorLevel = 1
+	// Error WARN describes that whatever the operation/scheduled 'Work'
+	// failed in, it may continue work on the state, even if partial changes
+	// were made into the state of the accepted 'Work' that is currently
+	// being processed.
+	//
+	// **Use with caution**, make sure that all of the function in the chain
+	// with this error level can handle partial state.
+	ErrorLevel_ERROR_WARN ErrorLevel = 1
 )
 
 // Enum value maps for ErrorLevel.
