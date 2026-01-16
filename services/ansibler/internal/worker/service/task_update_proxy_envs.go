@@ -68,6 +68,7 @@ func UpdateProxyEnvs(
 		logger.Error().Msg("HERE, TODO: remove me after testing")
 		nps = DefaultNodePoolsToReachableInfrastructureOnly(
 			nps,
+			// Playbook is only executed on kubernetes nodes.
 			unreachable.Kubernetes,
 		)
 	}

@@ -33,7 +33,7 @@ var (
 	HealthCheckName = envs.GetOrDefault("ANSIBLER_HEALTHCHECK_SERVICE_NAME", "ansibler-readiness")
 
 	// Ack wait time in minutes for processing incoming NATS messages.
-	AckWait = time.Duration(envs.GetOrDefaultInt("ANSIBLER_ACK_WAIT_TIME", 10)) * time.Minute
+	AckWait = time.Duration(envs.GetOrDefaultInt("ANSIBLER_ACK_WAIT_TIME", 10)) * time.Second
 )
 
 type grpcServer struct {

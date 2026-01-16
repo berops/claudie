@@ -2263,27 +2263,27 @@ func (x *Role_Settings) GetEnvoyAdminPort() int32 {
 	return 0
 }
 
-type Unreachable_ListOfNodes struct {
+type Unreachable_ListOfNodeEndpoints struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nodes         []string               `protobuf:"bytes,1,rep,name=nodes,proto3" json:"nodes,omitempty"`
+	Endpoints     []string               `protobuf:"bytes,1,rep,name=endpoints,proto3" json:"endpoints,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Unreachable_ListOfNodes) Reset() {
-	*x = Unreachable_ListOfNodes{}
+func (x *Unreachable_ListOfNodeEndpoints) Reset() {
+	*x = Unreachable_ListOfNodeEndpoints{}
 	mi := &file_spec_manifest_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Unreachable_ListOfNodes) String() string {
+func (x *Unreachable_ListOfNodeEndpoints) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Unreachable_ListOfNodes) ProtoMessage() {}
+func (*Unreachable_ListOfNodeEndpoints) ProtoMessage() {}
 
-func (x *Unreachable_ListOfNodes) ProtoReflect() protoreflect.Message {
+func (x *Unreachable_ListOfNodeEndpoints) ProtoReflect() protoreflect.Message {
 	mi := &file_spec_manifest_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -2295,21 +2295,21 @@ func (x *Unreachable_ListOfNodes) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Unreachable_ListOfNodes.ProtoReflect.Descriptor instead.
-func (*Unreachable_ListOfNodes) Descriptor() ([]byte, []int) {
+// Deprecated: Use Unreachable_ListOfNodeEndpoints.ProtoReflect.Descriptor instead.
+func (*Unreachable_ListOfNodeEndpoints) Descriptor() ([]byte, []int) {
 	return file_spec_manifest_proto_rawDescGZIP(), []int{13, 0}
 }
 
-func (x *Unreachable_ListOfNodes) GetNodes() []string {
+func (x *Unreachable_ListOfNodeEndpoints) GetEndpoints() []string {
 	if x != nil {
-		return x.Nodes
+		return x.Endpoints
 	}
 	return nil
 }
 
 type Unreachable_UnreachableNodePools struct {
-	state         protoimpl.MessageState              `protogen:"open.v1"`
-	Nodepools     map[string]*Unreachable_ListOfNodes `protobuf:"bytes,1,rep,name=nodepools,proto3" json:"nodepools,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	state         protoimpl.MessageState                      `protogen:"open.v1"`
+	Nodepools     map[string]*Unreachable_ListOfNodeEndpoints `protobuf:"bytes,1,rep,name=nodepools,proto3" json:"nodepools,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2344,7 +2344,7 @@ func (*Unreachable_UnreachableNodePools) Descriptor() ([]byte, []int) {
 	return file_spec_manifest_proto_rawDescGZIP(), []int{13, 1}
 }
 
-func (x *Unreachable_UnreachableNodePools) GetNodepools() map[string]*Unreachable_ListOfNodes {
+func (x *Unreachable_UnreachableNodePools) GetNodepools() map[string]*Unreachable_ListOfNodeEndpoints {
 	if x != nil {
 		return x.Nodepools
 	}
@@ -5261,19 +5261,19 @@ const file_spec_manifest_proto_rawDesc = "" +
 	".spec.TaskR\x04task\x12 \n" +
 	"\vdescription\x18\x05 \x01(\tR\vdescription\x12'\n" +
 	"\bpipeline\x18\b \x03(\v2\v.spec.StageR\bpipeline\x12\"\n" +
-	"\fcurrentStage\x18\t \x01(\rR\fcurrentStage\"\xfb\x03\n" +
+	"\fcurrentStage\x18\t \x01(\rR\fcurrentStage\"\x93\x04\n" +
 	"\vUnreachable\x12F\n" +
 	"\n" +
 	"kubernetes\x18\x01 \x01(\v2&.spec.Unreachable.UnreachableNodePoolsR\n" +
 	"kubernetes\x12J\n" +
-	"\rloadbalancers\x18\x02 \x03(\v2$.spec.Unreachable.LoadbalancersEntryR\rloadbalancers\x1a#\n" +
-	"\vListOfNodes\x12\x14\n" +
-	"\x05nodes\x18\x01 \x03(\tR\x05nodes\x1a\xc8\x01\n" +
+	"\rloadbalancers\x18\x02 \x03(\v2$.spec.Unreachable.LoadbalancersEntryR\rloadbalancers\x1a3\n" +
+	"\x13ListOfNodeEndpoints\x12\x1c\n" +
+	"\tendpoints\x18\x01 \x03(\tR\tendpoints\x1a\xd0\x01\n" +
 	"\x14UnreachableNodePools\x12S\n" +
-	"\tnodepools\x18\x01 \x03(\v25.spec.Unreachable.UnreachableNodePools.NodepoolsEntryR\tnodepools\x1a[\n" +
+	"\tnodepools\x18\x01 \x03(\v25.spec.Unreachable.UnreachableNodePools.NodepoolsEntryR\tnodepools\x1ac\n" +
 	"\x0eNodepoolsEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x123\n" +
-	"\x05value\x18\x02 \x01(\v2\x1d.spec.Unreachable.ListOfNodesR\x05value:\x028\x01\x1ah\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12;\n" +
+	"\x05value\x18\x02 \x01(\v2%.spec.Unreachable.ListOfNodeEndpointsR\x05value:\x028\x01\x1ah\n" +
 	"\x12LoadbalancersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12<\n" +
 	"\x05value\x18\x02 \x01(\v2&.spec.Unreachable.UnreachableNodePoolsR\x05value:\x028\x01\"c\n" +
@@ -5594,7 +5594,7 @@ var file_spec_manifest_proto_goTypes = []any{
 	(*TaskResult)(nil),                       // 25: spec.TaskResult
 	nil,                                      // 26: spec.Config.ClustersEntry
 	(*Role_Settings)(nil),                    // 27: spec.Role.Settings
-	(*Unreachable_ListOfNodes)(nil),          // 28: spec.Unreachable.ListOfNodes
+	(*Unreachable_ListOfNodeEndpoints)(nil),  // 28: spec.Unreachable.ListOfNodeEndpoints
 	(*Unreachable_UnreachableNodePools)(nil), // 29: spec.Unreachable.UnreachableNodePools
 	nil,                                      // 30: spec.Unreachable.LoadbalancersEntry
 	nil,                                      // 31: spec.Unreachable.UnreachableNodePools.NodepoolsEntry
@@ -5737,7 +5737,7 @@ var file_spec_manifest_proto_depIdxs = []int32{
 	8,   // 66: spec.Config.ClustersEntry.value:type_name -> spec.ClusterState
 	31,  // 67: spec.Unreachable.UnreachableNodePools.nodepools:type_name -> spec.Unreachable.UnreachableNodePools.NodepoolsEntry
 	29,  // 68: spec.Unreachable.LoadbalancersEntry.value:type_name -> spec.Unreachable.UnreachableNodePools
-	28,  // 69: spec.Unreachable.UnreachableNodePools.NodepoolsEntry.value:type_name -> spec.Unreachable.ListOfNodes
+	28,  // 69: spec.Unreachable.UnreachableNodePools.NodepoolsEntry.value:type_name -> spec.Unreachable.ListOfNodeEndpoints
 	13,  // 70: spec.Update.State.k8s:type_name -> spec.K8scluster
 	14,  // 71: spec.Update.State.loadBalancers:type_name -> spec.LBcluster
 	14,  // 72: spec.Update.TerraformerAddLoadBalancer.handle:type_name -> spec.LBcluster

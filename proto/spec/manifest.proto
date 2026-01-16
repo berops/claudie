@@ -226,11 +226,11 @@ enum ApiEndpointChangeState {
 // should omit connecting to those nodes during the processing
 // of the pipeline, if relevant.
 message Unreachable {
-  message ListOfNodes {
-    repeated string nodes = 1;
+  message ListOfNodeEndpoints {
+    repeated string endpoints = 1;
   }
   message UnreachableNodePools {
-    map<string, ListOfNodes> nodepools = 1;
+    map<string, ListOfNodeEndpoints> nodepools = 1;
   }
 
   UnreachableNodePools kubernetes = 1;

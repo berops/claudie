@@ -327,11 +327,11 @@ func DefaultNodePoolsToReachableInfrastructureOnly(
 	var result []*spec.NodePool
 
 	for _, np := range nps {
-		unreachable := unreachable.GetNodepools()[np.Name].GetNodes()
+		unreachable := unreachable.GetNodepools()[np.Name].GetEndpoints()
 		var reachable []string
 
 		for _, n := range np.Nodes {
-			if !slices.Contains(unreachable, n.Name) {
+			if !slices.Contains(unreachable, n.Public) {
 				reachable = append(reachable, n.Name)
 			}
 		}

@@ -99,6 +99,7 @@ func HealthCheck(logger zerolog.Logger, state *spec.Clusters) HealthCheckStatus 
 	result.Cluster.Nodes = make(map[string]struct{})
 
 	kc := kubectl.Kubectl{
+		Kubeconfig:        state.K8S.Kubeconfig,
 		MaxKubectlRetries: -1,
 	}
 

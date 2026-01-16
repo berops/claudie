@@ -8,6 +8,7 @@ import (
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/managerv2/internal/service/managementcluster"
+	"github.com/google/uuid"
 
 	"google.golang.org/protobuf/proto"
 )
@@ -16,6 +17,10 @@ import (
 // scheduling of the tasks.
 type ScheduleResult uint8
 
+// TODO: handle the Deletion error where on Creation it fails and the subsequetn deletion also fails
+// as there is not current state and also there is not InFlight state.
+//
+// Meaning that Creation fails -> then -> Deletion fails -> Panic.
 // TODO: handle the Unreachable optional in the relevant pipeline stages.
 // Priority.
 //
@@ -187,7 +192,28 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 
 			result = Noop
 
+			// TODO: if for example a dead node comes in during the
+			// cycle rescheduling in here it will always error out
+			// event though the unreachable node could be removed
+			// and then this could be retried. There could be added
+			// a new field called Previos Retry, or something that would
+			// be stored along the task and on successfull processing would
+			// check if it exists and replace it.
 			if shouldRescheduleInFlight(state.InFlight) {
+				newUUID := uuid.New().String()
+
+				logger.
+					Info().
+					Msgf(
+						"Rescheduling last failed task %q, Scheduling under new ID %q",
+						state.InFlight.Id,
+						newUUID,
+					)
+
+				// Scheduling under a new UUID is necessary to avoid
+				// catching duplicates under NATS when rescheduling.
+				state.InFlight.Id = newUUID
+
 				result = Reschedule
 				break
 			}

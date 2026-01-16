@@ -213,6 +213,7 @@ func setUpLoadbalancers(
 		if unreachable != nil {
 			lbnps = DefaultNodePoolsToReachableInfrastructureOnly(
 				lbnps,
+				// The playbook is only executed on loadbalancers.
 				unreachable.Loadbalancers[lbClusterId],
 			)
 		}

@@ -175,6 +175,6 @@ func DestroyCluster(
 		logger.Info().Msgf("Successfully deleted dns Templates files for cluster %q", cluster.Id())
 	}
 
-	logger.Info().Msg("Cluster successfully destroyed")
+	logger.Info().Msg("Processed destroyed infrastructure")
 	return nil
 }

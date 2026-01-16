@@ -72,6 +72,7 @@ func CommitProxyEnvs(
 		logger.Error().Msg("HERE, TODO: remove me after testing")
 		nps = DefaultNodePoolsToReachableInfrastructureOnly(
 			nps,
+			//The playbook uses only k8s nodes.
 			unreachable.Kubernetes,
 		)
 	}

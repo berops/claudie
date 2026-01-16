@@ -17,6 +17,8 @@ import (
 
 const (
 	longhornNamespace = "longhorn-system"
+
+	UnreachableNodesPingCount = clusters.PingRetryCount + 3
 )
 
 // etcdMemberList wraps parsed structures that are
@@ -90,7 +92,9 @@ func NewDeleter(
 	}
 
 	if notDeleted == "" {
-		return nil, fmt.Errorf("out of the %v control nodes, after the deletion none will remain, invalid state")
+		return nil, fmt.Errorf(
+			"out of the %v control nodes, after the deletion none will remain, invalid state", len(controlNodes),
+		)
 	}
 
 	return &Deleter{
@@ -128,6 +132,44 @@ func (d *Deleter) DeleteNodes(logger zerolog.Logger) error {
 
 	// Remove master nodes sequentially to minimise risk of faults in etcd
 	for _, master := range d.masterNodes {
+		if !slices.Contains(k8snodes, master.k8sName) {
+			logger.
+				Warn().
+				Msgf("Node with name %s not found in cluster", master.k8sName)
+			continue
+		}
+
+		logger.
+			Info().
+			Msgf("verifying if node %s is reachable", master.k8sName)
+
+		if err := clusters.Ping(logger, UnreachableNodesPingCount, master.publicEndpoint); err != nil {
+			if errors.Is(err, clusters.ErrEchoTimeout) {
+				logger.
+					Info().
+					Msgf(
+						"Node %s is unreachable, marking node with `out-of-service` taint "+
+							"before deleting it from the cluster", master.k8sName,
+					)
+
+				if err := kubectl.KubectlTaintNodeShutdown(master.k8sName); err != nil {
+					logger.
+						Err(err).
+						Msgf(
+							"Failed to taint node %s with 'out-of-service' taint, proceeding with default deletion",
+							master.k8sName,
+						)
+				}
+			} else {
+				logger.
+					Err(err).
+					Msgf(
+						"Failed to determine if node %s is reachable or not, proceeding with default deletion",
+						master.k8sName,
+					)
+			}
+		}
+
 		// IMPORTANT: first you have to cordon and drain, and only after that you can remove from etcd
 		// kubectl cordon <node-name> <args>
 		if err := kubectl.KubectlCordon(master.k8sName); err != nil {
@@ -144,6 +186,7 @@ func (d *Deleter) DeleteNodes(logger zerolog.Logger) error {
 		if err := d.deleteFromEtcd(logger, kubectl); err != nil {
 			return fmt.Errorf("error while deleting nodes from etcd: %w", err)
 		}
+
 		// delete master nodes
 		if err := d.deleteNodesByName(logger, kubectl, master, k8snodes); err != nil {
 			return fmt.Errorf("error while deleting nodes from master nodes: %w", err)
@@ -157,6 +200,37 @@ func (d *Deleter) DeleteNodes(logger zerolog.Logger) error {
 				Warn().
 				Msgf("Node with name %s not found in cluster", worker.k8sName)
 			continue
+		}
+
+		logger.
+			Info().
+			Msgf("verifying if node %s is reachable", worker.k8sName)
+
+		if err := clusters.Ping(logger, UnreachableNodesPingCount, worker.publicEndpoint); err != nil {
+			if errors.Is(err, clusters.ErrEchoTimeout) {
+				logger.
+					Info().
+					Msgf(
+						"Node %s is unreachable, marking node with `out-of-service` taint "+
+							"before deleting it from the cluster", worker.k8sName,
+					)
+
+				if err := kubectl.KubectlTaintNodeShutdown(worker.k8sName); err != nil {
+					logger.
+						Err(err).
+						Msgf(
+							"Failed to taint node %s with 'out-of-service' taint, proceeding with default deletion",
+							worker.k8sName,
+						)
+				}
+			} else {
+				logger.
+					Err(err).
+					Msgf(
+						"Failed to determine if node %s is reachable or not, proceeding with default deletion",
+						worker.k8sName,
+					)
+			}
 		}
 
 		// kubectl cordon <node-name> <args>
@@ -191,18 +265,6 @@ func (d *Deleter) deleteNodesByName(logger zerolog.Logger, kc kubectl.Kubectl, n
 	if !slices.Contains(realNodeNames, node.k8sName) {
 		logger.Warn().Msgf("Node with name %s not found in cluster", node.k8sName)
 		return nil
-	}
-
-	logger.Info().Msgf("verifying if node %s is reachable", node.k8sName)
-	if err := clusters.Ping(logger, clusters.PingRetryCount, node.publicEndpoint); err != nil {
-		if errors.Is(err, clusters.ErrEchoTimeout) {
-			logger.Info().Msgf("Node %s is unreachable, marking node with `out-of-service` taint before deleting it from the cluster", node.k8sName)
-			if err := kc.KubectlTaintNodeShutdown(node.k8sName); err != nil {
-				logger.Err(err).Msgf("Failed to taint node %s with 'out-of-service' taint, proceeding with default deletion", node.k8sName)
-			}
-		} else {
-			logger.Err(err).Msgf("Failed to determine if node %s is reachable or not, proceeding with default deletion", node.k8sName)
-		}
 	}
 
 	logger.Info().Msgf("Deleting node %s from k8s cluster", node.k8sName)

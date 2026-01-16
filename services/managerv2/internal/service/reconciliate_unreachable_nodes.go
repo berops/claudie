@@ -106,25 +106,25 @@ func HandleKubernetesUnreachableNodes(
 		// the known unreachable infrastructure
 		unreachableInfra = spec.Unreachable{
 			Kubernetes: &spec.Unreachable_UnreachableNodePools{
-				Nodepools: map[string]*spec.Unreachable_ListOfNodes{},
+				Nodepools: map[string]*spec.Unreachable_ListOfNodeEndpoints{},
 			},
 			Loadbalancers: map[string]*spec.Unreachable_UnreachableNodePools{},
 		}
 	)
 
-	for np, nodes := range r.Unreachable.Kubernetes {
-		unreachableInfra.Kubernetes.Nodepools[np] = &spec.Unreachable_ListOfNodes{
-			Nodes: nodes,
+	for np, endpoints := range r.Unreachable.Kubernetes {
+		unreachableInfra.Kubernetes.Nodepools[np] = &spec.Unreachable_ListOfNodeEndpoints{
+			Endpoints: endpoints,
 		}
 	}
 
 	for lb, nps := range r.Unreachable.LoadBalancers {
 		unreachableInfra.Loadbalancers[lb] = &spec.Unreachable_UnreachableNodePools{
-			Nodepools: map[string]*spec.Unreachable_ListOfNodes{},
+			Nodepools: map[string]*spec.Unreachable_ListOfNodeEndpoints{},
 		}
-		for np, nodes := range nps {
-			unreachableInfra.Loadbalancers[lb].Nodepools[np] = &spec.Unreachable_ListOfNodes{
-				Nodes: nodes,
+		for np, endpoints := range nps {
+			unreachableInfra.Loadbalancers[lb].Nodepools[np] = &spec.Unreachable_ListOfNodeEndpoints{
+				Endpoints: endpoints,
 			}
 		}
 	}
@@ -358,25 +358,25 @@ func HandleLoadBalancerUnreachableNodes(
 		// the known unreachable infrastructure
 		unreachableInfra = spec.Unreachable{
 			Kubernetes: &spec.Unreachable_UnreachableNodePools{
-				Nodepools: map[string]*spec.Unreachable_ListOfNodes{},
+				Nodepools: map[string]*spec.Unreachable_ListOfNodeEndpoints{},
 			},
 			Loadbalancers: map[string]*spec.Unreachable_UnreachableNodePools{},
 		}
 	)
 
-	for np, nodes := range r.Unreachable.Kubernetes {
-		unreachableInfra.Kubernetes.Nodepools[np] = &spec.Unreachable_ListOfNodes{
-			Nodes: nodes,
+	for np, endpoints := range r.Unreachable.Kubernetes {
+		unreachableInfra.Kubernetes.Nodepools[np] = &spec.Unreachable_ListOfNodeEndpoints{
+			Endpoints: endpoints,
 		}
 	}
 
 	for lb, nps := range r.Unreachable.LoadBalancers {
 		unreachableInfra.Loadbalancers[lb] = &spec.Unreachable_UnreachableNodePools{
-			Nodepools: map[string]*spec.Unreachable_ListOfNodes{},
+			Nodepools: map[string]*spec.Unreachable_ListOfNodeEndpoints{},
 		}
-		for np, nodes := range nps {
-			unreachableInfra.Loadbalancers[lb].Nodepools[np] = &spec.Unreachable_ListOfNodes{
-				Nodes: nodes,
+		for np, endpoints := range nps {
+			unreachableInfra.Loadbalancers[lb].Nodepools[np] = &spec.Unreachable_ListOfNodeEndpoints{
+				Endpoints: endpoints,
 			}
 		}
 	}
@@ -471,7 +471,7 @@ func HandleLoadBalancerUnreachableNodes(
 			errMsg.WriteByte(']')
 			errUnreachable = errors.Join(
 				errUnreachable,
-				fmt.Errorf("nodepool %q from loadbalancer %q has %v unreachable loadbalancer node/s: %s", np, lb, len(ips), errMsg.String()),
+				fmt.Errorf("nodepool %q from loadbalancer %q has %v unreachable loadbalancer node/s:\n %s", np, lb, len(ips), errMsg.String()),
 			)
 		}
 	}
@@ -480,7 +480,7 @@ func HandleLoadBalancerUnreachableNodes(
 		r.State.InFlight = nil
 		r.State.State.Status = spec.Workflow_ERROR
 		r.State.State.Description = fmt.Sprintf(`
-Nodes within loadbalancers attached to the kubernetes clsuter
+Nodes within loadbalancers attached to the kubernetes cluster
 have reachability problems.
 
 Fix the unreachable nodes by either:
@@ -491,6 +491,10 @@ Fix the unreachable nodes by either:
 
 %v
 `, errUnreachable)
+
+		logger.
+			Error().
+			Msg(r.State.State.Description)
 
 		return UnreachableNodesPropagateError
 	}

@@ -294,24 +294,23 @@ func (te *Task) ConsumeUpdateResult(result *TaskResult_Update) error {
 			}
 
 			affected := (*k8s).ClusterInfo.NodePools[idx]
+			unreachable := delta.KDeleteNodes.Unreachable
 
 			if delta.KDeleteNodes.WithNodePool {
-				// Below, with the replacement of the kuberentes
-				// cluster it should no longer reference this nodepool
-				// and this should be the only owner of it afterwards.
 				update.Delta = &Update_DeletedK8SNodes_{
 					DeletedK8SNodes: &Update_DeletedK8SNodes{
+						Unreachable: unreachable,
 						Kind: &Update_DeletedK8SNodes_Whole{
 							Whole: &Update_DeletedK8SNodes_WholeNodePool{
+								// Below, with the replacement of the kuberentes
+								// cluster it should no longer reference this nodepool
+								// and this should be the only owner of it afterwards.
 								Nodepool: affected,
 							},
 						},
 					},
 				}
 			} else {
-				// Below, with the replacement of the kubernetes
-				// cluster it should no longer reference these nodes
-				// and this should be the only owner of them afterwards.
 				d := &Update_DeletedK8SNodes_Partial_{
 					Partial: &Update_DeletedK8SNodes_Partial{
 						Nodepool:       delta.KDeleteNodes.Nodepool,
@@ -320,6 +319,9 @@ func (te *Task) ConsumeUpdateResult(result *TaskResult_Update) error {
 					},
 				}
 
+				// Below, with the replacement of the kubernetes
+				// cluster it should no longer reference these nodes
+				// and this should be the only owner of them afterwards.
 				for _, n := range affected.Nodes {
 					if slices.Contains(delta.KDeleteNodes.Nodes, n.Name) {
 						d.Partial.Nodes = append(d.Partial.Nodes, n)
@@ -335,7 +337,8 @@ func (te *Task) ConsumeUpdateResult(result *TaskResult_Update) error {
 
 				update.Delta = &Update_DeletedK8SNodes_{
 					DeletedK8SNodes: &Update_DeletedK8SNodes{
-						Kind: d,
+						Unreachable: unreachable,
+						Kind:        d,
 					},
 				}
 			}
@@ -364,25 +367,24 @@ func (te *Task) ConsumeUpdateResult(result *TaskResult_Update) error {
 			}
 
 			affected := lb.ClusterInfo.NodePools[npi]
+			unreachable := delta.TfDeleteLoadBalancerNodes.Unreachable
 
 			if delta.TfDeleteLoadBalancerNodes.WithNodePool {
-				// Below, with the replacement of the loadbalancer
-				// clsuter it should no longer reference this nodepool
-				// and this should be the only owner of it afterwards.
 				update.Delta = &Update_DeletedLoadBalancerNodes_{
 					DeletedLoadBalancerNodes: &Update_DeletedLoadBalancerNodes{
-						Handle: handle,
+						Unreachable: unreachable,
+						Handle:      handle,
 						Kind: &Update_DeletedLoadBalancerNodes_Whole{
 							Whole: &Update_DeletedLoadBalancerNodes_WholeNodePool{
+								// Below, with the replacement of the loadbalancer
+								// cluster it should no longer reference this nodepool
+								// and this should be the only owner of it afterwards.
 								Nodepool: affected,
 							},
 						},
 					},
 				}
 			} else {
-				// Below, with the replacement of the loadbalancer cluster
-				// it should no longer reference these nodes and this should
-				// be the only owner of them afterwards.
 				d := &Update_DeletedLoadBalancerNodes_Partial_{
 					Partial: &Update_DeletedLoadBalancerNodes_Partial{
 						Nodepool:       delta.TfDeleteLoadBalancerNodes.Nodepool,
@@ -391,6 +393,9 @@ func (te *Task) ConsumeUpdateResult(result *TaskResult_Update) error {
 					},
 				}
 
+				// Below, with the replacement of the loadbalancer cluster
+				// it should no longer reference these nodes and this should
+				// be the only owner of them afterwards.
 				for _, n := range affected.Nodes {
 					if slices.Contains(delta.TfDeleteLoadBalancerNodes.Nodes, n.Name) {
 						d.Partial.Nodes = append(d.Partial.Nodes, n)
@@ -406,8 +411,9 @@ func (te *Task) ConsumeUpdateResult(result *TaskResult_Update) error {
 
 				update.Delta = &Update_DeletedLoadBalancerNodes_{
 					DeletedLoadBalancerNodes: &Update_DeletedLoadBalancerNodes{
-						Handle: handle,
-						Kind:   d,
+						Unreachable: unreachable,
+						Handle:      handle,
+						Kind:        d,
 					},
 				}
 			}
