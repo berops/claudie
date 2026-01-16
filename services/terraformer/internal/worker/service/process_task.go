@@ -27,8 +27,7 @@ type (
 	}
 
 	Stores struct {
-		s3     store.S3StateStorage
-		dynamo store.DynamoDB
+		s3 store.S3StateStorage
 	}
 
 	Tracker struct {

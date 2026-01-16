@@ -51,7 +51,6 @@ type natsConsumer struct {
 }
 
 type Service struct {
-	dynamoDB          store.DynamoDB
 	stateStorage      store.S3StateStorage
 	spawnProcessLimit *semaphore.Weighted
 
@@ -98,7 +97,6 @@ func New(ctx context.Context, opts ...grpc.ServerOption) (*Service, error) {
 	healthserver.SetServingStatus(HealthCheckName, grpc_health_v1.HealthCheckResponse_NOT_SERVING)
 	grpc_health_v1.RegisterHealthServer(grpcserver, healthserver)
 
-	dynamo := store.CreateDynamoDBAdapter()
 	s3 := store.CreateS3Adapter()
 	spawnLimit := semaphore.NewWeighted(int64(SpawnProcessLimit))
 
@@ -114,7 +112,6 @@ func New(ctx context.Context, opts ...grpc.ServerOption) (*Service, error) {
 	}
 
 	s := Service{
-		dynamoDB:          dynamo,
 		stateStorage:      s3,
 		spawnProcessLimit: spawnLimit,
 		gserver:           &gserver,
@@ -171,12 +168,6 @@ func (s *Service) Stop() {
 
 func (s *Service) PerformHealthCheckAndUpdateStatus() {
 	if err := s.stateStorage.HealthCheck(); err != nil {
-		s.gserver.healthServer.SetServingStatus(HealthCheckName, grpc_health_v1.HealthCheckResponse_NOT_SERVING)
-		log.Debug().Msgf("Failed to verify healthcheck: %v", err)
-		return
-	}
-
-	if err := s.dynamoDB.HealthCheck(); err != nil {
 		s.gserver.healthServer.SetServingStatus(HealthCheckName, grpc_health_v1.HealthCheckResponse_NOT_SERVING)
 		log.Debug().Msgf("Failed to verify healthcheck: %v", err)
 		return

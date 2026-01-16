@@ -17,8 +17,6 @@ Claudie relies on all services to be interconnected. If any of these services fa
     ansibler-5c6c776b75-82c2q              1/1     Running     0               8m10s
     builder-59f9d44596-n2qzm               1/1     Running     0               8m10s
     manager-5d76c89b4d-tb6h4               1/1     Running     1 (6m37s ago)   8m10s
-    create-table-job-jvs9n                 0/1     Completed   1               8m10s
-    dynamodb-68777f9787-8wjhs              1/1     Running     0               8m10s
     claudie-operator-5755b7bc69-5l84h      1/1     Running     0               8m10s
     kube-eleven-64468cd5bd-qp4d4           1/1     Running     0               8m10s
     kuber-698c4564c-dhsvg                  1/1     Running     0               8m10s
@@ -69,10 +67,10 @@ Claudie relies on all services to be interconnected. If any of these services fa
         The great thing about Claudie is that it utilizes open source tools to set up and configure infrastructure based on your preferences. As a result, the majority of errors can be easily found and resolved through online resources.
 
 ### Terraformer service not starting
-Terraformer relies on MinIO and DynamoDB datastores to be configured via jobs `make-bucket-job` and `create-table-job` respectively. If these jobs fail to configure the datastores, or the datastores themselves fail to start, Terraformer will also fail to start.
+Terraformer relies on MinIO datastore to be configured via jobs `make-bucket-job`. If the job fails to configure the datastore, or the datastore itself fails to start, Terraformer will also fail to start.
 
 ### Datastore initialization jobs
-The `create-table-job` is responsible for creating necessary tables in the DynamoDB datastore, while the `make-bucket-job` creates a bucket in the MinIO datastore. If these jobs encounter scheduling problems or experience slow autoscaling, they may fail to complete within the designated time frame. To handle this, we have set the `backoffLimit` of both jobs to fail after approximately 42 minutes. If you encounter any issues with these jobs or believe the `backoffLimit` should be adjusted, please [create an issue](https://github.com/berops/claudie/issues).
+The `make-bucket-job` creates a bucket in the MinIO datastore. If this job encounter scheduling problems or experience slow autoscaling, it may fail to complete within the designated time frame. To handle this, we have set the `backoffLimit` to fail after approximately 42 minutes. If you encounter any issues with this job or believe the `backoffLimit` should be adjusted, please [create an issue](https://github.com/berops/claudie/issues).
 
 ## Networking issues
 ### Wireguard MTU

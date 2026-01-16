@@ -25,8 +25,7 @@ import (
 func (s *Service) Handler(msg jetstream.Msg) {
 	handler := func() {
 		stores := Stores{
-			s3:     s.stateStorage,
-			dynamo: s.dynamoDB,
+			s3: s.stateStorage,
 		}
 		handlerInner(AckWait, s.spawnProcessLimit, s.done, s.consumer.natsclient.JetStream(), msg, stores)
 	}

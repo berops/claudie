@@ -21,9 +21,6 @@ import (
 const (
 	keyFormatStateFile    = "%s/%s"
 	dnsKeyFormatStateFile = "%s/%s-dns"
-
-	keyFormatLockFile    = "%s/%s/%s-md5"
-	dnsKeyFormatLockFile = "%s/%s/%s-dns-md5"
 )
 
 func destroy(
@@ -78,7 +75,7 @@ func destroy(
 	err := concurrent.Exec(clusters, func(idx int, cluster Cluster) error {
 		buildLogger := logger.With().Str("cluster", cluster.Id()).Logger()
 		ids[idx] = cluster.Id()
-		errs[idx] = DestroyCluster(buildLogger, projectName, cluster, stores.s3, stores.dynamo)
+		errs[idx] = DestroyCluster(buildLogger, projectName, cluster, stores.s3)
 		return errs[idx]
 	})
 	if err != nil {
@@ -121,7 +118,6 @@ func DestroyCluster(
 	projectName string,
 	cluster Cluster,
 	s3 store.S3StateStorage,
-	dynamo store.DynamoDB,
 ) error {
 	logger.Info().Msg("Destroying infrastructure")
 
@@ -144,10 +140,7 @@ func DestroyCluster(
 
 	logger.Info().Msgf("Infrastructure was successfully destroyed")
 
-	// After the infrastructure is destroyed, we need to delete the tofu state file from MinIO and tofu state-lock file from DynamoDB.
-	if err := dynamo.DeleteLockFile(ctx, projectName, cluster.Id(), keyFormatLockFile); err != nil {
-		logger.Warn().Msgf("Failed to delete lock file, assumming it was deleted/not created")
-	}
+	// After the infrastructure is destroyed, we need to delete the tofu state file from MinIO.
 	if err := s3.DeleteStateFile(ctx, projectName, cluster.Id(), keyFormatStateFile); err != nil {
 		logger.Warn().Msgf("Failed to delete state file, assumming it was deleted/not created")
 	}
@@ -159,11 +152,8 @@ func DestroyCluster(
 	logger.Info().Msgf("Successfully deleted Templates files for cluster")
 
 	// In case of LoadBalancer type cluster,
-	// there are additional DNS related tofu state and state-lock files.
+	// there is additional DNS related tofu state.
 	if _, ok := cluster.(*loadbalancer.LBcluster); ok {
-		if err := dynamo.DeleteLockFile(ctx, projectName, cluster.Id(), dnsKeyFormatLockFile); err != nil {
-			logger.Warn().Msgf("Failed to delete lock file for %q-dns, assumming it was deleted/not created", cluster.Id())
-		}
 		if err := s3.DeleteStateFile(ctx, projectName, cluster.Id(), dnsKeyFormatStateFile); err != nil {
 			logger.Warn().Msgf("Failed to delete state file for %q-dns, assumming it was deleted/not created", cluster.Id())
 		}

@@ -8,7 +8,7 @@ import (
 	"github.com/berops/claudie/internal/healthcheck"
 )
 
-// environmnet variables that should be used within the implementation of [S3StateStorage] or [DynamoDB]
+// environmnet variables that should be used within the implementation of [S3StateStorage]
 var (
 	s3Endpoint = envs.BucketEndpoint
 	s3Bucket   = envs.BucketName
@@ -17,14 +17,6 @@ var (
 	awsAccessKeyId     = envs.AwsAccesskeyId
 	awsSecretAccessKey = envs.AwsSecretAccessKey
 )
-
-// API for communicating with DynamoDB style backends.
-type DynamoDB interface {
-	// DeleteLockFile removes lock file for the tofu state file from dynamoDB.
-	DeleteLockFile(ctx context.Context, projectName, clusterId string, keyFormat string) error
-
-	healthcheck.HealthChecker
-}
 
 var (
 	// ErrKeyNotExists is returned when the key is not present in the storage implementing [S3StateStorage].
