@@ -8,7 +8,7 @@ spec:
       providerType: oci
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.14
+        tag: v0.9.15
         path: "templates/terraformer/oci"
       secretRef:
         name: oci-secret
@@ -17,7 +17,7 @@ spec:
       providerType: cloudflare
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.14
+        tag: v0.9.15
         path: "templates/terraformer/cloudflare"
       secretRef:
         name: cloudflare-secret
@@ -26,7 +26,7 @@ spec:
       providerType: gcp
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.14
+        tag: v0.9.15
         path: "templates/terraformer/gcp"
       secretRef:
         name: gcp-secret

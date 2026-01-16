@@ -8,7 +8,7 @@ spec:
       providerType: hetzner
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.14
+        tag: v0.9.15
         path: "templates/terraformer/hetzner"
       secretRef:
         name: hetzner-secret
