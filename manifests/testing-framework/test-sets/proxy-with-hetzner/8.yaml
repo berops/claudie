@@ -23,13 +23,13 @@ spec:
         namespace: e2e-secrets
   nodePools:
     dynamic:
-      - name: gcp-ctrl-nodes
+      - name: htz-ctrl-nodes
         providerSpec:
           name: hetzner-1
           region: fsn1
           zone: fsn1-dc14
         count: 1
-        serverType: cpx11
+        serverType: cpx22
         image: ubuntu-24.04
         storageDiskSize: 50
         labels:
@@ -42,7 +42,7 @@ spec:
           name: hetzner-1
           region: fsn1
           zone: fsn1-dc14
-        serverType: cpx11
+        serverType: cpx22
         image: ubuntu-24.04
         storageDiskSize: 50
         count: 1
@@ -61,6 +61,6 @@ spec:
           endpoint: http://proxy.claudie.io:8880
         pools:
           control:
-            - gcp-ctrl-nodes
+            - htz-ctrl-nodes
           compute:
             - htz-cmpt-nodes
