@@ -11,7 +11,8 @@ env:
 
 jobs:
   merge-branch:
-    if: github.event.pull_request.draft == false
+    # Skip merge step for fork PRs - GITHUB_TOKEN cannot push to external repositories
+    if: github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
@@ -27,7 +28,7 @@ jobs:
           target_branch: ${{ github.head_ref }}
   #--------------------------------------------------------------------------------------------------
   check-changes:
-    if: github.event.pull_request.draft == false
+    if: github.event.pull_request.draft == false && !failure() && !cancelled()
     runs-on: self-hosted
     needs: merge-branch
     steps:
@@ -70,6 +71,7 @@ jobs:
       RUN_TESTS: ${{ steps.change.outputs.RUN_TESTS }}
   #--------------------------------------------------------------------------------------------------
   gotest:
+    if: ${{ !failure() && !cancelled() }}
     runs-on: self-hosted
     needs: [merge-branch, check-changes]
     steps:
@@ -88,6 +90,7 @@ jobs:
   #--------------------------------------------------------------------------------------------------
   golangci:
     name: Run golangci-lint
+    if: ${{ !failure() && !cancelled() }}
     runs-on: self-hosted
     needs: [merge-branch, check-changes]
     steps:
@@ -129,6 +132,7 @@ jobs:
 
   #--------------------------------------------------------------------------------------------------
   build-and-push:
+    if: ${{ !failure() && !cancelled() }}
     runs-on: self-hosted
     needs: [merge-branch, check-changes]
     steps:
@@ -198,6 +202,7 @@ jobs:
       ARRAY_OF_CHANGES: ${{ steps.autoscaler-tag.outputs.ARRAY_OF_CHANGES }}
   #--------------------------------------------------------------------------------------------------
   edit-kustomization:
+    if: ${{ !failure() && !cancelled() }}
     runs-on: self-hosted
     needs: [merge-branch, check-changes, build-and-push, golangci, gotest]
     steps:
@@ -272,7 +277,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    if: ${{ (needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' || needs.check-changes.outputs.RUN_TESTS == 'true') && github.event.pull_request.draft == false }}
+    if: ${{ !failure() && !cancelled() && (needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' || needs.check-changes.outputs.RUN_TESTS == 'true') && github.event.pull_request.draft == false }}
     steps:
       - uses: actions/checkout@v4
         with:
