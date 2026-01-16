@@ -32,6 +32,7 @@ Claudie has been built as an answer to the following Kubernetes challenges.
 - Managed Kubernetes for providers that do not offer it
 - Cloud bursting
 - Service interconnect
+- Integration of GPU nodes into Kubernetes for AI workloads
 
 Read in more details [here](https://docs.claudie.io/latest/use-cases/use-cases/).
 
