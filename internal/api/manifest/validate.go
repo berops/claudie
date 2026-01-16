@@ -84,7 +84,7 @@ func prettyPrintValidationError(err error) error {
 		case "cidrv4":
 			nerr = fmt.Errorf("field '%s' is required to have a valid CIDRv4 value", err.StructField())
 		case "ver":
-			nerr = fmt.Errorf("field '%s' is required to have a kubernetes version of: 1.30.x, 1.31.x, 1.32.x", err.StructField())
+			nerr = fmt.Errorf("field '%s' is required to have a kubernetes version of: 1.32.x, 1.33.x, 1.34.x", err.StructField())
 		case "proxyMode":
 			nerr = fmt.Errorf("field '%s' is required to have a valid proxy mode value of \"on\", \"off\", \"default\"", err.StructField())
 		case "semver2":
