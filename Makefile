@@ -42,6 +42,10 @@ mongo:
 	mkdir -p ~/mongo/data
 	docker run --name mongo -d --rm -p 27017:27017 -v ~/mongo/data:/data/db mongo:5
 
+nats:
+	mkdir -p ~/nats
+	docker run --name nats -d --rm -p 4222:4222 -v ~/nats:/data nats -js -sd /data
+
 # Start minio backend for state files used in terraform
 minio:
 # mkdir will simulate the automatic bucket creation
