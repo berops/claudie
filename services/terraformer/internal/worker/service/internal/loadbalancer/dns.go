@@ -42,6 +42,7 @@ func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 		tofu      = tofu.Terraform{
 			Directory:         dnsDir,
 			SpawnProcessLimit: d.SpawnProcessLimit,
+			CacheDir:          cluster_builder.CacheDir,
 		}
 	)
 
@@ -62,6 +63,11 @@ func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 
 	if err := d.generateFiles(logger, dnsID, dnsDir, d.Dns, d.NodeIPs); err != nil {
 		return fmt.Errorf("error while creating dns .tf files for %s : %w", dnsID, err)
+	}
+
+	if err := tofu.ProvidersLock(); err != nil {
+		sublogger.Warn().Msgf("Error while locking providers from local FS mirror\n" +
+			"Continue to retrieve providers and generate hash from remote registry")
 	}
 
 	if err := tofu.Init(); err != nil {
@@ -136,10 +142,16 @@ func (d *DNS) DestroyDNSRecords(logger zerolog.Logger) error {
 	tofu := tofu.Terraform{
 		Directory:         dnsDir,
 		SpawnProcessLimit: d.SpawnProcessLimit,
+		CacheDir:          cluster_builder.CacheDir,
 	}
 
 	tofu.Stdout = comm.GetStdOut(dnsID)
 	tofu.Stderr = comm.GetStdErr(dnsID)
+
+	if err := tofu.ProvidersLock(); err != nil {
+		sublogger.Warn().Msgf("Error while locking providers from local FS mirror\n" +
+			"Continue to retrieve providers and generate hash from remote registry")
+	}
 
 	if err := tofu.Init(); err != nil {
 		return err

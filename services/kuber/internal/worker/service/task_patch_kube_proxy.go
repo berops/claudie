@@ -1,12 +1,19 @@
 package service
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
 
+	"github.com/berops/claudie/internal/fileutils"
+	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 
 	"gopkg.in/yaml.v3"
 )
@@ -24,10 +31,33 @@ func PatchKubeProxy(logger zerolog.Logger, tracker Tracker) {
 	}
 
 	kubeconfig := action.Update.State.K8S.Kubeconfig
-	patchKubeProxy(logger, kubeconfig, tracker)
+	clusterId := action.Update.State.K8S.ClusterInfo.Id()
+	patchKubeProxy(logger, kubeconfig, clusterId, tracker)
 }
 
-func patchKubeProxy(logger zerolog.Logger, kubeconfig string, tracker Tracker) {
+func patchKubeProxy(logger zerolog.Logger, kubeconfig, clusterId string, tracker Tracker) {
+	clusterDir := filepath.Join(OutputDir, fmt.Sprintf("%s-%s", clusterId, hash.Create(7)))
+	if err := fileutils.CreateDirectory(clusterDir); err != nil {
+		logger.Err(err).Msgf("Failed to create directory %s", clusterDir)
+		tracker.Diagnostics.Push(err)
+		return
+	}
+
+	defer func() {
+		if err := os.RemoveAll(clusterDir); err != nil {
+			log.Err(err).Msgf("error while deleting temp directory: %s", clusterDir)
+		}
+	}()
+
+	file, err := os.CreateTemp(clusterDir, clusterId)
+	if err != nil {
+		err := fmt.Errorf("failed to create temporary file: %w", err)
+		logger.Err(err).Msg("Failed to create temp file within temp directory")
+		tracker.Diagnostics.Push(err)
+		return
+	}
+	defer file.Close()
+
 	k := kubectl.Kubectl{
 		Kubeconfig: kubeconfig,
 	}
@@ -44,7 +74,7 @@ func patchKubeProxy(logger zerolog.Logger, kubeconfig string, tracker Tracker) {
 		return
 	}
 
-	var desiredKubeconfig map[string]interface{}
+	var desiredKubeconfig map[string]any
 	if err := yaml.Unmarshal([]byte(kubeconfig), &desiredKubeconfig); err != nil {
 		err := fmt.Errorf("failed to unmarshal kubeconfig, malformed yaml : %w", err)
 		logger.Err(err).Msg("Unmarshall failed")
@@ -52,7 +82,7 @@ func patchKubeProxy(logger zerolog.Logger, kubeconfig string, tracker Tracker) {
 		return
 	}
 
-	var rawConfigMap map[string]interface{}
+	var rawConfigMap map[string]any
 	if err := yaml.Unmarshal(configMap, &rawConfigMap); err != nil {
 		err := fmt.Errorf("failed to update cluster info config map, malformed yaml : %w", err)
 		logger.Err(err).Msg("Failed to unmarshall")
@@ -84,7 +114,22 @@ func patchKubeProxy(logger zerolog.Logger, kubeconfig string, tracker Tracker) {
 		return
 	}
 
-	if err = k.KubectlApplyString(string(b), "-n kube-system"); err != nil {
+	n, err := io.Copy(file, bytes.NewReader(b))
+	if err != nil {
+		err := fmt.Errorf("failed to write contents to temporary file: %w", err)
+		logger.Err(err).Msg("Failed to write new config map into temporary file")
+		tracker.Diagnostics.Push(err)
+		return
+	}
+	if n != int64(len(b)) {
+		err := fmt.Errorf("failed to fully write contents to temporary file")
+		logger.Err(err).Msg("Failed to fully write changes into temporary file")
+		tracker.Diagnostics.Push(err)
+		return
+	}
+
+	k.Directory = clusterDir
+	if err = k.KubectlApply(filepath.Base(file.Name()), "-n kube-system"); err != nil {
 		err := fmt.Errorf("failed to patch config map: %w", err)
 		logger.Err(err).Msg("Failed to apply patched kube proxy config map")
 		tracker.Diagnostics.Push(err)

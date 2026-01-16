@@ -31,6 +31,7 @@ const (
 const (
 	TemplatesRootDir = "services/terraformer/templates"
 	Output           = "services/terraformer/clusters"
+	CacheDir         = "services/terraformer/server/cache"
 )
 
 type K8sInfo struct{ ExportPort6443 bool }
@@ -76,10 +77,16 @@ func (c ClusterBuilder) CreateNodepools() error {
 	tofu := tofu.Terraform{
 		Directory:         clusterDir,
 		SpawnProcessLimit: c.SpawnProcessLimit,
+		CacheDir:          CacheDir,
 	}
 
 	tofu.Stdout = comm.GetStdOut(clusterID)
 	tofu.Stderr = comm.GetStdErr(clusterID)
+
+	if err := tofu.ProvidersLock(); err != nil {
+		log.Warn().Msgf("Error while locking providers from local FS mirror\n" +
+			"Continue to retrieve providers and generate hash from remote registry.")
+	}
 
 	if err := tofu.Init(); err != nil {
 		return fmt.Errorf("error while running tofu init in %s : %w", clusterID, err)
@@ -129,6 +136,7 @@ func (c ClusterBuilder) DestroyNodepools() error {
 		tofu       = tofu.Terraform{
 			Directory:         clusterDir,
 			SpawnProcessLimit: c.SpawnProcessLimit,
+			CacheDir:          CacheDir,
 		}
 	)
 
@@ -143,6 +151,11 @@ func (c ClusterBuilder) DestroyNodepools() error {
 
 	if err := c.generateFiles(clusterID, clusterDir); err != nil {
 		return fmt.Errorf("failed to generate files: %w", err)
+	}
+
+	if err := tofu.ProvidersLock(); err != nil {
+		log.Warn().Msgf("Error while locking providers from local FS mirror\n" +
+			"Continue to retrieve providers and generate hash from remote registry.")
 	}
 
 	if err := tofu.Init(); err != nil {
