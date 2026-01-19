@@ -33,7 +33,8 @@ var (
 	DurableName = envs.GetOrDefault("KUBER_DURABLE_NAME", "kuber")
 
 	// Name used for health checking via the grpc health check.
-	HealthCheckName = envs.GetOrDefault("KUBER_HEALTHCHECK_SERVICE_NAME", "kuber-readiness")
+	HealthCheckReadinessName = envs.GetOrDefault("KUBER_HEALTHCHECK_READINESS_SERVICE_NAME", "kuber-readiness")
+	HealthCheckLivenessName  = envs.GetOrDefault("KUBER_HEALTHCHECK_LIVENESS_SERVICE_NAME", "kuber-liveness")
 
 	// Ack wait time in minutes for processing incoming NATS messages.
 	AckWait = time.Duration(envs.GetOrDefaultInt("KUBER_ACK_WAIT_TIME", 10)) * time.Minute
@@ -96,7 +97,8 @@ func New(ctx context.Context, opts ...grpc.ServerOption) (*Service, error) {
 	grpcserver := grpcutils.NewGRPCServer(opts...)
 	healthserver := health.NewServer()
 
-	healthserver.SetServingStatus(HealthCheckName, grpc_health_v1.HealthCheckResponse_NOT_SERVING)
+	healthserver.SetServingStatus(HealthCheckReadinessName, grpc_health_v1.HealthCheckResponse_NOT_SERVING)
+	healthserver.SetServingStatus(HealthCheckLivenessName, grpc_health_v1.HealthCheckResponse_NOT_SERVING)
 	grpc_health_v1.RegisterHealthServer(grpcserver, healthserver)
 
 	spawnLimit := semaphore.NewWeighted(int64(SpawnProcessLimit))
@@ -170,10 +172,12 @@ func (s *Service) Stop() {
 func (s *Service) PerformHealthCheckAndUpdateStatus() {
 	if status := s.consumer.natsclient.Conn().Status(); status != nats.CONNECTED {
 		err := fmt.Errorf("nats connection status is %s", status.String())
-		s.gserver.healthServer.SetServingStatus(HealthCheckName, grpc_health_v1.HealthCheckResponse_NOT_SERVING)
+		s.gserver.healthServer.SetServingStatus(HealthCheckReadinessName, grpc_health_v1.HealthCheckResponse_NOT_SERVING)
+		s.gserver.healthServer.SetServingStatus(HealthCheckLivenessName, grpc_health_v1.HealthCheckResponse_NOT_SERVING)
 		log.Debug().Msgf("Failed to verify healthcheck: %v", err)
 		return
 	}
 
-	s.gserver.healthServer.SetServingStatus(HealthCheckName, grpc_health_v1.HealthCheckResponse_SERVING)
+	s.gserver.healthServer.SetServingStatus(HealthCheckReadinessName, grpc_health_v1.HealthCheckResponse_SERVING)
+	s.gserver.healthServer.SetServingStatus(HealthCheckLivenessName, grpc_health_v1.HealthCheckResponse_SERVING)
 }

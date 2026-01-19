@@ -31,7 +31,8 @@ var (
 	DurableName = envs.GetOrDefault("TERRAFORMER_DURABLE_NAME", "terraformer")
 
 	// Name used for health checking via the grpc health check.
-	HealthCheckName = envs.GetOrDefault("TERRAFORMER_HEALTHCHECK_SERVICE_NAME", "terraformer-readiness")
+	HealthCheckReadinessName = envs.GetOrDefault("TERRAFORMER_HEALTHCHECK_READINESS_SERVICE_NAME", "terraformer-readiness")
+	HealthCheckLivenessName  = envs.GetOrDefault("TERRAFORMER_HEALTHCHECK_LIVENESS_SERVICE_NAME", "terraformer-liveness")
 
 	// Ack wait time in minutes for processing incoming NATS messages.
 	AckWait = time.Duration(envs.GetOrDefaultInt("TERRAFORMER_ACK_WAIT_TIME", 10)) * time.Minute
@@ -94,7 +95,8 @@ func New(ctx context.Context, opts ...grpc.ServerOption) (*Service, error) {
 	grpcserver := grpcutils.NewGRPCServer(opts...)
 	healthserver := health.NewServer()
 
-	healthserver.SetServingStatus(HealthCheckName, grpc_health_v1.HealthCheckResponse_NOT_SERVING)
+	healthserver.SetServingStatus(HealthCheckReadinessName, grpc_health_v1.HealthCheckResponse_NOT_SERVING)
+	healthserver.SetServingStatus(HealthCheckLivenessName, grpc_health_v1.HealthCheckResponse_NOT_SERVING)
 	grpc_health_v1.RegisterHealthServer(grpcserver, healthserver)
 
 	s3 := store.CreateS3Adapter()
@@ -168,17 +170,20 @@ func (s *Service) Stop() {
 
 func (s *Service) PerformHealthCheckAndUpdateStatus() {
 	if err := s.stateStorage.HealthCheck(); err != nil {
-		s.gserver.healthServer.SetServingStatus(HealthCheckName, grpc_health_v1.HealthCheckResponse_NOT_SERVING)
+		s.gserver.healthServer.SetServingStatus(HealthCheckReadinessName, grpc_health_v1.HealthCheckResponse_NOT_SERVING)
+		s.gserver.healthServer.SetServingStatus(HealthCheckLivenessName, grpc_health_v1.HealthCheckResponse_NOT_SERVING)
 		log.Debug().Msgf("Failed to verify healthcheck: %v", err)
 		return
 	}
 
 	if status := s.consumer.natsclient.Conn().Status(); status != nats.CONNECTED {
 		err := fmt.Errorf("nats connection status is %s", status.String())
-		s.gserver.healthServer.SetServingStatus(HealthCheckName, grpc_health_v1.HealthCheckResponse_NOT_SERVING)
+		s.gserver.healthServer.SetServingStatus(HealthCheckReadinessName, grpc_health_v1.HealthCheckResponse_NOT_SERVING)
+		s.gserver.healthServer.SetServingStatus(HealthCheckLivenessName, grpc_health_v1.HealthCheckResponse_NOT_SERVING)
 		log.Debug().Msgf("Failed to verify healthcheck: %v", err)
 		return
 	}
 
-	s.gserver.healthServer.SetServingStatus(HealthCheckName, grpc_health_v1.HealthCheckResponse_SERVING)
+	s.gserver.healthServer.SetServingStatus(HealthCheckReadinessName, grpc_health_v1.HealthCheckResponse_SERVING)
+	s.gserver.healthServer.SetServingStatus(HealthCheckLivenessName, grpc_health_v1.HealthCheckResponse_SERVING)
 }

@@ -28,7 +28,8 @@ var (
 	DurableName = envs.GetOrDefault("MANAGER_DURABLE_NAME", "manager")
 
 	// Name used for health checking via the grpc health check.
-	HealthCheckName = envs.GetOrDefault("MANAGER_HEALTHCHECK_SERVICE_NAME", "manager-readiness")
+	HealthCheckReadinessName = envs.GetOrDefault("MANAGER_HEALTHCHECK_READINESS_SERVICE_NAME", "manager-readiness")
+	HealthCheckLivenessName  = envs.GetOrDefault("MANAGER_HEALTHCHECK_LIVENESS_SERVICE_NAME", "manager-liveness")
 
 	// Ack wait time in minutes for processing incoming NATS messages.
 	AckWait = time.Duration(envs.GetOrDefaultInt("MANAGER_ACK_WAIT_TIME", 10)) * time.Minute
@@ -116,7 +117,8 @@ func New(ctx context.Context, opts ...grpc.ServerOption) (*Service, error) {
 	grpcserver := grpcutils.NewGRPCServer(opts...)
 	healthserver := health.NewServer()
 
-	healthserver.SetServingStatus(HealthCheckName, grpc_health_v1.HealthCheckResponse_NOT_SERVING)
+	healthserver.SetServingStatus(HealthCheckReadinessName, grpc_health_v1.HealthCheckResponse_NOT_SERVING)
+	healthserver.SetServingStatus(HealthCheckLivenessName, grpc_health_v1.HealthCheckResponse_NOT_SERVING)
 	grpc_health_v1.RegisterHealthServer(grpcserver, healthserver)
 
 	gserver := grpcServer{
@@ -200,14 +202,14 @@ func (s *Service) Stop() error {
 
 func (s *Service) PerformHealthCheckAndUpdateStatus() {
 	if err := s.store.HealthCheck(); err != nil {
-		s.server.healthServer.SetServingStatus(HealthCheckName, grpc_health_v1.HealthCheckResponse_NOT_SERVING)
+		s.server.healthServer.SetServingStatus(HealthCheckReadinessName, grpc_health_v1.HealthCheckResponse_NOT_SERVING)
+		s.server.healthServer.SetServingStatus(HealthCheckLivenessName, grpc_health_v1.HealthCheckResponse_NOT_SERVING)
 		log.Debug().Msgf("Failed to verify healthcheck: %v", err)
 		return
 	}
-	s.server.healthServer.SetServingStatus(HealthCheckName, grpc_health_v1.HealthCheckResponse_SERVING)
+	s.server.healthServer.SetServingStatus(HealthCheckReadinessName, grpc_health_v1.HealthCheckResponse_SERVING)
+	s.server.healthServer.SetServingStatus(HealthCheckLivenessName, grpc_health_v1.HealthCheckResponse_SERVING)
 }
-
-// TODO: remove the worker package used in managerv1.
 
 func (s *Service) watchPending() {
 	for {
