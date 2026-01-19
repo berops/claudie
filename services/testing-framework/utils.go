@@ -122,7 +122,6 @@ var (
 		spec.AWSProvider{},
 		spec.AzureProvider{},
 		spec.CloudflareProvider{},
-		spec.GenesisCloudProvider{},
 		spec.Provider{},
 		spec.Provider_Gcp{},
 		spec.Provider_Hetzner{},
@@ -131,7 +130,6 @@ var (
 		spec.Provider_Aws{},
 		spec.Provider_Azure{},
 		spec.Provider_Cloudflare{},
-		spec.Provider_Genesiscloud{},
 		spec.TemplateRepository{},
 	)
 )

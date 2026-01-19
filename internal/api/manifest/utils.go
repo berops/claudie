@@ -202,28 +202,6 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 		}
 	}
 
-	for _, gc := range ds.Providers.GenesisCloud {
-		if gc.Name == providerSpecName {
-			t := &spec.TemplateRepository{
-				Repository: gc.Templates.Repository,
-				Tag:        gc.Templates.Tag,
-				Path:       gc.Templates.Path,
-			}
-			if err := FetchCommitHash(t); err != nil {
-				return nil, err
-			}
-			return &spec.Provider{
-				SpecName: providerSpecName,
-				ProviderType: &spec.Provider_Genesiscloud{
-					Genesiscloud: &spec.GenesisCloudProvider{
-						Token: gc.ApiToken,
-					},
-				},
-				CloudProviderName: "genesiscloud",
-				Templates:         t,
-			}, nil
-		}
-	}
 	for _, os := range ds.Providers.Openstack {
 		if os.Name == providerSpecName {
 			t := &spec.TemplateRepository{
@@ -549,12 +527,6 @@ func (ds *Manifest) ForEachProvider(do func(name, typ string, tmpls **TemplateRe
 
 	for i, c := range ds.Providers.Azure {
 		if !do(c.Name, "azure", &ds.Providers.Azure[i].Templates) {
-			return
-		}
-	}
-
-	for i, c := range ds.Providers.GenesisCloud {
-		if !do(c.Name, "genesiscloud", &ds.Providers.GenesisCloud[i].Templates) {
 			return
 		}
 	}

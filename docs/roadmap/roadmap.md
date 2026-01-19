@@ -24,7 +24,6 @@ v0.8.1:
     - [x] AWS
     - [x] Azure
     - [x] Cloudflare
-    - [x] GenesisCloud
 - [x] Hybrid-cloud support (on-premises)
 - [x] `arm64` support for the nodepools
 - [x] App-level metrics

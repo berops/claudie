@@ -86,7 +86,6 @@ Before you begin, please make sure you have the following prerequisites installe
    | [OCI](https://docs.claudie.io/latest/input-manifest/providers/oci/)               | :heavy_check_mark: | :heavy_check_mark: |:heavy_check_mark: |
    | [Hetzner](https://docs.claudie.io/latest/input-manifest/providers/hetzner/)       | :heavy_check_mark: | :heavy_check_mark: | N/A               |
    | [Cloudflare](https://docs.claudie.io/latest/input-manifest/providers/cloudflare/) | N/A                | :heavy_check_mark: |:heavy_check_mark: |
-   | [GenesisCloud](https://docs.claudie.io/latest/input-manifest/providers/genesiscloud/) | :heavy_check_mark: | N/A            | N/A               |
    | [Openstack](https://docs.claudie.io/latest/input-manifest/providers/openstack/)   | :heavy_check_mark: | N/A                | N/A               |
 
 For adding support for other cloud providers, open an issue or propose a PR.

@@ -129,14 +129,7 @@ func (d *DynamicNodePool) Validate(m *Manifest) error {
 	validate.RegisterStructValidation(func(sl validator.StructLevel) {
 		dnp := sl.Current().Interface().(DynamicNodePool)
 
-		found := false
-		for _, p := range m.Providers.GenesisCloud {
-			if p.Name == dnp.ProviderSpec.Name {
-				found = true
-			}
-		}
-
-		if !found && dnp.ProviderSpec.Zone == "" {
+		if dnp.ProviderSpec.Zone == "" {
 			sl.ReportError(dnp.ProviderSpec.Zone, "Zone", "Zone", "required", "")
 		}
 	}, DynamicNodePool{})

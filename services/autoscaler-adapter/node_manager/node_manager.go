@@ -33,13 +33,12 @@ type InstanceInfo struct {
 // such as CPU, Memory, GPUs etc.
 type NodeManager struct {
 	// VM type info caches
-	genesisCloudVMs map[string]*InstanceInfo
-	hetznerVMs      map[string]*InstanceInfo
-	gcpVMs          map[string]*InstanceInfo
-	awsVMs          map[string]*InstanceInfo
-	azureVMs        map[string]*InstanceInfo
-	ociVMs          map[string]*InstanceInfo
-	openstackVMs    map[string]*InstanceInfo
+	hetznerVMs   map[string]*InstanceInfo
+	gcpVMs       map[string]*InstanceInfo
+	awsVMs       map[string]*InstanceInfo
+	azureVMs     map[string]*InstanceInfo
+	ociVMs       map[string]*InstanceInfo
+	openstackVMs map[string]*InstanceInfo
 
 	// Provider-region-zone cache
 	cacheProviderMap map[string]struct{}
@@ -85,10 +84,6 @@ func (nm *NodeManager) Refresh(autoscaled []*spec.NodePool) error {
 				}
 			case "azure":
 				if err := nm.cacheAzure(dyn); err != nil {
-					return err
-				}
-			case "genesiscloud":
-				if err := nm.cacheGenesisCloud(dyn); err != nil {
 					return err
 				}
 			case "openstack":
@@ -164,10 +159,6 @@ func (nm *NodeManager) InstanceInfo(np *spec.DynamicNodePool) *InstanceInfo {
 		}
 	case "azure":
 		if ti, ok := nm.azureVMs[np.ServerType]; ok {
-			return ti
-		}
-	case "genesiscloud":
-		if ti, ok := nm.genesisCloudVMs[np.ServerType]; ok {
 			return ti
 		}
 	case "openstack":

@@ -153,7 +153,6 @@ kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/
 | [OCI](https://docs.claudie.io/latest/input-manifest/providers/oci/) | ![✔](https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/2714.svg) | ![✔](https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/2714.svg) | ![✔](https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/2714.svg) |
 | [Hetzner](https://docs.claudie.io/latest/input-manifest/providers/hetzner/) | ![✔](https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/2714.svg) | ![✔](https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/2714.svg) | N/A |
 | [Cloudflare](https://docs.claudie.io/latest/input-manifest/providers/cloudflare/) | N/A | ![✔](https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/2714.svg) | ![✔](https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/2714.svg) |
-| [GenesisCloud](https://docs.claudie.io/latest/input-manifest/providers/genesiscloud/) | ![✔](https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/2714.svg) | N/A | N/A |
 
 For adding support for other cloud providers, open an issue or propose a PR.
 
@@ -344,7 +343,6 @@ Claudie offers extensive customization options for your Kubernetes cluster acros
 | [OCI](https://docs.claudie.io/latest/input-manifest/providers/oci/) | ![✔](https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/2714.svg) | ![✔](https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/2714.svg) | ![✔](https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/2714.svg) |
 | [Hetzner](https://docs.claudie.io/latest/input-manifest/providers/hetzner/) | ![✔](https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/2714.svg) | ![✔](https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/2714.svg) | N/A |
 | [Cloudflare](https://docs.claudie.io/latest/input-manifest/providers/cloudflare/) | N/A | ![✔](https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/2714.svg) | ![✔](https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/2714.svg) |
-| [GenesisCloud](https://docs.claudie.io/latest/input-manifest/providers/genesiscloud/) | ![✔](https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/2714.svg) | N/A | N/A |
 
 For adding support for other cloud providers, open an issue or propose a PR.
 
@@ -1912,93 +1910,6 @@ spec:
 
 ```
 
-[Skip to content](https://docs.claudie.io/latest/input-manifest/providers/genesiscloud/#genesis-cloud)
-
-# Genesis Cloud(https://docs.claudie.io/latest/input-manifest/providers/genesiscloud/\#genesis-cloud)
-
-Genesis cloud provider requires `apitoken` token field in string format.
-
-## Compute example(https://docs.claudie.io/latest/input-manifest/providers/genesiscloud/\#compute-example)
-
-```
-apiVersion: v1
-kind: Secret
-metadata:
-  name: genesiscloud-secret
-data:
-  apitoken: GCAAAZZZZnnnnNNNNxXXX123BBcc123qqcva
-type: Opaque
-
-```
-
-## Create Genesis Cloud API token(https://docs.claudie.io/latest/input-manifest/providers/genesiscloud/\#create-genesis-cloud-api-token)
-
-You can create Genesis Cloud API token by following [this guide](https://support.genesiscloud.com/support/solutions/articles/47001126146-how-to-generate-an-api-token-). The token must be able to have access to the following compute resources.
-
-```
-Instances, Network, Volumes
-
-```
-
-## Input manifest examples(https://docs.claudie.io/latest/input-manifest/providers/genesiscloud/\#input-manifest-examples)
-
-### Single provider, multi region cluster example(https://docs.claudie.io/latest/input-manifest/providers/genesiscloud/\#single-provider-multi-region-cluster-example)
-
-#### Create a secret for Genesis cloud provider(https://docs.claudie.io/latest/input-manifest/providers/genesiscloud/\#create-a-secret-for-genesis-cloud-provider)
-
-```
-kubectl create secret generic genesiscloud-secret --namespace=mynamespace --from-literal=apitoken='GCAAAZZZZnnnnNNNNxXXX123BBcc123qqcva'
-
-```
-
-```
-apiVersion: claudie.io/v1beta1
-kind: InputManifest
-metadata:
-  name: genesis-example
-  labels:
-    app.kubernetes.io/part-of: claudie
-spec:
-  providers:
-    - name: genesiscloud
-      providerType: genesiscloud
-      secretRef:
-        name: genesiscloud-secret
-        namespace: mynamespace
-
-  nodePools:
-    dynamic:
-      - name: control
-        providerSpec:
-          name: genesiscloud
-          region: ARC-IS-HAF-1
-        count: 1
-        serverType: vcpu-2_memory-4g_disk-80g
-        image: "Ubuntu 22.04"
-        storageDiskSize: 50
-
-      - name: compute
-        providerSpec:
-          name: genesiscloud
-          region: ARC-IS-HAF-1
-        count: 3
-        serverType: vcpu-2_memory-4g_disk-80g
-        image: "Ubuntu 22.04"
-        storageDiskSize: 50
-
-  kubernetes:
-    clusters:
-      - name: genesiscloud-cluster
-        version: v1.31.0
-        network: 172.16.2.0/24
-        pools:
-          control:
-            - control
-          compute:
-            - compute
-
-```
-
 [Skip to content](https://docs.claudie.io/latest/input-manifest/providers/hetzner/#hetzner)
 
 # Hetzner(https://docs.claudie.io/latest/input-manifest/providers/hetzner/\#hetzner)
@@ -3279,48 +3190,49 @@ spec:
 
 We will follow the guide
 from [Nvidia](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html#operator-install-guide)
-to deploy the `gpu-operator` into a claudie build kubernetes cluster. Make sure you fulfill the necessary listed
+to deploy the `gpu-operator` into a Claudie-built Kubernetes cluster. Make sure you fulfill the necessary listed
 requirements in prerequisites before continuing, if you decide to use a different cloud provider.
 
-In this example we will be using [GenesisCloud](https://docs.claudie.io/latest/input-manifest/providers/genesiscloud/) as our provider, with the following config:
+In this example we will be using [AWS](https://docs.claudie.io/latest/input-manifest/providers/aws/) as our provider, with the following config:
 
 ```
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
-  name: genesis-example
+  name: aws-gpu-example
   labels:
     app.kubernetes.io/part-of: claudie
 spec:
   providers:
-    - name: genesiscloud
-      providerType: genesiscloud
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.8"
-        path: "templates/terraformer/genesiscloud"
+    - name: aws-1
+      providerType: aws
       secretRef:
-        name: genesiscloud-secret
+        name: aws-secret
         namespace: secrets
 
   nodePools:
     dynamic:
-    - name: gencloud-cpu
+    - name: control-aws
       providerSpec:
-        name: genesiscloud
-        region: ARC-IS-HAF-1
+        name: aws-1
+        region: eu-central-1
+        zone: eu-central-1a
       count: 1
-      serverType: vcpu-2_memory-4g_disk-80g
-      image: "Ubuntu 22.04"
-      storageDiskSize: 50
+      serverType: t3.medium
+      # AMI ID of the image Ubuntu 24.04.
+      # Make sure to update it according to the region.
+      image: ami-07eef52105e8a2059
 
-    - name: gencloud-gpu
+    - name: gpu-aws
       providerSpec:
-        name: genesiscloud
-        region: ARC-IS-HAF-1
+        name: aws-1
+        region: eu-central-1
+        zone: eu-central-1a
       count: 2
-      serverType: vcpu-4_memory-12g_disk-80g_nvidia3080-1
-      image: "Ubuntu 22.04"
+      serverType: g4dn.xlarge
+      # AMI ID of the image Ubuntu 24.04.
+      # Make sure to update it according to the region.
+      image: ami-07eef52105e8a2059
       storageDiskSize: 50
 
   kubernetes:
@@ -3330,9 +3242,9 @@ spec:
         network: 172.16.2.0/24
         pools:
           control:
-            - gencloud-cpu
+            - control-aws
           compute:
-            - gencloud-gpu
+            - gpu-aws
 
 ```
 
@@ -3442,19 +3354,19 @@ Claudie allows to plug in your own templates for spawning the infrastructure. Sp
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
-  name: genesis-example
+  name: hetzner-example
   labels:
     app.kubernetes.io/part-of: claudie
 spec:
   providers:
-    - name: genesiscloud
-      providerType: genesiscloud
+    - name: hetzner-1
+      providerType: hetzner
       templates:
         repository: "https://github.com/berops/claudie-config"
         tag: "v0.9.8" # optional
-        path: "templates/terraformer/genesiscloud"
+        path: "templates/terraformer/hetzner"
       secretRef:
-        name: genesiscloud-secret
+        name: hetzner-secret
         namespace: secrets
 ...
 
@@ -3699,7 +3611,6 @@ Type of a provider. The providerType defines mandatory fields that has to be inc
 | `hetzner` | [Hetzner](https://docs.claudie.io/latest/input-manifest/api-reference/#hetzner) provider type |
 | `hetznerdns` | [Hetzner](https://docs.claudie.io/latest/input-manifest/api-reference/#hetznerdns) DNS provider type |
 | `oci` | [OCI](https://docs.claudie.io/latest/input-manifest/api-reference/#oci) provider type |
-| `genesiscloud` | [GenesisCloud](https://docs.claudie.io/latest/input-manifest/api-reference/#genesiscloud) provider type |
 
 - `secretRef` [SecretRef](https://docs.claudie.io/latest/input-manifest/api-reference/#secretref)
 
@@ -3761,20 +3672,6 @@ Credentials for the provider. Stringified JSON service account key.
 - `gcpproject`
 
 Project id of an already existing GCP project where the infrastructure is to be created.
-
-- `templates`
-- `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
-- `tag`: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.
-- `path`: specifies the path for a specific provider within the `repository` where the source template files are located.
-
-### GenesisCloud(https://docs.claudie.io/latest/input-manifest/api-reference/\#genesiscloud)
-
-The fields that need to be included in a Kubernetes Secret resource to utilize the Genesis Cloud provider.
-To find out how to configure Genesis Cloud provider, follow the instructions [here](https://docs.claudie.io/latest/input-manifest/providers/genesiscloud/).
-
-- `apitoken`
-
-API token for the provider.
 
 - `templates`
 - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.

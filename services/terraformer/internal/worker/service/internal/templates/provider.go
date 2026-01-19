@@ -20,15 +20,14 @@ type UsedProviders struct {
 
 // providerTemplateData is data structure passed to providers.tpl
 type usedProvidersTemplateData struct {
-	Gcp          bool
-	Hetzner      bool
-	Aws          bool
-	Oci          bool
-	Azure        bool
-	Cloudflare   bool
-	HetznerDNS   bool
-	GenesisCloud bool
-	Openstack    bool
+	Gcp        bool
+	Hetzner    bool
+	Aws        bool
+	Oci        bool
+	Azure      bool
+	Cloudflare bool
+	HetznerDNS bool
+	Openstack  bool
 }
 
 // CreateUsedProviderDNS creates provider file used for DNS management.
@@ -86,9 +85,6 @@ func getProvidersUsed(nodepools []*spec.DynamicNodePool, data *usedProvidersTemp
 		}
 		if nodepool.Provider.CloudProviderName == "azure" {
 			data.Azure = true
-		}
-		if nodepool.Provider.CloudProviderName == "genesiscloud" {
-			data.GenesisCloud = true
 		}
 		if nodepool.Provider.CloudProviderName == "openstack" {
 			data.Openstack = true
