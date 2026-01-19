@@ -6,7 +6,6 @@ LICENSE
 .git
 services/ansibler
 services/kube-eleven
-services/builder
 services/testing-framework
 services/claudie-operator
 services/kuber
