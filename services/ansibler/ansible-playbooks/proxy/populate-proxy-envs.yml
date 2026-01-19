@@ -1,25 +1,25 @@
 - hosts: all
+  strategy: free
   gather_facts: false
   become: true
   tasks:
-    - name: Verifying if /etc/apt/apt.conf.d/ exists
+    - name: Ensure apt and systemd drop-in directories exist
       ansible.builtin.file:
-        path: /etc/apt/apt.conf.d/
+        path: "{{ item }}"
         state: directory
-    - name: Verifying if directories in /etc/systemd/system for containerd,kubelet,docker exists
-      ansible.builtin.file:
-        path: "/etc/systemd/system/{{ item }}.service.d/"
-        state: directory
+        mode: "0755"
       loop:
-        - docker
-        - containerd
-        - kubelet
+        - /etc/systemd/system/docker.service.d
+        - /etc/systemd/system/containerd.service.d
+        - /etc/systemd/system/kubelet.service.d
+
     - name: Setting HTTP,HTTPS proxy settings in /etc/apt/apt.conf.d/proxy.conf
       ansible.builtin.copy:
         content: |
           Acquire::https::Proxy "{{ http_proxy_url }}";
           Acquire::http::Proxy "{{ http_proxy_url }}";
         dest: "/etc/apt/apt.conf.d/proxy.conf"
+
     - name: Setting HTTP,HTTPS proxy settings in /etc/systemd/system/
       ansible.builtin.copy:
         content: |
@@ -31,28 +31,15 @@
         - containerd
         - docker
 
-    - name: Delete HTTP,HTTPS,NO_PROXY from /etc/environmennt
-      ansible.builtin.lineinfile:
+    - name: Ensure proxy variables in /etc/environment
+      ansible.builtin.blockinfile:
         path: /etc/environment
-        regexp: "^{{ item.key }}=.*$"
-        state: absent
-      loop:
-        - { key: "HTTP_PROXY" }
-        - { key: "http_proxy" }
-        - { key: "HTTPS_PROXY" }
-        - { key: "https_proxy" }
-        - { key: "NO_PROXY" }
-        - { key: "no_proxy" }
-
-    - name: Add HTTP,HTTPS,NO_PROXY into /etc/environmennt
-      ansible.builtin.lineinfile:
-        path: /etc/environment
-        regexp: "^{{ item.key }}=.*$"
-        line: "{{ item.key }}={{ item.value }}"
-      loop:
-        - { key: "HTTP_PROXY", value: "{{ http_proxy_url }}" }
-        - { key: "http_proxy", value: "{{ http_proxy_url }}" }
-        - { key: "HTTPS_PROXY", value: "{{ http_proxy_url }}" }
-        - { key: "https_proxy", value: "{{ http_proxy_url }}" }
-        - { key: "NO_PROXY", value: "{{ no_proxy_list }}" }
-        - { key: "no_proxy", value: "{{ no_proxy_list }}" }
+        create: yes
+        marker: "# {mark} ANSIBLE MANAGED PROXY SETTINGS"
+        block: |
+          HTTP_PROXY={{ http_proxy_url }}
+          http_proxy={{ http_proxy_url }}
+          HTTPS_PROXY={{ http_proxy_url }}
+          https_proxy={{ http_proxy_url }}
+          NO_PROXY={{ no_proxy_list }}
+          no_proxy={{ no_proxy_list }}

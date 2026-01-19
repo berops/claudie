@@ -44,7 +44,7 @@
         crictl pods | grep kube-scheduler | awk '{print $1}' | xargs -I {} sh -c 'crictl stopp {} && crictl rmp {}'
 
 - hosts: all
-  gather_facts: true
+  gather_facts: false
   become: true
   tasks:
     # This will reload the systemd unit files present under /etc/systemd/system/.
@@ -69,7 +69,7 @@
       loop: "{{ service_status.results }}"
 
 - hosts: control
-  gather_facts: true
+  gather_facts: false
   become: true
   tasks:
     - name: Try 10 times to check kube-apiserver health
