@@ -78,12 +78,12 @@ TARGETARCH = $$(go env GOHOSTARCH)
 REV = $$(git rev-parse --short HEAD)
 SERVICES = $$(command ls services/)
 containerimgs:
-	sed -i "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$(REV)/" services/kuber/templates/cluster-autoscaler.goyaml
+	sed -i "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$(REV)/" services/manager/internal/service/managementcluster/internal/autoscaler/cluster-autoscaler.goyaml
 	for service in $(SERVICES) ; do \
 		echo " --- building $$service --- "; \
 		DOCKER_BUILDKIT=1 docker build --build-arg=TARGETARCH="$(TARGETARCH)" -t "ghcr.io/berops/claudie/$$service:$(REV)" -f ./services/$$service/Dockerfile . ; \
 	done
-	sed -i "s/adapter:.*$$/adapter/" services/kuber/templates/cluster-autoscaler.goyaml
+	sed -i "s/adapter:.*$$/adapter/" services/manager/internal/service/managementcluster/internal/autoscaler/cluster-autoscaler.goyaml
 
 kind-load-images:
 	for service in $(SERVICES) ; do \
