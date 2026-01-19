@@ -87,7 +87,6 @@ nav:
           - On Premise: input-manifest/providers/on-prem.md
       - Example yaml file: input-manifest/example.md
       - GPUs example: input-manifest/gpu-example.md
-      - Custom Settings example: input-manifest/example-settings.md
       - External Templates: input-manifest/external-templates.md
       - API reference: input-manifest/api-reference.md
       - Claudie in a custom namespace: input-manifest/claudie-custom-ns.md
