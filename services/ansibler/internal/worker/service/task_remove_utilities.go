@@ -69,7 +69,7 @@ func RemoveUtilities(
 		return
 	}
 
-	logger.Info().Msg("Successfully removed claudie utilities")
+	logger.Info().Msg("Finished removing claudie utilities")
 }
 
 func removeUtilities(clusterID string, npi []*NodepoolsInfo, processLimit *semaphore.Weighted) error {

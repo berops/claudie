@@ -57,6 +57,13 @@ func ScheduleCreateCluster(desired *spec.Clusters) *spec.TaskEvent {
 						},
 					},
 					{
+						Kind: spec.StageAnsibler_INSTALL_TEE_OVERRIDE,
+						Description: &spec.StageDescription{
+							About:      "Installing Tee override for newly added nodes",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
 						Kind: spec.StageAnsibler_INSTALL_VPN,
 						Description: &spec.StageDescription{
 							About:      "Setting up VPN across the nodes of the kuberentes and loadbalancer clusters",
@@ -93,6 +100,13 @@ func ScheduleCreateCluster(desired *spec.Clusters) *spec.TaskEvent {
 						Kind: spec.StageAnsibler_INSTALL_NODE_REQUIREMENTS,
 						Description: &spec.StageDescription{
 							About:      "Installing pre-requisites on all of the nodes of the cluster",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
+						Kind: spec.StageAnsibler_INSTALL_TEE_OVERRIDE,
+						Description: &spec.StageDescription{
+							About:      "Installing Tee override for newly added nodes",
 							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 						},
 					},

@@ -53,6 +53,7 @@ message StageAnsibler {
     COMMIT_PROXY_ENVS = 6;
     UPDATE_PROXY_ENVS_ON_NODES = 7;
     CLEAR_PROXY_ENVS_ON_NODES = 8;
+    INSTALL_TEE_OVERRIDE = 9;
   }
   message SubPass {
     SubPassKind kind = 1;

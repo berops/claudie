@@ -616,6 +616,13 @@ func ScheduleAdditionsInNodePools(
 				},
 			},
 			{
+				Kind: spec.StageAnsibler_INSTALL_TEE_OVERRIDE,
+				Description: &spec.StageDescription{
+					About:      "Installing Tee override for newly added nodes",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+			},
+			{
 				Kind: spec.StageAnsibler_INSTALL_VPN,
 				Description: &spec.StageDescription{
 					About:      "Installing VPN and interconnect new nodes with existing infrastructure",
@@ -643,6 +650,13 @@ func ScheduleAdditionsInNodePools(
 				Kind: spec.StageAnsibler_INSTALL_NODE_REQUIREMENTS,
 				Description: &spec.StageDescription{
 					About:      "Installing node requirments for newly added nodes",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+			},
+			{
+				Kind: spec.StageAnsibler_INSTALL_TEE_OVERRIDE,
+				Description: &spec.StageDescription{
+					About:      "Installing Tee override for newly added nodes",
 					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 				},
 			},

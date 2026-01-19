@@ -143,6 +143,7 @@ const (
 	StageAnsibler_COMMIT_PROXY_ENVS             StageAnsibler_SubPassKind = 6
 	StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES    StageAnsibler_SubPassKind = 7
 	StageAnsibler_CLEAR_PROXY_ENVS_ON_NODES     StageAnsibler_SubPassKind = 8
+	StageAnsibler_INSTALL_TEE_OVERRIDE          StageAnsibler_SubPassKind = 9
 )
 
 // Enum value maps for StageAnsibler_SubPassKind.
@@ -157,6 +158,7 @@ var (
 		6: "COMMIT_PROXY_ENVS",
 		7: "UPDATE_PROXY_ENVS_ON_NODES",
 		8: "CLEAR_PROXY_ENVS_ON_NODES",
+		9: "INSTALL_TEE_OVERRIDE",
 	}
 	StageAnsibler_SubPassKind_value = map[string]int32{
 		"INSTALL_NODE_REQUIREMENTS":     0,
@@ -168,6 +170,7 @@ var (
 		"COMMIT_PROXY_ENVS":             6,
 		"UPDATE_PROXY_ENVS_ON_NODES":    7,
 		"CLEAR_PROXY_ENVS_ON_NODES":     8,
+		"INSTALL_TEE_OVERRIDE":          9,
 	}
 )
 
@@ -922,13 +925,13 @@ const file_spec_pass_proto_rawDesc = "" +
 	"\x14BUILD_INFRASTRUCTURE\x10\x00\x12\x19\n" +
 	"\x15UPDATE_INFRASTRUCTURE\x10\x01\x12\x1a\n" +
 	"\x16DESTROY_INFRASTRUCTURE\x10\x02\x12\x1a\n" +
-	"\x16API_PORT_ON_KUBERNETES\x10\x03\"\x8b\x04\n" +
+	"\x16API_PORT_ON_KUBERNETES\x10\x03\"\xa5\x04\n" +
 	"\rStageAnsibler\x128\n" +
 	"\vdescription\x18\x01 \x01(\v2\x16.spec.StageDescriptionR\vdescription\x129\n" +
 	"\tsubPasses\x18\x02 \x03(\v2\x1b.spec.StageAnsibler.SubPassR\tsubPasses\x1ax\n" +
 	"\aSubPass\x123\n" +
 	"\x04kind\x18\x01 \x01(\x0e2\x1f.spec.StageAnsibler.SubPassKindR\x04kind\x128\n" +
-	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"\x8a\x02\n" +
+	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"\xa4\x02\n" +
 	"\vSubPassKind\x12\x1d\n" +
 	"\x19INSTALL_NODE_REQUIREMENTS\x10\x00\x12\x0f\n" +
 	"\vINSTALL_VPN\x10\x01\x12!\n" +
@@ -938,7 +941,8 @@ const file_spec_pass_proto_rawDesc = "" +
 	"\x13UPDATE_API_ENDPOINT\x10\x05\x12\x15\n" +
 	"\x11COMMIT_PROXY_ENVS\x10\x06\x12\x1e\n" +
 	"\x1aUPDATE_PROXY_ENVS_ON_NODES\x10\a\x12\x1d\n" +
-	"\x19CLEAR_PROXY_ENVS_ON_NODES\x10\b\"\xbf\x02\n" +
+	"\x19CLEAR_PROXY_ENVS_ON_NODES\x10\b\x12\x18\n" +
+	"\x14INSTALL_TEE_OVERRIDE\x10\t\"\xbf\x02\n" +
 	"\x0fStageKubeEleven\x128\n" +
 	"\vdescription\x18\x01 \x01(\v2\x16.spec.StageDescriptionR\vdescription\x12;\n" +
 	"\tsubPasses\x18\x02 \x03(\v2\x1d.spec.StageKubeEleven.SubPassR\tsubPasses\x1az\n" +
