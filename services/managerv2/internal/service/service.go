@@ -149,7 +149,9 @@ func New(ctx context.Context, opts ...grpc.ServerOption) (*Service, error) {
 	}
 
 	if s.nts.consumerCtx, err = consumer.Consume(s.Handler, consumeOptions[:]...); err != nil {
-		s.Stop()
+		if err := s.Stop(); err != nil {
+			log.Err(err).Msg("Failed to create consume handler")
+		}
 		return nil, fmt.Errorf("failed to start nats consumer handler: %w", err)
 	}
 
@@ -218,7 +220,9 @@ func (s *Service) watchPending() {
 			log.Info().Msg("Exited worker loop running WatchForPendingDocuments")
 			return
 		case <-time.After(PendingTick):
-			s.WatchForPendingDocuments(context.Background())
+			if err := s.WatchForPendingDocuments(context.Background()); err != nil {
+				log.Err(err).Msg("Watch for pending documents failed")
+			}
 		}
 	}
 }
@@ -230,7 +234,9 @@ func (s *Service) watchScheduled() {
 			log.Info().Msgf("Exited worker loop running WatchForScheduledDocuments")
 			return
 		case <-time.After(Tick):
-			s.WatchForScheduledDocuments(context.Background())
+			if err := s.WatchForScheduledDocuments(context.Background()); err != nil {
+				log.Err(err).Msg("Watch for scheduled documents failed")
+			}
 		}
 	}
 }
@@ -242,7 +248,9 @@ func (s *Service) watchDoneOrError() {
 			log.Info().Msgf("Exited worker loop running WatchForDoneOrErrorDocuments")
 			return
 		case <-time.After(Tick):
-			s.WatchForDoneOrErrorDocuments(context.Background())
+			if err := s.WatchForDoneOrErrorDocuments(context.Background()); err != nil {
+				log.Err(err).Msg("Watch for Done/Error documents failed")
+			}
 		}
 	}
 }

@@ -379,7 +379,7 @@ func ScheduleRefreshVPN(usesProxy bool, current *spec.Clusters) *spec.TaskEvent 
 					{
 						Kind: spec.StageAnsibler_COMMIT_PROXY_ENVS,
 						Description: &spec.StageDescription{
-							About:      "Commiting proxy environment variables",
+							About:      "Committing proxy environment variables",
 							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 						},
 					},

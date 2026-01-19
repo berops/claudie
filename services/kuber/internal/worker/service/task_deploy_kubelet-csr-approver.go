@@ -47,7 +47,7 @@ func DeployKubeletCSRApprover(
 
 	defer func() {
 		if err := os.RemoveAll(clusterDir); err != nil {
-			logger.Err(err).Msg("Failed to remove direcotry where templates were generated")
+			logger.Err(err).Msg("Failed to remove directory where templates were generated")
 			return
 		}
 	}()

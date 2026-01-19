@@ -190,7 +190,7 @@ func waitForDoneOrError(ctx context.Context, manager managerclient.CrudAPI, set 
 				// TODO: fix me.
 				for cluster, state := range res.Config.Clusters {
 					if state.State.Status == spec.Workflow_ERROR {
-						err = errors.Join(err, fmt.Errorf("----\nerror in cluster %s\n----\nStage: %s \n State: %s\n Description: %s", cluster, state.InFlight.CurrentStage, state.State.Status, state.State.Description))
+						err = errors.Join(err, fmt.Errorf("----\nerror in cluster %s\n----\nStage: %v \n State: %s\n Description: %s", cluster, state.InFlight.CurrentStage, state.State.Status, state.State.Description))
 					}
 				}
 

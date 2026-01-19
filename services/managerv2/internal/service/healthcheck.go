@@ -122,6 +122,7 @@ func HealthCheck(logger zerolog.Logger, state *spec.Clusters) HealthCheckStatus 
 	controlpools := nodepools.Control(state.K8S.ClusterInfo.NodePools)
 	if node := nodepools.RandomNode(controlpools); node != nil {
 		endpoint := net.JoinHostPort(node.Public, fmt.Sprint(manifest.APIServerPort))
+		// nolint
 		if c, err := net.DialTimeout("tcp", endpoint, clusters.PingTimeout); err == nil {
 			result.Cluster.ControlNodesHave6443 = true
 			c.Close()

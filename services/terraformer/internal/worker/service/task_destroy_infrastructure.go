@@ -102,12 +102,12 @@ func destroy(
 		}
 	}
 
-	clear := tracker.Result.Clear()
+	infraClear := tracker.Result.Clear()
 	if k8sId != "" {
-		clear.Kubernetes()
+		infraClear.Kubernetes()
 	}
-	clear.LoadBalancers(lbIds...)
-	clear.Commit()
+	infraClear.LoadBalancers(lbIds...)
+	infraClear.Commit()
 }
 
 // Destroys the infrastructure of the passed in [Cluster] by looking

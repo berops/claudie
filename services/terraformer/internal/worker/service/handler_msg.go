@@ -157,7 +157,7 @@ func handlerInner(
 				logger.Debug().Msg("Service being shutdown")
 				return
 			case <-time.After(refreshTime):
-				logger.Debug().Msg("Issueing InProgress refresh of the task")
+				logger.Debug().Msg("Issuing InProgress refresh of the task")
 				if err := msg.InProgress(); err != nil {
 					logger.Err(err).Msg("Failed to issue InProgress refresh of the task")
 				}

@@ -504,7 +504,7 @@ Fix the unreachable nodes by either:
 
 // Deletes the loadbalancer with the id specified in the passed in lb from the [spec.Clusters] state. The deletion
 // Only deletes the Infrastructure if any. Contrary to how the [ScheduleDeleteLoadBalancer] works this function will
-// not run/execute any other stages as part of its delete pipeline. This task is usefull for scenarios where the loadbalancer
+// not run/execute any other stages as part of its delete pipeline. This task is useful for scenarios where the loadbalancer
 // infrastructure is unresponsive and needs to be replaced. The ansibler stage will not be called at all, thus there
 // should be other mechanisms in place to reconcile the ansible stage.
 //
@@ -593,7 +593,7 @@ func ScheduleRawDeleteLoadBalancer(
 // Schedules a task that will delete a nodepool from the current state of the loadbalancer.
 // Contrary to how the [ScheduleDeletionLoadBalancerNodePools] task works, this will only
 // run the terraformer stage for the destruction of the unreachable infrastructure without
-// running any other stages. This task is usefull when needing to remove unreachable state
+// running any other stages. This task is useful when needing to remove unreachable state
 // from the cluster. The ansibler stage will not be executed at all, thus the caller should
 // find alternative ways of reconciling the ansibler stage.
 //

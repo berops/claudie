@@ -267,7 +267,7 @@ func ScheduleProxyOff(current, desired *spec.Clusters) *spec.TaskEvent {
 							{
 								Kind: spec.StageAnsibler_COMMIT_PROXY_ENVS,
 								Description: &spec.StageDescription{
-									About:      "Commiting proxy environment variables",
+									About:      "Committing proxy environment variables",
 									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 								},
 							},
@@ -326,7 +326,7 @@ func ScheduleProxyOn(current, desired *spec.Clusters) *spec.TaskEvent {
 							{
 								Kind: spec.StageAnsibler_COMMIT_PROXY_ENVS,
 								Description: &spec.StageDescription{
-									About:      "Commiting proxy environment variables",
+									About:      "Committing proxy environment variables",
 									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 								},
 							},
@@ -463,7 +463,7 @@ func ScheduleTransferApiEndpoint(current *spec.Clusters, nodepool, node string) 
 				},
 			},
 		},
-		Description: fmt.Sprintf("Transfering Api endpoint to %s from nodepool %s", node, nodepool),
+		Description: fmt.Sprintf("Transferring Api endpoint to %s from nodepool %s", node, nodepool),
 		Pipeline: []*spec.Stage{
 			{
 				StageKind: &spec.Stage_Ansibler{
@@ -476,7 +476,7 @@ func ScheduleTransferApiEndpoint(current *spec.Clusters, nodepool, node string) 
 							{
 								Kind: spec.StageAnsibler_UPDATE_API_ENDPOINT,
 								Description: &spec.StageDescription{
-									About:      "Transfering api endpoint",
+									About:      "Transferring api endpoint",
 									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 								},
 							},
@@ -639,7 +639,7 @@ func ScheduleAdditionsInNodePools(
 			{
 				Kind: spec.StageAnsibler_COMMIT_PROXY_ENVS,
 				Description: &spec.StageDescription{
-					About:      "Commiting proxy environment variables",
+					About:      "Committing proxy environment variables",
 					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 				},
 			},
@@ -750,7 +750,7 @@ func ScheduleAdditionsInNodePools(
 		for _, lb := range current.LoadBalancers.Clusters {
 			for _, r := range lb.Roles {
 				for _, tg := range r.TargetPools {
-					// Need to match againts only the nodepool name without the hash.
+					// Need to match against only the nodepool name without the hash.
 					if n, _ := nodepools.MatchNameAndHashWithTemplate(tg, np); n != "" {
 						ans.Ansibler.SubPasses = append(ans.Ansibler.SubPasses, &spec.StageAnsibler_SubPass{
 							Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
@@ -868,7 +868,7 @@ func ScheduleAdditionsInNodePools(
 		for _, lb := range current.LoadBalancers.Clusters {
 			for _, r := range lb.Roles {
 				for _, tg := range r.TargetPools {
-					// Need to match againts only the nodepool name without the hash.
+					// Need to match against only the nodepool name without the hash.
 					if n, _ := nodepools.MatchNameAndHashWithTemplate(tg, np); n != "" {
 						ans.Ansibler.SubPasses = append(ans.Ansibler.SubPasses, &spec.StageAnsibler_SubPass{
 							Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
@@ -1004,7 +1004,7 @@ func ScheduleDeletionsInNodePools(
 	}
 
 	// Unless the proxy is in use, in which case the task needs to also
-	// update proxy environemnt variables after deletion, in which case
+	// update proxy environment variables after deletion, in which case
 	// the task will also bundle the update of the VPN as there is a call
 	// to be made to the Ansibler stage.
 	if opts.UseProxy {
@@ -1026,7 +1026,7 @@ func ScheduleDeletionsInNodePools(
 			{
 				Kind: spec.StageAnsibler_COMMIT_PROXY_ENVS,
 				Description: &spec.StageDescription{
-					About:      "Commiting proxy environment variables",
+					About:      "Committing proxy environment variables",
 					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 				},
 			},
@@ -1091,7 +1091,7 @@ func ScheduleDeletionsInNodePools(
 		for _, lb := range current.LoadBalancers.Clusters {
 			for _, r := range lb.Roles {
 				for _, tg := range r.TargetPools {
-					// Need to match againts only the nodepool name without the hash.
+					// Need to match against only the nodepool name without the hash.
 					if n, _ := nodepools.MatchNameAndHashWithTemplate(tg, np); n != "" {
 						ans.Ansibler.SubPasses = append(ans.Ansibler.SubPasses, &spec.StageAnsibler_SubPass{
 							Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
@@ -1185,7 +1185,7 @@ func ScheduleDeletionsInNodePools(
 		for _, lb := range current.LoadBalancers.Clusters {
 			for _, r := range lb.Roles {
 				for _, tg := range r.TargetPools {
-					// Need to match againts only the nodepool name without the hash.
+					// Need to match against only the nodepool name without the hash.
 					if n, _ := nodepools.MatchNameAndHashWithTemplate(tg, np); n != "" {
 						ans.Ansibler.SubPasses = append(ans.Ansibler.SubPasses, &spec.StageAnsibler_SubPass{
 							Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,

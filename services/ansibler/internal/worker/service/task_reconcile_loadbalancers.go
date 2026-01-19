@@ -169,7 +169,7 @@ func ReconcileLoadBalancers(
 		update.Commit()
 	}
 
-	logger.Info().Msg("Sucessfully reconciled LoadBalancers")
+	logger.Info().Msg("Successfully reconciled LoadBalancers")
 }
 
 // setUpLoadbalancers sets up the loadbalancers along with DNS and verifies their configuration

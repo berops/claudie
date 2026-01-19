@@ -131,7 +131,6 @@ func ReconcileLonghornStorageClasses(logger zerolog.Logger, tracker Tracker) {
 	}
 
 	logger.Info().Msg("Successfully reconciled longhorn storage classes")
-
 }
 
 // currentClaudieStorageClasses returns a slice of names of claudie related storage classes currently deployed in cluster

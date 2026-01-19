@@ -42,7 +42,7 @@ const (
 	NoReschedule
 
 	// Noop describes the case where from the reconciliation of the current and desired
-	// state no new tasks were identified, or an error occured during the process, thus
+	// state no new tasks were identified, or an error occurred during the process, thus
 	// no changes are to be worked on and no need to update the representation in the external
 	// storage.
 	Noop
@@ -96,7 +96,7 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 					break
 				}
 
-				// If there is any InFlight state that was not commited
+				// If there is any InFlight state that was not committed
 				// to the current state, delete it, as we still don't
 				// have any current state and the InFlight state could
 				// have been partially applied.
@@ -131,7 +131,7 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 					break
 				}
 
-				// If there is any InFlight state that was not commited
+				// If there is any InFlight state that was not committed
 				// to the current state, create an Intermediate Representation
 				// combining the two together to delete all of the infrastructure.
 				// As there could be partiall additions, or partial deletions.
@@ -196,8 +196,8 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 			// cycle rescheduling in here it will always error out
 			// event though the unreachable node could be removed
 			// and then this could be retried. There could be added
-			// a new field called Previos Retry, or something that would
-			// be stored along the task and on successfull processing would
+			// a new field called Previous Retry, or something that would
+			// be stored along the task and on successful processing would
 			// check if it exists and replace it.
 			if shouldRescheduleInFlight(state.InFlight) {
 				newUUID := uuid.New().String()

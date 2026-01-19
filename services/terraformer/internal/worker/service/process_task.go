@@ -37,11 +37,11 @@ type (
 		// Result of the [Work.Task] as it is processed by the pipeline.
 		//
 		// Generally for the terraformer service, additions, even if partially
-		// succeded ones or failed ones, are fully commited back to the message
+		// succeeded ones or failed ones, are fully committed back to the message
 		// queue to be picked up by the manager as there currently is no way of
 		// tracking partially build changes. By returning the updated state with
 		// the newly added items, even if failed, along the message an error is send
-		// and the manager should make out the diff to reconciliate back to the correct
+		// and the manager should make out the diff to reconciliate back to the correcservices/terraformer/internal/worker/service/process_task.got
 		// state by performing deletions, which when picked up by this service will be
 		// a noop if they were not build.
 		//

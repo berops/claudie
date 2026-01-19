@@ -90,7 +90,7 @@ func backwardsCompatibility(c *spec.Config) {
 // Finds matching nodepools in desired that are also in current and that both have nodepool type of
 // [spec.NodePool_StaticNodePool]. For all of the nodes within the nodepool, Nodes with matching Public
 // Endpoints (IP addresses), are ignored in this function as they have an already existing Name in the
-// `current` state that needs to be transfered. For nodes that do not match unique names are generated
+// `current` state that needs to be transferred. For nodes that do not match unique names are generated
 // such that they do no collide with the already assigned names in the `current` state. This function
 // should be used in combination with [transferImmutableState] to both deduplicate the names
 // and then transfer existing state.
@@ -130,7 +130,7 @@ outer:
 			// If the names of the nodes that exist in both current and desired,
 			// based on a public endpoint match, do not match this should not be
 			// handled in this function and should instead be handled with [transferStaticNodePool]
-			// which trasnfers also the Name, that is considered "Immutable" once assigned.
+			// which transfers also the Name, that is considered "Immutable" once assigned.
 			for _, n := range desired.Nodes {
 				filter := func(cn *spec.Node) bool { return cn.Public == n.Public }
 				if slices.IndexFunc(current.Nodes, filter) >= 0 {
@@ -301,7 +301,7 @@ func transferDynamicNodePool(current, desired *spec.NodePool) {
 	//
 	// 1. The target Size of Autoscaled nodepools.
 	//    The target Size of Autoscaled is not managed by the InputManifest, so anything
-	//    that is in the desired state is not the actuall target Size, with the expection
+	//    that is in the desired state is not the actuall target Size, with the exception
 	//    when there is not current state, but in this function the expecation is that
 	//    the current state exists.
 	//
@@ -342,16 +342,16 @@ func transferDynamicNodePool(current, desired *spec.NodePool) {
 	}
 
 	// 2. The count of both of the nodepools.
-	// 	  Whatever the counts are, transfering the current number of
+	// 	  Whatever the counts are, transferring the current number of
 	//    nodes is limited by the minimum count of the possible nodes
 	//    within the nodepools of both states.
 	count := min(cnp.Count, dnp.Count)
 
-	// 3. While transfering nodes from the current state
+	// 3. While transferring nodes from the current state
 	//    consider ignoring nodes that were marked for
 	//    deletion. This node status indicates that at
 	//    some point in the future the nodes should be
-	//    deleted, and in here since we are transfering
+	//    deleted, and in here since we are transferring
 	//    existing state, we decide to also ignore nodes
 	//    that are MarkedForDeletion and omitting them
 	//    to be transferred to the desired state, which

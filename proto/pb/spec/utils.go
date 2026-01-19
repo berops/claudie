@@ -429,9 +429,8 @@ func (te *Task) ConsumeUpdateResult(result *TaskResult_Update) error {
 		result.Update.K8S = nil
 	}
 
-	var toUpdate LoadBalancers
-	for _, lb := range result.Update.LoadBalancers.Clusters {
-		toUpdate.Clusters = append(toUpdate.Clusters, lb)
+	toUpdate := LoadBalancers{
+		Clusters: result.Update.LoadBalancers.Clusters,
 	}
 	result.Update.LoadBalancers.Clusters = nil
 
@@ -625,27 +624,27 @@ func (s *InFlightUpdateState) Commit() {
 	switch prev := s.r.Result.(type) {
 	case *TaskResult_Update:
 		old := prev.Update
-		new := s.state
+		desired := s.state
 
-		if new.K8S != nil {
-			old.K8S = new.K8S
-			new.K8S = nil
+		if desired.K8S != nil {
+			old.K8S = desired.K8S
+			desired.K8S = nil
 		}
 
 		// update existing ones.
 		for i := range old.LoadBalancers.Clusters {
 			o := old.LoadBalancers.Clusters[i].ClusterInfo.Id()
-			for j := range new.LoadBalancers.Clusters {
-				if n := new.LoadBalancers.Clusters[j].ClusterInfo.Id(); n == o {
-					old.LoadBalancers.Clusters[i] = new.LoadBalancers.Clusters[j]
-					new.LoadBalancers.Clusters = slices.Delete(new.LoadBalancers.Clusters, j, j+1)
+			for j := range desired.LoadBalancers.Clusters {
+				if n := desired.LoadBalancers.Clusters[j].ClusterInfo.Id(); n == o {
+					old.LoadBalancers.Clusters[i] = desired.LoadBalancers.Clusters[j]
+					desired.LoadBalancers.Clusters = slices.Delete(desired.LoadBalancers.Clusters, j, j+1)
 					break
 				}
 			}
 		}
 
 		// add new ones
-		old.LoadBalancers.Clusters = append(old.LoadBalancers.Clusters, new.LoadBalancers.Clusters...)
+		old.LoadBalancers.Clusters = append(old.LoadBalancers.Clusters, desired.LoadBalancers.Clusters...)
 		s.state = nil
 	default:
 		s.r.Result = &TaskResult_Update{
@@ -685,9 +684,7 @@ func (s *InFlightClearState) Kubernetes() *InFlightClearState {
 func (s *InFlightClearState) LoadBalancers(lbs ...string) *InFlightClearState {
 	if len(lbs) > 0 {
 		s.state.LoadBalancersIDs = []string{}
-		for _, lb := range lbs {
-			s.state.LoadBalancersIDs = append(s.state.LoadBalancersIDs, lb)
-		}
+		s.state.LoadBalancersIDs = append(s.state.LoadBalancersIDs, lbs...)
 	}
 	return s
 }

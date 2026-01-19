@@ -39,7 +39,7 @@ func destroyLoadBalancer(
 		return
 	}
 
-	clear := tracker.Result.Clear()
-	clear.LoadBalancers(lb.Cluster.ClusterInfo.Id())
-	clear.Commit()
+	infraClear := tracker.Result.Clear()
+	infraClear.LoadBalancers(lb.Cluster.ClusterInfo.Id())
+	infraClear.Commit()
 }

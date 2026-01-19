@@ -41,19 +41,6 @@ type patchData struct {
 	errChan      chan<- error
 }
 
-type Patcher struct {
-	kBase     kubectl.Kubectl
-	clusterID string
-	logger    zerolog.Logger
-
-	errChan       chan error
-	aggregateDone chan struct{}
-	err           error
-
-	wg           *errgroup.Group
-	processLimit *semaphore.Weighted
-}
-
 func Patch(
 	logger zerolog.Logger,
 	patch *spec.Update_KuberPatchNodes,

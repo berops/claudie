@@ -52,10 +52,10 @@ func PreKubernetesDiff(r LoadBalancersReconciliate) *spec.TaskEvent {
 	case spec.ApiEndpointChangeState_MoveEndpoint:
 		// make sure both are in the current cluster and that the roles have been synced.
 		old := clusters.IndexLoadbalancerById(r.Diff.ApiEndpoint.Current, r.Current.LoadBalancers.Clusters)
-		new := clusters.IndexLoadbalancerById(r.Diff.ApiEndpoint.New, r.Current.LoadBalancers.Clusters)
+		desired := clusters.IndexLoadbalancerById(r.Diff.ApiEndpoint.New, r.Current.LoadBalancers.Clusters)
 		oldRolesSynced := len(r.Diff.Modified[r.Diff.ApiEndpoint.Current].Roles.Added) == 0
 		newRolesSynced := len(r.Diff.Modified[r.Diff.ApiEndpoint.New].Roles.Added) == 0
-		if old >= 0 && new >= 0 && oldRolesSynced && newRolesSynced {
+		if old >= 0 && desired >= 0 && oldRolesSynced && newRolesSynced {
 			return ScheduleMoveApiEndpoint(r.Current, r.Diff.ApiEndpoint.Current, r.Diff.ApiEndpoint.New, r.Diff.ApiEndpoint.State)
 		}
 	case spec.ApiEndpointChangeState_EndpointRenamed:
@@ -268,7 +268,7 @@ func ScheduleDeletionLoadBalancerNodePools(
 	// of the VPN.
 	//
 	// Unless the proxy is in use, in which case the task needs to also
-	// update proxy environemnt variables after deletion, in which case
+	// update proxy environment variables after deletion, in which case
 	// the task will also bundle the update of the VPN as there is a call
 	// to be made to the Ansibler stage.
 	if opts.UseProxy {
@@ -297,7 +297,7 @@ func ScheduleDeletionLoadBalancerNodePools(
 						{
 							Kind: spec.StageAnsibler_COMMIT_PROXY_ENVS,
 							Description: &spec.StageDescription{
-								About:      "Commiting proxy environment variables",
+								About:      "Committing proxy environment variables",
 								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 							},
 						},
@@ -465,7 +465,7 @@ func ScheduleAdditionLoadBalancerNodePools(
 			{
 				Kind: spec.StageAnsibler_COMMIT_PROXY_ENVS,
 				Description: &spec.StageDescription{
-					About:      "Commiting proxy environment variables",
+					About:      "Committing proxy environment variables",
 					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 				},
 			},
@@ -697,7 +697,7 @@ func ScheduleReplaceDns(
 					{
 						Kind: spec.StageAnsibler_COMMIT_PROXY_ENVS,
 						Description: &spec.StageDescription{
-							About:      "Commiting proxy environment variables",
+							About:      "Committing proxy environment variables",
 							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 						},
 					},
@@ -1039,7 +1039,7 @@ func ScheduleDeleteLoadBalancer(useProxy bool, current *spec.Clusters, cid LoadB
 	}
 
 	// Unless the proxy is in use, in which case the task needs to also
-	// update proxy environemnt variables after deletion, in which case
+	// update proxy environment variables after deletion, in which case
 	// the task will also bundle the update of the VPN as there is a call
 	// to be made to the Ansibler stage.
 	if useProxy {
@@ -1067,7 +1067,7 @@ func ScheduleDeleteLoadBalancer(useProxy bool, current *spec.Clusters, cid LoadB
 					{
 						Kind: spec.StageAnsibler_COMMIT_PROXY_ENVS,
 						Description: &spec.StageDescription{
-							About:      "Commiting proxy environment variables",
+							About:      "Committing proxy environment variables",
 							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 						},
 					},
@@ -1206,7 +1206,7 @@ func ScheduleJoinLoadBalancer(useProxy bool, current, desired *spec.Clusters, di
 					{
 						Kind: spec.StageAnsibler_COMMIT_PROXY_ENVS,
 						Description: &spec.StageDescription{
-							About:      "Commiting proxy environment variables",
+							About:      "Committing proxy environment variables",
 							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 						},
 					},

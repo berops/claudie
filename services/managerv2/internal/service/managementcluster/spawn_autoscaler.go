@@ -111,7 +111,7 @@ func DriftInAutoscalerPods(logger zerolog.Logger, manifestName string, clusters 
 			drift = true
 
 			// There are two cases, error is io.EOF or some unknown error
-			// that ocurred during parsing. For the former case continue
+			// that occurred during parsing. For the former case continue
 			// as there is no live state, for the latter there is an invalid
 			// yaml, thus for both cases set the drift to true and continue
 			continue

@@ -167,7 +167,7 @@ type (
 		// If the state from which the index
 		// was obtained is modified, this
 		// index is invalidated and must not
-		// be used futher.
+		// be used further.
 		Index int
 	}
 
@@ -189,7 +189,7 @@ type (
 			// ID of the loadbalancer with the Api role.
 			Current string
 
-			// ID of the loadbalancers to which the Api role should be transfered to.
+			// ID of the loadbalancers to which the Api role should be transferred to.
 			New string
 
 			// What action should be done based on the difference for the [Current] and [Desired].
@@ -245,7 +245,7 @@ func (r *NodePoolsDiffResult) IsEmpty() bool {
 }
 
 // NodePoolsDiff calculates difference between two [NodePoolsViewType] and returns the result as a [NodePoolsDiffResult].
-func NodePoolsDiff(old, new NodePoolsViewType) NodePoolsDiffResult {
+func NodePoolsDiff(old, desired NodePoolsViewType) NodePoolsDiffResult {
 	result := NodePoolsDiffResult{
 		PartiallyDeleted: NodePoolsViewType{},
 		Deleted:          NodePoolsViewType{},
@@ -255,7 +255,7 @@ func NodePoolsDiff(old, new NodePoolsViewType) NodePoolsDiffResult {
 
 	// 1. track nodepools that are completely absent in the new version.
 	for nodepool, nodes := range old {
-		if _, ok := new[nodepool]; !ok {
+		if _, ok := desired[nodepool]; !ok {
 			result.Deleted[nodepool] = nodes
 		}
 	}
@@ -265,21 +265,21 @@ func NodePoolsDiff(old, new NodePoolsViewType) NodePoolsDiffResult {
 	}
 
 	// 2. track nodepools that are new in the new version.
-	for nodepool, nodes := range new {
+	for nodepool, nodes := range desired {
 		if _, ok := old[nodepool]; !ok {
 			result.Added[nodepool] = nodes
 		}
 	}
 	// delete the nodepools from the new version.
 	for nodepool := range result.Added {
-		delete(new, nodepool)
+		delete(desired, nodepool)
 	}
 
 	// Now, In both old,new [NodePoolsViewType] we only have nodepools that are present in both.
 
 	// 3. track partially deleted node from nodepools present in both versions.
 	for nodepool, oldNodes := range old {
-		newNodes := new[nodepool]
+		newNodes := desired[nodepool]
 
 		for _, oldNode := range oldNodes {
 			found := slices.Contains(newNodes, oldNode)
@@ -294,7 +294,7 @@ func NodePoolsDiff(old, new NodePoolsViewType) NodePoolsDiffResult {
 	}
 
 	// 4. track partially added nodes from nodepools present in both versions.
-	for nodepool, newNodes := range new {
+	for nodepool, newNodes := range desired {
 		oldNodes := old[nodepool]
 
 		for _, newNode := range newNodes {
@@ -306,7 +306,7 @@ func NodePoolsDiff(old, new NodePoolsViewType) NodePoolsDiffResult {
 	}
 	// delete the partially added nodes from the old version.
 	for nodepool, nodes := range result.PartiallyAdded {
-		new[nodepool] = slices.DeleteFunc(new[nodepool], func(node string) bool { return slices.Contains(nodes, node) })
+		desired[nodepool] = slices.DeleteFunc(desired[nodepool], func(node string) bool { return slices.Contains(nodes, node) })
 	}
 
 	// Now in the new,old [NodePoolsViewType] only the nodes that are common to both of them remain,
@@ -346,21 +346,21 @@ func NodePoolsView(info *spec.ClusterInfo) (dynamic NodePoolsViewType, static No
 	return
 }
 
-func Diff(old, new *spec.Clusters) DiffResult {
+func Diff(old, desired *spec.Clusters) DiffResult {
 	var result DiffResult
 
-	result.Kubernetes = KubernetesDiff(old.K8S, new.K8S)
-	result.LoadBalancers = LoadBalancersDiff(old.LoadBalancers, new.LoadBalancers)
+	result.Kubernetes = KubernetesDiff(old.K8S, desired.K8S)
+	result.LoadBalancers = LoadBalancersDiff(old.LoadBalancers, desired.LoadBalancers)
 
 	return result
 }
 
-func KubernetesDiff(old, new *spec.K8Scluster) KubernetesDiffResult {
+func KubernetesDiff(old, desired *spec.K8Scluster) KubernetesDiffResult {
 	var (
 		result KubernetesDiffResult
 
 		odynamic, ostatic = NodePoolsView(old.GetClusterInfo())
-		ndynamic, nstatic = NodePoolsView(new.GetClusterInfo())
+		ndynamic, nstatic = NodePoolsView(desired.GetClusterInfo())
 
 		dynamicDiff = NodePoolsDiff(odynamic, ndynamic)
 		staticDiff  = NodePoolsDiff(ostatic, nstatic)
@@ -376,7 +376,7 @@ func KubernetesDiff(old, new *spec.K8Scluster) KubernetesDiffResult {
 	result.PendingDynamicDeletions = make(PendingDeletionsViewType)
 	result.PendingStaticDeletions = make(PendingDeletionsViewType)
 	for _, cnp := range old.ClusterInfo.NodePools {
-		for _, dnp := range new.ClusterInfo.NodePools {
+		for _, dnp := range desired.ClusterInfo.NodePools {
 			if cnp.Name != dnp.Name {
 				continue
 			}
@@ -403,7 +403,7 @@ func KubernetesDiff(old, new *spec.K8Scluster) KubernetesDiffResult {
 
 	proxyDiff := ProxyDiffResult{
 		CurrentUsed: UsesProxy(old),
-		DesiredUsed: UsesProxy(new),
+		DesiredUsed: UsesProxy(desired),
 	}
 
 	if proxyDiff.CurrentUsed && !proxyDiff.DesiredUsed {
@@ -415,7 +415,7 @@ func KubernetesDiff(old, new *spec.K8Scluster) KubernetesDiffResult {
 	}
 
 	result.Proxy = proxyDiff
-	result.Version = old.Kubernetes != new.Kubernetes
+	result.Version = old.Kubernetes != desired.Kubernetes
 	result.Dynamic = dynamicDiff
 	result.Static = staticDiff
 
@@ -445,7 +445,7 @@ api:
 	if result.ApiEndpoint.Current != "" {
 		if del, ok := result.Dynamic.Deleted[result.ApiEndpoint.CurrentNodePool]; ok {
 			if slices.Contains(del, result.ApiEndpoint.Current) {
-				np, ep := newAPIEndpointNodeCandidate(new.ClusterInfo.NodePools)
+				np, ep := newAPIEndpointNodeCandidate(desired.ClusterInfo.NodePools)
 				result.ApiEndpoint.Desired = ep
 				result.ApiEndpoint.DesiredNodePool = np
 			}
@@ -453,7 +453,7 @@ api:
 
 		if del, ok := result.Dynamic.PartiallyDeleted[result.ApiEndpoint.CurrentNodePool]; ok {
 			if slices.Contains(del, result.ApiEndpoint.Current) {
-				np, ep := newAPIEndpointNodeCandidate(new.ClusterInfo.NodePools)
+				np, ep := newAPIEndpointNodeCandidate(desired.ClusterInfo.NodePools)
 				result.ApiEndpoint.Desired = ep
 				result.ApiEndpoint.DesiredNodePool = np
 			}
@@ -461,7 +461,7 @@ api:
 
 		if del, ok := result.Static.Deleted[result.ApiEndpoint.CurrentNodePool]; ok {
 			if slices.Contains(del, result.ApiEndpoint.Current) {
-				np, ep := newAPIEndpointNodeCandidate(new.ClusterInfo.NodePools)
+				np, ep := newAPIEndpointNodeCandidate(desired.ClusterInfo.NodePools)
 				result.ApiEndpoint.Desired = ep
 				result.ApiEndpoint.DesiredNodePool = np
 			}
@@ -469,7 +469,7 @@ api:
 
 		if del, ok := result.Static.PartiallyDeleted[result.ApiEndpoint.CurrentNodePool]; ok {
 			if slices.Contains(del, result.ApiEndpoint.Current) {
-				np, ep := newAPIEndpointNodeCandidate(new.ClusterInfo.NodePools)
+				np, ep := newAPIEndpointNodeCandidate(desired.ClusterInfo.NodePools)
 				result.ApiEndpoint.Desired = ep
 				result.ApiEndpoint.DesiredNodePool = np
 			}
@@ -486,7 +486,7 @@ api:
 
 	// labels,taints,annotaions diff.
 	for _, c := range old.ClusterInfo.NodePools {
-		for _, n := range new.ClusterInfo.NodePools {
+		for _, n := range desired.ClusterInfo.NodePools {
 			// Only perform the diff on NodePools in both
 			// states. Is Old is not in New than it will
 			// be deleted, and if New is not in Old than
@@ -563,13 +563,13 @@ api:
 	return result
 }
 
-func LoadBalancersDiff(old, new *spec.LoadBalancers) LoadBalancersDiffResult {
+func LoadBalancersDiff(old, desired *spec.LoadBalancers) LoadBalancersDiffResult {
 	result := LoadBalancersDiffResult{
 		Modified: make(map[string]ModifiedLoadBalancer),
 	}
 
 	// 1. Find any added.
-	for i, n := range new.Clusters {
+	for i, n := range desired.Clusters {
 		idx := clusters.IndexLoadbalancerById(n.ClusterInfo.Id(), old.Clusters)
 		if idx < 0 {
 			result.Added = append(result.Added, LoadBalancerIdentifier{
@@ -582,7 +582,7 @@ func LoadBalancersDiff(old, new *spec.LoadBalancers) LoadBalancersDiffResult {
 
 	// 2. Find any deleted/modified.
 	for oldIdx, old := range old.Clusters {
-		idx := clusters.IndexLoadbalancerById(old.ClusterInfo.Id(), new.Clusters)
+		idx := clusters.IndexLoadbalancerById(old.ClusterInfo.Id(), desired.Clusters)
 		if idx < 0 {
 			result.Deleted = append(result.Deleted, LoadBalancerIdentifier{
 				Id:    old.ClusterInfo.Id(),
@@ -592,7 +592,7 @@ func LoadBalancersDiff(old, new *spec.LoadBalancers) LoadBalancersDiffResult {
 		}
 
 		// 2.1 Find any difference between clusters that exist in both.
-		new := new.Clusters[idx]
+		desired := desired.Clusters[idx]
 
 		var (
 			// Changes in Roles
@@ -603,13 +603,13 @@ func LoadBalancersDiff(old, new *spec.LoadBalancers) LoadBalancersDiffResult {
 		)
 
 		for _, o := range old.Roles {
-			found := slices.ContainsFunc(new.Roles, func(r *spec.Role) bool { return o.Name == r.Name })
+			found := slices.ContainsFunc(desired.Roles, func(r *spec.Role) bool { return o.Name == r.Name })
 			if !found {
 				rolesDeleted = append(rolesDeleted, o.Name)
 			}
 		}
 
-		for _, n := range new.Roles {
+		for _, n := range desired.Roles {
 			found := slices.ContainsFunc(old.Roles, func(r *spec.Role) bool { return n.Name == r.Name })
 			if !found {
 				rolesAdded = append(rolesAdded, n.Name)
@@ -619,7 +619,7 @@ func LoadBalancersDiff(old, new *spec.LoadBalancers) LoadBalancersDiffResult {
 		for _, o := range old.Roles {
 			var newRole *spec.Role
 
-			for _, n := range new.Roles {
+			for _, n := range desired.Roles {
 				if n.Name == o.Name {
 					newRole = n
 					break
@@ -650,13 +650,13 @@ func LoadBalancersDiff(old, new *spec.LoadBalancers) LoadBalancersDiffResult {
 		// Changes in DNS
 		var dnsChanged bool
 		switch {
-		case old.Dns == nil && new.Dns != nil:
+		case old.Dns == nil && desired.Dns != nil:
 			dnsChanged = true
-		case old.Dns != nil && new.Dns == nil:
+		case old.Dns != nil && desired.Dns == nil:
 			dnsChanged = true
-		case old.Dns != nil && new.Dns != nil:
-			if old.Dns.Provider.SpecName == new.Dns.Provider.SpecName {
-				if proto.Equal(old.Dns, new.Dns) {
+		case old.Dns != nil && desired.Dns != nil:
+			if old.Dns.Provider.SpecName == desired.Dns.Provider.SpecName {
+				if proto.Equal(old.Dns, desired.Dns) {
 					break
 				}
 			}
@@ -675,7 +675,7 @@ func LoadBalancersDiff(old, new *spec.LoadBalancers) LoadBalancersDiffResult {
 		//
 		// Note: can be improved upon.
 		for _, cnp := range old.ClusterInfo.NodePools {
-			for _, dnp := range new.ClusterInfo.NodePools {
+			for _, dnp := range desired.ClusterInfo.NodePools {
 				if cnp.Name != dnp.Name {
 					continue
 				}
@@ -702,7 +702,7 @@ func LoadBalancersDiff(old, new *spec.LoadBalancers) LoadBalancersDiffResult {
 
 		// Changes in NodePools.
 		oldDynamic, oldStatic := NodePoolsView(old.ClusterInfo)
-		newDynamic, newStatic := NodePoolsView(new.ClusterInfo)
+		newDynamic, newStatic := NodePoolsView(desired.ClusterInfo)
 
 		dynDiff := NodePoolsDiff(oldDynamic, newDynamic)
 		sttDiff := NodePoolsDiff(oldStatic, newStatic)
@@ -755,7 +755,7 @@ func LoadBalancersDiff(old, new *spec.LoadBalancers) LoadBalancersDiffResult {
 	}
 
 	// 3. Determine API Endpoint changes.
-	cid, did, change := determineLBApiEndpointChange(old.Clusters, new.Clusters)
+	cid, did, change := determineLBApiEndpointChange(old.Clusters, desired.Clusters)
 	result.ApiEndpoint.Current = cid
 	result.ApiEndpoint.New = did
 	result.ApiEndpoint.State = change

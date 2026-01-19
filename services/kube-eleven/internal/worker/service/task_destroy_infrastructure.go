@@ -25,17 +25,17 @@ func Destroy(
 		return
 	}
 
-	delete := action.Delete
+	toDelete := action.Delete
 
 	logger.Info().Msgf("Destroying kubernetes cluster")
 
 	var loadbalancerApiEndpoint string
-	if ep := clusters.FindAssignedLbApiEndpoint(delete.LoadBalancers); ep != nil {
+	if ep := clusters.FindAssignedLbApiEndpoint(toDelete.LoadBalancers); ep != nil {
 		loadbalancerApiEndpoint = ep.Dns.Endpoint
 	}
 
 	k := kube_eleven.KubeEleven{
-		K8sCluster:           delete.K8S,
+		K8sCluster:           toDelete.K8S,
 		LoadBalancerEndpoint: loadbalancerApiEndpoint,
 		SpawnProcessLimit:    processLimit,
 	}
@@ -49,8 +49,8 @@ func Destroy(
 	logger.Info().Msgf("Kubernetes cluster was successfully destroyed")
 
 	// No changes to LoadBalancers, update only kuberentes cluster.
-	delete.K8S.Kubeconfig = ""
+	toDelete.K8S.Kubeconfig = ""
 	update := tracker.Result.Update()
-	update.Kubernetes(delete.K8S)
+	update.Kubernetes(toDelete.K8S)
 	update.Commit()
 }

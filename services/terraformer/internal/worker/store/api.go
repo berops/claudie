@@ -8,7 +8,7 @@ import (
 	"github.com/berops/claudie/internal/healthcheck"
 )
 
-// environmnet variables that should be used within the implementation of [S3StateStorage]
+// environments variables that should be used within the implementation of [S3StateStorage]
 var (
 	s3Endpoint = envs.BucketEndpoint
 	s3Bucket   = envs.BucketName

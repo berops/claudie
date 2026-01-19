@@ -305,12 +305,7 @@ func (m *Manager) NodeGroupTemplateNodeInfo(_ context.Context, req *protos.NodeG
 		return nil, fmt.Errorf("failed to get node info template: %w", err)
 	}
 
-	b, err := info.Marshal()
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal node info template: %w", err)
-	}
-
-	return &protos.NodeGroupTemplateNodeInfoResponse{NodeBytes: b}, nil
+	return &protos.NodeGroupTemplateNodeInfoResponse{NodeInfo: info}, nil
 }
 
 // NodeGroupGetOptions returns NodeGroupAutoscalingOptions that should be used for this particular
