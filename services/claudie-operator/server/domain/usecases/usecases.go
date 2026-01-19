@@ -3,7 +3,7 @@ package usecases
 import (
 	"context"
 
-	managerclient "github.com/berops/claudie/services/managerv2/client"
+	managerclient "github.com/berops/claudie/services/manager/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 )
 

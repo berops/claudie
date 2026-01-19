@@ -11,7 +11,7 @@ import (
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
-	managerclient "github.com/berops/claudie/services/managerv2/client"
+	managerclient "github.com/berops/claudie/services/manager/client"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/rs/zerolog/log"
 

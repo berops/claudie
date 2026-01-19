@@ -15,7 +15,7 @@ import (
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/proto/pb/spec"
-	managerclient "github.com/berops/claudie/services/managerv2/client"
+	managerclient "github.com/berops/claudie/services/manager/client"
 	"github.com/rs/zerolog/log"
 
 	"golang.org/x/sync/errgroup"

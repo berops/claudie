@@ -14,7 +14,7 @@ import (
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/autoscaler-adapter/node_manager"
 	cOperator "github.com/berops/claudie/services/claudie-operator/client"
-	managerclient "github.com/berops/claudie/services/managerv2/client"
+	managerclient "github.com/berops/claudie/services/manager/client"
 	"github.com/rs/zerolog/log"
 
 	"google.golang.org/grpc"

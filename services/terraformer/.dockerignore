@@ -14,4 +14,4 @@ services/autoscaler-adapter
 .golangci.yml
 .gitattributes
 manifests
-docs
+doc

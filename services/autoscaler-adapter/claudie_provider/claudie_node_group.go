@@ -8,7 +8,7 @@ import (
 
 	"github.com/berops/claudie/internal/nodes"
 	"github.com/berops/claudie/proto/pb/spec"
-	managerclient "github.com/berops/claudie/services/managerv2/client"
+	managerclient "github.com/berops/claudie/services/manager/client"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

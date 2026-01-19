@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/berops/claudie/internal/api/manifest"
-	managerclient "github.com/berops/claudie/services/managerv2/client"
+	managerclient "github.com/berops/claudie/services/manager/client"
 	"github.com/rs/zerolog/log"
 
 	"gopkg.in/yaml.v3"
