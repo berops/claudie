@@ -2,10 +2,10 @@ name: Release pipeline
 on:
   # Run when release is published
   release:
-    types: [ published ]
+    types: [published]
 
 env:
-  SERVICES: manager builder terraformer ansibler kube-eleven kuber claudie-operator autoscaler-adapter
+  SERVICES: manager terraformer ansibler kube-eleven kuber claudie-operator autoscaler-adapter
 
 jobs:
   build-and-publish:
@@ -60,8 +60,8 @@ jobs:
           for SERVICE in "${ARR[@]}"
           do
             echo "-----Building $SERVICE-----"
-            IMGTAG="ghcr.io/berops/claudie/$SERVICE:${RELEASE}" 
-            DOCKER_BUILDKIT=1 docker buildx build --push --platform linux/amd64,linux/arm64 --tag $IMGTAG -f ./services/$SERVICE/Dockerfile . 
+            IMGTAG="ghcr.io/berops/claudie/$SERVICE:${RELEASE}"
+            DOCKER_BUILDKIT=1 docker buildx build --push --platform linux/amd64,linux/arm64 --tag $IMGTAG -f ./services/$SERVICE/Dockerfile .
           done
 
       - name: Set new image & tag to manifests

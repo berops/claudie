@@ -7,7 +7,7 @@ on:
 
 env:
   ENV_FILE: .env
-  SERVICES: manager builder terraformer ansibler kube-eleven kuber claudie-operator autoscaler-adapter testing-framework
+  SERVICES: manager terraformer ansibler kube-eleven kuber claudie-operator autoscaler-adapter testing-framework
 
 jobs:
   merge-branch:
