@@ -90,6 +90,7 @@ message StageKuber {
     ENABLE_LONGHORN_CA = 9;
     DISABLE_LONGHORN_CA = 10;
     RECONCILE_LONGHORN_STORAGE_CLASSES = 11;
+    DEPLOY_KUBELET_CSR_APPROVER = 12;
   }
   message SubPass {
     SubPassKind kind = 1;

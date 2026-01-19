@@ -114,6 +114,8 @@ passes:
 			ReconcileLonghornStorageClasses(logger, tracker)
 		case spec.StageKuber_STORE_LB_SCRAPE_CONFIG:
 			StoreScrapeConfig(logger, tracker)
+		case spec.StageKuber_DEPLOY_KUBELET_CSR_APPROVER:
+			DeployKubeletCSRApprover(logger, work.InputManifestName, tracker)
 		default:
 			logger.Warn().Msg("Stage not recognized, skipping")
 			continue

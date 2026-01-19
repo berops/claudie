@@ -698,6 +698,15 @@ func ScheduleAdditionsInNodePools(
 			},
 			SubPasses: []*spec.StageKuber_SubPass{
 				{
+					Kind: spec.StageKuber_DEPLOY_KUBELET_CSR_APPROVER,
+					Description: &spec.StageDescription{
+						About: "Deploying kubelet-csr approver",
+						// Failing to deploy the approve is not a fatal error
+						// that would make the whole cluster unusable.
+						ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+					},
+				},
+				{
 					Kind: spec.StageKuber_PATCH_NODES,
 					Description: &spec.StageDescription{
 						About: "Patching newly added nodes",

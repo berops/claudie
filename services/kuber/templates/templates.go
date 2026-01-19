@@ -6,6 +6,9 @@ import (
 
 var (
 
+	//go:embed kubelet-csr-approver.goyaml
+	KubeletCSRApproverTemplate string
+
 	//go:embed enable-ca.goyaml
 	EnableClusterAutoscalerTemplate string
 
