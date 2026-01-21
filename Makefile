@@ -13,7 +13,7 @@ proto:
 
 # Start manager on a local environment, exposted on port 50055
 manager:
-	GOLANG_LOG=debug PROMETHEUS_PORT=9091 go run ./services/managerv2/cmd/api-server
+	GOLANG_LOG=debug PROMETHEUS_PORT=9091 go run ./services/manager/cmd/api-server
 
 # Start Terraformer service on a local environment, exposed on port 50052
 terraformer:
@@ -63,10 +63,20 @@ lint:
 	golangci-lint run
 
 # Start all data stores at once,in docker containers, to simplify the local development
-datastoreStart: mongo minio nats
+datastoreStart: mongo minio nats dockernetwork
+
+dockernetwork:
+	docker network create claudie-test-network
+	docker network connect claudie-test-network nats
+	docker network connect claudie-test-network minio
+	docker network connect claudie-test-network mongo
 
 # Stops all data stores at once, which will also remove docker containers
 datastoreStop:
+	docker network disconnect claudie-test-network nats
+	docker network disconnect claudie-test-network minio
+	docker network disconnect claudie-test-network mongo
+	docker network rm claudie-test-network
 	docker stop mongo
 	docker stop minio
 	docker stop nats

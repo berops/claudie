@@ -13,7 +13,7 @@ import (
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/berops/claudie/services/managerv2/internal/service/managementcluster/internal/autoscaler"
+	"github.com/berops/claudie/services/manager/internal/service/managementcluster/internal/autoscaler"
 	"github.com/google/go-cmp/cmp"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"

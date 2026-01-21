@@ -6,8 +6,6 @@ import (
 	"strings"
 )
 
-// TODO: maybe we might remove this once we get rid of builder...
-// Hostnames and ports on what services are listening
 var (
 	// NatsClusterURL for connected to a nats cluster of [NatsClusterSize].
 	NatsClusterURL = GetOrDefault("NATS_CLUSTER_URL", "nats://127.0.0.1") + ":" + GetOrDefault("NATS_CLUSTER_PORT", "4222")
@@ -19,15 +17,6 @@ var (
 	// will be exchanged.
 	NatsClusterJetstreamName = GetOrDefault("NATS_CLUSTER_JETSTREAM_NAME", "claudie-internal")
 
-	// TerraformerURL is a listening URL for Terraformer module
-	TerraformerURL = os.Getenv("TERRAFORMER_HOSTNAME") + ":" + os.Getenv("TERRAFORMER_PORT")
-
-	// AnsiblerURL is a listening URL for Ansibler module
-	AnsiblerURL = os.Getenv("ANSIBLER_HOSTNAME") + ":" + os.Getenv("ANSIBLER_PORT")
-
-	// KubeElevenURL is a listening URL for KubeEleven module
-	KubeElevenURL = os.Getenv("KUBE_ELEVEN_HOSTNAME") + ":" + os.Getenv("KUBE_ELEVEN_PORT")
-
 	// ManagerURL is a listening URL for Manager module
 	ManagerURL = os.Getenv("MANAGER_HOSTNAME") + ":" + os.Getenv("MANAGER_PORT")
 
@@ -36,9 +25,6 @@ var (
 
 	// DatabaseURL is a listening URL for Database
 	DatabaseURL = os.Getenv("DATABASE_URL")
-
-	// KuberURL is a listening URL for Kuber module
-	KuberURL = os.Getenv("KUBER_HOSTNAME") + ":" + os.Getenv("KUBER_PORT")
 
 	// BucketEndpoint is a listening URL for Minio deployment
 	// If not defined it will use and external S3 Bucket,
@@ -68,21 +54,6 @@ var (
 
 // func init is used as setter for default values in case the env var has not been set
 func init() {
-	if TerraformerURL == ":" {
-		TerraformerURL = "localhost:50052"
-	}
-	TerraformerURL = strings.ReplaceAll(TerraformerURL, ":tcp://", "")
-
-	if AnsiblerURL == ":" {
-		AnsiblerURL = "localhost:50053"
-	}
-	AnsiblerURL = strings.ReplaceAll(AnsiblerURL, ":tcp://", "")
-
-	if KubeElevenURL == ":" {
-		KubeElevenURL = "localhost:50054"
-	}
-	KubeElevenURL = strings.ReplaceAll(KubeElevenURL, ":tcp://", "")
-
 	if ManagerURL == ":" {
 		ManagerURL = "localhost:50055"
 	}
@@ -96,11 +67,6 @@ func init() {
 	if DatabaseURL == "" {
 		DatabaseURL = "mongodb://localhost:27017"
 	}
-
-	if KuberURL == ":" {
-		KuberURL = "localhost:50057"
-	}
-	KuberURL = strings.ReplaceAll(KuberURL, ":tcp://", "")
 
 	if BucketName == "" {
 		BucketName = "claudie-tf-state-files"

@@ -51,10 +51,6 @@ const (
 
 	// Subject related to Terraformer service only response Messages.
 	TerraformerResponse = "claudie-internal-cluster-response-terraformer"
-
-	// TODO: do we need it ?
-	// Misc is a subject unrelated to any of the other above subjects.
-	Misc = "claudie-internal-misc"
 )
 
 // Default subjects that are used if no are supplied in the [Client.JetStreamWorkQueue] func.
@@ -67,5 +63,4 @@ var DefaultSubjects = [...]string{
 	KubeElevenResponse,
 	TerraformerRequests,
 	TerraformerResponse,
-	Misc,
 }

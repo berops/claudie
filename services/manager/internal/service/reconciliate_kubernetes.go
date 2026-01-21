@@ -161,6 +161,28 @@ func KubernetesLowPriority(r KubernetesReconciliate) *spec.TaskEvent {
 		return SchedulePatchNodes(r.Current, r.Diff.LabelsTaintsAnnotations)
 	}
 
+	// If this path gets hit, means that there are no changes to the counts
+	// of the nodepools and just that the Autoscaler config was changed but
+	// the count of nodes remains same.
+	if len(r.Diff.ChangedToAutoscaled) > 0 {
+		for np, conf := range r.Diff.ChangedToAutoscaled {
+			return ScheduleMoveNodePoolToAutoscaled(
+				r.Current,
+				np,
+				conf,
+			)
+		}
+	}
+
+	// If this path gets hit, means that there are no changes to the counts
+	// of the nodepools and just that the Autoscaler config was changed but
+	// the count of nodes remains same.
+	if len(r.Diff.ChangedToFixed) > 0 {
+		for np := range r.Diff.ChangedToFixed {
+			return ScheduleMoveNodePoolFromAutoscaled(r.Current, np)
+		}
+	}
+
 	return nil
 }
 
@@ -698,15 +720,6 @@ func ScheduleAdditionsInNodePools(
 			},
 			SubPasses: []*spec.StageKuber_SubPass{
 				{
-					Kind: spec.StageKuber_DEPLOY_KUBELET_CSR_APPROVER,
-					Description: &spec.StageDescription{
-						About: "Deploying kubelet-csr approver",
-						// Failing to deploy the approve is not a fatal error
-						// that would make the whole cluster unusable.
-						ErrorLevel: spec.ErrorLevel_ERROR_WARN,
-					},
-				},
-				{
 					Kind: spec.StageKuber_PATCH_NODES,
 					Description: &spec.StageDescription{
 						About: "Patching newly added nodes",
@@ -1227,4 +1240,175 @@ func ScheduleDeletionsInNodePools(
 	}
 
 	return nil
+}
+
+// Schedules a task that will move the nodepool from the current state of the cluster from a fixed size to autoscaled type.
+//
+// The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
+func ScheduleMoveNodePoolToAutoscaled(
+	current *spec.Clusters,
+	nodepool string,
+	config *spec.AutoscalerConf,
+) *spec.TaskEvent {
+	// For the move nothing needs to be build as all of the infra,
+	// with the same number of nodes and everything is just moved
+	// to an autoscaled nodepool, thus just schedule the move operation.
+	//
+	// Since this can only be scheduled for dynamic nodepools omit
+	// any static nodepool pipeline paths.
+
+	inFlight := proto.Clone(current).(*spec.Clusters)
+	pipeline := []*spec.Stage{
+		{
+			StageKind: &spec.Stage_Terraformer{
+				Terraformer: &spec.StageTerraformer{
+					Description: &spec.StageDescription{
+						About:      "Reconciling infrastructure for cluster",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+					SubPasses: []*spec.StageTerraformer_SubPass{
+						{
+							Kind: spec.StageTerraformer_UPDATE_INFRASTRUCTURE,
+							Description: &spec.StageDescription{
+								About:      "Moving nodepool to autoscaled type",
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	enableCA := len(nodepools.Autoscaled(current.K8S.ClusterInfo.NodePools)) == 0
+	if enableCA {
+		pipeline = append(pipeline, &spec.Stage{
+			StageKind: &spec.Stage_Kuber{
+				Kuber: &spec.StageKuber{
+					Description: &spec.StageDescription{
+						About:      "Configuring cluster after move to autoscaled nodepool",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+					SubPasses: []*spec.StageKuber_SubPass{
+						{
+							Kind: spec.StageKuber_ENABLE_LONGHORN_CA,
+							Description: &spec.StageDescription{
+								About:      "Enable cluster-autoscaler support for longhorn",
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+						},
+					},
+				},
+			},
+		})
+	}
+
+	return &spec.TaskEvent{
+		Id:        uuid.New().String(),
+		Timestamp: timestamppb.New(time.Now().UTC()),
+		Event:     spec.Event_UPDATE,
+		Task: &spec.Task{
+			Do: &spec.Task_Update{
+				Update: &spec.Update{
+					State: &spec.Update_State{
+						K8S:           inFlight.K8S,
+						LoadBalancers: inFlight.LoadBalancers.Clusters,
+					},
+					Delta: &spec.Update_TfMoveNodePoolToAutoscaled{
+						TfMoveNodePoolToAutoscaled: &spec.Update_TerraformerMoveNodePoolToAutoscaled{
+							Nodepool: nodepool,
+							Config:   config,
+						},
+					},
+				},
+			},
+		},
+		Description: fmt.Sprintf("Moving nodepool %q from fixed to autoscaled type", nodepool),
+		Pipeline:    pipeline,
+	}
+}
+
+// Schedules a task that will move the nodepool from the current state of the cluster from being autoscaled to fixed.
+//
+// The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
+func ScheduleMoveNodePoolFromAutoscaled(
+	current *spec.Clusters,
+	nodepool string,
+) *spec.TaskEvent {
+	// For the move nothing needs to be build as all of the infra,
+	// with the same number of nodes and everything is just moved
+	// from an autoscaled nodepool, thus just schedule the move operation.
+	//
+	// Since this can only be scheduled for dynamic nodepools omit
+	// any static nodepool pipeline paths.
+	inFlight := proto.Clone(current).(*spec.Clusters)
+	pipeline := []*spec.Stage{
+		{
+			StageKind: &spec.Stage_Terraformer{
+				Terraformer: &spec.StageTerraformer{
+					Description: &spec.StageDescription{
+						About:      "Reconciling infrastructure for cluster",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+					SubPasses: []*spec.StageTerraformer_SubPass{
+						{
+							Kind: spec.StageTerraformer_UPDATE_INFRASTRUCTURE,
+							Description: &spec.StageDescription{
+								About:      "Moving nodepool from autoscaled type to fixed",
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// If the deletion of the last autoscaled nodepools is to be scheduled. Also remove
+	// the CA requirement for the cluster.
+	if a := nodepools.Autoscaled(current.K8S.ClusterInfo.NodePools); len(a) == 1 {
+		if a[0].Name == nodepool {
+			pipeline = append(pipeline, &spec.Stage{
+				StageKind: &spec.Stage_Kuber{
+					Kuber: &spec.StageKuber{
+						Description: &spec.StageDescription{
+							About:      "Configuring cluster after move from autoscaled nodepool",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+						SubPasses: []*spec.StageKuber_SubPass{
+							{
+								Description: &spec.StageDescription{
+									About:      "Disabling Longhorn cluster autoscaler setting",
+									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+								},
+							},
+						},
+					},
+				},
+			})
+		}
+	}
+
+	return &spec.TaskEvent{
+		Id:        uuid.New().String(),
+		Timestamp: timestamppb.New(time.Now().UTC()),
+		Event:     spec.Event_UPDATE,
+		Task: &spec.Task{
+			Do: &spec.Task_Update{
+				Update: &spec.Update{
+					State: &spec.Update_State{
+						K8S:           inFlight.K8S,
+						LoadBalancers: inFlight.LoadBalancers.Clusters,
+					},
+					Delta: &spec.Update_TfMoveNodePoolFromAutoscaled{
+						TfMoveNodePoolFromAutoscaled: &spec.Update_TerraformerMoveNodePoolFromAutoscaled{
+							Nodepool: nodepool,
+						},
+					},
+				},
+			},
+		},
+		Description: fmt.Sprintf("Moving nodepool %q from autoscaled type to fixed", nodepool),
+		Pipeline:    pipeline,
+	}
 }

@@ -51,7 +51,6 @@ func CommitProxyEnvs(
 	if add := update.Update.GetAddedK8SNodes(); add != nil {
 		// On addition, only commit on the existing, established nodes
 		// as the new ones are not in the cluster yet.
-		logger.Error().Msg("HERE, TODO: remove me after testing, PROXY ADD")
 
 		if i := nodepools.IndexByName(add.Nodepool, nps); i >= 0 {
 			np := DefaultNodePoolToExistingInfrastructureOnly(nps[i], add.Nodes)
@@ -69,7 +68,6 @@ func CommitProxyEnvs(
 	// This task may be called during the deletion of unreachable nodes
 	// thus filter them out when processing.
 	if unreachable := UnreachableInfrastructure(update); unreachable != nil {
-		logger.Error().Msg("HERE, TODO: remove me after testing")
 		nps = DefaultNodePoolsToReachableInfrastructureOnly(
 			nps,
 			//The playbook uses only k8s nodes.

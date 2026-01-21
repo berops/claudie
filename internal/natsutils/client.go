@@ -11,9 +11,6 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// TODO: set nats message max size  to some large value... since
-// we send current state and desired state.
-
 // Default options used in the [NewClientWithJetStream] func.
 var defaultOpts = [...]nats.Option{
 	nats.MaxReconnects(-1), // endless reconnect attempts.
@@ -98,10 +95,10 @@ func (c *Client) JetStreamWorkQueue(ctx context.Context, name string, subjects .
 		Subjects: subjects,
 		// Retention type WorkQueuePolicy so that the messages are retained until acknowledged.
 		Retention:            jetstream.WorkQueuePolicy,
-		MaxMsgs:              1024,                 // have up to 1024 messages across all subjects.
+		MaxMsgs:              16384,                // have up to 8192 messages across all subjects.
 		Discard:              jetstream.DiscardNew, // when full discard new messages while keeping the old.
 		DiscardNewPerSubject: true,                 // Discard also new messages per subject when the queue is full already.
-		MaxMsgsPerSubject:    256,                  // Limit the number of messages to 256 per each subject.
+		MaxMsgsPerSubject:    4096,                 // Limit the number of messages to 2048 per each subject.
 
 		// Persist the incoming messages on disk, rather than in-memory.
 		// So that un-expected restarts do not invalidate our state.

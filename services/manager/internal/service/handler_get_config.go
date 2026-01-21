@@ -8,7 +8,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/berops/claudie/proto/pb"
-	"github.com/berops/claudie/services/managerv2/internal/store"
+	"github.com/berops/claudie/services/manager/internal/store"
 	"github.com/rs/zerolog/log"
 )
 

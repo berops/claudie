@@ -12,7 +12,7 @@ import (
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/metrics"
-	"github.com/berops/claudie/services/managerv2/internal/service"
+	"github.com/berops/claudie/services/manager/internal/service"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
 

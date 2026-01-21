@@ -207,7 +207,8 @@ func (m *Manager) NodeGroupDeleteNodes(ctx context.Context, req *protos.NodeGrou
 	}
 
 	for _, n := range req.Nodes {
-		nodeName := fmt.Sprintf("%s-%s-%s", m.Immutable.ClusterName, m.Immutable.ClusterHash, n.Name)
+		nodeName := strings.TrimPrefix(n.Name, nodes.ProviderId)
+		nodeName = fmt.Sprintf("%s-%s-%s", m.Immutable.ClusterName, m.Immutable.ClusterHash, nodeName)
 		decrement := true
 
 		resp, err := MarkNodeForDeletion(ctx, managerclient.MarkNodeForDeletionRequest{

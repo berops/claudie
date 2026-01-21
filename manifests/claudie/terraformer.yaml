@@ -38,9 +38,9 @@ spec:
           volumeMounts:
             - mountPath: /bin/services/terraformer/templates
               name: templates
-            - mountPath: /bin/services/terraformer/server/clusters
+            - mountPath: /bin/services/terraformer/clusters
               name: data
-            - mountPath: /bin/services/terraformer/server/cache
+            - mountPath: /bin/services/terraformer/cache
               name: cache
             - mountPath: /tmp
               name: temp
@@ -58,6 +58,11 @@ spec:
             limits:
               memory: 2000Mi
           env:
+            - name: NATS_CLUSTER_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: NATS_CLUSTER_URL
             - name: TERRAFORMER_TOFU_PARALLELISM
               valueFrom:
                 configMapKeyRef:

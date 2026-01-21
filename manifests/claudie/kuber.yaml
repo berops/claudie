@@ -35,7 +35,7 @@ spec:
           imagePullPolicy: Always
           image: ghcr.io/berops/claudie/kuber
           volumeMounts:
-            - mountPath: /bin/services/kuber/server/clusters
+            - mountPath: /bin/services/kuber/clusters
               name: data
           securityContext:
             allowPrivilegeEscalation: false
@@ -54,6 +54,11 @@ spec:
             limits:
               memory: 700Mi
           env:
+            - name: NATS_CLUSTER_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: NATS_CLUSTER_URL
             - name: KUBER_WORKERS
               valueFrom:
                 configMapKeyRef:
@@ -79,10 +84,6 @@ spec:
                 configMapKeyRef:
                   name: env
                   key: GOLANG_LOG
-            - name: NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
           ports:
             - containerPort: 50057
             - name: "metrics"
@@ -99,7 +100,6 @@ spec:
               service: kuber-liveness
             initialDelaySeconds: 5
             periodSeconds: 30
-      serviceAccountName: kuber
 ---
 kind: Service
 apiVersion: v1
@@ -116,42 +116,3 @@ spec:
     - protocol: TCP
       port: 50057
       targetPort: 50057
-
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: kuber
-  labels:
-    app.kubernetes.io/part-of: claudie
-    app.kubernetes.io/name: kuber
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: kuber
-  labels:
-    app.kubernetes.io/part-of: claudie
-    app.kubernetes.io/name: kuber
-rules:
-  - apiGroups: [""]
-    resources: ["secrets", "configmaps", "services"]
-    verbs: ["create", "patch", "update", "get", "list", "delete"]
-  - apiGroups: ["apps"]
-    resources: ["deployments"]
-    verbs: ["create", "patch", "update", "get", "list", "delete"]
----
-kind: RoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: kuber
-  labels:
-    app.kubernetes.io/part-of: claudie
-    app.kubernetes.io/name: kuber
-roleRef:
-  kind: Role
-  name: kuber
-  apiGroup: rbac.authorization.k8s.io
-subjects:
-  - kind: ServiceAccount
-    name: kuber

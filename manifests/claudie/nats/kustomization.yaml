@@ -1,0 +1,7 @@
+kind: Kustomization
+metadata:
+  name: nats
+resources:
+  - crds.yaml
+  - nats.yaml
+  - nack.yaml

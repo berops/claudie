@@ -4,6 +4,7 @@ import (
 	"maps"
 	"slices"
 
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/kuber/internal/worker/service/internal/nodes"
 	"github.com/rs/zerolog"
@@ -43,18 +44,15 @@ func PatchNodes(logger zerolog.Logger, processlimit *semaphore.Weighted, workers
 			}
 		}
 	case *spec.Task_Update:
-		// TODO: allow also other messges in here... for example add k8s nodes.
-		// look in manager for which ones.
-		delta, ok := do.Update.Delta.(*spec.Update_KpatchNodes)
+		var ok bool
+		patch, ok = extractPatchFromUpdate(do.Update)
 		if !ok {
 			logger.
 				Warn().
 				Msgf("Received update task %T while wanting to patch nodes, assuming it was mischeduled, ignoring", do.Update.Delta)
 			return
 		}
-
 		k8s = do.Update.State.K8S
-		patch = delta.KpatchNodes
 	default:
 		logger.
 			Warn().
@@ -129,5 +127,40 @@ func updateExistingAnnotationsLabelsTaints(k8s *spec.K8Scluster, add *spec.Updat
 		if m, ok := add.Taints[np.Name]; ok {
 			np.Taints = append(np.Taints, m.Taints...)
 		}
+	}
+}
+
+func extractPatchFromUpdate(update *spec.Update) (*spec.Update_KuberPatchNodes, bool) {
+	switch delta := update.Delta.(type) {
+	case *spec.Update_KpatchNodes:
+		return delta.KpatchNodes, true
+	case *spec.Update_AddedK8SNodes_:
+		np := nodepools.FindByName(delta.AddedK8SNodes.Nodepool, update.State.K8S.ClusterInfo.NodePools)
+		if np == nil {
+			return nil, false
+		}
+		out := &spec.Update_KuberPatchNodes{
+			Add: &spec.Update_KuberPatchNodes_AddBatch{
+				Taints: map[string]*spec.Update_KuberPatchNodes_ListOfTaints{
+					np.Name: {
+						Taints: np.Taints,
+					},
+				},
+				Labels: map[string]*spec.Update_KuberPatchNodes_MapOfLabels{
+					np.Name: {
+						Labels: np.Labels,
+					},
+				},
+				Annotations: map[string]*spec.Update_KuberPatchNodes_MapOfAnnotations{
+					np.Name: {
+						Annotations: np.Annotations,
+					},
+				},
+			},
+			Remove: new(spec.Update_KuberPatchNodes_RemoveBatch),
+		}
+		return out, true
+	default:
+		return nil, false
 	}
 }

@@ -10,7 +10,7 @@ import (
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/natsutils"
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/berops/claudie/services/managerv2/internal/store"
+	"github.com/berops/claudie/services/manager/internal/store"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/rs/zerolog"

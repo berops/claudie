@@ -31,7 +31,7 @@ const (
 const (
 	TemplatesRootDir = "services/terraformer/templates"
 	Output           = "services/terraformer/clusters"
-	CacheDir         = "services/terraformer/server/cache"
+	CacheDir         = "services/terraformer/cache"
 )
 
 type K8sInfo struct{ ExportPort6443 bool }

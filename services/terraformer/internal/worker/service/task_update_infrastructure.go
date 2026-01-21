@@ -29,6 +29,18 @@ func reconcileInfrastructure(
 	}
 
 	switch delta := action.Update.Delta.(type) {
+	case *spec.Update_TfMoveNodePoolFromAutoscaled:
+		action := MoveNodePoolFromAutoscaled{
+			State: state,
+			Move:  delta.TfMoveNodePoolFromAutoscaled,
+		}
+		moveNodePoolFromAutoscaled(logger, action, tracker)
+	case *spec.Update_TfMoveNodePoolToAutoscaled:
+		action := MoveNodePoolToAutoscaled{
+			State: state,
+			Move:  delta.TfMoveNodePoolToAutoscaled,
+		}
+		moveNodePoolToAutoscaled(logger, action, tracker)
 	case *spec.Update_TfAddLoadBalancer:
 		lb := delta.TfAddLoadBalancer.Handle
 		addLoadBalancer(logger, projectName, processLimit, lb, tracker)

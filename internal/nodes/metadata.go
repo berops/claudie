@@ -12,7 +12,10 @@ import (
 
 type LabelKey string
 
-const ProviderIdFormat = "claudie://%s"
+const (
+	ProviderId       = "claudie://"
+	ProviderIdFormat = ProviderId + "%s"
+)
 
 // To properly escape / in JSONPatch,
 // it has to be replaced with ~1

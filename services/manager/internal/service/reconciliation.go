@@ -7,8 +7,9 @@ import (
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/berops/claudie/services/managerv2/internal/service/managementcluster"
+	"github.com/berops/claudie/services/manager/internal/service/managementcluster"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 
 	"google.golang.org/protobuf/proto"
 )
@@ -17,6 +18,7 @@ import (
 // scheduling of the tasks.
 type ScheduleResult uint8
 
+// TODO: adjust the stdout on the autoscaling, and fix the autoscaling drift catching.
 // TODO: handle the Deletion error where on Creation it fails and the subsequetn deletion also fails
 // as there is not current state and also there is not InFlight state.
 //
@@ -56,11 +58,15 @@ const (
 // No changes to the passed in values are done. The passed in `desired` and `pending`
 // states will not be modified in any way.
 func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) ScheduleResult {
-	var result ScheduleResult
-
 	PopulateEntriesForNewClusters(&pending.Clusters, desired)
 
+	clusterResult := make(map[string]ScheduleResult, len(pending.Clusters))
+
 	for cluster, state := range pending.Clusters {
+		// The default settings if always to reschedule
+		// until decided to do otherwise.
+		clusterResult[cluster] = Reschedule
+
 		var (
 			logger = loggerutils.WithProjectAndCluster(pending.Name, cluster)
 
@@ -83,7 +89,7 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 		case noop:
 			// there is no desired state and no current state.
 			// the cluster if deleted, stop rescheduling.
-			result = NoReschedule
+			clusterResult[cluster] = NoReschedule
 		case isCreate:
 			if hasInFlightState {
 				logger.
@@ -168,8 +174,8 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 					Msg("Failed to store cluster metadata secret in the management cluster")
 			}
 
-			updateAutoscalerPods := len(nodepools.Autoscaled(state.Current.K8S.ClusterInfo.NodePools)) > 0
-			if updateAutoscalerPods {
+			currentAutoscaled := len(nodepools.Autoscaled(state.Current.K8S.ClusterInfo.NodePools)) > 0
+			if currentAutoscaled {
 				drift, err := managementcluster.DriftInAutoscalerPods(logger, pending.Name, current)
 				if err != nil {
 					logger.
@@ -188,9 +194,16 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 							Msg("Failed to refresh autoscaler pods in the management cluster")
 					}
 				}
+			} else {
+				if err := managementcluster.DestroyClusterAutoscaler(pending.Name, state.Current); err != nil {
+					// ignore error.
+					log.
+						Debug().
+						Msgf("Failed to destroy cluster autoscaler pod, could be because current state does not have any autoscaled nodepools: %v", err)
+				}
 			}
 
-			result = Noop
+			clusterResult[cluster] = Noop
 
 			// TODO: if for example a dead node comes in during the
 			// cycle rescheduling in here it will always error out
@@ -214,7 +227,7 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 				// catching duplicates under NATS when rescheduling.
 				state.InFlight.Id = newUUID
 
-				result = Reschedule
+				clusterResult[cluster] = Reschedule
 				break
 			}
 
@@ -222,13 +235,17 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 			// is made all of the current,desired [spec.Clusters] state is considered
 			// immutable and is not modified to not invalidate cached indices for the
 			// returned diffs.
-			logger.Info().Msg("Health checking current state")
+			logger.Debug().Msg("Health checking current state")
 
 			hc := HealthCheck(logger, current)
 			diff := Diff(current, desired)
 
 			if state.InFlight = handleUpdate(hc, diff, current, desired); state.InFlight != nil {
-				result = Reschedule
+				clusterResult[cluster] = Reschedule
+
+				logger.
+					Info().
+					Msg("Verifying reachability of the cluster before scheduling task to work on")
 
 				// Before scheduling any new task, healthcheck the reachability of the
 				// build infrastructure to avoid any issues with unreachable nodes during
@@ -236,7 +253,7 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 				// then the scheduled task.
 				rhc, err := HealthCheckNodeReachability(logger, current)
 				if err != nil {
-					result = NotReady
+					clusterResult[cluster] = NotReady
 
 					state.InFlight = nil
 					state.State.Status = spec.Workflow_ERROR
@@ -264,7 +281,7 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 						Msg("Propagating change to current state after static node removal on the kubernetes level")
 
 					state.InFlight = nil
-					result = NotReady
+					clusterResult[cluster] = NotReady
 					break event_switch
 				case UnreachableNodesPropagateError:
 					// Higher priority task can't be scheduled due to wait on user
@@ -282,7 +299,7 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 						Msg("Propagating error for unreachable nodes on the kubernetes level without working on any task")
 
 					state.InFlight = nil
-					result = NotReady
+					clusterResult[cluster] = NotReady
 					break event_switch
 				case UnreachableNodesScheduledTask:
 					logger.Debug().Msg("Scheduled Task with higher priority for unreachable nodes on the kubernetes level")
@@ -304,7 +321,7 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 						Msg("Propagating change to current state after static node removal on the loadbalancer level")
 
 					state.InFlight = nil
-					result = NotReady
+					clusterResult[cluster] = NotReady
 					break event_switch
 				case UnreachableNodesPropagateError:
 					logger.
@@ -312,7 +329,7 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 						Msg("Propagating error for unreachable nodes on the loadbalancer level without working on any task")
 
 					state.InFlight = nil
-					result = NotReady
+					clusterResult[cluster] = NotReady
 					break event_switch
 				case UnreachableNodesScheduledTask:
 					logger.
@@ -326,7 +343,7 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 			}
 		}
 
-		switch result {
+		switch clusterResult[cluster] {
 		case Reschedule, NoReschedule:
 			// Events are going to be worked on, thus clear the Error state, if any.
 			state.State = &spec.Workflow{
@@ -336,7 +353,42 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 		}
 	}
 
-	return result
+	var (
+		finalResult ScheduleResult
+
+		reschedule   int
+		noReschedule int
+		noop         int
+		notReady     int
+	)
+
+	for _, r := range clusterResult {
+		switch r {
+		case NoReschedule:
+			noReschedule += 1
+		case Noop:
+			noop += 1
+		case NotReady:
+			notReady += 1
+		case Reschedule:
+			reschedule += 1
+		}
+	}
+
+	switch {
+	case reschedule > 0:
+		finalResult = Reschedule
+	case notReady > 0:
+		finalResult = NotReady
+	case noop == len(clusterResult):
+		finalResult = Noop
+	case noReschedule == len(clusterResult):
+		finalResult = NoReschedule
+	default:
+		finalResult = Reschedule
+	}
+
+	return finalResult
 }
 
 func PopulateEntriesForNewClusters(

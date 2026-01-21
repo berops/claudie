@@ -12,20 +12,17 @@ import (
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/natsutils"
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/berops/claudie/services/managerv2/internal/store"
+	"github.com/berops/claudie/services/manager/internal/store"
 	"github.com/nats-io/nats.go"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
-// TODO: the pending Tick could be variable and initialize
-// coud be just 1 sec and on subsequent or more than 1 clusters have 1min.
-
 const (
 	// PendingTick represents the interval at which each manifest state is checked
 	// while in the [manifest.Pending] state.
-	PendingTick = 10 * time.Second
+	PendingTick = 12 * time.Second
 
 	// Tick represents the interval at which each manifest state is checked while
 	// in the [manifest.Pending] state.

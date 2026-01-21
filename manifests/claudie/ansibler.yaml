@@ -30,7 +30,7 @@ spec:
       containers:
         - name: ansibler
           volumeMounts:
-            - mountPath: /bin/services/ansibler/server/clusters
+            - mountPath: /bin/services/ansibler/clusters
               name: data
             - mountPath: /.ansible
               name: temp
@@ -50,6 +50,11 @@ spec:
             limits:
               memory: 2250Mi
           env:
+            - name: NATS_CLUSTER_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: NATS_CLUSTER_URL
             - name: ANSIBLER_CONCURRENT_CLUSTERS
               valueFrom:
                 configMapKeyRef:

@@ -11,6 +11,7 @@ resources:
   - cluster-rbac
   - mongo
   - minio
+  - nats
 
 # Alter ValidatingWebhookConfiguration and Certificate fields, so they will match the generated namespace
 replacements:

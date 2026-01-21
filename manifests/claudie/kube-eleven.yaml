@@ -30,7 +30,7 @@ spec:
           imagePullPolicy: Always
           image: ghcr.io/berops/claudie/kube-eleven
           volumeMounts:
-            - mountPath: /bin/services/kube-eleven/server/clusters
+            - mountPath: /bin/services/kube-eleven/clusters
               name: data
           securityContext:
             allowPrivilegeEscalation: false
@@ -46,6 +46,11 @@ spec:
             limits:
               memory: 200Mi
           env:
+            - name: NATS_CLUSTER_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: NATS_CLUSTER_URL
             - name: KUBE_ELEVEN_CONCURRENT_CLUSTERS
               valueFrom:
                 configMapKeyRef:

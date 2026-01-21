@@ -68,7 +68,6 @@ func InstallVPN(
 
 	k8snps := k8s.ClusterInfo.NodePools
 	if unreachable != nil {
-		logger.Error().Msg("HERE, TODO: remove me after testing")
 		k8snps = DefaultNodePoolsToReachableInfrastructureOnly(
 			k8snps,
 			unreachable.Kubernetes,
@@ -93,7 +92,6 @@ func InstallVPN(
 		handle := lb.ClusterInfo.Id()
 		lbnps := lb.ClusterInfo.NodePools
 		if unreachable != nil {
-			logger.Error().Msg("HERE, TODO: remove me after testing, lb")
 			lbnps = DefaultNodePoolsToReachableInfrastructureOnly(
 				lbnps,
 				unreachable.Loadbalancers[handle],

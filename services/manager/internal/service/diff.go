@@ -71,6 +71,12 @@ type (
 		// Diff in the Static NodePools of the cluster.
 		Static NodePoolsDiffResult
 
+		// Nodepools to switch to autoscaling nodepools.
+		ChangedToAutoscaled PendingAutoscaledNodePoolTransitions
+
+		// Nodepools to switch to fixed nodepools.
+		ChangedToFixed PendingFixedNodePoolTransitions
+
 		// Dynamic nodes that are present in both the current and
 		// desired state and are marked with [spec.NodeStatus_MarkedForDeletion]
 		//
@@ -231,6 +237,14 @@ type (
 	// nodes that are marked with [spec.NodeStatus_MarkedForDeletion]
 	PendingDeletionsViewType = map[string][]string
 
+	// PendingNodePoolTransitions is an unordered view into the nodepools
+	// which has moved to autoscaled type from normal.
+	PendingAutoscaledNodePoolTransitions = map[string]*spec.AutoscalerConf
+
+	// PendingFixedNodePoolTransitions is an unordered view into the nodepools
+	// which has move from autoscaled to fixed type.
+	PendingFixedNodePoolTransitions = map[string]struct{}
+
 	// TargetPoolsViewType is an unordered view into the diff for target pools
 	// that are from a [spec.Role].
 	TargetPoolsViewType = map[string][]string
@@ -367,6 +381,7 @@ func KubernetesDiff(old, desired *spec.K8Scluster) KubernetesDiffResult {
 	)
 
 	// Check for [spec.NodeStatus_MarkedForDeletion] nodes.
+	// Check for nodepools that have moved from/to autoscaled type.
 	//
 	// Alot of nested for loops here but its not expected in real usage
 	// to have a lot of nodepools in a cluster, along with a lot of nodes
@@ -375,10 +390,23 @@ func KubernetesDiff(old, desired *spec.K8Scluster) KubernetesDiffResult {
 	// Note: can be improved upon.
 	result.PendingDynamicDeletions = make(PendingDeletionsViewType)
 	result.PendingStaticDeletions = make(PendingDeletionsViewType)
+	result.ChangedToAutoscaled = make(PendingAutoscaledNodePoolTransitions)
+	result.ChangedToFixed = make(PendingFixedNodePoolTransitions)
 	for _, cnp := range old.ClusterInfo.NodePools {
 		for _, dnp := range desired.ClusterInfo.NodePools {
 			if cnp.Name != dnp.Name {
 				continue
+			}
+
+			if cnp.GetDynamicNodePool() != nil && dnp.GetDynamicNodePool() != nil {
+				cdyn := cnp.GetDynamicNodePool()
+				ddyn := dnp.GetDynamicNodePool()
+				if cdyn.AutoscalerConfig == nil && ddyn.AutoscalerConfig != nil {
+					result.ChangedToAutoscaled[dnp.Name] = proto.Clone(ddyn.AutoscalerConfig).(*spec.AutoscalerConf)
+				}
+				if cdyn.AutoscalerConfig != nil && ddyn.AutoscalerConfig == nil {
+					result.ChangedToFixed[dnp.Name] = struct{}{}
+				}
 			}
 
 			for _, cn := range cnp.Nodes {

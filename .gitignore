@@ -20,3 +20,4 @@ bin
 .manifest*
 .DS_Store
 /services/terraformer/server/cache
+/services/terraformer/cache
