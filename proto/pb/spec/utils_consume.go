@@ -10,7 +10,7 @@ import (
 // TODO: tests
 
 // Consumes the [TaskResult_Clear] for the task.
-func (te *Task) ConsumeClearResult(result *TaskResult_Clear) {
+func (te *Task) ConsumeClearResult(result *TaskResult_Clear) error {
 	var k8s **K8Scluster
 	var lbs *[]*LBcluster
 
@@ -25,19 +25,33 @@ func (te *Task) ConsumeClearResult(result *TaskResult_Clear) {
 		k8s = &task.Update.State.K8S
 		lbs = &task.Update.State.LoadBalancers
 	default:
-		return
+		return nil
 	}
 
-	if result.Clear.K8S != nil && *result.Clear.K8S {
-		*k8s = nil
-		*lbs = nil
-		return
-	}
-
+	// first acknowledge any clearing of loadbalancers.
 	lbFilter := func(lb *LBcluster) bool {
 		return slices.Contains(result.Clear.LoadBalancersIDs, lb.GetClusterInfo().Id())
 	}
 	*lbs = slices.DeleteFunc(*lbs, lbFilter)
+
+	if result.Clear.K8S != nil && *result.Clear.K8S {
+		// if the clear removes also the kuberentes cluster
+		// perform an additional check that the rest of the
+		// infrastructure is deleted, i.e there are no more
+		// loadbalancers.
+		if len(*lbs) > 0 {
+			// This will result in a partial consumption of the clear
+			// message while ignoring the other part.
+			return fmt.Errorf("refuse to clear kubernetes cluster while loadbalancers for it still exists")
+		}
+
+		*k8s = nil
+		*lbs = nil
+
+		// fallthrough
+	}
+
+	return nil
 }
 
 // Consumes the [TaskResult_Update] for the task.

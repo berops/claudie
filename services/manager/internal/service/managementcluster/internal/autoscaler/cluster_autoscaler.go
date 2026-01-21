@@ -13,11 +13,11 @@ import (
 
 	_ "embed"
 
-	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/templateUtils"
 	"github.com/berops/claudie/proto/pb/spec"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -83,7 +83,7 @@ func NewAutoscalerManager(projectName string, cluster *spec.K8Scluster, director
 }
 
 // SetUpClusterAutoscaler deploys all resources necessary to set up a Cluster Autoscaler.
-func (a *AutoscalerManager) SetUpClusterAutoscaler() error {
+func (a *AutoscalerManager) SetUpClusterAutoscaler(logger zerolog.Logger) error {
 	if err := a.generateFiles(); err != nil {
 		return err
 	}
@@ -93,8 +93,8 @@ func (a *AutoscalerManager) SetUpClusterAutoscaler() error {
 		MaxKubectlRetries: -1,
 	}
 
-	kc.Stdout = comm.GetStdOut(a.cluster.ClusterInfo.Id())
-	kc.Stderr = comm.GetStdErr(a.cluster.ClusterInfo.Id())
+	kc.Stdout = logger.Level(zerolog.DebugLevel)
+	kc.Stderr = logger.Level(zerolog.DebugLevel)
 
 	if err := kc.KubectlApply(clusterAutoscalerDeployment, "-n", envs.Namespace); err != nil {
 		return fmt.Errorf("error while applying cluster autoscaler: %w", err)
@@ -104,7 +104,7 @@ func (a *AutoscalerManager) SetUpClusterAutoscaler() error {
 }
 
 // DestroyClusterAutoscaler removes all resources regarding Cluster Autoscaler.
-func (a *AutoscalerManager) DestroyClusterAutoscaler() error {
+func (a *AutoscalerManager) DestroyClusterAutoscaler(logger zerolog.Logger) error {
 	if err := a.generateFiles(); err != nil {
 		return err
 	}
@@ -114,8 +114,8 @@ func (a *AutoscalerManager) DestroyClusterAutoscaler() error {
 		MaxKubectlRetries: -1,
 	}
 
-	kc.Stdout = comm.GetStdOut(a.cluster.ClusterInfo.Id())
-	kc.Stderr = comm.GetStdErr(a.cluster.ClusterInfo.Id())
+	kc.Stdout = logger.Level(zerolog.DebugLevel)
+	kc.Stderr = logger.Level(zerolog.DebugLevel)
 
 	if err := kc.KubectlDeleteManifest(clusterAutoscalerDeployment, "-n", envs.Namespace); err != nil {
 		return fmt.Errorf("error while deleting cluster autoscaler: %w", err)

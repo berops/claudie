@@ -18,14 +18,6 @@ import (
 // scheduling of the tasks.
 type ScheduleResult uint8
 
-// TODO: adjust the stdout on the autoscaling, and fix the autoscaling drift catching.
-// TODO: handle the Deletion error where on Creation it fails and the subsequetn deletion also fails
-// as there is not current state and also there is not InFlight state.
-//
-// Meaning that Creation fails -> then -> Deletion fails -> Panic.
-// TODO: handle the Unreachable optional in the relevant pipeline stages.
-// Priority.
-//
 // TODO: endless reconciliation... double check the control flow such that it will never stop reconciling.
 // TODO: with a failed inFlight state there needs to be a decision to be made if a task
 // with a higher priority is to be scheduled what happens in that case ?
@@ -156,7 +148,7 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 			}
 
 			if len(nodepools.Autoscaled(del.K8S.ClusterInfo.NodePools)) > 0 {
-				if err := managementcluster.DestroyClusterAutoscaler(pending.Name, del); err != nil {
+				if err := managementcluster.DestroyClusterAutoscaler(logger, pending.Name, del); err != nil {
 					logger.Err(err).Msg("Failed to destroy autoscaler pods")
 				}
 			}
@@ -188,14 +180,14 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 						Info().
 						Msg("Detected drift in autoscaler deployments")
 
-					if err := managementcluster.SetUpClusterAutoscaler(pending.Name, current); err != nil {
+					if err := managementcluster.SetUpClusterAutoscaler(logger, pending.Name, current); err != nil {
 						logger.
 							Err(err).
 							Msg("Failed to refresh autoscaler pods in the management cluster")
 					}
 				}
 			} else {
-				if err := managementcluster.DestroyClusterAutoscaler(pending.Name, state.Current); err != nil {
+				if err := managementcluster.DestroyClusterAutoscaler(logger, pending.Name, state.Current); err != nil {
 					// ignore error.
 					log.
 						Debug().

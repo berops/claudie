@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/envs"
@@ -16,13 +17,12 @@ import (
 	"github.com/berops/claudie/services/manager/internal/service/managementcluster/internal/autoscaler"
 	"github.com/google/go-cmp/cmp"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
-func SetUpClusterAutoscaler(manifestName string, clusters *spec.Clusters) error {
+func SetUpClusterAutoscaler(logger zerolog.Logger, manifestName string, clusters *spec.Clusters) error {
 	if envs.Namespace == "" {
 		return nil
 	}
@@ -41,11 +41,11 @@ func SetUpClusterAutoscaler(manifestName string, clusters *spec.Clusters) error 
 
 	defer func() {
 		if err := os.RemoveAll(clusterDir); err != nil {
-			log.Err(err).Msgf("Failed to remove directory: %s", clusterDir)
+			logger.Err(err).Msgf("Failed to remove directory: %s", clusterDir)
 		}
 	}()
 
-	if err := autoscalerManager.SetUpClusterAutoscaler(); err != nil {
+	if err := autoscalerManager.SetUpClusterAutoscaler(logger); err != nil {
 		return fmt.Errorf("error while setting up cluster autoscaler: %w", err)
 	}
 
@@ -86,8 +86,8 @@ func DriftInAutoscalerPods(logger zerolog.Logger, manifestName string, clusters 
 		b, err := kc.KubectlGet(desired.GetKind(), args...)
 		if err != nil {
 			logger.
-				Err(err).
-				Msg("Failed to decode autoscaler deployment in management cluster, assuming drift")
+				Warn().
+				Msgf("Failed to decode autoscaler deployment in management cluster: %v, assuming drift", err)
 			drift = true
 			continue
 		}
@@ -101,11 +101,12 @@ func DriftInAutoscalerPods(logger zerolog.Logger, manifestName string, clusters 
 			// This shouldn't error out, but in that case simply assume there is a drift.
 
 			logger.
-				Err(err).
+				Warn().
 				Msgf(
-					"Failed to decode %q %q, asumming drift",
+					"Failed to decode %q %q: %v, asumming drift",
 					desired.GetKind(),
 					desired.GetName(),
+					err,
 				)
 
 			drift = true
@@ -131,10 +132,39 @@ func DriftInAutoscalerPods(logger zerolog.Logger, manifestName string, clusters 
 
 		live.Object["metadata"] = liveMd
 
+		// Note(despire):
+		// For now this should work as the `cluster-autoscaler.goyaml`
+		// only has a config map and deployment, once that changes this
+		// should be adjsuted aswell.
+		stripResourceSpecificData(live)
+
 		if !cmp.Equal(live, desired) {
 			drift = true
 		}
 	}
 
 	return drift, nil
+}
+
+func stripResourceSpecificData(live unstructured.Unstructured) {
+	switch strings.ToLower(live.GetKind()) {
+	case "configmap":
+		metadata := live.Object["metadata"]
+		data := live.Object["data"]
+
+		clear(live.Object)
+
+		// For configmaps the `cluster-autoscaler.goyaml` has only these two fields
+		live.Object["metadata"] = metadata
+		live.Object["data"] = data
+	case "deployment":
+		metadata := live.Object["metadata"]
+		spec := live.Object["spec"]
+
+		clear(live.Object)
+
+		// For deployments the `cluster-autoscaler.goyaml` has only these two fields
+		live.Object["metadata"] = metadata
+		live.Object["spec"] = spec
+	}
 }

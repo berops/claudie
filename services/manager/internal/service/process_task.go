@@ -7,6 +7,7 @@ import (
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/manager/internal/store"
+	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -25,6 +26,12 @@ type (
 	}
 )
 
+// Process the Message from the NATS message queue.
+//
+// Note that NATS follows the at least once delivery, thus messages may be re-delivered
+// could be due to ack failing or various reasons. The 'acknowledge' return parameter
+// tells whether the message should be ack or not. If not the message will be 100%
+// re-delivered again, otherwise the message will be ack from the message queue.
 func ProcessTask(ctx context.Context, stores Stores, work Work) (acknowledge bool) {
 	logger, ok := loggerutils.Value(ctx)
 	if !ok {
@@ -77,10 +84,59 @@ func ProcessTask(ctx context.Context, stores Stores, work Work) (acknowledge boo
 	}
 
 	if err := propagateResult(logger, cluster, work.Result); err != nil {
-		// Parsing of the database representation shouldn't fail, there has to
-		// be some kind of malformed or corrupted data, thus don't acknowledge the
-		// received message, halting the workflow.
+		// Make sure the message is retried, in case of DB failures.
 		acknowledge = false
+
+		// Propagating the result failed for unknown reasons, could be due
+		// to malformed message or simply invalid message changes that the
+		// manager refuses to merge. How to proceed here is to acknowledge
+		// the 'bad' message, but without any advancing to the next stage
+		// or persisting the changes, and let manager reconciliation take
+		// over the changes again by rescheduling the same 'task' but under
+		// new ID.
+		//
+		// Once rescheduled under a new ID, possible re-delivery of the old
+		// message will be discarded as guarded by the above [work.TaskID]
+		// check, and won't be considered for the newly rescheduled task
+		// under the new ID.
+		//
+		// Also re-scheduling under a new UUID is necessary to avoid
+		// catching duplicate messages within NATS itself.
+
+		newUUID := uuid.New().String()
+
+		logger.
+			Warn().
+			Msgf(
+				"Rescheduling task %q, scheduling under new ID %q, due to failed result propagation of received message: %v",
+				cluster.InFlight.Id,
+				newUUID,
+				err,
+			)
+
+		cluster.InFlight.Id = newUUID
+		cluster.State = store.Workflow{
+			Status: spec.Workflow_WAIT_FOR_PICKUP.String(),
+		}
+
+		if err := stores.store.UpdateConfig(ctx, im); err != nil {
+			// In both cases, retry processing the message.
+			if errors.Is(err, store.ErrNotFoundOrDirty) {
+				logger.Warn().Msg("Failed to update InputManifest, dirty write")
+			} else {
+				logger.Err(err).Msg("Failed to update InputManifest")
+			}
+			acknowledge = false
+			return
+		}
+
+		logger.
+			Info().
+			Msgf("Successfully rescheduled task under new ID %q", newUUID)
+
+		// If the Ack messge fails here the task was rescheduling under a new ID thus processing
+		// the result again, will be discarded before reaching any processing of the message.
+		acknowledge = true
 		return
 	}
 
@@ -94,7 +150,7 @@ func ProcessTask(ctx context.Context, stores Stores, work Work) (acknowledge boo
 
 	if err := stores.store.UpdateConfig(ctx, im); err != nil {
 		if errors.Is(err, store.ErrNotFoundOrDirty) {
-			logger.Debug().Msg("Failed to update InputManifest, dirty write")
+			logger.Warn().Msg("Failed to update InputManifest, dirty write")
 		} else {
 			logger.Err(err).Msg("Failed to update InputManifest")
 		}
@@ -134,11 +190,59 @@ func processTaskWithError(
 
 	if isErrorPartial {
 		if err := propagateResult(logger, cluster, work.Result); err != nil {
-			// Since the function works with successfully loaded database data and
-			// also the successfully received work result data, there has to be some kind
-			// of malformed or corrupted data, thus we don't acknowledge the received message, halting
-			// the workflow.
+			// Make sure the message is retried, in case of DB failures.
 			acknowledge = false
+
+			// Propagating the result failed for unknown reasons, could be due
+			// to malformed message or simply invalid message changes that the
+			// manager refuses to merge. How to proceed here is to acknowledge
+			// the 'bad' message, but without any advancing to the next stage
+			// or persisting the changes, and let manager reconciliation take
+			// over the changes again by rescheduling the same 'task' but under
+			// new ID.
+			//
+			// Once rescheduled under a new ID, possible re-delivery of the old
+			// message will be discarded as guarded by the above [work.TaskID]
+			// check in the [ProcessTask] function, and won't be considered for
+			// the newly rescheduled task under the new ID.
+			//
+			// Also re-scheduling under a new UUID is necessary to avoid
+			// catching duplicate messages within NATS itself.
+
+			newUUID := uuid.New().String()
+
+			logger.
+				Warn().
+				Msgf(
+					"Rescheduling task %q, scheduling under new ID %q, due to failed result propagation of received message: %v",
+					cluster.InFlight.Id,
+					newUUID,
+					err,
+				)
+
+			cluster.InFlight.Id = newUUID
+			cluster.State = store.Workflow{
+				Status: spec.Workflow_WAIT_FOR_PICKUP.String(),
+			}
+
+			if err := stores.store.UpdateConfig(ctx, im); err != nil {
+				// In both cases, retry processing the message.
+				if errors.Is(err, store.ErrNotFoundOrDirty) {
+					logger.Warn().Msg("Failed to update InputManifest, dirty write")
+				} else {
+					logger.Err(err).Msg("Failed to update InputManifest")
+				}
+				acknowledge = false
+				return
+			}
+
+			logger.
+				Info().
+				Msgf("Successfully rescheduled task under new ID %q", newUUID)
+
+			// If the Ack messge fails here the task was rescheduling under a new ID thus processing
+			// the result again, will be discarded before reaching any processing of the message.
+			acknowledge = true
 			return
 		}
 	}
@@ -155,7 +259,7 @@ func processTaskWithError(
 
 	if err := stores.store.UpdateConfig(ctx, im); err != nil {
 		if errors.Is(err, store.ErrNotFoundOrDirty) {
-			logger.Debug().Msg("Failed to update InputManifest, dirty write")
+			logger.Warn().Msg("Failed to update InputManifest, dirty write")
 		} else {
 			logger.Err(err).Msg("Failed to update InputManifest")
 		}
@@ -205,12 +309,18 @@ func propagateResult(logger zerolog.Logger, cluster *store.ClusterState, result 
 		logger.Debug().Msg("Received [Update] as a result for the task")
 		if err := inFlight.Task.ConsumeUpdateResult(result); err != nil {
 			logger.
-				Err(err).
-				Msg("Unexpected mismatch in the name of the clusters from the received messagge and current state in the database, ignoring")
+				Warn().
+				Msgf("Failed to consume update result: %v", err)
+			return err
 		}
 	case *spec.TaskResult_Clear:
 		logger.Debug().Msg("Received [Clear] as a result for the task")
-		inFlight.Task.ConsumeClearResult(result)
+		if err := inFlight.Task.ConsumeClearResult(result); err != nil {
+			logger.
+				Warn().
+				Msgf("Failed to consume clear result: %v", err)
+			return err
+		}
 	case *spec.TaskResult_None_:
 		logger.Debug().Msg("Received [None] as a result for the task, no work to be done.")
 	default:

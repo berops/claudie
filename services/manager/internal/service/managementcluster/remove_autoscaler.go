@@ -10,11 +10,11 @@ import (
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/manager/internal/service/managementcluster/internal/autoscaler"
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 )
 
 // DestroyClusterAutoscaler removes deployment of Cluster Autoscaler from the management cluster for given k8s cluster.
-func DestroyClusterAutoscaler(manifestName string, clusters *spec.Clusters) error {
+func DestroyClusterAutoscaler(logger zerolog.Logger, manifestName string, clusters *spec.Clusters) error {
 	if envs.Namespace == "" {
 		return nil
 	}
@@ -32,11 +32,11 @@ func DestroyClusterAutoscaler(manifestName string, clusters *spec.Clusters) erro
 
 	defer func() {
 		if err := os.RemoveAll(clusterDir); err != nil {
-			log.Err(err).Msgf("Failed to remove directory: %s", clusterDir)
+			logger.Err(err).Msgf("Failed to remove directory: %s", clusterDir)
 		}
 	}()
 
-	if err := autoscalerManager.DestroyClusterAutoscaler(); err != nil {
+	if err := autoscalerManager.DestroyClusterAutoscaler(logger); err != nil {
 		return fmt.Errorf("error while destroying cluster autoscaler: %w", err)
 	}
 
