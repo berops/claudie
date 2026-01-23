@@ -192,6 +192,16 @@ message TaskEvent {
 
   // Index into the currently to be worked on pipeline stage.
   uint32 currentStage = 9;
+
+  // LowerPriority Task is an optional field that is set whenever
+  // a higher priority task should be scheduled but the lower priority
+  // task should immediately follow after the higher priority task
+  // finishes.
+  //
+  // Only Higher priority tasks will have this field set.
+  // It is possible to create a chain of tasks with this
+  // that would follow based on priority until `nil` is hit.
+  optional TaskEvent lowerPriority = 21;
 }
 
 enum ApiEndpointChangeState {

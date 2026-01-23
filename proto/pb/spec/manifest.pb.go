@@ -1174,7 +1174,16 @@ type TaskEvent struct {
 	// to be considered as done.
 	Pipeline []*Stage `protobuf:"bytes,8,rep,name=pipeline,proto3" json:"pipeline,omitempty"`
 	// Index into the currently to be worked on pipeline stage.
-	CurrentStage  uint32 `protobuf:"varint,9,opt,name=currentStage,proto3" json:"currentStage,omitempty"`
+	CurrentStage uint32 `protobuf:"varint,9,opt,name=currentStage,proto3" json:"currentStage,omitempty"`
+	// LowerPriority Task is an optional field that is set whenever
+	// a higher priority task should be scheduled but the lower priority
+	// task should immediately follow after the higher priority task
+	// finishes.
+	//
+	// Only Higher priority tasks will have this field set.
+	// It is possible to create a chain of tasks with this
+	// that would follow based on priority until `nil` is hit.
+	LowerPriority *TaskEvent `protobuf:"bytes,21,opt,name=lowerPriority,proto3,oneof" json:"lowerPriority,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1256,6 +1265,13 @@ func (x *TaskEvent) GetCurrentStage() uint32 {
 		return x.CurrentStage
 	}
 	return 0
+}
+
+func (x *TaskEvent) GetLowerPriority() *TaskEvent {
+	if x != nil {
+		return x.LowerPriority
+	}
+	return nil
 }
 
 // Unreachable are the nodes of the kubernetes cluster
@@ -5520,7 +5536,7 @@ const file_spec_manifest_proto_rawDesc = "" +
 	"\bSettings\x12$\n" +
 	"\rproxyProtocol\x18\x01 \x01(\bR\rproxyProtocol\x12&\n" +
 	"\x0estickySessions\x18\x02 \x01(\bR\x0estickySessions\x12(\n" +
-	"\x10envoy_admin_port\x18\x03 \x01(\x05R\x0eenvoyAdminPort\"\x87\x02\n" +
+	"\x10envoy_admin_port\x18\x03 \x01(\x05R\x0eenvoyAdminPort\"\xd5\x02\n" +
 	"\tTaskEvent\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x128\n" +
 	"\ttimestamp\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x12!\n" +
@@ -5529,7 +5545,9 @@ const file_spec_manifest_proto_rawDesc = "" +
 	".spec.TaskR\x04task\x12 \n" +
 	"\vdescription\x18\x05 \x01(\tR\vdescription\x12'\n" +
 	"\bpipeline\x18\b \x03(\v2\v.spec.StageR\bpipeline\x12\"\n" +
-	"\fcurrentStage\x18\t \x01(\rR\fcurrentStage\"\x93\x04\n" +
+	"\fcurrentStage\x18\t \x01(\rR\fcurrentStage\x12:\n" +
+	"\rlowerPriority\x18\x15 \x01(\v2\x0f.spec.TaskEventH\x00R\rlowerPriority\x88\x01\x01B\x10\n" +
+	"\x0e_lowerPriority\"\x93\x04\n" +
 	"\vUnreachable\x12F\n" +
 	"\n" +
 	"kubernetes\x18\x01 \x01(\v2&.spec.Unreachable.UnreachableNodePoolsR\n" +
@@ -5978,118 +5996,119 @@ var file_spec_manifest_proto_depIdxs = []int32{
 	1,   // 20: spec.TaskEvent.event:type_name -> spec.Event
 	23,  // 21: spec.TaskEvent.task:type_name -> spec.Task
 	100, // 22: spec.TaskEvent.pipeline:type_name -> spec.Stage
-	29,  // 23: spec.Unreachable.kubernetes:type_name -> spec.Unreachable.UnreachableNodePools
-	30,  // 24: spec.Unreachable.loadbalancers:type_name -> spec.Unreachable.LoadbalancersEntry
-	13,  // 25: spec.Create.k8s:type_name -> spec.K8scluster
-	14,  // 26: spec.Create.loadBalancers:type_name -> spec.LBcluster
-	32,  // 27: spec.Update.state:type_name -> spec.Update.State
-	33,  // 28: spec.Update.none:type_name -> spec.Update.None
-	38,  // 29: spec.Update.tfAddLoadBalancer:type_name -> spec.Update.TerraformerAddLoadBalancer
-	42,  // 30: spec.Update.tfAddLoadBalancerNodes:type_name -> spec.Update.TerraformerAddLoadBalancerNodes
-	47,  // 31: spec.Update.tfReplaceDns:type_name -> spec.Update.TerraformerReplaceDns
-	62,  // 32: spec.Update.tfAddK8sNodes:type_name -> spec.Update.TerraformerAddK8sNodes
-	45,  // 33: spec.Update.tfAddLoadBalancerRoles:type_name -> spec.Update.TerraformerAddLoadBalancerRoles
-	40,  // 34: spec.Update.tfDeleteLoadBalancerNodes:type_name -> spec.Update.TerraformerDeleteLoadBalancerNodes
-	34,  // 35: spec.Update.tfMoveNodePoolToAutoscaled:type_name -> spec.Update.TerraformerMoveNodePoolToAutoscaled
-	36,  // 36: spec.Update.tfMoveNodePoolFromAutoscaled:type_name -> spec.Update.TerraformerMoveNodePoolFromAutoscaled
-	53,  // 37: spec.Update.ansReplaceProxy:type_name -> spec.Update.AnsiblerReplaceProxySettings
-	55,  // 38: spec.Update.ansReplaceTargetPools:type_name -> spec.Update.AnsiblerReplaceTargetPools
-	58,  // 39: spec.Update.kpatchNodes:type_name -> spec.Update.KuberPatchNodes
-	60,  // 40: spec.Update.kDeleteNodes:type_name -> spec.Update.KuberDeleteK8sNodes
-	39,  // 41: spec.Update.addedLoadBalancer:type_name -> spec.Update.AddedLoadBalancer
-	43,  // 42: spec.Update.addedLoadBalancerNodes:type_name -> spec.Update.AddedLoadBalancerNodes
-	48,  // 43: spec.Update.replacedDns:type_name -> spec.Update.ReplacedDns
-	63,  // 44: spec.Update.addedK8sNodes:type_name -> spec.Update.AddedK8sNodes
-	54,  // 45: spec.Update.replacedProxy:type_name -> spec.Update.ReplacedProxySettings
-	59,  // 46: spec.Update.patchedNodes:type_name -> spec.Update.PatchedNodes
-	46,  // 47: spec.Update.addedLoadBalancerRoles:type_name -> spec.Update.AddedLoadBalancerRoles
-	56,  // 48: spec.Update.replacedTargetPools:type_name -> spec.Update.ReplacedTargetPools
-	35,  // 49: spec.Update.movedNodePoolToAutoscaled:type_name -> spec.Update.MovedNodePoolToAutoscaled
-	37,  // 50: spec.Update.movedNodePoolFromAutoscaled:type_name -> spec.Update.MovedNodePoolFromAutoscaled
-	49,  // 51: spec.Update.deleteLoadBalancer:type_name -> spec.Update.DeleteLoadBalancer
-	61,  // 52: spec.Update.deletedK8sNodes:type_name -> spec.Update.DeletedK8sNodes
-	41,  // 53: spec.Update.deletedLoadBalancerNodes:type_name -> spec.Update.DeletedLoadBalancerNodes
-	44,  // 54: spec.Update.deleteLoadBalancerRoles:type_name -> spec.Update.DeleteLoadBalancerRoles
-	50,  // 55: spec.Update.apiEndpoint:type_name -> spec.Update.ApiEndpoint
-	52,  // 56: spec.Update.clusterApiPort:type_name -> spec.Update.ApiPortOnCluster
-	51,  // 57: spec.Update.k8sApiEndpoint:type_name -> spec.Update.K8sOnlyApiEndpoint
-	57,  // 58: spec.Update.upgradeVersion:type_name -> spec.Update.UpgradeVersion
-	13,  // 59: spec.Delete.k8s:type_name -> spec.K8scluster
-	14,  // 60: spec.Delete.loadBalancers:type_name -> spec.LBcluster
-	20,  // 61: spec.Task.create:type_name -> spec.Create
-	21,  // 62: spec.Task.update:type_name -> spec.Update
-	22,  // 63: spec.Task.delete:type_name -> spec.Delete
-	23,  // 64: spec.Work.task:type_name -> spec.Task
-	101, // 65: spec.Work.passes:type_name -> google.protobuf.Any
-	93,  // 66: spec.TaskResult.error:type_name -> spec.TaskResult.Error
-	94,  // 67: spec.TaskResult.none:type_name -> spec.TaskResult.None
-	95,  // 68: spec.TaskResult.update:type_name -> spec.TaskResult.UpdateState
-	96,  // 69: spec.TaskResult.clear:type_name -> spec.TaskResult.ClearState
-	8,   // 70: spec.Config.ClustersEntry.value:type_name -> spec.ClusterState
-	31,  // 71: spec.Unreachable.UnreachableNodePools.nodepools:type_name -> spec.Unreachable.UnreachableNodePools.NodepoolsEntry
-	29,  // 72: spec.Unreachable.LoadbalancersEntry.value:type_name -> spec.Unreachable.UnreachableNodePools
-	28,  // 73: spec.Unreachable.UnreachableNodePools.NodepoolsEntry.value:type_name -> spec.Unreachable.ListOfNodeEndpoints
-	13,  // 74: spec.Update.State.k8s:type_name -> spec.K8scluster
-	14,  // 75: spec.Update.State.loadBalancers:type_name -> spec.LBcluster
-	102, // 76: spec.Update.TerraformerMoveNodePoolToAutoscaled.config:type_name -> spec.AutoscalerConf
-	102, // 77: spec.Update.MovedNodePoolFromAutoscaled.config:type_name -> spec.AutoscalerConf
-	14,  // 78: spec.Update.TerraformerAddLoadBalancer.handle:type_name -> spec.LBcluster
-	19,  // 79: spec.Update.TerraformerDeleteLoadBalancerNodes.unreachable:type_name -> spec.Unreachable
-	19,  // 80: spec.Update.DeletedLoadBalancerNodes.unreachable:type_name -> spec.Unreachable
-	64,  // 81: spec.Update.DeletedLoadBalancerNodes.whole:type_name -> spec.Update.DeletedLoadBalancerNodes.WholeNodePool
-	65,  // 82: spec.Update.DeletedLoadBalancerNodes.partial:type_name -> spec.Update.DeletedLoadBalancerNodes.Partial
-	67,  // 83: spec.Update.TerraformerAddLoadBalancerNodes.existing:type_name -> spec.Update.TerraformerAddLoadBalancerNodes.Existing
-	68,  // 84: spec.Update.TerraformerAddLoadBalancerNodes.new:type_name -> spec.Update.TerraformerAddLoadBalancerNodes.New
-	17,  // 85: spec.Update.TerraformerAddLoadBalancerRoles.roles:type_name -> spec.Role
-	97,  // 86: spec.Update.TerraformerReplaceDns.dns:type_name -> spec.DNS
-	19,  // 87: spec.Update.DeleteLoadBalancer.unreachable:type_name -> spec.Unreachable
-	2,   // 88: spec.Update.ApiEndpoint.state:type_name -> spec.ApiEndpointChangeState
-	16,  // 89: spec.Update.AnsiblerReplaceProxySettings.proxy:type_name -> spec.InstallationProxy
-	70,  // 90: spec.Update.AnsiblerReplaceTargetPools.roles:type_name -> spec.Update.AnsiblerReplaceTargetPools.RolesEntry
-	72,  // 91: spec.Update.ReplacedTargetPools.roles:type_name -> spec.Update.ReplacedTargetPools.RolesEntry
-	79,  // 92: spec.Update.KuberPatchNodes.add:type_name -> spec.Update.KuberPatchNodes.AddBatch
-	78,  // 93: spec.Update.KuberPatchNodes.remove:type_name -> spec.Update.KuberPatchNodes.RemoveBatch
-	19,  // 94: spec.Update.KuberDeleteK8sNodes.unreachable:type_name -> spec.Unreachable
-	19,  // 95: spec.Update.DeletedK8sNodes.unreachable:type_name -> spec.Unreachable
-	88,  // 96: spec.Update.DeletedK8sNodes.whole:type_name -> spec.Update.DeletedK8sNodes.WholeNodePool
-	89,  // 97: spec.Update.DeletedK8sNodes.partial:type_name -> spec.Update.DeletedK8sNodes.Partial
-	91,  // 98: spec.Update.TerraformerAddK8sNodes.existing:type_name -> spec.Update.TerraformerAddK8sNodes.Existing
-	92,  // 99: spec.Update.TerraformerAddK8sNodes.new:type_name -> spec.Update.TerraformerAddK8sNodes.New
-	98,  // 100: spec.Update.DeletedLoadBalancerNodes.WholeNodePool.nodepool:type_name -> spec.NodePool
-	103, // 101: spec.Update.DeletedLoadBalancerNodes.Partial.nodes:type_name -> spec.Node
-	66,  // 102: spec.Update.DeletedLoadBalancerNodes.Partial.staticNodeKeys:type_name -> spec.Update.DeletedLoadBalancerNodes.Partial.StaticNodeKeysEntry
-	103, // 103: spec.Update.TerraformerAddLoadBalancerNodes.Existing.nodes:type_name -> spec.Node
-	98,  // 104: spec.Update.TerraformerAddLoadBalancerNodes.New.nodepool:type_name -> spec.NodePool
-	69,  // 105: spec.Update.AnsiblerReplaceTargetPools.RolesEntry.value:type_name -> spec.Update.AnsiblerReplaceTargetPools.TargetPools
-	71,  // 106: spec.Update.ReplacedTargetPools.RolesEntry.value:type_name -> spec.Update.ReplacedTargetPools.TargetPools
-	104, // 107: spec.Update.KuberPatchNodes.ListOfTaints.taints:type_name -> spec.Taint
-	80,  // 108: spec.Update.KuberPatchNodes.MapOfLabels.labels:type_name -> spec.Update.KuberPatchNodes.MapOfLabels.LabelsEntry
-	81,  // 109: spec.Update.KuberPatchNodes.MapOfAnnotations.annotations:type_name -> spec.Update.KuberPatchNodes.MapOfAnnotations.AnnotationsEntry
-	82,  // 110: spec.Update.KuberPatchNodes.RemoveBatch.taints:type_name -> spec.Update.KuberPatchNodes.RemoveBatch.TaintsEntry
-	83,  // 111: spec.Update.KuberPatchNodes.RemoveBatch.annotations:type_name -> spec.Update.KuberPatchNodes.RemoveBatch.AnnotationsEntry
-	84,  // 112: spec.Update.KuberPatchNodes.RemoveBatch.labels:type_name -> spec.Update.KuberPatchNodes.RemoveBatch.LabelsEntry
-	85,  // 113: spec.Update.KuberPatchNodes.AddBatch.taints:type_name -> spec.Update.KuberPatchNodes.AddBatch.TaintsEntry
-	86,  // 114: spec.Update.KuberPatchNodes.AddBatch.labels:type_name -> spec.Update.KuberPatchNodes.AddBatch.LabelsEntry
-	87,  // 115: spec.Update.KuberPatchNodes.AddBatch.annotations:type_name -> spec.Update.KuberPatchNodes.AddBatch.AnnotationsEntry
-	73,  // 116: spec.Update.KuberPatchNodes.RemoveBatch.TaintsEntry.value:type_name -> spec.Update.KuberPatchNodes.ListOfTaints
-	75,  // 117: spec.Update.KuberPatchNodes.RemoveBatch.AnnotationsEntry.value:type_name -> spec.Update.KuberPatchNodes.ListOfAnnotationKeys
-	74,  // 118: spec.Update.KuberPatchNodes.RemoveBatch.LabelsEntry.value:type_name -> spec.Update.KuberPatchNodes.ListOfLabelKeys
-	73,  // 119: spec.Update.KuberPatchNodes.AddBatch.TaintsEntry.value:type_name -> spec.Update.KuberPatchNodes.ListOfTaints
-	76,  // 120: spec.Update.KuberPatchNodes.AddBatch.LabelsEntry.value:type_name -> spec.Update.KuberPatchNodes.MapOfLabels
-	77,  // 121: spec.Update.KuberPatchNodes.AddBatch.AnnotationsEntry.value:type_name -> spec.Update.KuberPatchNodes.MapOfAnnotations
-	98,  // 122: spec.Update.DeletedK8sNodes.WholeNodePool.nodepool:type_name -> spec.NodePool
-	103, // 123: spec.Update.DeletedK8sNodes.Partial.nodes:type_name -> spec.Node
-	90,  // 124: spec.Update.DeletedK8sNodes.Partial.staticNodeKeys:type_name -> spec.Update.DeletedK8sNodes.Partial.StaticNodeKeysEntry
-	103, // 125: spec.Update.TerraformerAddK8sNodes.Existing.nodes:type_name -> spec.Node
-	98,  // 126: spec.Update.TerraformerAddK8sNodes.New.nodepool:type_name -> spec.NodePool
-	5,   // 127: spec.TaskResult.Error.kind:type_name -> spec.TaskResult.Error.Kind
-	13,  // 128: spec.TaskResult.UpdateState.k8s:type_name -> spec.K8scluster
-	10,  // 129: spec.TaskResult.UpdateState.loadBalancers:type_name -> spec.LoadBalancers
-	130, // [130:130] is the sub-list for method output_type
-	130, // [130:130] is the sub-list for method input_type
-	130, // [130:130] is the sub-list for extension type_name
-	130, // [130:130] is the sub-list for extension extendee
-	0,   // [0:130] is the sub-list for field type_name
+	18,  // 23: spec.TaskEvent.lowerPriority:type_name -> spec.TaskEvent
+	29,  // 24: spec.Unreachable.kubernetes:type_name -> spec.Unreachable.UnreachableNodePools
+	30,  // 25: spec.Unreachable.loadbalancers:type_name -> spec.Unreachable.LoadbalancersEntry
+	13,  // 26: spec.Create.k8s:type_name -> spec.K8scluster
+	14,  // 27: spec.Create.loadBalancers:type_name -> spec.LBcluster
+	32,  // 28: spec.Update.state:type_name -> spec.Update.State
+	33,  // 29: spec.Update.none:type_name -> spec.Update.None
+	38,  // 30: spec.Update.tfAddLoadBalancer:type_name -> spec.Update.TerraformerAddLoadBalancer
+	42,  // 31: spec.Update.tfAddLoadBalancerNodes:type_name -> spec.Update.TerraformerAddLoadBalancerNodes
+	47,  // 32: spec.Update.tfReplaceDns:type_name -> spec.Update.TerraformerReplaceDns
+	62,  // 33: spec.Update.tfAddK8sNodes:type_name -> spec.Update.TerraformerAddK8sNodes
+	45,  // 34: spec.Update.tfAddLoadBalancerRoles:type_name -> spec.Update.TerraformerAddLoadBalancerRoles
+	40,  // 35: spec.Update.tfDeleteLoadBalancerNodes:type_name -> spec.Update.TerraformerDeleteLoadBalancerNodes
+	34,  // 36: spec.Update.tfMoveNodePoolToAutoscaled:type_name -> spec.Update.TerraformerMoveNodePoolToAutoscaled
+	36,  // 37: spec.Update.tfMoveNodePoolFromAutoscaled:type_name -> spec.Update.TerraformerMoveNodePoolFromAutoscaled
+	53,  // 38: spec.Update.ansReplaceProxy:type_name -> spec.Update.AnsiblerReplaceProxySettings
+	55,  // 39: spec.Update.ansReplaceTargetPools:type_name -> spec.Update.AnsiblerReplaceTargetPools
+	58,  // 40: spec.Update.kpatchNodes:type_name -> spec.Update.KuberPatchNodes
+	60,  // 41: spec.Update.kDeleteNodes:type_name -> spec.Update.KuberDeleteK8sNodes
+	39,  // 42: spec.Update.addedLoadBalancer:type_name -> spec.Update.AddedLoadBalancer
+	43,  // 43: spec.Update.addedLoadBalancerNodes:type_name -> spec.Update.AddedLoadBalancerNodes
+	48,  // 44: spec.Update.replacedDns:type_name -> spec.Update.ReplacedDns
+	63,  // 45: spec.Update.addedK8sNodes:type_name -> spec.Update.AddedK8sNodes
+	54,  // 46: spec.Update.replacedProxy:type_name -> spec.Update.ReplacedProxySettings
+	59,  // 47: spec.Update.patchedNodes:type_name -> spec.Update.PatchedNodes
+	46,  // 48: spec.Update.addedLoadBalancerRoles:type_name -> spec.Update.AddedLoadBalancerRoles
+	56,  // 49: spec.Update.replacedTargetPools:type_name -> spec.Update.ReplacedTargetPools
+	35,  // 50: spec.Update.movedNodePoolToAutoscaled:type_name -> spec.Update.MovedNodePoolToAutoscaled
+	37,  // 51: spec.Update.movedNodePoolFromAutoscaled:type_name -> spec.Update.MovedNodePoolFromAutoscaled
+	49,  // 52: spec.Update.deleteLoadBalancer:type_name -> spec.Update.DeleteLoadBalancer
+	61,  // 53: spec.Update.deletedK8sNodes:type_name -> spec.Update.DeletedK8sNodes
+	41,  // 54: spec.Update.deletedLoadBalancerNodes:type_name -> spec.Update.DeletedLoadBalancerNodes
+	44,  // 55: spec.Update.deleteLoadBalancerRoles:type_name -> spec.Update.DeleteLoadBalancerRoles
+	50,  // 56: spec.Update.apiEndpoint:type_name -> spec.Update.ApiEndpoint
+	52,  // 57: spec.Update.clusterApiPort:type_name -> spec.Update.ApiPortOnCluster
+	51,  // 58: spec.Update.k8sApiEndpoint:type_name -> spec.Update.K8sOnlyApiEndpoint
+	57,  // 59: spec.Update.upgradeVersion:type_name -> spec.Update.UpgradeVersion
+	13,  // 60: spec.Delete.k8s:type_name -> spec.K8scluster
+	14,  // 61: spec.Delete.loadBalancers:type_name -> spec.LBcluster
+	20,  // 62: spec.Task.create:type_name -> spec.Create
+	21,  // 63: spec.Task.update:type_name -> spec.Update
+	22,  // 64: spec.Task.delete:type_name -> spec.Delete
+	23,  // 65: spec.Work.task:type_name -> spec.Task
+	101, // 66: spec.Work.passes:type_name -> google.protobuf.Any
+	93,  // 67: spec.TaskResult.error:type_name -> spec.TaskResult.Error
+	94,  // 68: spec.TaskResult.none:type_name -> spec.TaskResult.None
+	95,  // 69: spec.TaskResult.update:type_name -> spec.TaskResult.UpdateState
+	96,  // 70: spec.TaskResult.clear:type_name -> spec.TaskResult.ClearState
+	8,   // 71: spec.Config.ClustersEntry.value:type_name -> spec.ClusterState
+	31,  // 72: spec.Unreachable.UnreachableNodePools.nodepools:type_name -> spec.Unreachable.UnreachableNodePools.NodepoolsEntry
+	29,  // 73: spec.Unreachable.LoadbalancersEntry.value:type_name -> spec.Unreachable.UnreachableNodePools
+	28,  // 74: spec.Unreachable.UnreachableNodePools.NodepoolsEntry.value:type_name -> spec.Unreachable.ListOfNodeEndpoints
+	13,  // 75: spec.Update.State.k8s:type_name -> spec.K8scluster
+	14,  // 76: spec.Update.State.loadBalancers:type_name -> spec.LBcluster
+	102, // 77: spec.Update.TerraformerMoveNodePoolToAutoscaled.config:type_name -> spec.AutoscalerConf
+	102, // 78: spec.Update.MovedNodePoolFromAutoscaled.config:type_name -> spec.AutoscalerConf
+	14,  // 79: spec.Update.TerraformerAddLoadBalancer.handle:type_name -> spec.LBcluster
+	19,  // 80: spec.Update.TerraformerDeleteLoadBalancerNodes.unreachable:type_name -> spec.Unreachable
+	19,  // 81: spec.Update.DeletedLoadBalancerNodes.unreachable:type_name -> spec.Unreachable
+	64,  // 82: spec.Update.DeletedLoadBalancerNodes.whole:type_name -> spec.Update.DeletedLoadBalancerNodes.WholeNodePool
+	65,  // 83: spec.Update.DeletedLoadBalancerNodes.partial:type_name -> spec.Update.DeletedLoadBalancerNodes.Partial
+	67,  // 84: spec.Update.TerraformerAddLoadBalancerNodes.existing:type_name -> spec.Update.TerraformerAddLoadBalancerNodes.Existing
+	68,  // 85: spec.Update.TerraformerAddLoadBalancerNodes.new:type_name -> spec.Update.TerraformerAddLoadBalancerNodes.New
+	17,  // 86: spec.Update.TerraformerAddLoadBalancerRoles.roles:type_name -> spec.Role
+	97,  // 87: spec.Update.TerraformerReplaceDns.dns:type_name -> spec.DNS
+	19,  // 88: spec.Update.DeleteLoadBalancer.unreachable:type_name -> spec.Unreachable
+	2,   // 89: spec.Update.ApiEndpoint.state:type_name -> spec.ApiEndpointChangeState
+	16,  // 90: spec.Update.AnsiblerReplaceProxySettings.proxy:type_name -> spec.InstallationProxy
+	70,  // 91: spec.Update.AnsiblerReplaceTargetPools.roles:type_name -> spec.Update.AnsiblerReplaceTargetPools.RolesEntry
+	72,  // 92: spec.Update.ReplacedTargetPools.roles:type_name -> spec.Update.ReplacedTargetPools.RolesEntry
+	79,  // 93: spec.Update.KuberPatchNodes.add:type_name -> spec.Update.KuberPatchNodes.AddBatch
+	78,  // 94: spec.Update.KuberPatchNodes.remove:type_name -> spec.Update.KuberPatchNodes.RemoveBatch
+	19,  // 95: spec.Update.KuberDeleteK8sNodes.unreachable:type_name -> spec.Unreachable
+	19,  // 96: spec.Update.DeletedK8sNodes.unreachable:type_name -> spec.Unreachable
+	88,  // 97: spec.Update.DeletedK8sNodes.whole:type_name -> spec.Update.DeletedK8sNodes.WholeNodePool
+	89,  // 98: spec.Update.DeletedK8sNodes.partial:type_name -> spec.Update.DeletedK8sNodes.Partial
+	91,  // 99: spec.Update.TerraformerAddK8sNodes.existing:type_name -> spec.Update.TerraformerAddK8sNodes.Existing
+	92,  // 100: spec.Update.TerraformerAddK8sNodes.new:type_name -> spec.Update.TerraformerAddK8sNodes.New
+	98,  // 101: spec.Update.DeletedLoadBalancerNodes.WholeNodePool.nodepool:type_name -> spec.NodePool
+	103, // 102: spec.Update.DeletedLoadBalancerNodes.Partial.nodes:type_name -> spec.Node
+	66,  // 103: spec.Update.DeletedLoadBalancerNodes.Partial.staticNodeKeys:type_name -> spec.Update.DeletedLoadBalancerNodes.Partial.StaticNodeKeysEntry
+	103, // 104: spec.Update.TerraformerAddLoadBalancerNodes.Existing.nodes:type_name -> spec.Node
+	98,  // 105: spec.Update.TerraformerAddLoadBalancerNodes.New.nodepool:type_name -> spec.NodePool
+	69,  // 106: spec.Update.AnsiblerReplaceTargetPools.RolesEntry.value:type_name -> spec.Update.AnsiblerReplaceTargetPools.TargetPools
+	71,  // 107: spec.Update.ReplacedTargetPools.RolesEntry.value:type_name -> spec.Update.ReplacedTargetPools.TargetPools
+	104, // 108: spec.Update.KuberPatchNodes.ListOfTaints.taints:type_name -> spec.Taint
+	80,  // 109: spec.Update.KuberPatchNodes.MapOfLabels.labels:type_name -> spec.Update.KuberPatchNodes.MapOfLabels.LabelsEntry
+	81,  // 110: spec.Update.KuberPatchNodes.MapOfAnnotations.annotations:type_name -> spec.Update.KuberPatchNodes.MapOfAnnotations.AnnotationsEntry
+	82,  // 111: spec.Update.KuberPatchNodes.RemoveBatch.taints:type_name -> spec.Update.KuberPatchNodes.RemoveBatch.TaintsEntry
+	83,  // 112: spec.Update.KuberPatchNodes.RemoveBatch.annotations:type_name -> spec.Update.KuberPatchNodes.RemoveBatch.AnnotationsEntry
+	84,  // 113: spec.Update.KuberPatchNodes.RemoveBatch.labels:type_name -> spec.Update.KuberPatchNodes.RemoveBatch.LabelsEntry
+	85,  // 114: spec.Update.KuberPatchNodes.AddBatch.taints:type_name -> spec.Update.KuberPatchNodes.AddBatch.TaintsEntry
+	86,  // 115: spec.Update.KuberPatchNodes.AddBatch.labels:type_name -> spec.Update.KuberPatchNodes.AddBatch.LabelsEntry
+	87,  // 116: spec.Update.KuberPatchNodes.AddBatch.annotations:type_name -> spec.Update.KuberPatchNodes.AddBatch.AnnotationsEntry
+	73,  // 117: spec.Update.KuberPatchNodes.RemoveBatch.TaintsEntry.value:type_name -> spec.Update.KuberPatchNodes.ListOfTaints
+	75,  // 118: spec.Update.KuberPatchNodes.RemoveBatch.AnnotationsEntry.value:type_name -> spec.Update.KuberPatchNodes.ListOfAnnotationKeys
+	74,  // 119: spec.Update.KuberPatchNodes.RemoveBatch.LabelsEntry.value:type_name -> spec.Update.KuberPatchNodes.ListOfLabelKeys
+	73,  // 120: spec.Update.KuberPatchNodes.AddBatch.TaintsEntry.value:type_name -> spec.Update.KuberPatchNodes.ListOfTaints
+	76,  // 121: spec.Update.KuberPatchNodes.AddBatch.LabelsEntry.value:type_name -> spec.Update.KuberPatchNodes.MapOfLabels
+	77,  // 122: spec.Update.KuberPatchNodes.AddBatch.AnnotationsEntry.value:type_name -> spec.Update.KuberPatchNodes.MapOfAnnotations
+	98,  // 123: spec.Update.DeletedK8sNodes.WholeNodePool.nodepool:type_name -> spec.NodePool
+	103, // 124: spec.Update.DeletedK8sNodes.Partial.nodes:type_name -> spec.Node
+	90,  // 125: spec.Update.DeletedK8sNodes.Partial.staticNodeKeys:type_name -> spec.Update.DeletedK8sNodes.Partial.StaticNodeKeysEntry
+	103, // 126: spec.Update.TerraformerAddK8sNodes.Existing.nodes:type_name -> spec.Node
+	98,  // 127: spec.Update.TerraformerAddK8sNodes.New.nodepool:type_name -> spec.NodePool
+	5,   // 128: spec.TaskResult.Error.kind:type_name -> spec.TaskResult.Error.Kind
+	13,  // 129: spec.TaskResult.UpdateState.k8s:type_name -> spec.K8scluster
+	10,  // 130: spec.TaskResult.UpdateState.loadBalancers:type_name -> spec.LoadBalancers
+	131, // [131:131] is the sub-list for method output_type
+	131, // [131:131] is the sub-list for method input_type
+	131, // [131:131] is the sub-list for extension type_name
+	131, // [131:131] is the sub-list for extension extendee
+	0,   // [0:131] is the sub-list for field type_name
 }
 
 func init() { file_spec_manifest_proto_init() }
@@ -6100,6 +6119,7 @@ func file_spec_manifest_proto_init() {
 	file_spec_dns_proto_init()
 	file_spec_nodepool_proto_init()
 	file_spec_pass_proto_init()
+	file_spec_manifest_proto_msgTypes[12].OneofWrappers = []any{}
 	file_spec_manifest_proto_msgTypes[15].OneofWrappers = []any{
 		(*Update_None_)(nil),
 		(*Update_TfAddLoadBalancer)(nil),

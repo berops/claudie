@@ -6,6 +6,7 @@ import (
 
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/proto/pb/spec"
+	"github.com/berops/claudie/services/manager/internal/service/metrics"
 	"github.com/berops/claudie/services/manager/internal/store"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
@@ -46,9 +47,11 @@ func ProcessTask(ctx context.Context, stores Stores, work Work) (acknowledge boo
 			// be a simple network problem or context cancelation.
 			logger.Err(err).Msg("Failed to get input manifest")
 			acknowledge = false
+			metrics.NatsMsgsUnAcknowledged.Inc()
 			return
 		}
 		acknowledge = true
+		metrics.NatsMsgsAcknowledged.Inc()
 		return
 	}
 
@@ -56,12 +59,14 @@ func ProcessTask(ctx context.Context, stores Stores, work Work) (acknowledge boo
 	if !ok {
 		logger.Warn().Msg("Cluster within InputManifest not found, ignoring.")
 		acknowledge = true
+		metrics.NatsMsgsAcknowledged.Inc()
 		return
 	}
 
 	if cluster.InFlight == nil || (cluster.InFlight.Id != work.TaskID) {
 		logger.Warn().Msg("Recevied task for cluster does not match, ignoring.")
 		acknowledge = true
+		metrics.NatsMsgsAcknowledged.Inc()
 		return
 	}
 
@@ -75,11 +80,31 @@ func ProcessTask(ctx context.Context, stores Stores, work Work) (acknowledge boo
 				stage,
 			)
 		acknowledge = true
+		metrics.NatsMsgsAcknowledged.Inc()
 		return
 	}
 
 	if err := work.Result.Error; err != nil {
 		acknowledge = processTaskWithError(ctx, logger, im, stores, work)
+		if acknowledge {
+			metrics.NatsMsgsAcknowledged.Inc()
+			metrics.TasksFinishedErr.Inc()
+
+			switch cluster.InFlight.Type {
+			case spec.Event_UNKNOWN.String():
+				metrics.TasksProcessedTypeUnknownCounter.Inc()
+			case spec.Event_CREATE.String():
+				metrics.TasksProcessedTypeCreateCounter.Inc()
+			case spec.Event_UPDATE.String():
+				metrics.TasksProcessedTypeUpdateCounter.Inc()
+			case spec.Event_DELETE.String():
+				metrics.TasksProcessedTypeDeleteCounter.Inc()
+			default:
+				metrics.TasksProcessedTypeUnknownCounter.Inc()
+			}
+		} else {
+			metrics.NatsMsgsUnAcknowledged.Inc()
+		}
 		return
 	}
 
@@ -127,6 +152,7 @@ func ProcessTask(ctx context.Context, stores Stores, work Work) (acknowledge boo
 				logger.Err(err).Msg("Failed to update InputManifest")
 			}
 			acknowledge = false
+			metrics.NatsMsgsUnAcknowledged.Inc()
 			return
 		}
 
@@ -137,6 +163,20 @@ func ProcessTask(ctx context.Context, stores Stores, work Work) (acknowledge boo
 		// If the Ack messge fails here the task was rescheduling under a new ID thus processing
 		// the result again, will be discarded before reaching any processing of the message.
 		acknowledge = true
+		metrics.NatsMsgsAcknowledged.Inc()
+
+		switch cluster.InFlight.Type {
+		case spec.Event_UNKNOWN.String():
+			metrics.TasksProcessedTypeUnknownCounter.Inc()
+		case spec.Event_CREATE.String():
+			metrics.TasksProcessedTypeCreateCounter.Inc()
+		case spec.Event_UPDATE.String():
+			metrics.TasksProcessedTypeUpdateCounter.Inc()
+		case spec.Event_DELETE.String():
+			metrics.TasksProcessedTypeDeleteCounter.Inc()
+		default:
+			metrics.TasksProcessedTypeUnknownCounter.Inc()
+		}
 		return
 	}
 
@@ -145,6 +185,7 @@ func ProcessTask(ctx context.Context, stores Stores, work Work) (acknowledge boo
 		// be some kind of malformed or corrupted data, thus don't acknowledge the
 		// received message, halting the workflow.
 		acknowledge = false
+		metrics.NatsMsgsUnAcknowledged.Inc()
 		return
 	}
 
@@ -155,6 +196,7 @@ func ProcessTask(ctx context.Context, stores Stores, work Work) (acknowledge boo
 			logger.Err(err).Msg("Failed to update InputManifest")
 		}
 		acknowledge = false
+		metrics.NatsMsgsUnAcknowledged.Inc()
 		return
 	}
 
@@ -163,6 +205,8 @@ func ProcessTask(ctx context.Context, stores Stores, work Work) (acknowledge boo
 		Msg("Successfully updated current state of the cluster. Moved the Task to the next stage")
 
 	acknowledge = true
+	metrics.NatsMsgsAcknowledged.Inc()
+	metrics.TasksFinishedOk.Inc()
 	return
 }
 
@@ -285,11 +329,11 @@ func advanceToNextStage(logger zerolog.Logger, state *store.ClusterState) error 
 		return nil
 	}
 
-	if err := moveInFlightStateToCurrentState(state); err != nil {
+	if err := propagateInFlightState(state); err != nil {
 		return err
 	}
 
-	state.InFlight = nil
+	state.InFlight = state.InFlight.LowerPriority
 	state.State.Status = spec.Workflow_DONE.String()
 	state.State.Description = ""
 
@@ -306,6 +350,7 @@ func propagateResult(logger zerolog.Logger, cluster *store.ClusterState, result 
 
 	switch result := result.Result.(type) {
 	case *spec.TaskResult_Update:
+		metrics.TaskUpdateResultCounter.Inc()
 		logger.Debug().Msg("Received [Update] as a result for the task")
 		if err := inFlight.Task.ConsumeUpdateResult(result); err != nil {
 			logger.
@@ -314,6 +359,7 @@ func propagateResult(logger zerolog.Logger, cluster *store.ClusterState, result 
 			return err
 		}
 	case *spec.TaskResult_Clear:
+		metrics.TaskClearResultCounter.Inc()
 		logger.Debug().Msg("Received [Clear] as a result for the task")
 		if err := inFlight.Task.ConsumeClearResult(result); err != nil {
 			logger.
@@ -322,8 +368,10 @@ func propagateResult(logger zerolog.Logger, cluster *store.ClusterState, result 
 			return err
 		}
 	case *spec.TaskResult_None_:
+		metrics.TaskNoneResultCounter.Inc()
 		logger.Debug().Msg("Received [None] as a result for the task, no work to be done.")
 	default:
+		metrics.TaskUnknownResultCounter.Inc()
 		logger.Warn().Msgf("Received message with unknown result type %T, ignoring", result)
 	}
 
@@ -336,7 +384,7 @@ func propagateResult(logger zerolog.Logger, cluster *store.ClusterState, result 
 	return nil
 }
 
-func moveInFlightStateToCurrentState(state *store.ClusterState) error {
+func propagateInFlightState(state *store.ClusterState) error {
 	t, err := store.ConvertToGRPCTask(state.InFlight.Task)
 	if err != nil {
 		return err
@@ -345,6 +393,31 @@ func moveInFlightStateToCurrentState(state *store.ClusterState) error {
 	s, err := t.MutableClusters()
 	if err != nil {
 		return err
+	}
+
+	// If this was a task that was scheduled in front
+	// of a previous task, replace the old state there with
+	// 'this' state, as 'this' state is build upon that previous
+	// task state but a hight priority task needed to be worked on
+	// first.
+	if state.InFlight.LowerPriority != nil {
+		// TODO: double-check this.
+		t, err := store.ConvertToGRPCTask(state.InFlight.LowerPriority.Task)
+		if err != nil {
+			return err
+		}
+
+		// The above result from [spec.Task.MutableClusters] is not
+		// used any further in this branch.
+		t.ReplaceClusters(s)
+
+		changed, err := store.ConvertFromGRPCTask(t)
+		if err != nil {
+			return err
+		}
+
+		state.InFlight.LowerPriority.Task = changed
+		return nil
 	}
 
 	cs, err := store.ConvertFromGRPCClusters(s)

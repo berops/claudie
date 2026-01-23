@@ -12,6 +12,7 @@ import (
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/natsutils"
 	"github.com/berops/claudie/proto/pb/spec"
+	"github.com/berops/claudie/services/manager/internal/service/metrics"
 	"github.com/berops/claudie/services/manager/internal/store"
 	"github.com/nats-io/nats.go"
 
@@ -121,6 +122,8 @@ func (s *Service) WatchForScheduledDocuments(ctx context.Context) error {
 				}
 
 				if ack.Duplicate {
+					metrics.NatsDuplicateMessagesCounter.Inc()
+
 					// Each message for a specific stage has its own ID for catching duplicates
 					// The pattern is [TaskID]-[StageName], thus it's not possible to catch duplicate
 					// messages from another stage here and there had to be some network issues.
@@ -142,6 +145,8 @@ func (s *Service) WatchForScheduledDocuments(ctx context.Context) error {
 				}
 
 				logger.Info().Msgf("Moved event %q for cluster %q into the work queue %q", event.Id, cluster, msg.Subject)
+
+				metrics.TasksScheduled.Inc()
 
 				// We break here as the config version was updated thus subsequent changes
 				// will error out anyways. On the run next changes will be worked on.
@@ -273,16 +278,31 @@ func (s *Service) WatchForDoneOrErrorDocuments(ctx context.Context) error {
 	for _, idle := range cfgs {
 		logger := loggerutils.WithProjectName(idle.Name)
 
+		// While reconciliation should be done.
 		if !bytes.Equal(idle.Manifest.LastAppliedChecksum, idle.Manifest.Checksum) {
-			logger.Info().Msgf("Moving to %q as changes have been made to the manifest since the last build", manifest.Pending.String())
+			logger.
+				Info().
+				Msgf("Moving to %q as changes have been made to the manifest since the last build", manifest.Pending.String())
 
 			ok, err := manifest.ValidStateTransitionString(idle.Manifest.State, manifest.Pending)
 			if err != nil || !ok {
-				logger.Err(err).Msgf("Cannot transtition from manifest state %q to %q, skipping", idle.Manifest.State, manifest.Pending)
+				logger.
+					Err(err).
+					Msgf("Cannot transtition from manifest state %q to %q, skipping", idle.Manifest.State, manifest.Pending)
 				continue
 			}
 
 			idle.Manifest.State = manifest.Pending.String()
+
+			for cluster, state := range idle.Clusters {
+				currentEmpty := len(state.Current.K8s) == 0 && len(state.Current.LoadBalancers) == 0
+				inFlightEmpty := state.InFlight == nil
+
+				if currentEmpty && inFlightEmpty {
+					logger.Debug().Msgf("Deleting cluster %q from database as infrastructure was destroyed", cluster)
+					delete(idle.Clusters, cluster)
+				}
+			}
 
 			if err := s.store.UpdateConfig(ctx, idle); err != nil {
 				if errors.Is(err, store.ErrNotFoundOrDirty) {
@@ -297,6 +317,7 @@ func (s *Service) WatchForDoneOrErrorDocuments(ctx context.Context) error {
 			continue
 		}
 
+		// When reconciliation ends and the manifest should no longer be reconciliated.
 		if idle.Manifest.State == manifest.Done.String() {
 			if idle.Manifest.Checksum == nil && idle.Manifest.LastAppliedChecksum == nil {
 				if err := s.store.DeleteConfig(ctx, idle.Name, idle.Version); err != nil {
@@ -308,53 +329,6 @@ func (s *Service) WatchForDoneOrErrorDocuments(ctx context.Context) error {
 				}
 				continue
 			}
-
-			clustersDeleted := false
-			for cluster, state := range idle.Clusters {
-				currentEmpty := len(state.Current.K8s) == 0 && len(state.Current.LoadBalancers) == 0
-				inFlightEmpty := state.InFlight == nil
-
-				if currentEmpty && inFlightEmpty {
-					logger.Debug().Msgf("Deleting cluster %q from database as infrastructure was destroyed", cluster)
-					clustersDeleted = true
-					delete(idle.Clusters, cluster)
-				}
-			}
-
-			if clustersDeleted {
-				if err := s.store.UpdateConfig(ctx, idle); err != nil {
-					if errors.Is(err, store.ErrNotFoundOrDirty) {
-						logger.Warn().Msgf("Idle Config couldn't be updated due to a Dirty Write, another retry will start shortly.")
-						continue
-					}
-					logger.Err(err).Msgf("Failed to update idle config, skipping.")
-				}
-				continue
-			}
-		}
-
-		cfg, err := store.ConvertToGRPC(idle)
-		if err != nil {
-			return fmt.Errorf("failed to convert database representation to grpc: %w", err)
-		}
-
-		updated, err := templatesUpdated(cfg)
-		if err != nil {
-			return fmt.Errorf("failed to check if templates for nodepools were updated: %w", err)
-		}
-
-		if updated {
-			logger.Debug().Msgf("rescheduling idle config for rolling updates")
-			// trigger reschedule.
-			idle.Manifest.LastAppliedChecksum = append([]byte(nil), idle.Manifest.Checksum[1:]...)
-			if err := s.store.UpdateConfig(ctx, idle); err != nil {
-				if errors.Is(err, store.ErrNotFoundOrDirty) {
-					logger.Warn().Msgf("Idle config couldn't be rescheduled for rolling update due to a Dirty Write, another retry will start shortly.")
-					continue
-				}
-				logger.Err(err).Msgf("Failed to reschedule Idle config for rolling update, skipping.")
-			}
-			continue
 		}
 	}
 

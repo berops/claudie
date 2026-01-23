@@ -55,8 +55,6 @@ func createDesiredState(pending *spec.Config, result *map[string]*spec.Clusters)
 		return fmt.Errorf("failed to parse lb clusters from manifest: %q: %w", m.Name, err)
 	}
 
-	// TODO: double check and validate with tests the slightly changed build of desired state.
-	// TODO: then use the transferring of the state when propagating the Task Result.
 	// 3.
 	// In the next steps It might be the case either the Current State or Desired state is nil
 	// thus these cases needs to be handled gracefully. Parts of the desired state are populated
@@ -119,9 +117,8 @@ func createDesiredState(pending *spec.Config, result *map[string]*spec.Clusters)
 		}
 	}
 
-	// uses only current state, so we can pass [pending] without the [desiredState]
-	// yet to be fully populated.
 	backwardsCompatibility(pending)
+	backwardsCompatibilityTransferMissingState(pending, desiredState)
 
 	// 4. After step 3. there can still be missing state that needs to be populated.
 	for _, desired := range desiredState {
@@ -424,13 +421,18 @@ func getCIDR(baseCIDR string, position int, existing []string) (string, error) {
 	}
 }
 
-// TODO: test.
 func fixupAutoscalerCounts(desired *spec.Clusters) {
 	// only k8s clusters have autoscaled nodepools.
 	for _, np := range nodepools.Autoscaled(desired.K8S.ClusterInfo.NodePools) {
 		dyn := np.GetDynamicNodePool()
 
 		// only check for a fixup when targetSize < count
+		// Count is the currently number of nodes within the
+		// nodepools and "targetSize" is the desired amount
+		// of nodes within the nodepool.
+		//
+		// Thus this condition checks which nodes should be
+		// marked as excessive to the nodepool.
 		if dyn.AutoscalerConfig.TargetSize >= dyn.Count {
 			continue
 		}

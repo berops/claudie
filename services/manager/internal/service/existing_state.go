@@ -5,86 +5,93 @@ import (
 	"slices"
 
 	"github.com/berops/claudie/internal/api/manifest"
+	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
+	"github.com/rs/zerolog/log"
 	"google.golang.org/protobuf/proto"
 )
 
-// TODO: fix me ip
-// func backwardsCompatibilityTransferMissingState(c *spec.Config) {
-// 	for _, state := range c.GetClusters() {
-// 		for _, current := range state.GetCurrent().GetLoadBalancers().GetClusters() {
-// 			// TODO: remove in future versions, cloudflare account id may not be correctly
-// 			// propagated to the current state when upgrading claudie versions, since the
-// 			// [manifest.Cloudflare.AccountID] has a validation which requires the presence
-// 			// of a valid, non-empty `account_id`, which might be missing in the current state,
-// 			// that will result in errors on subsequent workflows, simply transfer the `account_id`
-// 			// from the desired state to the current state, only if it's empty. That will take care
-// 			// of the drift introduced during claudie updates.
-// 			if cc := current.GetDns().GetProvider().GetCloudflare(); cc != nil && cc.AccountID == "" {
-// 				i := clusters.IndexLoadbalancerById(current.GetClusterInfo().Id(), state.GetDesired().GetLoadBalancers().GetClusters())
-// 				if i >= 0 {
-// 					dlb := state.Desired.LoadBalancers.Clusters[i]
-// 					if dc := dlb.GetDns().GetProvider().GetCloudflare(); dc != nil {
-// 						log.
-// 							Info().
-// 							Str("cluster", current.GetClusterInfo().Id()).
-// 							Msg("detected drift in current state for Cloudflare AccountID, transferring state from desired state")
-// 						cc.AccountID = dc.AccountID
-// 					}
-// 				}
-// 			}
-// 		}
-// 	}
-// }
+func backwardsCompatibilityTransferMissingState(c *spec.Config, desired map[string]*spec.Clusters) {
+	for clusterName, state := range c.GetClusters() {
+		desired := desired[clusterName]
+		if desired == nil {
+			continue
+		}
+
+		for _, current := range state.GetCurrent().GetLoadBalancers().GetClusters() {
+			// TODO: remove in future versions, cloudflare account id may not be correctly
+			// propagated to the current state when upgrading claudie versions, since the
+			// [manifest.Cloudflare.AccountID] has a validation which requires the presence
+			// of a valid, non-empty `account_id`, which might be missing in the current state,
+			// that will result in errors on subsequent workflows, simply transfer the `account_id`
+			// from the desired state to the current state, only if it's empty. That will take care
+			// of the drift introduced during claudie updates.
+
+			if cc := current.GetDns().GetProvider().GetCloudflare(); cc != nil && cc.AccountID == "" {
+				i := clusters.IndexLoadbalancerById(current.GetClusterInfo().Id(), desired.GetLoadBalancers().GetClusters())
+				if i >= 0 {
+					dlb := desired.LoadBalancers.Clusters[i]
+					if dc := dlb.GetDns().GetProvider().GetCloudflare(); dc != nil {
+						log.
+							Info().
+							Str("cluster", current.GetClusterInfo().Id()).
+							Msg("detected drift in current state for Cloudflare AccountID, transferring state from desired state")
+						cc.AccountID = dc.AccountID
+					}
+				}
+			}
+		}
+	}
+}
 
 func backwardsCompatibility(c *spec.Config) {
-	// // TODO: remove in future versions, currently only for backwards compatibility.
-	// // version 0.9.3 moved selection of the api server to the manager service
-	// // and introduced a new field that selects which LB is used as the api endpoint.
-	// // To have backwards compatibility with clusters build with versions before 0.9.3
-	// // select the first load balancer in the current state and set this new field to true.
-	// for _, state := range c.GetClusters() {
-	// 	currentLbs := state.GetCurrent().GetLoadBalancers().GetClusters()
-	// 	var (
-	// 		anyApiServerLoadBalancerSelected bool
-	// 		apiServerLoadBalancers           []int
-	// 	)
+	// TODO: remove in future versions, currently only for backwards compatibility.
+	// version 0.9.3 moved selection of the api server to the manager service
+	// and introduced a new field that selects which LB is used as the api endpoint.
+	// To have backwards compatibility with clusters build with versions before 0.9.3
+	// select the first load balancer in the current state and set this new field to true.
+	for _, state := range c.GetClusters() {
+		currentLbs := state.GetCurrent().GetLoadBalancers().GetClusters()
+		var (
+			anyApiServerLoadBalancerSelected bool
+			apiServerLoadBalancers           []int
+		)
 
-	// 	for _, current := range currentLbs {
-	// 		// TODO: remove in future versions, currently only for backwards compatibility.
-	// 		// version 0.9.7 introced additional role settings, which may not be set in the
-	// 		// current state. To have backwards compatibility add defaults to the current state.
-	// 		for _, role := range current.Roles {
-	// 			if role.Settings == nil {
-	// 				log.Info().
-	// 					Str("cluster", current.GetClusterInfo().Id()).
-	// 					Msg("detected loadbalancer build with version older than 0.9.7, settings default role settings for its current state")
+		for _, current := range currentLbs {
+			// TODO: remove in future versions, currently only for backwards compatibility.
+			// version 0.9.7 introced additional role settings, which may not be set in the
+			// current state. To have backwards compatibility add defaults to the current state.
+			for _, role := range current.Roles {
+				if role.Settings == nil {
+					log.Info().
+						Str("cluster", current.GetClusterInfo().Id()).
+						Msg("detected loadbalancer build with version older than 0.9.7, settings default role settings for its current state")
 
-	// 				role.Settings = &spec.Role_Settings{
-	// 					ProxyProtocol: true,
-	// 				}
-	// 			}
-	// 		}
-	// 	}
+					role.Settings = &spec.Role_Settings{
+						ProxyProtocol: true,
+					}
+				}
+			}
+		}
 
-	// 	for i, current := range currentLbs {
-	// 		if current.IsApiEndpoint() {
-	// 			anyApiServerLoadBalancerSelected = true
-	// 			break
-	// 		}
-	// 		if current.HasApiRole() && !current.UsedApiEndpoint && current.Dns != nil {
-	// 			apiServerLoadBalancers = append(apiServerLoadBalancers, i)
-	// 		}
-	// 	}
-	// 	if !anyApiServerLoadBalancerSelected && len(apiServerLoadBalancers) > 0 {
-	// 		currentLbs[apiServerLoadBalancers[0]].UsedApiEndpoint = true
-	// 		log.Info().
-	// 			Str("cluster", currentLbs[apiServerLoadBalancers[0]].GetClusterInfo().Id()).
-	// 			Msgf("detected api-server loadbalancer build with claudie version older than 0.9.3, selecting as the loadbalancer for the api-server")
-	// 	}
-	// }
+		for i, current := range currentLbs {
+			if current.IsApiEndpoint() {
+				anyApiServerLoadBalancerSelected = true
+				break
+			}
+			if current.HasApiRole() && !current.UsedApiEndpoint && current.Dns != nil {
+				apiServerLoadBalancers = append(apiServerLoadBalancers, i)
+			}
+		}
+		if !anyApiServerLoadBalancerSelected && len(apiServerLoadBalancers) > 0 {
+			currentLbs[apiServerLoadBalancers[0]].UsedApiEndpoint = true
+			log.Info().
+				Str("cluster", currentLbs[apiServerLoadBalancers[0]].GetClusterInfo().Id()).
+				Msgf("detected api-server loadbalancer build with claudie version older than 0.9.3, selecting as the loadbalancer for the api-server")
+		}
+	}
 }
 
 // Finds matching nodepools in desired that are also in current and that both have nodepool type of

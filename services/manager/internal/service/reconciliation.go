@@ -9,6 +9,7 @@ import (
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/manager/internal/service/managementcluster"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	"google.golang.org/protobuf/proto"
@@ -18,14 +19,6 @@ import (
 // scheduling of the tasks.
 type ScheduleResult uint8
 
-// TODO: endless reconciliation... double check the control flow such that it will never stop reconciling.
-// TODO: with a failed inFlight state there needs to be a decision to be made if a task
-// with a higher priority is to be scheduled what happens in that case ?
-// TODO: maybe restrucurize the workers project directory ?
-// TODO: the diff should be always between the committed current state and the desired state
-// if we have an inflight state the scheduled task should be merged with that inFlight state.
-// But then what if we add a loadbalancer and it fails in the ansible stage and then delete it
-// from the desired state ? the diff will miss this...
 const (
 	// Reschedule describes the case where the manifest should be rescheduled again
 	// after either error-ing or completing.
@@ -155,7 +148,6 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 
 			state.InFlight = ScheduleDeleteCluster(del)
 		default:
-			// TODO: add diff with the in-flight state.
 			if err := managementcluster.StoreKubeconfig(pending.Name, current); err != nil {
 				logger.Err(err).Msg("Failed to store kubeconfig in the management cluster")
 			}
@@ -197,14 +189,97 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 
 			clusterResult[cluster] = Noop
 
-			// TODO: if for example a dead node comes in during the
-			// cycle rescheduling in here it will always error out
-			// event though the unreachable node could be removed
-			// and then this could be retried. There could be added
-			// a new field called Previous Retry, or something that would
-			// be stored along the task and on successful processing would
-			// check if it exists and replace it.
-			if shouldRescheduleInFlight(state.InFlight) {
+			// Could be nil or could be a Task that failed.
+			lastTask := state.InFlight
+
+			current := current
+			desired := desired
+			if lastTask != nil {
+				inFlight, err := lastTask.Task.MutableClusters()
+				if err != nil {
+					state.State.Status = spec.Workflow_ERROR
+					state.State.Description = fmt.Sprintf(`
+Failed to extract state from failed 'InFlight' state: %v
+`, err)
+					logger.Error().Msg(state.State.Description)
+					break event_switch
+				}
+
+				// explicitly clone to avoid any unwated modifications.
+				inFlight = proto.Clone(inFlight).(*spec.Clusters)
+
+				// If there is an InFlight, make it current and the actual
+				// current will be the desired state to roll back to.
+				current, desired = inFlight, current
+			}
+
+			// After the [HealthCheckStatus] and the [KubernetesDiff], [LoadBalancersDiff]
+			// is made all of the current,desired [spec.Clusters] state is considered
+			// immutable and is not modified to not invalidate cached indices for the
+			// returned diffs.
+			logger.Debug().Msg("Health checking current state")
+
+			hc := HealthCheck(logger, current)
+			diff := Diff(current, desired)
+
+			if shouldRescheduleInFlight(lastTask) {
+				clusterResult[cluster] = Reschedule
+
+				logger.
+					Info().
+					Msg("Verifying reachability of the cluster before scheduling task to work on")
+
+				// Before scheduling any new task, healthcheck the reachability of the
+				// built infrastructure to avoid any issues with unreachable nodes during
+				// the building of the task, in which case this takes a higher priority
+				// then the scheduled task.
+				rhc, err := HealthCheckNodeReachability(logger, current)
+				if err != nil {
+					clusterResult[cluster] = NotReady
+
+					state.State.Status = spec.Workflow_ERROR
+					state.State.Description = fmt.Sprintf(
+						"Can't schedule task, failed to determine reachability of nodes of the clusters: %v",
+						err,
+					)
+
+					logger.Error().Msg(state.State.Description)
+					break event_switch
+				}
+
+				next, err := handleClusterReachability(logger, current, desired, diff, rhc, hc)
+				if err != nil {
+					logger.
+						Debug().
+						Msg("Propagating error for unreachable nodes without working on any task")
+
+					// Higher priority task can't be scheduled due to wait on user
+					// input on the unreachable nodes.
+					//
+					// If the user did not delete the unreachable nodes via kubectl or the user
+					// did not remove the whole nodepool with the unreachable nodes from the
+					// desired state we cannot proceed further as we need to remove all the
+					// nodes with connectivity issues to avoid problems when executing tasks
+					// to move the current state towards the desired state, as the workflow will
+					// get stuck in ansibler which connects to the nodes via ssh. Thus propagate
+					// the error to the user.
+					state.State.Status = spec.Workflow_ERROR
+					state.State.Description = err.Error()
+					logger.Error().Msg(state.State.Description)
+					clusterResult[cluster] = NotReady
+					break event_switch
+				}
+				if next != nil {
+					logger.
+						Info().
+						Msg("Scheduled Task with higher priority for unreachable nodes on the kubernetes level")
+
+					next.LowerPriority = lastTask
+					state.InFlight = next
+					clusterResult[cluster] = Reschedule
+					break event_switch
+				}
+
 				newUUID := uuid.New().String()
 
 				logger.
@@ -219,18 +294,8 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 				// catching duplicates under NATS when rescheduling.
 				state.InFlight.Id = newUUID
 
-				clusterResult[cluster] = Reschedule
 				break
 			}
-
-			// After the [HealthCheckStatus] and the [KubernetesDiff], [LoadBalancersDiff]
-			// is made all of the current,desired [spec.Clusters] state is considered
-			// immutable and is not modified to not invalidate cached indices for the
-			// returned diffs.
-			logger.Debug().Msg("Health checking current state")
-
-			hc := HealthCheck(logger, current)
-			diff := Diff(current, desired)
 
 			if state.InFlight = handleUpdate(hc, diff, current, desired); state.InFlight != nil {
 				clusterResult[cluster] = Reschedule
@@ -247,7 +312,6 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 				if err != nil {
 					clusterResult[cluster] = NotReady
 
-					state.InFlight = nil
 					state.State.Status = spec.Workflow_ERROR
 					state.State.Description = fmt.Sprintf(
 						"Can't schedule task, failed to determine reachability of nodes of the clusters: %v",
@@ -255,82 +319,32 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 					)
 
 					logger.Error().Msg(state.State.Description)
-					break
+					break event_switch
 				}
 
-				kr := KubernetesUnreachableNodes{
-					Hc:          hc,
-					Unreachable: rhc,
-					Diff:        &diff.Kubernetes,
-					State:       state,
-					Desired:     desired,
+				next, err := handleClusterReachability(logger, current, desired, diff, rhc, hc)
+				if err != nil {
+					clusterResult[cluster] = NotReady
+
+					logger.
+						Debug().
+						Msg("Propagating error for unreachable nodes without working on any task")
+
+					state.State.Status = spec.Workflow_ERROR
+					state.State.Description = err.Error()
+					logger.Error().Msg(state.State.Description)
+					break event_switch
 				}
+				if next != nil {
+					clusterResult[cluster] = Reschedule
 
-				switch HandleKubernetesUnreachableNodes(logger, kr) {
-				case UnreachableNodesModifiedCurrentState:
 					logger.
-						Debug().
-						Msg("Propagating change to current state after static node removal on the kubernetes level")
+						Info().
+						Msg("Scheduled Task with higher priority for unreachable nodes on the kubernetes level")
 
-					state.InFlight = nil
-					clusterResult[cluster] = NotReady
+					next.LowerPriority = lastTask
+					state.InFlight = next
 					break event_switch
-				case UnreachableNodesPropagateError:
-					// Higher priority task can't be scheduled due to wait on user
-					// input on the unreachable nodes.
-					//
-					// If the user did not delete the unreachable nodes via kubectl or the user
-					// did not remove the whole nodepool with the unreachable nodes from the
-					// desired state we cannot proceed further as we need to remove all the
-					// nodes with connectivity issues to avoid problems when executing tasks
-					// to move the current state towards the desired state, as the workflow will
-					// get stuck in ansibler which connects to the nodes via ssh. Thus propagate
-					// the error to the user.
-					logger.
-						Debug().
-						Msg("Propagating error for unreachable nodes on the kubernetes level without working on any task")
-
-					state.InFlight = nil
-					clusterResult[cluster] = NotReady
-					break event_switch
-				case UnreachableNodesScheduledTask:
-					logger.Debug().Msg("Scheduled Task with higher priority for unreachable nodes on the kubernetes level")
-					break event_switch
-				case UnreachableNodesNoop:
-					// Nothing to do.
-				}
-
-				// Same as with the kubernetes unreachable nodes.
-				lbr := LoadBalancerUnreachableNodes{
-					Unreachable: rhc,
-					State:       state,
-					Desired:     desired,
-				}
-				switch HandleLoadBalancerUnreachableNodes(logger, lbr) {
-				case UnreachableNodesModifiedCurrentState:
-					logger.
-						Debug().
-						Msg("Propagating change to current state after static node removal on the loadbalancer level")
-
-					state.InFlight = nil
-					clusterResult[cluster] = NotReady
-					break event_switch
-				case UnreachableNodesPropagateError:
-					logger.
-						Debug().
-						Msg("Propagating error for unreachable nodes on the loadbalancer level without working on any task")
-
-					state.InFlight = nil
-					clusterResult[cluster] = NotReady
-					break event_switch
-				case UnreachableNodesScheduledTask:
-					logger.
-						Debug().
-						Msg("Scheduled Task with higher priority for unreachable nodes on the loadbalancer level")
-
-					break event_switch
-				case UnreachableNodesNoop:
-					// Nothing to do.
 				}
 			}
 		}
@@ -372,10 +386,10 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 		finalResult = Reschedule
 	case notReady > 0:
 		finalResult = NotReady
-	case noop == len(clusterResult):
-		finalResult = Noop
 	case noReschedule == len(clusterResult):
 		finalResult = NoReschedule
+	case noop == len(clusterResult):
+		finalResult = Noop
 	default:
 		finalResult = Reschedule
 	}
@@ -610,4 +624,39 @@ func shouldRescheduleInFlight(inFlight *spec.TaskEvent) bool {
 	default:
 		return false
 	}
+}
+
+func handleClusterReachability(
+	logger zerolog.Logger,
+	current *spec.Clusters,
+	desired *spec.Clusters,
+	diff DiffResult,
+	rhc UnreachableNodes,
+	hc HealthCheckStatus,
+) (*spec.TaskEvent, error) {
+	kr := KubernetesUnreachableNodes{
+		Hc:          hc,
+		Unreachable: rhc,
+		Diff:        &diff.Kubernetes,
+		Current:     current,
+		Desired:     desired,
+	}
+
+	next, err := HandleKubernetesUnreachableNodes(logger, kr)
+	if err != nil {
+		return nil, err
+	}
+	if next != nil {
+		return next, nil
+	}
+
+	// Same as with the kubernetes unreachable nodes.
+	lbr := LoadBalancerUnreachableNodes{
+		Unreachable: rhc,
+		Diff:        &diff.Kubernetes,
+		Current:     current,
+		Desired:     desired,
+	}
+
+	return HandleLoadBalancerUnreachableNodes(lbr)
 }

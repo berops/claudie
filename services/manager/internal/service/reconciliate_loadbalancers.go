@@ -221,11 +221,12 @@ func PostKubernetesDiff(r LoadBalancersReconciliate) *spec.TaskEvent {
 }
 
 type LoadBalancerNodePoolsOptions struct {
-	UseProxy bool
-	IsStatic bool
+	UseProxy    bool
+	IsStatic    bool
+	Unreachable *spec.Unreachable
 }
 
-// Schedules a task that will add new nodes/nodepools into the current state of the loadbalancer.
+// Schedules a task that will remove nodes/nodepools from the current state of the loadbalancer.
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
 func ScheduleDeletionLoadBalancerNodePools(
@@ -329,6 +330,7 @@ func ScheduleDeletionLoadBalancerNodePools(
 	})
 
 	inFlight := proto.Clone(current).(*spec.Clusters)
+
 	for np, nodes := range diff.PartiallyDeleted {
 		update := spec.Task_Update{
 			Update: &spec.Update{
@@ -336,15 +338,59 @@ func ScheduleDeletionLoadBalancerNodePools(
 					K8S:           inFlight.K8S,
 					LoadBalancers: inFlight.LoadBalancers.Clusters,
 				},
-				Delta: &spec.Update_TfDeleteLoadBalancerNodes{
-					TfDeleteLoadBalancerNodes: &spec.Update_TerraformerDeleteLoadBalancerNodes{
-						Handle:       cid.Id,
-						WithNodePool: false,
-						Nodepool:     np,
-						Nodes:        nodes,
-					},
-				},
+				Delta: &spec.Update_None_{},
 			},
+		}
+
+		if opts.IsStatic {
+			// if the nodes to be deleted are static nodes
+			// remove them directly from the 'inFlight' state
+			// as there is no mechanism within claudie that
+			// explicitly removes the static nodes for loadbalanacers
+			//
+			// With kubernetes nodes the deletion is handled by the
+			// kuber service which removes the node, but there isn't
+			// such thing for loadbalancers.
+			idx := clusters.IndexLoadbalancerById(cid.Id, inFlight.LoadBalancers.Clusters)
+			if idx >= 0 {
+				lb := inFlight.LoadBalancers.Clusters[idx]
+				affectedNodePool := nodepools.FindByName(np, lb.ClusterInfo.NodePools)
+				affectedNodes := nodepools.CloneTargetNodes(affectedNodePool, nodes)
+				staticNodeKeys := make(map[string]string)
+
+				if stt := affectedNodePool.GetStaticNodePool(); stt != nil {
+					for _, n := range affectedNodes {
+						key := n.Public
+						staticNodeKeys[key] = stt.NodeKeys[key]
+					}
+				}
+
+				nodepools.DeleteNodes(affectedNodePool, nodes)
+
+				update.Update.Delta = &spec.Update_DeletedLoadBalancerNodes_{
+					DeletedLoadBalancerNodes: &spec.Update_DeletedLoadBalancerNodes{
+						Unreachable: opts.Unreachable,
+						Handle:      cid.Id,
+						Kind: &spec.Update_DeletedLoadBalancerNodes_Partial_{
+							Partial: &spec.Update_DeletedLoadBalancerNodes_Partial{
+								Nodepool:       np,
+								Nodes:          affectedNodes,
+								StaticNodeKeys: staticNodeKeys,
+							},
+						},
+					},
+				}
+			}
+		} else {
+			update.Update.Delta = &spec.Update_TfDeleteLoadBalancerNodes{
+				TfDeleteLoadBalancerNodes: &spec.Update_TerraformerDeleteLoadBalancerNodes{
+					Unreachable:  opts.Unreachable,
+					Handle:       cid.Id,
+					WithNodePool: false,
+					Nodepool:     np,
+					Nodes:        nodes,
+				},
+			}
 		}
 
 		return &spec.TaskEvent{
@@ -366,15 +412,40 @@ func ScheduleDeletionLoadBalancerNodePools(
 					K8S:           inFlight.K8S,
 					LoadBalancers: inFlight.LoadBalancers.Clusters,
 				},
-				Delta: &spec.Update_TfDeleteLoadBalancerNodes{
-					TfDeleteLoadBalancerNodes: &spec.Update_TerraformerDeleteLoadBalancerNodes{
-						Handle:       cid.Id,
-						WithNodePool: true,
-						Nodepool:     np,
-						Nodes:        nodes,
-					},
-				},
+				Delta: &spec.Update_None_{},
 			},
+		}
+
+		if opts.IsStatic {
+			// Same reason as with partiall deletions.
+			idx := clusters.IndexLoadbalancerById(cid.Id, inFlight.LoadBalancers.Clusters)
+			if idx >= 0 {
+				lb := inFlight.LoadBalancers.Clusters[idx]
+				affectedNodePool := nodepools.FindByName(cid.Id, lb.ClusterInfo.NodePools)
+				lb.ClusterInfo.NodePools = nodepools.DeleteByName(lb.ClusterInfo.NodePools, np)
+
+				update.Update.Delta = &spec.Update_DeletedLoadBalancerNodes_{
+					DeletedLoadBalancerNodes: &spec.Update_DeletedLoadBalancerNodes{
+						Unreachable: opts.Unreachable,
+						Handle:      cid.Id,
+						Kind: &spec.Update_DeletedLoadBalancerNodes_Whole{
+							Whole: &spec.Update_DeletedLoadBalancerNodes_WholeNodePool{
+								Nodepool: affectedNodePool,
+							},
+						},
+					},
+				}
+			}
+		} else {
+			update.Update.Delta = &spec.Update_TfDeleteLoadBalancerNodes{
+				TfDeleteLoadBalancerNodes: &spec.Update_TerraformerDeleteLoadBalancerNodes{
+					Unreachable:  opts.Unreachable,
+					Handle:       cid.Id,
+					WithNodePool: true,
+					Nodepool:     np,
+					Nodes:        nodes,
+				},
+			}
 		}
 
 		return &spec.TaskEvent{

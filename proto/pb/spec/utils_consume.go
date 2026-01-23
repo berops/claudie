@@ -394,8 +394,10 @@ func (te *Task) ConsumeUpdateResult(result *TaskResult_Update) error {
 // always returns fully valid data which was scheduled for the task.
 //
 // While this allows to directly mutate the returned [Clusters] it will not
-// allow Clearing, i.e setting to nil. For this consider using [Task.ConsumeClearResult]
-// or [Task.ConsumeUpdateResult]
+// allow Clearing, i.e setting to nil. There is a more unsafe function available
+// ,when needed, [ReplaceClusters] which replaces the state of the task otherwise
+// consider gradually upgrading the task via the [Task.ConsumeClearResult] or
+// [Task.ConsumeUpdateResult]
 func (te *Task) MutableClusters() (*Clusters, error) {
 	state := Clusters{
 		LoadBalancers: &LoadBalancers{},
@@ -416,6 +418,30 @@ func (te *Task) MutableClusters() (*Clusters, error) {
 	}
 
 	return &state, nil
+}
+
+// Replaces the [K8Scluster] and its [LBcluster]s with the ones provided in
+// the passed in [Clusters] object. The values are consumed, and the ones
+// inside the passed in [Clusters] are set to nil. After calling this function
+// the passed in references should no longer be used and the [Task] should be
+// the only owner of them.
+func (te *Task) ReplaceClusters(c *Clusters) {
+	switch task := te.Do.(type) {
+	case *Task_Create:
+		task.Create.K8S = c.K8S
+		task.Create.LoadBalancers = c.LoadBalancers.Clusters
+	case *Task_Delete:
+		task.Delete.K8S = c.K8S
+		task.Delete.LoadBalancers = c.LoadBalancers.Clusters
+	case *Task_Update:
+		task.Update.State.K8S = c.K8S
+		task.Update.State.LoadBalancers = c.LoadBalancers.Clusters
+	default:
+		// Do nothing.
+	}
+
+	c.K8S = nil
+	c.LoadBalancers = nil
 }
 
 type InFlightUpdateState struct {

@@ -17,76 +17,26 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// ScheduleUnreachableNodesResult describes the changes made within
-// one of the [HandleKubernetesUnreachableNodes] or [HandleLoadBalancerUnreachableNodes]
-// function.
-type ScheduleUnreachableNodesResult uint8
-
-const (
-	// Unreachable Nodes Noop signals that no operation was needed, meaning that
-	// all of the current state is reachable by the management cluster.
-	//
-	// No changes to the passed in state was done in this case.
-	UnreachableNodesNoop ScheduleUnreachableNodesResult = iota
-
-	// Unreachable Nodes Scheduled Task specifies that a task was scheduled
-	// which addresses part or the whole issue with the unreachable nodes.
-	//
-	// Any task, if any at all, that was already scheduled is overwritten and
-	// this newly scheduled task should be worked on with a higher priority.
-	UnreachableNodesScheduledTask
-
-	// Unreachable Nodes Modified Current State specifies that the current state
-	// was modified and that any indices into it were invalidated and should no
-	// longer be considered valid.
-	//
-	// Any task, if any at all, that was already scheduled is overwritten and
-	// this newly scheduled task should be worked on with a higher priority.
-	UnreachableNodesModifiedCurrentState
-
-	// Unreachable Nodes Propagate Error specifies that the error status with a
-	// descriptive error message was set in the [spec.ClusterState.State] which
-	// should be propagated to the user.
-	//
-	// No changes to the passed in state was done in this case.
-	//
-	// Any existing scheduled task is removed.
-	UnreachableNodesPropagateError
-)
-
-func (s ScheduleUnreachableNodesResult) String() string {
-	switch s {
-	case UnreachableNodesModifiedCurrentState:
-		return "UnreachableNodesModifiedCurrentState"
-	case UnreachableNodesNoop:
-		return "UnreachableNodesNoop"
-	case UnreachableNodesPropagateError:
-		return "UnreachableNodesPropagateError"
-	case UnreachableNodesScheduledTask:
-		return "UnreachableNodesScheduledTask"
-	default:
-		return ""
-	}
-}
-
 type KubernetesUnreachableNodes struct {
 	Hc          HealthCheckStatus
 	Unreachable UnreachableNodes
 	Diff        *KubernetesDiffResult
-	State       *spec.ClusterState
+	Current     *spec.Clusters
 	Desired     *spec.Clusters
 }
 
 // Based on the provided data via the [HealthCheckStatus] and [UnreachableNodes] determines what should be
-// done to unblock the unreachable nodes, the decision is returned via the [ScheduleUnreachableNodesResult].
+// done to unblock the unreachable nodes, the decision is returned via the (*[spec.TaskEvent], [error]) pair
 //
-// **This function may make changes to the current state, thus any indexes will be invalidated**
+// If an error is returned it means that the task cannot be scheduled due to needing input from the user as to
+// what should be done next with the unreachable state.
+//
+// On no error there are two possible outcomes:
+//   - A task is scheduled which should be worked on next with a higher priority to resolve the unreachable nodes.
+//   - Nothing is returned (nil, nil), meaning that there is no task and also no error, the infrastructure is ok and reachable.
 //
 // If an [*spec.TaskEvent] is scheduled it does not point to or share any memory with the two passed in states.
-func HandleKubernetesUnreachableNodes(
-	logger zerolog.Logger,
-	r KubernetesUnreachableNodes,
-) ScheduleUnreachableNodesResult {
+func HandleKubernetesUnreachableNodes(logger zerolog.Logger, r KubernetesUnreachableNodes) (*spec.TaskEvent, error) {
 	// Check if the nodepools with unreachability are present in the desired
 	// state. We then need to check if they are present in the k8s cluster,
 	// and based on that make a decision about what to do with the nodes.
@@ -114,7 +64,7 @@ func HandleKubernetesUnreachableNodes(
 
 	for np, endpoints := range r.Unreachable.Kubernetes {
 		unreachableInfra.Kubernetes.Nodepools[np] = &spec.Unreachable_ListOfNodeEndpoints{
-			Endpoints: endpoints,
+			Endpoints: slices.Clone(endpoints),
 		}
 	}
 
@@ -124,19 +74,19 @@ func HandleKubernetesUnreachableNodes(
 		}
 		for np, endpoints := range nps {
 			unreachableInfra.Loadbalancers[lb].Nodepools[np] = &spec.Unreachable_ListOfNodeEndpoints{
-				Endpoints: endpoints,
+				Endpoints: slices.Clone(endpoints),
 			}
 		}
 	}
 
 	// Look at whole nodepools first.
 	for np, ips := range r.Unreachable.Kubernetes {
-		cnp := nodepools.FindByName(np, r.State.Current.K8S.ClusterInfo.NodePools)
+		cnp := nodepools.FindByName(np, r.Current.K8S.ClusterInfo.NodePools)
 		dnp := nodepools.FindByName(np, r.Desired.K8S.ClusterInfo.NodePools)
 
 		if dnp == nil {
 			if cnp.IsControl {
-				controlpools := slices.Collect(nodepools.Control(r.State.Current.K8S.ClusterInfo.NodePools))
+				controlpools := slices.Collect(nodepools.Control(r.Current.K8S.ClusterInfo.NodePools))
 				if len(controlpools) == 1 {
 					// Deleting last control plane nodepool will result in an invalid cluster.
 					errUnreachable = errors.Join(
@@ -185,9 +135,8 @@ func HandleKubernetesUnreachableNodes(
 				diff.Deleted[cnp.Name] = append(diff.Deleted[cnp.Name], n.Name)
 			}
 
-			next := ScheduleDeletionsInNodePools(r.State.Current, &diff, opts)
-			r.State.InFlight = next
-			return UnreachableNodesScheduledTask
+			next := ScheduleDeletionsInNodePools(r.Current, &diff, opts)
+			return next, nil
 		}
 
 		errMsg := strings.Builder{}
@@ -219,20 +168,16 @@ func HandleKubernetesUnreachableNodes(
 		// If this persists that means the control plane is down and there is nothing we can do from
 		// claudie's POV. Deletion of the nodepools would also not help, essentially we are locked
 		// until resolved manually.
-		r.State.InFlight = nil
-		r.State.State.Status = spec.Workflow_ERROR
-		r.State.State.Description = fmt.Sprintf(`
+		errUnreachable = fmt.Errorf(`
 Failed to retrieve actuall nodes present in the cluster via 'kubectl'.
 
 %v
 `, errUnreachable)
 
-		logger.Error().Msg(r.State.State.Description)
-
 		// Note: if the cluster has more than one control plane node
 		// we should be able to recover by using the other control plane
 		// nodes, however currently we do not have the structure for this.
-		return UnreachableNodesPropagateError
+		return nil, errUnreachable
 	}
 
 	// For any nodes/nodepools which have unreachable ips and the user did not remove
@@ -241,7 +186,7 @@ Failed to retrieve actuall nodes present in the cluster via 'kubectl'.
 	errUnreachable = nil
 	for ip, info := range unreachableNodes {
 		// node names inside k8s cluster have stripped cluster prefix.
-		k8sname := strings.TrimPrefix(info.name, fmt.Sprintf("%s-", r.State.Current.K8S.ClusterInfo.Id()))
+		k8sname := strings.TrimPrefix(info.name, fmt.Sprintf("%s-", r.Current.K8S.ClusterInfo.Id()))
 
 		if _, ok := r.Hc.Cluster.Nodes[k8sname]; ok {
 			// unreachable node is still in the cluster.
@@ -300,15 +245,12 @@ Failed to retrieve actuall nodes present in the cluster via 'kubectl'.
 			},
 		}
 
-		next := ScheduleDeletionsInNodePools(r.State.Current, &diff, opts)
-		r.State.InFlight = next
-		return UnreachableNodesScheduledTask
+		next := ScheduleDeletionsInNodePools(r.Current, &diff, opts)
+		return next, nil
 	}
 
 	if errUnreachable != nil {
-		r.State.InFlight = nil
-		r.State.State.Status = spec.Workflow_ERROR
-		r.State.State.Description = fmt.Sprintf(`
+		errUnreachable = fmt.Errorf(`
 Nodes within the kubernetes cluster have reachability problems.
 
 Fix the unreachable nodes by either:
@@ -323,28 +265,20 @@ Fix the unreachable nodes by either:
 
 %v
 `, errUnreachable)
-
-		logger.
-			Error().
-			Msg(r.State.State.Description)
-
-		return UnreachableNodesPropagateError
+		return nil, errUnreachable
 	}
-
-	return UnreachableNodesNoop
+	return nil, nil
 }
 
 type LoadBalancerUnreachableNodes struct {
 	Unreachable UnreachableNodes
-	State       *spec.ClusterState
+	Diff        *KubernetesDiffResult
+	Current     *spec.Clusters
 	Desired     *spec.Clusters
 }
 
 // Similar as [HandleKubernetesUnreachableNodes] but works with the loadbalancer nodes.
-func HandleLoadBalancerUnreachableNodes(
-	logger zerolog.Logger,
-	r LoadBalancerUnreachableNodes,
-) ScheduleUnreachableNodesResult {
+func HandleLoadBalancerUnreachableNodes(r LoadBalancerUnreachableNodes) (*spec.TaskEvent, error) {
 	// for each loadbalancer check if the nodepool with the unreachable nodes is present in the desired
 	// state. If not issue a delete, if yes wait for either the connectivity issue to be resolved or the
 	// removal of the nodepool from the desired state.
@@ -366,7 +300,7 @@ func HandleLoadBalancerUnreachableNodes(
 
 	for np, endpoints := range r.Unreachable.Kubernetes {
 		unreachableInfra.Kubernetes.Nodepools[np] = &spec.Unreachable_ListOfNodeEndpoints{
-			Endpoints: endpoints,
+			Endpoints: slices.Clone(endpoints),
 		}
 	}
 
@@ -376,16 +310,16 @@ func HandleLoadBalancerUnreachableNodes(
 		}
 		for np, endpoints := range nps {
 			unreachableInfra.Loadbalancers[lb].Nodepools[np] = &spec.Unreachable_ListOfNodeEndpoints{
-				Endpoints: endpoints,
+				Endpoints: slices.Clone(endpoints),
 			}
 		}
 	}
 
 	for lb, unreachable := range r.Unreachable.LoadBalancers {
-		cid := clusters.IndexLoadbalancerById(lb, r.State.Current.LoadBalancers.Clusters)
+		cid := clusters.IndexLoadbalancerById(lb, r.Current.LoadBalancers.Clusters)
 		did := clusters.IndexLoadbalancerById(lb, r.Desired.LoadBalancers.Clusters)
 
-		clb := r.State.Current.LoadBalancers.Clusters[cid]
+		clb := r.Current.LoadBalancers.Clusters[cid]
 		if did < 0 {
 			// cluster with the unrechable ips has been deleted from the desired state.
 			if clb.IsApiEndpoint() {
@@ -411,9 +345,8 @@ func HandleLoadBalancerUnreachableNodes(
 			}
 
 			// If any other parts of the infra is unresponsive this task will not be blocked by it.
-			next := ScheduleRawDeleteLoadBalancer(r.State.Current, id, &unreachableInfra)
-			r.State.InFlight = next
-			return UnreachableNodesScheduledTask
+			next := ScheduleRawDeleteLoadBalancer(r.Current, id, &unreachableInfra)
+			return next, nil
 		}
 
 		dlb := r.Desired.LoadBalancers.Clusters[did]
@@ -423,39 +356,29 @@ func HandleLoadBalancerUnreachableNodes(
 
 			// nodepool with bad ips was deleted from the desired state.
 			if dnp == nil {
-				switch cnp.Type.(type) {
-				case *spec.NodePool_DynamicNodePool:
-					var nodes []string
-					for _, n := range cnp.Nodes {
-						nodes = append(nodes, n.Name)
-					}
-
-					next := ScheduleRawDeletionLoadBalancerNodePool(
-						r.State.Current,
-						LoadBalancerIdentifier{
-							Id:    lb,
-							Index: cid,
-						},
-						np,
-						nodes,
-						&unreachableInfra,
-					)
-					r.State.InFlight = next
-					return UnreachableNodesScheduledTask
-				case *spec.NodePool_StaticNodePool:
-					// For LoadBalancers unreachable Static nodepools don't have to be deleted,
-					// via the pipeline, simply 'forget' them from the current state.
-					//
-					// The vpn will be refreshed by the healthcheck or by
-					// the next workflow run, along with the proxy settings
-					// if any.
-					r.State.Current.K8S.ClusterInfo.NodePools = nodepools.DeleteByName(r.State.Current.K8S.ClusterInfo.NodePools, np)
-					r.State.InFlight = nil
-					return UnreachableNodesModifiedCurrentState
-				default:
-					logger.Error().Msgf("%q unrecognized nodepool type %T, ignoring healthcheck handling until resolved", np, cnp.Type)
-					continue
+				opts := LoadBalancerNodePoolsOptions{
+					UseProxy:    r.Diff.Proxy.CurrentUsed,
+					IsStatic:    cnp.GetStaticNodePool() != nil,
+					Unreachable: &unreachableInfra,
 				}
+
+				diff := NodePoolsDiffResult{
+					Deleted: make(NodePoolsViewType, len(cnp.Nodes)),
+				}
+				for _, n := range cnp.Nodes {
+					diff.Deleted[cnp.Name] = append(diff.Deleted[cnp.Name], n.Name)
+				}
+
+				next := ScheduleDeletionLoadBalancerNodePools(
+					r.Current,
+					LoadBalancerIdentifier{
+						Id:    lb,
+						Index: cid,
+					},
+					&diff,
+					opts,
+				)
+				return next, nil
 			}
 
 			errMsg := strings.Builder{}
@@ -477,9 +400,7 @@ func HandleLoadBalancerUnreachableNodes(
 	}
 
 	if errUnreachable != nil {
-		r.State.InFlight = nil
-		r.State.State.Status = spec.Workflow_ERROR
-		r.State.State.Description = fmt.Sprintf(`
+		errUnreachable = fmt.Errorf(`
 Nodes within loadbalancers attached to the kubernetes cluster
 have reachability problems.
 
@@ -491,15 +412,9 @@ Fix the unreachable nodes by either:
 
 %v
 `, errUnreachable)
-
-		logger.
-			Error().
-			Msg(r.State.State.Description)
-
-		return UnreachableNodesPropagateError
+		return nil, errUnreachable
 	}
-
-	return UnreachableNodesNoop
+	return nil, nil
 }
 
 // Deletes the loadbalancer with the id specified in the passed in lb from the [spec.Clusters] state. The deletion
@@ -586,95 +501,6 @@ func ScheduleRawDeleteLoadBalancer(
 			},
 		},
 		Description: fmt.Sprintf("Removing load balancer %q", cid.Id),
-		Pipeline:    pipeline,
-	}
-}
-
-// Schedules a task that will delete a nodepool from the current state of the loadbalancer.
-// Contrary to how the [ScheduleDeletionLoadBalancerNodePools] task works, this will only
-// run the terraformer stage for the destruction of the unreachable infrastructure without
-// running any other stages. This task is useful when needing to remove unreachable state
-// from the cluster. The ansibler stage will not be executed at all, thus the caller should
-// find alternative ways of reconciling the ansibler stage.
-//
-// **Only works for dynamic Nodepools**
-//
-// The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
-func ScheduleRawDeletionLoadBalancerNodePool(
-	current *spec.Clusters,
-	cid LoadBalancerIdentifier,
-	nodepool string,
-	nodes []string, // all of the nodes of the deleted nodepool.
-	unreachable *spec.Unreachable,
-) *spec.TaskEvent {
-	pipeline := []*spec.Stage{
-		{
-			StageKind: &spec.Stage_Terraformer{
-				Terraformer: &spec.StageTerraformer{
-					Description: &spec.StageDescription{
-						About:      "Reconciling infrastructure for the load balancer",
-						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-					},
-					SubPasses: []*spec.StageTerraformer_SubPass{
-						{
-							Kind: spec.StageTerraformer_UPDATE_INFRASTRUCTURE,
-							Description: &spec.StageDescription{
-								About:      "Remvoing firewalls and nodes",
-								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-							},
-						},
-					},
-				},
-			},
-		},
-
-		// try to update the scrape config, on any error, simply ignore them.
-		{
-			StageKind: &spec.Stage_Kuber{
-				Kuber: &spec.StageKuber{
-					Description: &spec.StageDescription{
-						About:      "Configuring kubernetes cluster",
-						ErrorLevel: spec.ErrorLevel_ERROR_WARN,
-					},
-					SubPasses: []*spec.StageKuber_SubPass{
-						{
-							Kind: spec.StageKuber_STORE_LB_SCRAPE_CONFIG,
-							Description: &spec.StageDescription{
-								About:      "Reconciling scrape config",
-								ErrorLevel: spec.ErrorLevel_ERROR_WARN,
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	inFlight := proto.Clone(current).(*spec.Clusters)
-	return &spec.TaskEvent{
-		Id:        uuid.New().String(),
-		Timestamp: timestamppb.New(time.Now().UTC()),
-		Event:     spec.Event_UPDATE,
-		Task: &spec.Task{
-			Do: &spec.Task_Update{
-				Update: &spec.Update{
-					State: &spec.Update_State{
-						K8S:           inFlight.K8S,
-						LoadBalancers: inFlight.LoadBalancers.Clusters,
-					},
-					Delta: &spec.Update_TfDeleteLoadBalancerNodes{
-						TfDeleteLoadBalancerNodes: &spec.Update_TerraformerDeleteLoadBalancerNodes{
-							Handle:       cid.Id,
-							WithNodePool: true,
-							Nodepool:     nodepool,
-							Nodes:        nodes,
-							Unreachable:  unreachable,
-						},
-					},
-				},
-			},
-		},
-		Description: fmt.Sprintf("Deleting nodepool %q from load balancer %q", nodepool, cid.Id),
 		Pipeline:    pipeline,
 	}
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/metrics"
 	"github.com/berops/claudie/services/manager/internal/service"
+	metrics2 "github.com/berops/claudie/services/manager/internal/service/metrics"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
 
@@ -34,7 +35,7 @@ func run() error {
 	metricsServer := &http.Server{Addr: fmt.Sprintf(":%v", PrometheusPort)}
 
 	metrics.MustRegisterCounters()
-	service.MustRegisterCounters()
+	metrics2.MustRegisterCounters()
 
 	errGroup, errGroupContext := errgroup.WithContext(context.Background())
 

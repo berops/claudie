@@ -1,5 +1,14 @@
 package service
 
+import (
+	"testing"
+
+	"github.com/berops/claudie/internal/nodepools"
+	"github.com/berops/claudie/internal/spectesting"
+	"github.com/berops/claudie/proto/pb/spec"
+	"github.com/stretchr/testify/assert"
+)
+
 // import (
 // 	"fmt"
 // 	"math"
@@ -1316,3 +1325,41 @@ package service
 // 		}
 // 	}
 // }
+
+func Test_fixupAutoscalerCounts(t *testing.T) {
+	k8s := spectesting.GenerateFakeK8SCluster(true)
+
+	clusters := &spec.Clusters{
+		K8S:           k8s,
+		LoadBalancers: &spec.LoadBalancers{},
+	}
+
+	var wantMarkedForDeletion int32
+	var markedForDeletion int32
+
+	for _, n := range nodepools.Autoscaled(k8s.ClusterInfo.NodePools) {
+		dyn := n.GetDynamicNodePool()
+		if dyn.AutoscalerConfig.TargetSize < dyn.Count {
+			wantMarkedForDeletion += dyn.Count - dyn.AutoscalerConfig.TargetSize
+		}
+		for _, n := range n.Nodes {
+			if n.Status == spec.NodeStatus_MarkedForDeletion {
+				markedForDeletion += 1
+			}
+		}
+	}
+
+	assert.Equal(t, markedForDeletion, int32(0))
+
+	fixupAutoscalerCounts(clusters)
+
+	for _, n := range nodepools.Autoscaled(k8s.ClusterInfo.NodePools) {
+		for _, n := range n.Nodes {
+			if n.Status == spec.NodeStatus_MarkedForDeletion {
+				markedForDeletion += 1
+			}
+		}
+	}
+
+	assert.Equal(t, markedForDeletion, wantMarkedForDeletion)
+}

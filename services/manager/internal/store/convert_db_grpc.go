@@ -203,6 +203,11 @@ func ConvertFromGRPCTaskEvent(te *spec.TaskEvent) (*TaskEvent, error) {
 		return nil, nil
 	}
 
+	lowerPriority, err := ConvertFromGRPCTaskEvent(te.LowerPriority)
+	if err != nil {
+		return nil, nil
+	}
+
 	task, err := ConvertFromGRPCTask(te.Task)
 	if err != nil {
 		return nil, err
@@ -221,6 +226,8 @@ func ConvertFromGRPCTaskEvent(te *spec.TaskEvent) (*TaskEvent, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		e.LowerPriority = lowerPriority
 	}
 
 	return &e, nil
@@ -229,6 +236,11 @@ func ConvertFromGRPCTaskEvent(te *spec.TaskEvent) (*TaskEvent, error) {
 func ConvertToGRPCTaskEvent(te *TaskEvent) (*spec.TaskEvent, error) {
 	if te == nil {
 		return nil, nil
+	}
+
+	lowerPriority, err := ConvertToGRPCTaskEvent(te.LowerPriority)
+	if err != nil {
+		return nil, err
 	}
 
 	task, err := ConvertToGRPCTask(te.Task)
@@ -242,13 +254,14 @@ func ConvertToGRPCTaskEvent(te *TaskEvent) (*spec.TaskEvent, error) {
 	}
 
 	e := &spec.TaskEvent{
-		Id:           te.Id,
-		Timestamp:    timestamppb.New(t),
-		Event:        spec.Event(spec.Event_value[te.Type]),
-		Task:         task,
-		Description:  te.Description,
-		Pipeline:     nil,
-		CurrentStage: te.CurrentStage,
+		Id:            te.Id,
+		Timestamp:     timestamppb.New(t),
+		Event:         spec.Event(spec.Event_value[te.Type]),
+		Task:          task,
+		Description:   te.Description,
+		Pipeline:      nil,
+		CurrentStage:  te.CurrentStage,
+		LowerPriority: lowerPriority,
 	}
 
 	e.Pipeline, err = ConvertToGRPCStages(te.Pipeline)

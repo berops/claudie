@@ -190,11 +190,6 @@ func KubernetesLowPriority(r KubernetesReconciliate) *spec.TaskEvent {
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
 func ScheduleUpgradeKubernetesVersion(current, desired *spec.Clusters) *spec.TaskEvent {
-	// TODO: this cannot be rollbacked once the rollback mechanism is implemented.
-	// same way deletion shouldn't be rolled back on error. Same way The Change
-	// of the Api Endpoint shouldn't be rolled back, those should be tried
-	// infinitely or just ignore errors as some point ?
-
 	inFlight := proto.Clone(current).(*spec.Clusters)
 	toReplace := desired.K8S.Kubernetes
 
@@ -783,7 +778,7 @@ func ScheduleAdditionsInNodePools(
 					K8S:           inFlight.K8S,
 					LoadBalancers: inFlight.LoadBalancers.Clusters,
 				},
-				Delta: nil,
+				Delta: &spec.Update_None_{},
 			},
 		}
 
@@ -963,6 +958,9 @@ func ScheduleDeletionsInNodePools(
 ) *spec.TaskEvent {
 	inFlight := proto.Clone(current).(*spec.Clusters)
 
+	// The kuber stage is removes the node from the scheduled 'InFlight'
+	// state and also from the kuberentes cluster, regardless if its a
+	// dynamic or a static node.
 	kuber := spec.Stage_Kuber{
 		Kuber: &spec.StageKuber{
 			Description: &spec.StageDescription{

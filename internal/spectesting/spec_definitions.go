@@ -475,11 +475,13 @@ func GenerateFakeK8SClusterInfo(
 			if rng.Uint64()%6 == 0 {
 				minRange := 1 + (rng.Uint64() % nodeCount)
 				maxRange := max(minRange, (rng.Uint64() % nodeCount))
+				targetSize := rng.Uint64() % maxRange
 				count = int(maxRange)
 				nodes = nodes[:count]
 				autoscaler = &spec.AutoscalerConf{
-					Min: int32(minRange),
-					Max: int32(maxRange),
+					Min:        int32(minRange),
+					Max:        int32(maxRange),
+					TargetSize: int32(targetSize),
 				}
 			}
 
