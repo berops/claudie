@@ -85,15 +85,15 @@ We're experiencing networking issues caused by the blacklisting of public IPs ow
 
 First of all you have to get into the directory in the `terraformer` pod, where all terraform files are located. In order to do that, follow these steps:
 
-* `kubectl exec -it -n claudie <terraformer-pod> -- bash`
-* `cd ./services/terraformer/server/clusters/<your-cluster>`
+* `kubectl exec -it -n claudie <terraformer-pod-name> -- bash`
+* `cd ./services/terraformer/server/clusters/<cluster-name>`
 
 ### Locked state
 
 Once you are in the directory with all TF files, run the following command:
 
 ```
-tofu force-unlock <lock-id>
+tofu force-unlock <state-lock-id>
 ```
 
 The `lock-id` is generally shown in the error message.

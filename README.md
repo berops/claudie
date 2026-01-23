@@ -116,9 +116,9 @@ For adding support for other cloud providers, open an issue or propose a PR.
 
     ```bash
     kubectl create secret generic example-aws-secret-1 \
-      --namespace=mynamespace \
-      --from-literal=accesskey='myAwsAccessKey' \
-      --from-literal=secretkey='myAwsSecretKey'
+      --namespace=<your-namespace> \
+      --from-literal=accesskey='<your-access-key>' \
+      --from-literal=secretkey='<your-secret-key>'
     ```
 
     Check the [supported providers](#supported-providers) for input manifest examples. For an input manifest spanning all supported hyperscalers checkout out [this example](https://docs.claudie.io/latest/input-manifest/example/).
@@ -137,8 +137,8 @@ For adding support for other cloud providers, open an issue or propose a PR.
           - name: aws-1
           providerType: aws
           secretRef:
-              name: example-aws-secret-1 # reference the secret name
-              namespace: mynamespace     # reference the secret namespace
+              name: example-aws-secret-1    # reference the secret name
+              namespace: <your-namespace>   # reference the secret namespace
       nodePools:
           dynamic:
           - name: control-aws
@@ -201,8 +201,8 @@ Claudie outputs base64 encoded kubeconfig secret `<cluster-name>-<cluster-hash>-
           - name: aws-1
           providerType: aws
           secretRef:
-              name: example-aws-secret-1 # reference the secret name
-              namespace: mynamespace     # reference the secret namespace
+              name: example-aws-secret-1    # reference the secret name
+              namespace: <your-namespace>   # reference the secret namespace
       nodePools:
           dynamic:
           - name: control-aws

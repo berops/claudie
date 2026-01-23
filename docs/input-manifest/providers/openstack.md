@@ -8,11 +8,11 @@ kind: Secret
 metadata:
   name: openstack-secret
 data:
-  authurl: U0xEVVRLU0hGRE1TSktESUFMQVNTRA==
-  domainid: ZGVmYXVsdAo=
-  projectid: OGM1MDZmZjBhNmQzNGVkNzkyNTBkZWQ4OGRhNzBmNmEK
-  applicationcredentialid: YmFhMDkxYTYyNWJkNGKyNjlmNzA5Mzc5ODg4YTQ5YzMQ
-  applicationcredentialsecret: YndNRUVLMmNPdE5oSDlJbXIzRmRlVEVPTG9odU1HcUQzVUxSTzgzWjZaTXh0U3hSSXNVLWNkTHlN==
+  authurl: <base64-encoded-auth-url>
+  domainid: <base64-encoded-domain-id>
+  projectid: <base64-encoded-project-id>
+  applicationcredentialid: <base64-encoded-credential-id>
+  applicationcredentialsecret: <base64-encoded-credential-secret>
 type: Opaque
 ```
 
@@ -39,15 +39,15 @@ openstack application credential create --role administrator claudie
 +--------------+----------------------------------------------------------------------------------------+
 | Field        | Value                                                                                  |
 +--------------+----------------------------------------------------------------------------------------+
-| ID           | 296f552c62f2443985b57b0280a5ca74                                                       |
+| ID           | <your-credential-id>                                                                   |
 | Name         | claudie                                                                                |
 | Description  | None                                                                                   |
-| Project ID   | 8c506ff0a6d34ed79250ded88da70f6a                                                       |
+| Project ID   | <your-project-id>                                                                      |
 | Roles        | administrator                                                                          |
 | Unrestricted | False                                                                                  |
 | Access Rules | []                                                                                     |
 | Expires At   | None                                                                                   |
-| Secret       | _0ZTJxyQFEOg9_sAMmeEvxDAEkI_vxoF1VYu-wGiXRCE_XgxIXxE9XxYfDtTNTqh4TXCfsP5qANljTfBZ0bsHQ |
+| Secret       | <your-credential-secret>                                                               |
 +--------------+----------------------------------------------------------------------------------------+
 ```
 
@@ -60,12 +60,12 @@ The secret for an Openstack provider must include the following mandatory fields
 
 ```bash
 kubectl create secret generic openstack-secret-1 \
---namespace=mynamespace \
---from-literal=authurl='https://auth.cloud.ovh.net' \
---from-literal=domainid='default' \
---from-literal=projectid='8c506ff0a6d34ed79250ded88da70f6a' \
---from-literal=applicationcredentialid='5533f69597734911921a7ee3f30c6464' \
---from-literal=applicationcredentialsecret='IdtoVmeRC_O-SClReHX9mzo4PRYvyVwQqWNBmWg2XIDGEA_CvhlVaObMEo2-BoH7GgpZZGhY_aqFgHh63NrMKw'
+--namespace=<your-namespace> \
+--from-literal=authurl='<your-auth-url>' \
+--from-literal=domainid='<your-domain-id>' \
+--from-literal=projectid='<your-project-id>' \
+--from-literal=applicationcredentialid='<your-credential-id>' \
+--from-literal=applicationcredentialsecret='<your-credential-secret>'
 ```
 
 ```yaml
@@ -81,7 +81,7 @@ spec:
       providerType: openstack
       secretRef:
         name: openstack-secret-1
-        namespace: mynamespace
+        namespace: <your-namespace>
 
   nodePools:
     dynamic:

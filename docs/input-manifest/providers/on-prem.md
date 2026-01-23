@@ -20,7 +20,7 @@ kind: Secret
 metadata:
   name: static-node-key
 data:
-  privatekey: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcFFJQkFBS0NBUUVBbzJEOGNYb0Uxb3VDblBYcXFpVW5qbHh0c1A4YXlKQW4zeFhYdmxLOTMwcDZBUzZMCncvVW03THFnbUhpOW9GL3pWVnB0TDhZNmE2NWUvWjk0dE9SQ0lHY0VJendpQXF3M3M4NGVNcnoyQXlrSWhsWE0KVEpSS3J3SHJrbDRtVlBvdE9paDFtZkVTenFMZ25TMWdmQWZxSUVNVFdOZlRkQmhtUXpBNVJFT2NpQ1Q1dFRnMApraDI1SmVHeU9qR3pzaFhkKzdaVi9PUXVQUk5Mb2lrQzFDVFdtM0FSVFFDeUpZaXR5bURVeEgwa09wa2VyODVoCmpFRTRkUnUxVzQ2WDZkdEUrSlBZNkNKRlR2c1VUcGlqT3QzQmNTSTYyY2ZyYmFRYXhvQXk2bEJLVlB1cm1xYm0Kb09JNHVRUWJWRGt5Q3V4MzcwSTFjTUVzWkszYVNBa0ZZSUlMRndJREFRQUJBb0lCQUVLUzFhc2p6bTdpSUZIMwpQeTBmd0xPWTVEVzRiZUNHSlVrWkxIVm9YK2hwLzdjVmtXeERMQjVRbWZvblVSWFZvMkVIWFBDWHROeUdERDBLCnkzUGlnek9TNXJPNDRCNzRzQ1g3ZW9Dd1VRck9vS09rdUlBSCtUckE3STRUQVVtbE8rS3o4OS9MeFI4Z2JhaCsKZ2c5b1pqWEpQMHYzZmptVGE3QTdLVXF3eGtzUEpORFhyN0J2MkhGc3ZueHROTkhWV3JBcjA3NUpSU2U3akJIRgpyQnpIRGFOUUhjYWwybTJWbDAvbGM4SVgyOEIwSXBYOEM5ajNqVGUwRS9XOVYyaURvM0ZvbmZzVU1BSm9KeW1nCkRzRXFxb25Cc0ZFeE9iY1BUNlh4SHRLVHVXMkRDRHF3c20xTVM2L0xUZzRtMFZ0alBRbGE5cnd0Z1lQcEtVSWYKbkRya3ZBRUNnWUVBOC9EUTRtNWF4UE0xL2d4UmVFNVZJSEMzRjVNK0s0S0dsdUNTVUNHcmtlNnpyVmhOZXllMwplbWpUV21lUmQ4L0szYzVxeGhJeGkvWE8vc0ZvREthSjdHaVl4L2RiOEl6dlJZYkw2ZHJiOVh0aHVObmhJWTlkCmJPd0VhbWxXZGxZbzlhUTBoYTFpSHpoUHVhMjN0TUNiM2xpZzE3MVZuUURhTXlhS3plaVMxUmNDZ1lFQXEzU2YKVEozcDRucmh4VjJiMEJKUStEdjkrRHNiZFBCY0pPbHpYVVVodHB6d3JyT3VKdzRUUXFXeG1pZTlhK1lpSzd0cAplY2YyOEltdHY0dy9aazg1TUdmQm9hTkpwdUNmNWxoMElseDB3ZXROQXlmb3dTNHZ3dUlZNG1zVFlvcE1WV20yClV5QzlqQ1M4Q0Y2Y1FrUVdjaVVlc2dVWHFocE50bXNLTG9LWU9nRUNnWUVBNWVwZVpsd09qenlQOGY4WU5tVFcKRlBwSGh4L1BZK0RsQzRWa1FjUktXZ1A2TTNKYnJLelZZTGsySXlva1VDRjRHakI0TUhGclkzZnRmZTA2TFZvMQorcXptK3Vub0xNUVlySllNMFQvbk91cnNRdmFRR3pwdG1zQ2t0TXJOcEVFMjM3YkJqaERKdjVVcWgxMzFISmJCCkVnTEVyaklVWkNNdWhURlplQk14ZVVjQ2dZRUFqZkZPc0M5TG9hUDVwVnVKMHdoVzRDdEtabWNJcEJjWk1iWFQKUERRdlpPOG9rbmxPaENheTYwb2hibTNYODZ2aVBqSTVjQWlMOXpjRUVNQWEvS2c1d0VrbGxKdUtMZzFvVTFxSApTcXNnUGlwKzUwM3k4M3M1THkzZlRCTTVTU3NWWnVETmdLUnFSOHRobjh3enNPaU5iSkl1aDFLUDlOTXg0d05hCnVvYURZQUVDZ1lFQW5xNzJJUEU1MlFwekpjSDU5RmRpbS8zOU1KYU1HZlhZZkJBNXJoenZnMmc5TW9URXpWKysKSVZ2SDFTSjdNTTB1SVBCa1FpbC91V083bU9DR2hHVHV3TGt3Uy9JU1FjTmRhSHlTRDNiZzdndzc5aG1UTVhiMgozVFpCTjdtb3FWM0VhRUhWVU1nT1N3dHUySTlQN1RJNGJJV0RQUWxuWE53Q0tCWWNKanRraWNRPQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo=
+  privatekey: <base64-encoded-private-key>
 type: Opaque
 ```
 
@@ -29,7 +29,7 @@ type: Opaque
 ### Private cluster example
 
 ```bash
-kubectl create secret generic static-node-key --namespace=mynamespace --from-file=privatekey=private.pem
+kubectl create secret generic static-node-key --namespace=<your-namespace> --from-file=privatekey=private.pem
 ```
 
 ```yaml
@@ -47,18 +47,18 @@ spec:
             - endpoint: "192.168.10.1"
               secretRef:
                 name: static-node-key
-                namespace: mynamespace
+                namespace: <your-namespace>
 
         - name: compute
           nodes:
             - endpoint: "192.168.10.2"
               secretRef:
                 name: static-node-key
-                namespace: mynamespace
+                namespace: <your-namespace>
             - endpoint: "192.168.10.3"
               secretRef:
                 name: static-node-key
-                namespace: mynamespace
+                namespace: <your-namespace>
 
   kubernetes:
     clusters:
@@ -77,7 +77,7 @@ spec:
 ### Create secret for private key
 
 ```bash
-kubectl create secret generic static-node-key --namespace=mynamespace --from-file=privatekey=private.pem
+kubectl create secret generic static-node-key --namespace=<your-namespace> --from-file=privatekey=private.pem
 ```
 
 > To see how to configure Hetzner or any other credentials for hybrid cloud, refer to their docs.
@@ -95,7 +95,7 @@ spec:
       providerType: hetzner
       secretRef:
         name: hetzner-secret-1
-        namespace: mynamespace
+        namespace: <your-namespace>
 
   nodePools:
     dynamic:
@@ -114,15 +114,15 @@ spec:
             - endpoint: "192.168.10.1"
               secretRef:
                 name: static-node-key
-                namespace: mynamespace
+                namespace: <your-namespace>
             - endpoint: "192.168.10.2"
               secretRef:
                 name: static-node-key
-                namespace: mynamespace
+                namespace: <your-namespace>
             - endpoint: "192.168.10.3"
               secretRef:
                 name: static-node-key
-                namespace: mynamespace
+                namespace: <your-namespace>
 
   kubernetes:
     clusters:
