@@ -34,7 +34,7 @@ var (
 	HealthCheckLivenessName  = envs.GetOrDefault("KUBE_ELEVEN_HEALTHCHECK_LIVENESS_SERVICE_NAME", "kube-eleven-liveness")
 
 	// Ack wait time in minutes for processing incoming NATS messages.
-	AckWait = time.Duration(envs.GetOrDefaultInt("KUBE_ELEVEN_ACK_WAIT_TIME", 10)) * time.Minute
+	AckWait = time.Duration(envs.GetOrDefaultInt("KUBE_ELEVEN_ACK_WAIT_TIME", 8)) * time.Minute
 )
 
 type grpcServer struct {

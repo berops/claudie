@@ -32,7 +32,7 @@ var (
 	HealthCheckLivenessName  = envs.GetOrDefault("MANAGER_HEALTHCHECK_LIVENESS_SERVICE_NAME", "manager-liveness")
 
 	// Ack wait time in minutes for processing incoming NATS messages.
-	AckWait = time.Duration(envs.GetOrDefaultInt("MANAGER_ACK_WAIT_TIME", 10)) * time.Minute
+	AckWait = time.Duration(envs.GetOrDefaultInt("MANAGER_ACK_WAIT_TIME", 8)) * time.Minute
 )
 
 var _ pb.ManagerServiceServer = (*Service)(nil)
