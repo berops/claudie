@@ -151,7 +151,7 @@ spec:
           name: oci-1
           # Region of the nodepool.
           region: eu-milan-1
-          # Availability domain of the nodepool.
+          # Zone is optional. If omitted, nodes are distributed across all availability domains.
           zone: hsVQ:EU-MILAN-1-AD-1
         count: 1
         # VM shape name.
@@ -167,7 +167,7 @@ spec:
           name: oci-1
           # Region of the nodepool.
           region: eu-frankfurt-1
-          # Availability domain of the nodepool.
+          # Zone is optional. If omitted, nodes are distributed across all availability domains.
           zone: hsVQ:EU-FRANKFURT-1-AD-1
         count: 2
         # VM shape name.
@@ -184,7 +184,7 @@ spec:
           name: oci-1
           # Region of the nodepool.
           region: eu-frankfurt-1
-          # Availability domain of the nodepool.
+          # Zone is optional. If omitted, nodes are distributed across all availability domains.
           zone: hsVQ:EU-FRANKFURT-1-AD-2
         count: 2
         # VM shape name.
