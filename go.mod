@@ -172,7 +172,7 @@ require (
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff // indirect
 	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738 // indirect
-	sigs.k8s.io/controller-tools v0.0.0-00010101000000-000000000000 // indirect
+	sigs.k8s.io/controller-tools v0.18.0 // indirect
 	sigs.k8s.io/json v0.0.0-20241010143419-9aa6b5e7a4b3 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.6.0 // indirect
@@ -186,8 +186,6 @@ replace k8s.io/apimachinery => k8s.io/apimachinery v0.33.0
 replace k8s.io/client-go => k8s.io/client-go v0.33.0
 
 replace k8s.io/code-generator => k8s.io/code-generator v0.33.0
-
-replace sigs.k8s.io/controller-tools => sigs.k8s.io/controller-tools v0.18.0
 
 replace k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.33.0
 

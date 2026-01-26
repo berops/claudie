@@ -20,6 +20,7 @@ const (
 	ProxyNoChange ProxyChange = iota
 	ProxyOff
 	ProxyOn
+	ProxyRefresh
 )
 
 type Labels = map[string]string
@@ -440,6 +441,12 @@ func KubernetesDiff(old, desired *spec.K8Scluster) KubernetesDiffResult {
 
 	if !proxyDiff.CurrentUsed && proxyDiff.DesiredUsed {
 		proxyDiff.Change = ProxyOn
+	}
+
+	if proxyDiff.CurrentUsed && proxyDiff.DesiredUsed {
+		if old.InstallationProxy.NoProxy != desired.InstallationProxy.NoProxy {
+			proxyDiff.Change = ProxyRefresh
+		}
 	}
 
 	result.Proxy = proxyDiff

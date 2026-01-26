@@ -19,10 +19,21 @@ type Proxy struct {
 	NoProxyList  string
 }
 
-func HttpProxyUrlAndNoProxyList(k8s *spec.K8Scluster, lbs []*spec.LBcluster) Proxy {
-	httpProxyUrl, noProxyList := defaultHttpProxyUrl, createNoProxyList(k8s, lbs)
-	if k8s.InstallationProxy.Endpoint != "" {
-		httpProxyUrl = k8s.InstallationProxy.Endpoint
+// Returns the filled out [Proxy] structure based on the passed in
+// values. The provided [*spec.K8Scluster] and [][*spec.LBCluster]
+// are only traversed to collect the private IPs of the nodes of the
+// cluster to from the NoProxyList. The **actuall Proxy arguments are
+// read from the passed in [*spec.InstallationProxy] parameter**. This
+// could be the same one as the one within the passed in [*spec.K8Scluster]
+// or could be a completely different one.
+func HttpProxyUrlAndNoProxyList(
+	k8s *spec.K8Scluster,
+	lbs []*spec.LBcluster,
+	installationProxy *spec.InstallationProxy,
+) Proxy {
+	httpProxyUrl, noProxyList := defaultHttpProxyUrl, createNoProxyList(k8s, lbs, installationProxy)
+	if installationProxy.Endpoint != "" {
+		httpProxyUrl = installationProxy.Endpoint
 	}
 	return Proxy{
 		HttpProxyUrl: httpProxyUrl,
@@ -30,9 +41,13 @@ func HttpProxyUrlAndNoProxyList(k8s *spec.K8Scluster, lbs []*spec.LBcluster) Pro
 	}
 }
 
-func createNoProxyList(k8s *spec.K8Scluster, lbs []*spec.LBcluster) string {
+func createNoProxyList(
+	k8s *spec.K8Scluster,
+	lbs []*spec.LBcluster,
+	installationProxy *spec.InstallationProxy,
+) string {
 	noProxyList := noProxyDefault
-	if userNoProxy := k8s.InstallationProxy.NoProxy; userNoProxy != "" {
+	if userNoProxy := installationProxy.NoProxy; userNoProxy != "" {
 		noProxyList = fmt.Sprintf("%v,%v", noProxyList, userNoProxy)
 	}
 

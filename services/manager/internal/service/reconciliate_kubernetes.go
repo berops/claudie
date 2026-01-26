@@ -144,7 +144,7 @@ func KubernetesLowPriority(r KubernetesReconciliate) *spec.TaskEvent {
 	switch r.Diff.Proxy.Change {
 	case ProxyOff:
 		return ScheduleProxyOff(r.Current, r.Desired)
-	case ProxyOn:
+	case ProxyOn, ProxyRefresh:
 		return ScheduleProxyOn(r.Current, r.Desired)
 	}
 

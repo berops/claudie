@@ -206,7 +206,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	switch configState {
 	case spec.Manifest_Pending:
-		currentState.State = v1beta1manifest.STATUS_NEW
+		currentState.State = v1beta1manifest.STATUS_WATCH
 	case spec.Manifest_Scheduled:
 		currentState.State = v1beta1manifest.STATUS_IN_PROGRESS
 	case spec.Manifest_Done:
@@ -254,7 +254,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		if controllerutil.ContainsFinalizer(inputManifest, finalizerName) {
 			// Prevent calling deleteConfig repeatedly
 			if inputManifest.Status.State == v1beta1manifest.STATUS_SCHEDULED_FOR_DELETION || deleted {
-				return ctrl.Result{RequeueAfter: REQUEUE_NEW}, nil
+				return ctrl.Result{RequeueAfter: REQUEUE_WATCH}, nil
 			}
 
 			// schedule deletion of manifest
@@ -281,12 +281,12 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			return ctrl.Result{}, err
 		}
 
-		inputManifest.SetNewResourceStatus()
+		inputManifest.SetWatchResourceStatus()
 		if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed executing finalizer: %w", err)
 		}
 
-		return ctrl.Result{RequeueAfter: REQUEUE_NEW}, nil
+		return ctrl.Result{RequeueAfter: REQUEUE_WATCH}, nil
 	}
 
 	if configState == spec.Manifest_Scheduled {
@@ -303,7 +303,6 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{RequeueAfter: REQUEUE_IN_PROGRES}, nil
 	}
 
-	// TODO: maybe we'll need a last known state not sure how the reconciliation will work the the errors here.
 	if configState == spec.Manifest_Error {
 		inputManifest.SetUpdateResourceStatus(currentState)
 

@@ -21,7 +21,7 @@ const (
 	STATUS_DONE = "DONE"
 
 	// STATUS_NEW is a helper status that indicates that the reconciliation loop was initiated for the resource.
-	STATUS_NEW = "NEW"
+	STATUS_WATCH = "WATCHING_FOR_CHANGES"
 
 	// SCHEDULED_FOR_DELETION
 	STATUS_SCHEDULED_FOR_DELETION = "SCHEDULED_FOR_DELETION"
@@ -63,8 +63,8 @@ func (im *InputManifest) GetStatuses() InputManifestStatus {
 	return im.Status
 }
 
-func (im *InputManifest) SetNewResourceStatus() {
-	im.Status.State = STATUS_NEW
+func (im *InputManifest) SetWatchResourceStatus() {
+	im.Status.State = STATUS_WATCH
 }
 
 func (im *InputManifest) SetUpdateResourceStatus(newStatus InputManifestStatus) {

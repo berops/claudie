@@ -72,10 +72,17 @@ func UpdateProxyEnvs(
 		)
 	}
 
+	installationProxy := k8s.InstallationProxy
+	if willReplace := tracker.Task.GetUpdate().GetAnsReplaceProxy(); willReplace != nil {
+		// When proxy is going to be replaced, use the NoRroxy from the provided
+		// context, rather then using it from current state.
+		installationProxy = willReplace.Proxy
+	}
+
 	// Build the Proxy/NoProxy from the current state of the cluster
 	// including any unreachable infrastructure. The unreachable hint
 	// is only for skipping to update unreachable nodes, while processing.
-	proxy := utils.HttpProxyUrlAndNoProxyList(k8s, lbs)
+	proxy := utils.HttpProxyUrlAndNoProxyList(k8s, lbs, installationProxy)
 
 	if err := updateProxyEnvsOnNodePools(k8s.ClusterInfo.Id(), nps, proxy, processLimit); err != nil {
 		logger.Err(err).Msg("Failed to update proxy envs")
