@@ -168,7 +168,7 @@ jobs:
           if [[ "${NEW_SERVICES[*]}" =~ "autoscaler-adapter" ]]; then
             TAG=${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
             echo "Setting new tag for autoscaler adapter to $TAG"
-            sed -i "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" services/kuber/templates/cluster-autoscaler.goyaml
+            sed -i "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" services/manager/internal/service/managementcluster/internal/autoscaler/cluster-autoscaler.goyaml
 
             if [[ ! "${NEW_SERVICES[*]}" =~ "kuber" ]]; then
               NEW_SERVICES+=(kuber)
@@ -179,7 +179,7 @@ jobs:
             if [[ "${NEW_SERVICES[*]}" =~ "kuber" ]]; then
               TAG=${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
               echo "Setting new tag for autoscaler adapter to $TAG"
-              sed -i "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" services/kuber/templates/cluster-autoscaler.goyaml
+              sed -i "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" services/manager/internal/service/managementcluster/internal/autoscaler/cluster-autoscaler.goyaml
               NEW_SERVICES+=(autoscaler-adapter)
             fi
           fi

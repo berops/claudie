@@ -50,7 +50,7 @@ jobs:
       - name: Edit autoscaler-adapter image tag in the manifest
         run: |
           TAG=${RELEASE}
-          sed -i "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" services/kuber/templates/cluster-autoscaler.goyaml
+          sed -i "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" services/manager/internal/service/managementcluster/internal/autoscaler/cluster-autoscaler.goyaml
           # Remove autoscaler-adapter tag from claudie kustomization.yaml
           awk '/autoscaler-adapter/{getline; next} 1' manifests/claudie/kustomization.yaml > temp.yaml && mv temp.yaml manifests/claudie/kustomization.yaml
 
