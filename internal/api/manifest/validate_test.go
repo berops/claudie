@@ -212,6 +212,8 @@ var (
 	testNpDiskSizeSuccessfulFifty   = DynamicNodePool{Name: "control-1", Count: 10, ServerType: "small", Image: "ubuntu", ProviderSpec: ProviderSpec{Name: "foo", Region: "north", Zone: "1"}, StorageDiskSize: newIntP(50)}
 	testNpDiskSizeSuccessfulDefault = DynamicNodePool{Name: "control-1", Count: 10, ServerType: "small", Image: "ubuntu", ProviderSpec: ProviderSpec{Name: "foo", Region: "north", Zone: "1"}}
 	testNpDiskSizeSuccessfulFail    = DynamicNodePool{Name: "control-1", Count: 10, ServerType: "small", Image: "ubuntu", ProviderSpec: ProviderSpec{Name: "foo", Region: "north", Zone: "1"}, StorageDiskSize: newIntP(10)}
+	testNodepoolWithoutZone         = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", StorageDiskSize: newIntP(50), Count: 1, ProviderSpec: ProviderSpec{Name: "p1", Region: "a"}}
+	testNodepoolWithZone            = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", StorageDiskSize: newIntP(50), Count: 1, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
 )
 
 func newIntP(a int32) *int32 {
@@ -317,4 +319,13 @@ func TestStorageDiskSize(t *testing.T) {
 	r.NoError(testNpDiskSizeSuccessfulFifty.Validate(&Manifest{}))
 	r.NoError(testNpDiskSizeSuccessfulDefault.Validate(&Manifest{}))
 	r.Error(testNpDiskSizeSuccessfulFail.Validate(&Manifest{}))
+}
+
+// TestOptionalZone tests that the zone field is optional for uniform zone distribution.
+func TestOptionalZone(t *testing.T) {
+	r := require.New(t)
+	// Zone should be optional - nodepools without zone should pass validation
+	r.NoError(testNodepoolWithoutZone.Validate(&Manifest{}))
+	// Nodepools with zone should still pass validation
+	r.NoError(testNodepoolWithZone.Validate(&Manifest{}))
 }

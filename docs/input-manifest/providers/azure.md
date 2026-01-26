@@ -114,7 +114,7 @@ spec:
           name: azure-1
           # Location of the nodepool.
           region: North Europe
-          # Zone of the nodepool.
+          # Zone is optional. If omitted, nodes are distributed across zones.
           zone: "1"
         count: 2
         # VM size name.
@@ -128,7 +128,7 @@ spec:
           name: azure-1
           # Location of the nodepool.
           region: Germany West Central
-          # Zone of the nodepool.
+          # Zone is optional. If omitted, nodes are distributed across zones.
           zone: "1"
         count: 2
         # VM size name.
@@ -143,7 +143,7 @@ spec:
           name: azure-1
           # Location of the nodepool.
           region: North Europe
-          # Zone of the nodepool.
+          # Zone is optional. If omitted, nodes are distributed across zones.
           zone: "1"
         count: 2
         # VM size name.
