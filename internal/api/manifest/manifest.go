@@ -239,6 +239,7 @@ type Cluster struct {
 	// https://docs.kubermatic.com/kubeone/v1.12/architecture/compatibility/supported-versions/
 	Version string `validate:"required,ver" yaml:"version" json:"version"`
 	// Network range for the VPN of the cluster. The value should be defined in format A.B.C.D/mask.
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Network is immutable"
 	Network string `validate:"required,cidrv4" yaml:"network" json:"network"`
 	// List of nodepool names this cluster will use.
 	Pools Pool `yaml:"pools" json:"pools"`
