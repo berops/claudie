@@ -102,7 +102,7 @@ spec:
           name: gcp-1
           # Region of the nodepool.
           region: europe-west1
-          # Zone of the nodepool.
+          # Zone is optional. If omitted, nodes are distributed across all zones in the region.
           zone: europe-west1-c
         count: 1
         # Machine type name.
@@ -116,7 +116,7 @@ spec:
           name: gcp-1
           # Region of the nodepool.
           region: europe-west3
-          # Zone of the nodepool.
+          # Zone is optional. If omitted, nodes are distributed across all zones in the region.
           zone: europe-west3-a
         count: 2
         # Machine type name.
@@ -131,7 +131,7 @@ spec:
           name: gcp-1
           # Region of the nodepool.
           region: europe-west2
-          # Zone of the nodepool.
+          # Zone is optional. If omitted, nodes are distributed across all zones in the region.
           zone: europe-west2-a
         count: 2
         # Machine type name.

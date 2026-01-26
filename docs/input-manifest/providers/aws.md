@@ -117,7 +117,7 @@ spec:
           name: aws-1
           # Region of the nodepool.
           region: eu-central-1
-          # Availability zone of the nodepool.
+          # Zone is optional. If omitted, nodes are distributed across all availability zones.
           zone: eu-central-1a
         count: 1
         # Instance type name.
@@ -132,7 +132,7 @@ spec:
           name: aws-1
           # Region of the nodepool.
           region: eu-west-2
-          # Availability zone of the nodepool.
+          # Zone is optional. If omitted, nodes are distributed across all availability zones.
           zone: eu-west-2a
         count: 2
         # Instance type name.
@@ -148,7 +148,7 @@ spec:
           name: aws-1
           # Region of the nodepool.
           region: eu-west-2
-          # Availability zone of the nodepool.
+          # Zone is optional. If omitted, nodes are distributed across all availability zones.
           zone: eu-west-2a
         count: 2
         # Instance type name.

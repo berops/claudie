@@ -85,7 +85,7 @@ spec:
     #     providerSpec:     # Provider specification for this nodepool.
     #       name:           # Name of the provider instance, referencing one of the providers define above.
     #       region:         # Region of the nodepool.
-    #       zone:           # Zone of the nodepool.
+    #       zone:           # Zone of the nodepool (optional). If omitted, nodes are distributed across zones automatically.
     #     count:            # Static number of nodes in this nodepool.
     #     serverType:       # Machine type of the nodes in this nodepool.
     #     image:            # OS image of the nodes in the nodepool.
