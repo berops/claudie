@@ -147,7 +147,7 @@ mc alias set claudie-minio http://127.0.0.1:9000 <your-access-key> <your-secret-
 Download the state into the backup folder
 
 ```bash
-mc mirror claudie-minio/claudie-tf-state-files ./claudie-backup
+mc mirror claudie-minio/claudie-tf-state-files ./claudie-backup/<minio-backup-folder>
 ```
 
 You now have everything you need to restore your input manifests to a new management cluster.
