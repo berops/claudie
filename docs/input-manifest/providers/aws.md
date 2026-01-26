@@ -8,8 +8,8 @@ kind: Secret
 metadata:
   name: aws-secret
 data:
-  accesskey: U0xEVVRLU0hGRE1TSktESUFMQVNTRA==
-  secretkey: aXVoYk9JSk4rb2luL29saWtEU2Fkc25vaVNWU0RzYWNvaW5PVVNIRA==
+  accesskey: <base64-encoded-access-key>
+  secretkey: <base64-encoded-secret-key>
 type: Opaque
 ```
 
@@ -88,7 +88,7 @@ If you wish to use AWS as your DNS provider where Claudie creates DNS records po
 The secret for an AWS provider must include the following mandatory fields: `accesskey` and `secretkey`.
 
 ```bash
-kubectl create secret generic aws-secret-1 --namespace=mynamespace --from-literal=accesskey='SLDUTKSHFDMSJKDIALASSD' --from-literal=secretkey='iuhbOIJN+oin/olikDSadsnoiSVSDsacoinOUSHD'
+kubectl create secret generic aws-secret-1 --namespace=<your-namespace> --from-literal=accesskey='<your-access-key>' --from-literal=secretkey='<your-secret-key>'
 ```
 
 ### Single provider, multi region cluster example
@@ -107,7 +107,7 @@ spec:
       providerType: aws
       secretRef:
         name: aws-secret-1
-        namespace: mynamespace
+        namespace: <your-namespace>
 
   nodePools:
     dynamic:
@@ -175,8 +175,8 @@ spec:
 ### Multi provider, multi region clusters example
 
 ```bash
-kubectl create secret generic aws-secret-1 --namespace=mynamespace --from-literal=accesskey='SLDUTKSHFDMSJKDIALASSD' --from-literal=secretkey='iuhbOIJN+oin/olikDSadsnoiSVSDsacoinOUSHD'
-kubectl create secret generic aws-secret-2 --namespace=mynamespace --from-literal=accesskey='ODURNGUISNFAIPUNUGFINB' --from-literal=secretkey='asduvnva+skd/ounUIBPIUjnpiuBNuNipubnPuip'
+kubectl create secret generic aws-secret-1 --namespace=<your-namespace> --from-literal=accesskey='<your-access-key>' --from-literal=secretkey='<your-secret-key>'
+kubectl create secret generic aws-secret-2 --namespace=<your-namespace> --from-literal=accesskey='<your-access-key>' --from-literal=secretkey='<your-secret-key>'
 ```
 
 ```yaml
@@ -193,12 +193,12 @@ spec:
       providerType: aws
       secretRef:
         name: aws-secret-1
-        namespace: mynamespace
+        namespace: <your-namespace>
     - name: aws-2
       providerType: aws
       secretRef:
         name: aws-secret-2
-        namespace: mynamespace
+        namespace: <your-namespace>
 
   nodePools:
     dynamic:

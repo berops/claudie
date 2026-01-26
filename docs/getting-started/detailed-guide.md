@@ -1,6 +1,17 @@
 # Detailed guide
 This detailed guide for Claudie serves as a resource for providing an overview of Claudie's features, installation instructions, customization options, and its role in provisioning and managing clusters. We'll start by guiding you through the process of setting up a management cluster, where Claudie will be installed, enabling you to effortlessly monitor and control clusters across multiple hyperscalers.
 
+!!! info "Documentation Conventions"
+    Throughout this documentation, placeholders that require your own values are formatted as `<placeholder>`. Replace these with your actual values when using the commands or configurations.
+
+    | Placeholder | Description |
+    |-------------|-------------|
+    | `<your-namespace>` | The Kubernetes namespace where you deploy resources |
+    | `<your-access-key>` | Your cloud provider access key or API token |
+    | `<your-secret-key>` | Your cloud provider secret key |
+    | `<your-domain>` | Your registered domain name for DNS configuration |
+    | `<your-cluster-name>` | The name you assign to your Kubernetes cluster |
+
 !!! note "Tip!"
     Claudie offers extensive customization options for your Kubernetes cluster across multiple hyperscalers. This detailed guide assumes you have AWS and Hetzner accounts. You can customize your deployment across different [supported providers](#supported-providers). If you wish to use different providers, we recommend to follow this guide anyway and create your own input manifest file based on the provided example. Refer to the supported provider table for the input manifest configuration of each provider.
 
@@ -109,8 +120,8 @@ This detailed guide for Claudie serves as a resource for providing an overview o
 
     ```bash
     # AWS provider requires the secrets to have fields: accesskey and secretkey
-    kubectl create secret generic aws-secret-1 --namespace=mynamespace --from-literal=accesskey='SLDUTKSHFDMSJKDIALASSD' --from-literal=secretkey='iuhbOIJN+oin/olikDSadsnoiSVSDsacoinOUSHD'
-    kubectl create secret generic aws-secret-dns --namespace=mynamespace --from-literal=accesskey='ODURNGUISNFAIPUNUGFINB' --from-literal=secretkey='asduvnva+skd/ounUIBPIUjnpiuBNuNipubnPuip'    
+    kubectl create secret generic aws-secret-1 --namespace=<your-namespace> --from-literal=accesskey='<your-access-key>' --from-literal=secretkey='<your-secret-key>'
+    kubectl create secret generic aws-secret-dns --namespace=<your-namespace> --from-literal=accesskey='<your-access-key>' --from-literal=secretkey='<your-secret-key>'
     ```
 
     ```yaml
@@ -128,12 +139,12 @@ This detailed guide for Claudie serves as a resource for providing an overview o
           providerType: aws
           secretRef:
             name: aws-secret-1
-            namespace: mynamespace
+            namespace: <your-namespace>
         - name: aws-dns
           providerType: aws
           secretRef:
             name: aws-secret-dns
-            namespace: mynamespace    
+            namespace: <your-namespace>    
       nodePools:
         dynamic:
           - name: aws-control
@@ -184,7 +195,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
             roles:
                 - apiserver
             dns:
-                dnsZone: domain.com # hosted zone domain name where claudie creates dns records for this cluster
+                dnsZone: <your-domain> # hosted zone domain name where claudie creates dns records for this cluster
                 provider: aws-dns
                 hostname: supercluster # the sub domain of the new cluster
             targetedK8s: my-super-cluster
@@ -309,7 +320,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
 
     ```bash
     # Hetzner provider requires the secrets to have field: credentials
-    kubectl create secret generic hetzner-secret-1 --namespace=mynamespace --from-literal=credentials='kslISA878a6etYAfXYcg5iYyrFGNlCxcICo060HVEygjFs21nske76ksjKko21lp'
+    kubectl create secret generic hetzner-secret-1 --namespace=<your-namespace> --from-literal=credentials='<your-access-key>'
     ```
 
     !!! note "Claudie autoscaling"
@@ -330,7 +341,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
           providerType: hetzner
           secretRef:
             name: hetzner-secret-1
-            namespace: mynamespace        
+            namespace: <your-namespace>        
       nodePools:
         dynamic:
         ...
@@ -400,7 +411,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
                 - apiserver
                 - https # define it here
             dns:
-                dnsZone: domain.com
+                dnsZone: <your-domain>
                 provider: aws-dns
                 hostname: supercluster
             targetedK8s: my-super-cluster

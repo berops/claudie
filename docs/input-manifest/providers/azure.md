@@ -8,13 +8,11 @@ kind: Secret
 metadata:
   name: azure-secret
 data:
-  clientid: QWJjZH5FRmd+SDZJamtsc35BQkMxNXNFRkdLNTRzNzhYfk9sazk=
-  # all resources you define will be charged here
-  clientsecret: NmE0ZGZzZzctc2Q0di1mNGFkLWRzdmEtYWQ0djYxNmZkNTEy
-  subscriptionid: NTRjZGFmYTUtc2R2cy00NWRzLTU0NnMtZGY2NTFzZmR0NjE0
-  tenantid: MDI1NXNjMjMtNzZ3ZS04N2c2LTk2NGYtYWJjMWRlZjJnaDNs
+  clientid: <base64-encoded-client-id>
+  clientsecret: <base64-encoded-client-secret>
+  subscriptionid: <base64-encoded-subscription-id>
+  tenantid: <base64-encoded-tenant-id>
 type: Opaque
-
 ```
 
 ## Create Azure credentials
@@ -91,7 +89,7 @@ If you wish to use Azure as your DNS provider where Claudie creates DNS records 
 The secret for an Azure provider must include the following mandatory fields: `clientsecret`, `subscriptionid`, `tenantid`, and `clientid`.
 
 ```bash
-kubectl create secret generic azure-secret-1 --namespace=mynamespace --from-literal=clientsecret='Abcd~EFg~H6Ijkls~ABC15sEFGK54s78X~Olk9' --from-literal=subscriptionid='6a4dfsg7-sd4v-f4ad-dsva-ad4v616fd512' --from-literal=tenantid='54cdafa5-sdvs-45ds-546s-df651sfdt614' --from-literal=clientid='0255sc23-76we-87g6-964f-abc1def2gh3l'
+kubectl create secret generic azure-secret-1 --namespace=<your-namespace> --from-literal=clientsecret='<your-client-secret>' --from-literal=subscriptionid='<your-subscription-id>' --from-literal=tenantid='<your-tenant-id>' --from-literal=clientid='<your-client-id>'
 ```
 
 ```yaml
@@ -107,7 +105,7 @@ spec:
       providerType: azure
       secretRef:
         name: azure-secret-1
-        namespace: mynamespace
+        namespace: <your-namespace>
   nodePools:
     dynamic:
       - name: control-az
@@ -170,9 +168,9 @@ spec:
 ### Multi provider, multi region clusters example
 
 ```bash
-kubectl create secret generic azure-secret-1 --namespace=mynamespace --from-literal=clientsecret='Abcd~EFg~H6Ijkls~ABC15sEFGK54s78X~Olk9' --from-literal=subscriptionid='6a4dfsg7-sd4v-f4ad-dsva-ad4v616fd512' --from-literal=tenantid='54cdafa5-sdvs-45ds-546s-df651sfdt614' --from-literal=clientid='0255sc23-76we-87g6-964f-abc1def2gh3l'
+kubectl create secret generic azure-secret-1 --namespace=<your-namespace> --from-literal=clientsecret='<your-client-secret>' --from-literal=subscriptionid='<your-subscription-id>' --from-literal=tenantid='<your-tenant-id>' --from-literal=clientid='<your-client-id>'
 
-kubectl create secret generic azure-secret-2 --namespace=mynamespace --from-literal=clientsecret='Efgh~ijkL~on43noi~NiuscviBUIds78X~UkL7' --from-literal=subscriptionid='0965bd5b-usa3-as3c-ads1-csdaba6fd512' --from-literal=tenantid='55safa5d-dsfg-546s-45ds-d51251sfdaba' --from-literal=clientid='076wsc23-sdv2-09cA-8sd9-oigv23npn1p2'
+kubectl create secret generic azure-secret-2 --namespace=<your-namespace> --from-literal=clientsecret='<your-client-secret>' --from-literal=subscriptionid='<your-subscription-id>' --from-literal=tenantid='<your-tenant-id>' --from-literal=clientid='<your-client-id>'
 ```
 
 ```yaml
@@ -188,13 +186,13 @@ spec:
       providerType: azure
       secretRef:
         name: azure-secret-1
-        namespace: mynamespace
+        namespace: <your-namespace>
 
     - name: azure-2
       providerType: azure
       secretRef:
         name: azure-secret-2
-        namespace: mynamespace
+        namespace: <your-namespace>
 
   nodePools:
     dynamic:
