@@ -320,7 +320,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
 
     ```bash
     # Hetzner provider requires the secrets to have field: credentials
-    kubectl create secret generic hetzner-secret-1 --namespace=<your-namespace> --from-literal=credentials='<your-api-token>'
+    kubectl create secret generic hetzner-secret-1 --namespace=<your-namespace> --from-literal=credentials='<your-access-key>'
     ```
 
     !!! note "Claudie autoscaling"

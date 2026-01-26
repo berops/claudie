@@ -92,8 +92,8 @@ First of all you have to get into the directory in the `terraformer` pod, where 
 
 Once you are in the directory with all TF files, run the following command:
 
-```
+```bash
 tofu force-unlock <state-lock-id>
 ```
 
-The `lock-id` is generally shown in the error message.
+The `<state-lock-id>` is generally shown in the error message.
