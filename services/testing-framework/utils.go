@@ -27,6 +27,8 @@ const (
 var (
 	errInterrupt = errors.New("interrupt")
 
+	// TODO: remove nolint
+	// nolint
 	opts = cmpopts.IgnoreUnexported(
 		spec.Stage{},
 		spec.StageDescription{},

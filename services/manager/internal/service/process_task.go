@@ -109,9 +109,6 @@ func ProcessTask(ctx context.Context, stores Stores, work Work) (acknowledge boo
 	}
 
 	if err := propagateResult(logger, cluster, work.Result); err != nil {
-		// Make sure the message is retried, in case of DB failures.
-		acknowledge = false
-
 		// Propagating the result failed for unknown reasons, could be due
 		// to malformed message or simply invalid message changes that the
 		// manager refuses to merge. How to proceed here is to acknowledge
@@ -234,9 +231,6 @@ func processTaskWithError(
 
 	if isErrorPartial {
 		if err := propagateResult(logger, cluster, work.Result); err != nil {
-			// Make sure the message is retried, in case of DB failures.
-			acknowledge = false
-
 			// Propagating the result failed for unknown reasons, could be due
 			// to malformed message or simply invalid message changes that the
 			// manager refuses to merge. How to proceed here is to acknowledge

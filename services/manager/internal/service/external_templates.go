@@ -7,6 +7,7 @@ import (
 )
 
 // templatesUpdated checks if at least 1 used provider had their template repository updated.
+// nolint
 func templatesUpdated(c *spec.Config) (bool, error) {
 	for _, cluster := range c.Clusters {
 		for _, n := range cluster.Current.GetK8S().GetClusterInfo().GetNodePools() {
@@ -57,6 +58,7 @@ func templatesUpdated(c *spec.Config) (bool, error) {
 }
 
 // Checks whether the templates for the provider has been updated.
+// nolint
 func commitHashUpdated(p *spec.Provider) (bool, error) {
 	t := proto.Clone(p.Templates).(*spec.TemplateRepository)
 	if err := manifest.FetchCommitHash(t); err != nil {
@@ -69,6 +71,7 @@ func commitHashUpdated(p *spec.Provider) (bool, error) {
 // Fetches the latest commit hash for the NodePools which have a provider with the lates Tag option.
 // If the nodepool does not have such a privder false is returned, otherwise true to signal the commit
 // hash has ben fetched. On any error during the network calls the error is propagated to the caller.
+// nolint
 func syncWithRemoteRepo(np *spec.NodePool) (bool, error) {
 	n := np.GetDynamicNodePool()
 	if n == nil || n.Provider.Templates.Tag != nil {

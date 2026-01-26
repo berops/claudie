@@ -168,10 +168,11 @@ func HandleKubernetesUnreachableNodes(logger zerolog.Logger, r KubernetesUnreach
 		// If this persists that means the control plane is down and there is nothing we can do from
 		// claudie's POV. Deletion of the nodepools would also not help, essentially we are locked
 		// until resolved manually.
+		// nolint
 		errUnreachable = fmt.Errorf(`
 Failed to retrieve actuall nodes present in the cluster via 'kubectl'.
 
-%v
+%w
 `, errUnreachable)
 
 		// Note: if the cluster has more than one control plane node
@@ -250,6 +251,7 @@ Failed to retrieve actuall nodes present in the cluster via 'kubectl'.
 	}
 
 	if errUnreachable != nil {
+		// nolint
 		errUnreachable = fmt.Errorf(`
 Nodes within the kubernetes cluster have reachability problems.
 
@@ -263,7 +265,7 @@ Fix the unreachable nodes by either:
    NOTE: if the unreachable node is the kube-apiserver, claudie will not be able to recover
          after the deletion.
 
-%v
+%w
 `, errUnreachable)
 		return nil, errUnreachable
 	}
@@ -400,6 +402,7 @@ func HandleLoadBalancerUnreachableNodes(r LoadBalancerUnreachableNodes) (*spec.T
 	}
 
 	if errUnreachable != nil {
+		// nolint
 		errUnreachable = fmt.Errorf(`
 Nodes within loadbalancers attached to the kubernetes cluster
 have reachability problems.
@@ -410,7 +413,7 @@ Fix the unreachable nodes by either:
   - delete the whole nodepool from the loadbalancer cluster in the InputManifest
   - delete the whole loadbalancer cluster from the InputManifest
 
-%v
+%w
 `, errUnreachable)
 		return nil, errUnreachable
 	}
