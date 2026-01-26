@@ -11,8 +11,8 @@ kind: Secret
 metadata:
   name: cloudflare-secret
 data:
-  apitoken: a3NsSVNBODc4YTZldFlBZlhZY2c1aVl5ckZHTmxDeGM=
-  accountid: ODU1NGEyM3J0NnU4NmRjNGFzZDE1ODc2NHcyNGIyNTQK
+  apitoken: <base64-encoded-api-token>
+  accountid: <base64-encoded-account-id>
 type: Opaque
 ```
 
@@ -50,12 +50,12 @@ If you wish to use Cloudflare as your DNS provider where Claudie creates DNS rec
 ### Create a secret for Cloudflare and AWS providers
 The secret for an Cloudflare provider must include the following mandatory fields: `apitoken` and `accountid` 
 ```bash
-kubectl create secret generic cloudflare-secret-1 --namespace=mynamespace --from-literal=apitoken='kslISA878a6etYAfXYcg5iYyrFGNlCxc' --from-literal=accountid='8554a23rt6u86dc4asd158764w24b254'
+kubectl create secret generic cloudflare-secret-1 --namespace=<your-namespace> --from-literal=apitoken='<your-api-token>' --from-literal=accountid='<your-account-id>'
 ```
 
 The secret for an AWS provider must include the following mandatory fields: `accesskey` and `secretkey`.
 ```bash
-kubectl create secret generic aws-secret-1 --namespace=mynamespace --from-literal=accesskey='SLDUTKSHFDMSJKDIALASSD' --from-literal=secretkey='iuhbOIJN+oin/olikDSadsnoiSVSDsacoinOUSHD'
+kubectl create secret generic aws-secret-1 --namespace=<your-namespace> --from-literal=accesskey='<your-access-key>' --from-literal=secretkey='<your-secret-key>'
 ```
 
 ``` yaml
@@ -71,13 +71,13 @@ spec:
       providerType: cloudflare
       secretRef:
         name: cloudflare-secret-1
-        namespace: mynamespace
+        namespace: <your-namespace>
 
     - name: aws-1
       providerType: aws
       secretRef:
         name: aws-secret-1
-        namespace: mynamespace
+        namespace: <your-namespace>
 
   nodePools: 
     dynamic:
