@@ -95,8 +95,8 @@ func (nm *NodeManager) GetCapacity(np *spec.NodePool) k8sV1.ResourceList {
 
 	// If the machine spec contains a valid number of NvidiaGPUs, prefer that value over the cached
 	// one from [typeInfo].
-	if dnp.MachineSpec != nil && dnp.MachineSpec.NvidiaGpu > 0 {
-		rl["nvidia.com/gpu"] = *resource.NewQuantity(int64(dnp.MachineSpec.NvidiaGpu), resource.DecimalSI)
+	if dnp.MachineSpec != nil && dnp.MachineSpec.NvidiaGpuCount > 0 {
+		rl["nvidia.com/gpu"] = *resource.NewQuantity(int64(dnp.MachineSpec.NvidiaGpuCount), resource.DecimalSI)
 	}
 	return rl
 }
