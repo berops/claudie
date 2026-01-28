@@ -2365,8 +2365,10 @@ In OOP analogy, a dynamic nodepool would be a class that would get instantiated 
 <ul>
 <li><code>cpuCount</code>: specifies the number of cpus used by the <code>serverType</code></li>
 <li><code>memory</code>: specifies the memory in GBs used by the <code>serverType</code></li>
+<li><code>nvidiaGpuCount</code>: specifies the number of NVIDIA GPUs used by the <code>serverType</code></li>
+<li><code>nvidiaGpuType</code>: specifies the NVIDIA GPU accelerator type (required for GCP when using GPUs). Examples: <code>nvidia-tesla-t4</code>, <code>nvidia-tesla-v100</code>, <code>nvidia-tesla-a100</code>, <code>nvidia-l4</code></li>
 <li>
-<p><code>nvidiaGpu</code>: specifies the number of nvidia GPUs used by the <code>serverType</code></p>
+<p><code>nvidiaGpu</code>: (deprecated) use <code>nvidiaGpuCount</code> instead</p>
 </li>
 <li>
 <p><code>image</code></p>
@@ -2410,9 +2412,9 @@ In OOP analogy, a dynamic nodepool would be a class that would get instantiated 
 </ul>
 <p>Region of the nodepool.</p>
 <ul>
-<li><code>zone</code></li>
+<li><code>zone</code> <em>(optional)</em></li>
 </ul>
-<p>Zone of the nodepool.</p>
+<p>Zone of the nodepool. If not specified, nodes are automatically distributed across all available zones in the region using round-robin assignment. This provides better availability and fault tolerance by spreading nodes across multiple availability zones.</p>
 <h2 id="autoscaler-configuration">Autoscaler Configuration<a class="headerlink" href="#autoscaler-configuration" title="Permanent link">&para;</a></h2>
 <p>Autoscaler configuration on per nodepool basis. Defines the number of nodes, autoscaler will scale up or down specific nodepool.</p>
 <ul>

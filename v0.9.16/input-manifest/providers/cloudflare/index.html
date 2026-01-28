@@ -1771,8 +1771,8 @@
 <span class="nt">metadata</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cloudflare-secret</span>
 <span class="nt">data</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">apitoken</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">a3NsSVNBODc4YTZldFlBZlhZY2c1aVl5ckZHTmxDeGM=</span>
-<span class="w">  </span><span class="nt">accountid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ODU1NGEyM3J0NnU4NmRjNGFzZDE1ODc2NHcyNGIyNTQK</span>
+<span class="w">  </span><span class="nt">apitoken</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;base64-encoded-api-token&gt;</span>
+<span class="w">  </span><span class="nt">accountid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;base64-encoded-account-id&gt;</span>
 <span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Opaque</span>
 </code></pre></div>
 <h2 id="create-cloudflare-credentials">Create Cloudflare credentials<a class="headerlink" href="#create-cloudflare-credentials" title="Permanent link">&para;</a></h2>
@@ -1800,10 +1800,10 @@ Billing:Read
 </div>
 <h3 id="create-a-secret-for-cloudflare-and-aws-providers">Create a secret for Cloudflare and AWS providers<a class="headerlink" href="#create-a-secret-for-cloudflare-and-aws-providers" title="Permanent link">&para;</a></h3>
 <p>The secret for an Cloudflare provider must include the following mandatory fields: <code>apitoken</code> and <code>accountid</code> 
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>cloudflare-secret-1<span class="w"> </span>--namespace<span class="o">=</span>mynamespace<span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">apitoken</span><span class="o">=</span><span class="s1">&#39;kslISA878a6etYAfXYcg5iYyrFGNlCxc&#39;</span><span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">accountid</span><span class="o">=</span><span class="s1">&#39;8554a23rt6u86dc4asd158764w24b254&#39;</span>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>cloudflare-secret-1<span class="w"> </span>--namespace<span class="o">=</span>&lt;your-namespace&gt;<span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">apitoken</span><span class="o">=</span><span class="s1">&#39;&lt;your-api-token&gt;&#39;</span><span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">accountid</span><span class="o">=</span><span class="s1">&#39;&lt;your-account-id&gt;&#39;</span>
 </code></pre></div></p>
 <p>The secret for an AWS provider must include the following mandatory fields: <code>accesskey</code> and <code>secretkey</code>.
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>aws-secret-1<span class="w"> </span>--namespace<span class="o">=</span>mynamespace<span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">accesskey</span><span class="o">=</span><span class="s1">&#39;SLDUTKSHFDMSJKDIALASSD&#39;</span><span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">secretkey</span><span class="o">=</span><span class="s1">&#39;iuhbOIJN+oin/olikDSadsnoiSVSDsacoinOUSHD&#39;</span>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>aws-secret-1<span class="w"> </span>--namespace<span class="o">=</span>&lt;your-namespace&gt;<span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">accesskey</span><span class="o">=</span><span class="s1">&#39;&lt;your-access-key&gt;&#39;</span><span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">secretkey</span><span class="o">=</span><span class="s1">&#39;&lt;your-secret-key&gt;&#39;</span>
 </code></pre></div></p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claudie.io/v1beta1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">InputManifest</span>
@@ -1817,13 +1817,13 @@ Billing:Read
 <span class="w">      </span><span class="nt">providerType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cloudflare</span>
 <span class="w">      </span><span class="nt">secretRef</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cloudflare-secret-1</span>
-<span class="w">        </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mynamespace</span>
+<span class="w">        </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;your-namespace&gt;</span>
 
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-1</span>
 <span class="w">      </span><span class="nt">providerType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws</span>
 <span class="w">      </span><span class="nt">secretRef</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-secret-1</span>
-<span class="w">        </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mynamespace</span>
+<span class="w">        </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;your-namespace&gt;</span>
 
 <span class="w">  </span><span class="nt">nodePools</span><span class="p">:</span><span class="w"> </span>
 <span class="w">    </span><span class="nt">dynamic</span><span class="p">:</span>

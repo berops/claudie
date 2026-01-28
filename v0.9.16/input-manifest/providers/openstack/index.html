@@ -1761,11 +1761,11 @@
 <span class="nt">metadata</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openstack-secret</span>
 <span class="nt">data</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">authurl</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">U0xEVVRLU0hGRE1TSktESUFMQVNTRA==</span>
-<span class="w">  </span><span class="nt">domainid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ZGVmYXVsdAo=</span>
-<span class="w">  </span><span class="nt">projectid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OGM1MDZmZjBhNmQzNGVkNzkyNTBkZWQ4OGRhNzBmNmEK</span>
-<span class="w">  </span><span class="nt">applicationcredentialid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">YmFhMDkxYTYyNWJkNGKyNjlmNzA5Mzc5ODg4YTQ5YzMQ</span>
-<span class="w">  </span><span class="nt">applicationcredentialsecret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">YndNRUVLMmNPdE5oSDlJbXIzRmRlVEVPTG9odU1HcUQzVUxSTzgzWjZaTXh0U3hSSXNVLWNkTHlN==</span>
+<span class="w">  </span><span class="nt">authurl</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;base64-encoded-auth-url&gt;</span>
+<span class="w">  </span><span class="nt">domainid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;base64-encoded-domain-id&gt;</span>
+<span class="w">  </span><span class="nt">projectid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;base64-encoded-project-id&gt;</span>
+<span class="w">  </span><span class="nt">applicationcredentialid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;base64-encoded-credential-id&gt;</span>
+<span class="w">  </span><span class="nt">applicationcredentialsecret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;base64-encoded-credential-secret&gt;</span>
 <span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Opaque</span>
 </code></pre></div>
 <h2 id="create-openstack-api-credentials">Create Openstack API credentials<a class="headerlink" href="#create-openstack-api-credentials" title="Permanent link">&para;</a></h2>
@@ -1787,15 +1787,15 @@ For specific permission requirements, please refer to your OpenStack provider's 
 +--------------+----------------------------------------------------------------------------------------+
 <span class="p">|</span><span class="w"> </span>Field<span class="w">        </span><span class="p">|</span><span class="w"> </span>Value<span class="w">                                                                                  </span><span class="p">|</span>
 +--------------+----------------------------------------------------------------------------------------+
-<span class="p">|</span><span class="w"> </span>ID<span class="w">           </span><span class="p">|</span><span class="w"> </span>296f552c62f2443985b57b0280a5ca74<span class="w">                                                       </span><span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>ID<span class="w">           </span><span class="p">|</span><span class="w"> </span>&lt;your-credential-id&gt;<span class="w">                                                                   </span><span class="p">|</span>
 <span class="p">|</span><span class="w"> </span>Name<span class="w">         </span><span class="p">|</span><span class="w"> </span>claudie<span class="w">                                                                                </span><span class="p">|</span>
 <span class="p">|</span><span class="w"> </span>Description<span class="w">  </span><span class="p">|</span><span class="w"> </span>None<span class="w">                                                                                   </span><span class="p">|</span>
-<span class="p">|</span><span class="w"> </span>Project<span class="w"> </span>ID<span class="w">   </span><span class="p">|</span><span class="w"> </span>8c506ff0a6d34ed79250ded88da70f6a<span class="w">                                                       </span><span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>Project<span class="w"> </span>ID<span class="w">   </span><span class="p">|</span><span class="w"> </span>&lt;your-project-id&gt;<span class="w">                                                                      </span><span class="p">|</span>
 <span class="p">|</span><span class="w"> </span>Roles<span class="w">        </span><span class="p">|</span><span class="w"> </span>administrator<span class="w">                                                                          </span><span class="p">|</span>
 <span class="p">|</span><span class="w"> </span>Unrestricted<span class="w"> </span><span class="p">|</span><span class="w"> </span>False<span class="w">                                                                                  </span><span class="p">|</span>
 <span class="p">|</span><span class="w"> </span>Access<span class="w"> </span>Rules<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="o">[]</span><span class="w">                                                                                     </span><span class="p">|</span>
 <span class="p">|</span><span class="w"> </span>Expires<span class="w"> </span>At<span class="w">   </span><span class="p">|</span><span class="w"> </span>None<span class="w">                                                                                   </span><span class="p">|</span>
-<span class="p">|</span><span class="w"> </span>Secret<span class="w">       </span><span class="p">|</span><span class="w"> </span>_0ZTJxyQFEOg9_sAMmeEvxDAEkI_vxoF1VYu-wGiXRCE_XgxIXxE9XxYfDtTNTqh4TXCfsP5qANljTfBZ0bsHQ<span class="w"> </span><span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>Secret<span class="w">       </span><span class="p">|</span><span class="w"> </span>&lt;your-credential-secret&gt;<span class="w">                                                               </span><span class="p">|</span>
 +--------------+----------------------------------------------------------------------------------------+
 </code></pre></div>
 <h2 id="input-manifest-examples">Input manifest examples<a class="headerlink" href="#input-manifest-examples" title="Permanent link">&para;</a></h2>
@@ -1803,12 +1803,12 @@ For specific permission requirements, please refer to your OpenStack provider's 
 <h4 id="create-a-secret-for-openstack-provider">Create a secret for Openstack provider<a class="headerlink" href="#create-a-secret-for-openstack-provider" title="Permanent link">&para;</a></h4>
 <p>The secret for an Openstack provider must include the following mandatory fields: <code>authurl</code>, <code>domainid</code>, <code>projectid</code>, <code>applicationcredentialid</code> and <code>applicationcredentialsecret</code>.</p>
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>openstack-secret-1<span class="w"> </span><span class="se">\</span>
---namespace<span class="o">=</span>mynamespace<span class="w"> </span><span class="se">\</span>
---from-literal<span class="o">=</span><span class="nv">authurl</span><span class="o">=</span><span class="s1">&#39;https://auth.cloud.ovh.net&#39;</span><span class="w"> </span><span class="se">\</span>
---from-literal<span class="o">=</span><span class="nv">domainid</span><span class="o">=</span><span class="s1">&#39;default&#39;</span><span class="w"> </span><span class="se">\</span>
---from-literal<span class="o">=</span><span class="nv">projectid</span><span class="o">=</span><span class="s1">&#39;8c506ff0a6d34ed79250ded88da70f6a&#39;</span><span class="w"> </span><span class="se">\</span>
---from-literal<span class="o">=</span><span class="nv">applicationcredentialid</span><span class="o">=</span><span class="s1">&#39;5533f69597734911921a7ee3f30c6464&#39;</span><span class="w"> </span><span class="se">\</span>
---from-literal<span class="o">=</span><span class="nv">applicationcredentialsecret</span><span class="o">=</span><span class="s1">&#39;IdtoVmeRC_O-SClReHX9mzo4PRYvyVwQqWNBmWg2XIDGEA_CvhlVaObMEo2-BoH7GgpZZGhY_aqFgHh63NrMKw&#39;</span>
+--namespace<span class="o">=</span>&lt;your-namespace&gt;<span class="w"> </span><span class="se">\</span>
+--from-literal<span class="o">=</span><span class="nv">authurl</span><span class="o">=</span><span class="s1">&#39;&lt;your-auth-url&gt;&#39;</span><span class="w"> </span><span class="se">\</span>
+--from-literal<span class="o">=</span><span class="nv">domainid</span><span class="o">=</span><span class="s1">&#39;&lt;your-domain-id&gt;&#39;</span><span class="w"> </span><span class="se">\</span>
+--from-literal<span class="o">=</span><span class="nv">projectid</span><span class="o">=</span><span class="s1">&#39;&lt;your-project-id&gt;&#39;</span><span class="w"> </span><span class="se">\</span>
+--from-literal<span class="o">=</span><span class="nv">applicationcredentialid</span><span class="o">=</span><span class="s1">&#39;&lt;your-credential-id&gt;&#39;</span><span class="w"> </span><span class="se">\</span>
+--from-literal<span class="o">=</span><span class="nv">applicationcredentialsecret</span><span class="o">=</span><span class="s1">&#39;&lt;your-credential-secret&gt;&#39;</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claudie.io/v1beta1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">InputManifest</span>
@@ -1822,7 +1822,7 @@ For specific permission requirements, please refer to your OpenStack provider's 
 <span class="w">      </span><span class="nt">providerType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openstack</span>
 <span class="w">      </span><span class="nt">secretRef</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openstack-secret-1</span>
-<span class="w">        </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mynamespace</span>
+<span class="w">        </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;your-namespace&gt;</span>
 
 <span class="w">  </span><span class="nt">nodePools</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">dynamic</span><span class="p">:</span>

@@ -1795,6 +1795,40 @@
 
 <h1 id="detailed-guide">Detailed guide<a class="headerlink" href="#detailed-guide" title="Permanent link">&para;</a></h1>
 <p>This detailed guide for Claudie serves as a resource for providing an overview of Claudie's features, installation instructions, customization options, and its role in provisioning and managing clusters. We'll start by guiding you through the process of setting up a management cluster, where Claudie will be installed, enabling you to effortlessly monitor and control clusters across multiple hyperscalers.</p>
+<div class="admonition info">
+<p class="admonition-title">Documentation Conventions</p>
+<p>Throughout this documentation, placeholders that require your own values are formatted as <code>&lt;placeholder&gt;</code>. Replace these with your actual values when using the commands or configurations.</p>
+<table>
+<thead>
+<tr>
+<th>Placeholder</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>&lt;your-namespace&gt;</code></td>
+<td>The Kubernetes namespace where you deploy resources</td>
+</tr>
+<tr>
+<td><code>&lt;your-access-key&gt;</code></td>
+<td>Your cloud provider access key or API token</td>
+</tr>
+<tr>
+<td><code>&lt;your-secret-key&gt;</code></td>
+<td>Your cloud provider secret key</td>
+</tr>
+<tr>
+<td><code>&lt;your-domain&gt;</code></td>
+<td>Your registered domain name for DNS configuration</td>
+</tr>
+<tr>
+<td><code>&lt;your-cluster-name&gt;</code></td>
+<td>The name you assign to your Kubernetes cluster</td>
+</tr>
+</tbody>
+</table>
+</div>
 <div class="admonition note">
 <p class="admonition-title">Tip!</p>
 <p>Claudie offers extensive customization options for your Kubernetes cluster across multiple hyperscalers. This detailed guide assumes you have AWS and Hetzner accounts. You can customize your deployment across different <a href="#supported-providers">supported providers</a>. If you wish to use different providers, we recommend to follow this guide anyway and create your own input manifest file based on the provided example. Refer to the supported provider table for the input manifest configuration of each provider.</p>
@@ -1830,7 +1864,7 @@
 <td><img alt="✔" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/2714.svg" title=":heavy_check_mark:" /></td>
 <td><img alt="✔" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/2714.svg" title=":heavy_check_mark:" /></td>
 <td><img alt="✔" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/2714.svg" title=":heavy_check_mark:" /></td>
-<td><img alt="❌" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/274c.svg" title=":x:" /></td>
+<td><img alt="✔" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/2714.svg" title=":heavy_check_mark:" /></td>
 </tr>
 <tr>
 <td><a href="https://docs.claudie.io/latest/input-manifest/providers/oci/">OCI</a></td>
@@ -1967,8 +2001,8 @@ terraformer-fd664b7ff-dd2h7    1/1     Running     0               8m9s
 <li>
 <p>Let's create a AWS high availability cluster which we'll expand later on with Hetzner bursting capacity. Let's start by creating providers secrets for the infrastructure, and next we will reference them in <code>inputmanifest-bursting.yaml</code>.</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># AWS provider requires the secrets to have fields: accesskey and secretkey</span>
-kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>aws-secret-1<span class="w"> </span>--namespace<span class="o">=</span>mynamespace<span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">accesskey</span><span class="o">=</span><span class="s1">&#39;SLDUTKSHFDMSJKDIALASSD&#39;</span><span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">secretkey</span><span class="o">=</span><span class="s1">&#39;iuhbOIJN+oin/olikDSadsnoiSVSDsacoinOUSHD&#39;</span>
-kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>aws-secret-dns<span class="w"> </span>--namespace<span class="o">=</span>mynamespace<span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">accesskey</span><span class="o">=</span><span class="s1">&#39;ODURNGUISNFAIPUNUGFINB&#39;</span><span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">secretkey</span><span class="o">=</span><span class="s1">&#39;asduvnva+skd/ounUIBPIUjnpiuBNuNipubnPuip&#39;</span><span class="w">    </span>
+kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>aws-secret-1<span class="w"> </span>--namespace<span class="o">=</span>&lt;your-namespace&gt;<span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">accesskey</span><span class="o">=</span><span class="s1">&#39;&lt;your-access-key&gt;&#39;</span><span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">secretkey</span><span class="o">=</span><span class="s1">&#39;&lt;your-secret-key&gt;&#39;</span>
+kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>aws-secret-dns<span class="w"> </span>--namespace<span class="o">=</span>&lt;your-namespace&gt;<span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">accesskey</span><span class="o">=</span><span class="s1">&#39;&lt;your-access-key&gt;&#39;</span><span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">secretkey</span><span class="o">=</span><span class="s1">&#39;&lt;your-secret-key&gt;&#39;</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="c1"># inputmanifest-bursting.yaml</span>
 
@@ -1984,12 +2018,12 @@ kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="
 <span class="w">      </span><span class="nt">providerType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws</span>
 <span class="w">      </span><span class="nt">secretRef</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-secret-1</span>
-<span class="w">        </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mynamespace</span>
+<span class="w">        </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;your-namespace&gt;</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-dns</span>
 <span class="w">      </span><span class="nt">providerType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws</span>
 <span class="w">      </span><span class="nt">secretRef</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-secret-dns</span>
-<span class="w">        </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mynamespace</span><span class="w">    </span>
+<span class="w">        </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;your-namespace&gt;</span><span class="w">    </span>
 <span class="w">  </span><span class="nt">nodePools</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">dynamic</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-control</span>
@@ -2040,7 +2074,7 @@ kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="
 <span class="w">        </span><span class="nt">roles</span><span class="p">:</span>
 <span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apiserver</span>
 <span class="w">        </span><span class="nt">dns</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">dnsZone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">domain.com</span><span class="w"> </span><span class="c1"># hosted zone domain name where claudie creates dns records for this cluster</span>
+<span class="w">            </span><span class="nt">dnsZone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;your-domain&gt;</span><span class="w"> </span><span class="c1"># hosted zone domain name where claudie creates dns records for this cluster</span>
 <span class="w">            </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-dns</span>
 <span class="w">            </span><span class="nt">hostname</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">supercluster</span><span class="w"> </span><span class="c1"># the sub domain of the new cluster</span>
 <span class="w">        </span><span class="nt">targetedK8s</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-super-cluster</span>
@@ -2161,7 +2195,7 @@ my-super-cluster-6ktx6rb-kubeconfig   Opaque   1      134m
 <li>
 <p>Let's add a bursting autoscaling node pool in Hetzner cloud. In order to use other hyperscalers, we'll need to add a new provider with appropriate credentials. First we will create a provider secret for Hetzner Cloud, then we open <code>inputmanifest-bursting.yaml</code> input manifest again and append the new Hetzner node pool configuration.</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Hetzner provider requires the secrets to have field: credentials</span>
-kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>hetzner-secret-1<span class="w"> </span>--namespace<span class="o">=</span>mynamespace<span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">credentials</span><span class="o">=</span><span class="s1">&#39;kslISA878a6etYAfXYcg5iYyrFGNlCxcICo060HVEygjFs21nske76ksjKko21lp&#39;</span>
+kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>hetzner-secret-1<span class="w"> </span>--namespace<span class="o">=</span>&lt;your-namespace&gt;<span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">credentials</span><span class="o">=</span><span class="s1">&#39;&lt;your-access-key&gt;&#39;</span>
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Claudie autoscaling</p>
@@ -2181,7 +2215,7 @@ kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="
 <span class="w">      </span><span class="nt">providerType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner</span>
 <span class="w">      </span><span class="nt">secretRef</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-secret-1</span>
-<span class="w">        </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mynamespace</span><span class="w">        </span>
+<span class="w">        </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;your-namespace&gt;</span><span class="w">        </span>
 <span class="w">  </span><span class="nt">nodePools</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">dynamic</span><span class="p">:</span>
 <span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">...</span>
@@ -2251,7 +2285,7 @@ kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="
 <span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apiserver</span>
 <span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https</span><span class="w"> </span><span class="c1"># define it here</span>
 <span class="w">        </span><span class="nt">dns</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">dnsZone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">domain.com</span>
+<span class="w">            </span><span class="nt">dnsZone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;your-domain&gt;</span>
 <span class="w">            </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-dns</span>
 <span class="w">            </span><span class="nt">hostname</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">supercluster</span>
 <span class="w">        </span><span class="nt">targetedK8s</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-super-cluster</span>

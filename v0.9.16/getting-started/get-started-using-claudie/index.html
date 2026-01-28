@@ -1816,7 +1816,7 @@
 <td><img alt="✔" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/2714.svg" title=":heavy_check_mark:" /></td>
 <td><img alt="✔" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/2714.svg" title=":heavy_check_mark:" /></td>
 <td><img alt="✔" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/2714.svg" title=":heavy_check_mark:" /></td>
-<td><img alt="❌" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/274c.svg" title=":x:" /></td>
+<td><img alt="✔" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/2714.svg" title=":heavy_check_mark:" /></td>
 </tr>
 <tr>
 <td><a href="https://docs.claudie.io/latest/input-manifest/providers/oci/">OCI</a></td>
@@ -1879,9 +1879,9 @@ kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> <
 <li>
 <p>Create Kubernetes Secret resource for your provider configuration.</p>
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>example-aws-secret-1<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--namespace<span class="o">=</span>mynamespace<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--from-literal<span class="o">=</span><span class="nv">accesskey</span><span class="o">=</span><span class="s1">&#39;myAwsAccessKey&#39;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--from-literal<span class="o">=</span><span class="nv">secretkey</span><span class="o">=</span><span class="s1">&#39;myAwsSecretKey&#39;</span>
+<span class="w">  </span>--namespace<span class="o">=</span>&lt;your-namespace&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--from-literal<span class="o">=</span><span class="nv">accesskey</span><span class="o">=</span><span class="s1">&#39;&lt;your-access-key&gt;&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--from-literal<span class="o">=</span><span class="nv">secretkey</span><span class="o">=</span><span class="s1">&#39;&lt;your-secret-key&gt;&#39;</span>
 </code></pre></div>
 <p>Check the <a href="#supported-providers">supported providers</a> for input manifest examples. For an input manifest spanning all supported hyperscalers checkout out <a href="https://docs.claudie.io/latest/input-manifest/example/">this example</a>.</p>
 </li>
@@ -1899,8 +1899,8 @@ kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> <
 <span class="s">      - name: aws-1</span>
 <span class="s">      providerType: aws</span>
 <span class="s">      secretRef:</span>
-<span class="s">          name: example-aws-secret-1 # reference the secret name</span>
-<span class="s">          namespace: mynamespace     # reference the secret namespace</span>
+<span class="s">          name: example-aws-secret-1    # reference the secret name</span>
+<span class="s">          namespace: &lt;your-namespace&gt;   # reference the secret namespace</span>
 <span class="s">  nodePools:</span>
 <span class="s">      dynamic:</span>
 <span class="s">      - name: control-aws</span>
@@ -1960,8 +1960,8 @@ kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> <
 <span class="s">      - name: aws-1</span>
 <span class="s">      providerType: aws</span>
 <span class="s">      secretRef:</span>
-<span class="s">          name: example-aws-secret-1 # reference the secret name</span>
-<span class="s">          namespace: mynamespace     # reference the secret namespace</span>
+<span class="s">          name: example-aws-secret-1    # reference the secret name</span>
+<span class="s">          namespace: &lt;your-namespace&gt;   # reference the secret namespace</span>
 <span class="s">  nodePools:</span>
 <span class="s">      dynamic:</span>
 <span class="s">      - name: control-aws</span>

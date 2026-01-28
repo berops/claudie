@@ -1822,19 +1822,19 @@ mongodb-6ccb5f5dff-ptdw2<span class="w">            </span><span class="m">1</sp
 terraformer-66c6f67d98-pwr9t<span class="w">        </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">     </span><span class="m">0</span><span class="w">             </span>18m
 </code></pre></div>
 <p>To backup state from MongoDB execute the following command</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-n<span class="w"> </span>claudie<span class="w"> </span>mongodb-&lt;your-mongdb-pod&gt;<span class="w"> </span>--<span class="w"> </span>sh<span class="w"> </span>-c<span class="w"> </span><span class="s1">&#39;mongoexport --uri=mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@localhost:27017/claudie -c inputManifests --authenticationDatabase admin&#39;</span><span class="w"> </span>&gt;<span class="w"> </span>claudie-backup/inputManifests
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-n<span class="w"> </span>claudie<span class="w"> </span>&lt;mongodb-pod-name&gt;<span class="w"> </span>--<span class="w"> </span>sh<span class="w"> </span>-c<span class="w"> </span><span class="s1">&#39;mongoexport --uri=mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@localhost:27017/claudie -c inputManifests --authenticationDatabase admin&#39;</span><span class="w"> </span>&gt;<span class="w"> </span>claudie-backup/inputManifests
 </code></pre></div>
 <p>Next we need to backup the state from MinIO. Port-forward the MinIO service so that it is accessible from localhost.</p>
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>port-forward<span class="w"> </span>-n<span class="w"> </span>claudie<span class="w"> </span>svc/minio<span class="w"> </span><span class="m">9000</span>:9000
 </code></pre></div>
 <p>Setup an alias for the <a href="https://min.io/docs/minio/linux/reference/minio-mc.html">mc</a> command line tool.</p>
-<div class="highlight"><pre><span></span><code>mc<span class="w"> </span><span class="nb">alias</span><span class="w"> </span><span class="nb">set</span><span class="w"> </span>claudie-minio<span class="w"> </span>http://127.0.0.1:9000<span class="w"> </span>&lt;ACCESSKEY&gt;<span class="w"> </span>&lt;SECRETKEY&gt;
+<div class="highlight"><pre><span></span><code>mc<span class="w"> </span><span class="nb">alias</span><span class="w"> </span><span class="nb">set</span><span class="w"> </span>claudie-minio<span class="w"> </span>http://127.0.0.1:9000<span class="w"> </span>&lt;your-access-key&gt;<span class="w"> </span>&lt;your-secret-key&gt;
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Provide the access and secret key for minio. The default can be found in the github repository in the <code>manifests/claudie/minio/secrets</code> folder. If you have not changed them, we strongly encourage you to do so!</p>
 </div>
 <p>Download the state into the backup folder</p>
-<div class="highlight"><pre><span></span><code>mc<span class="w"> </span>mirror<span class="w"> </span>claudie-minio/claudie-tf-state-files<span class="w"> </span>./claudie-backup
+<div class="highlight"><pre><span></span><code>mc<span class="w"> </span>mirror<span class="w"> </span>claudie-minio/claudie-tf-state-files<span class="w"> </span>./claudie-backup/&lt;minio-backup-folder&gt;
 </code></pre></div>
 <p>You now have everything you need to restore your input manifests to a new management cluster.</p>
 <div class="admonition warning">
@@ -1842,16 +1842,16 @@ terraformer-66c6f67d98-pwr9t<span class="w">        </span><span class="m">1</sp
 </div>
 <p>To restore the state on your new management cluster you can follow these commands. We expect that your default <code>kubeconfig</code> points to the new Management Cluster, if it does not, you can override it in the following commands using <code>--kubeconfig ./path-to-config</code>.</p>
 <p>Copy the collection into the MongoDB pod.</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>cp<span class="w"> </span>./claudie-backup/inputManifests<span class="w"> </span>mongodb-&lt;your-mongodb-pod&gt;:/tmp/inputManifests<span class="w"> </span>-n<span class="w"> </span>claudie
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>cp<span class="w"> </span>./claudie-backup/inputManifests<span class="w"> </span>mongodb-&lt;mongodb-pod-name&gt;:/tmp/inputManifests<span class="w"> </span>-n<span class="w"> </span>claudie
 </code></pre></div>
 <p>Import the state to MongoDB.</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-n<span class="w"> </span>claudie<span class="w"> </span>mongodb-&lt;your-mongodb-pod&gt;<span class="w"> </span>--<span class="w"> </span>sh<span class="w"> </span>-c<span class="w"> </span><span class="s1">&#39;mongoimport --uri=mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@localhost:27017/claudie -c inputManifests --authenticationDatabase admin --file /tmp/inputManifests&#39;</span>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-n<span class="w"> </span>claudie<span class="w"> </span>mongodb-&lt;mongodb-pod-name&gt;<span class="w"> </span>--<span class="w"> </span>sh<span class="w"> </span>-c<span class="w"> </span><span class="s1">&#39;mongoimport --uri=mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@localhost:27017/claudie -c inputManifests --authenticationDatabase admin --file /tmp/inputManifests&#39;</span>
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Don't forget to delete the <code>/tmp/inputManifests</code> file</p>
 </div>
 <p>Port-forward the MinIO service and import the backed up state.</p>
-<div class="highlight"><pre><span></span><code>mc<span class="w"> </span>cp<span class="w"> </span>--recursive<span class="w"> </span>./claudie-backup/&lt;your-folder-name-downloaded-from-minio&gt;<span class="w"> </span>claudie-minio/claudie-tf-state-files
+<div class="highlight"><pre><span></span><code>mc<span class="w"> </span>cp<span class="w"> </span>--recursive<span class="w"> </span>./claudie-backup/&lt;minio-backup-folder&gt;<span class="w"> </span>claudie-minio/claudie-tf-state-files
 </code></pre></div>
 <p>You can now apply your Claudie inputmanifests which will be immediately in the <code>DONE</code> stage. You can verify this with</p>
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>inputmanifests<span class="w"> </span>-A

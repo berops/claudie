@@ -1845,11 +1845,10 @@
 <span class="nt">metadata</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">azure-secret</span>
 <span class="nt">data</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">clientid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">QWJjZH5FRmd+SDZJamtsc35BQkMxNXNFRkdLNTRzNzhYfk9sazk=</span>
-<span class="w">  </span><span class="c1"># all resources you define will be charged here</span>
-<span class="w">  </span><span class="nt">clientsecret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NmE0ZGZzZzctc2Q0di1mNGFkLWRzdmEtYWQ0djYxNmZkNTEy</span>
-<span class="w">  </span><span class="nt">subscriptionid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NTRjZGFmYTUtc2R2cy00NWRzLTU0NnMtZGY2NTFzZmR0NjE0</span>
-<span class="w">  </span><span class="nt">tenantid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MDI1NXNjMjMtNzZ3ZS04N2c2LTk2NGYtYWJjMWRlZjJnaDNs</span>
+<span class="w">  </span><span class="nt">clientid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;base64-encoded-client-id&gt;</span>
+<span class="w">  </span><span class="nt">clientsecret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;base64-encoded-client-secret&gt;</span>
+<span class="w">  </span><span class="nt">subscriptionid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;base64-encoded-subscription-id&gt;</span>
+<span class="w">  </span><span class="nt">tenantid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;base64-encoded-tenant-id&gt;</span>
 <span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Opaque</span>
 </code></pre></div>
 <h2 id="create-azure-credentials">Create Azure credentials<a class="headerlink" href="#create-azure-credentials" title="Permanent link">&para;</a></h2>
@@ -1929,7 +1928,7 @@
 <h3 id="single-provider-multi-region-cluster-example">Single provider, multi region cluster example<a class="headerlink" href="#single-provider-multi-region-cluster-example" title="Permanent link">&para;</a></h3>
 <h4 id="create-a-secret-for-azure-provider">Create a secret for Azure provider<a class="headerlink" href="#create-a-secret-for-azure-provider" title="Permanent link">&para;</a></h4>
 <p>The secret for an Azure provider must include the following mandatory fields: <code>clientsecret</code>, <code>subscriptionid</code>, <code>tenantid</code>, and <code>clientid</code>.</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>azure-secret-1<span class="w"> </span>--namespace<span class="o">=</span>mynamespace<span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">clientsecret</span><span class="o">=</span><span class="s1">&#39;Abcd~EFg~H6Ijkls~ABC15sEFGK54s78X~Olk9&#39;</span><span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">subscriptionid</span><span class="o">=</span><span class="s1">&#39;6a4dfsg7-sd4v-f4ad-dsva-ad4v616fd512&#39;</span><span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">tenantid</span><span class="o">=</span><span class="s1">&#39;54cdafa5-sdvs-45ds-546s-df651sfdt614&#39;</span><span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">clientid</span><span class="o">=</span><span class="s1">&#39;0255sc23-76we-87g6-964f-abc1def2gh3l&#39;</span>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>azure-secret-1<span class="w"> </span>--namespace<span class="o">=</span>&lt;your-namespace&gt;<span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">clientsecret</span><span class="o">=</span><span class="s1">&#39;&lt;your-client-secret&gt;&#39;</span><span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">subscriptionid</span><span class="o">=</span><span class="s1">&#39;&lt;your-subscription-id&gt;&#39;</span><span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">tenantid</span><span class="o">=</span><span class="s1">&#39;&lt;your-tenant-id&gt;&#39;</span><span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">clientid</span><span class="o">=</span><span class="s1">&#39;&lt;your-client-id&gt;&#39;</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claudie.io/v1beta1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">InputManifest</span>
@@ -1943,7 +1942,7 @@
 <span class="w">      </span><span class="nt">providerType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">azure</span>
 <span class="w">      </span><span class="nt">secretRef</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">azure-secret-1</span>
-<span class="w">        </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mynamespace</span>
+<span class="w">        </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;your-namespace&gt;</span>
 <span class="w">  </span><span class="nt">nodePools</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">dynamic</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">control-az</span>
@@ -1952,7 +1951,7 @@
 <span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">azure-1</span>
 <span class="w">          </span><span class="c1"># Location of the nodepool.</span>
 <span class="w">          </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">North Europe</span>
-<span class="w">          </span><span class="c1"># Zone of the nodepool.</span>
+<span class="w">          </span><span class="c1"># Zone is optional. If omitted, nodes are distributed across zones.</span>
 <span class="w">          </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1&quot;</span>
 <span class="w">        </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
 <span class="w">        </span><span class="c1"># VM size name.</span>
@@ -1966,7 +1965,7 @@
 <span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">azure-1</span>
 <span class="w">          </span><span class="c1"># Location of the nodepool.</span>
 <span class="w">          </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Germany West Central</span>
-<span class="w">          </span><span class="c1"># Zone of the nodepool.</span>
+<span class="w">          </span><span class="c1"># Zone is optional. If omitted, nodes are distributed across zones.</span>
 <span class="w">          </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1&quot;</span>
 <span class="w">        </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
 <span class="w">        </span><span class="c1"># VM size name.</span>
@@ -1981,7 +1980,7 @@
 <span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">azure-1</span>
 <span class="w">          </span><span class="c1"># Location of the nodepool.</span>
 <span class="w">          </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">North Europe</span>
-<span class="w">          </span><span class="c1"># Zone of the nodepool.</span>
+<span class="w">          </span><span class="c1"># Zone is optional. If omitted, nodes are distributed across zones.</span>
 <span class="w">          </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1&quot;</span>
 <span class="w">        </span><span class="nt">count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
 <span class="w">        </span><span class="c1"># VM size name.</span>
@@ -2003,9 +2002,9 @@
 <span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">compute-1-az</span>
 </code></pre></div>
 <h3 id="multi-provider-multi-region-clusters-example">Multi provider, multi region clusters example<a class="headerlink" href="#multi-provider-multi-region-clusters-example" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>azure-secret-1<span class="w"> </span>--namespace<span class="o">=</span>mynamespace<span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">clientsecret</span><span class="o">=</span><span class="s1">&#39;Abcd~EFg~H6Ijkls~ABC15sEFGK54s78X~Olk9&#39;</span><span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">subscriptionid</span><span class="o">=</span><span class="s1">&#39;6a4dfsg7-sd4v-f4ad-dsva-ad4v616fd512&#39;</span><span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">tenantid</span><span class="o">=</span><span class="s1">&#39;54cdafa5-sdvs-45ds-546s-df651sfdt614&#39;</span><span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">clientid</span><span class="o">=</span><span class="s1">&#39;0255sc23-76we-87g6-964f-abc1def2gh3l&#39;</span>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>azure-secret-1<span class="w"> </span>--namespace<span class="o">=</span>&lt;your-namespace&gt;<span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">clientsecret</span><span class="o">=</span><span class="s1">&#39;&lt;your-client-secret&gt;&#39;</span><span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">subscriptionid</span><span class="o">=</span><span class="s1">&#39;&lt;your-subscription-id&gt;&#39;</span><span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">tenantid</span><span class="o">=</span><span class="s1">&#39;&lt;your-tenant-id&gt;&#39;</span><span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">clientid</span><span class="o">=</span><span class="s1">&#39;&lt;your-client-id&gt;&#39;</span>
 
-kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>azure-secret-2<span class="w"> </span>--namespace<span class="o">=</span>mynamespace<span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">clientsecret</span><span class="o">=</span><span class="s1">&#39;Efgh~ijkL~on43noi~NiuscviBUIds78X~UkL7&#39;</span><span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">subscriptionid</span><span class="o">=</span><span class="s1">&#39;0965bd5b-usa3-as3c-ads1-csdaba6fd512&#39;</span><span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">tenantid</span><span class="o">=</span><span class="s1">&#39;55safa5d-dsfg-546s-45ds-d51251sfdaba&#39;</span><span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">clientid</span><span class="o">=</span><span class="s1">&#39;076wsc23-sdv2-09cA-8sd9-oigv23npn1p2&#39;</span>
+kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>azure-secret-2<span class="w"> </span>--namespace<span class="o">=</span>&lt;your-namespace&gt;<span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">clientsecret</span><span class="o">=</span><span class="s1">&#39;&lt;your-client-secret&gt;&#39;</span><span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">subscriptionid</span><span class="o">=</span><span class="s1">&#39;&lt;your-subscription-id&gt;&#39;</span><span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">tenantid</span><span class="o">=</span><span class="s1">&#39;&lt;your-tenant-id&gt;&#39;</span><span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">clientid</span><span class="o">=</span><span class="s1">&#39;&lt;your-client-id&gt;&#39;</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claudie.io/v1beta1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">InputManifest</span>
@@ -2019,13 +2018,13 @@ kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="
 <span class="w">      </span><span class="nt">providerType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">azure</span>
 <span class="w">      </span><span class="nt">secretRef</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">azure-secret-1</span>
-<span class="w">        </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mynamespace</span>
+<span class="w">        </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;your-namespace&gt;</span>
 
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">azure-2</span>
 <span class="w">      </span><span class="nt">providerType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">azure</span>
 <span class="w">      </span><span class="nt">secretRef</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">azure-secret-2</span>
-<span class="w">        </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mynamespace</span>
+<span class="w">        </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;your-namespace&gt;</span>
 
 <span class="w">  </span><span class="nt">nodePools</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">dynamic</span><span class="p">:</span>

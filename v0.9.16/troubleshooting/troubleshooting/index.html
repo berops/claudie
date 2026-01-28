@@ -1890,14 +1890,14 @@ terraformer-fd664b7ff-dd2h7            1/1     Running     0               8m9s
 <p>~During normal operation, the content of this section should not be required. If you ended up here, it means there was likely a bug somewhere in Claudie. Please <a href="https://github.com/berops/claudie/issues/new/choose">open a bug report</a> in that case and use the content of this section to troubleshoot your way out of it.</p>
 <p>First of all you have to get into the directory in the <code>terraformer</code> pod, where all terraform files are located. In order to do that, follow these steps:</p>
 <ul>
-<li><code>kubectl exec -it -n claudie &lt;terraformer-pod&gt; -- bash</code></li>
-<li><code>cd ./services/terraformer/server/clusters/&lt;your-cluster&gt;</code></li>
+<li><code>kubectl exec -it -n claudie &lt;terraformer-pod-name&gt; -- bash</code></li>
+<li><code>cd ./services/terraformer/server/clusters/&lt;cluster-name&gt;</code></li>
 </ul>
 <h3 id="locked-state">Locked state<a class="headerlink" href="#locked-state" title="Permanent link">&para;</a></h3>
 <p>Once you are in the directory with all TF files, run the following command:</p>
-<div class="highlight"><pre><span></span><code>tofu force-unlock &lt;lock-id&gt;
+<div class="highlight"><pre><span></span><code>tofu<span class="w"> </span>force-unlock<span class="w"> </span>&lt;state-lock-id&gt;
 </code></pre></div>
-<p>The <code>lock-id</code> is generally shown in the error message.</p>
+<p>The <code>&lt;state-lock-id&gt;</code> is generally shown in the error message.</p>
 
 
 

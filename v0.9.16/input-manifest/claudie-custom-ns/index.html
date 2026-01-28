@@ -1664,35 +1664,35 @@
 </code></pre></div></li>
 <li>
 <p>Before applying the manifest, make the following changes:</p>
-<p>2.1. Replace every occurrence of <code>namespace: claudie</code> with your desired namespace (e.g., new-namespace). 
+<p>2.1. Replace every occurrence of <code>namespace: claudie</code> with your desired namespace (e.g., <code>&lt;your-namespace&gt;</code>).
    Using linux terminal you can use sed utility:
-   <div class="highlight"><pre><span></span><code><span class="w"> </span>sed<span class="w"> </span>-i<span class="w"> </span><span class="s1">&#39;s/namespace: claudie/namespace: new-namespace/&#39;</span><span class="w"> </span>claudie.yaml
+   <div class="highlight"><pre><span></span><code><span class="w"> </span>sed<span class="w"> </span>-i<span class="w"> </span><span class="s1">&#39;s/namespace: claudie/namespace: &lt;your-namespace&gt;/&#39;</span><span class="w"> </span>claudie.yaml
 </code></pre></div>
 2.2. For DNS Names within Certificate resource, <code>kind: Certificate</code>, ensure the dnsNames reflect the new namespace:
    <div class="highlight"><pre><span></span><code><span class="nt">spec</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">dnsNames</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claudie-operator.new-namespace</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claudie-operator.new-namespace.svc</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claudie-operator.new-namespace.svc.cluster</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claudie-operator.new-namespace.svc.cluster.local</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claudie-operator.&lt;your-namespace&gt;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claudie-operator.&lt;your-namespace&gt;.svc</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claudie-operator.&lt;your-namespace&gt;.svc.cluster</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claudie-operator.&lt;your-namespace&gt;.svc.cluster.local</span>
 </code></pre></div>
    Using linux terminal you can use sed utility:
-   <div class="highlight"><pre><span></span><code>sed<span class="w"> </span>-i<span class="w"> </span><span class="s1">&#39;s/\(claudie-operator\)\.claudie/\1.new-namespace/g&#39;</span><span class="w"> </span>claudie.yaml
+   <div class="highlight"><pre><span></span><code>sed<span class="w"> </span>-i<span class="w"> </span><span class="s1">&#39;s/\(claudie-operator\)\.claudie/\1.&lt;your-namespace&gt;/g&#39;</span><span class="w"> </span>claudie.yaml
 </code></pre></div>
-   2.3. Replace annotations <code>cert-manager.io/inject-ca-from: claudie/claudie-webhook-certificate</code> and name <code>name: claudie-webhook</code> in ValidatingWebhookConfiguration resource, <code>kind: ValidatingWebhookConfiguration</code>, so that is contains name of your new namespace
+   2.3. Replace annotations <code>cert-manager.io/inject-ca-from: claudie/claudie-webhook-certificate</code> and name <code>name: claudie-webhook</code> in ValidatingWebhookConfiguration resource, <code>kind: ValidatingWebhookConfiguration</code>, so that it contains name of your new namespace
 <div class="highlight"><pre><span></span><code><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">cert-manager.io/inject-ca-from</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">new-namespace/claudie-webhook-certificate</span>
+<span class="w">    </span><span class="nt">cert-manager.io/inject-ca-from</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;your-namespace&gt;/claudie-webhook-certificate</span>
 <span class="nn">...</span>
-<span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claudie-webhook-new-namespace</span>
+<span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claudie-webhook-&lt;your-namespace&gt;</span>
 </code></pre></div>
 Using linux terminal you can use sed utility:</p>
-<p><div class="highlight"><pre><span></span><code>sed<span class="w"> </span>-i<span class="w"> </span><span class="s1">&#39;s/cert-manager\.io\/inject-ca-from: claudie\//cert-manager.io\/inject-ca-from: new-namespace\//g&#39;</span><span class="w"> </span>claudie.yaml
-sed<span class="w"> </span>-i<span class="w"> </span><span class="s1">&#39;s/claudie-webhook$/claudie-webhook-new-namespace/g&#39;</span><span class="w"> </span>claudie.yaml
+<p><div class="highlight"><pre><span></span><code>sed<span class="w"> </span>-i<span class="w"> </span><span class="s1">&#39;s/cert-manager\.io\/inject-ca-from: claudie\//cert-manager.io\/inject-ca-from: &lt;your-namespace&gt;\//g&#39;</span><span class="w"> </span>claudie.yaml
+sed<span class="w"> </span>-i<span class="w"> </span><span class="s1">&#39;s/claudie-webhook$/claudie-webhook-&lt;your-namespace&gt;/g&#39;</span><span class="w"> </span>claudie.yaml
 </code></pre></div>
  2.4. To restrict the namespaces monitored by the Claudie operator (as defined in <code>claudie.yaml</code>), add the <code>CLAUDIE_NAMESPACES</code> environment variable to the claudie-operator deployment.
  <div class="highlight"><pre><span></span><code><span class="nt">env</span><span class="p">:</span>
 <span class="w">   </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CLAUDIE_NAMESPACES</span>
-<span class="w">     </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;new-namespace&quot;</span>
+<span class="w">     </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&lt;your-namespace&gt;&quot;</span>
 </code></pre></div></p>
 <div class="admonition danger">
 <p class="admonition-title">Updating CLAUDIE_NAMESPACES variable</p>
@@ -1701,10 +1701,10 @@ sed<span class="w"> </span>-i<span class="w"> </span><span class="s1">&#39;s/cla
 </div>
 <p>2.5. To ensure the <code>ClusterRoleBinding</code> is correctly applied to the specified <code>ServiceAccount</code>, make sure the <code>ClusterRoleBinding</code> has a unique name. Modify the name of the <code>ClusterRoleBinding</code> resource in the <code>claudie.yaml</code>.</p>
 <p>Using linux terminal you can use sed utility:</p>
-<p><div class="highlight"><pre><span></span><code>sed<span class="w"> </span>-i<span class="w"> </span><span class="s1">&#39;s/claudie-operator-role-binding/claudie-operator-role-binding-new-namespace/g&#39;</span><span class="w"> </span>claudie.yaml
+<p><div class="highlight"><pre><span></span><code>sed<span class="w"> </span>-i<span class="w"> </span><span class="s1">&#39;s/claudie-operator-role-binding/claudie-operator-role-binding-&lt;your-namespace&gt;/g&#39;</span><span class="w"> </span>claudie.yaml
 </code></pre></div>
- 2.6. Once you’ve updated claudie.yaml, create your custom namespace and apply the manifest. Make sure Cert Manager is already deployed in your cluster
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>namespace<span class="w"> </span>new-namespace
+ 2.6. Once you've updated claudie.yaml, create your custom namespace and apply the manifest. Make sure Cert Manager is already deployed in your cluster
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>namespace<span class="w"> </span>&lt;your-namespace&gt;
 kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>claudie.yaml
 </code></pre></div></p>
 </li>
