@@ -136,6 +136,14 @@ passes:
 					Warn().
 					Msg("Task failed for the current subpass, ignoring error and continuing with next")
 
+				logger.
+					Warn().
+					Msgf("Ignoring the following diagnostics: %v", diags[last:])
+
+				// zero-out the ignored diagnostics.
+				clear(diags[last:])
+				diags = diags[:last]
+
 				continue passes
 			}
 		}

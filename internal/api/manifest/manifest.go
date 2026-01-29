@@ -123,6 +123,9 @@ type LoadBalancer struct {
 // Kubernetes list of Kubernetes cluster this manifest will manage.
 type Kubernetes struct {
 	// List of Kubernetes clusters Claudie will create.
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=100
 	// +optional
 	Clusters []Cluster `yaml:"clusters" json:"clusters"`
 }
@@ -239,6 +242,7 @@ type Cluster struct {
 	// https://docs.kubermatic.com/kubeone/v1.12/architecture/compatibility/supported-versions/
 	Version string `validate:"required,ver" yaml:"version" json:"version"`
 	// Network range for the VPN of the cluster. The value should be defined in format A.B.C.D/mask.
+	// +kubebuilder:validation:MaxLength=50
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Network is immutable"
 	Network string `validate:"required,cidrv4" yaml:"network" json:"network"`
 	// List of nodepool names this cluster will use.

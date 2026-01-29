@@ -472,7 +472,7 @@ func targetNodes(targetPools []string, targetk8sPools []*spec.NodePool) (nodes [
 	for _, target := range targetPools {
 		for _, np := range targetk8sPools {
 			if np.GetDynamicNodePool() != nil {
-				if name, _ := nodepools.MatchNameAndHashWithTemplate(target, np.Name); name != "" {
+				if nodepools.HasNodePoolTypeOf(target, np.Name) {
 					pools = append(pools, np)
 				}
 			} else if np.GetStaticNodePool() != nil {

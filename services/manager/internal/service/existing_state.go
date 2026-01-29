@@ -150,29 +150,38 @@ outer:
 	}
 }
 
-// deduplicateDynamicNodePoolNames goes over each reference of each dynamic nodepool definition inside of
-// [manifest.Manifest] and with the passed in `current` state deduplicates the names in the `desired` state
+// resolveDynamicNodePoolReferences goes over each reference of each dynamic nodepool definition inside of
+// [manifest.Manifest] and with the passed in `current` state resolves the references in the `desired` state
 // by appending hashes to the names of the nodepools, in both k8s and loadbalancers. If `current` is empty
 // no transferring is done and the dynamic nodepools in `desired` are simply assigned a randomly generated
 // hash to their names.
-func deduplicateDynamicNodePoolNames(from *manifest.Manifest, current, desired *spec.Clusters) {
+//
+// Transferring here means that the current state nodepools should also continue existing in the desired state.
+func resolveDynamicNodePoolReferences(from *manifest.Manifest, current, desired *spec.Clusters) {
 	desiredK8s := desired.GetK8S()
 	desiredLbs := desired.GetLoadBalancers().GetClusters()
 
 	currentK8s := current.GetK8S()
 	currentLbs := current.GetLoadBalancers().GetClusters()
 
-	for _, np := range from.NodePools.Dynamic {
+	for _, nodepoolType := range from.NodePools.Dynamic {
 		used := make(map[string]struct{})
 
-		copyK8sNodePoolsNamesFromCurrentState(used, np.Name, currentK8s, desiredK8s)
-		copyLbNodePoolNamesFromCurrentState(used, np.Name, currentLbs, desiredLbs)
+		resolveK8sNodePoolReferences(used, nodepoolType.Name, currentK8s, desiredK8s)
+		resolveLbNodePoolReferences(used, nodepoolType.Name, currentLbs, desiredLbs)
 
-		references := nodepools.FindReferences(np.Name, desiredK8s.GetClusterInfo().GetNodePools())
+		// References reference the "Type" of the nodepool. Since a nodepool name is unique
+		// it also identifies a "Type". Thus with this we find all of the nodepools that have
+		// type "np.Name" and then append a random hash to them to de-duplicate them to be able
+		// to distingues them, but the "Type" stays, and can be again inferred by removing the
+		// appended hash.
+		references := nodepools.FindReferences(nodepoolType.Name, desiredK8s.GetClusterInfo().GetNodePools())
 		for _, lb := range desiredLbs {
-			references = append(references, nodepools.FindReferences(np.Name, lb.GetClusterInfo().GetNodePools())...)
+			references = append(references, nodepools.FindReferences(nodepoolType.Name, lb.GetClusterInfo().GetNodePools())...)
 		}
 
+		// For any references that were not transferred over from current state
+		// generate a new unique hash.
 		for _, np := range references {
 			h := hash.Create(hash.Length)
 			for _, ok := used[h]; ok; {
@@ -184,80 +193,197 @@ func deduplicateDynamicNodePoolNames(from *manifest.Manifest, current, desired *
 	}
 }
 
-// copyLbNodePoolNamesFromCurrentState copies the generated hash from an existing reference in the current state to the desired state.
-func copyLbNodePoolNamesFromCurrentState(used map[string]struct{}, nodepool string, current, desired []*spec.LBcluster) {
+// TODO: verify that Slices are actually not modified anywhere in the nodepools
+// TODO: check the deletion and addition of all slices...
+// TODO: verify the nodepools package does not actually returnes the underlying
+// TODO: double check.
+// slices as modifying those should be okay.
+// and always the copies are modified.
+// same as [resolveK8sNodePoolReferences] but works with loadbalancers.
+func resolveLbNodePoolReferences(
+	used map[string]struct{},
+	nodepoolType string,
+	current, desired []*spec.LBcluster,
+) {
 	for _, desired := range desired {
-		references := nodepools.FindReferences(nodepool, desired.GetClusterInfo().GetNodePools())
-		switch {
-		case len(references) > 1:
-			panic("unexpected nodepool reference count")
-		case len(references) == 0:
-			continue
-		}
-
-		ref := references[0]
-
 		for _, current := range current {
 			if desired.ClusterInfo.Name != current.ClusterInfo.Name {
 				continue
 			}
 
-			for _, np := range current.GetClusterInfo().GetNodePools() {
-				_, hash := nodepools.MatchNameAndHashWithTemplate(nodepool, np.Name)
-				if hash == "" {
+			// Shallow Clone the slices to avoid modifying the original ones.
+			var (
+				currentNodePools  = slices.Clone(current.GetClusterInfo().GetNodePools())
+				desiredReferences = nodepools.FindReferences(nodepoolType, desired.GetClusterInfo().GetNodePools())
+			)
+
+			// filter out nodepools from current state that do not have the passed in nodepool type.
+			currentNodePools = slices.DeleteFunc(currentNodePools, func(np *spec.NodePool) bool {
+				_, hash := nodepools.MatchNameAndHashWithTemplate(nodepoolType, np.Name)
+				if hash != "" {
+					used[hash] = struct{}{}
+				}
+				return hash == ""
+			})
+
+			for _, ref := range desiredReferences {
+				carryhash, idx := "", -1
+
+				for i, existing := range currentNodePools {
+					ep := existing.GetDynamicNodePool().GetProvider().GetTemplates()
+					rp := ref.GetDynamicNodePool().GetProvider().GetTemplates()
+					if proto.Equal(ep, rp) {
+						_, hash := nodepools.MatchNameAndHashWithTemplate(nodepoolType, existing.Name)
+						carryhash, idx = hash, i
+						break
+					}
+				}
+
+				if carryhash != "" {
+					currentNodePools = slices.Delete(currentNodePools, idx, idx+1)
+					ref.Name += fmt.Sprintf("-%s", carryhash)
 					continue
 				}
 
-				used[hash] = struct{}{}
+				if len(currentNodePools) == 0 {
+					// no more carrying over can be done.
+					break
+				}
 
-				ref.Name += fmt.Sprintf("-%s", hash)
-				break
+				// if no matching template reference exists, take whichever is left, if any.
+				_, carryhash = nodepools.MatchNameAndHashWithTemplate(nodepoolType, currentNodePools[0].Name)
+				ref.Name += fmt.Sprintf("-%s", carryhash)
+				currentNodePools = currentNodePools[1:]
 			}
 		}
 	}
 }
 
-// copyK8sNodePoolsNamesFromCurrentState copies the generated hash from an existing reference in the current state to the desired state.
-func copyK8sNodePoolsNamesFromCurrentState(used map[string]struct{}, nodepool string, current, desired *spec.K8Scluster) {
-	references := nodepools.FindReferences(nodepool, desired.GetClusterInfo().GetNodePools())
+// resolveK8sNodePoolsReferences goes over all the references of the given 'nodepoolType'
+// in the desired state and finds a matching nodepool with the same type in the current state and
+// if such nodepool exists transfers its hash to the reference in the desired state.
+//
+// This will result in the desired state having the same nodepool as the current state, thus it
+// won't be interpreted as a new nodepool that should be added.
+func resolveK8sNodePoolReferences(
+	used map[string]struct{},
+	nodepoolType string,
+	current, desired *spec.K8Scluster,
+) {
+	var (
+		control = slices.Collect(nodepools.Control(current.GetClusterInfo().GetNodePools()))
+		compute = slices.Collect(nodepools.Compute(current.GetClusterInfo().GetNodePools()))
 
-	switch {
-	case len(references) == 0:
-		return
-	case len(references) > 2:
-		// cannot reuse the same nodepool more than twice (once for control, once for worker pools)
-		panic("unexpected nodepool reference count")
-	}
+		desiredControl           = slices.Collect(nodepools.Control(desired.GetClusterInfo().GetNodePools()))
+		desiredCompute           = slices.Collect(nodepools.Compute(desired.GetClusterInfo().GetNodePools()))
+		desiredControlReferences = nodepools.FindReferences(nodepoolType, desiredControl)
+		desiredComputeReferences = nodepools.FindReferences(nodepoolType, desiredCompute)
+	)
 
-	// to avoid extra code for special cases where there is just 1 reference, append a nil.
-	references = append(references, []*spec.NodePool{nil}...)
+	// filter out nodepools from current state that do not have the passed in nodepool type.
+	control = slices.DeleteFunc(control, func(np *spec.NodePool) bool {
+		_, hash := nodepools.MatchNameAndHashWithTemplate(nodepoolType, np.Name)
+		if hash != "" {
+			used[hash] = struct{}{}
+		}
+		return hash == ""
+	})
+	compute = slices.DeleteFunc(compute, func(np *spec.NodePool) bool {
+		_, hash := nodepools.MatchNameAndHashWithTemplate(nodepoolType, np.Name)
+		if hash != "" {
+			used[hash] = struct{}{}
+		}
+		return hash == ""
+	})
 
-	control, compute := references[0], references[1]
-	if !references[0].IsControl {
-		control, compute = compute, control
-	}
+	// Take the reference from the desired state
+	// and match it againts a reference in the current
+	// state.
+	//
+	// When matching nodepools 1 thing needs to be considered:
+	//
+	// While the nodepool in both the current and desired state
+	// may reference the same nodepool type, the one in the desired
+	// state may have different "Templates", which essentially means
+	// that the infrastructure of the nodepool is different from the
+	// one of the current state nodepool, if one exists.
+	//
+	// What this means is that the matching should consider the templates
+	// of the nodepools for equality and should prefer to transfer nodepools
+	// that match the templates in the desired state if such nodepools exist
+	// in the current state, however.
+	//
+	// If nodepools in the current state do not match the templates of the
+	// desired state but there is still a reference in the desired state that
+	// is unmatched, the reference needs to be carried over and this should then
+	// be handled by a reconciliation loop when comparing the current and desired
+	// state to see where new nodepool templates needs to be applied.
+	//
+	// Given we match with the 'Provider Templates' priority this will also result
+	// in, once the rolling update of the nodepool is part of the current state it
+	// will be preferred to transfer over its reference to the desired state over
+	// the old nodepool with the old templates which results in the old nodepool
+	// with the old templates to not be in the desired state which again should
+	// trigger the deletion of the nodepool in the reconciliation loop.
+	for _, ref := range desiredControlReferences {
+		// The hash that should be carried over to the desired state.
+		carryhash, idx := "", -1
 
-	for _, np := range current.GetClusterInfo().GetNodePools() {
-		_, hash := nodepools.MatchNameAndHashWithTemplate(nodepool, np.Name)
-		if hash == "" {
+		// Try to find a reference with matching templates first.
+		for i, existing := range control {
+			ep := existing.GetDynamicNodePool().GetProvider().GetTemplates()
+			rp := ref.GetDynamicNodePool().GetProvider().GetTemplates()
+			if proto.Equal(ep, rp) {
+				_, hash := nodepools.MatchNameAndHashWithTemplate(nodepoolType, existing.Name)
+				carryhash, idx = hash, i
+				break
+			}
+		}
+
+		if carryhash != "" {
+			control = slices.Delete(control, idx, idx+1)
+			ref.Name += fmt.Sprintf("-%s", carryhash)
 			continue
 		}
 
-		used[hash] = struct{}{}
+		if len(control) == 0 {
+			// no more carrying over can be done.
+			break
+		}
 
-		if np.IsControl && control != nil {
-			// if there are multiple nodepools in the current state (for example on a failed rolling update)
-			// transfer only one of them.
-			if _, h := nodepools.MatchNameAndHashWithTemplate(nodepool, control.Name); h == "" {
-				control.Name += fmt.Sprintf("-%s", hash)
-			}
-		} else if !np.IsControl && compute != nil {
-			// if there are multiple nodepools in the current state (for example on a failed rolling update)
-			// transfer only one of them.
-			if _, h := nodepools.MatchNameAndHashWithTemplate(nodepool, compute.Name); h == "" {
-				compute.Name += fmt.Sprintf("-%s", hash)
+		// if no matching template reference exists, take whichever is left, if any.
+		_, carryhash = nodepools.MatchNameAndHashWithTemplate(nodepoolType, control[0].Name)
+		ref.Name += fmt.Sprintf("-%s", carryhash)
+		control = control[1:]
+	}
+
+	for _, ref := range desiredComputeReferences {
+		carryhash, idx := "", -1
+
+		for i, existing := range compute {
+			ep := existing.GetDynamicNodePool().GetProvider().GetTemplates()
+			rp := ref.GetDynamicNodePool().GetProvider().GetTemplates()
+			if proto.Equal(ep, rp) {
+				_, hash := nodepools.MatchNameAndHashWithTemplate(nodepoolType, existing.Name)
+				carryhash, idx = hash, i
+				break
 			}
 		}
+
+		if carryhash != "" {
+			compute = slices.Delete(compute, idx, idx+1)
+			ref.Name += fmt.Sprintf("-%s", carryhash)
+			continue
+		}
+
+		if len(compute) == 0 {
+			// no more carrying over can be done.
+			break
+		}
+
+		_, carryhash = nodepools.MatchNameAndHashWithTemplate(nodepoolType, compute[0].Name)
+		ref.Name += fmt.Sprintf("-%s", carryhash)
+		compute = compute[1:]
 	}
 }
 
@@ -294,6 +420,12 @@ func transferDynamicNodePool(current, desired *spec.NodePool) {
 	dnp.PublicKey = cnp.PublicKey
 	dnp.PrivateKey = cnp.PrivateKey
 	dnp.Cidr = cnp.Cidr
+
+	// Provider of a dynamic nodepool is also considered to be
+	// immutable. The only part that is allowed to be changed
+	// are the credentials and templates.
+	dnp.Provider.SpecName = cnp.Provider.SpecName
+	dnp.Provider.CloudProviderName = cnp.Provider.CloudProviderName
 
 	// Nodes in dynamic nodepools are not matched like how Static Nodepools are.
 	// Within dynamic nodepools IP addresses can be recycled, so they can identify

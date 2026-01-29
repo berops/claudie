@@ -97,6 +97,7 @@ spec:
                             description:
                               Network range for the VPN of the cluster. The
                               value should be defined in format A.B.C.D/mask.
+                            maxLength: 50
                             type: string
                             x-kubernetes-validations:
                               - message: Network is immutable
@@ -136,7 +137,11 @@ spec:
                           - pools
                           - version
                         type: object
+                      maxItems: 100
                       type: array
+                      x-kubernetes-list-map-keys:
+                        - name
+                      x-kubernetes-list-type: map
                   type: object
                 loadBalancers:
                   properties:

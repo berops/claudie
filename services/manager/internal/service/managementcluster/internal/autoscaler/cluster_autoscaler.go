@@ -93,8 +93,10 @@ func (a *AutoscalerManager) SetUpClusterAutoscaler(logger zerolog.Logger) error 
 		MaxKubectlRetries: -1,
 	}
 
-	kc.Stdout = logger.Level(zerolog.DebugLevel)
-	kc.Stderr = logger.Level(zerolog.DebugLevel)
+	if logger.GetLevel() <= zerolog.DebugLevel {
+		kc.Stdout = logger
+		kc.Stderr = logger
+	}
 
 	if err := kc.KubectlApply(clusterAutoscalerDeployment, "-n", envs.Namespace); err != nil {
 		return fmt.Errorf("error while applying cluster autoscaler: %w", err)
@@ -113,9 +115,6 @@ func (a *AutoscalerManager) DestroyClusterAutoscaler(logger zerolog.Logger) erro
 		Directory:         a.directory,
 		MaxKubectlRetries: -1,
 	}
-
-	kc.Stdout = logger.Level(zerolog.DebugLevel)
-	kc.Stderr = logger.Level(zerolog.DebugLevel)
 
 	if err := kc.KubectlDeleteManifest(clusterAutoscalerDeployment, "-n", envs.Namespace); err != nil {
 		return fmt.Errorf("error while deleting cluster autoscaler: %w", err)

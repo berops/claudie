@@ -9,6 +9,7 @@ import (
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -214,6 +215,22 @@ func PostKubernetesDiff(r LoadBalancersReconciliate) *spec.TaskEvent {
 	if ep := clusters.FindAssignedLbApiEndpoint(r.Current.LoadBalancers.Clusters); ep != nil {
 		if r.Hc.Cluster.ControlNodesHave6443 {
 			return ScheduleControlNodesPort6443(r.Current, false)
+		}
+	}
+
+	return nil
+}
+
+// LoadBalancersLowPriority handles the very last low priority tasks that should be worked on,
+// after all the other changes are done. Assumes that both the current and desired [spec.Clusters]
+// were not modified since the [HealthCheckStatus] and [LoadBalancersDiffResult] was computed,
+// and that all of the Cached Indices within the [LoadBalancersDiffResult] are not invalidated.
+// This function does not modify the input in any way and also the returned [spec.TaskEvent]
+// does not hold or share any memory to related to the input.
+func LoadBalancersLowPriority(r LoadBalancersReconciliate) *spec.TaskEvent {
+	for _, modified := range r.Diff.Modified {
+		for np := range modified.RollingUpdate {
+			log.Printf("LoadBalaner rolling update: %v", np)
 		}
 	}
 

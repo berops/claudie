@@ -7,6 +7,7 @@ import (
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -180,6 +181,12 @@ func KubernetesLowPriority(r KubernetesReconciliate) *spec.TaskEvent {
 	if len(r.Diff.ChangedToFixed) > 0 {
 		for np := range r.Diff.ChangedToFixed {
 			return ScheduleMoveNodePoolFromAutoscaled(r.Current, np)
+		}
+	}
+
+	if len(r.Diff.RollingUpdates) > 0 {
+		for np := range r.Diff.RollingUpdates {
+			log.Printf("Rolling kubernetes update: %v\n", np)
 		}
 	}
 
@@ -759,7 +766,7 @@ func ScheduleAdditionsInNodePools(
 			for _, r := range lb.Roles {
 				for _, tg := range r.TargetPools {
 					// Need to match against only the nodepool name without the hash.
-					if n, _ := nodepools.MatchNameAndHashWithTemplate(tg, np); n != "" {
+					if nodepools.HasNodePoolTypeOf(tg, np) {
 						ans.Ansibler.SubPasses = append(ans.Ansibler.SubPasses, &spec.StageAnsibler_SubPass{
 							Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
 							Description: &spec.StageDescription{
@@ -877,7 +884,7 @@ func ScheduleAdditionsInNodePools(
 			for _, r := range lb.Roles {
 				for _, tg := range r.TargetPools {
 					// Need to match against only the nodepool name without the hash.
-					if n, _ := nodepools.MatchNameAndHashWithTemplate(tg, np); n != "" {
+					if nodepools.HasNodePoolTypeOf(tg, np) {
 						ans.Ansibler.SubPasses = append(ans.Ansibler.SubPasses, &spec.StageAnsibler_SubPass{
 							Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
 							Description: &spec.StageDescription{
@@ -1103,7 +1110,7 @@ func ScheduleDeletionsInNodePools(
 			for _, r := range lb.Roles {
 				for _, tg := range r.TargetPools {
 					// Need to match against only the nodepool name without the hash.
-					if n, _ := nodepools.MatchNameAndHashWithTemplate(tg, np); n != "" {
+					if nodepools.HasNodePoolTypeOf(tg, np) {
 						ans.Ansibler.SubPasses = append(ans.Ansibler.SubPasses, &spec.StageAnsibler_SubPass{
 							Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
 							Description: &spec.StageDescription{
@@ -1197,7 +1204,7 @@ func ScheduleDeletionsInNodePools(
 			for _, r := range lb.Roles {
 				for _, tg := range r.TargetPools {
 					// Need to match against only the nodepool name without the hash.
-					if n, _ := nodepools.MatchNameAndHashWithTemplate(tg, np); n != "" {
+					if nodepools.HasNodePoolTypeOf(tg, np) {
 						ans.Ansibler.SubPasses = append(ans.Ansibler.SubPasses, &spec.StageAnsibler_SubPass{
 							Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
 							Description: &spec.StageDescription{

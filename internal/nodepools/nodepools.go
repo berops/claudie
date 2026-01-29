@@ -472,24 +472,29 @@ func commonNodes(currControlNps map[string]*spec.NodePool, desiredNp []*spec.Nod
 	return commonNps
 }
 
-func MatchNameAndHashWithTemplate(template, nodepoolName string) (n, h string) {
-	if len(nodepoolName) != len(template)+hash.Length+1 {
+func MatchNameAndHashWithTemplate(nodepoolType, nodepoolName string) (t, h string) {
+	if len(nodepoolName) != len(nodepoolType)+hash.Length+1 {
 		return
 	}
 
 	idx := strings.LastIndex(nodepoolName, "-")
 	if idx < 0 {
-		return "", ""
-	}
-
-	if nodepoolName[:idx] != template {
 		return
 	}
 
-	n = nodepoolName[:idx]
+	if nodepoolName[:idx] != nodepoolType {
+		return
+	}
+
+	t = nodepoolName[:idx]
 	h = nodepoolName[idx+1:]
 
 	return
+}
+
+func HasNodePoolTypeOf(nodepoolType, nodepoolName string) bool {
+	typ, _ := MatchNameAndHashWithTemplate(nodepoolType, nodepoolName)
+	return nodepoolType == typ
 }
 
 func MustExtractNameAndHash(pool string) (name, hash string) {

@@ -205,7 +205,7 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 	for info, pools := range nodepools.ByProviderDynamic(c.ClusterInfo.NodePools) {
 		templatesDownloadDir := filepath.Join(TemplatesRootDir, clusterID, info.SpecName)
 
-		for path, pools := range nodepools.ByTemplates(pools) {
+		for path, pools := range nodepools.ByTemplatesPath(pools) {
 			p := pools[0].GetDynamicNodePool().GetProvider()
 
 			if err := templates.DownloadProvider(templatesDownloadDir, p); err != nil {
@@ -286,7 +286,7 @@ func (c *ClusterBuilder) generateProviderTemplates(clusterID, directory string, 
 
 		templatesDownloadDir := filepath.Join(TemplatesRootDir, clusterID, info.SpecName)
 
-		for path, pools := range nodepools.ByTemplates(pools) {
+		for path, pools := range nodepools.ByTemplatesPath(pools) {
 			p := pools[0].GetDynamicNodePool().GetProvider()
 			if err := templates.DownloadProvider(templatesDownloadDir, p); err != nil {
 				msg := fmt.Sprintf("cluster %q failed to download template repository", clusterID)

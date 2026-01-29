@@ -361,7 +361,7 @@ func nodepoolImmutabilityCheck(desired, current *manifest.DynamicNodePool) error
 	}
 
 	if desired.ServerType != current.ServerType {
-		return fmt.Errorf("dynamic nodepools are immutable, changing the server type for %s is not allowed, only 'count' and autoscaling' fields are allowed to be modified, consider creating a new nodepool", current.Name)
+		return fmt.Errorf("dynamic nodepools are immutable, changing the server type, from %s to %s, for %s is not allowed, only 'count' and autoscaling' fields are allowed to be modified, consider creating a new nodepool", current.ServerType, desired.ServerType, current.Name)
 	}
 
 	if desired.Image != current.Image {

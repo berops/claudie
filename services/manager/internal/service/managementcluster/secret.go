@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	comm "github.com/berops/claudie/internal/command"
+	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -88,8 +89,11 @@ func (s *Secret) Apply(namespace string) error {
 		Kubeconfig:        "",
 		MaxKubectlRetries: -1,
 	}
-	kubectl.Stdout = comm.GetStdOut(s.YamlManifest.Metadata.Name)
-	kubectl.Stderr = comm.GetStdErr(s.YamlManifest.Metadata.Name)
+
+	if envs.LogLevel != "info" {
+		kubectl.Stdout = comm.GetStdOut(s.YamlManifest.Metadata.Name)
+		kubectl.Stderr = comm.GetStdErr(s.YamlManifest.Metadata.Name)
+	}
 
 	defer func() {
 		if err := os.RemoveAll(s.Directory); err != nil {

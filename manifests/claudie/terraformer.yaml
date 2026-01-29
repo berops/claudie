@@ -63,6 +63,11 @@ spec:
                 configMapKeyRef:
                   name: env
                   key: NATS_CLUSTER_URL
+            - name: NATS_CLUSTER_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: NATS_CLUSTER_SIZE
             - name: TERRAFORMER_TOFU_PARALLELISM
               valueFrom:
                 configMapKeyRef:

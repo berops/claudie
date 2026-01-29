@@ -64,15 +64,13 @@ func createDesiredState(pending *spec.Config, result *map[string]*spec.Clusters)
 		// no two clusters (including LB) can share the same name.
 		current := pending.Clusters[cluster].GetCurrent()
 
-		// Generate hashes for multiple references of the same dynamic nodepools,
-		// while also considering hashes previously assigned in the current state.
+		// Resolve references to same nodopool types used in both
+		// states, current and desired.
 		//
-		// This is so that the same reference to a dynamic nodepool is treated as
-		// a unique nodepool with its own state to be maintained. The validation
-		// layers guarantee that a dynamic nodepool can be referenced at most once
-		// within a block, i.e kubernetes:, loadbalancers:, If that invariant is
-		// somehow broken, the function panics.
-		deduplicateDynamicNodePoolNames(&m, current, desired)
+		// This function decides which nodepools of the same type are
+		// going to be kept in the desired state based on the number
+		// of references.
+		resolveDynamicNodePoolReferences(&m, current, desired)
 
 		// Deduplicate, static node names. Contrary to how dynamic node works, static
 		// nodes are identified via the Public endpoint. The name that is assigned to

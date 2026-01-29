@@ -109,6 +109,10 @@ type (
 		}
 
 		LabelsTaintsAnnotations LabelsTaintsAnnotationsDiffResult
+
+		// RollingUpdates are nodepools present in both states but
+		// having different templates commit hash.
+		RollingUpdates PendingRollingUpdates
 	}
 
 	ModifiedLoadBalancer struct {
@@ -163,6 +167,9 @@ type (
 		// Reason why its included in the diff, is mostly that its a
 		// pending diff to be handled at some point in the future.
 		PendingStaticDeletions PendingDeletionsViewType
+
+		// Nodepools that have their templates changed.
+		RollingUpdate PendingRollingUpdates
 	}
 
 	LoadBalancerIdentifier struct {
@@ -245,6 +252,12 @@ type (
 	// PendingFixedNodePoolTransitions is an unordered view into the nodepools
 	// which has move from autoscaled to fixed type.
 	PendingFixedNodePoolTransitions = map[string]struct{}
+
+	// PendingRollingUpdates is an unordered view into nodepools which
+	// are present in both the current and desired state but have different
+	// templates versions, meaning that a rolling update is requried for the
+	// infrastructure.
+	PendingRollingUpdates map[string]struct{}
 
 	// TargetPoolsViewType is an unordered view into the diff for target pools
 	// that are from a [spec.Role].
@@ -393,6 +406,7 @@ func KubernetesDiff(old, desired *spec.K8Scluster) KubernetesDiffResult {
 	result.PendingStaticDeletions = make(PendingDeletionsViewType)
 	result.ChangedToAutoscaled = make(PendingAutoscaledNodePoolTransitions)
 	result.ChangedToFixed = make(PendingFixedNodePoolTransitions)
+	result.RollingUpdates = make(PendingRollingUpdates)
 	for _, cnp := range old.ClusterInfo.NodePools {
 		for _, dnp := range desired.ClusterInfo.NodePools {
 			if cnp.Name != dnp.Name {
@@ -402,6 +416,10 @@ func KubernetesDiff(old, desired *spec.K8Scluster) KubernetesDiffResult {
 			if cnp.GetDynamicNodePool() != nil && dnp.GetDynamicNodePool() != nil {
 				cdyn := cnp.GetDynamicNodePool()
 				ddyn := dnp.GetDynamicNodePool()
+
+				if cdyn.Provider.Templates.CommitHash != ddyn.Provider.Templates.CommitHash {
+					result.RollingUpdates[dnp.Name] = struct{}{}
+				}
 				if cdyn.AutoscalerConfig == nil && ddyn.AutoscalerConfig != nil {
 					result.ChangedToAutoscaled[dnp.Name] = proto.Clone(ddyn.AutoscalerConfig).(*spec.AutoscalerConf)
 				}
@@ -701,6 +719,7 @@ func LoadBalancersDiff(old, desired *spec.LoadBalancers) LoadBalancersDiffResult
 		// Pending deletions.
 		pendingDynamicDeletions := make(PendingDeletionsViewType)
 		pendingStaticDeletions := make(PendingDeletionsViewType)
+		rollingUpdates := make(PendingRollingUpdates)
 
 		// Check for [spec.NodeStatus_MarkedForDeletion] nodes.
 		//
@@ -713,6 +732,15 @@ func LoadBalancersDiff(old, desired *spec.LoadBalancers) LoadBalancersDiffResult
 			for _, dnp := range desired.ClusterInfo.NodePools {
 				if cnp.Name != dnp.Name {
 					continue
+				}
+
+				if cnp.GetDynamicNodePool() != nil && dnp.GetDynamicNodePool() != nil {
+					cdyn := cnp.GetDynamicNodePool()
+					ddyn := dnp.GetDynamicNodePool()
+
+					if cdyn.Provider.Templates.CommitHash != ddyn.Provider.Templates.CommitHash {
+						rollingUpdates[dnp.Name] = struct{}{}
+					}
 				}
 
 				for _, cn := range cnp.Nodes {
@@ -746,6 +774,7 @@ func LoadBalancersDiff(old, desired *spec.LoadBalancers) LoadBalancersDiffResult
 		modified = modified || len(targetPoolsAdded) > 0 || len(targetPoolsDeleted) > 0
 		modified = modified || dnsChanged
 		modified = modified || len(pendingDynamicDeletions) > 0 || len(pendingStaticDeletions) > 0
+		modified = modified || len(rollingUpdates) > 0
 		modified = modified || (!dynDiff.IsEmpty() || !sttDiff.IsEmpty())
 		if modified {
 			entry := struct {
@@ -763,6 +792,7 @@ func LoadBalancersDiff(old, desired *spec.LoadBalancers) LoadBalancersDiffResult
 
 				PendingDynamicDeletions PendingDeletionsViewType
 				PendingStaticDeletions  PendingDeletionsViewType
+				RollingUpdate           PendingRollingUpdates
 			}{}
 
 			entry.CurrentIdx = oldIdx
@@ -776,6 +806,7 @@ func LoadBalancersDiff(old, desired *spec.LoadBalancers) LoadBalancersDiffResult
 
 			entry.PendingDynamicDeletions = pendingDynamicDeletions
 			entry.PendingStaticDeletions = pendingStaticDeletions
+			entry.RollingUpdate = rollingUpdates
 
 			if !dynDiff.IsEmpty() {
 				entry.Dynamic = dynDiff

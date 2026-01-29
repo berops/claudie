@@ -99,6 +99,26 @@ func (l *LBcluster) Destroy(logger zerolog.Logger) error {
 			return nil
 		}
 
+		var emptycount int
+		for _, ip := range nodeIPs {
+			if ip == "" {
+				emptycount += 1
+			}
+		}
+
+		// This check needs to be done as the resources in the terraform
+		// templates are based on IPs and if there are more than two nodes
+		// that do not have an IP it will continiously fail. But given that
+		// the DNS isn't even build if atleast 1 node fails means that this
+		// will only be hit if the building of the infrastructure failed altogether
+		// and to avoid error simply do not destroy what was not build.
+		//
+		// This really depends on how the templates are structured but this catches
+		// the case where the IP is used in the resource name.
+		if emptycount > 1 {
+			return nil
+		}
+
 		dns := DNS{
 			ProjectName:       projectName,
 			ClusterName:       ci.Name,

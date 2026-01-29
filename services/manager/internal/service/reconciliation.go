@@ -160,23 +160,10 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 
 			currentAutoscaled := len(nodepools.Autoscaled(state.Current.K8S.ClusterInfo.NodePools)) > 0
 			if currentAutoscaled {
-				drift, err := managementcluster.DriftInAutoscalerPods(logger, pending.Name, current)
-				if err != nil {
+				if err := managementcluster.SetUpClusterAutoscaler(logger, pending.Name, current); err != nil {
 					logger.
 						Err(err).
-						Msg("Failed to detect drift in autoscaler deployments")
-				}
-
-				if drift {
-					logger.
-						Info().
-						Msg("Detected drift in autoscaler deployments")
-
-					if err := managementcluster.SetUpClusterAutoscaler(logger, pending.Name, current); err != nil {
-						logger.
-							Err(err).
-							Msg("Failed to refresh autoscaler pods in the management cluster")
-					}
+						Msg("Failed to refresh autoscaler pods in the management cluster")
 				}
 			} else {
 				if err := managementcluster.DestroyClusterAutoscaler(logger, pending.Name, state.Current); err != nil {
@@ -577,6 +564,10 @@ func handleUpdate(hc HealthCheckStatus, diff DiffResult, current, desired *spec.
 
 	if hc.Cluster.VpnDrift {
 		return ScheduleRefreshVPN(kr.Diff.Proxy.CurrentUsed, current)
+	}
+
+	if next := LoadBalancersLowPriority(lbr); next != nil {
+		return next
 	}
 
 	if next := KubernetesLowPriority(kr); next != nil {

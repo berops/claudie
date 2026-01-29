@@ -55,6 +55,11 @@ spec:
                 configMapKeyRef:
                   name: env
                   key: NATS_CLUSTER_URL
+            - name: NATS_CLUSTER_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: NATS_CLUSTER_SIZE
             - name: ANSIBLER_CONCURRENT_CLUSTERS
               valueFrom:
                 configMapKeyRef:
