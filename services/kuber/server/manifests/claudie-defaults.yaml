@@ -1,5 +1,5 @@
 # Make sure longhorn is deployed only on compute nodes
-apiVersion: longhorn.io/v1beta1
+apiVersion: longhorn.io/v1beta2
 kind: Setting
 metadata:
   name: system-managed-components-node-selector
@@ -7,7 +7,7 @@ metadata:
 value: claudie.io/node-type:compute
 ---
 # Make sure longhorn is using block on eviction if last replica is on the node deleted.
-apiVersion: longhorn.io/v1beta1
+apiVersion: longhorn.io/v1beta2
 kind: Setting
 metadata:
   name: node-drain-policy
@@ -15,7 +15,7 @@ metadata:
 value: block-for-eviction-if-last-replica
 ---
 # Default path to use for storing data on a host
-apiVersion: longhorn.io/v1beta1
+apiVersion: longhorn.io/v1beta2
 kind: Setting
 metadata:
   name: default-data-path
@@ -23,7 +23,7 @@ metadata:
 value: /opt/claudie/data
 ---
 # Default data locality setting to use best-effort
-apiVersion: longhorn.io/v1beta1
+apiVersion: longhorn.io/v1beta2
 kind: Setting
 metadata:
   name: default-data-locality
