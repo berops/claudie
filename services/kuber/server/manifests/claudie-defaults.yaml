@@ -12,7 +12,7 @@ kind: Setting
 metadata:
   name: node-drain-policy
   namespace: longhorn-system
-value: block-for-eviction-if-last-replica
+value: block-for-eviction-if-contains-last-replica
 ---
 # Default path to use for storing data on a host
 apiVersion: longhorn.io/v1beta2
