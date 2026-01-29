@@ -255,7 +255,7 @@ type (
 
 	// PendingRollingUpdates is an unordered view into nodepools which
 	// are present in both the current and desired state but have different
-	// templates versions, meaning that a rolling update is requried for the
+	// templates versions, meaning that a rolling update is required for the
 	// infrastructure.
 	PendingRollingUpdates map[string]struct{}
 

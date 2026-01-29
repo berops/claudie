@@ -108,7 +108,7 @@ func (l *LBcluster) Destroy(logger zerolog.Logger) error {
 
 		// This check needs to be done as the resources in the terraform
 		// templates are based on IPs and if there are more than two nodes
-		// that do not have an IP it will continiously fail. But given that
+		// that do not have an IP it will continuously fail. But given that
 		// the DNS isn't even build if atleast 1 node fails means that this
 		// will only be hit if the building of the infrastructure failed altogether
 		// and to avoid error simply do not destroy what was not build.

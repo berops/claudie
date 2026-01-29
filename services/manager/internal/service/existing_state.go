@@ -297,7 +297,7 @@ func resolveK8sNodePoolReferences(
 	})
 
 	// Take the reference from the desired state
-	// and match it againts a reference in the current
+	// and match it against a reference in the current
 	// state.
 	//
 	// When matching nodepools 1 thing needs to be considered:
