@@ -25,6 +25,15 @@ type LBcluster struct {
 	ProjectName string
 	Cluster     *spec.LBcluster
 
+	// NodePools that were deleted and are no longer part of the
+	// passed in [LBcluster.Cluster] state, but still need their
+	// infra to be removed.
+	//
+	// This field needs to be set for nodepools that were deleted
+	// as the provider will be missing from the [K8Scluster.Cluster]
+	// state and it will fail on the clean up.
+	GhostNodePools []*spec.NodePool
+
 	// SpawnProcessLimit  limits the number of spawned tofu processes.
 	SpawnProcessLimit *semaphore.Weighted
 }
@@ -43,16 +52,20 @@ func (l *LBcluster) Build(logger zerolog.Logger) error {
 	)
 
 	clusterBuilder := cluster_builder.ClusterBuilder{
-		ClusterInfo: ci,
-		ProjectName: projectName,
-		ClusterType: cluster_builder.LoadBalancer,
+		ClusterName:    l.Cluster.ClusterInfo.Name,
+		ClusterHash:    l.Cluster.ClusterInfo.Hash,
+		ClusterId:      l.Cluster.ClusterInfo.Id(),
+		NodePools:      l.Cluster.ClusterInfo.NodePools,
+		GhostNodePools: l.GhostNodePools,
+		ProjectName:    projectName,
+		ClusterType:    cluster_builder.LoadBalancer,
 		LBInfo: cluster_builder.LBInfo{
 			Roles: roles,
 		},
 		SpawnProcessLimit: processLimit,
 	}
 
-	if err := clusterBuilder.CreateNodepools(); err != nil {
+	if err := clusterBuilder.ReconcileNodePools(); err != nil {
 		return fmt.Errorf("%w: error while creating the LB cluster %s : %w", ErrCreateNodePools, ci.Name, err)
 	}
 
@@ -86,10 +99,17 @@ func (l *LBcluster) Destroy(logger zerolog.Logger) error {
 	group := errgroup.Group{}
 	group.Go(func() error {
 		cluster := cluster_builder.ClusterBuilder{
-			ClusterInfo:       ci,
+			ClusterName:       l.Cluster.ClusterInfo.Name,
+			ClusterHash:       l.Cluster.ClusterInfo.Hash,
+			ClusterId:         l.Cluster.ClusterInfo.Id(),
+			NodePools:         l.Cluster.ClusterInfo.NodePools,
 			ProjectName:       projectName,
 			ClusterType:       cluster_builder.LoadBalancer,
 			SpawnProcessLimit: processLimit,
+
+			// during deletion these are not required to be set as deletion works
+			// always with the current state.
+			GhostNodePools: nil,
 		}
 		return cluster.DestroyNodepools()
 	})

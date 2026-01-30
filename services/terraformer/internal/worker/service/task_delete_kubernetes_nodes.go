@@ -38,6 +38,12 @@ func deleteKubernetesNodes(
 		SpawnProcessLimit: processLimit,
 	}
 
+	if del := action.Delete.GetWhole(); del != nil {
+		// Include the deleted nodepools for generating the provider that was used
+		// in that nodepool so that the infrastructure will get correctly destroyed.
+		cluster.GhostNodePools = append(cluster.GhostNodePools, del.Nodepool)
+	}
+
 	buildLogger := logger.With().Str("cluster", cluster.Id()).Logger()
 	if err := BuildK8Scluster(buildLogger, cluster); err != nil {
 		buildLogger.Err(err).Msg("Failed to reconcile cluster after node deletion")

@@ -20,6 +20,15 @@ type K8Scluster struct {
 	ProjectName string
 	Cluster     *spec.K8Scluster
 
+	// NodePools that were deleted and are no longer part of the
+	// passed in [K8Scluster.Cluster] state, but still need their
+	// infra to be removed.
+	//
+	// This field needs to be set for nodepools that were deleted
+	// as the provider will be missing from the [K8Scluster.Cluster]
+	// state and it will fail on the clean up.
+	GhostNodePools []*spec.NodePool
+
 	// Signals whether to export port 6443 on the
 	// control plane nodes of the cluster.
 	// This value is passed down when generating
@@ -37,16 +46,20 @@ func (k *K8Scluster) Build(logger zerolog.Logger) error {
 	logger.Info().Msgf("Building K8S Cluster %s", k.Cluster.ClusterInfo.Name)
 
 	cluster := cluster_builder.ClusterBuilder{
-		ClusterInfo: k.Cluster.ClusterInfo,
-		ProjectName: k.ProjectName,
-		ClusterType: cluster_builder.Kubernetes,
+		ClusterName:    k.Cluster.ClusterInfo.Name,
+		ClusterHash:    k.Cluster.ClusterInfo.Hash,
+		ClusterId:      k.Cluster.ClusterInfo.Id(),
+		NodePools:      k.Cluster.ClusterInfo.NodePools,
+		GhostNodePools: k.GhostNodePools,
+		ProjectName:    k.ProjectName,
+		ClusterType:    cluster_builder.Kubernetes,
 		K8sInfo: cluster_builder.K8sInfo{
 			ExportPort6443: k.ExportPort6443,
 		},
 		SpawnProcessLimit: k.SpawnProcessLimit,
 	}
 
-	if err := cluster.CreateNodepools(); err != nil {
+	if err := cluster.ReconcileNodePools(); err != nil {
 		return fmt.Errorf("%w: error while creating the K8s cluster %s : %w", ErrCreateNodePools, k.Cluster.ClusterInfo.Name, err)
 	}
 
@@ -56,10 +69,17 @@ func (k *K8Scluster) Build(logger zerolog.Logger) error {
 func (k *K8Scluster) Destroy(logger zerolog.Logger) error {
 	logger.Info().Msgf("Destroying K8S Cluster %s", k.Cluster.ClusterInfo.Name)
 	cluster := cluster_builder.ClusterBuilder{
-		ClusterInfo:       k.Cluster.ClusterInfo,
+		ClusterName:       k.Cluster.ClusterInfo.Name,
+		ClusterHash:       k.Cluster.ClusterInfo.Hash,
+		ClusterId:         k.Cluster.ClusterInfo.Id(),
+		NodePools:         k.Cluster.ClusterInfo.NodePools,
 		ProjectName:       k.ProjectName,
 		ClusterType:       cluster_builder.Kubernetes,
 		SpawnProcessLimit: k.SpawnProcessLimit,
+
+		// during deletion these are not required to be set as deletion works
+		// always with the current state.
+		GhostNodePools: nil,
 	}
 
 	if err := cluster.DestroyNodepools(); err != nil {

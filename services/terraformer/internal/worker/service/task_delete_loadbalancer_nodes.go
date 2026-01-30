@@ -35,10 +35,23 @@ func deleteLoadBalancerNodes(
 	}
 
 	current := action.State.LoadBalancers[idx]
+	lb := loadbalancer.LBcluster{
+		ProjectName:       projectName,
+		Cluster:           current,
+		SpawnProcessLimit: processLimit,
+	}
 
 	if action.Delete.WithNodePool {
+		deleted := nodepools.FindByName(action.Delete.Nodepool, current.ClusterInfo.NodePools)
+
 		// deleting whole nodepool, if the nodepool is not found there are no side-effects.
 		current.ClusterInfo.NodePools = nodepools.DeleteByName(current.ClusterInfo.NodePools, action.Delete.Nodepool)
+
+		// Include the deleted nodepools for generating the provider that was used
+		// in that nodepool so that the infrastructure will get correctly destroyed.
+		if deleted != nil {
+			lb.GhostNodePools = append(lb.GhostNodePools, deleted)
+		}
 	} else {
 		np := nodepools.FindByName(action.Delete.Nodepool, current.ClusterInfo.NodePools)
 		if np == nil {
@@ -52,12 +65,6 @@ func deleteLoadBalancerNodes(
 			return
 		}
 		nodepools.DeleteNodes(np, action.Delete.Nodes)
-	}
-
-	lb := loadbalancer.LBcluster{
-		ProjectName:       projectName,
-		Cluster:           current,
-		SpawnProcessLimit: processLimit,
 	}
 
 	buildLogger := logger.With().Str("cluster", lb.Id()).Logger()

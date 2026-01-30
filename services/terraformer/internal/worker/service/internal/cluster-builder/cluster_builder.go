@@ -38,8 +38,25 @@ type K8sInfo struct{ ExportPort6443 bool }
 type LBInfo struct{ Roles []*spec.Role }
 
 type ClusterBuilder struct {
-	// Cluster to be reconciled.
-	ClusterInfo *spec.ClusterInfo
+	ClusterName string
+	ClusterHash string
+	ClusterId   string
+
+	// NodePools that represent the actuall state of the
+	// infrastructure, these are the nodepools that should
+	// be build when calling Tofu.Apply or destroyed
+	// when calling Tofu.Destroy
+	NodePools []*spec.NodePool
+
+	// GhostNodepools are nodepools that were removed from
+	// the [ClusterBuilder.NodePools] state, but not yet from
+	// the state file, terraformer still needs to know about them
+	// to correctly clean up the terraform state. This field should
+	// only be used whenever the need to generate the provider for
+	// the 'Removed' nodepools should be generated so that the next
+	// Tofu.Apply will result in the deletion of the resources of
+	// that nodepool.
+	GhostNodePools []*spec.NodePool
 
 	// ProjectName is the name of the manifest.
 	ProjectName string
@@ -59,9 +76,8 @@ type ClusterBuilder struct {
 }
 
 // CreateNodepools creates node pools for the cluster.
-func (c ClusterBuilder) CreateNodepools() error {
-	clusterID := c.ClusterInfo.Id()
-	clusterDir := filepath.Join(Output, clusterID)
+func (c ClusterBuilder) ReconcileNodePools() error {
+	clusterDir := filepath.Join(Output, c.ClusterId)
 
 	defer func() {
 		// Clean after tofu
@@ -70,7 +86,7 @@ func (c ClusterBuilder) CreateNodepools() error {
 		}
 	}()
 
-	if err := c.generateFiles(clusterID, clusterDir); err != nil {
+	if err := c.generateFiles(clusterDir); err != nil {
 		return fmt.Errorf("failed to generate files: %w", err)
 	}
 
@@ -80,8 +96,8 @@ func (c ClusterBuilder) CreateNodepools() error {
 		CacheDir:          CacheDir,
 	}
 
-	tofu.Stdout = comm.GetStdOut(clusterID)
-	tofu.Stderr = comm.GetStdErr(clusterID)
+	tofu.Stdout = comm.GetStdOut(c.ClusterId)
+	tofu.Stderr = comm.GetStdErr(c.ClusterId)
 
 	if err := tofu.ProvidersLock(); err != nil {
 		log.Warn().Msgf("Error while locking providers from local FS mirror\n" +
@@ -89,14 +105,14 @@ func (c ClusterBuilder) CreateNodepools() error {
 	}
 
 	if err := tofu.Init(); err != nil {
-		return fmt.Errorf("error while running tofu init in %s : %w", clusterID, err)
+		return fmt.Errorf("error while running tofu init in %s : %w", c.ClusterId, err)
 	}
 
 	if err := tofu.Apply(); err != nil {
 		return err
 	}
 
-	for _, nodepool := range nodepools.Dynamic(c.ClusterInfo.NodePools) {
+	for _, nodepool := range nodepools.Dynamic(c.NodePools) {
 		d := nodepool.GetDynamicNodePool()
 		f := hash.Digest128(filepath.Join(d.Provider.SpecName, d.Provider.Templates.MustExtractTargetPath()))
 		k := fmt.Sprintf("%s_%s_%s", nodepool.Name, d.Provider.SpecName, hex.EncodeToString(f))
@@ -131,8 +147,7 @@ func (c ClusterBuilder) CreateNodepools() error {
 // DestroyNodepools destroys nodepools for the cluster.
 func (c ClusterBuilder) DestroyNodepools() error {
 	var (
-		clusterID  = c.ClusterInfo.Id()
-		clusterDir = filepath.Join(Output, clusterID)
+		clusterDir = filepath.Join(Output, c.ClusterId)
 		tofu       = tofu.Terraform{
 			Directory:         clusterDir,
 			SpawnProcessLimit: c.SpawnProcessLimit,
@@ -140,8 +155,8 @@ func (c ClusterBuilder) DestroyNodepools() error {
 		}
 	)
 
-	tofu.Stdout = comm.GetStdOut(clusterID)
-	tofu.Stderr = comm.GetStdErr(clusterID)
+	tofu.Stdout = comm.GetStdOut(c.ClusterId)
+	tofu.Stderr = comm.GetStdErr(c.ClusterId)
 
 	defer func() {
 		if err := os.RemoveAll(clusterDir); err != nil {
@@ -149,7 +164,7 @@ func (c ClusterBuilder) DestroyNodepools() error {
 		}
 	}()
 
-	if err := c.generateFiles(clusterID, clusterDir); err != nil {
+	if err := c.generateFiles(clusterDir); err != nil {
 		return fmt.Errorf("failed to generate files: %w", err)
 	}
 
@@ -159,21 +174,21 @@ func (c ClusterBuilder) DestroyNodepools() error {
 	}
 
 	if err := tofu.Init(); err != nil {
-		return fmt.Errorf("error while running tofu init in %s : %w", clusterID, err)
+		return fmt.Errorf("error while running tofu init in %s : %w", c.ClusterId, err)
 	}
 
 	if err := tofu.Destroy(); err != nil {
-		return fmt.Errorf("error while running tofu apply in %s : %w", clusterID, err)
+		return fmt.Errorf("error while running tofu apply in %s : %w", c.ClusterId, err)
 	}
 
 	return nil
 }
 
 // generateFiles creates all the necessary tofu files used to create/destroy node pools.
-func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
+func (c *ClusterBuilder) generateFiles(clusterDir string) error {
 	backend := templates.Backend{
 		ProjectName: c.ProjectName,
-		ClusterName: clusterID,
+		ClusterName: c.ClusterId,
 		Directory:   clusterDir,
 	}
 
@@ -184,32 +199,34 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 	// generate Providers tofu configuration
 	usedProviders := templates.UsedProviders{
 		ProjectName: c.ProjectName,
-		ClusterName: clusterID,
+		ClusterName: c.ClusterId,
 		Directory:   clusterDir,
 	}
 
-	if err := usedProviders.CreateUsedProvider(c.ClusterInfo); err != nil {
+	// Create providers for all of the nodepools.
+	err := usedProviders.CreateUsedProvider(append(c.NodePools, c.GhostNodePools...))
+	if err != nil {
 		return err
 	}
 
 	clusterData := templates.ClusterData{
-		ClusterName: c.ClusterInfo.Name,
-		ClusterHash: c.ClusterInfo.Hash,
+		ClusterName: c.ClusterName,
+		ClusterHash: c.ClusterHash,
 		ClusterType: string(c.ClusterType),
 	}
 
-	if err := c.generateProviderTemplates(clusterID, clusterDir, clusterData); err != nil {
+	if err := c.generateProviderTemplates(clusterDir, clusterData); err != nil {
 		return fmt.Errorf("error while generating provider templates: %w", err)
 	}
 
-	for info, pools := range nodepools.ByProviderDynamic(c.ClusterInfo.NodePools) {
-		templatesDownloadDir := filepath.Join(TemplatesRootDir, clusterID, info.SpecName)
+	for info, pools := range nodepools.ByProviderDynamic(c.NodePools) {
+		templatesDownloadDir := filepath.Join(TemplatesRootDir, c.ClusterId, info.SpecName)
 
 		for path, pools := range nodepools.ByTemplatesPath(pools) {
 			p := pools[0].GetDynamicNodePool().GetProvider()
 
 			if err := templates.DownloadProvider(templatesDownloadDir, p); err != nil {
-				msg := fmt.Sprintf("cluster %q failed to download template repository", clusterID)
+				msg := fmt.Sprintf("cluster %q failed to download template repository", c.ClusterId)
 				log.Error().Msgf("%v", msg)
 				return fmt.Errorf("%s: %w", msg, err)
 			}
@@ -238,7 +255,7 @@ func (c *ClusterBuilder) generateFiles(clusterID, clusterDir string) error {
 			}
 
 			g := templates.Generator{
-				ID:                clusterID,
+				ID:                c.ClusterId,
 				TargetDirectory:   clusterDir,
 				ReadFromDirectory: templatesDownloadDir,
 				TemplatePath:      path,
@@ -278,24 +295,28 @@ func readIPs(data string) (templates.NodepoolIPs, error) {
 }
 
 // generateProviderTemplates generates only the `provider.tpl` templates so tofu can destroy the infra if needed.
-func (c *ClusterBuilder) generateProviderTemplates(clusterID, directory string, clusterData templates.ClusterData) error {
-	for info, pools := range nodepools.ByProviderDynamic(c.ClusterInfo.NodePools) {
+func (c *ClusterBuilder) generateProviderTemplates(directory string, clusterData templates.ClusterData) error {
+	// Need to append also the nodepools that are no longer present in the infrastructure
+	// so that their statefile records will get cleaned up.
+	nps := append(c.NodePools, c.GhostNodePools...)
+
+	for info, pools := range nodepools.ByProviderDynamic(nps) {
 		if err := fileutils.CreateKey(info.Creds, directory, info.SpecName); err != nil {
 			return fmt.Errorf("error creating provider credential key file for provider %s in %s : %w", info.SpecName, directory, err)
 		}
 
-		templatesDownloadDir := filepath.Join(TemplatesRootDir, clusterID, info.SpecName)
+		templatesDownloadDir := filepath.Join(TemplatesRootDir, c.ClusterId, info.SpecName)
 
 		for path, pools := range nodepools.ByTemplatesPath(pools) {
 			p := pools[0].GetDynamicNodePool().GetProvider()
 			if err := templates.DownloadProvider(templatesDownloadDir, p); err != nil {
-				msg := fmt.Sprintf("cluster %q failed to download template repository", clusterID)
+				msg := fmt.Sprintf("cluster %q failed to download template repository", c.ClusterId)
 				log.Error().Msgf("%v", msg)
 				return fmt.Errorf("%s: %w", msg, err)
 			}
 
 			g := templates.Generator{
-				ID:                clusterID,
+				ID:                c.ClusterId,
 				TargetDirectory:   directory,
 				ReadFromDirectory: templatesDownloadDir,
 				TemplatePath:      path,
