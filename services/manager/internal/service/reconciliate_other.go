@@ -150,7 +150,7 @@ func ScheduleCreateCluster(desired *spec.Clusters) *spec.TaskEvent {
 			Kuber: &spec.StageKuber{
 				Description: &spec.StageDescription{
 					About:      "Configuring cluster",
-					ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 				},
 				SubPasses: []*spec.StageKuber_SubPass{
 					{
@@ -260,6 +260,15 @@ func ScheduleDeleteCluster(current *spec.Clusters) *spec.TaskEvent {
 						About:      "Destroying kubernetes cluster and related binaries",
 						ErrorLevel: spec.ErrorLevel_ERROR_WARN,
 					},
+					SubPasses: []*spec.StageKubeEleven_SubPass{
+						{
+							Kind: spec.StageKubeEleven_DESTROY_CLUSTER,
+							Description: &spec.StageDescription{
+								About:      "Tearing down kuberentes cluster",
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+						},
+					},
 				},
 			},
 		}
@@ -270,6 +279,15 @@ func ScheduleDeleteCluster(current *spec.Clusters) *spec.TaskEvent {
 					Description: &spec.StageDescription{
 						About:      "Removing claudie installed utilities across nodes",
 						ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+					},
+					SubPasses: []*spec.StageAnsibler_SubPass{
+						{
+							Kind: spec.StageAnsibler_REMOVE_CLAUDIE_UTILITIES,
+							Description: &spec.StageDescription{
+								About:      "Removing claudie installed utilities",
+								ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+							},
+						},
 					},
 				},
 			},

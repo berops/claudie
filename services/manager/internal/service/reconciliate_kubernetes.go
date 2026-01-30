@@ -724,9 +724,8 @@ func ScheduleAdditionsInNodePools(
 				{
 					Kind: spec.StageKuber_PATCH_NODES,
 					Description: &spec.StageDescription{
-						About: "Patching newly added nodes",
-						// Failing to patch  nodes is not a fatal error.
-						ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+						About:      "Patching newly added nodes",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 					},
 				},
 			},

@@ -70,19 +70,5 @@ func (k *Kubeone) Apply(prefix string) error {
 	cmd.Stdout = comm.GetStdOut(prefix)
 	cmd.Stderr = comm.GetStdErr(prefix)
 
-	if err := cmd.Run(); err != nil {
-		log.Warn().Msgf("Error encountered while executing %s : %v", command, err)
-
-		retryCmd := comm.Cmd{
-			Command: command,
-			Dir:     k.ConfigDirectory,
-			Stdout:  cmd.Stdout,
-			Stderr:  cmd.Stderr,
-		}
-
-		if err := retryCmd.RetryCommand(maxRetryCount); err != nil {
-			return fmt.Errorf("failed to execute cmd: %s: %w", retryCmd.Command, err)
-		}
-	}
-	return nil
+	return cmd.Run()
 }
