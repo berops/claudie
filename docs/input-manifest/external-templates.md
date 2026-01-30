@@ -107,7 +107,7 @@ spec:
 +       path: "templates/terraformer/hetzner"
       secretRef:
         name: hetzner-secret-1
-        namespace: mynamespace
+        namespace: <your-namespace>
 
   nodePools:
     dynamic:
@@ -189,5 +189,5 @@ spec:
 +       path: "templates/terraformer/hetzner"
       secretRef:
         name: hetzner-secret-1
-        namespace: mynamespace
+        namespace: <your-namespace>
 ```

@@ -34,7 +34,7 @@ To simplify the deployment of Claudie into local system, we recommend to use rul
 
 To start all the datastores, simply run `make datastoreStart`, which will create containers for each required datastore with preconfigured port-forwarding.
 
-To start all services, run `make <service name>`, in separate shells. In case you will make some changes to the code, to apply them, please kill the process and start it again using `make <service name>`.
+To start all services, run `make <service-name>`, in separate shells. In case you will make some changes to the code, to apply them, please kill the process and start it again using `make <service-name>`.
 
 ## How to test Claudie locally
 

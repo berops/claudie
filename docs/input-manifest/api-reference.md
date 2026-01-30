@@ -296,9 +296,9 @@ Provider spec is an additional specification built on top of the data from any o
 
   Region of the nodepool.
 
-- `zone`
+- `zone` *(optional)*
 
-  Zone of the nodepool.
+  Zone of the nodepool. If not specified, nodes are automatically distributed across all available zones in the region using round-robin assignment. This provides better availability and fault tolerance by spreading nodes across multiple availability zones.
 
 ## Autoscaler Configuration
 

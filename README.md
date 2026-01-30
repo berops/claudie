@@ -86,6 +86,7 @@ Before you begin, please make sure you have the following prerequisites installe
    | [OCI](https://docs.claudie.io/latest/input-manifest/providers/oci/)               | :heavy_check_mark: | :heavy_check_mark: |:heavy_check_mark: | :heavy_check_mark: |
    | [Hetzner](https://docs.claudie.io/latest/input-manifest/providers/hetzner/)       | :heavy_check_mark: | :heavy_check_mark: | N/A               | :heavy_check_mark: |
    | [Cloudflare](https://docs.claudie.io/latest/input-manifest/providers/cloudflare/) | N/A                | :heavy_check_mark: |:heavy_check_mark: | N/A                |
+   | [OVH Cloud](https://docs.claudie.io/latest/input-manifest/providers/openstack/)   | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: |
    | [Openstack](https://docs.claudie.io/latest/input-manifest/providers/openstack/)   | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: |
 
 > **Note:** `N/A` indicates that the given feature is not applicable for the provider.
@@ -116,9 +117,9 @@ For adding support for other cloud providers, open an issue or propose a PR.
 
     ```bash
     kubectl create secret generic example-aws-secret-1 \
-      --namespace=mynamespace \
-      --from-literal=accesskey='myAwsAccessKey' \
-      --from-literal=secretkey='myAwsSecretKey'
+      --namespace=<your-namespace> \
+      --from-literal=accesskey='<your-access-key>' \
+      --from-literal=secretkey='<your-secret-key>'
     ```
 
     Check the [supported providers](#supported-providers) for input manifest examples. For an input manifest spanning all supported hyperscalers checkout out [this example](https://docs.claudie.io/latest/input-manifest/example/).
@@ -137,8 +138,8 @@ For adding support for other cloud providers, open an issue or propose a PR.
           - name: aws-1
           providerType: aws
           secretRef:
-              name: example-aws-secret-1 # reference the secret name
-              namespace: mynamespace     # reference the secret namespace
+              name: example-aws-secret-1    # reference the secret name
+              namespace: <your-namespace>   # reference the secret namespace
       nodePools:
           dynamic:
           - name: control-aws
@@ -201,8 +202,8 @@ Claudie outputs base64 encoded kubeconfig secret `<cluster-name>-<cluster-hash>-
           - name: aws-1
           providerType: aws
           secretRef:
-              name: example-aws-secret-1 # reference the secret name
-              namespace: mynamespace     # reference the secret namespace
+              name: example-aws-secret-1    # reference the secret name
+              namespace: <your-namespace>   # reference the secret namespace
       nodePools:
           dynamic:
           - name: control-aws

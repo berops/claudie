@@ -9,12 +9,11 @@ kind: Secret
 metadata:
   name: oci-secret
 data:
-  compartmentocid: b2NpZDIuY29tcGFydG1lbnQub2MyLi5hYWFhYWFhYWEycnNmdmx2eGMzNG8wNjBrZmR5Z3NkczIxbnNrZTc2a3Nqa2tvMjFscHNkZnNm
-  keyfingerprint: YWI6Y2Q6M2Y6MzQ6MzM6MjI6MzI6MzQ6NTQ6NTQ6NDU6NzY6NzY6Nzg6OTg6YWE=
-  privatekey: >-
-    LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQogICAgICAgIE1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQ2oyL2Fza0pTTG9zYWQKICAgICAgICBNSUlFdlFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLY3dnZ1NqQWdFQUFvSUJBUUNqMi9hc2tKU0xvc2FkCiAgICAgICAgTUlJRXZRSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2N3Z2dTakFnRUFBb0lCQVFDajIvYXNrSlNMb3NhZAogICAgICAgIE1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQ2oyL2Fza0pTTG9zYWQKICAgICAgICBNSUlFdlFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLY3dnZ1NqQWdFQUFvSUJBUUNqMi9hc2tKU0xvc2FkCiAgICAgICAgTUlJRXZRSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2N3Z2dTakFnRUFBb0lCQVFDajIvYXNrSlNMb3NhZAogICAgICAgIE1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQ2oyL2Fza0pTTG9zYWQKICAgICAgICBNSUlFdlFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLY3dnZ1NqQWdFQUFvSUJBUUNqMi9hc2tKU0xvc2FkCiAgICAgICAgTUlJRXZRSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2N3Z2dTakFnRUFBb0lCQVFDajIvYXNrSlNMb3NhZAogICAgICAgIE1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQ2oyL2Fza0pTTG9zYWQKICAgICAgICBNSUlFdlFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLY3dnZ1NqQWdFQUFvSUJBUUNqMi9hc2tKU0xvc2FkCiAgICAgICAgTUlJRXZRSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2N3Z2dTakFnRUFBb0lCQVFDajIvYXNrSlNMb3NhZAogICAgICAgIE1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQ2oyL2Fza0pTTG9zYWQKICAgICAgICBNSUlFdlFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLY3dnZ1NqQWdFQUFvSUJBUUNqMi9hc2tKU0xvc2FkCiAgICAgICAgTUlJRXZRSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2N3Z2dTakFnRUFBb0lCQVFDajIvYXNrSlNMb3NhZAogICAgICAgIE1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQ2oyL2Fza0pTTG9zYWQKICAgICAgICBNSUlFdlFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLY3dnZ1NqQWdFQUFvSUJBUUNqMi9hc2tKU0xvc2FkCiAgICAgICAgTUlJRXZRSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2N3Z2dTakFnRUFBb0lCQVFDajIvYXNrSlNMb3NhZAogICAgICAgIE1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQ2oyL2Fza0pTTG9zYWQKICAgICAgICBNSUlFdlFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLY3dnZ1NqQWdFQUFvSUJBUUNqMi9hc2tKU0xvc2FkCiAgICAgICAgTUlJRXZRSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2N3Z2dTakFnRUFBb0lCQVFDajIvYXNrSlNMb3NhZAogICAgICAgIE1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQ2oyL2Fza0pTTG9zYWQKICAgICAgICBNSUlFdlFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLY3dnZ1NqQWdFQUFvSUJBUUNqMi9hc2tKU0xvc2FkCiAgICAgICAgTUlJRXZRSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2N3Z2dTakFnRUFBb0lCQVFDajIvYXNrSlNMb3NhZAogICAgICAgIE1JSUV2UUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQ2oyLz09CiAgICAgICAgLS0tLS1FTkQgUlNBIFBSSVZBVEUgS0VZLS0tLS0=
-  tenancyocid: b2NpZDIudGVuYW5jeS5vYzIuLmFhYWFhYWFheXJzZnZsdnhjMzRvMDYwa2ZkeWdzZHMyMW5za2U3NmtzamtrbzIxbHBzZGZzZnNnYnJ0Z2hz
-  userocid: b2NpZDIudXNlci5vYzIuLmFhYWFhYWFhYWFueXJzZnZsdnhjMzRvMDYwa2ZkeWdzZHMyMW5za2U3NmtzamtrbzIxbHBzZGZzZg==
+  compartmentocid: <base64-encoded-compartment-ocid>
+  keyfingerprint: <base64-encoded-key-fingerprint>
+  privatekey: <base64-encoded-private-key>
+  tenancyocid: <base64-encoded-tenancy-ocid>
+  userocid: <base64-encoded-user-ocid>
 type: Opaque
 ```
 
@@ -42,7 +41,7 @@ export tenancy_ocid="ocid"
 
 4. Create the claudie user:
 ```bash
-oci iam user create --name claudie-user --compartment-id $tenancy_ocid --description claudie-user --email <email address>
+oci iam user create --name claudie-user --compartment-id $tenancy_ocid --description claudie-user --email <your-email>
 ```
 
 5. Create a group that will hold permissions for the user:
@@ -126,7 +125,7 @@ The secret for an OCI provider must include the following mandatory fields: `com
 
 ```bash
 # Refer to values exported in "Creating OCI credentials for Claudie" section
-kubectl create secret generic oci-secret-1 --namespace=mynamespace --from-literal=compartmentocid=$compartment_ocid --from-literal=userocid=$user_ocid --from-literal=tenancyocid=$tenancy_ocid --from-literal=keyfingerprint=$fingerprint --from-file=privatekey=./claudie-user_public.pem
+kubectl create secret generic oci-secret-1 --namespace=<your-namespace> --from-literal=compartmentocid=$compartment_ocid --from-literal=userocid=$user_ocid --from-literal=tenancyocid=$tenancy_ocid --from-literal=keyfingerprint=$fingerprint --from-file=privatekey=./claudie-user_public.pem
 ```
 
 ```yaml
@@ -142,7 +141,7 @@ spec:
       providerType: oci
       secretRef:
         name: oci-secret-1
-        namespace: mynamespace
+        namespace: <your-namespace>
 
   nodePools:
     dynamic:
@@ -152,7 +151,7 @@ spec:
           name: oci-1
           # Region of the nodepool.
           region: eu-milan-1
-          # Availability domain of the nodepool.
+          # Zone is optional. If omitted, nodes are distributed across all availability domains.
           zone: hsVQ:EU-MILAN-1-AD-1
         count: 1
         # VM shape name.
@@ -168,7 +167,7 @@ spec:
           name: oci-1
           # Region of the nodepool.
           region: eu-frankfurt-1
-          # Availability domain of the nodepool.
+          # Zone is optional. If omitted, nodes are distributed across all availability domains.
           zone: hsVQ:EU-FRANKFURT-1-AD-1
         count: 2
         # VM shape name.
@@ -185,7 +184,7 @@ spec:
           name: oci-1
           # Region of the nodepool.
           region: eu-frankfurt-1
-          # Availability domain of the nodepool.
+          # Zone is optional. If omitted, nodes are distributed across all availability domains.
           zone: hsVQ:EU-FRANKFURT-1-AD-2
         count: 2
         # VM shape name.
@@ -215,9 +214,9 @@ The secret for an OCI provider must include the following mandatory fields: `com
 
 ```bash
 # Refer to values exported in "Creating OCI credentials for Claudie" section
-kubectl create secret generic oci-secret-1 --namespace=mynamespace --from-literal=compartmentocid=$compartment_ocid --from-literal=userocid=$user_ocid --from-literal=tenancyocid=$tenancy_ocid --from-literal=keyfingerprint=$fingerprint --from-file=privatekey=./claudie-user_public.pem
+kubectl create secret generic oci-secret-1 --namespace=<your-namespace> --from-literal=compartmentocid=$compartment_ocid --from-literal=userocid=$user_ocid --from-literal=tenancyocid=$tenancy_ocid --from-literal=keyfingerprint=$fingerprint --from-file=privatekey=./claudie-user_public.pem
 
-kubectl create secret generic oci-secret-2 --namespace=mynamespace --from-literal=compartmentocid=$compartment_ocid2 --from-literal=userocid=$user_ocid2 --from-literal=tenancyocid=$tenancy_ocid2 --from-literal=keyfingerprint=$fingerprint2 --from-file=privatekey=./claudie-user_public2.pem
+kubectl create secret generic oci-secret-2 --namespace=<your-namespace> --from-literal=compartmentocid=$compartment_ocid2 --from-literal=userocid=$user_ocid2 --from-literal=tenancyocid=$tenancy_ocid2 --from-literal=keyfingerprint=$fingerprint2 --from-file=privatekey=./claudie-user_public2.pem
 ```
 
 ```yaml
@@ -233,12 +232,12 @@ spec:
       providerType: oci
       secretRef:
         name: oci-secret-1
-        namespace: mynamespace
+        namespace: <your-namespace>
     - name: oci-2
       providerType: oci
       secretRef:
         name: oci-secret-2
-        namespace: mynamespace
+        namespace: <your-namespace>
 
   nodePools:
     dynamic:
@@ -328,7 +327,7 @@ The secret for an OCI provider must include the following mandatory fields: `com
 
 ```bash
 # Refer to values exported in "Creating OCI credentials for Claudie" section
-kubectl create secret generic oci-secret-1 --namespace=mynamespace --from-literal=compartmentocid=$compartment_ocid --from-literal=userocid=$user_ocid --from-literal=tenancyocid=$tenancy_ocid --from-literal=keyfingerprint=$fingerprint --from-file=privatekey=./claudie-user_public.pem
+kubectl create secret generic oci-secret-1 --namespace=<your-namespace> --from-literal=compartmentocid=$compartment_ocid --from-literal=userocid=$user_ocid --from-literal=tenancyocid=$tenancy_ocid --from-literal=keyfingerprint=$fingerprint --from-file=privatekey=./claudie-user_public.pem
 ```
 
 ```yaml
@@ -344,7 +343,7 @@ spec:
       providerType: oci
       secretRef:
         name: oci-secret-1
-        namespace: mynamespace
+        namespace: <your-namespace>
 
   nodePools:
     dynamic:

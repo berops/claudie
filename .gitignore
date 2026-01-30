@@ -1,22 +1,43 @@
+# IDE and editors
 .idea/
-*.ini
+.vscode/
+
+# Terraform
 .terraform*
-playground
-clusters
-.vscode
-mongodb
 *.tfstate*
-*.pem
+
+# Local development
+playground/
+clusters/
+mongodb/
+bin/
+
+# Kubernetes and cluster files
 kubeone.yaml
 cluster.tar.gz
 cluster-kubeconfig
+*.pem
 *.conf
+
+# Build artifacts
 __debug_bin
-services/testing-framework/test-sets
-services/terraformer/templates
+
+# OS-specific
+.DS_Store
+
+# Python/Documentation
 /venv/
 /site/
-bin
+
+# Configuration files
+*.ini
 .manifest*
-.DS_Store
-/services/terraformer/server/cache
+
+# Service-specific
+services/testing-framework/test-sets/
+services/terraformer/templates/
+/services/terraformer/server/cache/
+
+# Claude
+.claude/
+CLAUDE.md

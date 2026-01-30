@@ -8,9 +8,8 @@ kind: Secret
 metadata:
   name: hetzner-secret
 data:
-  credentials: a3NsSVNBODc4YTZldFlBZlhZY2c1aVl5ckZHTmxDeGNJQ28wNjBIVkV5Z2pGczIxbnNrZTc2a3NqS2tvMjFscA==
+  credentials: <base64-encoded-api-token>
 type: Opaque
-
 ```
 
 ## DNS example
@@ -20,7 +19,7 @@ kind: Secret
 metadata:
   name: hetznerdns-secret
 data:
-  apitoken: a1V0UmcxcGdqQ1JhYXBQbWQ3cEFJalZnaHVyWG8xY24=
+  apitoken: <base64-encoded-dns-api-token>
 type: Opaque
 ```
 
@@ -53,7 +52,7 @@ If you wish to use Hetzner as your DNS provider where Claudie creates DNS record
 The secret for an Hetzner provider must include the following mandatory fields: `credentials`.
 
 ```bash
-kubectl create secret generic hetzner-secret-1 --namespace=mynamespace --from-literal=credentials='kslISA878a6etYAfXYcg5iYyrFGNlCxcICo060HVEygjFs21nske76ksjKko21lp'
+kubectl create secret generic hetzner-secret-1 --namespace=<your-namespace> --from-literal=credentials='<your-api-token>'
 ```
 
 ```yaml
@@ -69,7 +68,7 @@ spec:
       providerType: hetzner
       secretRef:
         name: hetzner-secret-1
-        namespace: mynamespace
+        namespace: <your-namespace>
 
   nodePools:
     dynamic:
@@ -135,8 +134,8 @@ spec:
 The secret for an Hetzner provider must include the following mandatory fields: `credentials`.
 
 ```bash
-kubectl create secret generic hetzner-secret-1 --namespace=mynamespace --from-literal=credentials='kslISA878a6etYAfXYcg5iYyrFGNlCxcICo060HVEygjFs21nske76ksjKko21lp'
-kubectl create secret generic hetzner-secret-2 --namespace=mynamespace --from-literal=credentials='kslIIOUYBiuui7iGBYIUiuybpiUB87bgPyuCo060HVEygjFs21nske76ksjKko21l'
+kubectl create secret generic hetzner-secret-1 --namespace=<your-namespace> --from-literal=credentials='<your-api-token>'
+kubectl create secret generic hetzner-secret-2 --namespace=<your-namespace> --from-literal=credentials='<your-api-token>'
 ```
 
 ```yaml
@@ -152,12 +151,12 @@ spec:
       providerType: hetzner
       secretRef:
         name: hetzner-secret-1
-        namespace: mynamespace
+        namespace: <your-namespace>
     - name: hetzner-2
       providerType: hetzner
       secretRef:
         name: hetzner-secret-2
-        namespace: mynamespace        
+        namespace: <your-namespace>        
 
   nodePools:
     dynamic:

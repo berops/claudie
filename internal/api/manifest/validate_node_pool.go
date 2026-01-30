@@ -126,13 +126,6 @@ func (d *DynamicNodePool) Validate(m *Manifest) error {
 	}
 
 	validate := validator.New()
-	validate.RegisterStructValidation(func(sl validator.StructLevel) {
-		dnp := sl.Current().Interface().(DynamicNodePool)
-
-		if dnp.ProviderSpec.Zone == "" {
-			sl.ReportError(dnp.ProviderSpec.Zone, "Zone", "Zone", "required", "")
-		}
-	}, DynamicNodePool{})
 
 	if err := validate.RegisterValidation("external_net", validateExternalNet); err != nil {
 		return err
