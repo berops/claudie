@@ -15,6 +15,8 @@ func addLoadBalancer(
 	toReconcile *spec.LBcluster,
 	tracker Tracker,
 ) {
+	logger.Info().Msg("Add LoadBalancer")
+
 	lb := loadbalancer.LBcluster{
 		ProjectName:       projectName,
 		Cluster:           toReconcile,

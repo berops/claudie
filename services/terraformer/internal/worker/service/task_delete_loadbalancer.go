@@ -18,6 +18,8 @@ func destroyLoadBalancer(
 	stores Stores,
 	tracker Tracker,
 ) {
+	logger.Info().Msg("Deleting LoadBalancer")
+
 	idx := clusters.IndexLoadbalancerById(toDestroy, lbs)
 	if idx < 0 {
 		logger.

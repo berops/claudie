@@ -30,6 +30,8 @@ func destroy(
 	processLimit *semaphore.Weighted,
 	tracker Tracker,
 ) {
+	logger.Info().Msg("Destroying infrastructure")
+
 	var clusters []Cluster
 
 	action, ok := tracker.Task.Do.(*spec.Task_Delete)

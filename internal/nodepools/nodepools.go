@@ -531,12 +531,14 @@ func FirstControlNode(nodepools []*spec.NodePool) *spec.Node {
 	return nil
 }
 
-// Returns a random node. Nil if there is none.
-func RandomNode(nodepools iter.Seq[*spec.NodePool]) *spec.Node {
+// Returns a random dynamic node. Nil if there is none.
+func RandomDynamicNode(nodepools iter.Seq[*spec.NodePool]) *spec.Node {
 	var nodes []*spec.Node
 
 	for np := range nodepools {
-		nodes = append(nodes, np.Nodes...)
+		if np.GetDynamicNodePool() != nil {
+			nodes = append(nodes, np.Nodes...)
+		}
 	}
 
 	if len(nodes) == 0 {

@@ -21,6 +21,8 @@ func deleteKubernetesNodes(
 	action DeleteKubernetesNodes,
 	tracker Tracker,
 ) {
+	logger.Info().Msg("Deleting Kubernetes Nodes")
+
 	// The deletion of the nodes for the kubernetes cluster is handled by the
 	// kuber service, in here we only destroy the spawned infrastructure for the
 	// dynamic nodepools.

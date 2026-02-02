@@ -16,6 +16,7 @@ func moveNodePoolToAutoscaled(
 	action MoveNodePoolToAutoscaled,
 	tracker Tracker,
 ) {
+	logger.Info().Msg("Moving NodePool to Autoscaled type")
 	// Currently there is no special mechanism for moving a
 	// nodepool from fixed sized to autoscaled type.
 	//

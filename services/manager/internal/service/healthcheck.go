@@ -118,9 +118,14 @@ func HealthCheck(logger zerolog.Logger, state *spec.Clusters) HealthCheckStatus 
 		}
 	}
 
-	// Test a random control node if the 6443 port is reachable.
+	// Test a random dynamic control node if the 6443 port is reachable.
+	// We can't test static nodes as we do not have the ability to control
+	// them afterwards.
+	//
+	// This check is here for the reconciliation loop to know when to close
+	// the 6443 if an LoadBalancer was attached.
 	controlpools := nodepools.Control(state.K8S.ClusterInfo.NodePools)
-	if node := nodepools.RandomNode(controlpools); node != nil {
+	if node := nodepools.RandomDynamicNode(controlpools); node != nil {
 		endpoint := net.JoinHostPort(node.Public, fmt.Sprint(manifest.APIServerPort))
 		// nolint
 		if c, err := net.DialTimeout("tcp", endpoint, clusters.PingTimeout); err == nil {

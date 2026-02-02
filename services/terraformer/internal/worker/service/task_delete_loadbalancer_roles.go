@@ -23,6 +23,8 @@ func deleteLoadBalancerRoles(
 	action DeleteLoadBalancerRoles,
 	tracker Tracker,
 ) {
+	logger.Info().Msg("Deleting LoadBalancer Roles")
+
 	// Currently there is no special mechanism for just deleting the
 	// roles of the loadbalancer, thus simply just remove them from the
 	// state and reconcile the cluster, on failures don't report any

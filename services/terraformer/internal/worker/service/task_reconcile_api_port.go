@@ -14,6 +14,8 @@ func reconcileApiPort(
 	processLimit *semaphore.Weighted,
 	tracker Tracker,
 ) {
+	logger.Info().Msg("Reconciling API port")
+
 	action, ok := tracker.Task.Do.(*spec.Task_Update)
 	if !ok {
 		logger.

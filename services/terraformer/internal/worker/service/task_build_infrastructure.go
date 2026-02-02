@@ -17,6 +17,8 @@ func build(
 	processLimit *semaphore.Weighted,
 	tracker Tracker,
 ) {
+	logger.Info().Msg("Building Infrastructure")
+
 	action, ok := tracker.Task.Do.(*spec.Task_Create)
 	if !ok {
 		logger.

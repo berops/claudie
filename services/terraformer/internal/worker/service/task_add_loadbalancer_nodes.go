@@ -22,6 +22,8 @@ func addLoadBalancerNodes(
 	action AddLoadBalancerNodes,
 	tracker Tracker,
 ) {
+	logger.Info().Msg("Adding LoadBalancer Nodes")
+
 	// Currently there is no special mechanism for adding the
 	// nodes of the loadbalancer as the whole cluster shares a
 	// single state file, thus simply just add the new nodes to

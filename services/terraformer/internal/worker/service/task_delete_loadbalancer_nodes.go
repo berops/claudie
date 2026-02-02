@@ -22,6 +22,8 @@ func deleteLoadBalancerNodes(
 	action DeleteLoadBalancerNodes,
 	tracker Tracker,
 ) {
+	logger.Info().Msg("Deleting LoadBalancer Nodes")
+
 	// Currently there is no special mechanism for deleting the
 	// nodes of the loadbalancer as the whole cluster shares a
 	// single state file, thus simply just remove the node from

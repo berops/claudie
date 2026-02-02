@@ -22,6 +22,7 @@ func replaceDns(
 	action ReplaceDns,
 	tracker Tracker,
 ) {
+	logger.Info().Msg("Replacing DNS")
 	idx := clusters.IndexLoadbalancerById(action.Replace.Handle, action.State.LoadBalancers)
 	if idx < 0 {
 		logger.

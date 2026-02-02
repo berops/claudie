@@ -21,6 +21,8 @@ func addLoadBalancerRoles(
 	action AddLoadBalancerRoles,
 	tracker Tracker,
 ) {
+	logger.Info().Msg("Adding LoadBalancer Roles")
+
 	// Currently there is no special mechanism for just adding the
 	// roles of the loadbalancer, thus simply add them to the state
 	// and reconcile the cluster.

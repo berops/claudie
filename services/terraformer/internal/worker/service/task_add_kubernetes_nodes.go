@@ -22,6 +22,8 @@ func addKubernetesNodes(
 	action AddKubernetesNodes,
 	tracker Tracker,
 ) {
+	logger.Info().Msg("Adding kubernetes Nodes")
+
 	// Currently there is no special mechanism for adding the
 	// nodes of the kubernetes cluster as the whole cluster
 	// shares a single state file, thus simply just add the
