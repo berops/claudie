@@ -14,6 +14,7 @@ import (
 // Default options used in the [NewClientWithJetStream] func.
 var defaultOpts = [...]nats.Option{
 	nats.MaxReconnects(-1), // endless reconnect attempts.
+	nats.RetryOnFailedConnect(true),
 	nats.ReconnectWait(3 * time.Second),
 	nats.ReconnectJitter(350*time.Millisecond, 1*time.Second),
 	nats.DisconnectErrHandler(func(c *nats.Conn, err error) {
