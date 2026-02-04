@@ -271,9 +271,10 @@ To see the vision behind Claudie, please refer to the [roadmap](https://docs.cla
 
 ## Reach out to us
 
-Claudie is proudly developed by Berops.
-Feel free to request a demo [here](mailto:claudie-demo&commat;berops&period;com).
-For information on enterprise support, contact us [here](mailto:claudie&commat;berops&period;com).
+Claudie is proudly developed by Berops.  
+Project office hours on Fridays @1300 UTC on [Google Meet](http://meet.google.com/amd-dtkb-ixa).  
+Feel free to request a demo [here](mailto:claudie-demo&commat;berops&period;com).  
+For information on enterprise support, contact us [here](mailto:claudie&commat;berops&period;com).  
 
 ## LICENSE
 
