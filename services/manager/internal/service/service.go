@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand/v2"
 	"net"
 	"sync"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/berops/claudie/internal/natsutils"
 	"github.com/berops/claudie/proto/pb"
 	"github.com/berops/claudie/services/manager/internal/store"
+	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
@@ -44,10 +46,9 @@ type grpcServer struct {
 }
 
 type natsClient struct {
-	client      *natsutils.Client
-	consumer    jetstream.Consumer
-	consumerCtx jetstream.ConsumeContext
-	inFlight    sync.WaitGroup
+	client     *natsutils.Client
+	inFlight   sync.WaitGroup
+	loopExited <-chan struct{}
 }
 
 type Service struct {
@@ -70,21 +71,6 @@ func New(ctx context.Context, opts ...grpc.ServerOption) (*Service, error) {
 	if err := client.JetStreamWorkQueue(ctx, envs.NatsClusterJetstreamName); err != nil {
 		client.Close()
 		return nil, fmt.Errorf("failed to create/update %q queue", envs.NatsClusterJetstreamName)
-	}
-
-	consumer, err := client.JSWorkQueueConsumer(
-		ctx,
-		DurableName,
-		envs.NatsClusterJetstreamName,
-		AckWait,
-		natsutils.AnsiblerResponse,
-		natsutils.KuberResponse,
-		natsutils.KubeElevenResponse,
-		natsutils.TerraformerResponse,
-	)
-	if err != nil {
-		client.Close()
-		return nil, fmt.Errorf("failed to create consumer for jetstream %s: %w", envs.NatsClusterJetstreamName, err)
 	}
 
 	log.Info().Msgf("jetstream %q successfully initialized", envs.NatsClusterJetstreamName)
@@ -127,9 +113,10 @@ func New(ctx context.Context, opts ...grpc.ServerOption) (*Service, error) {
 		healthServer: healthserver,
 	}
 
+	consumerLoopChan := make(chan struct{})
 	natsconsumer := natsClient{
-		client:   client,
-		consumer: consumer,
+		client:     client,
+		loopExited: consumerLoopChan,
 	}
 
 	s := &Service{
@@ -139,24 +126,9 @@ func New(ctx context.Context, opts ...grpc.ServerOption) (*Service, error) {
 		done:   make(chan struct{}),
 	}
 
-	consumeOptions := [...]jetstream.PullConsumeOpt{
-		jetstream.ConsumeErrHandler(errHandler),
-		// The consumer will by default buffer messages behind the scenes and if the messages are not
-		// acknowledged, even if they're buffered, within the specified ack timeout they will be re-send,
-		// thus we always keep a maximum of 1 message to be buffered. To then handle multiple msgs at once
-		// we process each message in each go-routine.
-		jetstream.PullMaxMessages(1),
-	}
-
-	if s.nts.consumerCtx, err = consumer.Consume(s.Handler, consumeOptions[:]...); err != nil {
-		if err := s.Stop(); err != nil {
-			log.Err(err).Msg("Failed to create consume handler")
-		}
-		return nil, fmt.Errorf("failed to start nats consumer handler: %w", err)
-	}
-
 	pb.RegisterManagerServiceServer(s.server.server, s)
 
+	go s.consumerLoop(consumerLoopChan)
 	go s.watchPending()
 	go s.watchScheduled()
 	go s.watchDoneOrError()
@@ -178,17 +150,11 @@ func (s *Service) Serve() error {
 func (s *Service) Stop() error {
 	log.Info().Msg("Gracefully shutting down service")
 
-	// unsubscribe and discard any buffered messages in NATS.
-	s.nts.consumerCtx.Stop()
-
-	// signal we are closing to all spawned go-routine.
+	// signal we are closing to all spawned go-routines.
 	close(s.done)
 
-	// wait for current in-flight messages to finish.
-	s.nts.inFlight.Wait()
-
-	// wait for the consumer to close.
-	<-s.nts.consumerCtx.Closed()
+	// wait for the consumer loop to exit.
+	<-s.nts.loopExited
 
 	s.nts.client.Close()
 	s.server.server.GracefulStop()
@@ -253,4 +219,149 @@ func (s *Service) watchDoneOrError() {
 			}
 		}
 	}
+}
+
+func (s *Service) consumerLoop(exit chan<- struct{}) {
+	defer close(exit)
+
+	for {
+		select {
+		case <-s.done:
+			log.
+				Info().
+				Msg("Closing consumer loop, received done signal, waiting for any pending processes to finish")
+
+			s.nts.inFlight.Wait()
+			return
+		default:
+			log.Info().Msg("Creating consumer for incoming messages")
+			// fallthrough.
+		}
+
+		var (
+			creatingConsumerDone = make(chan struct{})
+			ctx, cancel          = context.WithCancel(context.Background())
+		)
+
+		go func() {
+			// on both consumer done or the service being killed, cancel the context.
+			defer cancel()
+
+			for {
+				select {
+				case <-creatingConsumerDone:
+					return
+				case <-s.done:
+					return
+				}
+			}
+		}()
+
+		consumer, err := s.nts.client.JSWorkQueueConsumer(
+			ctx,
+			DurableName,
+			envs.NatsClusterJetstreamName,
+			AckWait,
+			natsutils.AnsiblerResponse,
+			natsutils.KuberResponse,
+			natsutils.KubeElevenResponse,
+			natsutils.TerraformerResponse,
+		)
+
+		close(creatingConsumerDone)
+		<-ctx.Done()
+
+		if err != nil {
+			jitter := rand.IntN(500)
+			sleep := 850*time.Millisecond + (time.Duration(jitter) * time.Millisecond)
+
+			log.
+				Err(err).
+				Msgf("Failed to create work queue consumer, will try again in %s", sleep)
+			time.Sleep(sleep)
+			continue
+		}
+
+		consumeOptions := [...]jetstream.PullConsumeOpt{
+			jetstream.ConsumeErrHandler(errHandler),
+			// The consumer will by default buffer messages behind the scenes and if the messages are not
+			// acknowledged, even if they're buffered, within the specified ack timeout they will be re-send,
+			// thus we always keep a maximum of 1 message to be buffered. To then handle multiple msgs at once
+			// we process each message in each go-routine.
+			jetstream.PullMaxMessages(1),
+		}
+
+		cctx, err := consumer.Consume(s.Handler, consumeOptions[:]...)
+		if err != nil {
+			jitter := rand.IntN(500)
+			sleep := 850*time.Millisecond + (time.Duration(jitter) * time.Millisecond)
+
+			log.
+				Err(err).
+				Msgf("Failed to start consuming messages, will try again in %s", sleep)
+			time.Sleep(sleep)
+			continue
+		}
+
+		log.Info().Msg("Consumer created and registered for incoming messages")
+
+		// Everything was created Okay, now explicitly wait for something to stop
+		// the consuming.
+		select {
+		case <-cctx.Closed():
+			log.
+				Info().
+				Msg("Current consumer stopped. Waiting for any processing to finish, will recreate later")
+
+			s.nts.inFlight.Wait()
+
+			// Since the service did not exit, some outside
+			// interference must be going on or some unknown
+			// errors, thus continue with the consumer loop.
+			continue
+		case <-s.done:
+			// unsubscribe and discard any buffered messages in NATS.
+			cctx.Stop()
+
+			// wait for current in-filght messages to finish.
+			s.nts.inFlight.Wait()
+
+			// wait for the consumer to close.
+			<-cctx.Closed()
+
+			log.Info().Msg("Closing consumer loop, received done signal")
+			return
+		}
+	}
+}
+
+func errHandler(consumeCtx jetstream.ConsumeContext, err error) {
+	if errors.Is(err, nats.ErrConsumerDeleted) {
+		log.
+			Warn().
+			Msgf("Received consumer error: %s, closing down current consumer", err.Error())
+
+		consumeCtx.Stop()
+		return
+	}
+
+	if errors.Is(err, nats.ErrNoResponders) {
+		// [nats.ErrNoResponders] is not a terminal error
+		// thus simply log in debug builds.
+		//
+		// Source: https://github.com/nats-io/nats.go/discussions/1158
+		log.
+			Debug().
+			Msgf("Received error no responders: %v", err)
+		return
+	}
+
+	if errors.Is(err, nats.ErrNoHeartbeat) {
+		log.Warn().Msgf("%s", err)
+		return
+	}
+
+	log.
+		Err(err).
+		Msgf("Failed to consume message: %v", err)
 }

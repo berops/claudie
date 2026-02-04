@@ -69,6 +69,8 @@ func Patch(
 
 	// 1. re-apply existing state with new additions.
 	wg, ctx := errgroup.WithContext(context.Background())
+	wg.SetLimit(workersLimit)
+
 	p := patchData{
 		kBase:        kbase,
 		clusterID:    clusterID,
@@ -96,6 +98,7 @@ func Patch(
 
 	// 2. delete
 	wg, ctx = errgroup.WithContext(context.Background())
+	wg.SetLimit(workersLimit)
 	p = patchData{
 		kBase:        kbase,
 		clusterID:    clusterID,

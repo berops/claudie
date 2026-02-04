@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/natsutils"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -24,14 +25,17 @@ func (s *Service) Handler(msg jetstream.Msg) {
 		stores := Stores{
 			store: s.store,
 		}
-		handlerInner(AckWait, s.done, msg, stores)
+		handlerInner(
+			AckWait,
+			s.done,
+			msg,
+			stores,
+			DurableName,
+			envs.NatsClusterJetstreamName,
+		)
 	}
 
 	s.nts.inFlight.Go(handler)
-}
-
-func errHandler(consumeCtx jetstream.ConsumeContext, err error) {
-	log.Err(err).Msgf("Failed to consume message: %v", err)
 }
 
 func handlerInner(
@@ -39,6 +43,8 @@ func handlerInner(
 	done chan struct{},
 	msg jetstream.Msg,
 	stores Stores,
+	thisConsumer string,
+	thisConsumerStream string,
 ) {
 	var (
 		// Messages are in the format (ID)-(SUBJECT), this is to avoid duplicate

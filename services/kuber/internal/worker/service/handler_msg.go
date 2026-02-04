@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/natsutils"
 	"github.com/berops/claudie/internal/processlimit"
@@ -31,13 +32,11 @@ func (s *Service) Handler(msg jetstream.Msg) {
 			s.workersLimit,
 			s.done, s.consumer.natsclient.JetStream(),
 			msg,
+			DurableName,
+			envs.NatsClusterJetstreamName,
 		)
 	}
 	s.consumer.inFlight.Go(handler)
-}
-
-func errHandler(consumeCtx jetstream.ConsumeContext, err error) {
-	log.Err(err).Msgf("Failed to consume message: %v", err)
 }
 
 func handlerInner(
@@ -47,6 +46,8 @@ func handlerInner(
 	done chan struct{},
 	js jetstream.JetStream,
 	msg jetstream.Msg,
+	thisConsumer string,
+	thisConsumerStream string,
 ) {
 	var (
 		stageID       = msg.Headers().Get(nats.MsgIdHdr)
@@ -193,17 +194,49 @@ func handlerInner(
 	defer cancel()
 
 	for range retries {
+		jitter := time.Duration(rand.IntN(750)) * time.Millisecond
+		wait := 5*time.Second + jitter
+		wait = min(wait, refreshTime) // keep the refresh interval in mind.
+
 		if err := msg.InProgress(); err != nil {
 			log.Warn().Msgf("failed to refresh msg while trying to send result to its reply channel: %v", err)
+		}
+
+		// ensure the current consumer still exists.
+		// To minimize the possibility of a lost msg.
+		if _, err = js.Consumer(ctx, thisConsumerStream, thisConsumer); err != nil {
+			if errors.Is(err, nats.ErrConsumerNotFound) {
+				// This would mean that "This" service was removed as a consumer.
+				// While publishing will work the retry mechanism will recreate
+				// a new consumer and will process the message again. Thus it may
+				// still happen that two messages will be processed at the same time
+				// one in this service and the other in the next service. This is the
+				// "at least once" delivery. The configuration of the Consumers and
+				// stream use durable consumers that have an Inactive treshold of 0
+				// i.e never deleted, thus if a consumer is actually deleted something
+				// must be wrong. In this case error out before publishing the message.
+				//
+				// This will not 100% avoid handling this scenario but will minimize the
+				// chances of having duplicate processing when this occurs. Further minimization
+				// of chances are done in other parts, i.e. long duplicate ID windows...
+				//
+				// The recreation of the consumer, if deleted is handled in the [Service.consumerLoop]
+				// and is only recreated after all processing msgs have finishes, thus it should not
+				// happen that the consumer will be recreated by this service during the processing,
+				// if a consumer will get deleted somehow.
+				//
+				// Only catches deletion of a consumer mid processing.
+				break
+			}
+
+			time.Sleep(wait)
+			continue
 		}
 
 		if err = natsutils.ReplyTo(ctx, logger, js, reply); err == nil {
 			break
 		}
 
-		jitter := time.Duration(rand.IntN(750)) * time.Millisecond
-		wait := 5*time.Second + jitter
-		wait = min(wait, refreshTime) // keep the refresh interval in mind.
 		time.Sleep(wait)
 	}
 
@@ -221,12 +254,16 @@ func handlerInner(
 		log.Err(err).Msg("Failed to refresh msg as in progress, after sending result to reply channel")
 	}
 
+	// For acknowledging the message have a higher number of retries
+	// will try up around a minute of retries.
+	retries = 45
 	for range retries {
 		if err = msg.DoubleAck(ctx); err == nil {
 			break
 		}
 
-		jitter := 1*time.Millisecond + (time.Duration(rand.IntN(100)) * time.Millisecond)
+		jitter := 1250*time.Millisecond + (time.Duration(rand.IntN(800)) * time.Millisecond)
+		logger.Debug().Msgf("Message ack failed, trying again in %s", jitter)
 		time.Sleep(jitter)
 	}
 

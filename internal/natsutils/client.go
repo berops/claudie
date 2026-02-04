@@ -106,10 +106,10 @@ func (c *Client) JetStreamWorkQueue(ctx context.Context, name string, subjects .
 		Storage: jetstream.FileStorage,
 
 		Replicas:    c.clusterSize,
-		Duplicates:  5 * time.Minute, // keep track of duplicate messages for 5 mins.
+		Duplicates:  1 * time.Hour, // keep track of duplicate messages for 1 hour.
 		Compression: jetstream.NoCompression,
 		ConsumerLimits: jetstream.StreamConsumerLimits{
-			InactiveThreshold: 30 * time.Second,
+			InactiveThreshold: 0 * time.Second, // disable threshold, after which the consumer will be deleted.
 			MaxAckPending:     512,
 		},
 		PersistMode: jetstream.DefaultPersistMode, // required every message to be flushed.
@@ -128,13 +128,14 @@ func (c *Client) JSWorkQueueConsumer(
 	subjects ...string,
 ) (jetstream.Consumer, error) {
 	defaultConfig := jetstream.ConsumerConfig{
-		Durable:       durableName,
-		DeliverPolicy: jetstream.DeliverAllPolicy,  // required with work queue.
-		AckPolicy:     jetstream.AckExplicitPolicy, // explicit ack required for messages.
-		AckWait:       ackWait,
-		ReplayPolicy:  jetstream.ReplayInstantPolicy, // resent messages instantly.
-		MaxWaiting:    512,                           // alllow to have a total of 512 waiting messages
-		MaxAckPending: 512,                           // allow to have a total of 512 unack messages pending
+		Durable:           durableName,
+		DeliverPolicy:     jetstream.DeliverAllPolicy,  // required with work queue.
+		AckPolicy:         jetstream.AckExplicitPolicy, // explicit ack required for messages.
+		AckWait:           ackWait,
+		ReplayPolicy:      jetstream.ReplayInstantPolicy, // resent messages instantly.
+		MaxWaiting:        512,                           // alllow to have a total of 512 waiting messages
+		MaxAckPending:     512,                           // allow to have a total of 512 unack messages pending
+		InactiveThreshold: 0,                             // disable, persists forever.
 	}
 
 	if len(subjects) == 1 {

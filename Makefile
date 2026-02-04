@@ -73,9 +73,9 @@ dockernetwork:
 
 # Stops all data stores at once, which will also remove docker containers
 datastoreStop:
-	docker network disconnect claudie-test-network nats
-	docker network disconnect claudie-test-network minio
-	docker network disconnect claudie-test-network mongo
+	docker network disconnect claudie-test-network nats || true
+	docker network disconnect claudie-test-network minio || true
+	docker network disconnect claudie-test-network mongo || true
 	docker network rm claudie-test-network
 	docker stop mongo
 	docker stop minio
