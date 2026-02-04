@@ -147,8 +147,7 @@ func (d *DynamicNodePool) Validate(m *Manifest) error {
 func (d *DynamicNodePool) validateGCPGpuConfig(m *Manifest) error {
 	providerType, err := m.GetProviderType(d.ProviderSpec.Name)
 	if err != nil {
-		// Provider validation is handled elsewhere
-		return nil
+		return err
 	}
 
 	if providerType != "gcp" {
