@@ -11,6 +11,7 @@ import (
 	semver "github.com/Masterminds/semver/v3"
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
+	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/internal/sanitise"
 	"github.com/berops/claudie/internal/templateUtils"
@@ -56,6 +57,7 @@ func (l *Longhorn) SetUp() error {
 	}
 	k.Stdout = comm.GetStdOut(l.Cluster.ClusterInfo.Id())
 	k.Stderr = comm.GetStdErr(l.Cluster.ClusterInfo.Id())
+	log := loggerutils.WithClusterName(l.Cluster.ClusterInfo.Id())
 
 	current, err := l.currentClaudieStorageClasses(k)
 	if err != nil {
