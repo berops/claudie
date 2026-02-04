@@ -69,6 +69,53 @@ If you wish to use GCP as your DNS provider where Claudie creates DNS records po
 !!! warning "GCP is not my domain registrar"
     If you haven't acquired a domain via GCP and wish to utilize GCP for hosting your zone, you can refer to [this guide](https://cloud.google.com/dns/docs/update-name-servers) on GCP nameservers. However, if you prefer not to use the entire domain, an alternative option is to delegate a subdomain to GCP.
 
+## GPU Support
+
+GCP requires explicit configuration to attach GPUs to compute instances. Unlike some other providers where GPU-enabled instance types automatically include GPUs, GCP uses a separate `guest_accelerator` mechanism that requires both GPU count and GPU type to be specified.
+
+### Configuration
+
+To use GPUs with GCP nodepools, you must specify both `nvidiaGpuCount` and `nvidiaGpuType` in the `machineSpec` block:
+
+```yaml
+nodePools:
+  dynamic:
+    - name: gpu-nodepool
+      providerSpec:
+        name: gcp-1
+        region: us-central1
+        zone: us-central1-a
+      count: 2
+      serverType: n1-standard-4
+      image: ubuntu-2404-noble-amd64-v20251001
+      machineSpec:
+        nvidiaGpuCount: 1
+        nvidiaGpuType: nvidia-tesla-t4
+```
+
+### Available GPU Types
+
+Common NVIDIA GPU accelerator types available on GCP:
+
+| GPU Type | Description |
+|----------|-------------|
+| `nvidia-tesla-t4` | NVIDIA Tesla T4 (cost-effective for inference) |
+| `nvidia-tesla-v100` | NVIDIA Tesla V100 (high performance training) |
+| `nvidia-tesla-a100` | NVIDIA A100 (latest generation) |
+| `nvidia-l4` | NVIDIA L4 (successor to T4) |
+| `nvidia-tesla-p100` | NVIDIA Tesla P100 |
+| `nvidia-tesla-k80` | NVIDIA Tesla K80 (legacy) |
+
+!!! note "GPU Availability"
+    GPU availability varies by zone. Check [GCP GPU regions and zones](https://cloud.google.com/compute/docs/gpus/gpu-regions-zones) for current availability in your desired region.
+
+!!! warning "GPU Instance Limitations"
+    - GPU instances cannot be live migrated and will be terminated during maintenance events
+    - Use `n1-standard-*` or `n1-highmem-*` machine types with GPUs (not `e2-*` types)
+    - Some GPU types have minimum vCPU and memory requirements
+
+For a complete GPU deployment example including the NVIDIA GPU Operator installation, see the [GPU Example](../gpu-example.md).
+
 ## Input manifest examples
 ### Single provider, multi region cluster example
 

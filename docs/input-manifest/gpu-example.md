@@ -3,7 +3,9 @@ from [Nvidia](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/lates
 to deploy the `gpu-operator` into a Claudie-built Kubernetes cluster. Make sure you fulfill the necessary listed
 requirements in prerequisites before continuing, if you decide to use a different cloud provider.
 
-In this example we will be using [AWS](providers/aws.md) as our provider, with the following config:
+## AWS GPU Example
+
+In this example we will be using [AWS](providers/aws.md) as our provider. AWS GPU instances (like `g4dn.xlarge`) come with GPUs attached, so no additional `machineSpec` configuration is needed:
 
 ```yaml
 apiVersion: claudie.io/v1beta1
@@ -56,6 +58,71 @@ spec:
           compute:
             - gpu-aws
 ```
+
+## GCP GPU Example
+
+For [GCP](providers/gcp.md), you must explicitly specify the GPU type and count using the `machineSpec` block. GCP requires both `nvidiaGpuCount` and `nvidiaGpuType` to attach GPUs to instances:
+
+```yaml
+apiVersion: claudie.io/v1beta1
+kind: InputManifest
+metadata:
+  name: gcp-gpu-example
+  labels:
+    app.kubernetes.io/part-of: claudie
+spec:
+  providers:
+    - name: gcp-1
+      providerType: gcp
+      secretRef:
+        name: gcp-secret
+        namespace: secrets
+
+  nodePools:
+    dynamic:
+    - name: control-gcp
+      providerSpec:
+        name: gcp-1
+        region: us-central1
+        zone: us-central1-a
+      count: 1
+      serverType: e2-medium
+      image: ubuntu-2404-noble-amd64-v20251001
+
+    - name: gpu-gcp
+      providerSpec:
+        name: gcp-1
+        region: us-central1
+        zone: us-central1-a
+      count: 2
+      # Use n1-standard machine types for GPU attachment
+      serverType: n1-standard-4
+      image: ubuntu-2404-noble-amd64-v20251001
+      storageDiskSize: 50
+      # GPU configuration required for GCP
+      machineSpec:
+        nvidiaGpuCount: 1
+        nvidiaGpuType: nvidia-tesla-t4
+
+  kubernetes:
+    clusters:
+      - name: gpu-example
+        version: v1.31.0
+        network: 172.16.2.0/24
+        pools:
+          control:
+            - control-gcp
+          compute:
+            - gpu-gcp
+```
+
+!!! note "GCP GPU Requirements"
+    - The `nvidiaGpuType` field is required when `nvidiaGpuCount > 0` for GCP providers
+    - Available GPU types vary by zone. Check [GCP GPU regions and zones](https://cloud.google.com/compute/docs/gpus/gpu-regions-zones) for availability
+    - Common GPU types: `nvidia-tesla-t4`, `nvidia-tesla-v100`, `nvidia-tesla-a100`, `nvidia-l4`
+    - GPU instances cannot be live migrated, so they will be terminated during maintenance events
+
+## Deploying the GPU Operator
 
 After the `InputManifest` has been successfully built by Claudie, deploy the `gpu-operator` to the `gpu-example` Kubernetes cluster.
 

@@ -1,4 +1,4 @@
-.PHONY: proto manager builder terraformer ansibler kubeEleven test database minio containerimgs crd crd-apply controller-gen kind-load-images
+.PHONY: proto manager builder terraformer ansibler kubeEleven test database minio containerimgs crd crd-apply controller-gen kind-load-images kind-deploy
 
 # Enforce same version of protoc
 PROTOC_VERSION = "29.5"
@@ -84,11 +84,22 @@ containerimgs:
 	done
 	$(SED_INPLACE) "s/adapter:.*$$/adapter/" services/kuber/templates/cluster-autoscaler.goyaml
 
+KIND_CLUSTER ?= kind
+KIND_NAMESPACE ?= claudie
 kind-load-images:
 	for service in $(SERVICES) ; do \
 		echo " --- loading $$service to kind cluster --- "; \
-		kind load docker-image ghcr.io/berops/claudie/$$service:$(REV); \
+		kind load docker-image --name $(KIND_CLUSTER) ghcr.io/berops/claudie/$$service:$(REV); \
 	done
+
+kind-deploy: kind-load-images
+	@echo " --- updating deployments in $(KIND_NAMESPACE) namespace --- "
+	@for svc in ansibler builder claudie-operator kube-eleven kuber manager terraformer; do \
+		echo " --- updating $$svc deployment --- "; \
+		kubectl set image deployment/$$svc $$svc=ghcr.io/berops/claudie/$$svc:$(REV) -n $(KIND_NAMESPACE); \
+	done
+	@echo " --- waiting for rollouts to complete --- "
+	@kubectl rollout status deployment -n $(KIND_NAMESPACE)
 
 # Generate CustomResourceDefinition objects.
 crd:
