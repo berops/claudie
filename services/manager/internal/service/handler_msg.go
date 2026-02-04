@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/natsutils"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -30,8 +29,6 @@ func (s *Service) Handler(msg jetstream.Msg) {
 			s.done,
 			msg,
 			stores,
-			DurableName,
-			envs.NatsClusterJetstreamName,
 		)
 	}
 
@@ -43,8 +40,6 @@ func handlerInner(
 	done chan struct{},
 	msg jetstream.Msg,
 	stores Stores,
-	thisConsumer string,
-	thisConsumerStream string,
 ) {
 	var (
 		// Messages are in the format (ID)-(SUBJECT), this is to avoid duplicate
