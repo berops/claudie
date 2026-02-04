@@ -131,9 +131,17 @@ type TaskEvent struct {
 }
 
 type Workflow struct {
-	Status      string `bson:"status"`
-	Description string `bson:"description"`
-	Timestamp   string `bson:"timestamp"`
+	Status      string             `bson:"status"`
+	Description string             `bson:"description"`
+	Timestamp   string             `bson:"timestamp"`
+	Previous    []FinishedWorkflow `bson:"previous"`
+}
+
+type FinishedWorkflow struct {
+	Status          string    `bson:"status"`
+	Stage           StageKind `bson:"stage"`
+	TaskDescription string    `bson:"taskDescription"`
+	Timestamp       string    `bson:"timestamp"`
 }
 
 func (cs *ClusterState) Exists() bool {

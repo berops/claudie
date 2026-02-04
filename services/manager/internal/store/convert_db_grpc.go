@@ -274,18 +274,46 @@ func ConvertToGRPCTaskEvent(te *TaskEvent) (*spec.TaskEvent, error) {
 
 // ConvertFromGRPCWorkflow converts the workflow state data from GRPC to the database representation.
 func ConvertFromGRPCWorkflow(w *spec.Workflow) Workflow {
+	var previous []FinishedWorkflow
+	for _, p := range w.Previous {
+		fw := FinishedWorkflow{
+			Status:          p.Status.String(),
+			TaskDescription: p.TaskDescription,
+			Stage:           StageKind(p.Stage),
+			Timestamp:       p.Timestamp.AsTime().UTC().Format(time.RFC3339),
+		}
+		previous = append(previous, fw)
+	}
 	return Workflow{
 		Status:      w.GetStatus().String(),
 		Description: w.GetDescription(),
 		Timestamp:   time.Now().UTC().Format(time.RFC3339),
+		Previous:    previous,
 	}
 }
 
 // ConvertToGRPCWorkflow converts the database representation of the workflow state to GRPC.
 func ConvertToGRPCWorkflow(w Workflow) *spec.Workflow {
+	var previous []*spec.FinishedWorkflow
+	for _, p := range w.Previous {
+		t, err := time.Parse(time.RFC3339, p.Timestamp)
+		if err != nil {
+			t = time.Now()
+		}
+		t = t.UTC()
+		fw := &spec.FinishedWorkflow{
+			Status:          spec.Workflow_Status(spec.Workflow_Status_value[p.Status]),
+			TaskDescription: p.TaskDescription,
+			Timestamp:       timestamppb.New(t),
+			Stage:           string(p.Stage),
+		}
+		previous = append(previous, fw)
+	}
+
 	return &spec.Workflow{
 		Status:      spec.Workflow_Status(spec.Workflow_Status_value[w.Status]),
 		Description: w.Description,
+		Previous:    previous,
 	}
 }
 

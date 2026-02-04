@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/loggerutils"
@@ -340,7 +341,8 @@ Failed to extract state from failed 'InFlight' state: %v
 		case Reschedule, NoReschedule:
 			// Events are going to be worked on, thus clear the Error state, if any.
 			state.State = &spec.Workflow{
-				Status: spec.Workflow_WAIT_FOR_PICKUP,
+				Status:   spec.Workflow_WAIT_FOR_PICKUP,
+				Previous: slices.Clone(state.State.Previous),
 			}
 		case NotReady, Noop:
 		}

@@ -610,8 +610,25 @@ spec:
                         type: string
                       phase:
                         type: string
+                      previous:
+                        items:
+                          properties:
+                            stage:
+                              type: string
+                            status:
+                              type: string
+                            taskDescription:
+                              type: string
+                            timestamp:
+                              type: string
+                          required:
+                            - timestamp
+                          type: object
+                        type: array
                       state:
                         type: string
+                    required:
+                      - previous
                     type: object
                   type: object
                 state:

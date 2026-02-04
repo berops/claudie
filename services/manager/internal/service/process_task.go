@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"errors"
+	"slices"
+	"time"
 
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -12,6 +14,8 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
+
+const PreviouslyCachedWorkflowResults = 2
 
 type (
 	Work struct {
@@ -138,7 +142,8 @@ func ProcessTask(ctx context.Context, stores Stores, work Work) (acknowledge boo
 
 		cluster.InFlight.Id = newUUID
 		cluster.State = store.Workflow{
-			Status: spec.Workflow_WAIT_FOR_PICKUP.String(),
+			Status:   spec.Workflow_WAIT_FOR_PICKUP.String(),
+			Previous: slices.Clone(cluster.State.Previous),
 		}
 
 		if err := stores.store.UpdateConfig(ctx, im); err != nil {
@@ -176,6 +181,19 @@ func ProcessTask(ctx context.Context, stores Stores, work Work) (acknowledge boo
 		}
 		return
 	}
+
+	// About to advance a successful task.
+	// Store the result in the previously finished workflows.
+	previous := store.FinishedWorkflow{
+		Status:          spec.Workflow_DONE.String(),
+		TaskDescription: cluster.State.Description,
+		Timestamp:       time.Now().UTC().Format(time.RFC3339),
+		Stage:           cluster.InFlight.Pipeline[cluster.InFlight.CurrentStage].Kind,
+	}
+	if len(cluster.State.Previous) >= PreviouslyCachedWorkflowResults {
+		cluster.State.Previous = cluster.State.Previous[1:]
+	}
+	cluster.State.Previous = append(cluster.State.Previous, previous)
 
 	if err := advanceToNextStage(logger, cluster); err != nil {
 		// Parsing of the database representation shouldn't fail, there has to
@@ -226,6 +244,19 @@ func processTaskWithError(
 		isStageWarn    = stage.Description.ErrorLevel == spec.ErrorLevel_ERROR_WARN.String()
 	)
 
+	// About to advance a failed task.
+	// Store the result in the previously finished workflows.
+	previous := store.FinishedWorkflow{
+		Status:          spec.Workflow_ERROR.String(),
+		TaskDescription: cluster.State.Description,
+		Timestamp:       time.Now().UTC().Format(time.RFC3339),
+		Stage:           cluster.InFlight.Pipeline[cluster.InFlight.CurrentStage].Kind,
+	}
+	if len(cluster.State.Previous) >= PreviouslyCachedWorkflowResults {
+		cluster.State.Previous = cluster.State.Previous[1:]
+	}
+	cluster.State.Previous = append(cluster.State.Previous, previous)
+
 	cluster.State.Status = spec.Workflow_ERROR.String()
 	cluster.State.Description = work.Result.Error.Description
 
@@ -260,7 +291,8 @@ func processTaskWithError(
 
 			cluster.InFlight.Id = newUUID
 			cluster.State = store.Workflow{
-				Status: spec.Workflow_WAIT_FOR_PICKUP.String(),
+				Status:   spec.Workflow_WAIT_FOR_PICKUP.String(),
+				Previous: slices.Clone(cluster.State.Previous),
 			}
 
 			if err := stores.store.UpdateConfig(ctx, im); err != nil {

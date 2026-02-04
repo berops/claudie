@@ -59,6 +59,13 @@ message KubernetesContext {
   string namespace = 2;
 }
 
+message FinishedWorkflow {
+  Workflow.Status status = 1;
+  string taskDescription = 2;
+  string stage = 3;
+  google.protobuf.Timestamp timestamp = 4;
+}
+
 message Workflow {
   enum Status {
     // DONE indicates that the workflow for a scheduled [Task] has finished.
@@ -78,6 +85,9 @@ message Workflow {
   Status status = 2;
   // additional information describing the state.
   string description = 3;
+
+  // Information about previously finished workflows.
+  repeated FinishedWorkflow previous = 9;
 }
 
 // K8scluster represents a single kubernetes cluster specified in the manifest.

@@ -183,11 +183,22 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				}
 			}
 
-			currentState.Clusters[cluster] = v1beta1manifest.ClustersStatus{
+			status := v1beta1manifest.ClustersStatus{
 				State:   state.State.GetStatus().String(),
 				Phase:   stage,
 				Message: state.State.GetDescription(),
 			}
+
+			for _, p := range state.State.Previous {
+				status.Previous = append(status.Previous, v1beta1manifest.FinishedWorkflow{
+					Status:          p.Status.String(),
+					Stage:           p.Stage,
+					TaskDescription: p.TaskDescription,
+					Timestamp:       p.Timestamp.String(),
+				})
+			}
+
+			currentState.Clusters[cluster] = status
 		}
 		deleted = deletedCount == len(config.Clusters)
 
