@@ -1,0 +1,110 @@
+syntax = "proto3";
+package spec;
+
+option go_package = "github.com/berops/claudie/proto/pb/spec";
+
+// Different error levels supported by each scheduled 'Work' in
+// claudie.
+enum ErrorLevel {
+  // Error FATAL describes that whatever the operation/scheduled 'Work'
+  // failed in, no further work must be done on the state and whatever
+  // changes has been made, if any, must be reported back to be synced.
+  ERROR_FATAL = 0;
+
+  // Error WARN describes that whatever the operation/scheduled 'Work'
+  // failed in, it may continue work on the state, even if partial changes
+  // were made into the state of the accepted 'Work' that is currently
+  // being processed.
+  //
+  // **Use with caution**, make sure that all of the function in the chain
+  // with this error level can handle partial state.
+  ERROR_WARN = 1;
+}
+
+message StageDescription {
+  string about = 1;
+  ErrorLevel errorLevel = 2;
+}
+
+message StageTerraformer {
+  enum SubPassKind {
+    BUILD_INFRASTRUCTURE = 0;
+    UPDATE_INFRASTRUCTURE = 1;
+    DESTROY_INFRASTRUCTURE = 2;
+    API_PORT_ON_KUBERNETES = 3;
+  }
+  message SubPass {
+    SubPassKind kind = 1;
+    StageDescription description = 2;
+  }
+
+  StageDescription description = 1;
+  repeated SubPass subPasses = 2;
+}
+
+message StageAnsibler {
+  enum SubPassKind {
+    INSTALL_NODE_REQUIREMENTS = 0;
+    INSTALL_VPN = 1;
+    DETERMINE_API_ENDPOINT_CHANGE = 2;
+    RECONCILE_LOADBALANCERS = 3;
+    REMOVE_CLAUDIE_UTILITIES = 4;
+    UPDATE_API_ENDPOINT = 5;
+    COMMIT_PROXY_ENVS = 6;
+    UPDATE_PROXY_ENVS_ON_NODES = 7;
+    CLEAR_PROXY_ENVS_ON_NODES = 8;
+    INSTALL_TEE_OVERRIDE = 9;
+  }
+  message SubPass {
+    SubPassKind kind = 1;
+    StageDescription description = 2;
+  }
+  StageDescription description = 1;
+  repeated SubPass subPasses = 2;
+}
+
+message StageKubeEleven {
+  enum SubPassKind {
+    RECONCILE_CLUSTER = 0;
+    DESTROY_CLUSTER = 1;
+  }
+  message SubPass {
+    SubPassKind kind = 1;
+    StageDescription description = 2;
+  }
+  StageDescription description = 1;
+  repeated SubPass subPasses = 2;
+}
+
+message StageKuber {
+  enum SubPassKind {
+    CILIUM_RESTART = 0;
+    DELETE_NODES = 1;
+    PATCH_CLUSTER_INFO_CM = 2;
+    PATCH_KUBE_PROXY = 3;
+    PATCH_KUBEADM = 4;
+    REMOVE_LB_SCRAPE_CONFIG = 5;
+    STORE_LB_SCRAPE_CONFIG = 6;
+    PATCH_NODES = 7;
+    DEPLOY_LONGHORN = 8;
+    ENABLE_LONGHORN_CA = 9;
+    DISABLE_LONGHORN_CA = 10;
+    RECONCILE_LONGHORN_STORAGE_CLASSES = 11;
+    DEPLOY_KUBELET_CSR_APPROVER = 12;
+  }
+  message SubPass {
+    SubPassKind kind = 1;
+    StageDescription description = 2;
+  }
+  StageDescription description = 1;
+  repeated SubPass subPasses = 2;
+}
+
+message Stage {
+  oneof StageKind {
+    StageTerraformer terraformer = 1;
+    StageAnsibler ansibler = 2;
+    StageKubeEleven kubeEleven = 3;
+    StageKuber kuber = 4;
+  }
+}

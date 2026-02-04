@@ -1,49 +1,14 @@
-#K8s
-[control]
-{{- range $nodepool := .K8sNodepools.Dynamic }}
-    {{- if $nodepool.IsControl }}
-        {{- range $node :=  $nodepool.Nodes }}
-{{ trimPrefix (printf "%s-" $.ClusterID) $node.Name }} ansible_user=root ansible_host={{ $node.Public }} private_ip={{ $node.Private }} ansible_ssh_private_key_file={{ $nodepool.Name }}.pem ansible_ssh_extra_args="-o IdentitiesOnly=yes"
-        {{- end }}
-    {{- end }}
-{{- end }}
-{{- range $nodepool := .K8sNodepools.Static }}
-    {{- if $nodepool.IsControl }}
-        {{- range $node :=  $nodepool.Nodes }}
-{{ $node.Name }} ansible_user={{ $node.Username }} ansible_host={{ $node.Public }} private_ip={{ $node.Private }} ansible_ssh_private_key_file={{ $node.Name }}.pem ansible_ssh_extra_args="-o IdentitiesOnly=yes"
-        {{- end }}
-    {{- end }}
-{{- end }}
-
-[compute]
-{{- range $nodepool := .K8sNodepools.Dynamic }}
-    {{- if not $nodepool.IsControl }}
-        {{- range $node :=  $nodepool.Nodes }}
-{{ trimPrefix (printf "%s-" $.ClusterID) $node.Name }} ansible_user=root ansible_host={{ $node.Public }} private_ip={{ $node.Private }} ansible_ssh_private_key_file={{ $nodepool.Name }}.pem ansible_ssh_extra_args="-o IdentitiesOnly=yes"
-        {{- end }}
-    {{- end }}
-{{- end }}
-{{- range $nodepool := .K8sNodepools.Static }}
-    {{- if not $nodepool.IsControl }}
-        {{- range $node :=  $nodepool.Nodes }}
-{{ $node.Name }} ansible_user={{ $node.Username }} ansible_host={{ $node.Public }} private_ip={{ $node.Private }} ansible_ssh_private_key_file={{ $node.Name }}.pem ansible_ssh_extra_args="-o IdentitiesOnly=yes"
-        {{- end }}
-    {{- end }}
-{{- end }}
-
-
-{{- range $lbCluster := .LBClusters }}
-[{{ $lbCluster.Name }}]
-    {{- range $lbNodepool := $lbCluster.LBnodepools.Dynamic }}
-        {{- range $lbNode :=  $lbNodepool.Nodes }}
+[{{ $.Name }}]
+{{- range $lbNodepool := $.LBnodepools.Dynamic }}
+    {{- range $lbNode :=  $lbNodepool.Nodes }}
 {{/*key.pem is taken from a directory where ansible-playbook is called, thus it does not need to specify path relative to inventory.ini*/}}
-{{ trimPrefix (printf "%s-%s-" $lbCluster.Name $lbCluster.Hash) $lbNode.Name }} ansible_user=root ansible_host={{ $lbNode.Public }} private_ip={{ $lbNode.Private }} ansible_ssh_private_key_file={{ $lbNodepool.Name }}.pem ansible_ssh_extra_args="-o IdentitiesOnly=yes"
-        {{- end }}
+{{ trimPrefix (printf "%s-%s-" $.Name $.Hash) $lbNode.Name }} ansible_user=root ansible_host={{ $lbNode.Public }} private_ip={{ $lbNode.Private }} ansible_ssh_private_key_file={{ $lbNodepool.Name }}.pem ansible_ssh_extra_args="-o IdentitiesOnly=yes"
     {{- end }}
-    {{- range $lbNodepool := $lbCluster.LBnodepools.Static }}
-        {{- range $lbNode :=  $lbNodepool.Nodes }}
+{{- end }}
+
+{{- range $lbNodepool := $.LBnodepools.Static }}
+    {{- range $lbNode :=  $lbNodepool.Nodes }}
 {{/*key.pem is taken from a directory where ansible-playbook is called, thus it does not need to specify path relative to inventory.ini*/}}
 {{ $lbNode.Name }} ansible_user={{ $lbNode.Username }} ansible_host={{ $lbNode.Public }} private_ip={{ $lbNode.Private }} ansible_ssh_private_key_file={{ $lbNode.Name }}.pem ansible_ssh_extra_args="-o IdentitiesOnly=yes"
-        {{- end }}
     {{- end }}
 {{- end }}

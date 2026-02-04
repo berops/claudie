@@ -1,11 +1,7 @@
 package service
 
 import (
-	"bytes"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
-	"encoding/pem"
+	"errors"
 	"fmt"
 	"net"
 	"slices"
@@ -16,113 +12,155 @@ import (
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/berops/claudie/services/manager/internal/store"
 	"github.com/rs/zerolog/log"
 
 	"gopkg.in/yaml.v3"
-
-	"google.golang.org/protobuf/proto"
-
-	"golang.org/x/crypto/ssh"
 )
 
 const (
 	// CIDR used when creating the nodepools for desired state.
-	baseSubnetCIDR       = "10.0.0.0/24"
+	baseSubnetCIDR = "10.0.0.0/24"
+
+	// Which Octet to change within the [baseSubnetCIDR]
 	defaultOctetToChange = 2
 )
 
-func createDesiredState(pending *store.Config) error {
+func createDesiredState(pending *spec.Config, result *map[string]*spec.Clusters) error {
+	if result == nil {
+		return errors.New("empty pointer to map for clusters desired state")
+	}
+
 	// 1. If the infrastructure was marked for deletion the InputManifest and the ManifestChecksum will be empty.
 	markedForDeletion := pending.Manifest.Raw == "" &&
 		pending.Manifest.Checksum == nil &&
-		pending.Manifest.State == manifest.Pending.String()
+		pending.Manifest.State == spec.Manifest_Pending
 
 	if markedForDeletion {
-		for cluster := range pending.Clusters {
-			pending.Clusters[cluster].Desired.K8s = nil
-			pending.Clusters[cluster].Desired.LoadBalancers = nil
-		}
+		// The result map will be empty, indicating there is no desired state.
+		clear(*result)
 		return nil
 	}
-
-	// In the next steps It might be the case either the Current State or Desired state is nil and thus
-	// these cases needs to be handled gracefully.
 
 	// 2. create the desired state from the input manifest.
 	var m manifest.Manifest
 	if err := yaml.Unmarshal([]byte(pending.Manifest.Raw), &m); err != nil {
 		return fmt.Errorf("error unmarshalling manifest for config %q: %w", pending.Name, err)
 	}
-	if err := createK8sClustersFromManifest(&m, pending); err != nil {
+
+	var desiredState map[string]*spec.Clusters
+	if err := createK8sClustersFromManifest(&m, &desiredState); err != nil {
 		return fmt.Errorf("failed to parse k8s clusters from manifest %q: %w", m.Name, err)
 	}
-	if err := createLBClustersFromManifest(&m, pending); err != nil {
+	if err := createLBClustersFromManifest(&m, &desiredState); err != nil {
 		return fmt.Errorf("failed to parse lb clusters from manifest: %q: %w", m.Name, err)
 	}
 
-	grpcRepr, err := store.ConvertToGRPC(pending)
-	if err != nil {
-		return fmt.Errorf("failed to convert from db representation to grpc %q: %w", pending.Name, err)
-	}
+	// 3.
+	// In the next steps It might be the case either the Current State or Desired state is nil
+	// thus these cases needs to be handled gracefully. Parts of the desired state are populated
+	// based on the values in the current state, if any exists.
+	for cluster, desired := range desiredState {
+		// It is guaranteed by validation, that within a single InputManifest
+		// no two clusters (including LB) can share the same name.
+		current := pending.Clusters[cluster].GetCurrent()
 
-	// 2.1 Also consider to re-use existing data created in previous run if not first-run of the workflow for the manifest.
-	for _, state := range grpcRepr.Clusters {
-		deduplicateNodepoolNames(&m, state)
-	}
+		// Resolve references to same nodopool types used in both
+		// states, current and desired.
+		//
+		// This function decides which nodepools of the same type are
+		// going to be kept in the desired state based on the number
+		// of references.
+		resolveDynamicNodePoolReferences(&m, current, desired)
 
-	backwardsCompatibility(grpcRepr)
+		// Deduplicate, static node names. Contrary to how dynamic node works, static
+		// nodes are identified via the Public endpoint. The name that is assigned to
+		// static nodes is not used to identify them, atleast not in this stage of the
+		// build pipeline.
+		//
+		// For identifying if the same static node is reused, the Public Endpoint is used.
+		// After the [deduplicateStaticNodeNames] newly added static nodes will have unique
+		// names. Nodes that are present in both `current` and `desired` will need to have
+		// their state transferred via [transferImmutableState]
+		deduplicateStaticNodeNames(current, desired)
 
-	if err := transferExistingState(grpcRepr); err != nil {
-		return fmt.Errorf("failed to reuse current state date for desired state for %q: %w", m.Name, err)
-	}
+		if current.GetK8S() != nil {
+			log.Debug().Str("cluster", cluster).Msgf("reusing existing state")
 
-	backwardsCompatibilityTransferMissingState(grpcRepr)
+			// Transfers any state from current into desired. The state that
+			// is transferred is considered to be "Immutable" by claudie,
+			// thus once it is assigned it must not changed.
+			//
+			// The transfer may possibly overwrite any existing state in [desired].
+			transferImmutableState(current, desired)
 
-	// after transferring existing state fill remaining data.
-	// 1. generate dynamic nodes
-	for _, state := range grpcRepr.Clusters {
-		fillMissingDynamicNodes(state.Desired)
-	}
+			// After transferring the current state, for autoscaled nodepools
+			// the `TargetSize` and `Counts` may not reconcile eventually
+			// thus look at autoscaled nodepools and resolve any `TargetSize < Count`
+			// by marking nodes for deletion to match the desired targetSize at
+			// some point.
+			//
+			// This needs to be called immediately after transferring the nodes
+			// and before populating the rest of the dynamic nodes as the desired
+			// nodepool currently has nodes that are in the current state and thus
+			// when marked for deletion, an existing node will actually be deleted.
+			fixupAutoscalerCounts(desired)
+		}
 
-	// 2. generate the CIDR for individual nodepools at this step, as
-	// we need information about the current state so that we do not
-	// generate the same cidr for the same Provider/Region pair multiple
-	// times, avoiding conflicts.
-	for _, state := range grpcRepr.Clusters {
-		if err := fillMissingCIDR(state); err != nil {
-			return fmt.Errorf("failed to generate cidrs for nodepools: %w", err)
+		// Must follow after [transferImmutableState], Generates the CIDR for
+		// individual nodepools at this step, as we need information about the
+		// current state so that we do not generate the same cidr for the same
+		// Provider/Region pair multiple times, avoiding conflicts.
+		if err := generateMissingCIDR(current, desired); err != nil {
+			return fmt.Errorf("failed to generate CIDRs for nodepools: %w", err)
 		}
 	}
 
-	// 3. generate missing envoy admin ports and add the default role for the healthcheck.
-	for _, state := range grpcRepr.Clusters {
+	backwardsCompatibility(pending)
+	backwardsCompatibilityTransferMissingState(pending, desiredState)
+
+	// 4. After step 3. there can still be missing state that needs to be populated.
+	for _, desired := range desiredState {
+		if err := PopulateSSHKeys(desired); err != nil {
+			return err
+		}
+
+		// Populate DNS hostname if it was not transferred from the existing state.
+		PopulateDnsHostName(desired)
+
+		// After transferring the existing state we fill the remaining
+		// missing dynamic nodes, as the [spec.DynamicNodePool.Count]
+		// could have changed.
+		PopulateDynamicNodesForClusters(desired)
+
 		// validation of the Manifest assures that the number of
 		// roles is limited and that we will always be able to
 		// generate the required number of ports for the envoy
 		// admin interface.
-		fillMissingEnvoyAdminPorts(state.Desired)
+		PopulateEnvoyAdminPorts(desired)
 
 		// To each loadbalancer cluster we add a default healthcheck role
 		// that can then be used for the HA loadbalancing.
-		fillDefaultHealthcheckRole(state.Desired)
+		PopulateDefaultHealthcheckRole(desired)
 	}
 
-	modified, err := store.ConvertFromGRPC(grpcRepr)
-	if err != nil {
-		return fmt.Errorf("failed to convert from grpc to db representation %q: %w", grpcRepr.Name, err)
-	}
-
-	*pending = *modified
-
+	*result = desiredState
 	return nil
 }
 
 // createK8sClustersFromManifest parses manifest and creates desired state for Kubernetes clusters.
-func createK8sClustersFromManifest(from *manifest.Manifest, into *store.Config) error {
+// The desired state of the clusters is filled into the passed in `into` map. It is then necessary
+// to compare the current state to the filled out desired state of the cluster to determine what changed.
+func createK8sClustersFromManifest(from *manifest.Manifest, into *map[string]*spec.Clusters) error {
+	if into == nil {
+		return errors.New("empty pointer to map for clusters desired state")
+	}
+	if *into == nil {
+		*into = make(map[string]*spec.Clusters)
+	}
+	clear(*into)
+
 	// 1. traverse all clusters in the manifest
 	//    catching newly created or existing (updated).
-	desiredClusters := make(map[string]struct{})
 	for _, cluster := range from.Kubernetes.Clusters {
 		useInstallationProxy := &spec.InstallationProxy{
 			Mode: "default",
@@ -158,47 +196,25 @@ func createK8sClustersFromManifest(from *manifest.Manifest, into *store.Config) 
 
 		newCluster.ClusterInfo.NodePools = append(controlNodePools, computeNodePools...)
 
-		// NOTE: we do not populate nodepool.CIDR at this stage
+		// NOTE: the CIDR and SSH keys are not populated at this point in the pipeline. Here
+		// only the parsed skeleton of the passed in [manifest.Manifest] is created.
 
-		if err := generateSSHKeys(newCluster.ClusterInfo); err != nil {
-			return fmt.Errorf("error encountered while creating desired state for %s : %w", newCluster.ClusterInfo.Name, err)
+		(*into)[newCluster.ClusterInfo.Name] = &spec.Clusters{
+			K8S:           newCluster,
+			LoadBalancers: new(spec.LoadBalancers),
 		}
-
-		clusterBytes, err := proto.Marshal(newCluster)
-		if err != nil {
-			return fmt.Errorf("failed to marshal k8s cluster %q: %w", newCluster.GetClusterInfo().Id(), err)
-		}
-
-		// It is guaranteed by validation, that within a single InputManifest no two clusters (including LB)
-		// can share the same name.
-		if v, ok := into.Clusters[newCluster.ClusterInfo.Name]; ok {
-			v.Desired.K8s = clusterBytes
-		} else {
-			if into.Clusters == nil {
-				into.Clusters = make(map[string]*store.ClusterState)
-			}
-			into.Clusters[newCluster.ClusterInfo.Name] = &store.ClusterState{Desired: store.Clusters{K8s: clusterBytes}}
-		}
-
-		desiredClusters[newCluster.ClusterInfo.Name] = struct{}{}
-	}
-
-	// 2. Catch clusters that were deleted.
-	for clusterName := range into.Clusters {
-		if _, ok := desiredClusters[clusterName]; ok {
-			continue
-		}
-
-		// Mark for deletion.
-		into.Clusters[clusterName].Desired.K8s = nil
-		into.Clusters[clusterName].Desired.LoadBalancers = nil
 	}
 
 	return nil
 }
 
 // createLBClustersFromManifest reads the manifest and creates load balancer clusters based on it.
-func createLBClustersFromManifest(from *manifest.Manifest, into *store.Config) error {
+// It continues to fill the map from the [createDesiredState] function with the matching loadbalancers.
+func createLBClustersFromManifest(from *manifest.Manifest, into *map[string]*spec.Clusters) error {
+	if into == nil {
+		return errors.New("empty pointer to map for clusters desired state")
+	}
+
 	// 1. Collect all Lbs in the desired state for given K8s clusters.
 	lbs := make(map[string]*spec.LoadBalancers)
 	for _, lbCluster := range from.LoadBalancer.Clusters {
@@ -207,7 +223,7 @@ func createLBClustersFromManifest(from *manifest.Manifest, into *store.Config) e
 			return fmt.Errorf("error while building desired state for LB %s : %w", lbCluster.Name, err)
 		}
 
-		// NOTE: we do not populate roles.Settings.EnvoyAdminPort at this stage.
+		// NOTE: do not populate roles.Settings.EnvoyAdminPort at this stage.
 		attachedRoles := getRolesAttachedToLBCluster(from.LoadBalancer.Roles, lbCluster.Roles)
 
 		newLbCluster := &spec.LBcluster{
@@ -226,14 +242,10 @@ func createLBClustersFromManifest(from *manifest.Manifest, into *store.Config) e
 		}
 		newLbCluster.ClusterInfo.NodePools = nodes
 
-		// NOTE: we do not populate nodepool.CIDR at this stage
-
-		if err := generateSSHKeys(newLbCluster.ClusterInfo); err != nil {
-			return fmt.Errorf("error encountered while creating desired state for %s : %w", newLbCluster.ClusterInfo.Name, err)
-		}
-
-		// delay the creation of the hostname at a later point
-		// where we can re-use the current state.
+		// NOTE:
+		// the CIDR,SSH keys and DNS hostname (if not set) are not populated at this point
+		// in the pipeline. Here only the parsed skeleton of the passed in [manifest.Manifest]
+		// is created.
 
 		if _, ok := lbs[newLbCluster.TargetedK8S]; !ok {
 			lbs[newLbCluster.TargetedK8S] = new(spec.LoadBalancers)
@@ -241,20 +253,13 @@ func createLBClustersFromManifest(from *manifest.Manifest, into *store.Config) e
 		lbs[newLbCluster.TargetedK8S].Clusters = append(lbs[newLbCluster.TargetedK8S].Clusters, newLbCluster)
 	}
 
-	// 2. Marshal and match with respective clusters.
-	for k8sCluster := range into.Clusters {
+	// 2. Match with respective clusters.
+	for k8sCluster := range *into {
 		lbs, ok := lbs[k8sCluster]
 		if !ok {
-			into.Clusters[k8sCluster].Desired.LoadBalancers = nil
 			continue
 		}
-
-		bytes, err := proto.Marshal(lbs)
-		if err != nil {
-			return fmt.Errorf("failed to marshal lb clusters for %q: %w", k8sCluster, err)
-		}
-
-		into.Clusters[k8sCluster].Desired.LoadBalancers = bytes
+		(*into)[k8sCluster].LoadBalancers = lbs
 	}
 
 	return nil
@@ -335,117 +340,27 @@ func getRolesAttachedToLBCluster(roles []manifest.Role, roleNames []string) []*s
 	return matchingRoles
 }
 
-// generateSSHKeys will generate SSH keypair for each nodepool that does not yet have
-// a keypair assigned.
-func generateSSHKeys(desiredInfo *spec.ClusterInfo) error {
-	for i := range desiredInfo.NodePools {
-		if dp := desiredInfo.NodePools[i].GetDynamicNodePool(); dp != nil && dp.PublicKey == "" {
-			var err error
-			if dp.PublicKey, dp.PrivateKey, err = generateSSHKeyPair(); err != nil {
-				return fmt.Errorf("error while create SSH key pair for nodepool %s: %w", desiredInfo.NodePools[i].Name, err)
-			}
-		}
-	}
-	return nil
-}
-
-func generateSSHKeyPair() (string, string, error) {
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		return "", "", err
-	}
-
-	// Generate and write private key as PEM
-	var privKeyBuf strings.Builder
-
-	privateKeyPEM := &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)}
-	if err := pem.Encode(&privKeyBuf, privateKeyPEM); err != nil {
-		return "", "", err
-	}
-
-	// Generate and write public key
-	pubKey, err := ssh.NewPublicKey(&privateKey.PublicKey)
-	if err != nil {
-		return "", "", err
-	}
-
-	b := &bytes.Buffer{}
-	b.Write(ssh.MarshalAuthorizedKey(pubKey))
-	b.Truncate(b.Len() - 1) // remove generated newline
-
-	return b.String(), privKeyBuf.String(), nil
-}
-
-func fillMissingDynamicNodes(c *spec.Clusters) {
-	k8sID := c.GetK8S().GetClusterInfo().Id()
-
-	for _, np := range c.GetK8S().GetClusterInfo().GetNodePools() {
-		if np.GetDynamicNodePool() == nil {
-			continue
-		}
-		usedNames := make(map[string]struct{})
-		for _, node := range np.Nodes {
-			usedNames[node.Name] = struct{}{}
-		}
-
-		nodepoolID := fmt.Sprintf("%s-%s", k8sID, np.Name)
-		generateMissingDynamicNodes(nodepoolID, usedNames, np)
-	}
-
-	for _, lb := range c.GetLoadBalancers().GetClusters() {
-		lbID := lb.ClusterInfo.Id()
-		for _, np := range lb.GetClusterInfo().GetNodePools() {
-			if np.GetDynamicNodePool() == nil {
-				continue
-			}
-			usedNames := make(map[string]struct{})
-			for _, node := range np.Nodes {
-				usedNames[node.Name] = struct{}{}
-			}
-			nodepoolID := fmt.Sprintf("%s-%s", lbID, np.Name)
-			generateMissingDynamicNodes(nodepoolID, usedNames, np)
-		}
-	}
-}
-
-func generateMissingDynamicNodes(nodepoolID string, usedNames map[string]struct{}, np *spec.NodePool) {
-	typ := spec.NodeType_worker
-	if np.IsControl {
-		typ = spec.NodeType_master
-	}
-
-	for len(np.Nodes) < int(np.GetDynamicNodePool().Count) {
-		name := uniqueNodeName(nodepoolID, usedNames)
-		usedNames[name] = struct{}{}
-		np.Nodes = append(np.Nodes, &spec.Node{
-			Name:     name,
-			NodeType: typ,
-		})
-		log.Debug().Str("nodepool", nodepoolID).Msgf("adding new node %q into desired state IsControl: %v", name, np.IsControl)
-	}
-}
-
-func fillMissingCIDR(c *spec.ClusterState) error {
+func generateMissingCIDR(current, desired *spec.Clusters) error {
 	// https://github.com/berops/claudie/issues/647
 	// 1. generate cidrs for k8s nodepools.
 	existing := make(map[string][]string)
-	for p, nps := range nodepools.ByProviderRegion(c.GetCurrent().GetK8S().GetClusterInfo().GetNodePools()) {
+	for p, nps := range nodepools.ByProviderRegion(current.GetK8S().GetClusterInfo().GetNodePools()) {
 		for _, np := range nodepools.ExtractDynamic(nps) {
 			existing[p] = append(existing[p], np.Cidr)
 		}
 	}
 
-	for p, nps := range nodepools.ByProviderRegion(c.GetDesired().GetK8S().GetClusterInfo().GetNodePools()) {
+	for p, nps := range nodepools.ByProviderRegion(desired.GetK8S().GetClusterInfo().GetNodePools()) {
 		if err := calculateCIDR(baseSubnetCIDR, p, existing, nodepools.ExtractDynamic(nps)); err != nil {
 			return fmt.Errorf("error while generating cidr for nodepool: %w", err)
 		}
 	}
 
 	// 2. generate cidrs for each lb nodepool
-	for _, desired := range c.GetDesired().GetLoadBalancers().GetClusters() {
+	for _, desired := range desired.GetLoadBalancers().GetClusters() {
 		existing := make(map[string][]string)
-		if i := clusters.IndexLoadbalancerById(desired.GetClusterInfo().Id(), c.GetCurrent().GetLoadBalancers().GetClusters()); i >= 0 {
-			current := c.GetCurrent().GetLoadBalancers().GetClusters()[i]
+		if i := clusters.IndexLoadbalancerById(desired.GetClusterInfo().Id(), current.GetLoadBalancers().GetClusters()); i >= 0 {
+			current := current.GetLoadBalancers().GetClusters()[i]
 			for p, nps := range nodepools.ByProviderRegion(current.GetClusterInfo().GetNodePools()) {
 				for _, np := range nodepools.ExtractDynamic(nps) {
 					existing[p] = append(existing[p], np.Cidr)
@@ -501,5 +416,31 @@ func getCIDR(baseCIDR string, position int, existing []string) (string, error) {
 			continue
 		}
 		return fmt.Sprintf("%s/%d", ip.String(), ones), nil
+	}
+}
+
+func fixupAutoscalerCounts(desired *spec.Clusters) {
+	// only k8s clusters have autoscaled nodepools.
+	for _, np := range nodepools.Autoscaled(desired.K8S.ClusterInfo.NodePools) {
+		dyn := np.GetDynamicNodePool()
+
+		// only check for a fixup when targetSize < count
+		// Count is the currently number of nodes within the
+		// nodepools and "targetSize" is the desired amount
+		// of nodes within the nodepool.
+		//
+		// Thus this condition checks which nodes should be
+		// marked as excessive to the nodepool.
+		if dyn.AutoscalerConfig.TargetSize >= dyn.Count {
+			continue
+		}
+
+		toBeMarked := dyn.Count - dyn.AutoscalerConfig.TargetSize
+		for i := 0; i < len(np.Nodes) && toBeMarked > 0; i++ {
+			if np.Nodes[i].Status != spec.NodeStatus_MarkedForDeletion {
+				np.Nodes[i].Status = spec.NodeStatus_MarkedForDeletion
+				toBeMarked -= 1
+			}
+		}
 	}
 }

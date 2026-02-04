@@ -27,6 +27,9 @@ var (
 	//go:embed lb-inventory.goini
 	LoadbalancerInventoryTemplate string
 
+	//go:embed k8s-inventory.goini
+	KubernetesInventoryTemplate string
+
 	//go:embed node-exporter.goyml
 	NodeExporterPlaybookTemplate string
 

@@ -6,60 +6,54 @@ import (
 	"strings"
 )
 
-// Hostnames and ports on what services are listening
 var (
-	//TerraformerURL is a listening URL for Terraformer module
-	TerraformerURL = os.Getenv("TERRAFORMER_HOSTNAME") + ":" + os.Getenv("TERRAFORMER_PORT")
-	//AnsiblerURL is a listening URL for Ansibler module
-	AnsiblerURL = os.Getenv("ANSIBLER_HOSTNAME") + ":" + os.Getenv("ANSIBLER_PORT")
-	//KubeElevenURL is a listening URL for KubeEleven module
-	KubeElevenURL = os.Getenv("KUBE_ELEVEN_HOSTNAME") + ":" + os.Getenv("KUBE_ELEVEN_PORT")
-	//ManagerURL is a listening URL for Manager module
+	// NatsClusterURL for connected to a nats cluster of [NatsClusterSize].
+	NatsClusterURL = GetOrDefault("NATS_CLUSTER_URL", "nats://127.0.0.1") + ":" + GetOrDefault("NATS_CLUSTER_PORT", "4222")
+
+	// NatsClusterSize for expected when connecting using the [NatsClusterURL]
+	NatsClusterSize = GetOrDefaultInt("NATS_CLUSTER_SIZE", 1)
+
+	// Name of the Jetstream when connected to the [NatsClusterURL] through which the communication
+	// will be exchanged.
+	NatsClusterJetstreamName = GetOrDefault("NATS_CLUSTER_JETSTREAM_NAME", "claudie-internal")
+
+	// ManagerURL is a listening URL for Manager module
 	ManagerURL = os.Getenv("MANAGER_HOSTNAME") + ":" + os.Getenv("MANAGER_PORT")
-	//OperatorURL is a listening URL for claudie-operator connection
+
+	// OperatorURL is a listening URL for claudie-operator connection
 	OperatorURL = os.Getenv("OPERATOR_HOSTNAME") + ":" + os.Getenv("OPERATOR_PORT")
-	//DatabaseURL is a listening URL for Database
+
+	// DatabaseURL is a listening URL for Database
 	DatabaseURL = os.Getenv("DATABASE_URL")
-	//KuberURL is a listening URL for Kuber module
-	KuberURL = os.Getenv("KUBER_HOSTNAME") + ":" + os.Getenv("KUBER_PORT")
-	//BucketEndpoint is a listening URL for Minio deployment
-	//If not defined it will use and external S3 Bucket,
-	//by using AWS_REGION and BUCKET_NAME variables
+
+	// BucketEndpoint is a listening URL for Minio deployment
+	// If not defined it will use and external S3 Bucket,
+	// by using AWS_REGION and BUCKET_NAME variables
 	BucketEndpoint = os.Getenv("BUCKET_URL")
-	//BucketName is the name of the bucket use for state
-	//If not defined it will default to "claudie-tf-state"
+
+	// BucketName is the name of the bucket use for state
+	// If not defined it will default to "claudie-tf-state"
 	BucketName = os.Getenv("BUCKET_NAME")
+
 	// AwsAccesskeyId is part of credentials needed for connecting to bucket
 	AwsAccesskeyId = os.Getenv("AWS_ACCESS_KEY_ID")
+
 	// AwsSecretAccessKey is part of credentials needed for connecting to bucket
 	AwsSecretAccessKey = os.Getenv("AWS_SECRET_ACCESS_KEY")
+
 	// AwsRegion is part of credentials needed for connecting to bucket
 	AwsRegion = os.Getenv("AWS_REGION")
 
-	//Namespace of current deployment
-	//NOTE: namespace should be left empty if env var not been set
+	// Namespace of current deployment
+	// NOTE: namespace should be left empty if env var not been set
 	Namespace = os.Getenv("NAMESPACE")
-	//Golang log level
+
+	// Golang log level
 	LogLevel = os.Getenv("GOLANG_LOG")
 )
 
 // func init is used as setter for default values in case the env var has not been set
 func init() {
-	if TerraformerURL == ":" {
-		TerraformerURL = "localhost:50052"
-	}
-	TerraformerURL = strings.ReplaceAll(TerraformerURL, ":tcp://", "")
-
-	if AnsiblerURL == ":" {
-		AnsiblerURL = "localhost:50053"
-	}
-	AnsiblerURL = strings.ReplaceAll(AnsiblerURL, ":tcp://", "")
-
-	if KubeElevenURL == ":" {
-		KubeElevenURL = "localhost:50054"
-	}
-	KubeElevenURL = strings.ReplaceAll(KubeElevenURL, ":tcp://", "")
-
 	if ManagerURL == ":" {
 		ManagerURL = "localhost:50055"
 	}
@@ -73,11 +67,6 @@ func init() {
 	if DatabaseURL == "" {
 		DatabaseURL = "mongodb://localhost:27017"
 	}
-
-	if KuberURL == ":" {
-		KuberURL = "localhost:50057"
-	}
-	KuberURL = strings.ReplaceAll(KuberURL, ":tcp://", "")
 
 	if BucketName == "" {
 		BucketName = "claudie-tf-state-files"

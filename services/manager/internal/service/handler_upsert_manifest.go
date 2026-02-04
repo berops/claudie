@@ -18,7 +18,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func (g *GRPC) UpsertManifest(ctx context.Context, request *pb.UpsertManifestRequest) (*pb.UpsertManifestResponse, error) {
+func (s *Service) UpsertManifest(ctx context.Context, request *pb.UpsertManifestRequest) (*pb.UpsertManifestResponse, error) {
 	log.Debug().Msgf("Received Config to store: %v", request.Name)
 
 	if request.Manifest == nil {
@@ -33,7 +33,7 @@ func (g *GRPC) UpsertManifest(ctx context.Context, request *pb.UpsertManifestReq
 
 	request.Manifest.Checksum = hash.Digest(request.Manifest.Raw)
 
-	dbConfig, err := g.Store.GetConfig(ctx, request.Name)
+	dbConfig, err := s.store.GetConfig(ctx, request.Name)
 	if err != nil {
 		if !errors.Is(err, store.ErrNotFoundOrDirty) {
 			return nil, status.Errorf(codes.Internal, "failed to check existence for config %q: %v", request.Name, err)
@@ -53,7 +53,7 @@ func (g *GRPC) UpsertManifest(ctx context.Context, request *pb.UpsertManifestReq
 			},
 		}
 
-		if err := g.Store.CreateConfig(ctx, &newConfig); err != nil {
+		if err := s.store.CreateConfig(ctx, &newConfig); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create document for config %q: %v", newConfig.Name, err)
 		}
 
@@ -67,7 +67,7 @@ func (g *GRPC) UpsertManifest(ctx context.Context, request *pb.UpsertManifestReq
 		dbConfig.K8SCtx.Namespace = request.GetK8SCtx().GetNamespace()
 	}
 
-	c, err := g.Store.ListConfigs(ctx, nil)
+	c, err := s.store.ListConfigs(ctx, nil)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "error validating config %q: %v", request.Name, err)
 	}
@@ -81,7 +81,7 @@ func (g *GRPC) UpsertManifest(ctx context.Context, request *pb.UpsertManifestReq
 		return nil, status.Errorf(codes.Internal, "error validating config %q: %v", request.Name, err)
 	}
 
-	if err := g.Store.UpdateConfig(ctx, dbConfig); err != nil {
+	if err := s.store.UpdateConfig(ctx, dbConfig); err != nil {
 		if errors.Is(err, store.ErrNotFoundOrDirty) {
 			return nil, status.Errorf(codes.Aborted, "%s", err.Error())
 		}

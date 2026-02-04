@@ -15,7 +15,7 @@ RUN go mod download
 COPY . .
 
 #Change the directory
-WORKDIR /go/services/ansibler/server
+WORKDIR /go/services/ansibler/cmd/worker
 
 #Compile the golang code, CGO_ENABLE=0 removes cross compile dependencies
 RUN CGO_ENABLED=0 go build
@@ -67,13 +67,13 @@ RUN set -eux \
 	&& python3 -m compileall -j 0 /usr/lib/python3.12
 
 #Copy the binaries to empty base image
-COPY --from=go_builder /go/services/ansibler/server/server /bin/services/ansibler/server/server
-COPY --from=go_builder /go/services/ansibler/server/ansible-playbooks /bin/services/ansibler/server/ansible-playbooks
+COPY --from=go_builder /go/services/ansibler/cmd/worker/worker /bin/services/ansibler/worker
+COPY --from=go_builder /go/services/ansibler/ansible-playbooks /bin/services/ansibler/ansible-playbooks
 
 RUN apk update && apk add -q bash
 
-#Run server
+#Run worker
 WORKDIR /bin
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD [ "./services/ansibler/server/server" ]
+CMD [ "./services/ansibler/worker" ]
 #NOTE: We cannot use scratch image for our dockerfile since we are using shell commands to execute commands inside the code

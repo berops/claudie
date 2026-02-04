@@ -1,0 +1,129 @@
+---
+# Source: nack/templates/rbac-jetstream-controller.yml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: jetstream-controller
+  labels:
+    app.kubernetes.io/part-of: claudie
+---
+# Source: nack/templates/rbac-jetstream-controller.yml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: jetstream-controller-cluster-role
+  labels:
+    app.kubernetes.io/part-of: claudie
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - update
+      - patch
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - get
+      - watch
+      - list
+  - apiGroups:
+      - jetstream.nats.io
+    resources:
+      - streams
+      - streams/status
+      - objectstores
+      - objectstores/status
+      - keyvalues
+      - keyvalues/status
+      - consumers
+      - consumers/status
+      - streamtemplates
+      - streamtemplates/status
+      - accounts
+      - accounts/status
+    verbs:
+      - create
+      - get
+      - list
+      - watch
+      - patch
+      - update
+      - delete
+---
+# Source: nack/templates/rbac-jetstream-controller.yml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: jetstream-controller-cluster-role-binding
+  labels:
+    app.kubernetes.io/part-of: claudie
+subjects:
+  - kind: ServiceAccount
+    name: jetstream-controller
+roleRef:
+  kind: ClusterRole
+  name: jetstream-controller-cluster-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: nack/templates/deployment-jetstream-controller.yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nack
+  labels:
+    app: nack
+    chart: nack-0.31.1
+    app.kubernetes.io/part-of: claudie
+spec:
+  selector:
+    matchLabels:
+      app: nack
+
+  # Singleton Replica per JetStream controller
+  replicas: 1
+
+  template:
+    metadata:
+      labels:
+        app: nack
+        app.kubernetes.io/part-of: claudie
+    spec:
+      terminationGracePeriodSeconds: 30
+      volumes:
+        - name: runtime
+          emptyDir: {}
+
+      serviceAccountName: jetstream-controller
+      containers:
+        - name: jsc
+          image: natsio/jetstream-controller:0.21.1
+          imagePullPolicy: IfNotPresent
+          workingDir: /nack
+          command:
+            - /jetstream-controller
+          args:
+            - -s=nats://nats.claudie.svc.cluster.local:4222
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          resources:
+            limits:
+              cpu: 50m
+              memory: 64Mi
+            requests:
+              cpu: 5m
+              memory: 16Mi
+          volumeMounts:
+            - name: runtime
+              mountPath: /nack

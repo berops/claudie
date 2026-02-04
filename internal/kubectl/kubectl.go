@@ -133,6 +133,18 @@ func (k *Kubectl) KubectlTaintRemove(nodeName string, key, value, effect string)
 	return k.run(command)
 }
 
+// KubectlTaint adds a taint to the node.
+func (k *Kubectl) KubectlTaint(nodeName string, key, value, effect string) error {
+	arg, cleanup, err := k.getKubeconfig()
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+
+	command := fmt.Sprintf("kubectl taint nodes %s %s=%s:%s %s", nodeName, key, value, effect, arg)
+	return k.run(command)
+}
+
 // KubectlDrain runs kubectl drain in k.Directory, on a specified node with flags --ignore-daemonsets --delete-emptydir-data
 // example: kubectl drain node1 -> k.KubectlDrain("node1")
 func (k *Kubectl) KubectlDrain(nodeName string) error {
@@ -274,12 +286,26 @@ func (k Kubectl) run(command string, options ...string) error {
 	cmd.Dir = k.Directory
 	cmd.Stdout = k.Stdout
 	cmd.Stderr = k.Stderr
+
 	if err := cmd.Run(); err != nil {
+		if k.MaxKubectlRetries < 0 {
+			return err
+		}
+
 		retryCount := k.MaxKubectlRetries
 		if k.MaxKubectlRetries == 0 {
 			retryCount = defaultMaxKubectlRetries
 		}
-		retryCmd := comm.Cmd{Command: command, Options: options, Dir: k.Directory, CommandTimeout: kubectlTimeout, Stdout: k.Stdout, Stderr: k.Stderr}
+
+		retryCmd := comm.Cmd{
+			Command:        command,
+			Options:        options,
+			Dir:            k.Directory,
+			CommandTimeout: kubectlTimeout,
+			Stdout:         k.Stdout,
+			Stderr:         k.Stderr,
+		}
+
 		if err = retryCmd.RetryCommand(retryCount); err != nil {
 			return err
 		}
@@ -297,6 +323,9 @@ func (k Kubectl) runWithOutput(command string, options ...string) ([]byte, error
 	//NOTE: Do not set custom Stdout/Stderr as that would pollute the output.
 	result, err = cmd.CombinedOutput()
 	if err != nil {
+		if k.MaxKubectlRetries < 0 {
+			return nil, err
+		}
 		retryCount := k.MaxKubectlRetries
 		if k.MaxKubectlRetries == 0 {
 			retryCount = defaultMaxKubectlRetries

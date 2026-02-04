@@ -9,7 +9,10 @@ import (
 )
 
 // ErrNotFoundOrDirty is returned when the requested document couldn't be found inside the database or a Dirty Write occurred.
-var ErrNotFoundOrDirty = errors.New("failed to find requested document. It is possible that this operation was a Dirty Write. Consider fetching the latest version of the requested document to repeat the read-write cycle")
+var ErrNotFoundOrDirty = errors.New(
+	"failed to find requested document. It is possible that this operation was a Dirty Write." +
+		"Consider fetching the latest version of the requested document to repeat the read-write cycle",
+)
 
 // ListFilter wraps supported filters for listing configs.
 type ListFilter struct {
@@ -76,10 +79,9 @@ type Manifest struct {
 }
 
 type ClusterState struct {
-	Current Clusters `bson:"current"`
-	Desired Clusters `bson:"desired"`
-	Events  Events   `bson:"events"`
-	State   Workflow `bson:"state"`
+	Current  Clusters   `bson:"current"`
+	InFlight *TaskEvent `bson:"inFlight"`
+	State    Workflow   `bson:"state"`
 }
 
 type Clusters struct {
@@ -87,24 +89,67 @@ type Clusters struct {
 	LoadBalancers []byte `bson:"loadBalancers"`
 }
 
-type Events struct {
-	TaskEvents []TaskEvent `bson:"taskEvents"`
-	TTL        int32       `bson:"ttl"`
-	Autoscaled bool        `bson:"autoscaled"`
+type StageKind string
+
+const (
+	Unknown     StageKind = ""
+	Terraformer StageKind = "TERRAFORMER"
+	Ansibler    StageKind = "ANSIBLER"
+	KubeEleven  StageKind = "KUBE_ELEVEN"
+	Kuber       StageKind = "KUBER"
+)
+
+type StageDescription struct {
+	About      string `bson:"about"`
+	ErrorLevel string `bson:"errorLevel"`
+}
+
+type SubPass struct {
+	Kind        string           `bson:"kind"`
+	Description StageDescription `bson:"description"`
+}
+
+type Stage struct {
+	Kind        StageKind        `bson:"kind"`
+	Description StageDescription `bson:"description"`
+	SubPasses   []SubPass        `bson:"subPasses"`
 }
 
 type TaskEvent struct {
-	Id          string `bson:"id"`
-	Timestamp   string `bson:"timestamp"`
-	Event       string `bson:"event"`
-	Task        []byte `bson:"task"`
-	Description string `bson:"description"`
-	OnError     []byte `bson:"onError"`
+	Id            string     `bson:"id"`
+	Timestamp     string     `bson:"timestamp"`
+	Type          string     `bson:"event"`
+	Task          []byte     `bson:"task"`
+	Description   string     `bson:"description"`
+	Pipeline      []Stage    `bson:"pipeline"`
+	CurrentStage  uint32     `bson:"currentStage"`
+	LowerPriority *TaskEvent `bson:"lowerPriority"`
+
+	// Deprecated.
+	// TODO: remove in future versions.
+	OnError []byte `bson:"onError"`
 }
 
 type Workflow struct {
-	Status      string `bson:"status"`
-	Stage       string `bson:"stage"`
-	Description string `bson:"description"`
-	Timestamp   string `bson:"timestamp"`
+	Status      string             `bson:"status"`
+	Description string             `bson:"description"`
+	Timestamp   string             `bson:"timestamp"`
+	Previous    []FinishedWorkflow `bson:"previous"`
+}
+
+type FinishedWorkflow struct {
+	Status          string    `bson:"status"`
+	Stage           StageKind `bson:"stage"`
+	TaskDescription string    `bson:"taskDescription"`
+	Timestamp       string    `bson:"timestamp"`
+}
+
+func (cs *ClusterState) Exists() bool {
+	// len(current.K8S) == 0 is here, as its possible the cluster was just deleted
+	// but its still in the store and will be deleted from the store on the next
+	// reconciliation loop.
+	//
+	// Its sufficient to check only for the kuberentes state presence as without
+	// a kuberentes cluster there are no loadbalancers.
+	return cs != nil && len(cs.Current.K8s) > 0
 }

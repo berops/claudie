@@ -188,10 +188,18 @@ type InputManifestStatus struct {
 	Clusters map[string]ClustersStatus `json:"clusters,omitempty"`
 }
 
+type FinishedWorkflow struct {
+	Status          string `json:"status,omitempty"`
+	Stage           string `json:"stage,omitempty"`
+	TaskDescription string `json:"taskDescription,omitempty"`
+	Timestamp       string `json:"timestamp"`
+}
+
 type ClustersStatus struct {
-	State   string `json:"state,omitempty"`
-	Phase   string `json:"phase,omitempty"`
-	Message string `json:"message,omitempty"`
+	State    string             `json:"state,omitempty"`
+	Phase    string             `json:"phase,omitempty"`
+	Message  string             `json:"message,omitempty"`
+	Previous []FinishedWorkflow `json:"previous"`
 }
 
 // +kubebuilder:object:root=true

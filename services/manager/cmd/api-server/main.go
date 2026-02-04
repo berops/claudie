@@ -12,37 +12,34 @@ import (
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/metrics"
-	"github.com/berops/claudie/internal/worker"
 	"github.com/berops/claudie/services/manager/internal/service"
+	metrics2 "github.com/berops/claudie/services/manager/internal/service/metrics"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
 
 	"golang.org/x/sync/errgroup"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
-const defaultPrometheusPort = 9090
+var PrometheusPort = envs.GetOrDefaultInt("PROMETHEUS_PORT", 9090)
 
 func main() {
-	loggerutils.Init("manager")
+	loggerutils.Init(service.DurableName)
 	if err := run(); err != nil {
 		log.Fatal().Msgf("manager service finished with: %s", err)
 	}
 }
 
 func run() error {
-	metricsServer := &http.Server{
-		Addr: fmt.Sprintf(":%s", envs.GetOrDefault("PROMETHEUS_PORT", fmt.Sprintf("%v", defaultPrometheusPort))),
-	}
+	metricsServer := &http.Server{Addr: fmt.Sprintf(":%v", PrometheusPort)}
 
 	metrics.MustRegisterCounters()
-	service.MustRegisterCounters()
+	metrics2.MustRegisterCounters()
 
 	errGroup, errGroupContext := errgroup.WithContext(context.Background())
 
-	manager, err := service.NewGRPC(errGroupContext, grpc.UnaryInterceptor(metrics.MetricsMiddleware))
+	manager, err := service.New(errGroupContext, grpc.UnaryInterceptor(metrics.MetricsMiddleware))
 	if err != nil {
 		return err
 	}
@@ -57,50 +54,12 @@ func run() error {
 				ticker.Stop()
 				return nil
 			case <-ticker.C:
-				if err := manager.Store.HealthCheck(); err != nil {
-					manager.HealthCheckServer.SetServingStatus("manager-readiness", grpc_health_v1.HealthCheckResponse_NOT_SERVING)
-					log.Debug().Msgf("Failed to verify healthcheck: %v", err)
-				} else {
-					manager.HealthCheckServer.SetServingStatus("manager-readiness", grpc_health_v1.HealthCheckResponse_SERVING)
-				}
+				manager.PerformHealthCheckAndUpdateStatus()
 			}
 		}
 	})
 
 	errGroup.Go(func() error { return manager.Serve() })
-
-	errGroup.Go(func() error {
-		worker.NewWorker(
-			errGroupContext,
-			service.Tick,
-			func() error { return manager.WatchForPendingDocuments(errGroupContext) },
-			worker.ErrorLogger,
-		).Run()
-		log.Info().Msg("Exited worker loop running WatchForPendingDocuments")
-		return nil
-	})
-
-	errGroup.Go(func() error {
-		worker.NewWorker(
-			errGroupContext,
-			service.Tick,
-			func() error { return manager.WatchForScheduledDocuments(errGroupContext) },
-			worker.ErrorLogger,
-		).Run()
-		log.Info().Msgf("Exited worker loop running WatchForScheduledDocuments")
-		return nil
-	})
-
-	errGroup.Go(func() error {
-		worker.NewWorker(
-			errGroupContext,
-			service.Tick,
-			func() error { return manager.WatchForDoneOrErrorDocuments(errGroupContext) },
-			worker.ErrorLogger,
-		).Run()
-		log.Info().Msgf("Exited worker loop running WatchForDoneOrErrorDocuments")
-		return nil
-	})
 
 	errGroup.Go(func() error {
 		ctx, stop := signal.NotifyContext(errGroupContext, syscall.SIGTERM)
@@ -119,7 +78,7 @@ func run() error {
 			log.Err(err).Msgf("Failed to shutdown metrics server")
 		}
 
-		log.Info().Msg("Gracefully shutting down grpc server")
+		log.Info().Msg("Gracefully shutting down manager")
 		if err := manager.Stop(); err != nil {
 			log.Err(err).Msgf("failed to stop manager service")
 		}

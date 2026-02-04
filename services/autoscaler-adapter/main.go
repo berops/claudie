@@ -16,34 +16,48 @@ import (
 	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider/externalgrpc/protos"
 )
 
-func main() {
-	projectName := os.Getenv("PROJECT_NAME")
-	clusterName := os.Getenv("CLUSTER_NAME")
-	port := os.Getenv("ADAPTER_PORT")
+var (
+	projectName = os.Getenv("PROJECT_NAME")
+	clusterName = os.Getenv("CLUSTER_NAME")
+	port        = os.Getenv("ADAPTER_PORT")
+)
 
+func main() {
 	if projectName == "" || clusterName == "" || port == "" {
 		log.Fatal().Msgf("Env vars PROJECT_NAME and CLUSTER_NAME and ADAPTER_PORT must be specified")
 	}
 
 	loggerutils.Init(fmt.Sprintf("%s-%s", "autoscaler-adapter", clusterName))
 
+	if err := run(); err != nil {
+		log.Fatal().Msgf("Failed to run cluster-autoscaler adapter: %v", err)
+	}
+}
+
+func run() error {
 	server := grpcutils.NewGRPCServer(
 		grpc.ChainUnaryInterceptor(grpcutils.PeerInfoInterceptor(&log.Logger)),
 	)
 
-	// Listen
 	serviceAddr := net.JoinHostPort("0.0.0.0", port)
+
 	//nolint
 	lis, err := net.Listen("tcp", serviceAddr)
 	if err != nil {
-		log.Fatal().Msgf("failed to listen: %s", err)
+		return err
 	}
 
-	// Serve
-	srv := claudie_provider.NewClaudieCloudProvider(context.Background(), projectName, clusterName)
-	protos.RegisterCloudProviderServer(server, srv)
-	log.Info().Msgf("Server ready at: %s", port)
-	if err := server.Serve(lis); err != nil {
-		log.Fatal().Msgf("failed to serve: %v", err)
+	srv, err := claudie_provider.NewProvider(
+		context.Background(),
+		projectName,
+		clusterName,
+	)
+	if err != nil {
+		return err
 	}
+
+	protos.RegisterCloudProviderServer(server, srv)
+
+	log.Info().Msgf("Server ready at: %s", port)
+	return server.Serve(lis)
 }
