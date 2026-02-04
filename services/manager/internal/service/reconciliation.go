@@ -340,9 +340,13 @@ Failed to extract state from failed 'InFlight' state: %v
 		switch clusterResult[cluster] {
 		case Reschedule, NoReschedule:
 			// Events are going to be worked on, thus clear the Error state, if any.
+			var prev []*spec.FinishedWorkflow
+			if state.State != nil {
+				prev = slices.Clone(state.State.Previous)
+			}
 			state.State = &spec.Workflow{
 				Status:   spec.Workflow_WAIT_FOR_PICKUP,
-				Previous: slices.Clone(state.State.Previous),
+				Previous: prev,
 			}
 		case NotReady, Noop:
 		}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"time"
 
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
@@ -190,12 +191,18 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			}
 
 			for _, p := range state.State.Previous {
-				status.Previous = append(status.Previous, v1beta1manifest.FinishedWorkflow{
+				fw := v1beta1manifest.FinishedWorkflow{
 					Status:          p.Status.String(),
 					Stage:           p.Stage,
 					TaskDescription: p.TaskDescription,
-					Timestamp:       p.Timestamp.String(),
-				})
+					Timestamp:       "",
+				}
+
+				if p.Timestamp != nil {
+					fw.Timestamp = p.Timestamp.AsTime().UTC().Format(time.RFC3339)
+				}
+
+				status.Previous = append(status.Previous, fw)
 			}
 
 			currentState.Clusters[cluster] = status
