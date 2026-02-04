@@ -226,8 +226,7 @@ func (l *Longhorn) getCurrentLonghornVersion(kc kubectl.Kubectl) (string, error)
 
 	out, err := kc.KubectlGet("deployment", "-n", "longhorn-system", "-l", "app.kubernetes.io/name=longhorn", "-o", "json")
 	if err != nil {
-		// Longhorn might not be installed yet
-		return "", nil
+		return "", err
 	}
 
 	if strings.Contains(string(out), "No resources found") {
