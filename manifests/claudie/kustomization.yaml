@@ -58,7 +58,7 @@ images:
 - name: ghcr.io/berops/claudie/ansibler
   newTag: 18ea3c1-3808
 - name: ghcr.io/berops/claudie/autoscaler-adapter
-  newTag: 8cd70ab-3860
+  newTag: b82a505-3866
 - name: ghcr.io/berops/claudie/builder
   newTag: 18ea3c1-3808
 - name: ghcr.io/berops/claudie/claudie-operator
@@ -66,7 +66,7 @@ images:
 - name: ghcr.io/berops/claudie/kube-eleven
   newTag: 18ea3c1-3808
 - name: ghcr.io/berops/claudie/kuber
-  newTag: 8cd70ab-3860
+  newTag: b82a505-3866
 - name: ghcr.io/berops/claudie/manager
   newTag: 18ea3c1-3808
 - name: ghcr.io/berops/claudie/terraformer
