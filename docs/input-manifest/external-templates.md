@@ -115,10 +115,8 @@ spec:
         providerSpec:
           # Name of the provider instance.
           name: hetzner-1
-          # Region of the nodepool.
+          # Location of the nodepool.
           region: hel1
-          # Datacenter of the nodepool.
-          zone: hel1-dc2
         count: 1
         # Machine type name.
         serverType: cpx22
@@ -129,10 +127,8 @@ spec:
         providerSpec:
           # Name of the provider instance.
           name: hetzner-1
-          # Region of the nodepool.
+          # Location of the nodepool.
           region: fsn1
-          # Datacenter of the nodepool.
-          zone: fsn1-dc14
         count: 2
         # Machine type name.
         serverType: cpx22
@@ -144,10 +140,8 @@ spec:
         providerSpec:
           # Name of the provider instance.
           name: hetzner-1
-          # Region of the nodepool.
+          # Location of the nodepool.
           region: nbg1
-          # Datacenter of the nodepool.
-          zone: nbg1-dc3
         count: 2
         # Machine type name.
         serverType: cpx22
