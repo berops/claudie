@@ -334,6 +334,16 @@ Failed to extract state from failed 'InFlight' state: %v
 					state.InFlight = next
 					break event_switch
 				}
+			} else {
+				if lastTask != nil {
+					// if there is no difference between current and desired state
+					// but there was an InFlight task, and the next task is Nil,
+					// that means that there is no work to be done, but we also
+					// need to clear the InFlight from the DB representation thus
+					// signal a NotReady, to propagate the changes but dont' scheduled
+					// anything.
+					clusterResult[cluster] = NotReady
+				}
 			}
 		}
 

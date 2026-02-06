@@ -92,14 +92,14 @@ spec:
             grpc:
               port: 50055
               service: manager-readiness
-            initialDelaySeconds: 5
-            periodSeconds: 30
+            initialDelaySeconds: 30
+            periodSeconds: 35
           livenessProbe:
             grpc:
               port: 50055
               service: manager-liveness
-            initialDelaySeconds: 5
-            periodSeconds: 30
+            initialDelaySeconds: 30
+            periodSeconds: 35
       serviceAccountName: manager
 ---
 kind: Service

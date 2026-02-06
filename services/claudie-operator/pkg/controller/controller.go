@@ -185,9 +185,10 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			}
 
 			status := v1beta1manifest.ClustersStatus{
-				State:   state.State.GetStatus().String(),
-				Phase:   stage,
-				Message: state.State.GetDescription(),
+				State:    state.State.GetStatus().String(),
+				Phase:    stage,
+				Message:  state.State.GetDescription(),
+				Previous: make([]v1beta1manifest.FinishedWorkflow, 0, 1),
 			}
 
 			for _, p := range state.State.Previous {

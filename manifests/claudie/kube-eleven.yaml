@@ -80,14 +80,14 @@ spec:
             grpc:
               port: 50054
               service: kube-eleven-readiness
-            initialDelaySeconds: 5
-            periodSeconds: 30
+            initialDelaySeconds: 30
+            periodSeconds: 35
           livenessProbe:
             grpc:
               port: 50054
               service: kube-eleven-liveness
-            initialDelaySeconds: 5
-            periodSeconds: 30
+            initialDelaySeconds: 30
+            periodSeconds: 35
 ---
 kind: Service
 apiVersion: v1

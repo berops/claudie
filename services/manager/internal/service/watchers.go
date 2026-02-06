@@ -366,7 +366,7 @@ func messageForStage(
 			}
 			work.Passes = append(work.Passes, r)
 			b.WriteByte('\n')
-			fmt.Fprintf(b, "- %s", pass.Description.About)
+			fmt.Fprintf(b, "  - %s", pass.Description.About)
 		}
 
 		description = b.String()
@@ -383,7 +383,7 @@ func messageForStage(
 			}
 			work.Passes = append(work.Passes, r)
 			b.WriteByte('\n')
-			fmt.Fprintf(b, "- %s", pass.Description.About)
+			fmt.Fprintf(b, "  - %s", pass.Description.About)
 		}
 
 		description = b.String()
@@ -400,7 +400,7 @@ func messageForStage(
 			}
 			work.Passes = append(work.Passes, r)
 			b.WriteByte('\n')
-			fmt.Fprintf(b, "- %s", pass.Description.About)
+			fmt.Fprintf(b, "  - %s", pass.Description.About)
 		}
 
 		description = b.String()
@@ -417,7 +417,7 @@ func messageForStage(
 			}
 			work.Passes = append(work.Passes, r)
 			b.WriteByte('\n')
-			fmt.Fprintf(b, "- %s", pass.Description.About)
+			fmt.Fprintf(b, "  - %s", pass.Description.About)
 		}
 
 		description = b.String()

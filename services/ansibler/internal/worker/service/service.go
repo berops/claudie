@@ -196,7 +196,7 @@ func (s *Service) consumerLoop(exit chan<- struct{}) {
 
 		if err != nil {
 			jitter := rand.IntN(500)
-			sleep := 850*time.Millisecond + (time.Duration(jitter) * time.Millisecond)
+			sleep := 1850*time.Millisecond + (time.Duration(jitter) * time.Millisecond)
 
 			log.
 				Err(err).
