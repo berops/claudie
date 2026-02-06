@@ -58,7 +58,7 @@ func addKubernetesNodes(
 			return
 		}
 
-		nodepools.DynamicAddNodes(np, kind.Existing.Nodes)
+		nodepools.AppendDynamicNodes(np, kind.Existing.Nodes)
 	case *spec.Update_TerraformerAddK8SNodes_New_:
 		k8s.ClusterInfo.NodePools = append(k8s.ClusterInfo.NodePools, kind.New.Nodepool)
 	default:

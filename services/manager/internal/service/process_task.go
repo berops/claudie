@@ -424,10 +424,11 @@ func propagateInFlightState(state *store.ClusterState) error {
 	// If this was a task that was scheduled in front
 	// of a previous task, replace the old state there with
 	// 'this' state, as 'this' state is build upon that previous
-	// task state but a hight priority task needed to be worked on
-	// first.
+	// task state but a higher priority task needed to be worked on
+	// first. Do no propagate the state to the 'current state' but
+	// rather to the lower priority task which will be worked on next
+	// so that it has the updated state.
 	if state.InFlight.LowerPriority != nil {
-		// TODO: double-check this.
 		t, err := store.ConvertToGRPCTask(state.InFlight.LowerPriority.Task)
 		if err != nil {
 			return err

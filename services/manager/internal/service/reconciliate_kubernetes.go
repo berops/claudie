@@ -185,8 +185,19 @@ func KubernetesLowPriority(r KubernetesReconciliate) *spec.TaskEvent {
 	}
 
 	if len(r.Diff.RollingUpdates) > 0 {
-		for np := range r.Diff.RollingUpdates {
-			log.Printf("Rolling kubernetes update: %v\n", np)
+		for np, tpl := range r.Diff.RollingUpdates {
+			opts := K8sNodeAdditionOptions{
+				UseProxy:     r.Diff.Proxy.CurrentUsed,
+				HasApiServer: r.Diff.ApiEndpoint.Current != "",
+				IsStatic:     false,
+			}
+
+			return ScheduleRollingUpdate(
+				r.Current,
+				np,
+				tpl,
+				opts,
+			)
 		}
 	}
 
@@ -1415,4 +1426,53 @@ func ScheduleMoveNodePoolFromAutoscaled(
 		Description: fmt.Sprintf("Moving nodepool %q from autoscaled type to fixed", nodepool),
 		Pipeline:    pipeline,
 	}
+}
+
+// Schedules the addition of a new nodepool with the new templates
+//
+// The returned [spec.TaskEvent] does not point to or share any
+// memory with the two passed in states.
+func ScheduleRollingUpdate(
+	current *spec.Clusters,
+	np string,
+	templates *spec.TemplateRepository,
+	opts K8sNodeAdditionOptions,
+) *spec.TaskEvent {
+	newNodePool, err := CreateNodePoolForRollingUpdate(
+		current,
+		nil,
+		np,
+		templates,
+	)
+	if err != nil {
+		log.
+			Err(err).
+			Msgf(
+				"Failed to create a new nodepool for rolling update for cluster %q nodepool %q",
+				current.K8S.ClusterInfo.Id(),
+				np,
+			)
+		return nil
+	}
+
+	var nodesAdded []string
+	for _, n := range newNodePool.Nodes {
+		nodesAdded = append(nodesAdded, n.Name)
+	}
+
+	desired := proto.Clone(current).(*spec.Clusters)
+	desired.K8S.ClusterInfo.NodePools = append(desired.K8S.ClusterInfo.NodePools, newNodePool)
+
+	diff := NodePoolsDiffResult{
+		Added: NodePoolsViewType{
+			newNodePool.Name: nodesAdded,
+		},
+	}
+
+	return ScheduleAdditionsInNodePools(
+		current,
+		desired,
+		&diff,
+		opts,
+	)
 }

@@ -298,7 +298,7 @@ func (d *Deleter) deleteFromEtcd(logger zerolog.Logger, kc kubectl.Kubectl) erro
 				found = true
 				logger.Debug().Msgf("Deleting etcd member %s, with hash %s", member.Name, member.Id)
 
-				etcdctlCmd := fmt.Sprintf("etcdctl member remove %s", member.Id)
+				etcdctlCmd := fmt.Sprintf("member remove %s", member.Id)
 				if _, err := kc.KubectlExecEtcd(etcdPods[0], etcdctlCmd); err != nil {
 					return fmt.Errorf("error while executing \"etcdctl member remove\" on node %s, cluster: %w", member.Name, err)
 				}
@@ -341,7 +341,7 @@ func getEtcdMembers(kc kubectl.Kubectl, etcdPod string) (etcdMemberList, error) 
 	var out etcdMemberList
 
 	// List all members known by etcd, printed as a json with Hexified strings.
-	cmd := "etcdctl member list -w json --hex=true"
+	cmd := "member list -w json --hex=true"
 	b, err := kc.KubectlExecEtcd(etcdPod, cmd)
 	if err != nil {
 		return out, fmt.Errorf("cannot find etcd members in cluster with etcd pod %s : %w", etcdPod, err)

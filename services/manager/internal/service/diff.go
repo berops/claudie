@@ -238,7 +238,7 @@ type (
 	}
 
 	// NodePoolsViewType is an unordered view into the nodepools and their
-	// nodes that are read from a [spec.K8Scluster].
+	// nodes that are read from a [spec.K8Scluster] or a [spec.LBcluster].
 	NodePoolsViewType = map[string][]string
 
 	// PendingNodeDeletions is an unordered view into the nodepools and their
@@ -257,7 +257,7 @@ type (
 	// are present in both the current and desired state but have different
 	// templates versions, meaning that a rolling update is required for the
 	// infrastructure.
-	PendingRollingUpdates map[string]struct{}
+	PendingRollingUpdates map[string]*spec.TemplateRepository
 
 	// TargetPoolsViewType is an unordered view into the diff for target pools
 	// that are from a [spec.Role].
@@ -418,7 +418,7 @@ func KubernetesDiff(old, desired *spec.K8Scluster) KubernetesDiffResult {
 				ddyn := dnp.GetDynamicNodePool()
 
 				if cdyn.Provider.Templates.CommitHash != ddyn.Provider.Templates.CommitHash {
-					result.RollingUpdates[dnp.Name] = struct{}{}
+					result.RollingUpdates[dnp.Name] = proto.Clone(ddyn.Provider.Templates).(*spec.TemplateRepository)
 				}
 				if cdyn.AutoscalerConfig == nil && ddyn.AutoscalerConfig != nil {
 					result.ChangedToAutoscaled[dnp.Name] = proto.Clone(ddyn.AutoscalerConfig).(*spec.AutoscalerConf)
@@ -739,7 +739,7 @@ func LoadBalancersDiff(old, desired *spec.LoadBalancers) LoadBalancersDiffResult
 					ddyn := dnp.GetDynamicNodePool()
 
 					if cdyn.Provider.Templates.CommitHash != ddyn.Provider.Templates.CommitHash {
-						rollingUpdates[dnp.Name] = struct{}{}
+						rollingUpdates[dnp.Name] = proto.Clone(ddyn.Provider.Templates).(*spec.TemplateRepository)
 					}
 				}
 

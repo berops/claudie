@@ -167,12 +167,6 @@ func resolveDynamicNodePoolReferences(from *manifest.Manifest, current, desired 
 	}
 }
 
-// TODO: verify that Slices are actually not modified anywhere in the nodepools
-// TODO: check the deletion and addition of all slices...
-// TODO: verify the nodepools package does not actually returnes the underlying
-// TODO: double check.
-// slices as modifying those should be okay.
-// and always the copies are modified.
 // same as [resolveK8sNodePoolReferences] but works with loadbalancers.
 func resolveLbNodePoolReferences(
 	used map[string]struct{},
@@ -187,8 +181,11 @@ func resolveLbNodePoolReferences(
 
 			// Shallow Clone the slices to avoid modifying the original ones.
 			var (
-				currentNodePools  = slices.Clone(current.GetClusterInfo().GetNodePools())
-				desiredReferences = nodepools.FindReferences(nodepoolType, desired.GetClusterInfo().GetNodePools())
+				currentNodePools  = nodepools.Dynamic(current.GetClusterInfo().GetNodePools())
+				desiredReferences = nodepools.FindReferences(
+					nodepoolType,
+					nodepools.Dynamic(desired.GetClusterInfo().GetNodePools()),
+				)
 			)
 
 			// filter out nodepools from current state that do not have the passed in nodepool type.
@@ -245,11 +242,14 @@ func resolveK8sNodePoolReferences(
 	current, desired *spec.K8Scluster,
 ) {
 	var (
-		control = slices.Collect(nodepools.Control(current.GetClusterInfo().GetNodePools()))
-		compute = slices.Collect(nodepools.Compute(current.GetClusterInfo().GetNodePools()))
+		currentDynamicNodePools = nodepools.Dynamic(current.GetClusterInfo().GetNodePools())
+		control                 = slices.Collect(nodepools.Control(currentDynamicNodePools))
+		compute                 = slices.Collect(nodepools.Compute(currentDynamicNodePools))
 
-		desiredControl           = slices.Collect(nodepools.Control(desired.GetClusterInfo().GetNodePools()))
-		desiredCompute           = slices.Collect(nodepools.Compute(desired.GetClusterInfo().GetNodePools()))
+		desiredDynamicNodePools = nodepools.Dynamic(desired.GetClusterInfo().GetNodePools())
+		desiredControl          = slices.Collect(nodepools.Control(desiredDynamicNodePools))
+		desiredCompute          = slices.Collect(nodepools.Compute(desiredDynamicNodePools))
+
 		desiredControlReferences = nodepools.FindReferences(nodepoolType, desiredControl)
 		desiredComputeReferences = nodepools.FindReferences(nodepoolType, desiredCompute)
 	)

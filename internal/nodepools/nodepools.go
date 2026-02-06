@@ -81,7 +81,7 @@ func NodeCount(nodepools []*spec.NodePool) int {
 // the count of the nodes within the nodepool. The nodes are not cloned
 // but simply shallow copied into the nodepool. If the nodepool is not
 // dynamic this is a noop function.
-func DynamicAddNodes(dst *spec.NodePool, nodes []*spec.Node) {
+func AppendDynamicNodes(dst *spec.NodePool, nodes []*spec.Node) {
 	dyn := dst.GetDynamicNodePool()
 	if dyn == nil {
 		return

@@ -4,7 +4,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// TODO: metrics on nats.
 var (
 	NatsDuplicateMessagesCounter = prometheus.NewCounter(prometheus.CounterOpts{
 		Name: "claudie_nats_messages_duplicate",

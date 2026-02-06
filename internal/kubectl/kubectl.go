@@ -30,10 +30,11 @@ const (
 
 	getEtcdPodsCmd = "get pods -n kube-system --no-headers -o custom-columns=\":metadata.name\" | grep etcd"
 
-	exportEtcdEnvsCmd = `
-		export ETCDCTL_CACERT=/etc/kubernetes/pki/etcd/ca.crt &&
-		export ETCDCTL_CERT=/etc/kubernetes/pki/etcd/healthcheck-client.crt &&
-		export ETCDCTL_KEY=/etc/kubernetes/pki/etcd/healthcheck-client.key`
+	etcdCerts = ` \
+		--cacert=/etc/kubernetes/pki/etcd/ca.crt \
+		--cert=/etc/kubernetes/pki/etcd/healthcheck-client.crt \
+		--key=/etc/kubernetes/pki/etcd/healthcheck-client.key
+	`
 
 	kubectlTimeout = 3 * 60 // cancel kubectl command after kubectlTimeout seconds
 )
@@ -248,8 +249,14 @@ func (k *Kubectl) KubectlExecEtcd(etcdPod, etcdctlCmd string) ([]byte, error) {
 	}
 	defer cleanup()
 
-	kcExecEtcdCmd := fmt.Sprintf("kubectl %s -n kube-system exec -i %s -- /bin/sh -c \" %s && %s \"",
-		arg, etcdPod, exportEtcdEnvsCmd, etcdctlCmd)
+	kcExecEtcdCmd := fmt.Sprintf(
+		"kubectl %s -n kube-system exec -i %s -- etcdctl %s %s",
+		arg,
+		etcdPod,
+		etcdctlCmd,
+		etcdCerts,
+	)
+
 	return k.runWithOutput(kcExecEtcdCmd)
 }
 

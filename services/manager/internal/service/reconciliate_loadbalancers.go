@@ -228,9 +228,25 @@ func PostKubernetesDiff(r LoadBalancersReconciliate) *spec.TaskEvent {
 // This function does not modify the input in any way and also the returned [spec.TaskEvent]
 // does not hold or share any memory to related to the input.
 func LoadBalancersLowPriority(r LoadBalancersReconciliate) *spec.TaskEvent {
-	for _, modified := range r.Diff.Modified {
-		for np := range modified.RollingUpdate {
-			log.Printf("LoadBalaner rolling update: %v", np)
+	for lb, modified := range r.Diff.Modified {
+		for np, tpl := range modified.RollingUpdate {
+			cid := LoadBalancerIdentifier{
+				Id:    lb,
+				Index: modified.CurrentIdx,
+			}
+
+			opts := LoadBalancerNodePoolsOptions{
+				UseProxy: r.Proxy.CurrentUsed,
+				IsStatic: false,
+			}
+
+			return ScheduleRollingUpdateLoadBalancer(
+				r.Current,
+				cid,
+				np,
+				tpl,
+				opts,
+			)
 		}
 	}
 
@@ -1636,4 +1652,57 @@ func ScheduleReconcileRoleTargetPools(
 			},
 		},
 	}
+}
+
+// Schedules the addition of a new nodepool with the new templates
+//
+// The returned [spec.TaskEvent] does not point to or share any
+// memory with the two passed in states.
+func ScheduleRollingUpdateLoadBalancer(
+	current *spec.Clusters,
+	cid LoadBalancerIdentifier,
+	np string,
+	templates *spec.TemplateRepository,
+	opts LoadBalancerNodePoolsOptions,
+) *spec.TaskEvent {
+	newNodePool, err := CreateNodePoolForRollingUpdate(
+		current,
+		&cid,
+		np,
+		templates,
+	)
+	if err != nil {
+		log.
+			Err(err).
+			Msgf(
+				"Failed to create a new nodepool for rolling update for cluster %q nodepool %q",
+				cid.Id,
+				np,
+			)
+		return nil
+	}
+
+	var nodesAdded []string
+	for _, n := range newNodePool.Nodes {
+		nodesAdded = append(nodesAdded, n.Name)
+	}
+
+	desired := proto.Clone(current).(*spec.Clusters)
+	desiredLb := desired.LoadBalancers.Clusters[cid.Index]
+	desiredLb.ClusterInfo.NodePools = append(desiredLb.ClusterInfo.NodePools, newNodePool)
+
+	diff := NodePoolsDiffResult{
+		Added: NodePoolsViewType{
+			newNodePool.Name: nodesAdded,
+		},
+	}
+
+	return ScheduleAdditionLoadBalancerNodePools(
+		current,
+		desired,
+		cid,
+		cid,
+		&diff,
+		opts,
+	)
 }

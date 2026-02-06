@@ -66,7 +66,7 @@ func addLoadBalancerNodes(
 			return
 		}
 
-		nodepools.DynamicAddNodes(np, kind.Existing.Nodes)
+		nodepools.AppendDynamicNodes(np, kind.Existing.Nodes)
 	case *spec.Update_TerraformerAddLoadBalancerNodes_New_:
 		current.ClusterInfo.NodePools = append(current.ClusterInfo.NodePools, kind.New.Nodepool)
 	default:
