@@ -34,7 +34,7 @@ See more in How Claudie works sections.
 
 !!! tip "AI/ML Ready Infrastructure"
 
-    Claudie lets you build GPU clusters that span multiple cloud providers, combining cost-effective GPU instances from different vendors into a single Kubernetes cluster. Pair it with the NVIDIA GPU Operator and Cluster Autoscaler for production-ready AI/ML workloads.
+    Claudie lets you build GPU clusters that span multiple cloud providers, combining cost-effective GPU instances from different vendors into a single Kubernetes cluster. It comes with the NVIDIA GPU Operator and Cluster Autoscaler for scalable production-ready AI/ML workloads.
 
 ## What to do next
 
