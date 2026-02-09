@@ -114,9 +114,9 @@ spec:
                           description: |-
                             Version should be defined in format vX.Y. In terms of supported versions of Kubernetes,
                             Claudie follows kubeone releases and their supported versions.
-                            The current kubeone version used in Claudie is 1.8.1.
+                            The current kubeone version used in Claudie is 1.12.1.
                             To see the list of supported versions, please refer to kubeone documentation.
-                            https://docs.kubermatic.com/kubeone/v1.8/architecture/compatibility/supported-versions/
+                            https://docs.kubermatic.com/kubeone/v1.12/architecture/compatibility/supported-versions/
                           type: string
                       required:
                       - name
@@ -310,9 +310,19 @@ spec:
                                 instance type will have.
                               type: integer
                             nvidiaGpu:
-                              description: Nvidia specifies the number of NVIDIA GPUs
-                                the provided instance type will have.
+                              description: |-
+                                NvidiaGpu is deprecated, use NvidiaGpuCount instead. Kept for backward compatibility.
+                                Deprecated: Use NvidiaGpuCount instead.
                               type: integer
+                            nvidiaGpuCount:
+                              description: NvidiaGpuCount specifies the number of
+                                NVIDIA GPUs the provided instance type will have.
+                              type: integer
+                            nvidiaGpuType:
+                              description: |-
+                                NvidiaGpuType specifies the NVIDIA GPU accelerator type (required for GCP when using GPUs).
+                                Examples: nvidia-tesla-k80, nvidia-tesla-v100, nvidia-tesla-a100, nvidia-l4
+                              type: string
                           type: object
                         name:
                           description: Name of the nodepool. Each nodepool will have

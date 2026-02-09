@@ -77,7 +77,7 @@ func getTypeInfoGcp(rawInfo []*computepb.MachineType) map[string]*typeInfo {
 		//
 		// If the API returns a slice of GPUs, use it, otherwise this will be a noop and in
 		// that case the the user would need to manually give us this information in the
-		// inputmanifest via the [manifest.NodePool.MachineSpec.NvidiaGpus].
+		// inputmanifest via the [manifest.NodePool.MachineSpec.NvidiaGpuCount].
 		for _, acc := range instance.Accelerators {
 			manufacturer, count := "", int64(0)
 

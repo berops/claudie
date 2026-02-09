@@ -135,9 +135,17 @@ type MachineSpec struct {
 	// Memory specifies the memory the provided instance type will have.
 	// +optional
 	Memory int `validate:"required_with=CpuCount,gte=0" yaml:"memory" json:"memory"`
-	// Nvidia specifies the number of NVIDIA GPUs the provided instance type will have.
+	// NvidiaGpuCount specifies the number of NVIDIA GPUs the provided instance type will have.
 	// +optional
-	NvidiaGpu int `validate:"gte=0" yaml:"nvidiaGpu" json:"nvidiaGpu"`
+	NvidiaGpuCount int `validate:"gte=0" yaml:"nvidiaGpuCount" json:"nvidiaGpuCount"`
+	// NvidiaGpuType specifies the NVIDIA GPU accelerator type (required for GCP when using GPUs).
+	// Examples: nvidia-tesla-k80, nvidia-tesla-v100, nvidia-tesla-a100, nvidia-l4
+	// +optional
+	NvidiaGpuType string `validate:"omitempty" yaml:"nvidiaGpuType" json:"nvidiaGpuType,omitempty"`
+	// NvidiaGpu is deprecated, use NvidiaGpuCount instead. Kept for backward compatibility.
+	// +optional
+	// Deprecated: Use NvidiaGpuCount instead.
+	NvidiaGpu int `validate:"gte=0" yaml:"nvidiaGpu" json:"nvidiaGpu,omitempty"`
 }
 
 // DynamicNodePool List of dynamically to-be-created nodepools of not yet existing machines, used for Kubernetes or loadbalancer clusters.
