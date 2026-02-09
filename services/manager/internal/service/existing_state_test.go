@@ -2,482 +2,445 @@ package service
 
 import (
 	"fmt"
+	"slices"
+	"strings"
 	"testing"
 
 	"github.com/berops/claudie/internal/api/manifest"
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/nodepools"
+	"github.com/berops/claudie/internal/spectesting"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/proto"
 )
 
-// import (
-// 	"fmt"
-// 	"slices"
-// 	"strings"
-// 	"testing"
+func Test_transferExistingDns(t *testing.T) {
+	type args struct {
+		current *spec.LBcluster
+		desired *spec.LBcluster
+	}
+	tests := []struct {
+		name     string
+		args     args
+		validate func(t *testing.T, args args)
+	}{
+		{
+			name:     "desired-nil",
+			args:     args{current: &spec.LBcluster{}, desired: nil},
+			validate: func(t *testing.T, args args) { assert.Nil(t, args.desired) },
+		},
+		{
+			name: "generate-hostname-1",
+			args: args{
+				current: &spec.LBcluster{},
+				desired: &spec.LBcluster{
+					ClusterInfo: &spec.ClusterInfo{Name: "cluster-1"},
+					Dns:         &spec.DNS{Hostname: ""},
+				},
+			},
+			validate: func(t *testing.T, args args) {
+				// Generation of DNS is not done at this function.
+				assert.Empty(t, args.desired.Dns.Hostname)
+			},
+		},
+		{
+			name: "generate-hostname-2",
+			args: args{
+				current: &spec.LBcluster{
+					ClusterInfo: &spec.ClusterInfo{Name: "cluster-1"},
+					Dns:         &spec.DNS{Hostname: "test-hostname", Endpoint: "test-endpoint"},
+				},
+				desired: &spec.LBcluster{
+					ClusterInfo: &spec.ClusterInfo{Name: "cluster-1"},
+					Dns:         &spec.DNS{Hostname: ""},
+				},
+			},
+			validate: func(t *testing.T, args args) {
+				assert.NotEmpty(t, args.desired.Dns.Hostname)
+				assert.Equal(t, "test-hostname", args.desired.Dns.Hostname)
+				assert.Equal(t, "test-endpoint", args.desired.Dns.Endpoint)
+			},
+		},
+		{
+			name: "generate-hostname-2",
+			args: args{
+				current: &spec.LBcluster{
+					ClusterInfo: &spec.ClusterInfo{Name: "cluster-1"},
+					Dns:         &spec.DNS{Hostname: "test-hostname", Endpoint: "test-endpoint"},
+				},
+				desired: &spec.LBcluster{
+					ClusterInfo: &spec.ClusterInfo{Name: "cluster-1"},
+					Dns:         &spec.DNS{Hostname: "other-hostname"},
+				},
+			},
+			validate: func(t *testing.T, args args) {
+				assert.NotEmpty(t, args.desired.Dns.Hostname)
+				assert.Equal(t, "other-hostname", args.desired.Dns.Hostname)
+				assert.Empty(t, args.desired.Dns.Endpoint)
+			},
+		},
+		{
+			name: "alternative-names-1",
+			args: args{
+				current: &spec.LBcluster{
+					ClusterInfo: &spec.ClusterInfo{Name: "cluster-1"},
+					Dns: &spec.DNS{
+						Hostname: "test-hostname",
+						Endpoint: "test-endpoint",
+						AlternativeNames: []*spec.AlternativeName{
+							{
+								Hostname: "app1",
+								Endpoint: "app1.endpoint",
+							},
+							{
+								Hostname: "app2",
+								Endpoint: "app2.endpoint",
+							},
+							{
+								Hostname: "app3",
+								Endpoint: "app3.endpoint",
+							},
+						},
+					},
+				},
+				desired: &spec.LBcluster{
+					ClusterInfo: &spec.ClusterInfo{Name: "cluster-1"},
+					Dns: &spec.DNS{
+						AlternativeNames: []*spec.AlternativeName{
+							{
+								Hostname: "app1",
+								Endpoint: "app1.endpoint",
+							},
+							{
+								Hostname: "app2",
+								Endpoint: "app2.endpoint",
+							},
+							{
+								Hostname: "app3",
+								Endpoint: "app3.endpoint",
+							},
+						},
+					},
+				},
+			},
+			validate: func(t *testing.T, args args) {
+				assert.NotEmpty(t, args.desired.Dns.Hostname)
+				assert.Equal(t, "test-hostname", args.desired.Dns.Hostname)
+				assert.Equal(t, "test-endpoint", args.desired.Dns.Endpoint)
+				assert.Equal(t, args.current.Dns.AlternativeNames, args.desired.Dns.AlternativeNames)
+			},
+		},
+		{
+			name: "alternative-names-2",
+			args: args{
+				current: &spec.LBcluster{
+					ClusterInfo: &spec.ClusterInfo{Name: "cluster-1"},
+					Dns: &spec.DNS{
+						Hostname: "test-hostname",
+						Endpoint: "test-endpoint",
+						AlternativeNames: []*spec.AlternativeName{
+							{
+								Hostname: "app1",
+								Endpoint: "app1.endpoint",
+							},
+							{
+								Hostname: "app2",
+								Endpoint: "app2.endpoint",
+							},
+							{
+								Hostname: "app3",
+								Endpoint: "app3.endpoint",
+							},
+						},
+					},
+				},
+				desired: &spec.LBcluster{
+					ClusterInfo: &spec.ClusterInfo{Name: "cluster-1"},
+					Dns: &spec.DNS{
+						AlternativeNames: []*spec.AlternativeName{
+							{
+								Hostname: "app1",
+								Endpoint: "app1.endpoint",
+							},
+							{
+								Hostname: "app3",
+								Endpoint: "app3.endpoint",
+							},
+						},
+					},
+				},
+			},
+			validate: func(t *testing.T, args args) {
+				assert.NotEmpty(t, args.desired.Dns.Hostname)
+				assert.Equal(t, "test-hostname", args.desired.Dns.Hostname)
+				assert.Equal(t, "test-endpoint", args.desired.Dns.Endpoint)
+				assert.NotEqual(t, args.current.Dns.AlternativeNames, args.desired.Dns.AlternativeNames)
+				assert.Equal(t, 2, len(args.desired.Dns.AlternativeNames))
+				assert.False(t, slices.ContainsFunc(args.desired.Dns.AlternativeNames, func(n *spec.AlternativeName) bool { return n.Hostname == "app2" }))
+				assert.True(t, slices.ContainsFunc(args.desired.Dns.AlternativeNames, func(n *spec.AlternativeName) bool { return n.Hostname == "app1" && n.Endpoint == "app1.endpoint" }))
+				assert.True(t, slices.ContainsFunc(args.desired.Dns.AlternativeNames, func(n *spec.AlternativeName) bool { return n.Hostname == "app3" && n.Endpoint == "app3.endpoint" }))
+			},
+		},
+		{
+			name: "alternative-names-3",
+			args: args{
+				current: &spec.LBcluster{
+					ClusterInfo: &spec.ClusterInfo{Name: "cluster-1"},
+					Dns: &spec.DNS{
+						Hostname: "test-hostname",
+						Endpoint: "test-endpoint",
+						AlternativeNames: []*spec.AlternativeName{
+							{
+								Hostname: "app1",
+								Endpoint: "app1.endpoint",
+							},
+							{
+								Hostname: "app2",
+								Endpoint: "app2.endpoint",
+							},
+							{
+								Hostname: "app3",
+								Endpoint: "app3.endpoint",
+							},
+						},
+					},
+				},
+				desired: &spec.LBcluster{
+					ClusterInfo: &spec.ClusterInfo{Name: "cluster-1"},
+					Dns:         &spec.DNS{AlternativeNames: nil},
+				},
+			},
+			validate: func(t *testing.T, args args) {
+				assert.NotEmpty(t, args.desired.Dns.Hostname)
+				assert.Equal(t, "test-hostname", args.desired.Dns.Hostname)
+				assert.Equal(t, "test-endpoint", args.desired.Dns.Endpoint)
+				assert.Empty(t, args.desired.Dns.AlternativeNames)
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			transferDns(tt.args.current, tt.args.desired)
+			tt.validate(t, tt.args)
+		})
+	}
+}
 
-// 	"github.com/berops/claudie/internal/api/manifest"
-// 	"github.com/berops/claudie/internal/hash"
-// 	"github.com/berops/claudie/internal/nodepools"
-// 	"github.com/berops/claudie/internal/spectesting"
-// 	"github.com/berops/claudie/proto/pb/spec"
-// 	"github.com/stretchr/testify/assert"
-// 	"google.golang.org/protobuf/proto"
-// )
+func Test_updateClusterInfo(t *testing.T) {
+	type args struct {
+		desired *spec.ClusterInfo
+		current *spec.ClusterInfo
+	}
+	tests := []struct {
+		name     string
+		args     args
+		wantErr  assert.ErrorAssertionFunc
+		validate func(t *testing.T, args args)
+	}{
+		{
+			name: "transfer-cluster-info-state-autoscaler",
+			args: args{
+				current: &spec.ClusterInfo{
+					Name: "current",
+					Hash: "current",
+					NodePools: []*spec.NodePool{
+						{
+							Type: &spec.NodePool_DynamicNodePool{
+								DynamicNodePool: &spec.DynamicNodePool{
+									Provider:   &spec.Provider{},
+									PublicKey:  "current-pk",
+									PrivateKey: "current-sk",
+									Cidr:       "current-cidr",
+									Count:      3,
+									AutoscalerConfig: &spec.AutoscalerConf{
+										Min: 3,
+										Max: 12,
+									},
+								},
+							},
+							Name: "np0",
+							Nodes: []*spec.Node{
+								{
+									Name:     "node-0",
+									Private:  "private",
+									Public:   "public",
+									NodeType: spec.NodeType_apiEndpoint,
+									Username: "username",
+								},
+								{
+									Name:     "node-1",
+									Private:  "private",
+									Public:   "public",
+									NodeType: spec.NodeType_worker,
+									Username: "username",
+								},
+								{
+									Name:     "node-2",
+									Private:  "private",
+									Public:   "public",
+									NodeType: spec.NodeType_worker,
+									Username: "username",
+								},
+							},
+							IsControl: true,
+						},
+					},
+				},
+				desired: &spec.ClusterInfo{
+					Name: "current",
+					Hash: "desired",
+					NodePools: []*spec.NodePool{
+						{
+							Name: "np0",
+							Type: &spec.NodePool_DynamicNodePool{
+								DynamicNodePool: &spec.DynamicNodePool{
+									Provider: &spec.Provider{},
+									Count:    3,
+									AutoscalerConfig: &spec.AutoscalerConf{
+										Min: 3,
+										Max: 12,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool { return assert.Nil(t, err) },
+			validate: func(t *testing.T, args args) {
+				assert.Equal(t, int32(3), args.desired.NodePools[0].GetDynamicNodePool().Count)
+				assert.Equal(t, 1, len(args.desired.NodePools))
+				assert.Equal(t, 3, len(args.desired.NodePools[0].Nodes))
+				assert.Equal(t, "node-0", args.desired.NodePools[0].Nodes[0].Name)
+				assert.Equal(t, "node-1", args.desired.NodePools[0].Nodes[1].Name)
+				assert.Equal(t, "node-2", args.desired.NodePools[0].Nodes[2].Name)
+				assert.Equal(t, "current-cidr", args.desired.NodePools[0].GetDynamicNodePool().Cidr)
+				assert.Equal(t, "current-pk", args.desired.NodePools[0].GetDynamicNodePool().PublicKey)
+				assert.Equal(t, "current-sk", args.desired.NodePools[0].GetDynamicNodePool().PrivateKey)
+			},
+		},
+		{
+			name: "transfer-cluster-info-state",
+			args: args{
+				current: &spec.ClusterInfo{
+					Name: "current",
+					Hash: "current",
+					NodePools: []*spec.NodePool{
+						{
+							Type: &spec.NodePool_DynamicNodePool{
+								DynamicNodePool: &spec.DynamicNodePool{
+									Provider:   &spec.Provider{},
+									PublicKey:  "current-pk",
+									PrivateKey: "current-sk",
+									Cidr:       "current-cidr",
+									Count:      1,
+								},
+							},
+							Name: "np0",
+							Nodes: []*spec.Node{
+								{
+									Name:     "node-0",
+									Private:  "private",
+									Public:   "public",
+									NodeType: spec.NodeType_apiEndpoint,
+									Username: "username",
+								},
+							},
+							IsControl: true,
+						},
+					},
+				},
+				desired: &spec.ClusterInfo{
+					Name: "current",
+					Hash: "desired",
+					NodePools: []*spec.NodePool{
+						{
+							Name: "np0", Type: &spec.NodePool_DynamicNodePool{
+								DynamicNodePool: &spec.DynamicNodePool{
+									Provider: &spec.Provider{},
+									Count:    2,
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool { return assert.Nil(t, err) },
+			validate: func(t *testing.T, args args) {
+				assert.Equal(t, 1, len(args.desired.NodePools))
+				assert.Equal(t, 1, len(args.desired.NodePools[0].Nodes))
+				assert.Equal(t, "node-0", args.desired.NodePools[0].Nodes[0].Name)
+				assert.Equal(t, "current-cidr", args.desired.NodePools[0].GetDynamicNodePool().Cidr)
+				assert.Equal(t, "current-pk", args.desired.NodePools[0].GetDynamicNodePool().PublicKey)
+				assert.Equal(t, "current-sk", args.desired.NodePools[0].GetDynamicNodePool().PrivateKey)
+			},
+		},
+		{
+			name: "transfer-cluster-info-state-static-pool",
+			args: args{
+				current: &spec.ClusterInfo{
+					Name: "current",
+					Hash: "current",
+					NodePools: []*spec.NodePool{
+						{
+							Type: &spec.NodePool_StaticNodePool{
+								StaticNodePool: &spec.StaticNodePool{},
+							},
+							Name: "np0",
+							Nodes: []*spec.Node{
+								{
+									Name:     "node-0",
+									Private:  "private",
+									Public:   "127.0.0.1",
+									NodeType: spec.NodeType_apiEndpoint,
+									Username: "username",
+								},
+							},
+							IsControl: false,
+						},
+					},
+				},
+				desired: &spec.ClusterInfo{
+					Name: "current",
+					Hash: "desired",
+					NodePools: []*spec.NodePool{
+						{
+							Name: "np0",
+							Type: &spec.NodePool_StaticNodePool{StaticNodePool: &spec.StaticNodePool{}},
+							Nodes: []*spec.Node{
+								{Public: "127.0.0.1"},
+								{Public: "127.0.0.2"},
+								{Public: "127.0.0.3"},
+							},
+						},
+					},
+				},
+			},
+			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool { return assert.Nil(t, err) },
+			validate: func(t *testing.T, args args) {
+				assert.Equal(t, 1, len(args.desired.NodePools))
+				assert.Equal(t, 3, len(args.desired.NodePools[0].Nodes))
+				assert.Equal(t, "node-0", args.desired.NodePools[0].Nodes[0].Name)
+				assert.Equal(t, "private", args.desired.NodePools[0].Nodes[0].Private)
+				assert.Equal(t, spec.NodeType_apiEndpoint, args.desired.NodePools[0].Nodes[0].NodeType)
 
-// func Test_transferExistingDns(t *testing.T) {
-// 	type args struct {
-// 		current *spec.LoadBalancers
-// 		desired *spec.LoadBalancers
-// 	}
-// 	tests := []struct {
-// 		name     string
-// 		args     args
-// 		validate func(t *testing.T, args args)
-// 	}{
-// 		{
-// 			name:     "desired-nil",
-// 			args:     args{current: &spec.LoadBalancers{}, desired: nil},
-// 			validate: func(t *testing.T, args args) { assert.Nil(t, args.desired) },
-// 		},
-// 		{
-// 			name: "generate-hostname-1",
-// 			args: args{
-// 				current: &spec.LoadBalancers{},
-// 				desired: &spec.LoadBalancers{
-// 					Clusters: []*spec.LBcluster{
-// 						{
-// 							ClusterInfo: &spec.ClusterInfo{Name: "cluster-1"},
-// 							Dns:         &spec.DNS{Hostname: ""},
-// 						},
-// 					},
-// 				},
-// 			},
-// 			validate: func(t *testing.T, args args) {
-// 				assert.NotEmpty(t, args.desired.Clusters[0].Dns.Hostname)
-// 			},
-// 		},
-// 		{
-// 			name: "generate-hostname-2",
-// 			args: args{
-// 				current: &spec.LoadBalancers{
-// 					Clusters: []*spec.LBcluster{
-// 						{
-// 							ClusterInfo: &spec.ClusterInfo{Name: "cluster-1"},
-// 							Dns:         &spec.DNS{Hostname: "test-hostname", Endpoint: "test-endpoint"},
-// 						},
-// 					},
-// 				},
-// 				desired: &spec.LoadBalancers{
-// 					Clusters: []*spec.LBcluster{
-// 						{
-// 							ClusterInfo: &spec.ClusterInfo{Name: "cluster-1"},
-// 							Dns:         &spec.DNS{Hostname: ""},
-// 						},
-// 					},
-// 				},
-// 			},
-// 			validate: func(t *testing.T, args args) {
-// 				assert.NotEmpty(t, args.desired.Clusters[0].Dns.Hostname)
-// 				assert.Equal(t, "test-hostname", args.desired.Clusters[0].Dns.Hostname)
-// 				assert.Equal(t, "test-endpoint", args.desired.Clusters[0].Dns.Endpoint)
-// 			},
-// 		},
-// 		{
-// 			name: "generate-hostname-2",
-// 			args: args{
-// 				current: &spec.LoadBalancers{
-// 					Clusters: []*spec.LBcluster{
-// 						{
-// 							ClusterInfo: &spec.ClusterInfo{Name: "cluster-1"},
-// 							Dns:         &spec.DNS{Hostname: "test-hostname", Endpoint: "test-endpoint"},
-// 						},
-// 					},
-// 				},
-// 				desired: &spec.LoadBalancers{
-// 					Clusters: []*spec.LBcluster{
-// 						{
-// 							ClusterInfo: &spec.ClusterInfo{Name: "cluster-1"},
-// 							Dns:         &spec.DNS{Hostname: "other-hostname"},
-// 						},
-// 					},
-// 				},
-// 			},
-// 			validate: func(t *testing.T, args args) {
-// 				assert.NotEmpty(t, args.desired.Clusters[0].Dns.Hostname)
-// 				assert.Equal(t, "other-hostname", args.desired.Clusters[0].Dns.Hostname)
-// 				assert.Empty(t, args.desired.Clusters[0].Dns.Endpoint)
-// 			},
-// 		},
-// 		{
-// 			name: "alternative-names-1",
-// 			args: args{
-// 				current: &spec.LoadBalancers{
-// 					Clusters: []*spec.LBcluster{
-// 						{
-// 							ClusterInfo: &spec.ClusterInfo{Name: "cluster-1"},
-// 							Dns: &spec.DNS{
-// 								Hostname: "test-hostname",
-// 								Endpoint: "test-endpoint",
-// 								AlternativeNames: []*spec.AlternativeName{
-// 									{
-// 										Hostname: "app1",
-// 										Endpoint: "app1.endpoint",
-// 									},
-// 									{
-// 										Hostname: "app2",
-// 										Endpoint: "app2.endpoint",
-// 									},
-// 									{
-// 										Hostname: "app3",
-// 										Endpoint: "app3.endpoint",
-// 									},
-// 								},
-// 							},
-// 						},
-// 					},
-// 				},
-// 				desired: &spec.LoadBalancers{
-// 					Clusters: []*spec.LBcluster{
-// 						{
-// 							ClusterInfo: &spec.ClusterInfo{Name: "cluster-1"},
-// 							Dns: &spec.DNS{
-// 								AlternativeNames: []*spec.AlternativeName{
-// 									{
-// 										Hostname: "app1",
-// 										Endpoint: "app1.endpoint",
-// 									},
-// 									{
-// 										Hostname: "app2",
-// 										Endpoint: "app2.endpoint",
-// 									},
-// 									{
-// 										Hostname: "app3",
-// 										Endpoint: "app3.endpoint",
-// 									},
-// 								},
-// 							},
-// 						},
-// 					},
-// 				},
-// 			},
-// 			validate: func(t *testing.T, args args) {
-// 				assert.NotEmpty(t, args.desired.Clusters[0].Dns.Hostname)
-// 				assert.Equal(t, "test-hostname", args.desired.Clusters[0].Dns.Hostname)
-// 				assert.Equal(t, "test-endpoint", args.desired.Clusters[0].Dns.Endpoint)
-// 				assert.Equal(t, args.current.Clusters[0].Dns.AlternativeNames, args.desired.Clusters[0].Dns.AlternativeNames)
-// 			},
-// 		},
-// 		{
-// 			name: "alternative-names-2",
-// 			args: args{
-// 				current: &spec.LoadBalancers{
-// 					Clusters: []*spec.LBcluster{
-// 						{
-// 							ClusterInfo: &spec.ClusterInfo{Name: "cluster-1"},
-// 							Dns: &spec.DNS{
-// 								Hostname: "test-hostname",
-// 								Endpoint: "test-endpoint",
-// 								AlternativeNames: []*spec.AlternativeName{
-// 									{
-// 										Hostname: "app1",
-// 										Endpoint: "app1.endpoint",
-// 									},
-// 									{
-// 										Hostname: "app2",
-// 										Endpoint: "app2.endpoint",
-// 									},
-// 									{
-// 										Hostname: "app3",
-// 										Endpoint: "app3.endpoint",
-// 									},
-// 								},
-// 							},
-// 						},
-// 					},
-// 				},
-// 				desired: &spec.LoadBalancers{
-// 					Clusters: []*spec.LBcluster{
-// 						{
-// 							ClusterInfo: &spec.ClusterInfo{Name: "cluster-1"},
-// 							Dns: &spec.DNS{
-// 								AlternativeNames: []*spec.AlternativeName{
-// 									{
-// 										Hostname: "app1",
-// 										Endpoint: "app1.endpoint",
-// 									},
-// 									{
-// 										Hostname: "app3",
-// 										Endpoint: "app3.endpoint",
-// 									},
-// 								},
-// 							},
-// 						},
-// 					},
-// 				},
-// 			},
-// 			validate: func(t *testing.T, args args) {
-// 				assert.NotEmpty(t, args.desired.Clusters[0].Dns.Hostname)
-// 				assert.Equal(t, "test-hostname", args.desired.Clusters[0].Dns.Hostname)
-// 				assert.Equal(t, "test-endpoint", args.desired.Clusters[0].Dns.Endpoint)
-// 				assert.NotEqual(t, args.current.Clusters[0].Dns.AlternativeNames, args.desired.Clusters[0].Dns.AlternativeNames)
-// 				assert.Equal(t, 2, len(args.desired.Clusters[0].Dns.AlternativeNames))
-// 				assert.False(t, slices.ContainsFunc(args.desired.Clusters[0].Dns.AlternativeNames, func(n *spec.AlternativeName) bool { return n.Hostname == "app2" }))
-// 				assert.True(t, slices.ContainsFunc(args.desired.Clusters[0].Dns.AlternativeNames, func(n *spec.AlternativeName) bool { return n.Hostname == "app1" && n.Endpoint == "app1.endpoint" }))
-// 				assert.True(t, slices.ContainsFunc(args.desired.Clusters[0].Dns.AlternativeNames, func(n *spec.AlternativeName) bool { return n.Hostname == "app3" && n.Endpoint == "app3.endpoint" }))
-// 			},
-// 		},
-// 		{
-// 			name: "alternative-names-3",
-// 			args: args{
-// 				current: &spec.LoadBalancers{
-// 					Clusters: []*spec.LBcluster{
-// 						{
-// 							ClusterInfo: &spec.ClusterInfo{Name: "cluster-1"},
-// 							Dns: &spec.DNS{
-// 								Hostname: "test-hostname",
-// 								Endpoint: "test-endpoint",
-// 								AlternativeNames: []*spec.AlternativeName{
-// 									{
-// 										Hostname: "app1",
-// 										Endpoint: "app1.endpoint",
-// 									},
-// 									{
-// 										Hostname: "app2",
-// 										Endpoint: "app2.endpoint",
-// 									},
-// 									{
-// 										Hostname: "app3",
-// 										Endpoint: "app3.endpoint",
-// 									},
-// 								},
-// 							},
-// 						},
-// 					},
-// 				},
-// 				desired: &spec.LoadBalancers{
-// 					Clusters: []*spec.LBcluster{
-// 						{
-// 							ClusterInfo: &spec.ClusterInfo{Name: "cluster-1"},
-// 							Dns:         &spec.DNS{AlternativeNames: nil},
-// 						},
-// 					},
-// 				},
-// 			},
-// 			validate: func(t *testing.T, args args) {
-// 				assert.NotEmpty(t, args.desired.Clusters[0].Dns.Hostname)
-// 				assert.Equal(t, "test-hostname", args.desired.Clusters[0].Dns.Hostname)
-// 				assert.Equal(t, "test-endpoint", args.desired.Clusters[0].Dns.Endpoint)
-// 				assert.Empty(t, args.desired.Clusters[0].Dns.AlternativeNames)
-// 			},
-// 		},
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			t.Parallel()
-// 			transferExistingDns(tt.args.current, tt.args.desired)
-// 			tt.validate(t, tt.args)
-// 		})
-// 	}
-// }
-
-// func Test_updateClusterInfo(t *testing.T) {
-// 	type args struct {
-// 		desired *spec.ClusterInfo
-// 		current *spec.ClusterInfo
-// 	}
-// 	tests := []struct {
-// 		name     string
-// 		args     args
-// 		wantErr  assert.ErrorAssertionFunc
-// 		validate func(t *testing.T, args args)
-// 	}{
-// 		{
-// 			name: "transfer-cluster-info-state-autoscaler",
-// 			args: args{
-// 				current: &spec.ClusterInfo{
-// 					Name: "current",
-// 					Hash: "current",
-// 					NodePools: []*spec.NodePool{
-// 						{
-// 							Type: &spec.NodePool_DynamicNodePool{
-// 								DynamicNodePool: &spec.DynamicNodePool{
-// 									PublicKey:  "current-pk",
-// 									PrivateKey: "current-sk",
-// 									Cidr:       "current-cidr",
-// 									Count:      5,
-// 									AutoscalerConfig: &spec.AutoscalerConf{
-// 										Min: 3,
-// 										Max: 12,
-// 									},
-// 								},
-// 							},
-// 							Name: "np0",
-// 							Nodes: []*spec.Node{
-// 								{
-// 									Name:     "node-0",
-// 									Private:  "private",
-// 									Public:   "public",
-// 									NodeType: spec.NodeType_apiEndpoint,
-// 									Username: "username",
-// 								},
-// 								{
-// 									Name:     "node-1",
-// 									Private:  "private",
-// 									Public:   "public",
-// 									NodeType: spec.NodeType_worker,
-// 									Username: "username",
-// 								},
-// 								{
-// 									Name:     "node-2",
-// 									Private:  "private",
-// 									Public:   "public",
-// 									NodeType: spec.NodeType_worker,
-// 									Username: "username",
-// 								},
-// 							},
-// 							IsControl: true,
-// 						},
-// 					},
-// 				},
-// 				desired: &spec.ClusterInfo{
-// 					Name: "current",
-// 					Hash: "desired",
-// 					NodePools: []*spec.NodePool{
-// 						{Name: "np0", Type: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{Count: 3, AutoscalerConfig: &spec.AutoscalerConf{
-// 							Min: 3,
-// 							Max: 12,
-// 						}}}},
-// 					},
-// 				},
-// 			},
-// 			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool { return assert.Nil(t, err) },
-// 			validate: func(t *testing.T, args args) {
-// 				assert.Equal(t, int32(5), args.desired.NodePools[0].GetDynamicNodePool().Count)
-// 				assert.Equal(t, 1, len(args.desired.NodePools))
-// 				assert.Equal(t, 5, len(args.desired.NodePools[0].Nodes))
-// 				assert.Equal(t, "node-0", args.desired.NodePools[0].Nodes[0].Name)
-// 				assert.Equal(t, "node-1", args.desired.NodePools[0].Nodes[1].Name)
-// 				assert.Equal(t, "node-2", args.desired.NodePools[0].Nodes[2].Name)
-// 				assert.Equal(t, "current-current-np0-01", args.desired.NodePools[0].Nodes[3].Name)
-// 				assert.Equal(t, "current-current-np0-02", args.desired.NodePools[0].Nodes[4].Name)
-// 				assert.Equal(t, "current-cidr", args.desired.NodePools[0].GetDynamicNodePool().Cidr)
-// 				assert.Equal(t, "current-pk", args.desired.NodePools[0].GetDynamicNodePool().PublicKey)
-// 				assert.Equal(t, "current-sk", args.desired.NodePools[0].GetDynamicNodePool().PrivateKey)
-// 			},
-// 		},
-// 		{
-// 			name: "transfer-cluster-info-state",
-// 			args: args{
-// 				current: &spec.ClusterInfo{
-// 					Name: "current",
-// 					Hash: "current",
-// 					NodePools: []*spec.NodePool{
-// 						{
-// 							Type: &spec.NodePool_DynamicNodePool{
-// 								DynamicNodePool: &spec.DynamicNodePool{
-// 									PublicKey:  "current-pk",
-// 									PrivateKey: "current-sk",
-// 									Cidr:       "current-cidr",
-// 									Count:      1,
-// 								},
-// 							},
-// 							Name: "np0",
-// 							Nodes: []*spec.Node{
-// 								{
-// 									Name:     "node-0",
-// 									Private:  "private",
-// 									Public:   "public",
-// 									NodeType: spec.NodeType_apiEndpoint,
-// 									Username: "username",
-// 								},
-// 							},
-// 							IsControl: true,
-// 						},
-// 					},
-// 				},
-// 				desired: &spec.ClusterInfo{
-// 					Name: "current",
-// 					Hash: "desired",
-// 					NodePools: []*spec.NodePool{
-// 						{Name: "np0", Type: &spec.NodePool_DynamicNodePool{DynamicNodePool: &spec.DynamicNodePool{Count: 2}}},
-// 					},
-// 				},
-// 			},
-// 			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool { return assert.Nil(t, err) },
-// 			validate: func(t *testing.T, args args) {
-// 				assert.Equal(t, 1, len(args.desired.NodePools))
-// 				assert.Equal(t, 2, len(args.desired.NodePools[0].Nodes))
-// 				assert.Equal(t, "node-0", args.desired.NodePools[0].Nodes[0].Name)
-// 				assert.Equal(t, "current-current-np0-01", args.desired.NodePools[0].Nodes[1].Name)
-// 				assert.Equal(t, "current-cidr", args.desired.NodePools[0].GetDynamicNodePool().Cidr)
-// 				assert.Equal(t, "current-pk", args.desired.NodePools[0].GetDynamicNodePool().PublicKey)
-// 				assert.Equal(t, "current-sk", args.desired.NodePools[0].GetDynamicNodePool().PrivateKey)
-// 			},
-// 		},
-// 		{
-// 			name: "transfer-cluster-info-state-static-pool",
-// 			args: args{
-// 				current: &spec.ClusterInfo{
-// 					Name: "current",
-// 					Hash: "current",
-// 					NodePools: []*spec.NodePool{
-// 						{
-// 							Type: &spec.NodePool_StaticNodePool{
-// 								StaticNodePool: &spec.StaticNodePool{},
-// 							},
-// 							Name: "np0",
-// 							Nodes: []*spec.Node{
-// 								{
-// 									Name:     "node-0",
-// 									Private:  "private",
-// 									Public:   "127.0.0.1",
-// 									NodeType: spec.NodeType_apiEndpoint,
-// 									Username: "username",
-// 								},
-// 							},
-// 							IsControl: false,
-// 						},
-// 					},
-// 				},
-// 				desired: &spec.ClusterInfo{
-// 					Name: "current",
-// 					Hash: "desired",
-// 					NodePools: []*spec.NodePool{
-// 						{
-// 							Name: "np0",
-// 							Type: &spec.NodePool_StaticNodePool{StaticNodePool: &spec.StaticNodePool{}},
-// 							Nodes: []*spec.Node{
-// 								{Public: "127.0.0.1"},
-// 								{Public: "127.0.0.2"},
-// 								{Public: "127.0.0.3"},
-// 							},
-// 						},
-// 					},
-// 				},
-// 			},
-// 			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool { return assert.Nil(t, err) },
-// 			validate: func(t *testing.T, args args) {
-// 				assert.Equal(t, 1, len(args.desired.NodePools))
-// 				assert.Equal(t, 3, len(args.desired.NodePools[0].Nodes))
-// 				assert.Equal(t, "node-0", args.desired.NodePools[0].Nodes[0].Name)
-// 				assert.Equal(t, "private", args.desired.NodePools[0].Nodes[0].Private)
-// 				assert.Equal(t, spec.NodeType_apiEndpoint, args.desired.NodePools[0].Nodes[0].NodeType)
-
-// 				assert.Equal(t, "np0-01", args.desired.NodePools[0].Nodes[1].Name)
-// 				assert.Equal(t, "np0-02", args.desired.NodePools[0].Nodes[2].Name)
-// 			},
-// 		},
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			t.Parallel()
-// 			tt.wantErr(t, transferNodePools(tt.args.desired, tt.args.current), fmt.Sprintf("transferNodePools(%v, %v)", tt.args.desired, tt.args.current))
-// 			tt.validate(t, tt.args)
-// 		})
-// 	}
-// }
+				assert.Equal(t, "node-0", args.desired.NodePools[0].Nodes[0].Name)
+				// Names are not generated, only matching state is transferred.
+				assert.Equal(t, "", args.desired.NodePools[0].Nodes[1].Name)
+				assert.Equal(t, "", args.desired.NodePools[0].Nodes[2].Name)
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			transferClusterInfo(tt.args.current, tt.args.desired)
+			tt.validate(t, tt.args)
+		})
+	}
+}
 
 func Test_copyK8sNodePoolsNamesFromCurrentState(t *testing.T) {
 	type args struct {
@@ -502,10 +465,24 @@ func Test_copyK8sNodePoolsNamesFromCurrentState(t *testing.T) {
 				},
 				nodepool: "np0",
 				current: &spec.K8Scluster{ClusterInfo: &spec.ClusterInfo{
-					NodePools: []*spec.NodePool{{Name: fmt.Sprintf("np0-%s", hash.Create(hash.Length))}},
+					NodePools: []*spec.NodePool{
+						{
+							Type: &spec.NodePool_DynamicNodePool{
+								DynamicNodePool: &spec.DynamicNodePool{},
+							},
+							Name: fmt.Sprintf("np0-%s", hash.Create(hash.Length)),
+						},
+					},
 				}},
 				desired: &spec.K8Scluster{ClusterInfo: &spec.ClusterInfo{
-					NodePools: []*spec.NodePool{{Name: "np0"}},
+					NodePools: []*spec.NodePool{
+						{
+							Type: &spec.NodePool_DynamicNodePool{
+								DynamicNodePool: &spec.DynamicNodePool{},
+							},
+							Name: "np0",
+						},
+					},
 				}},
 			},
 			validate: func(t *testing.T, args args) {
@@ -526,10 +503,24 @@ func Test_copyK8sNodePoolsNamesFromCurrentState(t *testing.T) {
 				},
 				nodepool: "np0",
 				current: &spec.K8Scluster{ClusterInfo: &spec.ClusterInfo{
-					NodePools: []*spec.NodePool{{Name: fmt.Sprintf("np0-%s", hash.Create(hash.Length))}},
+					NodePools: []*spec.NodePool{
+						{
+							Type: &spec.NodePool_DynamicNodePool{
+								DynamicNodePool: &spec.DynamicNodePool{},
+							},
+							Name: fmt.Sprintf("np0-%s", hash.Create(hash.Length)),
+						},
+					},
 				}},
 				desired: &spec.K8Scluster{ClusterInfo: &spec.ClusterInfo{
-					NodePools: []*spec.NodePool{{Name: "np-0"}},
+					NodePools: []*spec.NodePool{
+						{
+							Type: &spec.NodePool_DynamicNodePool{
+								DynamicNodePool: &spec.DynamicNodePool{},
+							},
+							Name: "np-0",
+						},
+					},
 				}},
 			},
 			validate: func(t *testing.T, args args) {
@@ -573,11 +564,31 @@ func Test_copyLbNodePoolNamesFromCurrentState(t *testing.T) {
 				},
 				nodepool: "np-0",
 				current: []*spec.LBcluster{{
-					ClusterInfo: &spec.ClusterInfo{NodePools: []*spec.NodePool{
-						{Name: fmt.Sprintf("np-0-%s", hash.Create(hash.Length))},
-					}},
+					ClusterInfo: &spec.ClusterInfo{
+						NodePools: []*spec.NodePool{
+							{
+								Type: &spec.NodePool_DynamicNodePool{
+									DynamicNodePool: &spec.DynamicNodePool{},
+								},
+								Name: fmt.Sprintf("np-0-%s", hash.Create(hash.Length)),
+							},
+						},
+					},
 				}},
-				desired: []*spec.LBcluster{{ClusterInfo: &spec.ClusterInfo{NodePools: []*spec.NodePool{{Name: "np-0"}}}}},
+				desired: []*spec.LBcluster{
+					{
+						ClusterInfo: &spec.ClusterInfo{
+							NodePools: []*spec.NodePool{
+								{
+									Type: &spec.NodePool_DynamicNodePool{
+										DynamicNodePool: &spec.DynamicNodePool{},
+									},
+									Name: "np-0",
+								},
+							},
+						},
+					},
+				},
 			},
 			validate: func(t *testing.T, args args) {
 				assert.Equal(t, args.current[0].ClusterInfo.NodePools[0].Name, args.desired[0].ClusterInfo.NodePools[0].Name)
@@ -597,11 +608,31 @@ func Test_copyLbNodePoolNamesFromCurrentState(t *testing.T) {
 				},
 				nodepool: "np-0",
 				current: []*spec.LBcluster{{
-					ClusterInfo: &spec.ClusterInfo{NodePools: []*spec.NodePool{
-						{Name: fmt.Sprintf("np-0-%s", hash.Create(hash.Length))},
-					}},
+					ClusterInfo: &spec.ClusterInfo{
+						NodePools: []*spec.NodePool{
+							{
+								Type: &spec.NodePool_DynamicNodePool{
+									DynamicNodePool: &spec.DynamicNodePool{},
+								},
+								Name: fmt.Sprintf("np-0-%s", hash.Create(hash.Length)),
+							},
+						},
+					},
 				}},
-				desired: []*spec.LBcluster{{ClusterInfo: &spec.ClusterInfo{NodePools: []*spec.NodePool{{Name: "np0"}}}}},
+				desired: []*spec.LBcluster{
+					{
+						ClusterInfo: &spec.ClusterInfo{
+							NodePools: []*spec.NodePool{
+								{
+									Type: &spec.NodePool_DynamicNodePool{
+										DynamicNodePool: &spec.DynamicNodePool{},
+									},
+									Name: "np0",
+								},
+							},
+						},
+					},
+				},
 			},
 			validate: func(t *testing.T, args args) {
 				assert.NotEqual(t, args.current[0].ClusterInfo.NodePools[0].Name, args.desired[0].ClusterInfo.NodePools[0].Name)
@@ -844,99 +875,101 @@ func Test_deduplicateNodepoolNames(t *testing.T) {
 	}
 }
 
-// func Test_transferStaticNodes(t *testing.T) {
-// 	t.Parallel()
+func Test_transferStaticNodes(t *testing.T) {
+	t.Parallel()
 
-// 	k8s := spectesting.GenerateFakeK8SCluster(false)
-// 	desired := nodepools.Static(k8s.ClusterInfo.NodePools)[0]
-// 	current := proto.Clone(desired).(*spec.NodePool)
+	current := spectesting.GenerateFakeK8SCluster(false)
+	desired := proto.Clone(current).(*spec.K8Scluster)
 
-// 	prevCount := len(desired.Nodes)
-// 	prevNames := []string{desired.Nodes[0].Name, desired.Nodes[1].Name}
-// 	// 1. delete some nodes from current state to simulate adding new nodes
-// 	current.Nodes = current.Nodes[2:]
+	chosen := nodepools.Static(current.ClusterInfo.NodePools)[0]
+	foundCurrent := chosen
+	foundDesired := nodepools.FindByName(chosen.Name, desired.ClusterInfo.NodePools)
 
-// 	assert.True(t, transferStaticNodes("id1", current, desired))
+	prevCount := len(foundDesired.Nodes)
+	prevNames := []string{foundDesired.Nodes[0].Name, foundDesired.Nodes[1].Name}
+	// 1. delete some nodes from current state to simulate adding new nodes
+	foundCurrent.Nodes = foundCurrent.Nodes[2:]
 
-// 	newCount := len(desired.Nodes)
-// 	newNames := []string{desired.Nodes[0].Name, desired.Nodes[1].Name}
+	deduplicateStaticNodeNames(&spec.Clusters{K8S: current}, &spec.Clusters{K8S: desired})
 
-// 	assert.NotEqual(t, newNames[0], prevNames[0])
-// 	assert.NotEqual(t, newNames[1], prevNames[1])
-// 	assert.Equal(t, newCount, prevCount)
-// }
+	newCount := len(foundDesired.Nodes)
+	newNames := []string{foundDesired.Nodes[0].Name, foundDesired.Nodes[1].Name}
 
-// func Test_fillDynamicNodes(t *testing.T) {
-// 	t.Parallel()
+	assert.NotEqual(t, newNames[0], prevNames[0])
+	assert.NotEqual(t, newNames[1], prevNames[1])
+	assert.Equal(t, newCount, prevCount)
+}
 
-// 	k8s := spectesting.GenerateFakeK8SCluster(false)
-// 	desired := slices.Collect(nodepools.Control(nodepools.Dynamic(k8s.ClusterInfo.NodePools)))[0]
-// 	current := proto.Clone(desired).(*spec.NodePool)
+func Test_fillDynamicNodes(t *testing.T) {
+	t.Parallel()
 
-// 	// 1. increase desired count to simulate adding nodes
-// 	c := len(desired.Nodes)
-// 	cd := desired.GetDynamicNodePool().Count
+	k8s := spectesting.GenerateFakeK8SCluster(false)
+	desired := slices.Collect(nodepools.Control(nodepools.Dynamic(k8s.ClusterInfo.NodePools)))[0]
 
-// 	desired.GetDynamicNodePool().Count += 2
-// 	fillDynamicNodes("id1", current, desired)
+	// 1. increase desired count to simulate adding nodes
+	c := len(desired.Nodes)
+	cd := desired.GetDynamicNodePool().Count
 
-// 	assert.NotEqual(t, len(desired.Nodes), c)
-// 	assert.Equal(t, len(desired.Nodes), c+2)
-// 	assert.Equal(t, desired.GetDynamicNodePool().Count, cd+2)
+	desired.GetDynamicNodePool().Count += 2
+	PopulateDynamicNodes("id1", desired)
 
-// 	assert.Equal(t, spec.NodeType_master, desired.Nodes[len(desired.Nodes)-1].NodeType)
-// 	assert.Equal(t, spec.NodeType_master, desired.Nodes[len(desired.Nodes)-2].NodeType)
-// 	assert.True(t, strings.HasPrefix(desired.Nodes[len(desired.Nodes)-1].Name, "id1"))
-// 	assert.True(t, strings.HasPrefix(desired.Nodes[len(desired.Nodes)-2].Name, "id1"))
-// 	assert.False(t, strings.HasPrefix(desired.Nodes[len(desired.Nodes)-3].Name, "id1"))
-// }
+	assert.NotEqual(t, len(desired.Nodes), c)
+	assert.Equal(t, len(desired.Nodes), c+2)
+	assert.Equal(t, desired.GetDynamicNodePool().Count, cd+2)
 
-// func Test_transferExistingRole(t *testing.T) {
-// 	t.Parallel()
+	assert.Equal(t, spec.NodeType_master, desired.Nodes[len(desired.Nodes)-1].NodeType)
+	assert.Equal(t, spec.NodeType_master, desired.Nodes[len(desired.Nodes)-2].NodeType)
+	assert.True(t, strings.HasPrefix(desired.Nodes[len(desired.Nodes)-1].Name, "id1"))
+	assert.True(t, strings.HasPrefix(desired.Nodes[len(desired.Nodes)-2].Name, "id1"))
+	assert.False(t, strings.HasPrefix(desired.Nodes[len(desired.Nodes)-3].Name, "id1"))
+}
 
-// 	current := []*spec.Role{
-// 		{
-// 			Name:     "1",
-// 			Settings: &spec.Role_Settings{EnvoyAdminPort: 2048},
-// 		},
-// 		{
-// 			Name:     "2",
-// 			Settings: &spec.Role_Settings{EnvoyAdminPort: 32100},
-// 		},
-// 		{
-// 			Name:     "3",
-// 			Settings: &spec.Role_Settings{EnvoyAdminPort: 45000},
-// 		},
-// 		{
-// 			Name:     "4",
-// 			Settings: &spec.Role_Settings{EnvoyAdminPort: 1024},
-// 		},
-// 	}
+func Test_transferExistingRole(t *testing.T) {
+	t.Parallel()
 
-// 	desired := []*spec.Role{
-// 		{
-// 			Name:     "1",
-// 			Settings: &spec.Role_Settings{EnvoyAdminPort: -1},
-// 		},
-// 		{
-// 			Name:     "7",
-// 			Settings: &spec.Role_Settings{EnvoyAdminPort: -1},
-// 		},
-// 		{
-// 			Name:     "5",
-// 			Settings: &spec.Role_Settings{EnvoyAdminPort: -1},
-// 		},
-// 		{
-// 			Name:     "4",
-// 			Settings: &spec.Role_Settings{EnvoyAdminPort: -1},
-// 		},
-// 	}
+	current := []*spec.Role{
+		{
+			Name:     "1",
+			Settings: &spec.Role_Settings{EnvoyAdminPort: 2048},
+		},
+		{
+			Name:     "2",
+			Settings: &spec.Role_Settings{EnvoyAdminPort: 32100},
+		},
+		{
+			Name:     "3",
+			Settings: &spec.Role_Settings{EnvoyAdminPort: 45000},
+		},
+		{
+			Name:     "4",
+			Settings: &spec.Role_Settings{EnvoyAdminPort: 1024},
+		},
+	}
 
-// 	transferExistingRoles(current, desired)
+	desired := []*spec.Role{
+		{
+			Name:     "1",
+			Settings: &spec.Role_Settings{EnvoyAdminPort: -1},
+		},
+		{
+			Name:     "7",
+			Settings: &spec.Role_Settings{EnvoyAdminPort: -1},
+		},
+		{
+			Name:     "5",
+			Settings: &spec.Role_Settings{EnvoyAdminPort: -1},
+		},
+		{
+			Name:     "4",
+			Settings: &spec.Role_Settings{EnvoyAdminPort: -1},
+		},
+	}
 
-// 	assert.Equal(t, int32(2048), desired[0].Settings.EnvoyAdminPort)
-// 	assert.Equal(t, int32(1024), desired[3].Settings.EnvoyAdminPort)
+	transferRoles(current, desired)
 
-// 	assert.Equal(t, int32(-1), desired[1].Settings.EnvoyAdminPort)
-// 	assert.Equal(t, int32(-1), desired[2].Settings.EnvoyAdminPort)
-// }
+	assert.Equal(t, int32(2048), desired[0].Settings.EnvoyAdminPort)
+	assert.Equal(t, int32(1024), desired[3].Settings.EnvoyAdminPort)
+
+	assert.Equal(t, int32(-1), desired[1].Settings.EnvoyAdminPort)
+	assert.Equal(t, int32(-1), desired[2].Settings.EnvoyAdminPort)
+}

@@ -10,10 +10,6 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// TODO: write tests.
-// TODO: what if the key for the static nodes is changed that should trigger, or not that would
-// be handled automatically on the run anyways.
-
 type ProxyChange uint8
 
 const (

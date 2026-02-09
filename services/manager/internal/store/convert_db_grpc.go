@@ -205,7 +205,7 @@ func ConvertFromGRPCTaskEvent(te *spec.TaskEvent) (*TaskEvent, error) {
 
 	lowerPriority, err := ConvertFromGRPCTaskEvent(te.LowerPriority)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 
 	task, err := ConvertFromGRPCTask(te.Task)
@@ -423,12 +423,12 @@ func ConvertToGRPCClusters(cluster Clusters) (*spec.Clusters, error) {
 func ConvertFromGRPCClusters(cluster *spec.Clusters) (Clusters, error) {
 	k8s, err := ConvertFromGRPCCluster(cluster.GetK8S())
 	if err != nil {
-		return Clusters{}, nil
+		return Clusters{}, err
 	}
 
 	lbs, err := ConvertFromGRPCLoadBalancers(cluster.GetLoadBalancers())
 	if err != nil {
-		return Clusters{}, nil
+		return Clusters{}, err
 	}
 
 	out := Clusters{
