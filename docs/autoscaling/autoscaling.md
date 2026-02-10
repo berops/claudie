@@ -48,7 +48,7 @@ The custom Claudie-Provider for the [Cluster-Autoscaler](https://github.com/kube
   serverType: g4dn.xlarge
   machineSpec:
     # explicitly specify how many GPU's the instance type provides.
-    nvidiaGpu: 1
+    nvidiaGpuCount: 1
   # OS image name
   image: ami-07eef52105e8a2059
   ```

@@ -125,6 +125,11 @@ func (d *DynamicNodePool) Validate(m *Manifest) error {
 		return fmt.Errorf("max available count for a nodepool is 255")
 	}
 
+	// Validate GCP-specific GPU configuration
+	if err := d.validateGCPGpuConfig(m); err != nil {
+		return err
+	}
+
 	validate := validator.New()
 
 	if err := validate.RegisterValidation("external_net", validateExternalNet); err != nil {
@@ -134,6 +139,37 @@ func (d *DynamicNodePool) Validate(m *Manifest) error {
 	if err := validate.Struct(d); err != nil {
 		return prettyPrintValidationError(err)
 	}
+	return nil
+}
+
+// validateGCPGpuConfig validates that GCP nodepools with GPUs have the required type specified.
+// GCP requires the guest_accelerator block with both type and count to attach GPUs to instances.
+func (d *DynamicNodePool) validateGCPGpuConfig(m *Manifest) error {
+	providerType, err := m.GetProviderType(d.ProviderSpec.Name)
+	if err != nil {
+		// Provider existence is validated in [NodePool.Validate] before
+		// calling [DynamicNodePool.Validate].
+		return nil
+	}
+
+	if providerType != "gcp" {
+		return nil
+	}
+
+	if d.MachineSpec == nil {
+		return nil
+	}
+
+	// Check both NvidiaGpuCount (new) and NvidiaGpu (deprecated) for backward compatibility
+	gpuCount := d.MachineSpec.NvidiaGpuCount
+	if gpuCount == 0 {
+		gpuCount = d.MachineSpec.NvidiaGpu
+	}
+
+	if gpuCount > 0 && d.MachineSpec.NvidiaGpuType == "" {
+		return fmt.Errorf("nvidiaGpuType is required for GCP when nvidiaGpuCount > 0")
+	}
+
 	return nil
 }
 

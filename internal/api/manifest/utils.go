@@ -313,10 +313,16 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.Nod
 
 			var machineSpec *spec.MachineSpec
 			if nodePool.MachineSpec != nil {
+				// Use NvidiaGpuCount as primary, fall back to deprecated NvidiaGpu for backward compatibility
+				gpuCount := int32(nodePool.MachineSpec.NvidiaGpuCount)
+				if gpuCount == 0 && nodePool.MachineSpec.NvidiaGpu > 0 {
+					gpuCount = int32(nodePool.MachineSpec.NvidiaGpu)
+				}
 				machineSpec = &spec.MachineSpec{
-					CpuCount:  int32(nodePool.MachineSpec.CpuCount),
-					Memory:    int32(nodePool.MachineSpec.Memory),
-					NvidiaGpu: int32(nodePool.MachineSpec.NvidiaGpu),
+					CpuCount:       int32(nodePool.MachineSpec.CpuCount),
+					Memory:         int32(nodePool.MachineSpec.Memory),
+					NvidiaGpuCount: gpuCount,
+					NvidiaGpuType:  nodePool.MachineSpec.NvidiaGpuType,
 				}
 			}
 
