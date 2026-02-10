@@ -41,7 +41,6 @@ const (
 	REQUEUE_WATCH       = 8 * time.Second
 	REQUEUE_UPDATE      = 8 * time.Second
 	REQUEUE_IN_PROGRES  = 8 * time.Second
-	REQUEUE_DELETE      = 8 * time.Second
 	REQUEUE_AFTER_ERROR = 8 * time.Second
 	finalizerName       = "v1beta1.claudie.io/finalizer"
 )

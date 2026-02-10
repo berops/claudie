@@ -116,6 +116,10 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	currentState := v1beta1manifest.InputManifestStatus{Clusters: make(map[string]v1beta1manifest.ClustersStatus)}
 
 	var (
+		// whether the config is currently marked for
+		// deletion.
+		markedForDeletion bool
+
 		// Whether the config is/was deleted.
 		deleted bool
 
@@ -133,6 +137,8 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		if inputManifest.GetNamespacedNameDashed() != config.Name {
 			continue
 		}
+
+		markedForDeletion = config.Manifest.Raw == "" && len(config.Manifest.Checksum) == 0
 
 		configState = config.Manifest.State
 		lastChecksum = config.Manifest.Checksum
@@ -256,23 +262,19 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			return ctrl.Result{}, nil
 		}
 
-		if configState == spec.Manifest_Scheduled {
-			inputManifest.SetUpdateResourceStatus(currentState)
+		inputManifest.SetUpdateResourceStatus(currentState)
 
-			if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
-				return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
-			}
+		if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
+		}
 
-			for cluster, wf := range currentState.Clusters {
-				log.Info("Refreshing state", "cluster", cluster, "stage", wf.Phase, "status", wf.State)
-			}
-
-			return ctrl.Result{RequeueAfter: REQUEUE_IN_PROGRES}, nil
+		for cluster, wf := range currentState.Clusters {
+			log.Info("Refreshing state", "cluster", cluster, "stage", wf.Phase, "status", wf.State)
 		}
 
 		if controllerutil.ContainsFinalizer(inputManifest, finalizerName) {
 			// Prevent calling deleteConfig repeatedly
-			if inputManifest.Status.State == v1beta1manifest.STATUS_SCHEDULED_FOR_DELETION || deleted {
+			if markedForDeletion || deleted {
 				return ctrl.Result{RequeueAfter: REQUEUE_WATCH}, nil
 			}
 
@@ -288,9 +290,9 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 			}
 
-			return ctrl.Result{RequeueAfter: REQUEUE_DELETE}, nil
+			return ctrl.Result{RequeueAfter: REQUEUE_IN_PROGRES}, nil
 		}
-		return ctrl.Result{RequeueAfter: REQUEUE_DELETE}, nil
+		return ctrl.Result{RequeueAfter: REQUEUE_IN_PROGRES}, nil
 	}
 
 	if !alreadyExists {
