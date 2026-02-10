@@ -107,7 +107,7 @@ kind-load-images:
 
 kind-deploy: kind-load-images
 	@echo " --- updating deployments in $(KIND_NAMESPACE) namespace --- "
-	@for svc in ansibler builder claudie-operator kube-eleven kuber manager terraformer; do \
+	@for svc in ansibler claudie-operator kube-eleven kuber manager terraformer; do \
 		echo " --- updating $$svc deployment --- "; \
 		kubectl set image deployment/$$svc $$svc=ghcr.io/berops/claudie/$$svc:$(REV) -n $(KIND_NAMESPACE); \
 	done
