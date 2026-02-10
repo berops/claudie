@@ -631,10 +631,15 @@ func (x *DynamicNodePool) GetExternalNetworkName() string {
 
 // MachineSpec further specifies the requested server type.
 type MachineSpec struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	CpuCount      int32                  `protobuf:"varint,1,opt,name=cpuCount,proto3" json:"cpuCount,omitempty"`
-	Memory        int32                  `protobuf:"varint,2,opt,name=memory,proto3" json:"memory,omitempty"`
-	NvidiaGpu     int32                  `protobuf:"varint,3,opt,name=nvidiaGpu,proto3" json:"nvidiaGpu,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Number of CPU cores.
+	CpuCount int32 `protobuf:"varint,1,opt,name=cpuCount,proto3" json:"cpuCount,omitempty"`
+	// Memory in MB.
+	Memory int32 `protobuf:"varint,2,opt,name=memory,proto3" json:"memory,omitempty"`
+	// Number of NVIDIA GPUs.
+	NvidiaGpuCount int32 `protobuf:"varint,3,opt,name=nvidiaGpuCount,proto3" json:"nvidiaGpuCount,omitempty"`
+	// NVIDIA GPU accelerator type (required for GCP when using GPUs).
+	NvidiaGpuType string `protobuf:"bytes,4,opt,name=nvidiaGpuType,proto3" json:"nvidiaGpuType,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -683,11 +688,18 @@ func (x *MachineSpec) GetMemory() int32 {
 	return 0
 }
 
-func (x *MachineSpec) GetNvidiaGpu() int32 {
+func (x *MachineSpec) GetNvidiaGpuCount() int32 {
 	if x != nil {
-		return x.NvidiaGpu
+		return x.NvidiaGpuCount
 	}
 	return 0
+}
+
+func (x *MachineSpec) GetNvidiaGpuType() string {
+	if x != nil {
+		return x.NvidiaGpuType
+	}
+	return ""
 }
 
 // Autoscaler configuration on per node pool basis.
@@ -853,11 +865,12 @@ const file_spec_nodepool_proto_rawDesc = "" +
 	"privateKey\x18\f \x01(\tR\n" +
 	"privateKey\x12\x12\n" +
 	"\x04cidr\x18\x0e \x01(\tR\x04cidr\x120\n" +
-	"\x13externalNetworkName\x18\x0f \x01(\tR\x13externalNetworkName\"_\n" +
+	"\x13externalNetworkName\x18\x0f \x01(\tR\x13externalNetworkName\"\x8f\x01\n" +
 	"\vMachineSpec\x12\x1a\n" +
 	"\bcpuCount\x18\x01 \x01(\x05R\bcpuCount\x12\x16\n" +
-	"\x06memory\x18\x02 \x01(\x05R\x06memory\x12\x1c\n" +
-	"\tnvidiaGpu\x18\x03 \x01(\x05R\tnvidiaGpu\"T\n" +
+	"\x06memory\x18\x02 \x01(\x05R\x06memory\x12&\n" +
+	"\x0envidiaGpuCount\x18\x03 \x01(\x05R\x0envidiaGpuCount\x12$\n" +
+	"\rnvidiaGpuType\x18\x04 \x01(\tR\rnvidiaGpuType\"T\n" +
 	"\x0eAutoscalerConf\x12\x10\n" +
 	"\x03min\x18\x01 \x01(\x05R\x03min\x12\x10\n" +
 	"\x03max\x18\x02 \x01(\x05R\x03max\x12\x1e\n" +

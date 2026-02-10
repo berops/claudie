@@ -112,9 +112,14 @@ message DynamicNodePool {
 
 // MachineSpec further specifies the requested server type.
 message MachineSpec {
+  // Number of CPU cores.
   int32 cpuCount = 1;
+  // Memory in MB.
   int32 memory = 2;
-  int32 nvidiaGpu = 3;
+  // Number of NVIDIA GPUs.
+  int32 nvidiaGpuCount = 3;
+  // NVIDIA GPU accelerator type (required for GCP when using GPUs).
+  string nvidiaGpuType = 4;
 }
 
 // Autoscaler configuration on per node pool basis.
