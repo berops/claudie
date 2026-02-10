@@ -15,6 +15,7 @@ Claudie has been built as an answer to the following Kubernetes challenges:
 * Managed Kubernetes for providers that do not offer it
 * Cloud bursting
 * Service interconnet
+* GPU & AI/ML workloads - Provision GPU nodes across multiple clouds, run NVIDIA GPU Operator, and leverage Cluster Autoscaler for GPU-aware scaling
 
 You can read more [here](./use-cases/use-cases.md).
 
@@ -27,8 +28,13 @@ Claudie covers you with the following features functionalities:
 * Fast scale-up/scale-down of your infrastructure
 * Loadbalancing
 * Persistent storage volumes
+* GPU workload support - Deploy GPU-accelerated nodepools with NVIDIA GPU Operator compatibility and autoscaler-aware GPU scheduling
 
 See more in How Claudie works sections.
+
+!!! tip "AI/ML Ready Infrastructure"
+
+    Claudie lets you build GPU clusters that span multiple cloud providers, combining cost-effective GPU instances from different vendors into a single Kubernetes cluster. It comes with the NVIDIA GPU Operator and Cluster Autoscaler for scalable production-ready AI/ML workloads.
 
 ## What to do next
 
