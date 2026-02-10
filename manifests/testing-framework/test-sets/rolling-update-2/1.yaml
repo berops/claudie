@@ -65,7 +65,6 @@ spec:
         providerSpec:
           name: hetzner-1
           region: nbg1
-          zone: nbg1-dc3
         count: 1
         serverType: cpx22
         image: ubuntu-24.04
@@ -101,7 +100,6 @@ spec:
         providerSpec:
           name: hetzner-2
           region: nbg1
-          zone: nbg1-dc3
         count: 1
         serverType: cpx22
         image: ubuntu-24.04
