@@ -625,7 +625,7 @@ func Test_createK8sClustersFromManifest(t *testing.T) {
 					},
 				},
 				into: map[string]*spec.Clusters{
-					"k8s-cluster": &spec.Clusters{
+					"k8s-cluster": {
 						K8S:           &spec.K8Scluster{},
 						LoadBalancers: &spec.LoadBalancers{},
 					},
