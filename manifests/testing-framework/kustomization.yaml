@@ -55,7 +55,6 @@ secretGenerator:
   - test-sets/proxy-with-hetzner/5.yaml
   - test-sets/proxy-with-hetzner/6.yaml
   - test-sets/proxy-with-hetzner/7.yaml
-  - test-sets/proxy-with-hetzner/8.yaml
   name: proxy-with-hetzner
 - files:
   - test-sets/proxy-without-hetzner/1.yaml
