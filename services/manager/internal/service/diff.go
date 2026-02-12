@@ -434,6 +434,16 @@ func KubernetesDiff(old, desired *spec.K8Scluster) KubernetesDiffResult {
 				if cdyn.AutoscalerConfig != nil && ddyn.AutoscalerConfig == nil {
 					result.ChangedToFixed[dnp.Name] = struct{}{}
 				}
+				if cdyn.AutoscalerConfig != nil && ddyn.AutoscalerConfig != nil {
+					rangeChanged := cdyn.AutoscalerConfig.Min != ddyn.AutoscalerConfig.Min
+					rangeChanged = rangeChanged || (cdyn.AutoscalerConfig.Max != ddyn.AutoscalerConfig.Max)
+					if rangeChanged {
+						// While strictly not a move to a Autoscaled nodepool, but we can interpret
+						// it as a move to different kind of an autoscaled nodepool, with a different
+						// range, to avoid having special cases for just changing the range.
+						result.ChangedToAutoscaled[dnp.Name] = proto.Clone(ddyn.AutoscalerConfig).(*spec.AutoscalerConf)
+					}
+				}
 			}
 
 			for _, cn := range cnp.Nodes {

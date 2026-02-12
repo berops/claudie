@@ -1332,13 +1332,13 @@ func ScheduleMoveNodePoolToAutoscaled(
 					Delta: &spec.Update_TfMoveNodePoolToAutoscaled{
 						TfMoveNodePoolToAutoscaled: &spec.Update_TerraformerMoveNodePoolToAutoscaled{
 							Nodepool: nodepool,
-							Config:   config,
+							Config:   proto.Clone(config).(*spec.AutoscalerConf),
 						},
 					},
 				},
 			},
 		},
-		Description: fmt.Sprintf("Moving nodepool %q from fixed to autoscaled type", nodepool),
+		Description: fmt.Sprintf("Moving nodepool %q to autoscaled type", nodepool),
 		Pipeline:    pipeline,
 	}
 }

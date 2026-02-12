@@ -50,6 +50,10 @@ func (s *Service) NodePoolUpdateTargetSize(ctx context.Context, request *pb.Node
 		return nil, status.Errorf(codes.NotFound, "no cluster %q found within config %q", request.Cluster, request.Config)
 	}
 
+	if cs.InFlight != nil {
+		return nil, status.Errorf(codes.Internal, "cluster has on going changes, try again later")
+	}
+
 	state, err := store.ConvertToGRPCClusterState(cs)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert cluster state database representation to grpc: %v", err)

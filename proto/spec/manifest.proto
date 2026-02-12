@@ -748,42 +748,42 @@ message Update {
     TerraformerDeleteLoadBalancerNodes tfDeleteLoadBalancerNodes = 8;
     TerraformerMoveNodePoolToAutoscaled tfMoveNodePoolToAutoscaled = 9;
     TerraformerMoveNodePoolFromAutoscaled tfMoveNodePoolFromAutoscaled = 10;
-    TerraformerReplaceRoleExternalSettings tfReplaceRoleExternalSettings = 11;
+    TerraformerReplaceRoleExternalSettings tfReplaceRoleExternalSettings = 12;
 
     // Ansibler message to consume
-    AnsiblerReplaceProxySettings ansReplaceProxy = 12;
-    AnsiblerReplaceTargetPools ansReplaceTargetPools = 13;
-    AnsiblerReplaceRoleInternalSettings ansReplaceRoleInternalSettings = 14;
+    AnsiblerReplaceProxySettings ansReplaceProxy = 14;
+    AnsiblerReplaceTargetPools ansReplaceTargetPools = 15;
+    AnsiblerReplaceRoleInternalSettings ansReplaceRoleInternalSettings = 16;
 
     // Kuber messages to consume
-    KuberPatchNodes kpatchNodes = 16;
-    KuberDeleteK8sNodes kDeleteNodes = 17;
+    KuberPatchNodes kpatchNodes = 18;
+    KuberDeleteK8sNodes kDeleteNodes = 19;
 
     // Consumed messages.
-    AddedLoadBalancer addedLoadBalancer = 19;
-    AddedLoadBalancerNodes addedLoadBalancerNodes = 20;
-    ReplacedDns replacedDns = 21;
-    AddedK8sNodes addedK8sNodes = 22;
-    ReplacedProxySettings replacedProxy = 23;
-    PatchedNodes patchedNodes = 24;
-    AddedLoadBalancerRoles addedLoadBalancerRoles = 25;
-    ReplacedTargetPools replacedTargetPools = 26;
-    MovedNodePoolToAutoscaled movedNodePoolToAutoscaled = 27;
-    MovedNodePoolFromAutoscaled movedNodePoolFromAutoscaled = 28;
-    ReplacedRoleInternalSettings replacedRoleInternalSettings = 29;
-    ReplacedRoleExternalSettings replacedRoleExternalSettings = 30;
+    AddedLoadBalancer addedLoadBalancer = 21;
+    AddedLoadBalancerNodes addedLoadBalancerNodes = 22;
+    ReplacedDns replacedDns = 23;
+    AddedK8sNodes addedK8sNodes = 24;
+    ReplacedProxySettings replacedProxy = 25;
+    PatchedNodes patchedNodes = 26;
+    AddedLoadBalancerRoles addedLoadBalancerRoles = 27;
+    ReplacedTargetPools replacedTargetPools = 28;
+    MovedNodePoolToAutoscaled movedNodePoolToAutoscaled = 29;
+    MovedNodePoolFromAutoscaled movedNodePoolFromAutoscaled = 30;
+    ReplacedRoleInternalSettings replacedRoleInternalSettings = 31;
+    ReplacedRoleExternalSettings replacedRoleExternalSettings = 32;
 
     // Deletions.
-    DeleteLoadBalancer deleteLoadBalancer = 31;
-    DeletedK8sNodes deletedK8sNodes = 32;
-    DeletedLoadBalancerNodes deletedLoadBalancerNodes = 33;
-    DeleteLoadBalancerRoles deleteLoadBalancerRoles = 34;
+    DeleteLoadBalancer deleteLoadBalancer = 34;
+    DeletedK8sNodes deletedK8sNodes = 35;
+    DeletedLoadBalancerNodes deletedLoadBalancerNodes = 36;
+    DeleteLoadBalancerRoles deleteLoadBalancerRoles = 37;
 
     // Utilities.
-    ApiEndpoint apiEndpoint = 35;
-    ApiPortOnCluster clusterApiPort = 36;
-    K8sOnlyApiEndpoint k8sApiEndpoint = 37;
-    UpgradeVersion upgradeVersion = 38;
+    ApiEndpoint apiEndpoint = 38;
+    ApiPortOnCluster clusterApiPort = 39;
+    K8sOnlyApiEndpoint k8sApiEndpoint = 40;
+    UpgradeVersion upgradeVersion = 41;
   }
 }
 

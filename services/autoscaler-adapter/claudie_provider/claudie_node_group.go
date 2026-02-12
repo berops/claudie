@@ -247,17 +247,49 @@ func (m *Manager) NodeGroupDeleteNodes(ctx context.Context, req *protos.NodeGrou
 // for new nodes that have not been yet fulfilled. Delta should be negative. It is assumed
 // that cloud provider will not delete the existing nodes if the size when there is an option
 // to just decrease the target.
-func (m *Manager) NodeGroupDecreaseTargetSize(_ context.Context, req *protos.NodeGroupDecreaseTargetSizeRequest) (*protos.NodeGroupDecreaseTargetSizeResponse, error) {
-	// Requests for new nodes are always fulfilled so we cannot decrease
-	// the size of the nodepool without actually going through the deletion
-	// of the nodes within a nodepool.
-	//
-	// Note(despire): Seems that this function is not mandatory to implement
-	// looking at the implementations in:
-	// https://github.com/search?q=repo%3Akubernetes%2Fautoscaler+DecreaseTargetSize&type=code
-	//
-	// Some providers avoid implementing it (Azure, for example) when they do not support
-	// decreasing the targetsize without actual deletion.
+func (m *Manager) NodeGroupDecreaseTargetSize(ctx context.Context, req *protos.NodeGroupDecreaseTargetSizeRequest) (*protos.NodeGroupDecreaseTargetSizeResponse, error) {
+	log.
+		Info().
+		Str("nodepool", req.Id).
+		Msgf("Handling NodeGroupDecreaseSize request for nodepool by %d", req.Delta)
+
+	if req.Delta >= 0 {
+		return nil, fmt.Errorf("expected a negative delta: %d", req.Delta)
+	}
+
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	g, ok := m.Groups[req.Id]
+	if !ok {
+		return nil, status.Errorf(codes.InvalidArgument, "nodepool with id %q not found", req.Id)
+	}
+
+	newDesiredTargetSize := g.TargetSize + req.Delta
+	if newDesiredTargetSize < g.G.MinSize {
+		return nil, status.Errorf(
+			codes.InvalidArgument,
+			"new desired target size %d would underflow node group min %d",
+			newDesiredTargetSize,
+			g.G.MinSize,
+		)
+	}
+
+	resp, err := UpdateNodePoolTargetSize(ctx, managerclient.NodePoolUpdateTargetSizeRequest{
+		Config:     m.Immutable.Config,
+		Cluster:    m.Immutable.ClusterName,
+		NodePool:   req.Id,
+		TargetSize: newDesiredTargetSize,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to update target size of nodepool %q: %v", req.Id, err)
+	}
+	if newDesiredTargetSize != resp.TargetSize {
+		return nil, status.Errorf(codes.Internal, "failed to increase target size for nodepool %q", req.Id)
+	}
+
+	g.TargetSize = resp.TargetSize
+
 	return new(protos.NodeGroupDecreaseTargetSizeResponse), nil
 }
 

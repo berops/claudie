@@ -1920,112 +1920,112 @@ type Update_TfMoveNodePoolFromAutoscaled struct {
 }
 
 type Update_TfReplaceRoleExternalSettings struct {
-	TfReplaceRoleExternalSettings *Update_TerraformerReplaceRoleExternalSettings `protobuf:"bytes,11,opt,name=tfReplaceRoleExternalSettings,proto3,oneof"`
+	TfReplaceRoleExternalSettings *Update_TerraformerReplaceRoleExternalSettings `protobuf:"bytes,12,opt,name=tfReplaceRoleExternalSettings,proto3,oneof"`
 }
 
 type Update_AnsReplaceProxy struct {
 	// Ansibler message to consume
-	AnsReplaceProxy *Update_AnsiblerReplaceProxySettings `protobuf:"bytes,12,opt,name=ansReplaceProxy,proto3,oneof"`
+	AnsReplaceProxy *Update_AnsiblerReplaceProxySettings `protobuf:"bytes,14,opt,name=ansReplaceProxy,proto3,oneof"`
 }
 
 type Update_AnsReplaceTargetPools struct {
-	AnsReplaceTargetPools *Update_AnsiblerReplaceTargetPools `protobuf:"bytes,13,opt,name=ansReplaceTargetPools,proto3,oneof"`
+	AnsReplaceTargetPools *Update_AnsiblerReplaceTargetPools `protobuf:"bytes,15,opt,name=ansReplaceTargetPools,proto3,oneof"`
 }
 
 type Update_AnsReplaceRoleInternalSettings struct {
-	AnsReplaceRoleInternalSettings *Update_AnsiblerReplaceRoleInternalSettings `protobuf:"bytes,14,opt,name=ansReplaceRoleInternalSettings,proto3,oneof"`
+	AnsReplaceRoleInternalSettings *Update_AnsiblerReplaceRoleInternalSettings `protobuf:"bytes,16,opt,name=ansReplaceRoleInternalSettings,proto3,oneof"`
 }
 
 type Update_KpatchNodes struct {
 	// Kuber messages to consume
-	KpatchNodes *Update_KuberPatchNodes `protobuf:"bytes,16,opt,name=kpatchNodes,proto3,oneof"`
+	KpatchNodes *Update_KuberPatchNodes `protobuf:"bytes,18,opt,name=kpatchNodes,proto3,oneof"`
 }
 
 type Update_KDeleteNodes struct {
-	KDeleteNodes *Update_KuberDeleteK8SNodes `protobuf:"bytes,17,opt,name=kDeleteNodes,proto3,oneof"`
+	KDeleteNodes *Update_KuberDeleteK8SNodes `protobuf:"bytes,19,opt,name=kDeleteNodes,proto3,oneof"`
 }
 
 type Update_AddedLoadBalancer_ struct {
 	// Consumed messages.
-	AddedLoadBalancer *Update_AddedLoadBalancer `protobuf:"bytes,19,opt,name=addedLoadBalancer,proto3,oneof"`
+	AddedLoadBalancer *Update_AddedLoadBalancer `protobuf:"bytes,21,opt,name=addedLoadBalancer,proto3,oneof"`
 }
 
 type Update_AddedLoadBalancerNodes_ struct {
-	AddedLoadBalancerNodes *Update_AddedLoadBalancerNodes `protobuf:"bytes,20,opt,name=addedLoadBalancerNodes,proto3,oneof"`
+	AddedLoadBalancerNodes *Update_AddedLoadBalancerNodes `protobuf:"bytes,22,opt,name=addedLoadBalancerNodes,proto3,oneof"`
 }
 
 type Update_ReplacedDns_ struct {
-	ReplacedDns *Update_ReplacedDns `protobuf:"bytes,21,opt,name=replacedDns,proto3,oneof"`
+	ReplacedDns *Update_ReplacedDns `protobuf:"bytes,23,opt,name=replacedDns,proto3,oneof"`
 }
 
 type Update_AddedK8SNodes_ struct {
-	AddedK8SNodes *Update_AddedK8SNodes `protobuf:"bytes,22,opt,name=addedK8sNodes,proto3,oneof"`
+	AddedK8SNodes *Update_AddedK8SNodes `protobuf:"bytes,24,opt,name=addedK8sNodes,proto3,oneof"`
 }
 
 type Update_ReplacedProxy struct {
-	ReplacedProxy *Update_ReplacedProxySettings `protobuf:"bytes,23,opt,name=replacedProxy,proto3,oneof"`
+	ReplacedProxy *Update_ReplacedProxySettings `protobuf:"bytes,25,opt,name=replacedProxy,proto3,oneof"`
 }
 
 type Update_PatchedNodes_ struct {
-	PatchedNodes *Update_PatchedNodes `protobuf:"bytes,24,opt,name=patchedNodes,proto3,oneof"`
+	PatchedNodes *Update_PatchedNodes `protobuf:"bytes,26,opt,name=patchedNodes,proto3,oneof"`
 }
 
 type Update_AddedLoadBalancerRoles_ struct {
-	AddedLoadBalancerRoles *Update_AddedLoadBalancerRoles `protobuf:"bytes,25,opt,name=addedLoadBalancerRoles,proto3,oneof"`
+	AddedLoadBalancerRoles *Update_AddedLoadBalancerRoles `protobuf:"bytes,27,opt,name=addedLoadBalancerRoles,proto3,oneof"`
 }
 
 type Update_ReplacedTargetPools_ struct {
-	ReplacedTargetPools *Update_ReplacedTargetPools `protobuf:"bytes,26,opt,name=replacedTargetPools,proto3,oneof"`
+	ReplacedTargetPools *Update_ReplacedTargetPools `protobuf:"bytes,28,opt,name=replacedTargetPools,proto3,oneof"`
 }
 
 type Update_MovedNodePoolToAutoscaled_ struct {
-	MovedNodePoolToAutoscaled *Update_MovedNodePoolToAutoscaled `protobuf:"bytes,27,opt,name=movedNodePoolToAutoscaled,proto3,oneof"`
+	MovedNodePoolToAutoscaled *Update_MovedNodePoolToAutoscaled `protobuf:"bytes,29,opt,name=movedNodePoolToAutoscaled,proto3,oneof"`
 }
 
 type Update_MovedNodePoolFromAutoscaled_ struct {
-	MovedNodePoolFromAutoscaled *Update_MovedNodePoolFromAutoscaled `protobuf:"bytes,28,opt,name=movedNodePoolFromAutoscaled,proto3,oneof"`
+	MovedNodePoolFromAutoscaled *Update_MovedNodePoolFromAutoscaled `protobuf:"bytes,30,opt,name=movedNodePoolFromAutoscaled,proto3,oneof"`
 }
 
 type Update_ReplacedRoleInternalSettings_ struct {
-	ReplacedRoleInternalSettings *Update_ReplacedRoleInternalSettings `protobuf:"bytes,29,opt,name=replacedRoleInternalSettings,proto3,oneof"`
+	ReplacedRoleInternalSettings *Update_ReplacedRoleInternalSettings `protobuf:"bytes,31,opt,name=replacedRoleInternalSettings,proto3,oneof"`
 }
 
 type Update_ReplacedRoleExternalSettings_ struct {
-	ReplacedRoleExternalSettings *Update_ReplacedRoleExternalSettings `protobuf:"bytes,30,opt,name=replacedRoleExternalSettings,proto3,oneof"`
+	ReplacedRoleExternalSettings *Update_ReplacedRoleExternalSettings `protobuf:"bytes,32,opt,name=replacedRoleExternalSettings,proto3,oneof"`
 }
 
 type Update_DeleteLoadBalancer_ struct {
 	// Deletions.
-	DeleteLoadBalancer *Update_DeleteLoadBalancer `protobuf:"bytes,31,opt,name=deleteLoadBalancer,proto3,oneof"`
+	DeleteLoadBalancer *Update_DeleteLoadBalancer `protobuf:"bytes,34,opt,name=deleteLoadBalancer,proto3,oneof"`
 }
 
 type Update_DeletedK8SNodes_ struct {
-	DeletedK8SNodes *Update_DeletedK8SNodes `protobuf:"bytes,32,opt,name=deletedK8sNodes,proto3,oneof"`
+	DeletedK8SNodes *Update_DeletedK8SNodes `protobuf:"bytes,35,opt,name=deletedK8sNodes,proto3,oneof"`
 }
 
 type Update_DeletedLoadBalancerNodes_ struct {
-	DeletedLoadBalancerNodes *Update_DeletedLoadBalancerNodes `protobuf:"bytes,33,opt,name=deletedLoadBalancerNodes,proto3,oneof"`
+	DeletedLoadBalancerNodes *Update_DeletedLoadBalancerNodes `protobuf:"bytes,36,opt,name=deletedLoadBalancerNodes,proto3,oneof"`
 }
 
 type Update_DeleteLoadBalancerRoles_ struct {
-	DeleteLoadBalancerRoles *Update_DeleteLoadBalancerRoles `protobuf:"bytes,34,opt,name=deleteLoadBalancerRoles,proto3,oneof"`
+	DeleteLoadBalancerRoles *Update_DeleteLoadBalancerRoles `protobuf:"bytes,37,opt,name=deleteLoadBalancerRoles,proto3,oneof"`
 }
 
 type Update_ApiEndpoint_ struct {
 	// Utilities.
-	ApiEndpoint *Update_ApiEndpoint `protobuf:"bytes,35,opt,name=apiEndpoint,proto3,oneof"`
+	ApiEndpoint *Update_ApiEndpoint `protobuf:"bytes,38,opt,name=apiEndpoint,proto3,oneof"`
 }
 
 type Update_ClusterApiPort struct {
-	ClusterApiPort *Update_ApiPortOnCluster `protobuf:"bytes,36,opt,name=clusterApiPort,proto3,oneof"`
+	ClusterApiPort *Update_ApiPortOnCluster `protobuf:"bytes,39,opt,name=clusterApiPort,proto3,oneof"`
 }
 
 type Update_K8SApiEndpoint struct {
-	K8SApiEndpoint *Update_K8SOnlyApiEndpoint `protobuf:"bytes,37,opt,name=k8sApiEndpoint,proto3,oneof"`
+	K8SApiEndpoint *Update_K8SOnlyApiEndpoint `protobuf:"bytes,40,opt,name=k8sApiEndpoint,proto3,oneof"`
 }
 
 type Update_UpgradeVersion_ struct {
-	UpgradeVersion *Update_UpgradeVersion `protobuf:"bytes,38,opt,name=upgradeVersion,proto3,oneof"`
+	UpgradeVersion *Update_UpgradeVersion `protobuf:"bytes,41,opt,name=upgradeVersion,proto3,oneof"`
 }
 
 func (*Update_None_) isUpdate_Delta() {}
@@ -5975,32 +5975,32 @@ const file_spec_manifest_proto_rawDesc = "" +
 	"\x1atfMoveNodePoolToAutoscaled\x18\t \x01(\v20.spec.Update.TerraformerMoveNodePoolToAutoscaledH\x00R\x1atfMoveNodePoolToAutoscaled\x12x\n" +
 	"\x1ctfMoveNodePoolFromAutoscaled\x18\n" +
 	" \x01(\v22.spec.Update.TerraformerMoveNodePoolFromAutoscaledH\x00R\x1ctfMoveNodePoolFromAutoscaled\x12{\n" +
-	"\x1dtfReplaceRoleExternalSettings\x18\v \x01(\v23.spec.Update.TerraformerReplaceRoleExternalSettingsH\x00R\x1dtfReplaceRoleExternalSettings\x12U\n" +
-	"\x0fansReplaceProxy\x18\f \x01(\v2).spec.Update.AnsiblerReplaceProxySettingsH\x00R\x0fansReplaceProxy\x12_\n" +
-	"\x15ansReplaceTargetPools\x18\r \x01(\v2'.spec.Update.AnsiblerReplaceTargetPoolsH\x00R\x15ansReplaceTargetPools\x12z\n" +
-	"\x1eansReplaceRoleInternalSettings\x18\x0e \x01(\v20.spec.Update.AnsiblerReplaceRoleInternalSettingsH\x00R\x1eansReplaceRoleInternalSettings\x12@\n" +
-	"\vkpatchNodes\x18\x10 \x01(\v2\x1c.spec.Update.KuberPatchNodesH\x00R\vkpatchNodes\x12F\n" +
-	"\fkDeleteNodes\x18\x11 \x01(\v2 .spec.Update.KuberDeleteK8sNodesH\x00R\fkDeleteNodes\x12N\n" +
-	"\x11addedLoadBalancer\x18\x13 \x01(\v2\x1e.spec.Update.AddedLoadBalancerH\x00R\x11addedLoadBalancer\x12]\n" +
-	"\x16addedLoadBalancerNodes\x18\x14 \x01(\v2#.spec.Update.AddedLoadBalancerNodesH\x00R\x16addedLoadBalancerNodes\x12<\n" +
-	"\vreplacedDns\x18\x15 \x01(\v2\x18.spec.Update.ReplacedDnsH\x00R\vreplacedDns\x12B\n" +
-	"\raddedK8sNodes\x18\x16 \x01(\v2\x1a.spec.Update.AddedK8sNodesH\x00R\raddedK8sNodes\x12J\n" +
-	"\rreplacedProxy\x18\x17 \x01(\v2\".spec.Update.ReplacedProxySettingsH\x00R\rreplacedProxy\x12?\n" +
-	"\fpatchedNodes\x18\x18 \x01(\v2\x19.spec.Update.PatchedNodesH\x00R\fpatchedNodes\x12]\n" +
-	"\x16addedLoadBalancerRoles\x18\x19 \x01(\v2#.spec.Update.AddedLoadBalancerRolesH\x00R\x16addedLoadBalancerRoles\x12T\n" +
-	"\x13replacedTargetPools\x18\x1a \x01(\v2 .spec.Update.ReplacedTargetPoolsH\x00R\x13replacedTargetPools\x12f\n" +
-	"\x19movedNodePoolToAutoscaled\x18\x1b \x01(\v2&.spec.Update.MovedNodePoolToAutoscaledH\x00R\x19movedNodePoolToAutoscaled\x12l\n" +
-	"\x1bmovedNodePoolFromAutoscaled\x18\x1c \x01(\v2(.spec.Update.MovedNodePoolFromAutoscaledH\x00R\x1bmovedNodePoolFromAutoscaled\x12o\n" +
-	"\x1creplacedRoleInternalSettings\x18\x1d \x01(\v2).spec.Update.ReplacedRoleInternalSettingsH\x00R\x1creplacedRoleInternalSettings\x12o\n" +
-	"\x1creplacedRoleExternalSettings\x18\x1e \x01(\v2).spec.Update.ReplacedRoleExternalSettingsH\x00R\x1creplacedRoleExternalSettings\x12Q\n" +
-	"\x12deleteLoadBalancer\x18\x1f \x01(\v2\x1f.spec.Update.DeleteLoadBalancerH\x00R\x12deleteLoadBalancer\x12H\n" +
-	"\x0fdeletedK8sNodes\x18  \x01(\v2\x1c.spec.Update.DeletedK8sNodesH\x00R\x0fdeletedK8sNodes\x12c\n" +
-	"\x18deletedLoadBalancerNodes\x18! \x01(\v2%.spec.Update.DeletedLoadBalancerNodesH\x00R\x18deletedLoadBalancerNodes\x12`\n" +
-	"\x17deleteLoadBalancerRoles\x18\" \x01(\v2$.spec.Update.DeleteLoadBalancerRolesH\x00R\x17deleteLoadBalancerRoles\x12<\n" +
-	"\vapiEndpoint\x18# \x01(\v2\x18.spec.Update.ApiEndpointH\x00R\vapiEndpoint\x12G\n" +
-	"\x0eclusterApiPort\x18$ \x01(\v2\x1d.spec.Update.ApiPortOnClusterH\x00R\x0eclusterApiPort\x12I\n" +
-	"\x0ek8sApiEndpoint\x18% \x01(\v2\x1f.spec.Update.K8sOnlyApiEndpointH\x00R\x0ek8sApiEndpoint\x12E\n" +
-	"\x0eupgradeVersion\x18& \x01(\v2\x1b.spec.Update.UpgradeVersionH\x00R\x0eupgradeVersion\x1ab\n" +
+	"\x1dtfReplaceRoleExternalSettings\x18\f \x01(\v23.spec.Update.TerraformerReplaceRoleExternalSettingsH\x00R\x1dtfReplaceRoleExternalSettings\x12U\n" +
+	"\x0fansReplaceProxy\x18\x0e \x01(\v2).spec.Update.AnsiblerReplaceProxySettingsH\x00R\x0fansReplaceProxy\x12_\n" +
+	"\x15ansReplaceTargetPools\x18\x0f \x01(\v2'.spec.Update.AnsiblerReplaceTargetPoolsH\x00R\x15ansReplaceTargetPools\x12z\n" +
+	"\x1eansReplaceRoleInternalSettings\x18\x10 \x01(\v20.spec.Update.AnsiblerReplaceRoleInternalSettingsH\x00R\x1eansReplaceRoleInternalSettings\x12@\n" +
+	"\vkpatchNodes\x18\x12 \x01(\v2\x1c.spec.Update.KuberPatchNodesH\x00R\vkpatchNodes\x12F\n" +
+	"\fkDeleteNodes\x18\x13 \x01(\v2 .spec.Update.KuberDeleteK8sNodesH\x00R\fkDeleteNodes\x12N\n" +
+	"\x11addedLoadBalancer\x18\x15 \x01(\v2\x1e.spec.Update.AddedLoadBalancerH\x00R\x11addedLoadBalancer\x12]\n" +
+	"\x16addedLoadBalancerNodes\x18\x16 \x01(\v2#.spec.Update.AddedLoadBalancerNodesH\x00R\x16addedLoadBalancerNodes\x12<\n" +
+	"\vreplacedDns\x18\x17 \x01(\v2\x18.spec.Update.ReplacedDnsH\x00R\vreplacedDns\x12B\n" +
+	"\raddedK8sNodes\x18\x18 \x01(\v2\x1a.spec.Update.AddedK8sNodesH\x00R\raddedK8sNodes\x12J\n" +
+	"\rreplacedProxy\x18\x19 \x01(\v2\".spec.Update.ReplacedProxySettingsH\x00R\rreplacedProxy\x12?\n" +
+	"\fpatchedNodes\x18\x1a \x01(\v2\x19.spec.Update.PatchedNodesH\x00R\fpatchedNodes\x12]\n" +
+	"\x16addedLoadBalancerRoles\x18\x1b \x01(\v2#.spec.Update.AddedLoadBalancerRolesH\x00R\x16addedLoadBalancerRoles\x12T\n" +
+	"\x13replacedTargetPools\x18\x1c \x01(\v2 .spec.Update.ReplacedTargetPoolsH\x00R\x13replacedTargetPools\x12f\n" +
+	"\x19movedNodePoolToAutoscaled\x18\x1d \x01(\v2&.spec.Update.MovedNodePoolToAutoscaledH\x00R\x19movedNodePoolToAutoscaled\x12l\n" +
+	"\x1bmovedNodePoolFromAutoscaled\x18\x1e \x01(\v2(.spec.Update.MovedNodePoolFromAutoscaledH\x00R\x1bmovedNodePoolFromAutoscaled\x12o\n" +
+	"\x1creplacedRoleInternalSettings\x18\x1f \x01(\v2).spec.Update.ReplacedRoleInternalSettingsH\x00R\x1creplacedRoleInternalSettings\x12o\n" +
+	"\x1creplacedRoleExternalSettings\x18  \x01(\v2).spec.Update.ReplacedRoleExternalSettingsH\x00R\x1creplacedRoleExternalSettings\x12Q\n" +
+	"\x12deleteLoadBalancer\x18\" \x01(\v2\x1f.spec.Update.DeleteLoadBalancerH\x00R\x12deleteLoadBalancer\x12H\n" +
+	"\x0fdeletedK8sNodes\x18# \x01(\v2\x1c.spec.Update.DeletedK8sNodesH\x00R\x0fdeletedK8sNodes\x12c\n" +
+	"\x18deletedLoadBalancerNodes\x18$ \x01(\v2%.spec.Update.DeletedLoadBalancerNodesH\x00R\x18deletedLoadBalancerNodes\x12`\n" +
+	"\x17deleteLoadBalancerRoles\x18% \x01(\v2$.spec.Update.DeleteLoadBalancerRolesH\x00R\x17deleteLoadBalancerRoles\x12<\n" +
+	"\vapiEndpoint\x18& \x01(\v2\x18.spec.Update.ApiEndpointH\x00R\vapiEndpoint\x12G\n" +
+	"\x0eclusterApiPort\x18' \x01(\v2\x1d.spec.Update.ApiPortOnClusterH\x00R\x0eclusterApiPort\x12I\n" +
+	"\x0ek8sApiEndpoint\x18( \x01(\v2\x1f.spec.Update.K8sOnlyApiEndpointH\x00R\x0ek8sApiEndpoint\x12E\n" +
+	"\x0eupgradeVersion\x18) \x01(\v2\x1b.spec.Update.UpgradeVersionH\x00R\x0eupgradeVersion\x1ab\n" +
 	"\x05State\x12\"\n" +
 	"\x03k8s\x18\x01 \x01(\v2\x10.spec.K8sclusterR\x03k8s\x125\n" +
 	"\rloadBalancers\x18\x02 \x03(\v2\x0f.spec.LBclusterR\rloadBalancers\x1a\x06\n" +
