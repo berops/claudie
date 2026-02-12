@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// nolint
 func mockLB(name, hash string) *LBcluster {
 	lb := &LBcluster{ClusterInfo: &ClusterInfo{Name: name, Hash: hash}}
 	return lb
