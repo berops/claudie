@@ -68,8 +68,11 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 			return fmt.Errorf("failed to validate role %q: %w", role.Name, err)
 		}
 
-		// save the result so we can use it later.
 		if role.TargetPort == APIServerPort {
+			if role.Port != APIServerPort {
+				return fmt.Errorf("as of now, only port '6443' is supported for the kubernetes Api server port, both the 'targetPort' and the 'port' of the role should have 6443")
+			}
+			// save the result so we can use it later.
 			apiServerRole = role
 		}
 

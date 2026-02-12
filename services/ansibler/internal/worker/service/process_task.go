@@ -198,6 +198,12 @@ func DefaultToSingleLoadBalancerIfPossible(task *spec.Task_Update) *spec.LBclust
 		targetHandle = delta.AddedLoadBalancer.Handle
 	case *spec.Update_AnsReplaceTargetPools:
 		targetHandle = delta.AnsReplaceTargetPools.Handle
+	case *spec.Update_AnsReplaceRoleInternalSettings:
+		targetHandle = delta.AnsReplaceRoleInternalSettings.Handle
+	case *spec.Update_ReplacedRoleInternalSettings_:
+		targetHandle = delta.ReplacedRoleInternalSettings.Handle
+	case *spec.Update_ReplacedRoleExternalSettings_:
+		targetHandle = delta.ReplacedRoleExternalSettings.Handle
 	case *spec.Update_DeletedLoadBalancerNodes_:
 		targetHandle = delta.DeletedLoadBalancerNodes.Handle
 	case *spec.Update_DeleteLoadBalancerRoles_:

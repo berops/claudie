@@ -5,6 +5,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/berops/claudie/internal/api/manifest"
 	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -42,8 +43,12 @@ func PreKubernetesDiff(r LoadBalancersReconciliate) *spec.TaskEvent {
 	switch r.Diff.ApiEndpoint.State {
 	case spec.ApiEndpointChangeState_AttachingLoadBalancer:
 		// make sure the new lb is already in the cluster.
-		if i := clusters.IndexLoadbalancerById(r.Diff.ApiEndpoint.New, r.Current.LoadBalancers.Clusters); i >= 0 {
-			return ScheduleMoveApiEndpoint(r.Current, r.Diff.ApiEndpoint.Current, r.Diff.ApiEndpoint.New, r.Diff.ApiEndpoint.State)
+		// and that the roles of the LB already have the Api port available.
+		i := clusters.IndexLoadbalancerById(r.Diff.ApiEndpoint.New, r.Current.LoadBalancers.Clusters)
+		if i >= 0 {
+			if r.Current.LoadBalancers.Clusters[i].HasApiRole() {
+				return ScheduleMoveApiEndpoint(r.Current, r.Diff.ApiEndpoint.Current, r.Diff.ApiEndpoint.New, r.Diff.ApiEndpoint.State)
+			}
 		}
 	case spec.ApiEndpointChangeState_DetachingLoadBalancer:
 		if !r.Hc.Cluster.ControlNodesHave6443 {
@@ -229,12 +234,36 @@ func PostKubernetesDiff(r LoadBalancersReconciliate) *spec.TaskEvent {
 // does not hold or share any memory to related to the input.
 func LoadBalancersLowPriority(r LoadBalancersReconciliate) *spec.TaskEvent {
 	for lb, modified := range r.Diff.Modified {
-		for np, tpl := range modified.RollingUpdate {
-			cid := LoadBalancerIdentifier{
-				Id:    lb,
-				Index: modified.CurrentIdx,
-			}
+		cid := LoadBalancerIdentifier{
+			Id:    lb,
+			Index: modified.CurrentIdx,
+		}
+		did := LoadBalancerIdentifier{
+			Id:    lb,
+			Index: modified.DesiredIdx,
+		}
 
+		for _, role := range modified.Roles.InternalSettingsChanged {
+			return ScheduleRefreshLoadBalancerRoleInternalSettings(
+				r.Current,
+				r.Desired,
+				cid,
+				did,
+				role,
+			)
+		}
+
+		for _, role := range modified.Roles.ExternalSettingsChanged {
+			return ScheduleRefreshLoadBalancerRoleExternalSettings(
+				r.Current,
+				r.Desired,
+				cid,
+				did,
+				role,
+			)
+		}
+
+		for np, tpl := range modified.RollingUpdate {
 			opts := LoadBalancerNodePoolsOptions{
 				UseProxy: r.Proxy.CurrentUsed,
 				IsStatic: false,
@@ -1705,4 +1734,166 @@ func ScheduleRollingUpdateLoadBalancer(
 		&diff,
 		opts,
 	)
+}
+
+// Schedules the refresh of the loadbalancer after the role settings
+// were adjusted.
+//
+// The returned [spec.TaskEvent] does not point to or share any
+// memory with the two passed in states.
+func ScheduleRefreshLoadBalancerRoleInternalSettings(
+	current *spec.Clusters,
+	desired *spec.Clusters,
+	cid LoadBalancerIdentifier,
+	did LoadBalancerIdentifier,
+	role string,
+) *spec.TaskEvent {
+	inFlight := proto.Clone(current).(*spec.Clusters)
+
+	settings := spec.Update_AnsReplaceRoleInternalSettings{
+		AnsReplaceRoleInternalSettings: &spec.Update_AnsiblerReplaceRoleInternalSettings{
+			Handle: cid.Id,
+			Role:   role,
+		},
+	}
+
+	for _, dr := range desired.LoadBalancers.Clusters[did.Index].Roles {
+		if dr.Name == role {
+			settings.AnsReplaceRoleInternalSettings.TargetPort = dr.TargetPort
+			settings.AnsReplaceRoleInternalSettings.Settings = proto.Clone(dr.Settings).(*spec.Role_Settings)
+			break
+		}
+	}
+
+	return &spec.TaskEvent{
+		Id:        uuid.New().String(),
+		Timestamp: timestamppb.New(time.Now().UTC()),
+		Event:     spec.Event_UPDATE,
+		Task: &spec.Task{
+			Do: &spec.Task_Update{
+				Update: &spec.Update{
+					State: &spec.Update_State{
+						K8S:           inFlight.K8S,
+						LoadBalancers: inFlight.LoadBalancers.Clusters,
+					},
+					Delta: &settings,
+				},
+			},
+		},
+		Description: fmt.Sprintf("Updating internal settings for role %q loadbalancer %q", role, cid.Id),
+		Pipeline: []*spec.Stage{
+			{
+				StageKind: &spec.Stage_Ansibler{
+					Ansibler: &spec.StageAnsibler{
+						Description: &spec.StageDescription{
+							About:      "Configuring nodes of the reconciled load balancer",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+						SubPasses: []*spec.StageAnsibler_SubPass{
+							{
+								Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
+								Description: &spec.StageDescription{
+									About:      "Refreshing existing envoy services for changed settings of the role",
+									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+// Schedules the refresh of the loadbalancer after the role settings
+// were adjusted.
+//
+// The returned [spec.TaskEvent] does not point to or share any
+// memory with the two passed in states.
+func ScheduleRefreshLoadBalancerRoleExternalSettings(
+	current *spec.Clusters,
+	desired *spec.Clusters,
+	cid LoadBalancerIdentifier,
+	did LoadBalancerIdentifier,
+	role string,
+) *spec.TaskEvent {
+	inFlight := proto.Clone(current).(*spec.Clusters)
+
+	settings := spec.Update_TfReplaceRoleExternalSettings{
+		TfReplaceRoleExternalSettings: &spec.Update_TerraformerReplaceRoleExternalSettings{
+			Handle: cid.Id,
+			Role:   role,
+		},
+	}
+
+	for _, dr := range desired.LoadBalancers.Clusters[did.Index].Roles {
+		if dr.Name == role {
+			settings.TfReplaceRoleExternalSettings.Protocol = dr.Protocol
+			settings.TfReplaceRoleExternalSettings.Port = dr.Port
+			if dr.Port == manifest.APIServerPort {
+				settings.TfReplaceRoleExternalSettings.RoleType = spec.RoleType_ApiServer
+			} else {
+				settings.TfReplaceRoleExternalSettings.RoleType = spec.RoleType_Ingress
+			}
+			break
+		}
+	}
+
+	return &spec.TaskEvent{
+		Id:        uuid.New().String(),
+		Timestamp: timestamppb.New(time.Now().UTC()),
+		Event:     spec.Event_UPDATE,
+		Task: &spec.Task{
+			Do: &spec.Task_Update{
+				Update: &spec.Update{
+					State: &spec.Update_State{
+						K8S:           inFlight.K8S,
+						LoadBalancers: inFlight.LoadBalancers.Clusters,
+					},
+					Delta: &settings,
+				},
+			},
+		},
+		Description: fmt.Sprintf("Updating external settings for role %q loadbalancer %q", role, cid.Id),
+		Pipeline: []*spec.Stage{
+			{
+				StageKind: &spec.Stage_Terraformer{
+					Terraformer: &spec.StageTerraformer{
+						Description: &spec.StageDescription{
+							About:      "Reconciling infrastructure for the load balancer",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+						SubPasses: []*spec.StageTerraformer_SubPass{
+							{
+								Kind: spec.StageTerraformer_UPDATE_INFRASTRUCTURE,
+								Description: &spec.StageDescription{
+									About:      "Reconciling firewalls for role",
+									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				StageKind: &spec.Stage_Ansibler{
+					Ansibler: &spec.StageAnsibler{
+						Description: &spec.StageDescription{
+							About:      "Configuring nodes of the reconciled load balancer",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+						SubPasses: []*spec.StageAnsibler_SubPass{
+							{
+								Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
+								Description: &spec.StageDescription{
+									About:      "Refreshing existing envoy services for changed settings of the role",
+									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 }

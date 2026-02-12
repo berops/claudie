@@ -7,8 +7,6 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// TODO: tests
-
 // Consumes the [TaskResult_Clear] for the task.
 func (te *Task) ConsumeClearResult(result *TaskResult_Clear) error {
 	var k8s **K8Scluster
@@ -278,6 +276,20 @@ func (te *Task) ConsumeUpdateResult(result *TaskResult_Update) error {
 			update.Delta = &Update_MovedNodePoolToAutoscaled_{
 				MovedNodePoolToAutoscaled: &Update_MovedNodePoolToAutoscaled{
 					Nodepool: nodepool,
+				},
+			}
+		case *Update_AnsReplaceRoleInternalSettings:
+			update.Delta = &Update_ReplacedRoleInternalSettings_{
+				ReplacedRoleInternalSettings: &Update_ReplacedRoleInternalSettings{
+					Handle: delta.AnsReplaceRoleInternalSettings.Handle,
+					Role:   delta.AnsReplaceRoleInternalSettings.Role,
+				},
+			}
+		case *Update_TfReplaceRoleExternalSettings:
+			update.Delta = &Update_ReplacedRoleExternalSettings_{
+				ReplacedRoleExternalSettings: &Update_ReplacedRoleExternalSettings{
+					Handle: delta.TfReplaceRoleExternalSettings.Handle,
+					Role:   delta.TfReplaceRoleExternalSettings.Role,
 				},
 			}
 		case *Update_AnsReplaceProxy:

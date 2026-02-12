@@ -29,6 +29,12 @@ func reconcileInfrastructure(
 	}
 
 	switch delta := action.Update.Delta.(type) {
+	case *spec.Update_TfReplaceRoleExternalSettings:
+		action := ReplaceRoleExternalSettings{
+			State:   state,
+			Replace: delta.TfReplaceRoleExternalSettings,
+		}
+		replaceRoleExternalSettings(logger, projectName, processLimit, action, tracker)
 	case *spec.Update_TfMoveNodePoolFromAutoscaled:
 		action := MoveNodePoolFromAutoscaled{
 			State: state,

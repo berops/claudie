@@ -142,6 +142,18 @@ type (
 			// Name of the roles from which TargetPools were deleted
 			// with the name of the Pools that were deleted.
 			TargetPoolsDeleted TargetPoolsViewType
+
+			// Name of the roles for which internal settings have changed.
+			// Internal Settings are:
+			//  - Role.Settings
+			//  - TargetPort
+			InternalSettingsChanged []string
+
+			// Name of the roles for which external settings have changed.
+			// External settings are:
+			// 	- Port
+			// 	- Protocol
+			ExternalSettingsChanged []string
 		}
 
 		// Diff in the Dynamic NodePools of the cluster.
@@ -645,10 +657,12 @@ func LoadBalancersDiff(old, desired *spec.LoadBalancers) LoadBalancersDiffResult
 
 		var (
 			// Changes in Roles
-			rolesAdded         []string
-			rolesDeleted       []string
-			targetPoolsAdded   = make(TargetPoolsViewType)
-			targetPoolsDeleted = make(TargetPoolsViewType)
+			internalSettingsChanged []string
+			externalSettingsChanged []string
+			rolesAdded              []string
+			rolesDeleted            []string
+			targetPoolsAdded        = make(TargetPoolsViewType)
+			targetPoolsDeleted      = make(TargetPoolsViewType)
 		)
 
 		for _, o := range old.Roles {
@@ -677,6 +691,18 @@ func LoadBalancersDiff(old, desired *spec.LoadBalancers) LoadBalancersDiffResult
 
 			if newRole == nil {
 				continue
+			}
+
+			hasInternalChanges := o.TargetPort != newRole.TargetPort
+			hasInternalChanges = hasInternalChanges || (!proto.Equal(o.Settings, newRole.Settings))
+			if hasInternalChanges {
+				internalSettingsChanged = append(internalSettingsChanged, newRole.Name)
+			}
+
+			hasExternalChanges := o.Port != newRole.Port
+			hasExternalChanges = hasExternalChanges || o.Protocol != newRole.Protocol
+			if hasExternalChanges {
+				externalSettingsChanged = append(externalSettingsChanged, newRole.Name)
 			}
 
 			// TargetPools deleted.
@@ -767,6 +793,7 @@ func LoadBalancersDiff(old, desired *spec.LoadBalancers) LoadBalancersDiffResult
 		sttDiff := NodePoolsDiff(oldStatic, newStatic)
 
 		modified := len(rolesAdded) > 0 || len(rolesDeleted) > 0
+		modified = modified || len(internalSettingsChanged) > 0 || len(externalSettingsChanged) > 0
 		modified = modified || len(targetPoolsAdded) > 0 || len(targetPoolsDeleted) > 0
 		modified = modified || dnsChanged
 		modified = modified || len(pendingDynamicDeletions) > 0 || len(pendingStaticDeletions) > 0
@@ -778,10 +805,12 @@ func LoadBalancersDiff(old, desired *spec.LoadBalancers) LoadBalancersDiffResult
 				DesiredIdx int
 				DNS        bool
 				Roles      struct {
-					Added              []string
-					Deleted            []string
-					TargetPoolsAdded   TargetPoolsViewType
-					TargetPoolsDeleted TargetPoolsViewType
+					Added                   []string
+					Deleted                 []string
+					TargetPoolsAdded        TargetPoolsViewType
+					TargetPoolsDeleted      TargetPoolsViewType
+					InternalSettingsChanged []string
+					ExternalSettingsChanged []string
 				}
 				Dynamic NodePoolsDiffResult
 				Static  NodePoolsDiffResult
@@ -799,6 +828,8 @@ func LoadBalancersDiff(old, desired *spec.LoadBalancers) LoadBalancersDiffResult
 			entry.Roles.Deleted = rolesDeleted
 			entry.Roles.TargetPoolsAdded = targetPoolsAdded
 			entry.Roles.TargetPoolsDeleted = targetPoolsDeleted
+			entry.Roles.InternalSettingsChanged = internalSettingsChanged
+			entry.Roles.ExternalSettingsChanged = externalSettingsChanged
 
 			entry.PendingDynamicDeletions = pendingDynamicDeletions
 			entry.PendingStaticDeletions = pendingStaticDeletions

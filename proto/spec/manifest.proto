@@ -531,6 +531,33 @@ message Update {
   }
   message ReplacedProxySettings {}
 
+  message TerraformerReplaceRoleExternalSettings {
+    string handle = 1;
+    string role = 2;
+
+    // updated settings.
+    RoleType roleType = 3;
+    string protocol = 4;
+    int32 port = 5;
+  }
+  message ReplacedRoleExternalSettings {
+    string handle = 1;
+    string role = 2;
+  }
+
+  message AnsiblerReplaceRoleInternalSettings {
+    string handle = 1;
+    string role = 2;
+
+    // updated settings.
+    int32 targetPort = 3;
+    Role.Settings settings = 4;
+  }
+  message ReplacedRoleInternalSettings {
+    string handle = 1;
+    string role = 2;
+  }
+
   // AnsiblerReplaceTargetPools is a message that once processed
   // by the Ansibler service a result is send back to the Manager,
   // it will consume the message and further stages will only have
@@ -721,38 +748,42 @@ message Update {
     TerraformerDeleteLoadBalancerNodes tfDeleteLoadBalancerNodes = 8;
     TerraformerMoveNodePoolToAutoscaled tfMoveNodePoolToAutoscaled = 9;
     TerraformerMoveNodePoolFromAutoscaled tfMoveNodePoolFromAutoscaled = 10;
+    TerraformerReplaceRoleExternalSettings tfReplaceRoleExternalSettings = 11;
 
     // Ansibler message to consume
-    AnsiblerReplaceProxySettings ansReplaceProxy = 11;
-    AnsiblerReplaceTargetPools ansReplaceTargetPools = 12;
+    AnsiblerReplaceProxySettings ansReplaceProxy = 12;
+    AnsiblerReplaceTargetPools ansReplaceTargetPools = 13;
+    AnsiblerReplaceRoleInternalSettings ansReplaceRoleInternalSettings = 14;
 
     // Kuber messages to consume
-    KuberPatchNodes kpatchNodes = 14;
-    KuberDeleteK8sNodes kDeleteNodes = 15;
+    KuberPatchNodes kpatchNodes = 16;
+    KuberDeleteK8sNodes kDeleteNodes = 17;
 
     // Consumed messages.
-    AddedLoadBalancer addedLoadBalancer = 16;
-    AddedLoadBalancerNodes addedLoadBalancerNodes = 17;
-    ReplacedDns replacedDns = 18;
-    AddedK8sNodes addedK8sNodes = 19;
-    ReplacedProxySettings replacedProxy = 20;
-    PatchedNodes patchedNodes = 21;
-    AddedLoadBalancerRoles addedLoadBalancerRoles = 22;
-    ReplacedTargetPools replacedTargetPools = 23;
-    MovedNodePoolToAutoscaled movedNodePoolToAutoscaled = 24;
-    MovedNodePoolFromAutoscaled movedNodePoolFromAutoscaled = 25;
+    AddedLoadBalancer addedLoadBalancer = 19;
+    AddedLoadBalancerNodes addedLoadBalancerNodes = 20;
+    ReplacedDns replacedDns = 21;
+    AddedK8sNodes addedK8sNodes = 22;
+    ReplacedProxySettings replacedProxy = 23;
+    PatchedNodes patchedNodes = 24;
+    AddedLoadBalancerRoles addedLoadBalancerRoles = 25;
+    ReplacedTargetPools replacedTargetPools = 26;
+    MovedNodePoolToAutoscaled movedNodePoolToAutoscaled = 27;
+    MovedNodePoolFromAutoscaled movedNodePoolFromAutoscaled = 28;
+    ReplacedRoleInternalSettings replacedRoleInternalSettings = 29;
+    ReplacedRoleExternalSettings replacedRoleExternalSettings = 30;
 
     // Deletions.
-    DeleteLoadBalancer deleteLoadBalancer = 26;
-    DeletedK8sNodes deletedK8sNodes = 27;
-    DeletedLoadBalancerNodes deletedLoadBalancerNodes = 28;
-    DeleteLoadBalancerRoles deleteLoadBalancerRoles = 29;
+    DeleteLoadBalancer deleteLoadBalancer = 31;
+    DeletedK8sNodes deletedK8sNodes = 32;
+    DeletedLoadBalancerNodes deletedLoadBalancerNodes = 33;
+    DeleteLoadBalancerRoles deleteLoadBalancerRoles = 34;
 
     // Utilities.
-    ApiEndpoint apiEndpoint = 30;
-    ApiPortOnCluster clusterApiPort = 31;
-    K8sOnlyApiEndpoint k8sApiEndpoint = 32;
-    UpgradeVersion upgradeVersion = 33;
+    ApiEndpoint apiEndpoint = 35;
+    ApiPortOnCluster clusterApiPort = 36;
+    K8sOnlyApiEndpoint k8sApiEndpoint = 37;
+    UpgradeVersion upgradeVersion = 38;
   }
 }
 

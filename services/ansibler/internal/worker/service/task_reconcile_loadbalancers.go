@@ -139,6 +139,20 @@ func ReconcileLoadBalancers(
 				}
 			}
 		}
+
+		// same as with replace target pools.
+		st, ok := do.Update.Delta.(*spec.Update_AnsReplaceRoleInternalSettings)
+		if ok {
+			idx := clusters.IndexLoadbalancerById(st.AnsReplaceRoleInternalSettings.Handle, lbs)
+			if idx >= 0 {
+				for _, role := range lbs[idx].Roles {
+					if role.Name == st.AnsReplaceRoleInternalSettings.Role {
+						role.TargetPort = st.AnsReplaceRoleInternalSettings.TargetPort
+						role.Settings = st.AnsReplaceRoleInternalSettings.Settings
+					}
+				}
+			}
+		}
 	default:
 		logger.
 			Warn().
@@ -163,7 +177,11 @@ func ReconcileLoadBalancers(
 	}
 
 	// If replacement was done as part of a scheduled update, report back the changes.
-	if tracker.Task.GetUpdate().GetAnsReplaceTargetPools() != nil {
+	switch {
+	case
+		tracker.Task.GetUpdate().GetAnsReplaceTargetPools() != nil,
+		tracker.Task.GetUpdate().GetAnsReplaceRoleInternalSettings() != nil:
+
 		update := tracker.Result.Update()
 		update.Loadbalancers(lbs...)
 		update.Commit()
