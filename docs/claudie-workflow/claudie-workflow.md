@@ -52,7 +52,7 @@ state to the desired state. Each time a task is picked up by the any of the work
 is transferred to the task so that each task has up-to-date information about current infrastructure and its up to that
 respective service to build/modify/delete the missing pieces in the picked up task.
 
-Once a task is done building, either in error or successfully, the current state should is updated by communicating the
+Once a task is done building, either in error or successfully, the current state should be updated by communicating the
 changes back to the manager service so that the manager has the actual information about the current state of the infrastructure.
 
 #### Rolling updates
