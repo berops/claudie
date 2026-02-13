@@ -1,10 +1,13 @@
 syntax = "proto3";
 package spec;
-option go_package = "github.com/berops/claudie/proto/pb/spec";
 
+import "google/protobuf/any.proto";
 import "google/protobuf/timestamp.proto";
-import "spec/nodepool.proto";
 import "spec/dns.proto";
+import "spec/nodepool.proto";
+import "spec/pass.proto";
+
+option go_package = "github.com/berops/claudie/proto/pb/spec";
 
 // Config holds data for a single manifest.
 message Config {
@@ -36,9 +39,8 @@ message Manifest {
 
 message ClusterState {
   Clusters current = 1;
-  Clusters desired = 2;
-  Events events = 3;
   Workflow state = 4;
+  TaskEvent inFlight = 5;
 }
 
 message Clusters {
@@ -57,41 +59,35 @@ message KubernetesContext {
   string namespace = 2;
 }
 
+message FinishedWorkflow {
+  Workflow.Status status = 1;
+  string taskDescription = 2;
+  string stage = 3;
+  google.protobuf.Timestamp timestamp = 4;
+}
+
 message Workflow {
-  enum Stage {
-    // NONE indicates that no stage is currently executing.
-    NONE = 0;
-    // TERRAFORMER indicates that the cluster is currently being build in
-    // terraformer.
-    TERRAFORMER = 1;
-    // ANSIBLER indicates that the cluster is currently being build in ansibler.
-    ANSIBLER = 2;
-    // KUBE_ELEVEN indicates that the cluster is currently being build in kube
-    // eleven.
-    KUBE_ELEVEN = 3;
-    // KUBER indicates that the cluster is currently being build in kuber.
-    KUBER = 4;
-    // DESTROY_TERRAFORMER indicates that infra for a cluster is being deleted.
-    DESTROY_TERRAFORMER = 7;
-    // DESTROY_KUBER indicates that data for a cluster is being deleted.
-    DESTROY_KUBER = 8;
-    // DELETE_NODES indicates the nodes are being deleted for the cluster.
-    DELETE_NODES = 9;
-  }
-
   enum Status {
-    // DONE indicates that the workflow has finished.
+    // DONE indicates that the workflow for a scheduled [Task] has finished.
     DONE = 0;
-    // ERROR indicates that an error occurred while building the cluster.
+
+    // ERROR indicates that an error occurred while processing the scheduled [Task]
     ERROR = 1;
-    // IN_PROGRESS indicates that the cluster is currently being build.
+
+    // IN_PROGRESS indicates that the [Task] is currently being worked on.
     IN_PROGRESS = 2;
+
+    // WAIT_FOR_PICKUP indicates that new a new [Task] was created or moved to
+    // the next stage to be worked on.
+    WAIT_FOR_PICKUP = 3;
   }
 
-  Stage stage = 1;
   Status status = 2;
-  // additional information describing the state and status.
+  // additional information describing the state.
   string description = 3;
+
+  // Information about previously finished workflows.
+  repeated FinishedWorkflow previous = 9;
 }
 
 // K8scluster represents a single kubernetes cluster specified in the manifest.
@@ -152,27 +148,6 @@ message InstallationProxy {
   string noProxy = 3;
 }
 
-enum ProxyOp {
- // None specifies that no change happened in the desired
- // state of the Proxy settings compared to the current.
- NONE = 0;
- // Modified indicates some change happened, either add,
- // delete, modified, replaced etc.
- MODIFIED = 1;
- // Off indicates that the Proxy envs should be turned off.
- OFF = 2;
-}
-
-// ProxyEnvs holds information about a need to update proxy envs, proxy endpoint, and no proxy list.
-message ProxyEnvs {
-  // Signal a need to update proxy envs
-  ProxyOp op = 1;
-  // Holds a proxy endpoint.
-  string httpProxyUrl = 2;
-  // Holds a list of IPs and hostnames that aren't routed through proxy.
-  string noProxyList = 3;
-}
-
 // Role represents a single loadbalancer role from the manifest.
 message Role {
   message Settings {
@@ -181,7 +156,7 @@ message Role {
 
     // required port for the envoy admin interface,
     // on change will issue restart of the envoy proxy.
-    int32  envoy_admin_port = 3;
+    int32 envoy_admin_port = 3;
   }
   // Name of the role.
   string name = 1;
@@ -191,10 +166,10 @@ message Role {
   int32 port = 3;
   // Port that load balancer will forward to.
   int32 targetPort = 4;
-  // Targeted nodes in Kubernetes clusters.
-  repeated string targetPools = 7;
   // Type of the role.
   RoleType roleType = 6;
+  // Targeted nodes in Kubernetes clusters.
+  repeated string targetPools = 7;
   // Additional settings for the role.
   Settings settings = 8;
 }
@@ -207,25 +182,11 @@ enum RoleType {
   Ingress = 1;
 }
 
-// ClusterType specifies the type of the cluster.
-enum ClusterType {
-  // Kubernetes cluster.
-  K8s = 0;
-  // Load balancer cluster.
-  LB = 1;
-}
-
 enum Event {
   UNKNOWN = 0;
   CREATE = 1;
   UPDATE = 2;
   DELETE = 3;
-}
-
-message Events {
-  repeated TaskEvent events = 1;
-  int32 ttl = 2;
-  bool autoscaled = 3;
 }
 
 message TaskEvent {
@@ -234,123 +195,686 @@ message TaskEvent {
   Event event = 3;
   Task task = 4;
   string description = 5;
-  Retry onError = 7;
-}
 
-message Retry {
-  message Repeat {
-    enum Kind {
-      ENDLESS = 0;
-      EXPONENTIAL = 1;
-    }
-    Kind kind = 1;
-    // currentTick specifies the current number of ticks.
-    // A tick is an regular interval at which manifests are being checked.
-    // to check the Tick timeout see: manager/internal/service/watchers.go
-    uint32 currentTick = 2;
-    // stopAfter specifies the maximum number of ticks, after reaching this value the manifest will be rescheduled
-    // for the last time before giving up.
-    uint32 stopAfter = 3;
-    // retryAfter specifies the number of ticks to wait before rescheduling the manifest again.
-    // this value will be set to the value of currentTick after it is updated.
-    uint32 retryAfter = 4;
-  }
-  message Rollback {
-    repeated TaskEvent tasks = 1;
-  }
+  // Pipeline stages of the task through which it has to pass
+  // to be considered as done.
+  repeated Stage pipeline = 8;
 
-  oneof Do {
-    Repeat repeat = 3;
-    Rollback rollback = 4;
-  }
-}
+  // Index into the currently to be worked on pipeline stage.
+  uint32 currentStage = 9;
 
-message Task {
-  CreateState createState = 1;
-  UpdateState updateState = 2;
-  DeleteState deleteState = 3;
-  uint64 options = 4;
-}
-
-message CreateState {
-  K8scluster k8s = 1;
-  LoadBalancers lbs = 2;
+  // LowerPriority Task is an optional field that is set whenever
+  // a higher priority task should be scheduled but the lower priority
+  // task should immediately follow after the higher priority task
+  // finishes.
+  //
+  // Only Higher priority tasks will have this field set.
+  // It is possible to create a chain of tasks with this
+  // that would follow based on priority until `nil` is hit.
+  optional TaskEvent lowerPriority = 21;
 }
 
 enum ApiEndpointChangeState {
   // NoChange represents the 1st case - no change is needed as the LB cluster is currently
   // attached and the desired spec contains no changes.
   NoChange = 0;
+
   // AttachingLoadBalancer represents 2nd case - the K8s cluster previously
   // didn't have an LB cluster attached and the ports needed to communicate with the API server
   // were exposed. After attaching an LB cluster to the existing K8s cluster the ports
   // were closed and are no longer accessible, and thus we need to change the API endpoint.
   AttachingLoadBalancer = 1;
+
   // DetachingLoadBalancer represents 3rd. case - the K8s cluster had an existing
   // LB cluster attached but the new state removed the LB cluster and thus the API endpoint
   // needs to be changed back to one of the control nodes of the cluster.
   DetachingLoadBalancer = 2;
+
   // EndpointRenamed represents the 4th. case - the K8s cluster has an existing
   // LB cluster attached and also keeps it but the endpoint has changed in the desired state.
   EndpointRenamed = 3;
+
   // MoveEndpoint represents the 5th. case - the K8s cluster has an existing
   // LB cluster attached, but it will be switched to a different LB cluster
   // in the desired state.
   MoveEndpoint = 4;
 }
 
-message UpdateState {
-  message K8sEndpoint {
-    string nodepool = 1;
-    string node = 2;
+// Unreachable are the nodes of the kubernetes cluster
+// and all of its loadbalancer clusters which are
+// unreachable. If this is included in some message, one
+// should omit connecting to those nodes during the processing
+// of the pipeline, if relevant.
+message Unreachable {
+  message ListOfNodeEndpoints {
+    repeated string endpoints = 1;
   }
-  message LbEndpoint {
+  message UnreachableNodePools {
+    map<string, ListOfNodeEndpoints> nodepools = 1;
+  }
+
+  UnreachableNodePools kubernetes = 1;
+  map<string, UnreachableNodePools> loadbalancers = 2;
+}
+
+// Creates a new kubernetes cluster with the attached [LBcluster], if any.
+message Create {
+  // The desired state of the kuberenetes cluster to create.
+  //
+  // This field is required to be present.
+  K8scluster k8s = 1;
+
+  // The desired state of the LoadBalancers attached to the
+  // kubernetes cluster to create.
+  //
+  // This field is optional, if the kuberentes cluster does not have
+  // any loadbalacners.
+  repeated LBcluster loadBalancers = 2;
+}
+
+message Update {
+  // State is the current state as known by the Manager service that is continiously
+  // updated and merged into the [Update] message as it traverses the build pipeline.
+  message State {
+    // The state of the kubernetes cluster to update.
+    K8scluster k8s = 1;
+    // The state of the loadbalancers to update.
+    repeated LBcluster loadBalancers = 2;
+  }
+
+  message None {}
+
+  // TerraformerMoveNodePoolToAutoscaled is a message that once
+  // processed by the Terraformer service a result is send back to
+  // the Manager, the manager will consume the message and further
+  // stages will only have a [MovedNodePoolToAutoscaled] message to
+  // process.
+  //
+  // New, "desired", state needs to only be present in the terraformer
+  // stage and all other services  need to only see what has been done
+  // and ocasionally index the performed change on the nodepool which will
+  // already be present in the [State] of the [Update] message.
+  message TerraformerMoveNodePoolToAutoscaled {
+    string nodepool = 1;
+    spec.AutoscalerConf config = 2;
+  }
+  message MovedNodePoolToAutoscaled {
+    string nodepool = 1;
+  }
+
+  // Does exactly the same thing as [TerraformerMoveNodePoolToAutoscaled]
+  // but instead moves it to a fixed size nodepool.
+  message TerraformerMoveNodePoolFromAutoscaled {
+    string nodepool = 1;
+  }
+  message MovedNodePoolFromAutoscaled {
+    string nodepool = 1;
+    spec.AutoscalerConf config = 2;
+  }
+
+  // TerraformerAddLoadBalancer is a message that once processed
+  // by the Terraformer service and a result is send back to the
+  // Manager, the manager will consume the message further stages
+  // will only have a [AddedLoadBalancer] message to process.
+  //
+  // New, "desired", state needs only to be present in the terraformer
+  // stage and all other services need to only see what has been done
+  // and ocasionally index the loadbalancer, which will already be present
+  // in the [State] of the [Update] message.
+  message TerraformerAddLoadBalancer {
+    LBcluster handle = 1;
+  }
+  message AddedLoadBalancer {
+    string handle = 1;
+  }
+
+  // TerraformerDeleteLoadBalancerNodes is a message that is processed by the
+  // Terraformer service and a result is send back to the Manager, it will consume
+  // the message and further stages will only have a [DeletedLoadBalancerNodes]
+  // message to process.
+  //
+  // Old, "current", state needs to only be present in the Terraformer stage and
+  // all other services need to only see the changes after the deletion for
+  // reconciliation which will already be present in the [State] of the [Update]
+  // message.
+  message TerraformerDeleteLoadBalancerNodes {
+    // Id of the loadbalancer.
+    string handle = 1;
+
+    // Whether the NodePool itself
+    // was deleted from the cluster.
+    // Meaning that all nodes of the
+    // nodepool were deleted.
+    bool withNodePool = 2;
+
+    // Affected Nodepool.
+    string nodepool = 3;
+
+    // Nodes that were deleted.
+    repeated string nodes = 4;
+
+    // Unreachable infrastructure that is optionally set
+    // for the deletion process, in which presense, connecting
+    // to the unreachable infrastructure should be omitted.
+    optional Unreachable unreachable = 5;
+  }
+  message DeletedLoadBalancerNodes {
+    message WholeNodePool {
+      // The nodepool that was deleted from the current
+      // state along with all of its nodes.
+      NodePool nodepool = 1;
+    }
+    message Partial {
+      // The nodepool which was modified with the
+      // deletion of the nodes, which is still present
+      // in the [State] passed along the [Update] msg.
+      string nodepool = 1;
+
+      // The nodes that were deleted.
+      repeated Node nodes = 2;
+
+      // Map of keys for each node.
+      // Will only be set if the partially
+      // deleted nodes were part of a static
+      // nodepool.
+      // [<Node Endpoint>]<Key>.
+      map<string, string> staticNodeKeys = 3;
+    }
+
+    // Unreachable infrastructure that is optionally set
+    // for the deletion process, in which presense, connecting
+    // to the unreachable infrastructure should be omitted.
+    optional Unreachable unreachable = 1;
+
+    // id of the loadbalancer.
+    string handle = 2;
+
+    oneof Kind {
+      WholeNodePool whole = 3;
+      Partial partial = 4;
+    }
+  }
+
+  // TerraformerAddLoadBalancerNodes is a message that is processed by the
+  // Terraformer service and a result is send back to the Manager, it will
+  // consume the message and further stages will only have a [AddedLoadBalancerNodes]
+  // message to process.
+  //
+  // New, "desired", state needs only to be present in the Terraformer stage and
+  // all other services need to only see what has been done which will already
+  // be present in the [State] of the [Update] message.
+  message TerraformerAddLoadBalancerNodes {
+    message Existing {
+      // The nodepool which is to be modified with the
+      // addition of new nodes, which is already present
+      // in the [State] passed along the [Update] msg.
+      string nodepool = 1;
+
+      // Nodes to be added.
+      repeated Node nodes = 2;
+    }
+
+    message New {
+      // The new nodepool which is to be added to the
+      // [State] passed along the [Update] msg.
+      NodePool nodepool = 1;
+    }
+
+    // Id of the loadbalancer.
+    string handle = 1;
+
+    oneof Kind {
+      Existing existing = 2;
+      New new = 3;
+    }
+  }
+  message AddedLoadBalancerNodes {
+    string handle = 1;
+    bool newNodePool = 2;
+    string nodePool = 3;
+    repeated string nodes = 4;
+  }
+
+  // DeleteLoadBalnacerRoles works with the [State] that is part of
+  // the [Update] message, thus no "message consuming" needs to happen.
+  message DeleteLoadBalancerRoles {
+    string handle = 1;
+    repeated string roles = 2;
+  }
+
+  // TerraformerAddLoadBalancerRoles is a message that is processed by the
+  // Terraformer service and a result is send back to the Manager, it will
+  // consume the message and further stages will only have a [AddedLoadBalancerRoles]
+  // message to process.
+  //
+  // New, "desired", state needs only to be present in the Terraformer stage and
+  // all other services need to only see what has been done which will already
+  // be present in the [State] of the [Update] message.
+  message TerraformerAddLoadBalancerRoles {
+    string handle = 1;
+    repeated Role roles = 2;
+  }
+  message AddedLoadBalancerRoles {
+    string handle = 1;
+    repeated string roles = 2;
+  }
+
+  // TerraformerReplaceDns is a message that once processed by the
+  // Terraformer service and a result is send back to the Manager,
+  // it will consume the message and further stages will only have
+  // a [ReplacedDns] message to process.
+  //
+  // New, "desired", state needs only to be present in the terraformer
+  // stage and all other services need to only see what has been done and
+  // occasionally index the LoadBalancer, which will already be present
+  // in the [State] of the [Update] message.
+  message TerraformerReplaceDns {
+    // Loadbalancer ID to which the new [Dns] is going to created for.
+    string handle = 1;
+
+    // The new dns to replace the old within [LoadBalancerId].
+    DNS dns = 2;
+
+    // If the [Dns] is part of a Api loadbalancer this
+    // field will be set to give extra information for
+    // when changing the Api endpoint from the old to
+    // the new.
+    optional string oldApiEndpoint = 3;
+  }
+  message ReplacedDns {
+    string handle = 1;
+    optional string oldApiEndpoint = 2;
+  }
+
+  // DeleteLoadBalancer works with the [State] that is part of the [Update]
+  // message, thus no "message consuming" needs to happen.
+  message DeleteLoadBalancer {
+    string handle = 1;
+
+    // Unreachable infrastructure that is optionally set
+    // for the deletion process, in which presense, connecting
+    // to the unreachable infrastructure should be omitted.
+    optional Unreachable unreachable = 2;
+  }
+
+  // ApiEndpoint works with the [State] that is part of the [Update] message
+  // thus no "message consuming" needs to happen.
+  message ApiEndpoint {
     ApiEndpointChangeState state = 1;
     string currentEndpointId = 2;
     string desiredEndpointId = 3;
   }
 
+  // K8sOnlyApiEndpoint works with the [State] that is part of the [Update]
+  // message, thus no "message consuming" needs to happen.
+  message K8sOnlyApiEndpoint {
+    string nodepool = 1;
+    string node = 2;
+  }
+
+  // ApiPortOnCluster works with the [State] that is part of the [Update] message
+  // thus no "message consuming" needs to happen.
+  message ApiPortOnCluster {
+    bool open = 1;
+  }
+
+  // AnsiblerReplaceProxySettings is a message that once processed
+  // by the Ansibler service a result is send back to the Manager,
+  // it will consume the message and further stages will only have
+  // a [ReplacedProxySettings] message to process.
+  //
+  // New, "desired", state needs only to be present in the ansibler
+  // stage and all other services need to only see what has been done
+  // which will already be present in the [State] of the [Update] message.
+  message AnsiblerReplaceProxySettings {
+    InstallationProxy proxy = 1;
+  }
+  message ReplacedProxySettings {}
+
+  message TerraformerReplaceRoleExternalSettings {
+    string handle = 1;
+    string role = 2;
+
+    // updated settings.
+    RoleType roleType = 3;
+    string protocol = 4;
+    int32 port = 5;
+  }
+  message ReplacedRoleExternalSettings {
+    string handle = 1;
+    string role = 2;
+  }
+
+  message AnsiblerReplaceRoleInternalSettings {
+    string handle = 1;
+    string role = 2;
+
+    // updated settings.
+    int32 targetPort = 3;
+    Role.Settings settings = 4;
+  }
+  message ReplacedRoleInternalSettings {
+    string handle = 1;
+    string role = 2;
+  }
+
+  // AnsiblerReplaceTargetPools is a message that once processed
+  // by the Ansibler service a result is send back to the Manager,
+  // it will consume the message and further stages will only have
+  // a [ReplacedTargetPools] message to process.
+  //
+  // New, "desired", state needs only to be present in the ansibler
+  // stage and all other services need to only see what has been done
+  // which will already be present in the [State] of the [Update] message.
+  message AnsiblerReplaceTargetPools {
+    message TargetPools {
+      repeated string pools = 1;
+    }
+    string handle = 1;
+
+    // Role to target pools
+    map<string, TargetPools> roles = 2;
+  }
+  message ReplacedTargetPools {
+    message TargetPools {
+      repeated string pools = 1;
+    }
+    string handle = 1;
+
+    // Role to target pools.
+    map<string, TargetPools> roles = 2;
+  }
+
+  // UpgradeVersion works with the [State] that is part of the [Update]
+  // message, thus no "message consuming" needs to happen.
+  message UpgradeVersion {
+    string version = 1;
+  }
+
+  // KuberPatchNodes is a message that once processed by the Kuber service
+  // and a result is send back to the Manager, it will consume the message
+  // and further stages will only have a [PatchedNodes] message to process.
+  //
+  // New, "desired", state needs only to be present in the kuber stage and
+  // all other services need to only see what has been done which will already
+  // be present in the [State] of the [Update] message.
+  message KuberPatchNodes {
+    message ListOfTaints {
+      repeated spec.Taint taints = 1;
+    }
+    message ListOfLabelKeys {
+      repeated string labels = 1;
+    }
+    message ListOfAnnotationKeys {
+      repeated string annotations = 1;
+    }
+    message MapOfLabels {
+      map<string, string> labels = 1;
+    }
+    message MapOfAnnotations {
+      map<string, string> annotations = 1;
+    }
+    message RemoveBatch {
+      map<string, ListOfTaints> taints = 1;
+      map<string, ListOfAnnotationKeys> annotations = 2;
+      map<string, ListOfLabelKeys> labels = 3;
+    }
+    message AddBatch {
+      map<string, ListOfTaints> taints = 1;
+      map<string, MapOfLabels> labels = 2;
+      map<string, MapOfAnnotations> annotations = 3;
+    }
+
+    AddBatch add = 1;
+    RemoveBatch remove = 2;
+  }
+  message PatchedNodes {}
+
+  // KuberDeleteK8sNodes is a message that is processed by the Kuber service
+  // and a result is send back to the Manager, it will consume the message
+  // and further stages will only have a [DeletedK8sNodes] message to process.
+  //
+  // Old, "current", state needs to only be present in the Kuber stage and
+  // all other services need to only see the changes after the deletion for
+  // reconciliation which will already be present in the [State] of the [Update]
+  // message.
+  message KuberDeleteK8sNodes {
+    // Whether the NodePool itself
+    // was deleted from the cluster.
+    // Meaning that all nodes of the
+    // nodepool were deleted.
+    //
+    // Note that with autoscaling its
+    // possible to have a zero sized
+    // nodepool so this is only set
+    // if the nodepool is removed from
+    // the cluster.
+    bool withNodePool = 1;
+
+    // Affected Nodepool.
+    string nodepool = 2;
+
+    // Nodes that were deleted.
+    repeated string nodes = 3;
+
+    // Unreachable infrastructure that is optionally set
+    // for the deletion process, in which presense, connecting
+    // to the unreachable infrastructure should be omitted.
+    optional Unreachable unreachable = 4;
+  }
+  message DeletedK8sNodes {
+    message WholeNodePool {
+      // The nodepool that was deleted from the current
+      // state along with all of its nodes.
+      NodePool nodepool = 1;
+    }
+    message Partial {
+      // The nodepool which was modified with the
+      // deletion of the nodes, which is still present
+      // in the [State] passed along the [Update] msg.
+      string nodepool = 1;
+
+      // Nodes that were deleted.
+      repeated Node nodes = 2;
+
+      // Map of keys for each node.
+      // Will only be set if the partially
+      // deleted nodes were part of a static
+      // nodepool.
+      // [<Node Endpoint>]<Key>.
+      map<string, string> staticNodeKeys = 3;
+    }
+
+    // Unreachable infrastructure that is optionally set
+    // for the deletion process, in which presense, connecting
+    // to the unreachable infrastructure should be omitted.
+    optional Unreachable unreachable = 1;
+
+    oneof Kind {
+      WholeNodePool whole = 2;
+      Partial partial = 3;
+    }
+  }
+
+  // TerraformerAddK8sNodes is a message that is processed by the Terraformer service
+  // and a result is send back to the Manager, it will consume the message
+  // and further stages will only have a [AddedK8sNodes] message to process.
+  //
+  // New, "desired", state needs only to be present in the Terraformer stage and
+  // all other services need to only see what has been done which will already
+  // be present in the [State] of the [Update] message.
+  message TerraformerAddK8sNodes {
+    message Existing {
+      // The nodepool which is to be modified with the
+      // addition of new nodes, which is already present
+      // in the [State] passed along the [Update] msg.
+      string nodepool = 1;
+
+      // Nodes to be added.
+      repeated Node nodes = 2;
+    }
+    message New {
+      // The new nodepool which is to be added to the
+      // [State] passed along the [Update] msg.
+      NodePool nodepool = 1;
+    }
+
+    oneof Kind {
+      Existing existing = 1;
+      New new = 2;
+    }
+  }
+  message AddedK8sNodes {
+    bool newNodePool = 1;
+    string nodepool = 2;
+    repeated string nodes = 3;
+  }
+
+  // State that gets continiously updated as the task gets processed.
+  State state = 1;
+
+  // Additional information while the [Update] message is passed through
+  // the build pipeline to give context what has been scheduled and what
+  // to process.
+  oneof Delta {
+    None none = 2;
+
+    // Terraformer messages to consume
+    TerraformerAddLoadBalancer tfAddLoadBalancer = 3;
+    TerraformerAddLoadBalancerNodes tfAddLoadBalancerNodes = 4;
+    TerraformerReplaceDns tfReplaceDns = 5;
+    TerraformerAddK8sNodes tfAddK8sNodes = 6;
+    TerraformerAddLoadBalancerRoles tfAddLoadBalancerRoles = 7;
+    TerraformerDeleteLoadBalancerNodes tfDeleteLoadBalancerNodes = 8;
+    TerraformerMoveNodePoolToAutoscaled tfMoveNodePoolToAutoscaled = 9;
+    TerraformerMoveNodePoolFromAutoscaled tfMoveNodePoolFromAutoscaled = 10;
+    TerraformerReplaceRoleExternalSettings tfReplaceRoleExternalSettings = 12;
+
+    // Ansibler message to consume
+    AnsiblerReplaceProxySettings ansReplaceProxy = 14;
+    AnsiblerReplaceTargetPools ansReplaceTargetPools = 15;
+    AnsiblerReplaceRoleInternalSettings ansReplaceRoleInternalSettings = 16;
+
+    // Kuber messages to consume
+    KuberPatchNodes kpatchNodes = 18;
+    KuberDeleteK8sNodes kDeleteNodes = 19;
+
+    // Consumed messages.
+    AddedLoadBalancer addedLoadBalancer = 21;
+    AddedLoadBalancerNodes addedLoadBalancerNodes = 22;
+    ReplacedDns replacedDns = 23;
+    AddedK8sNodes addedK8sNodes = 24;
+    ReplacedProxySettings replacedProxy = 25;
+    PatchedNodes patchedNodes = 26;
+    AddedLoadBalancerRoles addedLoadBalancerRoles = 27;
+    ReplacedTargetPools replacedTargetPools = 28;
+    MovedNodePoolToAutoscaled movedNodePoolToAutoscaled = 29;
+    MovedNodePoolFromAutoscaled movedNodePoolFromAutoscaled = 30;
+    ReplacedRoleInternalSettings replacedRoleInternalSettings = 31;
+    ReplacedRoleExternalSettings replacedRoleExternalSettings = 32;
+
+    // Deletions.
+    DeleteLoadBalancer deleteLoadBalancer = 34;
+    DeletedK8sNodes deletedK8sNodes = 35;
+    DeletedLoadBalancerNodes deletedLoadBalancerNodes = 36;
+    DeleteLoadBalancerRoles deleteLoadBalancerRoles = 37;
+
+    // Utilities.
+    ApiEndpoint apiEndpoint = 38;
+    ApiPortOnCluster clusterApiPort = 39;
+    K8sOnlyApiEndpoint k8sApiEndpoint = 40;
+    UpgradeVersion upgradeVersion = 41;
+  }
+}
+
+// Deletes an existing kubernetes cluster along with its attached [LBcluster], if any.
+message Delete {
+  // The current state of the kuberentes cluster to delete.
+  //
+  // This field is required
   K8scluster k8s = 1;
-  LoadBalancers lbs = 2;
 
-  oneof EndpointChange {
-    K8sEndpoint newControlEndpoint = 3;
-    LbEndpoint  lbEndpointChange = 4;
+  // The current state of the loadbalancers  to delete, that
+  // are attached to the kubernetes cluster.
+  //
+  // This field depends on the above [k8s] field and is required if
+  // the kuberentes cluster has any loadbalancers attached.
+  repeated LBcluster loadBalancers = 2;
+}
+
+message Task {
+  oneof Do {
+    Create create = 7;
+    Update update = 8;
+    Delete delete = 9;
   }
 }
 
-message DeleteState {
-  message K8s {
-    // if set, the whole k8s cluster and all of its attached
-    // loadbalancers should be destroyed.
-    bool destroy = 1;
-    // if 'destroy' is not set, the deletion process should look at
-    // the specifies nodepools and their nodes which should be deleted.
-    map<string, DeletedNodes> nodepools = 2;
-  }
-  message LoadBalancer {
-    // id of the loadbalancer.
-    string id = 1;
-    // if set, the whole loadbalancer cluster will be destroyed.
-    bool destroy = 2;
-    // if 'destroy' is not set, the deletion process should look at
-    // the specifies nodepools and their nodes which should be deleted.
-    map<string, DeletedNodes> nodepools = 3;
-  }
-  K8s k8s = 1;
-  repeated LoadBalancer lbs = 2;
+// The message that is used for the Message Queue.
+message Work {
+  // The task to be worked on.
+  Task task = 1;
+
+  // What exactly should be done with the task.
+  repeated google.protobuf.Any passes = 2;
 }
 
-message DeletedNodes {
-  // nodes specifies which nodes should be deleted
-  // from the nodepool.
-  repeated string nodes = 1;
-  // keepNodePoolIfEmpty specifies if the nodepool should
-  // be deleted from the current state if its node count
-  // reaches zero. Currently this will only be used with
-  // autoscaled dynamic nodepools which can have a minimum
-  // of 0 nodes, other nodepool types will have this always
-  // set to false to indicate that after deletion of all nodes
-  // the nodepool should no longer be tracked in the current state.
-  bool keepNodePoolIfEmpty = 2;
+message TaskResult {
+  message Error {
+    enum Kind {
+      FATAL = 0;
+      PARTIAL = 1;
+    }
+
+    Kind kind = 1;
+    string description = 2;
+  }
+
+  // None specifies that nothing should be done as a result of
+  // processing a task other than acknowledging that the task
+  // was processed, and thus moving to next task, if any.
+  message None {}
+
+  // UpdateState specifies the current state should be updated
+  // as changes may have been done to it. All of the values
+  // are optionals and the receiving end should make sense of
+  // them.
+  // Any non-nil value signals an update that should be handled.
+  message UpdateState {
+    // If the [k8s] field is set then its current state should be merged/replaced
+    // with the state in this message.
+    optional K8scluster k8s = 1;
+
+    // Updates the loadbalancers that are attached to the [k8s] cluster.
+    // The loadbalancers in this message should only update existing matching
+    // loadbalancers and or add newly created ones.
+    //
+    // If any loadbalancers are missing while they're present in the current state
+    // they should not be deleted, as for that there is an explicit task result [ClearState].
+    optional LoadBalancers loadBalancers = 2;
+  }
+
+  // ClearState specifies cluster IDs which should be cleared as changes
+  // processed by a scheduled task destroyed the infrastructure.
+  // Any non-nil value signals an update that should be done.
+  message ClearState {
+    // If the kuberentes cluster is specified than all of its loadbalancers
+    // should be deleted even if they're not specified within this message.
+    optional bool k8s = 1;
+
+    // ID of the loadbalancers that should be cleared.
+    repeated string loadBalancersIDs = 2;
+  }
+
+  // If the Error.Kind is FATAL no useful
+  // information is stored in the result.
+  // Otherwise, if error is not set or PARTIAL,
+  // the result will contain valid data,.
+  optional Error error = 1;
+
+  oneof Result {
+    None none = 2;
+    UpdateState update = 3;
+    ClearState clear = 4;
+  }
 }

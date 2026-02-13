@@ -3,9 +3,8 @@ package usecases
 import (
 	"context"
 
-	"sigs.k8s.io/controller-runtime/pkg/event"
-
 	managerclient "github.com/berops/claudie/services/manager/client"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 )
 
 type Usecases struct {

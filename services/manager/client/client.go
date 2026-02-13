@@ -43,29 +43,71 @@ func (t *Client) HealthCheck() error {
 	}
 }
 
-func (t *Client) NextTask(ctx context.Context) (*NextTaskResponse, error) {
-	resp, err := t.client.NextTask(ctx, new(pb.NextTaskRequest))
+func (t *Client) NodePoolUpdateTargetSize(ctx context.Context, request *NodePoolUpdateTargetSizeRequest) (*NodePoolUpdateTargetSizeResponse, error) {
+	req := pb.NodePoolUpdateTargetSizeRequest{
+		Config:       request.Config,
+		Cluster:      request.Cluster,
+		Nodepool:     request.NodePool,
+		Loadbalancer: request.LoadBalancer,
+		TargetSize:   request.TargetSize,
+	}
+
+	resp, err := t.client.NodePoolUpdateTargetSize(ctx, &req)
 	if err == nil {
-		return &NextTaskResponse{
-			State:   resp.State,
-			Config:  resp.Name,
-			Cluster: resp.Cluster,
-			TTL:     resp.Ttl,
-			Current: resp.Current,
-			Event:   resp.Event,
-		}, nil
+		return &NodePoolUpdateTargetSizeResponse{TargetSize: resp.TargetSize}, nil
 	}
 
 	if e, ok := status.FromError(err); ok {
 		switch e.Code() {
 		case codes.NotFound:
-			return nil, fmt.Errorf("%w: no task scheduled or config deleted in the meanwhile", ErrNotFound)
+			err = errors.Join(err, fmt.Errorf(
+				"config %q cluster %q nodepool %q: %w",
+				request.Config,
+				request.Cluster,
+				request.NodePool,
+				ErrNotFound,
+			))
 		case codes.Aborted:
-			return nil, fmt.Errorf("%w: %w", ErrVersionMismatch, err)
+			err = errors.Join(err, fmt.Errorf("%w", ErrVersionMismatch))
 		}
 	}
 
-	t.logger.Debug().Msgf("Received error %v while calling NextTask", err)
+	t.logger.Debug().Msgf("Received error %v while calling NodePoolUpdateTargetSize", err)
+	return nil, err
+}
+
+func (t *Client) MarkNodeForDeletion(ctx context.Context, request *MarkNodeForDeletionRequest) (*MarkNodeForDeletionResponse, error) {
+	req := pb.MarkNodeForDeletionRequest{
+		Config:                         request.Config,
+		Cluster:                        request.Cluster,
+		Nodepool:                       request.NodePool,
+		Node:                           request.Node,
+		Loadbalancer:                   request.LoadBalancer,
+		ShouldDecrementDesiredCapacity: request.ShouldDecrementDesiredCapacity,
+	}
+
+	resp, err := t.client.MarkNodeForDeletion(ctx, &req)
+	if err == nil {
+		return &MarkNodeForDeletionResponse{TargetSize: resp.TargetSize}, nil
+	}
+
+	if e, ok := status.FromError(err); ok {
+		switch e.Code() {
+		case codes.NotFound:
+			err = errors.Join(err, fmt.Errorf(
+				"config %q cluster %q nodepool %q node %q: %w",
+				request.Config,
+				request.Cluster,
+				request.NodePool,
+				request.Node,
+				ErrNotFound,
+			))
+		case codes.Aborted:
+			err = errors.Join(err, fmt.Errorf("%w", ErrVersionMismatch))
+		}
+	}
+
+	t.logger.Debug().Msgf("Received error %v while calling MarkNodeForDeletion", err)
 	return nil, err
 }
 
@@ -73,7 +115,10 @@ func (t *Client) MarkForDeletion(ctx context.Context, request *MarkForDeletionRe
 	// fetch latest document version before marking for deletion.
 	current, err := t.client.GetConfig(ctx, &pb.GetConfigRequest{Name: request.Name})
 	if err == nil {
-		_, err := t.client.MarkForDeletion(ctx, &pb.MarkForDeletionRequest{Name: request.Name, Version: current.Config.Version})
+		_, err := t.client.MarkForDeletion(ctx, &pb.MarkForDeletionRequest{
+			Name:    request.Name,
+			Version: current.Config.Version,
+		})
 		if err == nil {
 			return nil
 		}
@@ -121,7 +166,7 @@ func (t *Client) UpsertManifest(ctx context.Context, request *UpsertManifestRequ
 }
 
 func (t *Client) ListConfigs(ctx context.Context, _ *ListConfigRequest) (*ListConfigResponse, error) {
-	resp, err := t.client.ListConfigs(ctx, new(pb.ListConfigRequest))
+	resp, err := t.client.ListConfigs(ctx, new(pb.ListConfigsRequest))
 	if err == nil {
 		return &ListConfigResponse{Config: resp.Configs}, nil
 	}
@@ -140,103 +185,4 @@ func (t *Client) GetConfig(ctx context.Context, request *GetConfigRequest) (*Get
 	}
 	t.logger.Debug().Msgf("Received error %v while calling GetConfig", err)
 	return nil, err
-}
-
-func (t *Client) TaskUpdate(ctx context.Context, req *TaskUpdateRequest) error {
-	current, err := t.client.GetConfig(ctx, &pb.GetConfigRequest{Name: req.Config})
-	if err == nil {
-		_, err := t.client.TaskUpdate(ctx, &pb.TaskUpdateRequest{
-			Name:    req.Config,
-			Cluster: req.Cluster,
-			TaskId:  req.TaskId,
-			Version: current.Config.Version,
-			State:   req.State,
-		})
-		if err == nil {
-			return nil
-		}
-
-		if e, ok := status.FromError(err); ok {
-			switch e.Code() {
-			case codes.NotFound:
-				err = errors.Join(err, fmt.Errorf("combination config %q cluster %q task %q: %w", req.Config, req.Cluster, req.TaskId, ErrNotFound))
-			case codes.Aborted:
-				err = errors.Join(err, fmt.Errorf("%w", ErrVersionMismatch))
-			}
-		}
-
-		t.logger.Debug().Msgf("Received error %v while calling TaskUpdate", err)
-		return err
-	}
-	if e, ok := status.FromError(err); ok && e.Code() == codes.NotFound {
-		t.logger.Debug().Msgf("GetConfig(): no config with name %q found", req.Config)
-		return fmt.Errorf("config with name %q: %w", req.Config, ErrNotFound)
-	}
-	return err
-}
-
-func (t *Client) TaskComplete(ctx context.Context, req *TaskCompleteRequest) error {
-	current, err := t.client.GetConfig(ctx, &pb.GetConfigRequest{Name: req.Config})
-	if err == nil {
-		_, err := t.client.TaskComplete(ctx, &pb.TaskCompleteRequest{
-			Name:     req.Config,
-			Cluster:  req.Cluster,
-			TaskId:   req.TaskId,
-			Version:  current.Config.Version,
-			Workflow: req.Workflow,
-			State:    req.State,
-		})
-		if err == nil {
-			return nil
-		}
-
-		if e, ok := status.FromError(err); ok {
-			switch e.Code() {
-			case codes.NotFound:
-				err = errors.Join(err, fmt.Errorf("combination config %q cluster %q task %q: %w", req.Config, req.Cluster, req.TaskId, ErrNotFound))
-			case codes.Aborted:
-				err = errors.Join(err, fmt.Errorf("%w", ErrVersionMismatch))
-			}
-		}
-
-		t.logger.Debug().Msgf("Received error %v while calling TaskComplete", err)
-		return err
-	}
-	if e, ok := status.FromError(err); ok && e.Code() == codes.NotFound {
-		t.logger.Debug().Msgf("GetConfig(): no config with name %q found", req.Config)
-		return fmt.Errorf("config with name %q: %w", req.Config, ErrNotFound)
-	}
-	return err
-}
-
-func (t *Client) UpdateNodePool(ctx context.Context, req *UpdateNodePoolRequest) error {
-	current, err := t.client.GetConfig(ctx, &pb.GetConfigRequest{Name: req.Config})
-	if err == nil {
-		_, err := t.client.UpdateNodePool(ctx, &pb.UpdateNodePoolRequest{
-			Name:     req.Config,
-			Cluster:  req.Cluster,
-			Version:  current.Config.Version,
-			Nodepool: req.NodePool,
-		})
-		if err == nil {
-			return nil
-		}
-
-		if e, ok := status.FromError(err); ok {
-			switch e.Code() {
-			case codes.NotFound:
-				err = errors.Join(err, fmt.Errorf("combination config %q cluster %q nodepool %q: %w", req.Config, req.Cluster, req.NodePool.GetName(), ErrNotFound))
-			case codes.Aborted:
-				err = errors.Join(err, fmt.Errorf("%w", ErrVersionMismatch))
-			}
-		}
-
-		t.logger.Debug().Msgf("Received error %v while calling UpdateNodePool", err)
-		return err
-	}
-	if e, ok := status.FromError(err); ok && e.Code() == codes.NotFound {
-		t.logger.Debug().Msgf("GetConfig(): no config with name %q found", req.Config)
-		return fmt.Errorf("config with name %q: %w", req.Config, ErrNotFound)
-	}
-	return err
 }

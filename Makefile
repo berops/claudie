@@ -1,4 +1,4 @@
-.PHONY: proto manager builder terraformer ansibler kubeEleven test database minio containerimgs crd crd-apply controller-gen kind-load-images kind-deploy
+.PHONY: proto manager terraformer ansibler kubeEleven test database minio containerimgs crd crd-apply controller-gen kind-load-images nats  kind-deploy
 
 # Enforce same version of protoc
 PROTOC_VERSION = "29.5"
@@ -14,24 +14,22 @@ proto:
 # Start manager on a local environment, exposted on port 50055
 manager:
 	GOLANG_LOG=debug PROMETHEUS_PORT=9091 go run ./services/manager/cmd/api-server
-# Start Builder service on a local environment
-builder:
-	GOLANG_LOG=debug PROMETHEUS_PORT=9092 go run ./services/builder
+
 # Start Terraformer service on a local environment, exposed on port 50052
 terraformer:
-	GOLANG_LOG=debug BUCKET_URL="http://localhost:9000" AWS_ACCESS_KEY_ID=minioadmin AWS_SECRET_ACCESS_KEY=minioadmin PROMETHEUS_PORT=9093 go run ./services/terraformer/server
+	GOLANG_LOG=debug BUCKET_URL="http://localhost:9000" AWS_ACCESS_KEY_ID=minioadmin AWS_SECRET_ACCESS_KEY=minioadmin PROMETHEUS_PORT=9093 go run ./services/terraformer/cmd/worker
 
 # Start Ansibler service on a local environment, exposed on port 50053
 ansibler:
-	GOLANG_LOG=debug PROMETHEUS_PORT=9094 go run ./services/ansibler/server
+	GOLANG_LOG=debug PROMETHEUS_PORT=9094 go run ./services/ansibler/cmd/worker
 
 # Start Kube-eleven service on a local environment, exposed on port 50054
 kube-eleven:
-	GOLANG_LOG=debug PROMETHEUS_PORT=9095 go run ./services/kube-eleven/server
+	GOLANG_LOG=debug PROMETHEUS_PORT=9095 go run ./services/kube-eleven/cmd/worker
 
 # Start Kuber service on a local environment, exposed on port 50057
 kuber:
-	GOLANG_LOG=debug PROMETHEUS_PORT=9096 go run ./services/kuber/server
+	GOLANG_LOG=debug PROMETHEUS_PORT=9096 go run ./services/kuber/cmd/worker
 
 # Start Claudie-operator service on a local environment
 # This is not necessary to have running on local environtment, to inject input manifest,
@@ -43,6 +41,10 @@ operator:
 mongo:
 	mkdir -p ~/mongo/data
 	docker run --name mongo -d --rm -p 27017:27017 -v ~/mongo/data:/data/db mongo:5
+
+nats:
+	mkdir -p ~/nats
+	docker run --name nats -d --rm -p 4222:4222 -v ~/nats:/data nats -js -sd /data
 
 # Start minio backend for state files used in terraform
 minio:
@@ -61,12 +63,23 @@ lint:
 	golangci-lint run
 
 # Start all data stores at once,in docker containers, to simplify the local development
-datastoreStart: mongo minio
+datastoreStart: mongo minio nats dockernetwork
+
+dockernetwork:
+	docker network create claudie-test-network
+	docker network connect claudie-test-network nats
+	docker network connect claudie-test-network minio
+	docker network connect claudie-test-network mongo
 
 # Stops all data stores at once, which will also remove docker containers
 datastoreStop:
+	docker network disconnect claudie-test-network nats || true
+	docker network disconnect claudie-test-network minio || true
+	docker network disconnect claudie-test-network mongo || true
+	docker network rm claudie-test-network
 	docker stop mongo
 	docker stop minio
+	docker stop nats
 
 # We need the value of local architecture to pass to docker as a build arg and
 # Go already needs to be installed so we make use of it here.
@@ -77,12 +90,12 @@ SERVICES = $$(command ls services/)
 # macOS (BSD) sed requires -i '' while GNU sed uses -i
 SED_INPLACE := $(shell if [ "$$(uname)" = "Darwin" ]; then echo "sed -i ''"; else echo "sed -i"; fi)
 containerimgs:
-	$(SED_INPLACE) "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$(REV)/" services/kuber/templates/cluster-autoscaler.goyaml
+	$(SED_INPLACE) "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$(REV)/" services/manager/internal/service/managementcluster/internal/autoscaler/cluster-autoscaler.goyaml
 	for service in $(SERVICES) ; do \
 		echo " --- building $$service --- "; \
 		DOCKER_BUILDKIT=1 docker build --build-arg=TARGETARCH="$(TARGETARCH)" -t "ghcr.io/berops/claudie/$$service:$(REV)" -f ./services/$$service/Dockerfile . ; \
 	done
-	$(SED_INPLACE) "s/adapter:.*$$/adapter/" services/kuber/templates/cluster-autoscaler.goyaml
+	$(SED_INPLACE) "s/adapter:.*$$/adapter/" services/manager/internal/service/managementcluster/internal/autoscaler/cluster-autoscaler.goyaml
 
 KIND_CLUSTER ?= kind
 KIND_NAMESPACE ?= claudie
@@ -94,7 +107,7 @@ kind-load-images:
 
 kind-deploy: kind-load-images
 	@echo " --- updating deployments in $(KIND_NAMESPACE) namespace --- "
-	@for svc in ansibler builder claudie-operator kube-eleven kuber manager terraformer; do \
+	@for svc in ansibler claudie-operator kube-eleven kuber manager terraformer; do \
 		echo " --- updating $$svc deployment --- "; \
 		kubectl set image deployment/$$svc $$svc=ghcr.io/berops/claudie/$$svc:$(REV) -n $(KIND_NAMESPACE); \
 	done

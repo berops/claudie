@@ -1,0 +1,34 @@
+package store
+
+import (
+	"context"
+	"errors"
+
+	"github.com/berops/claudie/internal/envs"
+	"github.com/berops/claudie/internal/healthcheck"
+)
+
+// environments variables that should be used within the implementation of [S3StateStorage]
+var (
+	s3Endpoint = envs.BucketEndpoint
+	s3Bucket   = envs.BucketName
+
+	awsRegion          = envs.AwsRegion
+	awsAccessKeyId     = envs.AwsAccesskeyId
+	awsSecretAccessKey = envs.AwsSecretAccessKey
+)
+
+var (
+	// ErrKeyNotExists is returned when the key is not present in the storage implementing [S3StateStorage].
+	ErrS3KeyNotExists = errors.New("key is not present in bucket")
+)
+
+// API for communicating with S3 style state storage for managing terraform state files.
+type S3StateStorage interface {
+	// DeleteStateFile removes tofu state file from MinIO.
+	DeleteStateFile(ctx context.Context, projectName, clusterId string, keyFormat string) error
+	// Stat checks whether the object exists.
+	Stat(ctx context.Context, projectName, clusterId, keyFormat string) error
+
+	healthcheck.HealthChecker
+}

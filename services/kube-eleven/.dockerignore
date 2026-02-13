@@ -6,7 +6,6 @@ LICENSE
 .git
 services/terraformer
 services/ansibler
-services/builder
 services/testing-framework
 services/claudie-operator
 services/kuber

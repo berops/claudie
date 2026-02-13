@@ -10,7 +10,6 @@ services/ansibler
 services/testing-framework
 services/claudie-operator
 services/kuber
-services/builder
 .github
 .golangci.yml
 .gitattributes

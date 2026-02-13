@@ -36,7 +36,7 @@ __debug_bin
 # Service-specific
 services/testing-framework/test-sets/
 services/terraformer/templates/
-/services/terraformer/server/cache/
+/services/terraformer/cache/
 
 # Claude
 .claude/

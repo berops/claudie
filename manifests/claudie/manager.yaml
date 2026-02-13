@@ -54,11 +54,16 @@ spec:
             limits:
               cpu: 160m
           env:
-            - name: BUILDER_TTL
+            - name: NATS_CLUSTER_URL
               valueFrom:
                 configMapKeyRef:
                   name: env
-                  key: BUILDER_TTL
+                  key: NATS_CLUSTER_URL
+            - name: NATS_CLUSTER_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: NATS_CLUSTER_SIZE
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
@@ -75,6 +80,10 @@ spec:
                 configMapKeyRef:
                   name: env
                   key: GOLANG_LOG
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
           ports:
             - containerPort: 50055
             - name: "metrics"
@@ -83,8 +92,15 @@ spec:
             grpc:
               port: 50055
               service: manager-readiness
-            initialDelaySeconds: 5
-            periodSeconds: 30
+            initialDelaySeconds: 30
+            periodSeconds: 35
+          livenessProbe:
+            grpc:
+              port: 50055
+              service: manager-liveness
+            initialDelaySeconds: 30
+            periodSeconds: 35
+      serviceAccountName: manager
 ---
 kind: Service
 apiVersion: v1
@@ -101,3 +117,41 @@ spec:
     - protocol: TCP
       port: 50055
       targetPort: 50055
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: manager
+  labels:
+    app.managernetes.io/part-of: claudie
+    app.managernetes.io/name: manager
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: manager
+  labels:
+    app.managernetes.io/part-of: claudie
+    app.managernetes.io/name: manager
+rules:
+  - apiGroups: [""]
+    resources: ["secrets", "configmaps", "services"]
+    verbs: ["create", "patch", "update", "get", "list", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["create", "patch", "update", "get", "list", "delete"]
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: manager
+  labels:
+    app.managernetes.io/part-of: claudie
+    app.managernetes.io/name: manager
+roleRef:
+  kind: Role
+  name: manager
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+  - kind: ServiceAccount
+    name: manager

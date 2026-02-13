@@ -3,7 +3,6 @@ resources:
 - crd
 - ns.yaml
 - operator.yaml
-- builder.yaml
 - terraformer.yaml
 - ansibler.yaml
 - kube-eleven.yaml
@@ -12,6 +11,7 @@ resources:
 - cluster-rbac
 - mongo
 - minio
+- nats
 
 # Alter ValidatingWebhookConfiguration and Certificate fields, so they will match the generated namespace
 replacements:
@@ -56,18 +56,16 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
 - name: ghcr.io/berops/claudie/ansibler
-  newTag: 54b543c-3870
+  newTag: 7e6d55c-3880
 - name: ghcr.io/berops/claudie/autoscaler-adapter
-  newTag: 54b543c-3870
-- name: ghcr.io/berops/claudie/builder
-  newTag: 54b543c-3870
+  newTag: 7e6d55c-3880
 - name: ghcr.io/berops/claudie/claudie-operator
-  newTag: 54b543c-3870
+  newTag: 7e6d55c-3880
 - name: ghcr.io/berops/claudie/kube-eleven
-  newTag: 54b543c-3870
+  newTag: 7e6d55c-3880
 - name: ghcr.io/berops/claudie/kuber
-  newTag: 54b543c-3870
+  newTag: 7e6d55c-3880
 - name: ghcr.io/berops/claudie/manager
-  newTag: 54b543c-3870
+  newTag: 7e6d55c-3880
 - name: ghcr.io/berops/claudie/terraformer
-  newTag: 54b543c-3870
+  newTag: 7e6d55c-3880

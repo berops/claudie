@@ -10,51 +10,241 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// ConvertToGRPCEvents converts the database representation of events to GRPC.
-func ConvertToGRPCEvents(w Events) (*spec.Events, error) {
-	var te []*spec.TaskEvent
+func ConvertToGRPCStages(stages []Stage) ([]*spec.Stage, error) {
+	var out []*spec.Stage
 
-	for i := range w.TaskEvents {
-		g, err := ConvertToGRPCTaskEvent(w.TaskEvents[i])
+	for _, dbStage := range stages {
+		var stage *spec.Stage
+
+		switch dbStage.Kind {
+		case Ansibler:
+			subpasses := make([]*spec.StageAnsibler_SubPass, 0, len(dbStage.SubPasses))
+			for _, p := range dbStage.SubPasses {
+				subpasses = append(subpasses, &spec.StageAnsibler_SubPass{
+					Kind: spec.StageAnsibler_SubPassKind(spec.StageAnsibler_SubPassKind_value[p.Kind]),
+					Description: &spec.StageDescription{
+						About:      p.Description.About,
+						ErrorLevel: spec.ErrorLevel(spec.ErrorLevel_value[p.Description.ErrorLevel]),
+					},
+				})
+			}
+
+			stage = &spec.Stage{
+				StageKind: &spec.Stage_Ansibler{
+					Ansibler: &spec.StageAnsibler{
+						Description: &spec.StageDescription{
+							About:      dbStage.Description.About,
+							ErrorLevel: spec.ErrorLevel(spec.ErrorLevel_value[dbStage.Description.ErrorLevel]),
+						},
+						SubPasses: subpasses,
+					},
+				},
+			}
+		case KubeEleven:
+			subpasses := make([]*spec.StageKubeEleven_SubPass, 0, len(dbStage.SubPasses))
+			for _, p := range dbStage.SubPasses {
+				subpasses = append(subpasses, &spec.StageKubeEleven_SubPass{
+					Kind: spec.StageKubeEleven_SubPassKind(spec.StageKubeEleven_SubPassKind_value[p.Kind]),
+					Description: &spec.StageDescription{
+						About:      p.Description.About,
+						ErrorLevel: spec.ErrorLevel(spec.ErrorLevel_value[p.Description.ErrorLevel]),
+					},
+				})
+			}
+
+			stage = &spec.Stage{
+				StageKind: &spec.Stage_KubeEleven{
+					KubeEleven: &spec.StageKubeEleven{
+						Description: &spec.StageDescription{
+							About:      dbStage.Description.About,
+							ErrorLevel: spec.ErrorLevel(spec.ErrorLevel_value[dbStage.Description.ErrorLevel]),
+						},
+						SubPasses: subpasses,
+					},
+				},
+			}
+		case Kuber:
+			subpasses := make([]*spec.StageKuber_SubPass, 0, len(dbStage.SubPasses))
+			for _, p := range dbStage.SubPasses {
+				subpasses = append(subpasses, &spec.StageKuber_SubPass{
+					Kind: spec.StageKuber_SubPassKind(spec.StageKuber_SubPassKind_value[p.Kind]),
+					Description: &spec.StageDescription{
+						About:      p.Description.About,
+						ErrorLevel: spec.ErrorLevel(spec.ErrorLevel_value[p.Description.ErrorLevel]),
+					},
+				})
+			}
+
+			stage = &spec.Stage{
+				StageKind: &spec.Stage_Kuber{
+					Kuber: &spec.StageKuber{
+						Description: &spec.StageDescription{
+							About:      dbStage.Description.About,
+							ErrorLevel: spec.ErrorLevel(spec.ErrorLevel_value[dbStage.Description.ErrorLevel]),
+						},
+						SubPasses: subpasses,
+					},
+				},
+			}
+		case Terraformer:
+			subpasses := make([]*spec.StageTerraformer_SubPass, 0, len(dbStage.SubPasses))
+			for _, p := range dbStage.SubPasses {
+				subpasses = append(subpasses, &spec.StageTerraformer_SubPass{
+					Kind: spec.StageTerraformer_SubPassKind(spec.StageTerraformer_SubPassKind_value[p.Kind]),
+					Description: &spec.StageDescription{
+						About:      p.Description.About,
+						ErrorLevel: spec.ErrorLevel(spec.ErrorLevel_value[p.Description.ErrorLevel]),
+					},
+				})
+			}
+
+			stage = &spec.Stage{
+				StageKind: &spec.Stage_Terraformer{
+					Terraformer: &spec.StageTerraformer{
+						Description: &spec.StageDescription{
+							About:      dbStage.Description.About,
+							ErrorLevel: spec.ErrorLevel(spec.ErrorLevel_value[dbStage.Description.ErrorLevel]),
+						},
+						SubPasses: subpasses,
+					},
+				},
+			}
+		case Unknown:
+			fallthrough
+		default:
+			return nil, fmt.Errorf("unrecognized stage kind %s", dbStage.Kind)
+		}
+
+		out = append(out, stage)
+	}
+
+	return out, nil
+}
+
+func ConvertFromGRPCStages(stages []*spec.Stage) ([]Stage, error) {
+	var out []Stage
+
+	for _, stage := range stages {
+		var (
+			dbStage Stage
+
+			stageDescription      *spec.StageDescription
+			subpassesDescriptions []*spec.StageDescription
+			subpassesKinds        []string
+		)
+
+		switch typ := stage.StageKind.(type) {
+		case *spec.Stage_Ansibler:
+			dbStage.Kind, stageDescription = Ansibler, typ.Ansibler.GetDescription()
+			for _, p := range typ.Ansibler.GetSubPasses() {
+				subpassesDescriptions = append(subpassesDescriptions, p.GetDescription())
+				subpassesKinds = append(subpassesKinds, p.GetKind().String())
+			}
+		case *spec.Stage_KubeEleven:
+			dbStage.Kind, stageDescription = KubeEleven, typ.KubeEleven.GetDescription()
+			for _, p := range typ.KubeEleven.GetSubPasses() {
+				subpassesDescriptions = append(subpassesDescriptions, p.GetDescription())
+				subpassesKinds = append(subpassesKinds, p.GetKind().String())
+			}
+		case *spec.Stage_Kuber:
+			dbStage.Kind, stageDescription = Kuber, typ.Kuber.GetDescription()
+			for _, p := range typ.Kuber.GetSubPasses() {
+				subpassesDescriptions = append(subpassesDescriptions, p.GetDescription())
+				subpassesKinds = append(subpassesKinds, p.GetKind().String())
+			}
+		case *spec.Stage_Terraformer:
+			dbStage.Kind, stageDescription = Terraformer, typ.Terraformer.GetDescription()
+			for _, p := range typ.Terraformer.GetSubPasses() {
+				subpassesDescriptions = append(subpassesDescriptions, p.GetDescription())
+				subpassesKinds = append(subpassesKinds, p.GetKind().String())
+			}
+		default:
+			// left as unknown
+		}
+
+		if dbStage.Kind == Unknown {
+			return nil, fmt.Errorf("task contains pipeline stage with unknown kind: %T", stage.GetStageKind())
+		}
+
+		dbStage.Description.About = stageDescription.GetAbout()
+		dbStage.Description.ErrorLevel = stageDescription.GetErrorLevel().String()
+
+		for i := range len(subpassesKinds) {
+			dbStage.SubPasses = append(dbStage.SubPasses, SubPass{
+				Kind: subpassesKinds[i],
+				Description: StageDescription{
+					About:      subpassesDescriptions[i].GetAbout(),
+					ErrorLevel: subpassesDescriptions[i].GetErrorLevel().String(),
+				},
+			})
+		}
+
+		out = append(out, dbStage)
+	}
+
+	return out, nil
+}
+
+func ConvertFromGRPCTask(t *spec.Task) ([]byte, error) {
+	marshaller := proto.MarshalOptions{Deterministic: true}
+	return marshaller.Marshal(t)
+}
+
+func ConvertToGRPCTask(t []byte) (*spec.Task, error) {
+	var task spec.Task
+	if err := proto.Unmarshal(t, &task); err != nil {
+		return nil, err
+	}
+	return &task, nil
+}
+
+func ConvertFromGRPCTaskEvent(te *spec.TaskEvent) (*TaskEvent, error) {
+	if te == nil {
+		return nil, nil
+	}
+
+	lowerPriority, err := ConvertFromGRPCTaskEvent(te.LowerPriority)
+	if err != nil {
+		return nil, err
+	}
+
+	task, err := ConvertFromGRPCTask(te.Task)
+	if err != nil {
+		return nil, err
+	}
+
+	var e TaskEvent
+	{
+		e.Id = te.Id
+		e.Timestamp = te.Timestamp.AsTime().Format(time.RFC3339)
+		e.Type = te.Event.String()
+		e.Task = task
+		e.Description = te.Description
+		e.CurrentStage = te.CurrentStage
+
+		e.Pipeline, err = ConvertFromGRPCStages(te.Pipeline)
 		if err != nil {
 			return nil, err
 		}
-		te = append(te, g)
+
+		e.LowerPriority = lowerPriority
 	}
 
-	return &spec.Events{Events: te, Ttl: w.TTL, Autoscaled: w.Autoscaled}, nil
+	return &e, nil
 }
 
-// ConvertFromGRPCEvents converts the events data from GRPC to the database representation.
-func ConvertFromGRPCEvents(w *spec.Events) (Events, error) {
-	var te []TaskEvent
-	for _, e := range w.Events {
-		t, err := proto.Marshal(e.Task)
-		if err != nil {
-			return Events{}, err
-		}
-
-		r, err := proto.Marshal(e.OnError)
-		if err != nil {
-			return Events{}, err
-		}
-
-		te = append(te, TaskEvent{
-			Id:          e.Id,
-			Timestamp:   e.Timestamp.AsTime().Format(time.RFC3339),
-			Event:       e.Event.String(),
-			Task:        t,
-			Description: e.Description,
-			OnError:     r,
-		})
+func ConvertToGRPCTaskEvent(te *TaskEvent) (*spec.TaskEvent, error) {
+	if te == nil {
+		return nil, nil
 	}
 
-	return Events{TaskEvents: te, TTL: w.Ttl, Autoscaled: w.Autoscaled}, nil
-}
+	lowerPriority, err := ConvertToGRPCTaskEvent(te.LowerPriority)
+	if err != nil {
+		return nil, err
+	}
 
-func ConvertToGRPCTaskEvent(te TaskEvent) (*spec.TaskEvent, error) {
-	var task spec.Task
-	if err := proto.Unmarshal(te.Task, &task); err != nil {
+	task, err := ConvertToGRPCTask(te.Task)
+	if err != nil {
 		return nil, err
 	}
 
@@ -63,37 +253,67 @@ func ConvertToGRPCTaskEvent(te TaskEvent) (*spec.TaskEvent, error) {
 		return nil, err
 	}
 
-	var strategy spec.Retry
-	if err := proto.Unmarshal(te.OnError, &strategy); err != nil {
+	e := &spec.TaskEvent{
+		Id:            te.Id,
+		Timestamp:     timestamppb.New(t),
+		Event:         spec.Event(spec.Event_value[te.Type]),
+		Task:          task,
+		Description:   te.Description,
+		Pipeline:      nil,
+		CurrentStage:  te.CurrentStage,
+		LowerPriority: lowerPriority,
+	}
+
+	e.Pipeline, err = ConvertToGRPCStages(te.Pipeline)
+	if err != nil {
 		return nil, err
 	}
 
-	return &spec.TaskEvent{
-		Id:          te.Id,
-		Timestamp:   timestamppb.New(t),
-		Event:       spec.Event(spec.Event_value[te.Event]),
-		Task:        &task,
-		Description: te.Description,
-		OnError:     &strategy,
-	}, nil
+	return e, nil
 }
 
 // ConvertFromGRPCWorkflow converts the workflow state data from GRPC to the database representation.
 func ConvertFromGRPCWorkflow(w *spec.Workflow) Workflow {
+	var previous []FinishedWorkflow
+	for _, p := range w.Previous {
+		fw := FinishedWorkflow{
+			Status:          p.Status.String(),
+			TaskDescription: p.TaskDescription,
+			Stage:           StageKind(p.Stage),
+			Timestamp:       p.Timestamp.AsTime().UTC().Format(time.RFC3339),
+		}
+		previous = append(previous, fw)
+	}
 	return Workflow{
 		Status:      w.GetStatus().String(),
-		Stage:       w.GetStage().String(),
 		Description: w.GetDescription(),
 		Timestamp:   time.Now().UTC().Format(time.RFC3339),
+		Previous:    previous,
 	}
 }
 
 // ConvertToGRPCWorkflow converts the database representation of the workflow state to GRPC.
 func ConvertToGRPCWorkflow(w Workflow) *spec.Workflow {
+	var previous []*spec.FinishedWorkflow
+	for _, p := range w.Previous {
+		t, err := time.Parse(time.RFC3339, p.Timestamp)
+		if err != nil {
+			t = time.Now()
+		}
+		t = t.UTC()
+		fw := &spec.FinishedWorkflow{
+			Status:          spec.Workflow_Status(spec.Workflow_Status_value[p.Status]),
+			TaskDescription: p.TaskDescription,
+			Timestamp:       timestamppb.New(t),
+			Stage:           string(p.Stage),
+		}
+		previous = append(previous, fw)
+	}
+
 	return &spec.Workflow{
-		Stage:       spec.Workflow_Stage(spec.Workflow_Stage_value[w.Stage]),
 		Status:      spec.Workflow_Status(spec.Workflow_Status_value[w.Status]),
 		Description: w.Description,
+		Previous:    previous,
 	}
 }
 
@@ -118,42 +338,11 @@ func ConvertFromGRPC(cfg *spec.Config) (*Config, error) {
 	clusters := make(map[string]*ClusterState, len(cfg.GetClusters()))
 
 	for k8sName, cluster := range cfg.GetClusters() {
-		marshaller := proto.MarshalOptions{Deterministic: true}
-		currentK8s, err := marshaller.Marshal(cluster.GetCurrent().GetK8S())
+		c, err := ConvertFromGRPCClusterState(cluster)
 		if err != nil {
-			return nil, fmt.Errorf("failed to marshal current k8s cluster: %w", err)
+			return nil, err
 		}
-		currentLbs, err := marshaller.Marshal(cluster.GetCurrent().GetLoadBalancers())
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal current load balancer clusters: %w", err)
-		}
-
-		desiredK8s, err := marshaller.Marshal(cluster.GetDesired().GetK8S())
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal desired k8s cluster: %w", err)
-		}
-		desiredLbs, err := marshaller.Marshal(cluster.GetDesired().GetLoadBalancers())
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal desired load balancer clusters: %w", err)
-		}
-
-		events, err := ConvertFromGRPCEvents(cluster.GetEvents())
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert events to database representation: %w", err)
-		}
-
-		clusters[k8sName] = &ClusterState{
-			Current: Clusters{
-				K8s:           currentK8s,
-				LoadBalancers: currentLbs,
-			},
-			Desired: Clusters{
-				K8s:           desiredK8s,
-				LoadBalancers: desiredLbs,
-			},
-			Events: events,
-			State:  ConvertFromGRPCWorkflow(cluster.State),
-		}
+		clusters[k8sName] = c
 	}
 
 	if len(clusters) > 0 {
@@ -186,34 +375,11 @@ func ConvertToGRPC(cfg *Config) (*spec.Config, error) {
 	clusters := make(map[string]*spec.ClusterState)
 
 	for k8sName, cluster := range cfg.Clusters {
-		events, err := ConvertToGRPCEvents(cluster.Events)
+		c, err := ConvertToGRPCClusterState(cluster)
 		if err != nil {
-			return nil, fmt.Errorf("failed to convert db events back to grpc representation: %w", err)
+			return nil, err
 		}
-
-		// WARN:
-		// If making changes to .proto files in the /spec directory
-		// we need to always consider backwards compabitlity with the
-		// version stored in the database. The database is the proto message
-		// in the past and if we update the /spec directory by modifying fields
-		// or changing their order we need to consider these changes when reading it from
-		// the database aswell.
-		current, err := convertClusters(cluster.Current)
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert db clusters back to grpc representation: %w", err)
-		}
-
-		desired, err := convertClusters(cluster.Desired)
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert db clusters back to grpc representation: %w", err)
-		}
-
-		clusters[k8sName] = &spec.ClusterState{
-			Current: current,
-			Desired: desired,
-			Events:  events,
-			State:   ConvertToGRPCWorkflow(cluster.State),
-		}
+		clusters[k8sName] = c
 	}
 
 	if len(clusters) > 0 {
@@ -228,24 +394,132 @@ func ConvertToGRPC(cfg *Config) (*spec.Config, error) {
 // representation will have a nil (essentially mimicking what the GRPC unmarshall does
 // if the respective value is not set) value as well when converted which simplifies
 // checking absence of a specific state (i.e. current, desired).
-func convertClusters(cluster Clusters) (*spec.Clusters, error) {
-	var out *spec.Clusters
+func ConvertToGRPCClusters(cluster Clusters) (*spec.Clusters, error) {
+	out := spec.Clusters{
+		K8S:           nil,
+		LoadBalancers: &spec.LoadBalancers{},
+	}
 
 	if len(cluster.K8s) > 0 {
-		var k8s spec.K8Scluster
-		if err := proto.Unmarshal(cluster.K8s, &k8s); err != nil {
-			return nil, fmt.Errorf("failed to unmarshall current k8s cluster: %w", err)
+		k8s, err := ConvertToGRPCCluster(cluster.K8s)
+		if err != nil {
+			return nil, err
 		}
-		out = &spec.Clusters{K8S: &k8s}
+
+		out.K8S = k8s
 
 		if len(cluster.LoadBalancers) > 0 {
-			var lbs spec.LoadBalancers
-			if err := proto.Unmarshal(cluster.LoadBalancers, &lbs); err != nil {
-				return nil, fmt.Errorf("failed to unmarshall current load balancers cluster: %w", err)
+			lbs, err := ConvertToGRPCLoadBalancers(cluster.LoadBalancers)
+			if err != nil {
+				return nil, err
 			}
-			out.LoadBalancers = &lbs
+			out.LoadBalancers = lbs
 		}
 	}
 
+	return &out, nil
+}
+
+func ConvertFromGRPCClusters(cluster *spec.Clusters) (Clusters, error) {
+	k8s, err := ConvertFromGRPCCluster(cluster.GetK8S())
+	if err != nil {
+		return Clusters{}, err
+	}
+
+	lbs, err := ConvertFromGRPCLoadBalancers(cluster.GetLoadBalancers())
+	if err != nil {
+		return Clusters{}, err
+	}
+
+	out := Clusters{
+		K8s:           k8s,
+		LoadBalancers: lbs,
+	}
+
 	return out, nil
+}
+
+// ConvertToGRPCCluster converts the database representation to the GRPC representation.
+func ConvertToGRPCCluster(k8s []byte) (*spec.K8Scluster, error) {
+	var cluster spec.K8Scluster
+	if err := proto.Unmarshal(k8s, &cluster); err != nil {
+		return nil, fmt.Errorf("failed to unmarshall kuberentes cluster: %w", err)
+	}
+	return &cluster, nil
+}
+
+// ConvertToGRPCLoadBalancers converts the database representation to the GRPC representation.
+func ConvertToGRPCLoadBalancers(lbs []byte) (*spec.LoadBalancers, error) {
+	var loadbalancers spec.LoadBalancers
+	if err := proto.Unmarshal(lbs, &loadbalancers); err != nil {
+		return nil, fmt.Errorf("failed to unmarshall load balancer clusters: %w", err)
+	}
+	return &loadbalancers, nil
+}
+
+// ConvertFromGRPCLoadBalancers deterministically converts the grpc representation to the database representation.
+func ConvertFromGRPCLoadBalancers(lbs *spec.LoadBalancers) ([]byte, error) {
+	marshaller := proto.MarshalOptions{Deterministic: true}
+	b, err := marshaller.Marshal(lbs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal loadbalancer cluster: %w", err)
+	}
+	return b, nil
+}
+
+// ConvertFromGRPCCluster deterministically converts the grpc representation to the database representation.
+func ConvertFromGRPCCluster(k8s *spec.K8Scluster) ([]byte, error) {
+	marshaller := proto.MarshalOptions{Deterministic: true}
+	b, err := marshaller.Marshal(k8s)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal kubernetes cluster: %w", err)
+	}
+	return b, nil
+}
+
+func ConvertToGRPCClusterState(cluster *ClusterState) (*spec.ClusterState, error) {
+	i, err := ConvertToGRPCTaskEvent(cluster.InFlight)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert db events back to grpc representation: %w", err)
+	}
+
+	// WARN:
+	// If making changes to .proto files in the /spec directory
+	// we need to always consider backwards compabitlity with the
+	// version stored in the database. The database is the proto message
+	// in the past and if we update the /spec directory by modifying fields
+	// or changing their order we need to consider these changes when reading
+	// it from the database aswell.
+	current, err := ConvertToGRPCClusters(cluster.Current)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert db clusters back to grpc representation: %w", err)
+	}
+
+	out := spec.ClusterState{
+		Current:  current,
+		State:    ConvertToGRPCWorkflow(cluster.State),
+		InFlight: i,
+	}
+
+	return &out, nil
+}
+
+func ConvertFromGRPCClusterState(cluster *spec.ClusterState) (*ClusterState, error) {
+	clusters, err := ConvertFromGRPCClusters(cluster.GetCurrent())
+	if err != nil {
+		return nil, err
+	}
+
+	task, err := ConvertFromGRPCTaskEvent(cluster.GetInFlight())
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert task to database representation: %w", err)
+	}
+
+	out := ClusterState{
+		Current:  clusters,
+		InFlight: task,
+		State:    ConvertFromGRPCWorkflow(cluster.State),
+	}
+
+	return &out, nil
 }

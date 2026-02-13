@@ -21,8 +21,6 @@ type ClientAPI interface {
 	io.Closer
 	healthcheck.HealthChecker
 
-	TaskAPI
 	ManifestAPI
 	CrudAPI
-	StateAPI
 }

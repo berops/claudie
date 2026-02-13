@@ -51,6 +51,6 @@ func (u *Usecases) DeleteConfig(ctx context.Context, name string) error {
 		return err
 	}
 
-	log.Info().Msgf("Config %s was successfully marked for deletion", name)
+	log.Debug().Msgf("Config %s was successfully marked for deletion", name)
 	return nil
 }
