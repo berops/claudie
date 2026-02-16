@@ -15,16 +15,6 @@ updates:
         patterns:
           - "*"
 
-  # Maintain dependencies for Builder Docker
-  - package-ecosystem: "docker"
-    directory: "/services/builder"
-    schedule:
-      interval: "monthly"
-    groups: # Group all docker updates into single PR.
-      docker-dependencies:
-        patterns:
-          - "*"
-
   # Maintain dependencies for Claudie Operator Docker
   - package-ecosystem: "docker"
     directory: "/services/claudie-operator"

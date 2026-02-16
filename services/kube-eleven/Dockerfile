@@ -21,7 +21,7 @@ RUN go mod download
 COPY . .
 
 #Change the directory
-WORKDIR /go/services/kube-eleven/server
+WORKDIR /go/services/kube-eleven/cmd/worker
 
 #Compile the golang code, CGO_ENABLE=0 removes cross compile dependencies
 RUN CGO_ENABLED=0 go build
@@ -38,10 +38,10 @@ RUN apk update
 RUN apk add -q bash
 
 COPY --from=build /go/kubeone_dir/kubeone /usr/local/bin
-COPY --from=build /go/services/kube-eleven/server/server /bin/services/kube-eleven/server/server
+COPY --from=build /go/services/kube-eleven/cmd/worker/worker /bin/services/kube-eleven/worker
 
-#Run server
+#Run worker
 WORKDIR /bin
-ENTRYPOINT [ "./services/kube-eleven/server/server" ]
+ENTRYPOINT [ "./services/kube-eleven/worker" ]
 
 #NOTE: We cannot use scratch image for our dockerfile since we are using shell commands to execute commands inside the code

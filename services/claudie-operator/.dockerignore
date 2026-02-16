@@ -6,7 +6,6 @@ LICENSE
 .git
 services/terraformer
 services/kube-eleven
-services/builder
 services/testing-framework
 services/ansibler
 services/kuber

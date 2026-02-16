@@ -7,7 +7,6 @@
 ### Microservices
 
 - [Manager](https://github.com/berops/claudie/tree/master/services/manager)
-- [Builder](https://github.com/berops/claudie/tree/master/services/builder)
 - [Terraformer](https://github.com/berops/claudie/tree/master/services/terraformer)
 - [Ansibler](https://github.com/berops/claudie/tree/master/services/ansibler)
 - [Kube-eleven](https://github.com/berops/claudie/tree/master/services/kube-eleven)
@@ -32,7 +31,8 @@
 ## Manager
 
 Manger is the brain and main entry point for claudie.
-To build clusters users/services submit their configs to the manager service. The manager creates the desired state and schedules a number of jobs to be executed in order to achieve the desired state based on the current state. The jobs are then picked up by the builder service.
+To build clusters users/services submit their configs to the manager service. The manager creates the desired state and schedules a number of jobs to be executed in order to achieve the desired state based on the current state. The jobs are pushed to a
+NATS worker queue from which the tasks are picked up by the targeted services.
 
 For the API see the [GRPC definitions](https://github.com/berops/claudie/blob/master/proto/manager.proto).
 
@@ -42,22 +42,18 @@ Each newly created manifest starts in the Pending state. Pending manifests
 are periodically checked and based on the specification provided in the applied configs, the desired
 state for each cluster, along with the tasks to be performed to achieve the desired state are created,
 after which the manifest is moved to the  scheduled state. Tasks from Scheduled manifests are picked up
-by builder services gradually building the desired state. From this state, the manifest can end up in the 
+by worker services, gradually building the desired state. From this state, the manifest can end up in the 
 Done or Error state. Any changes to the input manifest while it is in the Scheduled state will be reflected after 
 it is moved to the Done state. After which the cycle repeats.
 
 Each cluster has a current state and desired state based on which tasks are created. The desired state is created only
 once, when changes to the configuration are detected. Several tasks can be created that will gradually converge the current
-state to the desired state. Each time a task is picked up by the builder service the relevant state from the current state
-is transferred to the task so that each task has up-to-date information about current infrastructure and its up to the
-builder service to build/modify/delete the missing pieces in the picked up task.
+state to the desired state. Each time a task is picked up by the any of the worker services the relevant state from the current state
+is transferred to the task so that each task has up-to-date information about current infrastructure and its up to that
+respective service to build/modify/delete the missing pieces in the picked up task.
 
-Once a task is done building, either in error or successfully, the current state should be updated by the builder
-service so that the manager has the actual information about the current state of the infrastructure. When the
-manager receives a request for the update of the current state it transfers relevant information to the desired state
-that was created at the beginning, before the tasks were scheduled. This is the only point where the desired state is
-updated, and we only transfer information from current state (such as newly build nodes, ips, etc...). After all tasks
-have finished successfully the current and desired state should match.
+Once a task is done building, either in error or successfully, the current state should be updated by communicating the
+changes back to the manager service so that the manager has the actual information about the current state of the infrastructure.
 
 #### Rolling updates
 
@@ -88,10 +84,6 @@ The individual states of the Input Manifest and how they are processed within ma
 
 ![done/error state](done_error_state.png)
 
-
-## Builder
-
-Processed tasks scheduled by the manager gradually building the desired state of the infrastructure. It communicates with `terraformer`, `ansibler`, `kube-eleven` and `kuber` services in order to manage the infrastructure. 
 
 ### Flow
 

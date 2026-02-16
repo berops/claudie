@@ -147,8 +147,8 @@ func (d *DynamicNodePool) Validate(m *Manifest) error {
 func (d *DynamicNodePool) validateGCPGpuConfig(m *Manifest) error {
 	providerType, err := m.GetProviderType(d.ProviderSpec.Name)
 	if err != nil {
-		// Provider existence is validated in NodePool.Validate() at lines 28-31
-		// before DynamicNodePool.Validate() is called.
+		// Provider existence is validated in [NodePool.Validate] before
+		// calling [DynamicNodePool.Validate].
 		return nil
 	}
 

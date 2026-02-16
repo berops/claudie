@@ -43,5 +43,3 @@ In case you are not sure where to go next, you can just simply start with our [G
 If you need help or want to chat with us, feel free to join our slack channel[<a href="https://kubernetes.slack.com/archives/C05SW4GKPL3" target="_blank" rel="noopener noreferrer">
   <img src="slack_logo.png" alt="Alt text" style="height:24px;margin-left: 5px;">
 </a>]()(Get invite [here](https://communityinviter.com/apps/kubernetes/community))
-
-

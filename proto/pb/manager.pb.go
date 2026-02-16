@@ -238,26 +238,26 @@ func (x *MarkForDeletionResponse) GetVersion() uint64 {
 	return 0
 }
 
-type NextTaskRequest struct {
+type ListConfigsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *NextTaskRequest) Reset() {
-	*x = NextTaskRequest{}
+func (x *ListConfigsRequest) Reset() {
+	*x = ListConfigsRequest{}
 	mi := &file_manager_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *NextTaskRequest) String() string {
+func (x *ListConfigsRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*NextTaskRequest) ProtoMessage() {}
+func (*ListConfigsRequest) ProtoMessage() {}
 
-func (x *NextTaskRequest) ProtoReflect() protoreflect.Message {
+func (x *ListConfigsRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_manager_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -269,289 +269,33 @@ func (x *NextTaskRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use NextTaskRequest.ProtoReflect.Descriptor instead.
-func (*NextTaskRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use ListConfigsRequest.ProtoReflect.Descriptor instead.
+func (*ListConfigsRequest) Descriptor() ([]byte, []int) {
 	return file_manager_proto_rawDescGZIP(), []int{4}
 }
 
-type NextTaskResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	State         *spec.Workflow         `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`
-	Current       *spec.Clusters         `protobuf:"bytes,2,opt,name=current,proto3" json:"current,omitempty"`
-	Event         *spec.TaskEvent        `protobuf:"bytes,3,opt,name=event,proto3" json:"event,omitempty"`
-	Ttl           int32                  `protobuf:"varint,4,opt,name=ttl,proto3" json:"ttl,omitempty"`
-	Cluster       string                 `protobuf:"bytes,5,opt,name=cluster,proto3" json:"cluster,omitempty"`
-	Version       uint64                 `protobuf:"varint,6,opt,name=version,proto3" json:"version,omitempty"`
-	Name          string                 `protobuf:"bytes,7,opt,name=name,proto3" json:"name,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *NextTaskResponse) Reset() {
-	*x = NextTaskResponse{}
-	mi := &file_manager_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *NextTaskResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*NextTaskResponse) ProtoMessage() {}
-
-func (x *NextTaskResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_manager_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use NextTaskResponse.ProtoReflect.Descriptor instead.
-func (*NextTaskResponse) Descriptor() ([]byte, []int) {
-	return file_manager_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *NextTaskResponse) GetState() *spec.Workflow {
-	if x != nil {
-		return x.State
-	}
-	return nil
-}
-
-func (x *NextTaskResponse) GetCurrent() *spec.Clusters {
-	if x != nil {
-		return x.Current
-	}
-	return nil
-}
-
-func (x *NextTaskResponse) GetEvent() *spec.TaskEvent {
-	if x != nil {
-		return x.Event
-	}
-	return nil
-}
-
-func (x *NextTaskResponse) GetTtl() int32 {
-	if x != nil {
-		return x.Ttl
-	}
-	return 0
-}
-
-func (x *NextTaskResponse) GetCluster() string {
-	if x != nil {
-		return x.Cluster
-	}
-	return ""
-}
-
-func (x *NextTaskResponse) GetVersion() uint64 {
-	if x != nil {
-		return x.Version
-	}
-	return 0
-}
-
-func (x *NextTaskResponse) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-type TaskUpdateRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Cluster       string                 `protobuf:"bytes,2,opt,name=cluster,proto3" json:"cluster,omitempty"`
-	TaskId        string                 `protobuf:"bytes,3,opt,name=taskId,proto3" json:"taskId,omitempty"`
-	Version       uint64                 `protobuf:"varint,4,opt,name=version,proto3" json:"version,omitempty"`
-	State         *spec.Workflow         `protobuf:"bytes,5,opt,name=state,proto3" json:"state,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *TaskUpdateRequest) Reset() {
-	*x = TaskUpdateRequest{}
-	mi := &file_manager_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *TaskUpdateRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*TaskUpdateRequest) ProtoMessage() {}
-
-func (x *TaskUpdateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_manager_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use TaskUpdateRequest.ProtoReflect.Descriptor instead.
-func (*TaskUpdateRequest) Descriptor() ([]byte, []int) {
-	return file_manager_proto_rawDescGZIP(), []int{6}
-}
-
-func (x *TaskUpdateRequest) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *TaskUpdateRequest) GetCluster() string {
-	if x != nil {
-		return x.Cluster
-	}
-	return ""
-}
-
-func (x *TaskUpdateRequest) GetTaskId() string {
-	if x != nil {
-		return x.TaskId
-	}
-	return ""
-}
-
-func (x *TaskUpdateRequest) GetVersion() uint64 {
-	if x != nil {
-		return x.Version
-	}
-	return 0
-}
-
-func (x *TaskUpdateRequest) GetState() *spec.Workflow {
-	if x != nil {
-		return x.State
-	}
-	return nil
-}
-
-type TaskUpdateResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Version       uint64                 `protobuf:"varint,2,opt,name=version,proto3" json:"version,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *TaskUpdateResponse) Reset() {
-	*x = TaskUpdateResponse{}
-	mi := &file_manager_proto_msgTypes[7]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *TaskUpdateResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*TaskUpdateResponse) ProtoMessage() {}
-
-func (x *TaskUpdateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_manager_proto_msgTypes[7]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use TaskUpdateResponse.ProtoReflect.Descriptor instead.
-func (*TaskUpdateResponse) Descriptor() ([]byte, []int) {
-	return file_manager_proto_rawDescGZIP(), []int{7}
-}
-
-func (x *TaskUpdateResponse) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *TaskUpdateResponse) GetVersion() uint64 {
-	if x != nil {
-		return x.Version
-	}
-	return 0
-}
-
-type ListConfigRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ListConfigRequest) Reset() {
-	*x = ListConfigRequest{}
-	mi := &file_manager_proto_msgTypes[8]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ListConfigRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ListConfigRequest) ProtoMessage() {}
-
-func (x *ListConfigRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_manager_proto_msgTypes[8]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ListConfigRequest.ProtoReflect.Descriptor instead.
-func (*ListConfigRequest) Descriptor() ([]byte, []int) {
-	return file_manager_proto_rawDescGZIP(), []int{8}
-}
-
-type ListConfigResponse struct {
+type ListConfigsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Configs       []*spec.Config         `protobuf:"bytes,1,rep,name=configs,proto3" json:"configs,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ListConfigResponse) Reset() {
-	*x = ListConfigResponse{}
-	mi := &file_manager_proto_msgTypes[9]
+func (x *ListConfigsResponse) Reset() {
+	*x = ListConfigsResponse{}
+	mi := &file_manager_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ListConfigResponse) String() string {
+func (x *ListConfigsResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListConfigResponse) ProtoMessage() {}
+func (*ListConfigsResponse) ProtoMessage() {}
 
-func (x *ListConfigResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_manager_proto_msgTypes[9]
+func (x *ListConfigsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_manager_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -562,16 +306,157 @@ func (x *ListConfigResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListConfigResponse.ProtoReflect.Descriptor instead.
-func (*ListConfigResponse) Descriptor() ([]byte, []int) {
-	return file_manager_proto_rawDescGZIP(), []int{9}
+// Deprecated: Use ListConfigsResponse.ProtoReflect.Descriptor instead.
+func (*ListConfigsResponse) Descriptor() ([]byte, []int) {
+	return file_manager_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *ListConfigResponse) GetConfigs() []*spec.Config {
+func (x *ListConfigsResponse) GetConfigs() []*spec.Config {
 	if x != nil {
 		return x.Configs
 	}
 	return nil
+}
+
+type NodePoolUpdateTargetSizeRequest struct {
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	Config   string                 `protobuf:"bytes,1,opt,name=config,proto3" json:"config,omitempty"`
+	Cluster  string                 `protobuf:"bytes,2,opt,name=cluster,proto3" json:"cluster,omitempty"`
+	Nodepool string                 `protobuf:"bytes,3,opt,name=nodepool,proto3" json:"nodepool,omitempty"`
+	// If set the node will be searched for in this
+	// specified loadbalanacer. The passed in [Cluster]
+	// specifies the kuberentes cluster, but loadbalancers
+	// are attached to the kubernetes cluster thus the search
+	// requires the kubernetes cluster id but makes the loadbalancer
+	// id optional.
+	Loadbalancer *string `protobuf:"bytes,4,opt,name=loadbalancer,proto3,oneof" json:"loadbalancer,omitempty"`
+	// Specifies the target size of the nodepool.
+	//
+	// For Dynamic and static nodepools this request or value
+	// will be ignored
+	//
+	// Why ?
+	//
+	// If this request would change the targetSize it would be
+	// overwritten on the next reconciliation loop by the desired
+	// state from the InputManifest which would result in a Noop.
+	//
+	// Only for autoscaled nodepools this will have an effect, which
+	// effectively sets the TargetSize within the [Min, Max] range of
+	// the autoscaled nodepool.
+	TargetSize    int32 `protobuf:"varint,5,opt,name=targetSize,proto3" json:"targetSize,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NodePoolUpdateTargetSizeRequest) Reset() {
+	*x = NodePoolUpdateTargetSizeRequest{}
+	mi := &file_manager_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NodePoolUpdateTargetSizeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NodePoolUpdateTargetSizeRequest) ProtoMessage() {}
+
+func (x *NodePoolUpdateTargetSizeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_manager_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NodePoolUpdateTargetSizeRequest.ProtoReflect.Descriptor instead.
+func (*NodePoolUpdateTargetSizeRequest) Descriptor() ([]byte, []int) {
+	return file_manager_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *NodePoolUpdateTargetSizeRequest) GetConfig() string {
+	if x != nil {
+		return x.Config
+	}
+	return ""
+}
+
+func (x *NodePoolUpdateTargetSizeRequest) GetCluster() string {
+	if x != nil {
+		return x.Cluster
+	}
+	return ""
+}
+
+func (x *NodePoolUpdateTargetSizeRequest) GetNodepool() string {
+	if x != nil {
+		return x.Nodepool
+	}
+	return ""
+}
+
+func (x *NodePoolUpdateTargetSizeRequest) GetLoadbalancer() string {
+	if x != nil && x.Loadbalancer != nil {
+		return *x.Loadbalancer
+	}
+	return ""
+}
+
+func (x *NodePoolUpdateTargetSizeRequest) GetTargetSize() int32 {
+	if x != nil {
+		return x.TargetSize
+	}
+	return 0
+}
+
+type NodePoolUpdateTargetSizeResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The new updated target size.
+	TargetSize    int32 `protobuf:"varint,1,opt,name=targetSize,proto3" json:"targetSize,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NodePoolUpdateTargetSizeResponse) Reset() {
+	*x = NodePoolUpdateTargetSizeResponse{}
+	mi := &file_manager_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NodePoolUpdateTargetSizeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NodePoolUpdateTargetSizeResponse) ProtoMessage() {}
+
+func (x *NodePoolUpdateTargetSizeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_manager_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NodePoolUpdateTargetSizeResponse.ProtoReflect.Descriptor instead.
+func (*NodePoolUpdateTargetSizeResponse) Descriptor() ([]byte, []int) {
+	return file_manager_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *NodePoolUpdateTargetSizeResponse) GetTargetSize() int32 {
+	if x != nil {
+		return x.TargetSize
+	}
+	return 0
 }
 
 type GetConfigRequest struct {
@@ -583,7 +468,7 @@ type GetConfigRequest struct {
 
 func (x *GetConfigRequest) Reset() {
 	*x = GetConfigRequest{}
-	mi := &file_manager_proto_msgTypes[10]
+	mi := &file_manager_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -595,7 +480,7 @@ func (x *GetConfigRequest) String() string {
 func (*GetConfigRequest) ProtoMessage() {}
 
 func (x *GetConfigRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_manager_proto_msgTypes[10]
+	mi := &file_manager_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -608,7 +493,7 @@ func (x *GetConfigRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetConfigRequest.ProtoReflect.Descriptor instead.
 func (*GetConfigRequest) Descriptor() ([]byte, []int) {
-	return file_manager_proto_rawDescGZIP(), []int{10}
+	return file_manager_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *GetConfigRequest) GetName() string {
@@ -627,7 +512,7 @@ type GetConfigResponse struct {
 
 func (x *GetConfigResponse) Reset() {
 	*x = GetConfigResponse{}
-	mi := &file_manager_proto_msgTypes[11]
+	mi := &file_manager_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -639,7 +524,7 @@ func (x *GetConfigResponse) String() string {
 func (*GetConfigResponse) ProtoMessage() {}
 
 func (x *GetConfigResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_manager_proto_msgTypes[11]
+	mi := &file_manager_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -652,7 +537,7 @@ func (x *GetConfigResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetConfigResponse.ProtoReflect.Descriptor instead.
 func (*GetConfigResponse) Descriptor() ([]byte, []int) {
-	return file_manager_proto_rawDescGZIP(), []int{11}
+	return file_manager_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *GetConfigResponse) GetConfig() *spec.Config {
@@ -662,31 +547,61 @@ func (x *GetConfigResponse) GetConfig() *spec.Config {
 	return nil
 }
 
-type UpdateNodePoolRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Cluster       string                 `protobuf:"bytes,2,opt,name=cluster,proto3" json:"cluster,omitempty"`
-	Version       uint64                 `protobuf:"varint,3,opt,name=version,proto3" json:"version,omitempty"`
-	Nodepool      *spec.NodePool         `protobuf:"bytes,4,opt,name=nodepool,proto3" json:"nodepool,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+type MarkNodeForDeletionRequest struct {
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	Config   string                 `protobuf:"bytes,1,opt,name=config,proto3" json:"config,omitempty"`
+	Cluster  string                 `protobuf:"bytes,2,opt,name=cluster,proto3" json:"cluster,omitempty"`
+	Nodepool string                 `protobuf:"bytes,3,opt,name=nodepool,proto3" json:"nodepool,omitempty"`
+	Node     string                 `protobuf:"bytes,4,opt,name=node,proto3" json:"node,omitempty"`
+	// If set the node will be searched for in this
+	// specified loadbalanacer. The passed in [Cluster]
+	// specifies the kuberentes cluster, but loadbalancers
+	// are attached to the kubernetes cluster thus the search
+	// requires the kubernetes cluster id but makes the loadbalancer
+	// id optional.
+	Loadbalancer *string `protobuf:"bytes,5,opt,name=loadbalancer,proto3,oneof" json:"loadbalancer,omitempty"`
+	// This flag only has effect with autoscaled dynamic nodepools,
+	// if any other nodepool is detected and this parameter is set
+	// it will be ignored.
+	//
+	// Why only for autoscaled nodepools ?
+	//
+	// Dynamic and Static nodepools have a fixed desired capacity that
+	// does not change until explicitly changed in the InputManifest.
+	// So even if this Api endpoint would allow to decrease the capacity
+	// for these nodepools on the next iteration of the reconciliation
+	// loop it would be overwritten by the desired count and effectively
+	// result in a Noop.
+	//
+	// Autoscaled nodepools work within a range of nodes [Min, Max] and
+	// works with two counters for nodes, 'count' which is the current number
+	// of nodes within the nodepool and 'targetSize' which is the Target Size
+	// within [Min, Max] that the NodePool should have. This parameter is
+	// externally managed, i.e. the desired state does not come from the
+	// InputManifest, for autoscaled nodepools and thus is also made
+	// available via this parameter.
+	//
+	// This parameter adjusts the 'targetSize' which will result of downscaling.
+	ShouldDecrementDesiredCapacity *bool `protobuf:"varint,6,opt,name=shouldDecrementDesiredCapacity,proto3,oneof" json:"shouldDecrementDesiredCapacity,omitempty"`
+	unknownFields                  protoimpl.UnknownFields
+	sizeCache                      protoimpl.SizeCache
 }
 
-func (x *UpdateNodePoolRequest) Reset() {
-	*x = UpdateNodePoolRequest{}
-	mi := &file_manager_proto_msgTypes[12]
+func (x *MarkNodeForDeletionRequest) Reset() {
+	*x = MarkNodeForDeletionRequest{}
+	mi := &file_manager_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *UpdateNodePoolRequest) String() string {
+func (x *MarkNodeForDeletionRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*UpdateNodePoolRequest) ProtoMessage() {}
+func (*MarkNodeForDeletionRequest) ProtoMessage() {}
 
-func (x *UpdateNodePoolRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_manager_proto_msgTypes[12]
+func (x *MarkNodeForDeletionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_manager_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -697,62 +612,76 @@ func (x *UpdateNodePoolRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use UpdateNodePoolRequest.ProtoReflect.Descriptor instead.
-func (*UpdateNodePoolRequest) Descriptor() ([]byte, []int) {
-	return file_manager_proto_rawDescGZIP(), []int{12}
+// Deprecated: Use MarkNodeForDeletionRequest.ProtoReflect.Descriptor instead.
+func (*MarkNodeForDeletionRequest) Descriptor() ([]byte, []int) {
+	return file_manager_proto_rawDescGZIP(), []int{10}
 }
 
-func (x *UpdateNodePoolRequest) GetName() string {
+func (x *MarkNodeForDeletionRequest) GetConfig() string {
 	if x != nil {
-		return x.Name
+		return x.Config
 	}
 	return ""
 }
 
-func (x *UpdateNodePoolRequest) GetCluster() string {
+func (x *MarkNodeForDeletionRequest) GetCluster() string {
 	if x != nil {
 		return x.Cluster
 	}
 	return ""
 }
 
-func (x *UpdateNodePoolRequest) GetVersion() uint64 {
-	if x != nil {
-		return x.Version
-	}
-	return 0
-}
-
-func (x *UpdateNodePoolRequest) GetNodepool() *spec.NodePool {
+func (x *MarkNodeForDeletionRequest) GetNodepool() string {
 	if x != nil {
 		return x.Nodepool
 	}
-	return nil
+	return ""
 }
 
-type UpdateNodePoolResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Version       uint64                 `protobuf:"varint,2,opt,name=version,proto3" json:"version,omitempty"`
+func (x *MarkNodeForDeletionRequest) GetNode() string {
+	if x != nil {
+		return x.Node
+	}
+	return ""
+}
+
+func (x *MarkNodeForDeletionRequest) GetLoadbalancer() string {
+	if x != nil && x.Loadbalancer != nil {
+		return *x.Loadbalancer
+	}
+	return ""
+}
+
+func (x *MarkNodeForDeletionRequest) GetShouldDecrementDesiredCapacity() bool {
+	if x != nil && x.ShouldDecrementDesiredCapacity != nil {
+		return *x.ShouldDecrementDesiredCapacity
+	}
+	return false
+}
+
+type MarkNodeForDeletionResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The new updated target size.
+	TargetSize    int64 `protobuf:"varint,1,opt,name=targetSize,proto3" json:"targetSize,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *UpdateNodePoolResponse) Reset() {
-	*x = UpdateNodePoolResponse{}
-	mi := &file_manager_proto_msgTypes[13]
+func (x *MarkNodeForDeletionResponse) Reset() {
+	*x = MarkNodeForDeletionResponse{}
+	mi := &file_manager_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *UpdateNodePoolResponse) String() string {
+func (x *MarkNodeForDeletionResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*UpdateNodePoolResponse) ProtoMessage() {}
+func (*MarkNodeForDeletionResponse) ProtoMessage() {}
 
-func (x *UpdateNodePoolResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_manager_proto_msgTypes[13]
+func (x *MarkNodeForDeletionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_manager_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -763,157 +692,14 @@ func (x *UpdateNodePoolResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use UpdateNodePoolResponse.ProtoReflect.Descriptor instead.
-func (*UpdateNodePoolResponse) Descriptor() ([]byte, []int) {
-	return file_manager_proto_rawDescGZIP(), []int{13}
+// Deprecated: Use MarkNodeForDeletionResponse.ProtoReflect.Descriptor instead.
+func (*MarkNodeForDeletionResponse) Descriptor() ([]byte, []int) {
+	return file_manager_proto_rawDescGZIP(), []int{11}
 }
 
-func (x *UpdateNodePoolResponse) GetName() string {
+func (x *MarkNodeForDeletionResponse) GetTargetSize() int64 {
 	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *UpdateNodePoolResponse) GetVersion() uint64 {
-	if x != nil {
-		return x.Version
-	}
-	return 0
-}
-
-type TaskCompleteRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Cluster       string                 `protobuf:"bytes,2,opt,name=cluster,proto3" json:"cluster,omitempty"`
-	TaskId        string                 `protobuf:"bytes,3,opt,name=taskId,proto3" json:"taskId,omitempty"`
-	Version       uint64                 `protobuf:"varint,4,opt,name=version,proto3" json:"version,omitempty"`
-	Workflow      *spec.Workflow         `protobuf:"bytes,5,opt,name=workflow,proto3" json:"workflow,omitempty"`
-	State         *spec.Clusters         `protobuf:"bytes,6,opt,name=state,proto3" json:"state,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *TaskCompleteRequest) Reset() {
-	*x = TaskCompleteRequest{}
-	mi := &file_manager_proto_msgTypes[14]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *TaskCompleteRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*TaskCompleteRequest) ProtoMessage() {}
-
-func (x *TaskCompleteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_manager_proto_msgTypes[14]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use TaskCompleteRequest.ProtoReflect.Descriptor instead.
-func (*TaskCompleteRequest) Descriptor() ([]byte, []int) {
-	return file_manager_proto_rawDescGZIP(), []int{14}
-}
-
-func (x *TaskCompleteRequest) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *TaskCompleteRequest) GetCluster() string {
-	if x != nil {
-		return x.Cluster
-	}
-	return ""
-}
-
-func (x *TaskCompleteRequest) GetTaskId() string {
-	if x != nil {
-		return x.TaskId
-	}
-	return ""
-}
-
-func (x *TaskCompleteRequest) GetVersion() uint64 {
-	if x != nil {
-		return x.Version
-	}
-	return 0
-}
-
-func (x *TaskCompleteRequest) GetWorkflow() *spec.Workflow {
-	if x != nil {
-		return x.Workflow
-	}
-	return nil
-}
-
-func (x *TaskCompleteRequest) GetState() *spec.Clusters {
-	if x != nil {
-		return x.State
-	}
-	return nil
-}
-
-type TaskCompleteResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Version       uint64                 `protobuf:"varint,2,opt,name=version,proto3" json:"version,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *TaskCompleteResponse) Reset() {
-	*x = TaskCompleteResponse{}
-	mi := &file_manager_proto_msgTypes[15]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *TaskCompleteResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*TaskCompleteResponse) ProtoMessage() {}
-
-func (x *TaskCompleteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_manager_proto_msgTypes[15]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use TaskCompleteResponse.ProtoReflect.Descriptor instead.
-func (*TaskCompleteResponse) Descriptor() ([]byte, []int) {
-	return file_manager_proto_rawDescGZIP(), []int{15}
-}
-
-func (x *TaskCompleteResponse) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *TaskCompleteResponse) GetVersion() uint64 {
-	if x != nil {
-		return x.Version
+		return x.TargetSize
 	}
 	return 0
 }
@@ -922,7 +708,7 @@ var File_manager_proto protoreflect.FileDescriptor
 
 const file_manager_proto_rawDesc = "" +
 	"\n" +
-	"\rmanager.proto\x12\aclaudie\x1a\x13spec/manifest.proto\x1a\x13spec/nodepool.proto\"\x88\x01\n" +
+	"\rmanager.proto\x12\aclaudie\x1a\x13spec/manifest.proto\"\x88\x01\n" +
 	"\x15UpsertManifestRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12/\n" +
 	"\x06k8sCtx\x18\x02 \x01(\v2\x17.spec.KubernetesContextR\x06k8sCtx\x12*\n" +
@@ -935,60 +721,47 @@ const file_manager_proto_rawDesc = "" +
 	"\aversion\x18\x02 \x01(\x04R\aversion\"G\n" +
 	"\x17MarkForDeletionResponse\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
-	"\aversion\x18\x02 \x01(\x04R\aversion\"\x11\n" +
-	"\x0fNextTaskRequest\"\xe3\x01\n" +
-	"\x10NextTaskResponse\x12$\n" +
-	"\x05state\x18\x01 \x01(\v2\x0e.spec.WorkflowR\x05state\x12(\n" +
-	"\acurrent\x18\x02 \x01(\v2\x0e.spec.ClustersR\acurrent\x12%\n" +
-	"\x05event\x18\x03 \x01(\v2\x0f.spec.TaskEventR\x05event\x12\x10\n" +
-	"\x03ttl\x18\x04 \x01(\x05R\x03ttl\x12\x18\n" +
-	"\acluster\x18\x05 \x01(\tR\acluster\x12\x18\n" +
-	"\aversion\x18\x06 \x01(\x04R\aversion\x12\x12\n" +
-	"\x04name\x18\a \x01(\tR\x04name\"\x99\x01\n" +
-	"\x11TaskUpdateRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
-	"\acluster\x18\x02 \x01(\tR\acluster\x12\x16\n" +
-	"\x06taskId\x18\x03 \x01(\tR\x06taskId\x12\x18\n" +
-	"\aversion\x18\x04 \x01(\x04R\aversion\x12$\n" +
-	"\x05state\x18\x05 \x01(\v2\x0e.spec.WorkflowR\x05state\"B\n" +
-	"\x12TaskUpdateResponse\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
-	"\aversion\x18\x02 \x01(\x04R\aversion\"\x13\n" +
-	"\x11ListConfigRequest\"<\n" +
-	"\x12ListConfigResponse\x12&\n" +
-	"\aconfigs\x18\x01 \x03(\v2\f.spec.ConfigR\aconfigs\"&\n" +
+	"\aversion\x18\x02 \x01(\x04R\aversion\"\x14\n" +
+	"\x12ListConfigsRequest\"=\n" +
+	"\x13ListConfigsResponse\x12&\n" +
+	"\aconfigs\x18\x01 \x03(\v2\f.spec.ConfigR\aconfigs\"\xc9\x01\n" +
+	"\x1fNodePoolUpdateTargetSizeRequest\x12\x16\n" +
+	"\x06config\x18\x01 \x01(\tR\x06config\x12\x18\n" +
+	"\acluster\x18\x02 \x01(\tR\acluster\x12\x1a\n" +
+	"\bnodepool\x18\x03 \x01(\tR\bnodepool\x12'\n" +
+	"\floadbalancer\x18\x04 \x01(\tH\x00R\floadbalancer\x88\x01\x01\x12\x1e\n" +
+	"\n" +
+	"targetSize\x18\x05 \x01(\x05R\n" +
+	"targetSizeB\x0f\n" +
+	"\r_loadbalancer\"B\n" +
+	" NodePoolUpdateTargetSizeResponse\x12\x1e\n" +
+	"\n" +
+	"targetSize\x18\x01 \x01(\x05R\n" +
+	"targetSize\"&\n" +
 	"\x10GetConfigRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\"9\n" +
 	"\x11GetConfigResponse\x12$\n" +
-	"\x06config\x18\x01 \x01(\v2\f.spec.ConfigR\x06config\"\x8b\x01\n" +
-	"\x15UpdateNodePoolRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
-	"\acluster\x18\x02 \x01(\tR\acluster\x12\x18\n" +
-	"\aversion\x18\x03 \x01(\x04R\aversion\x12*\n" +
-	"\bnodepool\x18\x04 \x01(\v2\x0e.spec.NodePoolR\bnodepool\"F\n" +
-	"\x16UpdateNodePoolResponse\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
-	"\aversion\x18\x02 \x01(\x04R\aversion\"\xc7\x01\n" +
-	"\x13TaskCompleteRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
-	"\acluster\x18\x02 \x01(\tR\acluster\x12\x16\n" +
-	"\x06taskId\x18\x03 \x01(\tR\x06taskId\x12\x18\n" +
-	"\aversion\x18\x04 \x01(\x04R\aversion\x12*\n" +
-	"\bworkflow\x18\x05 \x01(\v2\x0e.spec.WorkflowR\bworkflow\x12$\n" +
-	"\x05state\x18\x06 \x01(\v2\x0e.spec.ClustersR\x05state\"D\n" +
-	"\x14TaskCompleteResponse\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
-	"\aversion\x18\x02 \x01(\x04R\aversion2\xed\x04\n" +
+	"\x06config\x18\x01 \x01(\v2\f.spec.ConfigR\x06config\"\xa8\x02\n" +
+	"\x1aMarkNodeForDeletionRequest\x12\x16\n" +
+	"\x06config\x18\x01 \x01(\tR\x06config\x12\x18\n" +
+	"\acluster\x18\x02 \x01(\tR\acluster\x12\x1a\n" +
+	"\bnodepool\x18\x03 \x01(\tR\bnodepool\x12\x12\n" +
+	"\x04node\x18\x04 \x01(\tR\x04node\x12'\n" +
+	"\floadbalancer\x18\x05 \x01(\tH\x00R\floadbalancer\x88\x01\x01\x12K\n" +
+	"\x1eshouldDecrementDesiredCapacity\x18\x06 \x01(\bH\x01R\x1eshouldDecrementDesiredCapacity\x88\x01\x01B\x0f\n" +
+	"\r_loadbalancerB!\n" +
+	"\x1f_shouldDecrementDesiredCapacity\"=\n" +
+	"\x1bMarkNodeForDeletionResponse\x12\x1e\n" +
+	"\n" +
+	"targetSize\x18\x01 \x01(\x03R\n" +
+	"targetSize2\x9a\x04\n" +
 	"\x0eManagerService\x12Q\n" +
 	"\x0eUpsertManifest\x12\x1e.claudie.UpsertManifestRequest\x1a\x1f.claudie.UpsertManifestResponse\x12T\n" +
-	"\x0fMarkForDeletion\x12\x1f.claudie.MarkForDeletionRequest\x1a .claudie.MarkForDeletionResponse\x12F\n" +
-	"\vListConfigs\x12\x1a.claudie.ListConfigRequest\x1a\x1b.claudie.ListConfigResponse\x12B\n" +
-	"\tGetConfig\x12\x19.claudie.GetConfigRequest\x1a\x1a.claudie.GetConfigResponse\x12?\n" +
-	"\bNextTask\x12\x18.claudie.NextTaskRequest\x1a\x19.claudie.NextTaskResponse\x12E\n" +
-	"\n" +
-	"TaskUpdate\x12\x1a.claudie.TaskUpdateRequest\x1a\x1b.claudie.TaskUpdateResponse\x12K\n" +
-	"\fTaskComplete\x12\x1c.claudie.TaskCompleteRequest\x1a\x1d.claudie.TaskCompleteResponse\x12Q\n" +
-	"\x0eUpdateNodePool\x12\x1e.claudie.UpdateNodePoolRequest\x1a\x1f.claudie.UpdateNodePoolResponseB\n" +
+	"\x0fMarkForDeletion\x12\x1f.claudie.MarkForDeletionRequest\x1a .claudie.MarkForDeletionResponse\x12`\n" +
+	"\x13MarkNodeForDeletion\x12#.claudie.MarkNodeForDeletionRequest\x1a$.claudie.MarkNodeForDeletionResponse\x12H\n" +
+	"\vListConfigs\x12\x1b.claudie.ListConfigsRequest\x1a\x1c.claudie.ListConfigsResponse\x12B\n" +
+	"\tGetConfig\x12\x19.claudie.GetConfigRequest\x1a\x1a.claudie.GetConfigResponse\x12o\n" +
+	"\x18NodePoolUpdateTargetSize\x12(.claudie.NodePoolUpdateTargetSizeRequest\x1a).claudie.NodePoolUpdateTargetSizeResponseB\n" +
 	"Z\bproto/pbb\x06proto3"
 
 var (
@@ -1003,65 +776,46 @@ func file_manager_proto_rawDescGZIP() []byte {
 	return file_manager_proto_rawDescData
 }
 
-var file_manager_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
+var file_manager_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_manager_proto_goTypes = []any{
-	(*UpsertManifestRequest)(nil),   // 0: claudie.UpsertManifestRequest
-	(*UpsertManifestResponse)(nil),  // 1: claudie.UpsertManifestResponse
-	(*MarkForDeletionRequest)(nil),  // 2: claudie.MarkForDeletionRequest
-	(*MarkForDeletionResponse)(nil), // 3: claudie.MarkForDeletionResponse
-	(*NextTaskRequest)(nil),         // 4: claudie.NextTaskRequest
-	(*NextTaskResponse)(nil),        // 5: claudie.NextTaskResponse
-	(*TaskUpdateRequest)(nil),       // 6: claudie.TaskUpdateRequest
-	(*TaskUpdateResponse)(nil),      // 7: claudie.TaskUpdateResponse
-	(*ListConfigRequest)(nil),       // 8: claudie.ListConfigRequest
-	(*ListConfigResponse)(nil),      // 9: claudie.ListConfigResponse
-	(*GetConfigRequest)(nil),        // 10: claudie.GetConfigRequest
-	(*GetConfigResponse)(nil),       // 11: claudie.GetConfigResponse
-	(*UpdateNodePoolRequest)(nil),   // 12: claudie.UpdateNodePoolRequest
-	(*UpdateNodePoolResponse)(nil),  // 13: claudie.UpdateNodePoolResponse
-	(*TaskCompleteRequest)(nil),     // 14: claudie.TaskCompleteRequest
-	(*TaskCompleteResponse)(nil),    // 15: claudie.TaskCompleteResponse
-	(*spec.KubernetesContext)(nil),  // 16: spec.KubernetesContext
-	(*spec.Manifest)(nil),           // 17: spec.Manifest
-	(*spec.Workflow)(nil),           // 18: spec.Workflow
-	(*spec.Clusters)(nil),           // 19: spec.Clusters
-	(*spec.TaskEvent)(nil),          // 20: spec.TaskEvent
-	(*spec.Config)(nil),             // 21: spec.Config
-	(*spec.NodePool)(nil),           // 22: spec.NodePool
+	(*UpsertManifestRequest)(nil),            // 0: claudie.UpsertManifestRequest
+	(*UpsertManifestResponse)(nil),           // 1: claudie.UpsertManifestResponse
+	(*MarkForDeletionRequest)(nil),           // 2: claudie.MarkForDeletionRequest
+	(*MarkForDeletionResponse)(nil),          // 3: claudie.MarkForDeletionResponse
+	(*ListConfigsRequest)(nil),               // 4: claudie.ListConfigsRequest
+	(*ListConfigsResponse)(nil),              // 5: claudie.ListConfigsResponse
+	(*NodePoolUpdateTargetSizeRequest)(nil),  // 6: claudie.NodePoolUpdateTargetSizeRequest
+	(*NodePoolUpdateTargetSizeResponse)(nil), // 7: claudie.NodePoolUpdateTargetSizeResponse
+	(*GetConfigRequest)(nil),                 // 8: claudie.GetConfigRequest
+	(*GetConfigResponse)(nil),                // 9: claudie.GetConfigResponse
+	(*MarkNodeForDeletionRequest)(nil),       // 10: claudie.MarkNodeForDeletionRequest
+	(*MarkNodeForDeletionResponse)(nil),      // 11: claudie.MarkNodeForDeletionResponse
+	(*spec.KubernetesContext)(nil),           // 12: spec.KubernetesContext
+	(*spec.Manifest)(nil),                    // 13: spec.Manifest
+	(*spec.Config)(nil),                      // 14: spec.Config
 }
 var file_manager_proto_depIdxs = []int32{
-	16, // 0: claudie.UpsertManifestRequest.k8sCtx:type_name -> spec.KubernetesContext
-	17, // 1: claudie.UpsertManifestRequest.manifest:type_name -> spec.Manifest
-	18, // 2: claudie.NextTaskResponse.state:type_name -> spec.Workflow
-	19, // 3: claudie.NextTaskResponse.current:type_name -> spec.Clusters
-	20, // 4: claudie.NextTaskResponse.event:type_name -> spec.TaskEvent
-	18, // 5: claudie.TaskUpdateRequest.state:type_name -> spec.Workflow
-	21, // 6: claudie.ListConfigResponse.configs:type_name -> spec.Config
-	21, // 7: claudie.GetConfigResponse.config:type_name -> spec.Config
-	22, // 8: claudie.UpdateNodePoolRequest.nodepool:type_name -> spec.NodePool
-	18, // 9: claudie.TaskCompleteRequest.workflow:type_name -> spec.Workflow
-	19, // 10: claudie.TaskCompleteRequest.state:type_name -> spec.Clusters
-	0,  // 11: claudie.ManagerService.UpsertManifest:input_type -> claudie.UpsertManifestRequest
-	2,  // 12: claudie.ManagerService.MarkForDeletion:input_type -> claudie.MarkForDeletionRequest
-	8,  // 13: claudie.ManagerService.ListConfigs:input_type -> claudie.ListConfigRequest
-	10, // 14: claudie.ManagerService.GetConfig:input_type -> claudie.GetConfigRequest
-	4,  // 15: claudie.ManagerService.NextTask:input_type -> claudie.NextTaskRequest
-	6,  // 16: claudie.ManagerService.TaskUpdate:input_type -> claudie.TaskUpdateRequest
-	14, // 17: claudie.ManagerService.TaskComplete:input_type -> claudie.TaskCompleteRequest
-	12, // 18: claudie.ManagerService.UpdateNodePool:input_type -> claudie.UpdateNodePoolRequest
-	1,  // 19: claudie.ManagerService.UpsertManifest:output_type -> claudie.UpsertManifestResponse
-	3,  // 20: claudie.ManagerService.MarkForDeletion:output_type -> claudie.MarkForDeletionResponse
-	9,  // 21: claudie.ManagerService.ListConfigs:output_type -> claudie.ListConfigResponse
-	11, // 22: claudie.ManagerService.GetConfig:output_type -> claudie.GetConfigResponse
-	5,  // 23: claudie.ManagerService.NextTask:output_type -> claudie.NextTaskResponse
-	7,  // 24: claudie.ManagerService.TaskUpdate:output_type -> claudie.TaskUpdateResponse
-	15, // 25: claudie.ManagerService.TaskComplete:output_type -> claudie.TaskCompleteResponse
-	13, // 26: claudie.ManagerService.UpdateNodePool:output_type -> claudie.UpdateNodePoolResponse
-	19, // [19:27] is the sub-list for method output_type
-	11, // [11:19] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	12, // 0: claudie.UpsertManifestRequest.k8sCtx:type_name -> spec.KubernetesContext
+	13, // 1: claudie.UpsertManifestRequest.manifest:type_name -> spec.Manifest
+	14, // 2: claudie.ListConfigsResponse.configs:type_name -> spec.Config
+	14, // 3: claudie.GetConfigResponse.config:type_name -> spec.Config
+	0,  // 4: claudie.ManagerService.UpsertManifest:input_type -> claudie.UpsertManifestRequest
+	2,  // 5: claudie.ManagerService.MarkForDeletion:input_type -> claudie.MarkForDeletionRequest
+	10, // 6: claudie.ManagerService.MarkNodeForDeletion:input_type -> claudie.MarkNodeForDeletionRequest
+	4,  // 7: claudie.ManagerService.ListConfigs:input_type -> claudie.ListConfigsRequest
+	8,  // 8: claudie.ManagerService.GetConfig:input_type -> claudie.GetConfigRequest
+	6,  // 9: claudie.ManagerService.NodePoolUpdateTargetSize:input_type -> claudie.NodePoolUpdateTargetSizeRequest
+	1,  // 10: claudie.ManagerService.UpsertManifest:output_type -> claudie.UpsertManifestResponse
+	3,  // 11: claudie.ManagerService.MarkForDeletion:output_type -> claudie.MarkForDeletionResponse
+	11, // 12: claudie.ManagerService.MarkNodeForDeletion:output_type -> claudie.MarkNodeForDeletionResponse
+	5,  // 13: claudie.ManagerService.ListConfigs:output_type -> claudie.ListConfigsResponse
+	9,  // 14: claudie.ManagerService.GetConfig:output_type -> claudie.GetConfigResponse
+	7,  // 15: claudie.ManagerService.NodePoolUpdateTargetSize:output_type -> claudie.NodePoolUpdateTargetSizeResponse
+	10, // [10:16] is the sub-list for method output_type
+	4,  // [4:10] is the sub-list for method input_type
+	4,  // [4:4] is the sub-list for extension type_name
+	4,  // [4:4] is the sub-list for extension extendee
+	0,  // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_manager_proto_init() }
@@ -1069,13 +823,15 @@ func file_manager_proto_init() {
 	if File_manager_proto != nil {
 		return
 	}
+	file_manager_proto_msgTypes[6].OneofWrappers = []any{}
+	file_manager_proto_msgTypes[10].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_manager_proto_rawDesc), len(file_manager_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   16,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

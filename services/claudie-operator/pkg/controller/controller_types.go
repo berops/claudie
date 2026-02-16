@@ -38,11 +38,10 @@ const (
 	// For example: when a new cluster is created
 	// first sync of its state will be done after REQUEUE_NEW time,
 	// next sync will be done in REQUEUE_IN_PROGRESS
-	REQUEUE_NEW         = 20 * time.Second
-	REQUEUE_UPDATE      = 20 * time.Second
-	REQUEUE_IN_PROGRES  = 10 * time.Second
-	REQUEUE_DELETE      = 20 * time.Second
-	REQUEUE_AFTER_ERROR = 30 * time.Second
+	REQUEUE_WATCH       = 8 * time.Second
+	REQUEUE_UPDATE      = 8 * time.Second
+	REQUEUE_IN_PROGRES  = 8 * time.Second
+	REQUEUE_AFTER_ERROR = 8 * time.Second
 	finalizerName       = "v1beta1.claudie.io/finalizer"
 )
 

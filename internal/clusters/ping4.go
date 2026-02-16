@@ -21,7 +21,7 @@ import (
 
 const (
 	// How long to wait before considering the ping packet to be lost.
-	pingTimeout = 3 * time.Second
+	PingTimeout = 3 * time.Second
 	// PingRetryCount is the number of times the ping will be retried
 	// to determine if the node is healthy of not.
 	PingRetryCount = 5
@@ -146,7 +146,7 @@ func Ping(logger zerolog.Logger, count int, dst string) error {
 		time.Sleep(1 * time.Second)
 		seq := i + 1
 		send := time.Now()
-		if err := ping4(logger, conn, id, seq, dstAddr, pingTimeout); err != nil {
+		if err := ping4(logger, conn, id, seq, dstAddr, PingTimeout); err != nil {
 			lost++
 			if errors.Is(err, ErrEchoTimeout) {
 				logger.Warn().Msgf("[%v] node %s icmp seq %v, lost", time.Since(send).String(), dst, seq)

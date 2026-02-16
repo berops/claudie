@@ -9,6 +9,7 @@ package spec
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	anypb "google.golang.org/protobuf/types/known/anypb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
@@ -21,60 +22,6 @@ const (
 	// Verify that runtime/protoimpl is sufficiently up-to-date.
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
-
-type ProxyOp int32
-
-const (
-	// None specifies that no change happened in the desired
-	// state of the Proxy settings compared to the current.
-	ProxyOp_NONE ProxyOp = 0
-	// Modified indicates some change happened, either add,
-	// delete, modified, replaced etc.
-	ProxyOp_MODIFIED ProxyOp = 1
-	// Off indicates that the Proxy envs should be turned off.
-	ProxyOp_OFF ProxyOp = 2
-)
-
-// Enum value maps for ProxyOp.
-var (
-	ProxyOp_name = map[int32]string{
-		0: "NONE",
-		1: "MODIFIED",
-		2: "OFF",
-	}
-	ProxyOp_value = map[string]int32{
-		"NONE":     0,
-		"MODIFIED": 1,
-		"OFF":      2,
-	}
-)
-
-func (x ProxyOp) Enum() *ProxyOp {
-	p := new(ProxyOp)
-	*p = x
-	return p
-}
-
-func (x ProxyOp) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (ProxyOp) Descriptor() protoreflect.EnumDescriptor {
-	return file_spec_manifest_proto_enumTypes[0].Descriptor()
-}
-
-func (ProxyOp) Type() protoreflect.EnumType {
-	return &file_spec_manifest_proto_enumTypes[0]
-}
-
-func (x ProxyOp) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use ProxyOp.Descriptor instead.
-func (ProxyOp) EnumDescriptor() ([]byte, []int) {
-	return file_spec_manifest_proto_rawDescGZIP(), []int{0}
-}
 
 // RoleType specifies the type of the role.
 type RoleType int32
@@ -109,11 +56,11 @@ func (x RoleType) String() string {
 }
 
 func (RoleType) Descriptor() protoreflect.EnumDescriptor {
-	return file_spec_manifest_proto_enumTypes[1].Descriptor()
+	return file_spec_manifest_proto_enumTypes[0].Descriptor()
 }
 
 func (RoleType) Type() protoreflect.EnumType {
-	return &file_spec_manifest_proto_enumTypes[1]
+	return &file_spec_manifest_proto_enumTypes[0]
 }
 
 func (x RoleType) Number() protoreflect.EnumNumber {
@@ -122,56 +69,7 @@ func (x RoleType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use RoleType.Descriptor instead.
 func (RoleType) EnumDescriptor() ([]byte, []int) {
-	return file_spec_manifest_proto_rawDescGZIP(), []int{1}
-}
-
-// ClusterType specifies the type of the cluster.
-type ClusterType int32
-
-const (
-	// Kubernetes cluster.
-	ClusterType_K8s ClusterType = 0
-	// Load balancer cluster.
-	ClusterType_LB ClusterType = 1
-)
-
-// Enum value maps for ClusterType.
-var (
-	ClusterType_name = map[int32]string{
-		0: "K8s",
-		1: "LB",
-	}
-	ClusterType_value = map[string]int32{
-		"K8s": 0,
-		"LB":  1,
-	}
-)
-
-func (x ClusterType) Enum() *ClusterType {
-	p := new(ClusterType)
-	*p = x
-	return p
-}
-
-func (x ClusterType) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (ClusterType) Descriptor() protoreflect.EnumDescriptor {
-	return file_spec_manifest_proto_enumTypes[2].Descriptor()
-}
-
-func (ClusterType) Type() protoreflect.EnumType {
-	return &file_spec_manifest_proto_enumTypes[2]
-}
-
-func (x ClusterType) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use ClusterType.Descriptor instead.
-func (ClusterType) EnumDescriptor() ([]byte, []int) {
-	return file_spec_manifest_proto_rawDescGZIP(), []int{2}
+	return file_spec_manifest_proto_rawDescGZIP(), []int{0}
 }
 
 type Event int32
@@ -210,11 +108,11 @@ func (x Event) String() string {
 }
 
 func (Event) Descriptor() protoreflect.EnumDescriptor {
-	return file_spec_manifest_proto_enumTypes[3].Descriptor()
+	return file_spec_manifest_proto_enumTypes[1].Descriptor()
 }
 
 func (Event) Type() protoreflect.EnumType {
-	return &file_spec_manifest_proto_enumTypes[3]
+	return &file_spec_manifest_proto_enumTypes[1]
 }
 
 func (x Event) Number() protoreflect.EnumNumber {
@@ -223,7 +121,7 @@ func (x Event) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Event.Descriptor instead.
 func (Event) EnumDescriptor() ([]byte, []int) {
-	return file_spec_manifest_proto_rawDescGZIP(), []int{3}
+	return file_spec_manifest_proto_rawDescGZIP(), []int{1}
 }
 
 type ApiEndpointChangeState int32
@@ -279,11 +177,11 @@ func (x ApiEndpointChangeState) String() string {
 }
 
 func (ApiEndpointChangeState) Descriptor() protoreflect.EnumDescriptor {
-	return file_spec_manifest_proto_enumTypes[4].Descriptor()
+	return file_spec_manifest_proto_enumTypes[2].Descriptor()
 }
 
 func (ApiEndpointChangeState) Type() protoreflect.EnumType {
-	return &file_spec_manifest_proto_enumTypes[4]
+	return &file_spec_manifest_proto_enumTypes[2]
 }
 
 func (x ApiEndpointChangeState) Number() protoreflect.EnumNumber {
@@ -292,7 +190,7 @@ func (x ApiEndpointChangeState) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ApiEndpointChangeState.Descriptor instead.
 func (ApiEndpointChangeState) EnumDescriptor() ([]byte, []int) {
-	return file_spec_manifest_proto_rawDescGZIP(), []int{4}
+	return file_spec_manifest_proto_rawDescGZIP(), []int{2}
 }
 
 type Manifest_State int32
@@ -331,11 +229,11 @@ func (x Manifest_State) String() string {
 }
 
 func (Manifest_State) Descriptor() protoreflect.EnumDescriptor {
-	return file_spec_manifest_proto_enumTypes[5].Descriptor()
+	return file_spec_manifest_proto_enumTypes[3].Descriptor()
 }
 
 func (Manifest_State) Type() protoreflect.EnumType {
-	return &file_spec_manifest_proto_enumTypes[5]
+	return &file_spec_manifest_proto_enumTypes[3]
 }
 
 func (x Manifest_State) Number() protoreflect.EnumNumber {
@@ -347,89 +245,18 @@ func (Manifest_State) EnumDescriptor() ([]byte, []int) {
 	return file_spec_manifest_proto_rawDescGZIP(), []int{1, 0}
 }
 
-type Workflow_Stage int32
-
-const (
-	// NONE indicates that no stage is currently executing.
-	Workflow_NONE Workflow_Stage = 0
-	// TERRAFORMER indicates that the cluster is currently being build in
-	// terraformer.
-	Workflow_TERRAFORMER Workflow_Stage = 1
-	// ANSIBLER indicates that the cluster is currently being build in ansibler.
-	Workflow_ANSIBLER Workflow_Stage = 2
-	// KUBE_ELEVEN indicates that the cluster is currently being build in kube
-	// eleven.
-	Workflow_KUBE_ELEVEN Workflow_Stage = 3
-	// KUBER indicates that the cluster is currently being build in kuber.
-	Workflow_KUBER Workflow_Stage = 4
-	// DESTROY_TERRAFORMER indicates that infra for a cluster is being deleted.
-	Workflow_DESTROY_TERRAFORMER Workflow_Stage = 7
-	// DESTROY_KUBER indicates that data for a cluster is being deleted.
-	Workflow_DESTROY_KUBER Workflow_Stage = 8
-	// DELETE_NODES indicates the nodes are being deleted for the cluster.
-	Workflow_DELETE_NODES Workflow_Stage = 9
-)
-
-// Enum value maps for Workflow_Stage.
-var (
-	Workflow_Stage_name = map[int32]string{
-		0: "NONE",
-		1: "TERRAFORMER",
-		2: "ANSIBLER",
-		3: "KUBE_ELEVEN",
-		4: "KUBER",
-		7: "DESTROY_TERRAFORMER",
-		8: "DESTROY_KUBER",
-		9: "DELETE_NODES",
-	}
-	Workflow_Stage_value = map[string]int32{
-		"NONE":                0,
-		"TERRAFORMER":         1,
-		"ANSIBLER":            2,
-		"KUBE_ELEVEN":         3,
-		"KUBER":               4,
-		"DESTROY_TERRAFORMER": 7,
-		"DESTROY_KUBER":       8,
-		"DELETE_NODES":        9,
-	}
-)
-
-func (x Workflow_Stage) Enum() *Workflow_Stage {
-	p := new(Workflow_Stage)
-	*p = x
-	return p
-}
-
-func (x Workflow_Stage) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (Workflow_Stage) Descriptor() protoreflect.EnumDescriptor {
-	return file_spec_manifest_proto_enumTypes[6].Descriptor()
-}
-
-func (Workflow_Stage) Type() protoreflect.EnumType {
-	return &file_spec_manifest_proto_enumTypes[6]
-}
-
-func (x Workflow_Stage) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use Workflow_Stage.Descriptor instead.
-func (Workflow_Stage) EnumDescriptor() ([]byte, []int) {
-	return file_spec_manifest_proto_rawDescGZIP(), []int{6, 0}
-}
-
 type Workflow_Status int32
 
 const (
-	// DONE indicates that the workflow has finished.
+	// DONE indicates that the workflow for a scheduled [Task] has finished.
 	Workflow_DONE Workflow_Status = 0
-	// ERROR indicates that an error occurred while building the cluster.
+	// ERROR indicates that an error occurred while processing the scheduled [Task]
 	Workflow_ERROR Workflow_Status = 1
-	// IN_PROGRESS indicates that the cluster is currently being build.
+	// IN_PROGRESS indicates that the [Task] is currently being worked on.
 	Workflow_IN_PROGRESS Workflow_Status = 2
+	// WAIT_FOR_PICKUP indicates that new a new [Task] was created or moved to
+	// the next stage to be worked on.
+	Workflow_WAIT_FOR_PICKUP Workflow_Status = 3
 )
 
 // Enum value maps for Workflow_Status.
@@ -438,11 +265,13 @@ var (
 		0: "DONE",
 		1: "ERROR",
 		2: "IN_PROGRESS",
+		3: "WAIT_FOR_PICKUP",
 	}
 	Workflow_Status_value = map[string]int32{
-		"DONE":        0,
-		"ERROR":       1,
-		"IN_PROGRESS": 2,
+		"DONE":            0,
+		"ERROR":           1,
+		"IN_PROGRESS":     2,
+		"WAIT_FOR_PICKUP": 3,
 	}
 )
 
@@ -457,11 +286,11 @@ func (x Workflow_Status) String() string {
 }
 
 func (Workflow_Status) Descriptor() protoreflect.EnumDescriptor {
-	return file_spec_manifest_proto_enumTypes[7].Descriptor()
+	return file_spec_manifest_proto_enumTypes[4].Descriptor()
 }
 
 func (Workflow_Status) Type() protoreflect.EnumType {
-	return &file_spec_manifest_proto_enumTypes[7]
+	return &file_spec_manifest_proto_enumTypes[4]
 }
 
 func (x Workflow_Status) Number() protoreflect.EnumNumber {
@@ -470,53 +299,53 @@ func (x Workflow_Status) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Workflow_Status.Descriptor instead.
 func (Workflow_Status) EnumDescriptor() ([]byte, []int) {
-	return file_spec_manifest_proto_rawDescGZIP(), []int{6, 1}
+	return file_spec_manifest_proto_rawDescGZIP(), []int{7, 0}
 }
 
-type Retry_Repeat_Kind int32
+type TaskResult_Error_Kind int32
 
 const (
-	Retry_Repeat_ENDLESS     Retry_Repeat_Kind = 0
-	Retry_Repeat_EXPONENTIAL Retry_Repeat_Kind = 1
+	TaskResult_Error_FATAL   TaskResult_Error_Kind = 0
+	TaskResult_Error_PARTIAL TaskResult_Error_Kind = 1
 )
 
-// Enum value maps for Retry_Repeat_Kind.
+// Enum value maps for TaskResult_Error_Kind.
 var (
-	Retry_Repeat_Kind_name = map[int32]string{
-		0: "ENDLESS",
-		1: "EXPONENTIAL",
+	TaskResult_Error_Kind_name = map[int32]string{
+		0: "FATAL",
+		1: "PARTIAL",
 	}
-	Retry_Repeat_Kind_value = map[string]int32{
-		"ENDLESS":     0,
-		"EXPONENTIAL": 1,
+	TaskResult_Error_Kind_value = map[string]int32{
+		"FATAL":   0,
+		"PARTIAL": 1,
 	}
 )
 
-func (x Retry_Repeat_Kind) Enum() *Retry_Repeat_Kind {
-	p := new(Retry_Repeat_Kind)
+func (x TaskResult_Error_Kind) Enum() *TaskResult_Error_Kind {
+	p := new(TaskResult_Error_Kind)
 	*p = x
 	return p
 }
 
-func (x Retry_Repeat_Kind) String() string {
+func (x TaskResult_Error_Kind) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (Retry_Repeat_Kind) Descriptor() protoreflect.EnumDescriptor {
-	return file_spec_manifest_proto_enumTypes[8].Descriptor()
+func (TaskResult_Error_Kind) Descriptor() protoreflect.EnumDescriptor {
+	return file_spec_manifest_proto_enumTypes[5].Descriptor()
 }
 
-func (Retry_Repeat_Kind) Type() protoreflect.EnumType {
-	return &file_spec_manifest_proto_enumTypes[8]
+func (TaskResult_Error_Kind) Type() protoreflect.EnumType {
+	return &file_spec_manifest_proto_enumTypes[5]
 }
 
-func (x Retry_Repeat_Kind) Number() protoreflect.EnumNumber {
+func (x TaskResult_Error_Kind) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use Retry_Repeat_Kind.Descriptor instead.
-func (Retry_Repeat_Kind) EnumDescriptor() ([]byte, []int) {
-	return file_spec_manifest_proto_rawDescGZIP(), []int{15, 0, 0}
+// Deprecated: Use TaskResult_Error_Kind.Descriptor instead.
+func (TaskResult_Error_Kind) EnumDescriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{20, 0, 0}
 }
 
 // Config holds data for a single manifest.
@@ -672,9 +501,8 @@ func (x *Manifest) GetState() Manifest_State {
 type ClusterState struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Current       *Clusters              `protobuf:"bytes,1,opt,name=current,proto3" json:"current,omitempty"`
-	Desired       *Clusters              `protobuf:"bytes,2,opt,name=desired,proto3" json:"desired,omitempty"`
-	Events        *Events                `protobuf:"bytes,3,opt,name=events,proto3" json:"events,omitempty"`
 	State         *Workflow              `protobuf:"bytes,4,opt,name=state,proto3" json:"state,omitempty"`
+	InFlight      *TaskEvent             `protobuf:"bytes,5,opt,name=inFlight,proto3" json:"inFlight,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -716,23 +544,16 @@ func (x *ClusterState) GetCurrent() *Clusters {
 	return nil
 }
 
-func (x *ClusterState) GetDesired() *Clusters {
-	if x != nil {
-		return x.Desired
-	}
-	return nil
-}
-
-func (x *ClusterState) GetEvents() *Events {
-	if x != nil {
-		return x.Events
-	}
-	return nil
-}
-
 func (x *ClusterState) GetState() *Workflow {
 	if x != nil {
 		return x.State
+	}
+	return nil
+}
+
+func (x *ClusterState) GetInFlight() *TaskEvent {
+	if x != nil {
+		return x.InFlight
 	}
 	return nil
 }
@@ -887,19 +708,88 @@ func (x *KubernetesContext) GetNamespace() string {
 	return ""
 }
 
+type FinishedWorkflow struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Status          Workflow_Status        `protobuf:"varint,1,opt,name=status,proto3,enum=spec.Workflow_Status" json:"status,omitempty"`
+	TaskDescription string                 `protobuf:"bytes,2,opt,name=taskDescription,proto3" json:"taskDescription,omitempty"`
+	Stage           string                 `protobuf:"bytes,3,opt,name=stage,proto3" json:"stage,omitempty"`
+	Timestamp       *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *FinishedWorkflow) Reset() {
+	*x = FinishedWorkflow{}
+	mi := &file_spec_manifest_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FinishedWorkflow) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FinishedWorkflow) ProtoMessage() {}
+
+func (x *FinishedWorkflow) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FinishedWorkflow.ProtoReflect.Descriptor instead.
+func (*FinishedWorkflow) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *FinishedWorkflow) GetStatus() Workflow_Status {
+	if x != nil {
+		return x.Status
+	}
+	return Workflow_DONE
+}
+
+func (x *FinishedWorkflow) GetTaskDescription() string {
+	if x != nil {
+		return x.TaskDescription
+	}
+	return ""
+}
+
+func (x *FinishedWorkflow) GetStage() string {
+	if x != nil {
+		return x.Stage
+	}
+	return ""
+}
+
+func (x *FinishedWorkflow) GetTimestamp() *timestamppb.Timestamp {
+	if x != nil {
+		return x.Timestamp
+	}
+	return nil
+}
+
 type Workflow struct {
 	state  protoimpl.MessageState `protogen:"open.v1"`
-	Stage  Workflow_Stage         `protobuf:"varint,1,opt,name=stage,proto3,enum=spec.Workflow_Stage" json:"stage,omitempty"`
 	Status Workflow_Status        `protobuf:"varint,2,opt,name=status,proto3,enum=spec.Workflow_Status" json:"status,omitempty"`
-	// additional information describing the state and status.
-	Description   string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	// additional information describing the state.
+	Description string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	// Information about previously finished workflows.
+	Previous      []*FinishedWorkflow `protobuf:"bytes,9,rep,name=previous,proto3" json:"previous,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Workflow) Reset() {
 	*x = Workflow{}
-	mi := &file_spec_manifest_proto_msgTypes[6]
+	mi := &file_spec_manifest_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -911,7 +801,7 @@ func (x *Workflow) String() string {
 func (*Workflow) ProtoMessage() {}
 
 func (x *Workflow) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifest_proto_msgTypes[6]
+	mi := &file_spec_manifest_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -924,14 +814,7 @@ func (x *Workflow) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Workflow.ProtoReflect.Descriptor instead.
 func (*Workflow) Descriptor() ([]byte, []int) {
-	return file_spec_manifest_proto_rawDescGZIP(), []int{6}
-}
-
-func (x *Workflow) GetStage() Workflow_Stage {
-	if x != nil {
-		return x.Stage
-	}
-	return Workflow_NONE
+	return file_spec_manifest_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *Workflow) GetStatus() Workflow_Status {
@@ -946,6 +829,13 @@ func (x *Workflow) GetDescription() string {
 		return x.Description
 	}
 	return ""
+}
+
+func (x *Workflow) GetPrevious() []*FinishedWorkflow {
+	if x != nil {
+		return x.Previous
+	}
+	return nil
 }
 
 // K8scluster represents a single kubernetes cluster specified in the manifest.
@@ -967,7 +857,7 @@ type K8Scluster struct {
 
 func (x *K8Scluster) Reset() {
 	*x = K8Scluster{}
-	mi := &file_spec_manifest_proto_msgTypes[7]
+	mi := &file_spec_manifest_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -979,7 +869,7 @@ func (x *K8Scluster) String() string {
 func (*K8Scluster) ProtoMessage() {}
 
 func (x *K8Scluster) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifest_proto_msgTypes[7]
+	mi := &file_spec_manifest_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -992,7 +882,7 @@ func (x *K8Scluster) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use K8Scluster.ProtoReflect.Descriptor instead.
 func (*K8Scluster) Descriptor() ([]byte, []int) {
-	return file_spec_manifest_proto_rawDescGZIP(), []int{7}
+	return file_spec_manifest_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *K8Scluster) GetClusterInfo() *ClusterInfo {
@@ -1055,7 +945,7 @@ type LBcluster struct {
 
 func (x *LBcluster) Reset() {
 	*x = LBcluster{}
-	mi := &file_spec_manifest_proto_msgTypes[8]
+	mi := &file_spec_manifest_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1067,7 +957,7 @@ func (x *LBcluster) String() string {
 func (*LBcluster) ProtoMessage() {}
 
 func (x *LBcluster) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifest_proto_msgTypes[8]
+	mi := &file_spec_manifest_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1080,7 +970,7 @@ func (x *LBcluster) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LBcluster.ProtoReflect.Descriptor instead.
 func (*LBcluster) Descriptor() ([]byte, []int) {
-	return file_spec_manifest_proto_rawDescGZIP(), []int{8}
+	return file_spec_manifest_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *LBcluster) GetClusterInfo() *ClusterInfo {
@@ -1133,7 +1023,7 @@ type ClusterInfo struct {
 
 func (x *ClusterInfo) Reset() {
 	*x = ClusterInfo{}
-	mi := &file_spec_manifest_proto_msgTypes[9]
+	mi := &file_spec_manifest_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1145,7 +1035,7 @@ func (x *ClusterInfo) String() string {
 func (*ClusterInfo) ProtoMessage() {}
 
 func (x *ClusterInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifest_proto_msgTypes[9]
+	mi := &file_spec_manifest_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1158,7 +1048,7 @@ func (x *ClusterInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClusterInfo.ProtoReflect.Descriptor instead.
 func (*ClusterInfo) Descriptor() ([]byte, []int) {
-	return file_spec_manifest_proto_rawDescGZIP(), []int{9}
+	return file_spec_manifest_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *ClusterInfo) GetName() string {
@@ -1201,7 +1091,7 @@ type InstallationProxy struct {
 
 func (x *InstallationProxy) Reset() {
 	*x = InstallationProxy{}
-	mi := &file_spec_manifest_proto_msgTypes[10]
+	mi := &file_spec_manifest_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1213,7 +1103,7 @@ func (x *InstallationProxy) String() string {
 func (*InstallationProxy) ProtoMessage() {}
 
 func (x *InstallationProxy) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifest_proto_msgTypes[10]
+	mi := &file_spec_manifest_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1226,7 +1116,7 @@ func (x *InstallationProxy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InstallationProxy.ProtoReflect.Descriptor instead.
 func (*InstallationProxy) Descriptor() ([]byte, []int) {
-	return file_spec_manifest_proto_rawDescGZIP(), []int{10}
+	return file_spec_manifest_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *InstallationProxy) GetMode() string {
@@ -1250,70 +1140,6 @@ func (x *InstallationProxy) GetNoProxy() string {
 	return ""
 }
 
-// ProxyEnvs holds information about a need to update proxy envs, proxy endpoint, and no proxy list.
-type ProxyEnvs struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Signal a need to update proxy envs
-	Op ProxyOp `protobuf:"varint,1,opt,name=op,proto3,enum=spec.ProxyOp" json:"op,omitempty"`
-	// Holds a proxy endpoint.
-	HttpProxyUrl string `protobuf:"bytes,2,opt,name=httpProxyUrl,proto3" json:"httpProxyUrl,omitempty"`
-	// Holds a list of IPs and hostnames that aren't routed through proxy.
-	NoProxyList   string `protobuf:"bytes,3,opt,name=noProxyList,proto3" json:"noProxyList,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ProxyEnvs) Reset() {
-	*x = ProxyEnvs{}
-	mi := &file_spec_manifest_proto_msgTypes[11]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ProxyEnvs) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ProxyEnvs) ProtoMessage() {}
-
-func (x *ProxyEnvs) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifest_proto_msgTypes[11]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ProxyEnvs.ProtoReflect.Descriptor instead.
-func (*ProxyEnvs) Descriptor() ([]byte, []int) {
-	return file_spec_manifest_proto_rawDescGZIP(), []int{11}
-}
-
-func (x *ProxyEnvs) GetOp() ProxyOp {
-	if x != nil {
-		return x.Op
-	}
-	return ProxyOp_NONE
-}
-
-func (x *ProxyEnvs) GetHttpProxyUrl() string {
-	if x != nil {
-		return x.HttpProxyUrl
-	}
-	return ""
-}
-
-func (x *ProxyEnvs) GetNoProxyList() string {
-	if x != nil {
-		return x.NoProxyList
-	}
-	return ""
-}
-
 // Role represents a single loadbalancer role from the manifest.
 type Role struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -1325,10 +1151,10 @@ type Role struct {
 	Port int32 `protobuf:"varint,3,opt,name=port,proto3" json:"port,omitempty"`
 	// Port that load balancer will forward to.
 	TargetPort int32 `protobuf:"varint,4,opt,name=targetPort,proto3" json:"targetPort,omitempty"`
-	// Targeted nodes in Kubernetes clusters.
-	TargetPools []string `protobuf:"bytes,7,rep,name=targetPools,proto3" json:"targetPools,omitempty"`
 	// Type of the role.
 	RoleType RoleType `protobuf:"varint,6,opt,name=roleType,proto3,enum=spec.RoleType" json:"roleType,omitempty"`
+	// Targeted nodes in Kubernetes clusters.
+	TargetPools []string `protobuf:"bytes,7,rep,name=targetPools,proto3" json:"targetPools,omitempty"`
 	// Additional settings for the role.
 	Settings      *Role_Settings `protobuf:"bytes,8,opt,name=settings,proto3" json:"settings,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -1393,18 +1219,18 @@ func (x *Role) GetTargetPort() int32 {
 	return 0
 }
 
-func (x *Role) GetTargetPools() []string {
-	if x != nil {
-		return x.TargetPools
-	}
-	return nil
-}
-
 func (x *Role) GetRoleType() RoleType {
 	if x != nil {
 		return x.RoleType
 	}
 	return RoleType_ApiServer
+}
+
+func (x *Role) GetTargetPools() []string {
+	if x != nil {
+		return x.TargetPools
+	}
+	return nil
 }
 
 func (x *Role) GetSettings() *Role_Settings {
@@ -1414,81 +1240,34 @@ func (x *Role) GetSettings() *Role_Settings {
 	return nil
 }
 
-type Events struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Events        []*TaskEvent           `protobuf:"bytes,1,rep,name=events,proto3" json:"events,omitempty"`
-	Ttl           int32                  `protobuf:"varint,2,opt,name=ttl,proto3" json:"ttl,omitempty"`
-	Autoscaled    bool                   `protobuf:"varint,3,opt,name=autoscaled,proto3" json:"autoscaled,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *Events) Reset() {
-	*x = Events{}
-	mi := &file_spec_manifest_proto_msgTypes[13]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Events) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Events) ProtoMessage() {}
-
-func (x *Events) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifest_proto_msgTypes[13]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Events.ProtoReflect.Descriptor instead.
-func (*Events) Descriptor() ([]byte, []int) {
-	return file_spec_manifest_proto_rawDescGZIP(), []int{13}
-}
-
-func (x *Events) GetEvents() []*TaskEvent {
-	if x != nil {
-		return x.Events
-	}
-	return nil
-}
-
-func (x *Events) GetTtl() int32 {
-	if x != nil {
-		return x.Ttl
-	}
-	return 0
-}
-
-func (x *Events) GetAutoscaled() bool {
-	if x != nil {
-		return x.Autoscaled
-	}
-	return false
-}
-
 type TaskEvent struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Timestamp     *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	Event         Event                  `protobuf:"varint,3,opt,name=event,proto3,enum=spec.Event" json:"event,omitempty"`
-	Task          *Task                  `protobuf:"bytes,4,opt,name=task,proto3" json:"task,omitempty"`
-	Description   string                 `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
-	OnError       *Retry                 `protobuf:"bytes,7,opt,name=onError,proto3" json:"onError,omitempty"`
+	state       protoimpl.MessageState `protogen:"open.v1"`
+	Id          string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Timestamp   *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Event       Event                  `protobuf:"varint,3,opt,name=event,proto3,enum=spec.Event" json:"event,omitempty"`
+	Task        *Task                  `protobuf:"bytes,4,opt,name=task,proto3" json:"task,omitempty"`
+	Description string                 `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
+	// Pipeline stages of the task through which it has to pass
+	// to be considered as done.
+	Pipeline []*Stage `protobuf:"bytes,8,rep,name=pipeline,proto3" json:"pipeline,omitempty"`
+	// Index into the currently to be worked on pipeline stage.
+	CurrentStage uint32 `protobuf:"varint,9,opt,name=currentStage,proto3" json:"currentStage,omitempty"`
+	// LowerPriority Task is an optional field that is set whenever
+	// a higher priority task should be scheduled but the lower priority
+	// task should immediately follow after the higher priority task
+	// finishes.
+	//
+	// Only Higher priority tasks will have this field set.
+	// It is possible to create a chain of tasks with this
+	// that would follow based on priority until `nil` is hit.
+	LowerPriority *TaskEvent `protobuf:"bytes,21,opt,name=lowerPriority,proto3,oneof" json:"lowerPriority,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *TaskEvent) Reset() {
 	*x = TaskEvent{}
-	mi := &file_spec_manifest_proto_msgTypes[14]
+	mi := &file_spec_manifest_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1500,7 +1279,7 @@ func (x *TaskEvent) String() string {
 func (*TaskEvent) ProtoMessage() {}
 
 func (x *TaskEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifest_proto_msgTypes[14]
+	mi := &file_spec_manifest_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1513,7 +1292,7 @@ func (x *TaskEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaskEvent.ProtoReflect.Descriptor instead.
 func (*TaskEvent) Descriptor() ([]byte, []int) {
-	return file_spec_manifest_proto_rawDescGZIP(), []int{14}
+	return file_spec_manifest_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *TaskEvent) GetId() string {
@@ -1551,38 +1330,115 @@ func (x *TaskEvent) GetDescription() string {
 	return ""
 }
 
-func (x *TaskEvent) GetOnError() *Retry {
+func (x *TaskEvent) GetPipeline() []*Stage {
 	if x != nil {
-		return x.OnError
+		return x.Pipeline
 	}
 	return nil
 }
 
-type Retry struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Types that are valid to be assigned to Do:
-	//
-	//	*Retry_Repeat_
-	//	*Retry_Rollback_
-	Do            isRetry_Do `protobuf_oneof:"Do"`
+func (x *TaskEvent) GetCurrentStage() uint32 {
+	if x != nil {
+		return x.CurrentStage
+	}
+	return 0
+}
+
+func (x *TaskEvent) GetLowerPriority() *TaskEvent {
+	if x != nil {
+		return x.LowerPriority
+	}
+	return nil
+}
+
+// Unreachable are the nodes of the kubernetes cluster
+// and all of its loadbalancer clusters which are
+// unreachable. If this is included in some message, one
+// should omit connecting to those nodes during the processing
+// of the pipeline, if relevant.
+type Unreachable struct {
+	state         protoimpl.MessageState                       `protogen:"open.v1"`
+	Kubernetes    *Unreachable_UnreachableNodePools            `protobuf:"bytes,1,opt,name=kubernetes,proto3" json:"kubernetes,omitempty"`
+	Loadbalancers map[string]*Unreachable_UnreachableNodePools `protobuf:"bytes,2,rep,name=loadbalancers,proto3" json:"loadbalancers,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Retry) Reset() {
-	*x = Retry{}
+func (x *Unreachable) Reset() {
+	*x = Unreachable{}
+	mi := &file_spec_manifest_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Unreachable) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Unreachable) ProtoMessage() {}
+
+func (x *Unreachable) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Unreachable.ProtoReflect.Descriptor instead.
+func (*Unreachable) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *Unreachable) GetKubernetes() *Unreachable_UnreachableNodePools {
+	if x != nil {
+		return x.Kubernetes
+	}
+	return nil
+}
+
+func (x *Unreachable) GetLoadbalancers() map[string]*Unreachable_UnreachableNodePools {
+	if x != nil {
+		return x.Loadbalancers
+	}
+	return nil
+}
+
+// Creates a new kubernetes cluster with the attached [LBcluster], if any.
+type Create struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The desired state of the kuberenetes cluster to create.
+	//
+	// This field is required to be present.
+	K8S *K8Scluster `protobuf:"bytes,1,opt,name=k8s,proto3" json:"k8s,omitempty"`
+	// The desired state of the LoadBalancers attached to the
+	// kubernetes cluster to create.
+	//
+	// This field is optional, if the kuberentes cluster does not have
+	// any loadbalacners.
+	LoadBalancers []*LBcluster `protobuf:"bytes,2,rep,name=loadBalancers,proto3" json:"loadBalancers,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Create) Reset() {
+	*x = Create{}
 	mi := &file_spec_manifest_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Retry) String() string {
+func (x *Create) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Retry) ProtoMessage() {}
+func (*Create) ProtoMessage() {}
 
-func (x *Retry) ProtoReflect() protoreflect.Message {
+func (x *Create) ProtoReflect() protoreflect.Message {
 	mi := &file_spec_manifest_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1594,65 +1450,730 @@ func (x *Retry) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Retry.ProtoReflect.Descriptor instead.
-func (*Retry) Descriptor() ([]byte, []int) {
+// Deprecated: Use Create.ProtoReflect.Descriptor instead.
+func (*Create) Descriptor() ([]byte, []int) {
 	return file_spec_manifest_proto_rawDescGZIP(), []int{15}
 }
 
-func (x *Retry) GetDo() isRetry_Do {
+func (x *Create) GetK8S() *K8Scluster {
 	if x != nil {
-		return x.Do
+		return x.K8S
 	}
 	return nil
 }
 
-func (x *Retry) GetRepeat() *Retry_Repeat {
+func (x *Create) GetLoadBalancers() []*LBcluster {
 	if x != nil {
-		if x, ok := x.Do.(*Retry_Repeat_); ok {
-			return x.Repeat
+		return x.LoadBalancers
+	}
+	return nil
+}
+
+type Update struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// State that gets continiously updated as the task gets processed.
+	State *Update_State `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`
+	// Additional information while the [Update] message is passed through
+	// the build pipeline to give context what has been scheduled and what
+	// to process.
+	//
+	// Types that are valid to be assigned to Delta:
+	//
+	//	*Update_None_
+	//	*Update_TfAddLoadBalancer
+	//	*Update_TfAddLoadBalancerNodes
+	//	*Update_TfReplaceDns
+	//	*Update_TfAddK8SNodes
+	//	*Update_TfAddLoadBalancerRoles
+	//	*Update_TfDeleteLoadBalancerNodes
+	//	*Update_TfMoveNodePoolToAutoscaled
+	//	*Update_TfMoveNodePoolFromAutoscaled
+	//	*Update_TfReplaceRoleExternalSettings
+	//	*Update_AnsReplaceProxy
+	//	*Update_AnsReplaceTargetPools
+	//	*Update_AnsReplaceRoleInternalSettings
+	//	*Update_KpatchNodes
+	//	*Update_KDeleteNodes
+	//	*Update_AddedLoadBalancer_
+	//	*Update_AddedLoadBalancerNodes_
+	//	*Update_ReplacedDns_
+	//	*Update_AddedK8SNodes_
+	//	*Update_ReplacedProxy
+	//	*Update_PatchedNodes_
+	//	*Update_AddedLoadBalancerRoles_
+	//	*Update_ReplacedTargetPools_
+	//	*Update_MovedNodePoolToAutoscaled_
+	//	*Update_MovedNodePoolFromAutoscaled_
+	//	*Update_ReplacedRoleInternalSettings_
+	//	*Update_ReplacedRoleExternalSettings_
+	//	*Update_DeleteLoadBalancer_
+	//	*Update_DeletedK8SNodes_
+	//	*Update_DeletedLoadBalancerNodes_
+	//	*Update_DeleteLoadBalancerRoles_
+	//	*Update_ApiEndpoint_
+	//	*Update_ClusterApiPort
+	//	*Update_K8SApiEndpoint
+	//	*Update_UpgradeVersion_
+	Delta         isUpdate_Delta `protobuf_oneof:"Delta"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update) Reset() {
+	*x = Update{}
+	mi := &file_spec_manifest_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update) ProtoMessage() {}
+
+func (x *Update) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update.ProtoReflect.Descriptor instead.
+func (*Update) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *Update) GetState() *Update_State {
+	if x != nil {
+		return x.State
+	}
+	return nil
+}
+
+func (x *Update) GetDelta() isUpdate_Delta {
+	if x != nil {
+		return x.Delta
+	}
+	return nil
+}
+
+func (x *Update) GetNone() *Update_None {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_None_); ok {
+			return x.None
 		}
 	}
 	return nil
 }
 
-func (x *Retry) GetRollback() *Retry_Rollback {
+func (x *Update) GetTfAddLoadBalancer() *Update_TerraformerAddLoadBalancer {
 	if x != nil {
-		if x, ok := x.Do.(*Retry_Rollback_); ok {
-			return x.Rollback
+		if x, ok := x.Delta.(*Update_TfAddLoadBalancer); ok {
+			return x.TfAddLoadBalancer
 		}
 	}
 	return nil
 }
 
-type isRetry_Do interface {
-	isRetry_Do()
+func (x *Update) GetTfAddLoadBalancerNodes() *Update_TerraformerAddLoadBalancerNodes {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_TfAddLoadBalancerNodes); ok {
+			return x.TfAddLoadBalancerNodes
+		}
+	}
+	return nil
 }
 
-type Retry_Repeat_ struct {
-	Repeat *Retry_Repeat `protobuf:"bytes,3,opt,name=repeat,proto3,oneof"`
+func (x *Update) GetTfReplaceDns() *Update_TerraformerReplaceDns {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_TfReplaceDns); ok {
+			return x.TfReplaceDns
+		}
+	}
+	return nil
 }
 
-type Retry_Rollback_ struct {
-	Rollback *Retry_Rollback `protobuf:"bytes,4,opt,name=rollback,proto3,oneof"`
+func (x *Update) GetTfAddK8SNodes() *Update_TerraformerAddK8SNodes {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_TfAddK8SNodes); ok {
+			return x.TfAddK8SNodes
+		}
+	}
+	return nil
 }
 
-func (*Retry_Repeat_) isRetry_Do() {}
+func (x *Update) GetTfAddLoadBalancerRoles() *Update_TerraformerAddLoadBalancerRoles {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_TfAddLoadBalancerRoles); ok {
+			return x.TfAddLoadBalancerRoles
+		}
+	}
+	return nil
+}
 
-func (*Retry_Rollback_) isRetry_Do() {}
+func (x *Update) GetTfDeleteLoadBalancerNodes() *Update_TerraformerDeleteLoadBalancerNodes {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_TfDeleteLoadBalancerNodes); ok {
+			return x.TfDeleteLoadBalancerNodes
+		}
+	}
+	return nil
+}
+
+func (x *Update) GetTfMoveNodePoolToAutoscaled() *Update_TerraformerMoveNodePoolToAutoscaled {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_TfMoveNodePoolToAutoscaled); ok {
+			return x.TfMoveNodePoolToAutoscaled
+		}
+	}
+	return nil
+}
+
+func (x *Update) GetTfMoveNodePoolFromAutoscaled() *Update_TerraformerMoveNodePoolFromAutoscaled {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_TfMoveNodePoolFromAutoscaled); ok {
+			return x.TfMoveNodePoolFromAutoscaled
+		}
+	}
+	return nil
+}
+
+func (x *Update) GetTfReplaceRoleExternalSettings() *Update_TerraformerReplaceRoleExternalSettings {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_TfReplaceRoleExternalSettings); ok {
+			return x.TfReplaceRoleExternalSettings
+		}
+	}
+	return nil
+}
+
+func (x *Update) GetAnsReplaceProxy() *Update_AnsiblerReplaceProxySettings {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_AnsReplaceProxy); ok {
+			return x.AnsReplaceProxy
+		}
+	}
+	return nil
+}
+
+func (x *Update) GetAnsReplaceTargetPools() *Update_AnsiblerReplaceTargetPools {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_AnsReplaceTargetPools); ok {
+			return x.AnsReplaceTargetPools
+		}
+	}
+	return nil
+}
+
+func (x *Update) GetAnsReplaceRoleInternalSettings() *Update_AnsiblerReplaceRoleInternalSettings {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_AnsReplaceRoleInternalSettings); ok {
+			return x.AnsReplaceRoleInternalSettings
+		}
+	}
+	return nil
+}
+
+func (x *Update) GetKpatchNodes() *Update_KuberPatchNodes {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_KpatchNodes); ok {
+			return x.KpatchNodes
+		}
+	}
+	return nil
+}
+
+func (x *Update) GetKDeleteNodes() *Update_KuberDeleteK8SNodes {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_KDeleteNodes); ok {
+			return x.KDeleteNodes
+		}
+	}
+	return nil
+}
+
+func (x *Update) GetAddedLoadBalancer() *Update_AddedLoadBalancer {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_AddedLoadBalancer_); ok {
+			return x.AddedLoadBalancer
+		}
+	}
+	return nil
+}
+
+func (x *Update) GetAddedLoadBalancerNodes() *Update_AddedLoadBalancerNodes {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_AddedLoadBalancerNodes_); ok {
+			return x.AddedLoadBalancerNodes
+		}
+	}
+	return nil
+}
+
+func (x *Update) GetReplacedDns() *Update_ReplacedDns {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_ReplacedDns_); ok {
+			return x.ReplacedDns
+		}
+	}
+	return nil
+}
+
+func (x *Update) GetAddedK8SNodes() *Update_AddedK8SNodes {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_AddedK8SNodes_); ok {
+			return x.AddedK8SNodes
+		}
+	}
+	return nil
+}
+
+func (x *Update) GetReplacedProxy() *Update_ReplacedProxySettings {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_ReplacedProxy); ok {
+			return x.ReplacedProxy
+		}
+	}
+	return nil
+}
+
+func (x *Update) GetPatchedNodes() *Update_PatchedNodes {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_PatchedNodes_); ok {
+			return x.PatchedNodes
+		}
+	}
+	return nil
+}
+
+func (x *Update) GetAddedLoadBalancerRoles() *Update_AddedLoadBalancerRoles {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_AddedLoadBalancerRoles_); ok {
+			return x.AddedLoadBalancerRoles
+		}
+	}
+	return nil
+}
+
+func (x *Update) GetReplacedTargetPools() *Update_ReplacedTargetPools {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_ReplacedTargetPools_); ok {
+			return x.ReplacedTargetPools
+		}
+	}
+	return nil
+}
+
+func (x *Update) GetMovedNodePoolToAutoscaled() *Update_MovedNodePoolToAutoscaled {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_MovedNodePoolToAutoscaled_); ok {
+			return x.MovedNodePoolToAutoscaled
+		}
+	}
+	return nil
+}
+
+func (x *Update) GetMovedNodePoolFromAutoscaled() *Update_MovedNodePoolFromAutoscaled {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_MovedNodePoolFromAutoscaled_); ok {
+			return x.MovedNodePoolFromAutoscaled
+		}
+	}
+	return nil
+}
+
+func (x *Update) GetReplacedRoleInternalSettings() *Update_ReplacedRoleInternalSettings {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_ReplacedRoleInternalSettings_); ok {
+			return x.ReplacedRoleInternalSettings
+		}
+	}
+	return nil
+}
+
+func (x *Update) GetReplacedRoleExternalSettings() *Update_ReplacedRoleExternalSettings {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_ReplacedRoleExternalSettings_); ok {
+			return x.ReplacedRoleExternalSettings
+		}
+	}
+	return nil
+}
+
+func (x *Update) GetDeleteLoadBalancer() *Update_DeleteLoadBalancer {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_DeleteLoadBalancer_); ok {
+			return x.DeleteLoadBalancer
+		}
+	}
+	return nil
+}
+
+func (x *Update) GetDeletedK8SNodes() *Update_DeletedK8SNodes {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_DeletedK8SNodes_); ok {
+			return x.DeletedK8SNodes
+		}
+	}
+	return nil
+}
+
+func (x *Update) GetDeletedLoadBalancerNodes() *Update_DeletedLoadBalancerNodes {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_DeletedLoadBalancerNodes_); ok {
+			return x.DeletedLoadBalancerNodes
+		}
+	}
+	return nil
+}
+
+func (x *Update) GetDeleteLoadBalancerRoles() *Update_DeleteLoadBalancerRoles {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_DeleteLoadBalancerRoles_); ok {
+			return x.DeleteLoadBalancerRoles
+		}
+	}
+	return nil
+}
+
+func (x *Update) GetApiEndpoint() *Update_ApiEndpoint {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_ApiEndpoint_); ok {
+			return x.ApiEndpoint
+		}
+	}
+	return nil
+}
+
+func (x *Update) GetClusterApiPort() *Update_ApiPortOnCluster {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_ClusterApiPort); ok {
+			return x.ClusterApiPort
+		}
+	}
+	return nil
+}
+
+func (x *Update) GetK8SApiEndpoint() *Update_K8SOnlyApiEndpoint {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_K8SApiEndpoint); ok {
+			return x.K8SApiEndpoint
+		}
+	}
+	return nil
+}
+
+func (x *Update) GetUpgradeVersion() *Update_UpgradeVersion {
+	if x != nil {
+		if x, ok := x.Delta.(*Update_UpgradeVersion_); ok {
+			return x.UpgradeVersion
+		}
+	}
+	return nil
+}
+
+type isUpdate_Delta interface {
+	isUpdate_Delta()
+}
+
+type Update_None_ struct {
+	None *Update_None `protobuf:"bytes,2,opt,name=none,proto3,oneof"`
+}
+
+type Update_TfAddLoadBalancer struct {
+	// Terraformer messages to consume
+	TfAddLoadBalancer *Update_TerraformerAddLoadBalancer `protobuf:"bytes,3,opt,name=tfAddLoadBalancer,proto3,oneof"`
+}
+
+type Update_TfAddLoadBalancerNodes struct {
+	TfAddLoadBalancerNodes *Update_TerraformerAddLoadBalancerNodes `protobuf:"bytes,4,opt,name=tfAddLoadBalancerNodes,proto3,oneof"`
+}
+
+type Update_TfReplaceDns struct {
+	TfReplaceDns *Update_TerraformerReplaceDns `protobuf:"bytes,5,opt,name=tfReplaceDns,proto3,oneof"`
+}
+
+type Update_TfAddK8SNodes struct {
+	TfAddK8SNodes *Update_TerraformerAddK8SNodes `protobuf:"bytes,6,opt,name=tfAddK8sNodes,proto3,oneof"`
+}
+
+type Update_TfAddLoadBalancerRoles struct {
+	TfAddLoadBalancerRoles *Update_TerraformerAddLoadBalancerRoles `protobuf:"bytes,7,opt,name=tfAddLoadBalancerRoles,proto3,oneof"`
+}
+
+type Update_TfDeleteLoadBalancerNodes struct {
+	TfDeleteLoadBalancerNodes *Update_TerraformerDeleteLoadBalancerNodes `protobuf:"bytes,8,opt,name=tfDeleteLoadBalancerNodes,proto3,oneof"`
+}
+
+type Update_TfMoveNodePoolToAutoscaled struct {
+	TfMoveNodePoolToAutoscaled *Update_TerraformerMoveNodePoolToAutoscaled `protobuf:"bytes,9,opt,name=tfMoveNodePoolToAutoscaled,proto3,oneof"`
+}
+
+type Update_TfMoveNodePoolFromAutoscaled struct {
+	TfMoveNodePoolFromAutoscaled *Update_TerraformerMoveNodePoolFromAutoscaled `protobuf:"bytes,10,opt,name=tfMoveNodePoolFromAutoscaled,proto3,oneof"`
+}
+
+type Update_TfReplaceRoleExternalSettings struct {
+	TfReplaceRoleExternalSettings *Update_TerraformerReplaceRoleExternalSettings `protobuf:"bytes,12,opt,name=tfReplaceRoleExternalSettings,proto3,oneof"`
+}
+
+type Update_AnsReplaceProxy struct {
+	// Ansibler message to consume
+	AnsReplaceProxy *Update_AnsiblerReplaceProxySettings `protobuf:"bytes,14,opt,name=ansReplaceProxy,proto3,oneof"`
+}
+
+type Update_AnsReplaceTargetPools struct {
+	AnsReplaceTargetPools *Update_AnsiblerReplaceTargetPools `protobuf:"bytes,15,opt,name=ansReplaceTargetPools,proto3,oneof"`
+}
+
+type Update_AnsReplaceRoleInternalSettings struct {
+	AnsReplaceRoleInternalSettings *Update_AnsiblerReplaceRoleInternalSettings `protobuf:"bytes,16,opt,name=ansReplaceRoleInternalSettings,proto3,oneof"`
+}
+
+type Update_KpatchNodes struct {
+	// Kuber messages to consume
+	KpatchNodes *Update_KuberPatchNodes `protobuf:"bytes,18,opt,name=kpatchNodes,proto3,oneof"`
+}
+
+type Update_KDeleteNodes struct {
+	KDeleteNodes *Update_KuberDeleteK8SNodes `protobuf:"bytes,19,opt,name=kDeleteNodes,proto3,oneof"`
+}
+
+type Update_AddedLoadBalancer_ struct {
+	// Consumed messages.
+	AddedLoadBalancer *Update_AddedLoadBalancer `protobuf:"bytes,21,opt,name=addedLoadBalancer,proto3,oneof"`
+}
+
+type Update_AddedLoadBalancerNodes_ struct {
+	AddedLoadBalancerNodes *Update_AddedLoadBalancerNodes `protobuf:"bytes,22,opt,name=addedLoadBalancerNodes,proto3,oneof"`
+}
+
+type Update_ReplacedDns_ struct {
+	ReplacedDns *Update_ReplacedDns `protobuf:"bytes,23,opt,name=replacedDns,proto3,oneof"`
+}
+
+type Update_AddedK8SNodes_ struct {
+	AddedK8SNodes *Update_AddedK8SNodes `protobuf:"bytes,24,opt,name=addedK8sNodes,proto3,oneof"`
+}
+
+type Update_ReplacedProxy struct {
+	ReplacedProxy *Update_ReplacedProxySettings `protobuf:"bytes,25,opt,name=replacedProxy,proto3,oneof"`
+}
+
+type Update_PatchedNodes_ struct {
+	PatchedNodes *Update_PatchedNodes `protobuf:"bytes,26,opt,name=patchedNodes,proto3,oneof"`
+}
+
+type Update_AddedLoadBalancerRoles_ struct {
+	AddedLoadBalancerRoles *Update_AddedLoadBalancerRoles `protobuf:"bytes,27,opt,name=addedLoadBalancerRoles,proto3,oneof"`
+}
+
+type Update_ReplacedTargetPools_ struct {
+	ReplacedTargetPools *Update_ReplacedTargetPools `protobuf:"bytes,28,opt,name=replacedTargetPools,proto3,oneof"`
+}
+
+type Update_MovedNodePoolToAutoscaled_ struct {
+	MovedNodePoolToAutoscaled *Update_MovedNodePoolToAutoscaled `protobuf:"bytes,29,opt,name=movedNodePoolToAutoscaled,proto3,oneof"`
+}
+
+type Update_MovedNodePoolFromAutoscaled_ struct {
+	MovedNodePoolFromAutoscaled *Update_MovedNodePoolFromAutoscaled `protobuf:"bytes,30,opt,name=movedNodePoolFromAutoscaled,proto3,oneof"`
+}
+
+type Update_ReplacedRoleInternalSettings_ struct {
+	ReplacedRoleInternalSettings *Update_ReplacedRoleInternalSettings `protobuf:"bytes,31,opt,name=replacedRoleInternalSettings,proto3,oneof"`
+}
+
+type Update_ReplacedRoleExternalSettings_ struct {
+	ReplacedRoleExternalSettings *Update_ReplacedRoleExternalSettings `protobuf:"bytes,32,opt,name=replacedRoleExternalSettings,proto3,oneof"`
+}
+
+type Update_DeleteLoadBalancer_ struct {
+	// Deletions.
+	DeleteLoadBalancer *Update_DeleteLoadBalancer `protobuf:"bytes,34,opt,name=deleteLoadBalancer,proto3,oneof"`
+}
+
+type Update_DeletedK8SNodes_ struct {
+	DeletedK8SNodes *Update_DeletedK8SNodes `protobuf:"bytes,35,opt,name=deletedK8sNodes,proto3,oneof"`
+}
+
+type Update_DeletedLoadBalancerNodes_ struct {
+	DeletedLoadBalancerNodes *Update_DeletedLoadBalancerNodes `protobuf:"bytes,36,opt,name=deletedLoadBalancerNodes,proto3,oneof"`
+}
+
+type Update_DeleteLoadBalancerRoles_ struct {
+	DeleteLoadBalancerRoles *Update_DeleteLoadBalancerRoles `protobuf:"bytes,37,opt,name=deleteLoadBalancerRoles,proto3,oneof"`
+}
+
+type Update_ApiEndpoint_ struct {
+	// Utilities.
+	ApiEndpoint *Update_ApiEndpoint `protobuf:"bytes,38,opt,name=apiEndpoint,proto3,oneof"`
+}
+
+type Update_ClusterApiPort struct {
+	ClusterApiPort *Update_ApiPortOnCluster `protobuf:"bytes,39,opt,name=clusterApiPort,proto3,oneof"`
+}
+
+type Update_K8SApiEndpoint struct {
+	K8SApiEndpoint *Update_K8SOnlyApiEndpoint `protobuf:"bytes,40,opt,name=k8sApiEndpoint,proto3,oneof"`
+}
+
+type Update_UpgradeVersion_ struct {
+	UpgradeVersion *Update_UpgradeVersion `protobuf:"bytes,41,opt,name=upgradeVersion,proto3,oneof"`
+}
+
+func (*Update_None_) isUpdate_Delta() {}
+
+func (*Update_TfAddLoadBalancer) isUpdate_Delta() {}
+
+func (*Update_TfAddLoadBalancerNodes) isUpdate_Delta() {}
+
+func (*Update_TfReplaceDns) isUpdate_Delta() {}
+
+func (*Update_TfAddK8SNodes) isUpdate_Delta() {}
+
+func (*Update_TfAddLoadBalancerRoles) isUpdate_Delta() {}
+
+func (*Update_TfDeleteLoadBalancerNodes) isUpdate_Delta() {}
+
+func (*Update_TfMoveNodePoolToAutoscaled) isUpdate_Delta() {}
+
+func (*Update_TfMoveNodePoolFromAutoscaled) isUpdate_Delta() {}
+
+func (*Update_TfReplaceRoleExternalSettings) isUpdate_Delta() {}
+
+func (*Update_AnsReplaceProxy) isUpdate_Delta() {}
+
+func (*Update_AnsReplaceTargetPools) isUpdate_Delta() {}
+
+func (*Update_AnsReplaceRoleInternalSettings) isUpdate_Delta() {}
+
+func (*Update_KpatchNodes) isUpdate_Delta() {}
+
+func (*Update_KDeleteNodes) isUpdate_Delta() {}
+
+func (*Update_AddedLoadBalancer_) isUpdate_Delta() {}
+
+func (*Update_AddedLoadBalancerNodes_) isUpdate_Delta() {}
+
+func (*Update_ReplacedDns_) isUpdate_Delta() {}
+
+func (*Update_AddedK8SNodes_) isUpdate_Delta() {}
+
+func (*Update_ReplacedProxy) isUpdate_Delta() {}
+
+func (*Update_PatchedNodes_) isUpdate_Delta() {}
+
+func (*Update_AddedLoadBalancerRoles_) isUpdate_Delta() {}
+
+func (*Update_ReplacedTargetPools_) isUpdate_Delta() {}
+
+func (*Update_MovedNodePoolToAutoscaled_) isUpdate_Delta() {}
+
+func (*Update_MovedNodePoolFromAutoscaled_) isUpdate_Delta() {}
+
+func (*Update_ReplacedRoleInternalSettings_) isUpdate_Delta() {}
+
+func (*Update_ReplacedRoleExternalSettings_) isUpdate_Delta() {}
+
+func (*Update_DeleteLoadBalancer_) isUpdate_Delta() {}
+
+func (*Update_DeletedK8SNodes_) isUpdate_Delta() {}
+
+func (*Update_DeletedLoadBalancerNodes_) isUpdate_Delta() {}
+
+func (*Update_DeleteLoadBalancerRoles_) isUpdate_Delta() {}
+
+func (*Update_ApiEndpoint_) isUpdate_Delta() {}
+
+func (*Update_ClusterApiPort) isUpdate_Delta() {}
+
+func (*Update_K8SApiEndpoint) isUpdate_Delta() {}
+
+func (*Update_UpgradeVersion_) isUpdate_Delta() {}
+
+// Deletes an existing kubernetes cluster along with its attached [LBcluster], if any.
+type Delete struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The current state of the kuberentes cluster to delete.
+	//
+	// This field is required
+	K8S *K8Scluster `protobuf:"bytes,1,opt,name=k8s,proto3" json:"k8s,omitempty"`
+	// The current state of the loadbalancers  to delete, that
+	// are attached to the kubernetes cluster.
+	//
+	// This field depends on the above [k8s] field and is required if
+	// the kuberentes cluster has any loadbalancers attached.
+	LoadBalancers []*LBcluster `protobuf:"bytes,2,rep,name=loadBalancers,proto3" json:"loadBalancers,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Delete) Reset() {
+	*x = Delete{}
+	mi := &file_spec_manifest_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Delete) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Delete) ProtoMessage() {}
+
+func (x *Delete) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Delete.ProtoReflect.Descriptor instead.
+func (*Delete) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *Delete) GetK8S() *K8Scluster {
+	if x != nil {
+		return x.K8S
+	}
+	return nil
+}
+
+func (x *Delete) GetLoadBalancers() []*LBcluster {
+	if x != nil {
+		return x.LoadBalancers
+	}
+	return nil
+}
 
 type Task struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	CreateState   *CreateState           `protobuf:"bytes,1,opt,name=createState,proto3" json:"createState,omitempty"`
-	UpdateState   *UpdateState           `protobuf:"bytes,2,opt,name=updateState,proto3" json:"updateState,omitempty"`
-	DeleteState   *DeleteState           `protobuf:"bytes,3,opt,name=deleteState,proto3" json:"deleteState,omitempty"`
-	Options       uint64                 `protobuf:"varint,4,opt,name=options,proto3" json:"options,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Do:
+	//
+	//	*Task_Create
+	//	*Task_Update
+	//	*Task_Delete
+	Do            isTask_Do `protobuf_oneof:"Do"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Task) Reset() {
 	*x = Task{}
-	mi := &file_spec_manifest_proto_msgTypes[16]
+	mi := &file_spec_manifest_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1664,7 +2185,7 @@ func (x *Task) String() string {
 func (*Task) ProtoMessage() {}
 
 func (x *Task) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifest_proto_msgTypes[16]
+	mi := &file_spec_manifest_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1677,209 +2198,90 @@ func (x *Task) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Task.ProtoReflect.Descriptor instead.
 func (*Task) Descriptor() ([]byte, []int) {
-	return file_spec_manifest_proto_rawDescGZIP(), []int{16}
-}
-
-func (x *Task) GetCreateState() *CreateState {
-	if x != nil {
-		return x.CreateState
-	}
-	return nil
-}
-
-func (x *Task) GetUpdateState() *UpdateState {
-	if x != nil {
-		return x.UpdateState
-	}
-	return nil
-}
-
-func (x *Task) GetDeleteState() *DeleteState {
-	if x != nil {
-		return x.DeleteState
-	}
-	return nil
-}
-
-func (x *Task) GetOptions() uint64 {
-	if x != nil {
-		return x.Options
-	}
-	return 0
-}
-
-type CreateState struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	K8S           *K8Scluster            `protobuf:"bytes,1,opt,name=k8s,proto3" json:"k8s,omitempty"`
-	Lbs           *LoadBalancers         `protobuf:"bytes,2,opt,name=lbs,proto3" json:"lbs,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *CreateState) Reset() {
-	*x = CreateState{}
-	mi := &file_spec_manifest_proto_msgTypes[17]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CreateState) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CreateState) ProtoMessage() {}
-
-func (x *CreateState) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifest_proto_msgTypes[17]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use CreateState.ProtoReflect.Descriptor instead.
-func (*CreateState) Descriptor() ([]byte, []int) {
-	return file_spec_manifest_proto_rawDescGZIP(), []int{17}
-}
-
-func (x *CreateState) GetK8S() *K8Scluster {
-	if x != nil {
-		return x.K8S
-	}
-	return nil
-}
-
-func (x *CreateState) GetLbs() *LoadBalancers {
-	if x != nil {
-		return x.Lbs
-	}
-	return nil
-}
-
-type UpdateState struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	K8S   *K8Scluster            `protobuf:"bytes,1,opt,name=k8s,proto3" json:"k8s,omitempty"`
-	Lbs   *LoadBalancers         `protobuf:"bytes,2,opt,name=lbs,proto3" json:"lbs,omitempty"`
-	// Types that are valid to be assigned to EndpointChange:
-	//
-	//	*UpdateState_NewControlEndpoint
-	//	*UpdateState_LbEndpointChange
-	EndpointChange isUpdateState_EndpointChange `protobuf_oneof:"EndpointChange"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
-}
-
-func (x *UpdateState) Reset() {
-	*x = UpdateState{}
-	mi := &file_spec_manifest_proto_msgTypes[18]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UpdateState) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UpdateState) ProtoMessage() {}
-
-func (x *UpdateState) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifest_proto_msgTypes[18]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use UpdateState.ProtoReflect.Descriptor instead.
-func (*UpdateState) Descriptor() ([]byte, []int) {
 	return file_spec_manifest_proto_rawDescGZIP(), []int{18}
 }
 
-func (x *UpdateState) GetK8S() *K8Scluster {
+func (x *Task) GetDo() isTask_Do {
 	if x != nil {
-		return x.K8S
+		return x.Do
 	}
 	return nil
 }
 
-func (x *UpdateState) GetLbs() *LoadBalancers {
+func (x *Task) GetCreate() *Create {
 	if x != nil {
-		return x.Lbs
-	}
-	return nil
-}
-
-func (x *UpdateState) GetEndpointChange() isUpdateState_EndpointChange {
-	if x != nil {
-		return x.EndpointChange
-	}
-	return nil
-}
-
-func (x *UpdateState) GetNewControlEndpoint() *UpdateState_K8SEndpoint {
-	if x != nil {
-		if x, ok := x.EndpointChange.(*UpdateState_NewControlEndpoint); ok {
-			return x.NewControlEndpoint
+		if x, ok := x.Do.(*Task_Create); ok {
+			return x.Create
 		}
 	}
 	return nil
 }
 
-func (x *UpdateState) GetLbEndpointChange() *UpdateState_LbEndpoint {
+func (x *Task) GetUpdate() *Update {
 	if x != nil {
-		if x, ok := x.EndpointChange.(*UpdateState_LbEndpointChange); ok {
-			return x.LbEndpointChange
+		if x, ok := x.Do.(*Task_Update); ok {
+			return x.Update
 		}
 	}
 	return nil
 }
 
-type isUpdateState_EndpointChange interface {
-	isUpdateState_EndpointChange()
+func (x *Task) GetDelete() *Delete {
+	if x != nil {
+		if x, ok := x.Do.(*Task_Delete); ok {
+			return x.Delete
+		}
+	}
+	return nil
 }
 
-type UpdateState_NewControlEndpoint struct {
-	NewControlEndpoint *UpdateState_K8SEndpoint `protobuf:"bytes,3,opt,name=newControlEndpoint,proto3,oneof"`
+type isTask_Do interface {
+	isTask_Do()
 }
 
-type UpdateState_LbEndpointChange struct {
-	LbEndpointChange *UpdateState_LbEndpoint `protobuf:"bytes,4,opt,name=lbEndpointChange,proto3,oneof"`
+type Task_Create struct {
+	Create *Create `protobuf:"bytes,7,opt,name=create,proto3,oneof"`
 }
 
-func (*UpdateState_NewControlEndpoint) isUpdateState_EndpointChange() {}
+type Task_Update struct {
+	Update *Update `protobuf:"bytes,8,opt,name=update,proto3,oneof"`
+}
 
-func (*UpdateState_LbEndpointChange) isUpdateState_EndpointChange() {}
+type Task_Delete struct {
+	Delete *Delete `protobuf:"bytes,9,opt,name=delete,proto3,oneof"`
+}
 
-type DeleteState struct {
-	state         protoimpl.MessageState      `protogen:"open.v1"`
-	K8S           *DeleteState_K8S            `protobuf:"bytes,1,opt,name=k8s,proto3" json:"k8s,omitempty"`
-	Lbs           []*DeleteState_LoadBalancer `protobuf:"bytes,2,rep,name=lbs,proto3" json:"lbs,omitempty"`
+func (*Task_Create) isTask_Do() {}
+
+func (*Task_Update) isTask_Do() {}
+
+func (*Task_Delete) isTask_Do() {}
+
+// The message that is used for the Message Queue.
+type Work struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The task to be worked on.
+	Task *Task `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
+	// What exactly should be done with the task.
+	Passes        []*anypb.Any `protobuf:"bytes,2,rep,name=passes,proto3" json:"passes,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *DeleteState) Reset() {
-	*x = DeleteState{}
+func (x *Work) Reset() {
+	*x = Work{}
 	mi := &file_spec_manifest_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *DeleteState) String() string {
+func (x *Work) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*DeleteState) ProtoMessage() {}
+func (*Work) ProtoMessage() {}
 
-func (x *DeleteState) ProtoReflect() protoreflect.Message {
+func (x *Work) ProtoReflect() protoreflect.Message {
 	mi := &file_spec_manifest_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1891,56 +2293,56 @@ func (x *DeleteState) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use DeleteState.ProtoReflect.Descriptor instead.
-func (*DeleteState) Descriptor() ([]byte, []int) {
+// Deprecated: Use Work.ProtoReflect.Descriptor instead.
+func (*Work) Descriptor() ([]byte, []int) {
 	return file_spec_manifest_proto_rawDescGZIP(), []int{19}
 }
 
-func (x *DeleteState) GetK8S() *DeleteState_K8S {
+func (x *Work) GetTask() *Task {
 	if x != nil {
-		return x.K8S
+		return x.Task
 	}
 	return nil
 }
 
-func (x *DeleteState) GetLbs() []*DeleteState_LoadBalancer {
+func (x *Work) GetPasses() []*anypb.Any {
 	if x != nil {
-		return x.Lbs
+		return x.Passes
 	}
 	return nil
 }
 
-type DeletedNodes struct {
+type TaskResult struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// nodes specifies which nodes should be deleted
-	// from the nodepool.
-	Nodes []string `protobuf:"bytes,1,rep,name=nodes,proto3" json:"nodes,omitempty"`
-	// keepNodePoolIfEmpty specifies if the nodepool should
-	// be deleted from the current state if its node count
-	// reaches zero. Currently this will only be used with
-	// autoscaled dynamic nodepools which can have a minimum
-	// of 0 nodes, other nodepool types will have this always
-	// set to false to indicate that after deletion of all nodes
-	// the nodepool should no longer be tracked in the current state.
-	KeepNodePoolIfEmpty bool `protobuf:"varint,2,opt,name=keepNodePoolIfEmpty,proto3" json:"keepNodePoolIfEmpty,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	// If the Error.Kind is FATAL no useful
+	// information is stored in the result.
+	// Otherwise, if error is not set or PARTIAL,
+	// the result will contain valid data,.
+	Error *TaskResult_Error `protobuf:"bytes,1,opt,name=error,proto3,oneof" json:"error,omitempty"`
+	// Types that are valid to be assigned to Result:
+	//
+	//	*TaskResult_None_
+	//	*TaskResult_Update
+	//	*TaskResult_Clear
+	Result        isTaskResult_Result `protobuf_oneof:"Result"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
-func (x *DeletedNodes) Reset() {
-	*x = DeletedNodes{}
+func (x *TaskResult) Reset() {
+	*x = TaskResult{}
 	mi := &file_spec_manifest_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *DeletedNodes) String() string {
+func (x *TaskResult) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*DeletedNodes) ProtoMessage() {}
+func (*TaskResult) ProtoMessage() {}
 
-func (x *DeletedNodes) ProtoReflect() protoreflect.Message {
+func (x *TaskResult) ProtoReflect() protoreflect.Message {
 	mi := &file_spec_manifest_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1952,24 +2354,73 @@ func (x *DeletedNodes) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use DeletedNodes.ProtoReflect.Descriptor instead.
-func (*DeletedNodes) Descriptor() ([]byte, []int) {
+// Deprecated: Use TaskResult.ProtoReflect.Descriptor instead.
+func (*TaskResult) Descriptor() ([]byte, []int) {
 	return file_spec_manifest_proto_rawDescGZIP(), []int{20}
 }
 
-func (x *DeletedNodes) GetNodes() []string {
+func (x *TaskResult) GetError() *TaskResult_Error {
 	if x != nil {
-		return x.Nodes
+		return x.Error
 	}
 	return nil
 }
 
-func (x *DeletedNodes) GetKeepNodePoolIfEmpty() bool {
+func (x *TaskResult) GetResult() isTaskResult_Result {
 	if x != nil {
-		return x.KeepNodePoolIfEmpty
+		return x.Result
 	}
-	return false
+	return nil
 }
+
+func (x *TaskResult) GetNone() *TaskResult_None {
+	if x != nil {
+		if x, ok := x.Result.(*TaskResult_None_); ok {
+			return x.None
+		}
+	}
+	return nil
+}
+
+func (x *TaskResult) GetUpdate() *TaskResult_UpdateState {
+	if x != nil {
+		if x, ok := x.Result.(*TaskResult_Update); ok {
+			return x.Update
+		}
+	}
+	return nil
+}
+
+func (x *TaskResult) GetClear() *TaskResult_ClearState {
+	if x != nil {
+		if x, ok := x.Result.(*TaskResult_Clear); ok {
+			return x.Clear
+		}
+	}
+	return nil
+}
+
+type isTaskResult_Result interface {
+	isTaskResult_Result()
+}
+
+type TaskResult_None_ struct {
+	None *TaskResult_None `protobuf:"bytes,2,opt,name=none,proto3,oneof"`
+}
+
+type TaskResult_Update struct {
+	Update *TaskResult_UpdateState `protobuf:"bytes,3,opt,name=update,proto3,oneof"`
+}
+
+type TaskResult_Clear struct {
+	Clear *TaskResult_ClearState `protobuf:"bytes,4,opt,name=clear,proto3,oneof"`
+}
+
+func (*TaskResult_None_) isTaskResult_Result() {}
+
+func (*TaskResult_Update) isTaskResult_Result() {}
+
+func (*TaskResult_Clear) isTaskResult_Result() {}
 
 type Role_Settings struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
@@ -2033,103 +2484,28 @@ func (x *Role_Settings) GetEnvoyAdminPort() int32 {
 	return 0
 }
 
-type Retry_Repeat struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	Kind  Retry_Repeat_Kind      `protobuf:"varint,1,opt,name=kind,proto3,enum=spec.Retry_Repeat_Kind" json:"kind,omitempty"`
-	// currentTick specifies the current number of ticks.
-	// A tick is an regular interval at which manifests are being checked.
-	// to check the Tick timeout see: manager/internal/service/watchers.go
-	CurrentTick uint32 `protobuf:"varint,2,opt,name=currentTick,proto3" json:"currentTick,omitempty"`
-	// stopAfter specifies the maximum number of ticks, after reaching this value the manifest will be rescheduled
-	// for the last time before giving up.
-	StopAfter uint32 `protobuf:"varint,3,opt,name=stopAfter,proto3" json:"stopAfter,omitempty"`
-	// retryAfter specifies the number of ticks to wait before rescheduling the manifest again.
-	// this value will be set to the value of currentTick after it is updated.
-	RetryAfter    uint32 `protobuf:"varint,4,opt,name=retryAfter,proto3" json:"retryAfter,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *Retry_Repeat) Reset() {
-	*x = Retry_Repeat{}
-	mi := &file_spec_manifest_proto_msgTypes[23]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Retry_Repeat) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Retry_Repeat) ProtoMessage() {}
-
-func (x *Retry_Repeat) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifest_proto_msgTypes[23]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Retry_Repeat.ProtoReflect.Descriptor instead.
-func (*Retry_Repeat) Descriptor() ([]byte, []int) {
-	return file_spec_manifest_proto_rawDescGZIP(), []int{15, 0}
-}
-
-func (x *Retry_Repeat) GetKind() Retry_Repeat_Kind {
-	if x != nil {
-		return x.Kind
-	}
-	return Retry_Repeat_ENDLESS
-}
-
-func (x *Retry_Repeat) GetCurrentTick() uint32 {
-	if x != nil {
-		return x.CurrentTick
-	}
-	return 0
-}
-
-func (x *Retry_Repeat) GetStopAfter() uint32 {
-	if x != nil {
-		return x.StopAfter
-	}
-	return 0
-}
-
-func (x *Retry_Repeat) GetRetryAfter() uint32 {
-	if x != nil {
-		return x.RetryAfter
-	}
-	return 0
-}
-
-type Retry_Rollback struct {
+type Unreachable_ListOfNodeEndpoints struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Tasks         []*TaskEvent           `protobuf:"bytes,1,rep,name=tasks,proto3" json:"tasks,omitempty"`
+	Endpoints     []string               `protobuf:"bytes,1,rep,name=endpoints,proto3" json:"endpoints,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Retry_Rollback) Reset() {
-	*x = Retry_Rollback{}
-	mi := &file_spec_manifest_proto_msgTypes[24]
+func (x *Unreachable_ListOfNodeEndpoints) Reset() {
+	*x = Unreachable_ListOfNodeEndpoints{}
+	mi := &file_spec_manifest_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Retry_Rollback) String() string {
+func (x *Unreachable_ListOfNodeEndpoints) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Retry_Rollback) ProtoMessage() {}
+func (*Unreachable_ListOfNodeEndpoints) ProtoMessage() {}
 
-func (x *Retry_Rollback) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifest_proto_msgTypes[24]
+func (x *Unreachable_ListOfNodeEndpoints) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2140,41 +2516,40 @@ func (x *Retry_Rollback) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Retry_Rollback.ProtoReflect.Descriptor instead.
-func (*Retry_Rollback) Descriptor() ([]byte, []int) {
-	return file_spec_manifest_proto_rawDescGZIP(), []int{15, 1}
+// Deprecated: Use Unreachable_ListOfNodeEndpoints.ProtoReflect.Descriptor instead.
+func (*Unreachable_ListOfNodeEndpoints) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{14, 0}
 }
 
-func (x *Retry_Rollback) GetTasks() []*TaskEvent {
+func (x *Unreachable_ListOfNodeEndpoints) GetEndpoints() []string {
 	if x != nil {
-		return x.Tasks
+		return x.Endpoints
 	}
 	return nil
 }
 
-type UpdateState_K8SEndpoint struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nodepool      string                 `protobuf:"bytes,1,opt,name=nodepool,proto3" json:"nodepool,omitempty"`
-	Node          string                 `protobuf:"bytes,2,opt,name=node,proto3" json:"node,omitempty"`
+type Unreachable_UnreachableNodePools struct {
+	state         protoimpl.MessageState                      `protogen:"open.v1"`
+	Nodepools     map[string]*Unreachable_ListOfNodeEndpoints `protobuf:"bytes,1,rep,name=nodepools,proto3" json:"nodepools,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *UpdateState_K8SEndpoint) Reset() {
-	*x = UpdateState_K8SEndpoint{}
-	mi := &file_spec_manifest_proto_msgTypes[25]
+func (x *Unreachable_UnreachableNodePools) Reset() {
+	*x = Unreachable_UnreachableNodePools{}
+	mi := &file_spec_manifest_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *UpdateState_K8SEndpoint) String() string {
+func (x *Unreachable_UnreachableNodePools) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*UpdateState_K8SEndpoint) ProtoMessage() {}
+func (*Unreachable_UnreachableNodePools) ProtoMessage() {}
 
-func (x *UpdateState_K8SEndpoint) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifest_proto_msgTypes[25]
+func (x *Unreachable_UnreachableNodePools) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2185,26 +2560,1129 @@ func (x *UpdateState_K8SEndpoint) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use UpdateState_K8SEndpoint.ProtoReflect.Descriptor instead.
-func (*UpdateState_K8SEndpoint) Descriptor() ([]byte, []int) {
-	return file_spec_manifest_proto_rawDescGZIP(), []int{18, 0}
+// Deprecated: Use Unreachable_UnreachableNodePools.ProtoReflect.Descriptor instead.
+func (*Unreachable_UnreachableNodePools) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{14, 1}
 }
 
-func (x *UpdateState_K8SEndpoint) GetNodepool() string {
+func (x *Unreachable_UnreachableNodePools) GetNodepools() map[string]*Unreachable_ListOfNodeEndpoints {
+	if x != nil {
+		return x.Nodepools
+	}
+	return nil
+}
+
+// State is the current state as known by the Manager service that is continiously
+// updated and merged into the [Update] message as it traverses the build pipeline.
+type Update_State struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The state of the kubernetes cluster to update.
+	K8S *K8Scluster `protobuf:"bytes,1,opt,name=k8s,proto3" json:"k8s,omitempty"`
+	// The state of the loadbalancers to update.
+	LoadBalancers []*LBcluster `protobuf:"bytes,2,rep,name=loadBalancers,proto3" json:"loadBalancers,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_State) Reset() {
+	*x = Update_State{}
+	mi := &file_spec_manifest_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_State) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_State) ProtoMessage() {}
+
+func (x *Update_State) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_State.ProtoReflect.Descriptor instead.
+func (*Update_State) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 0}
+}
+
+func (x *Update_State) GetK8S() *K8Scluster {
+	if x != nil {
+		return x.K8S
+	}
+	return nil
+}
+
+func (x *Update_State) GetLoadBalancers() []*LBcluster {
+	if x != nil {
+		return x.LoadBalancers
+	}
+	return nil
+}
+
+type Update_None struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_None) Reset() {
+	*x = Update_None{}
+	mi := &file_spec_manifest_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_None) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_None) ProtoMessage() {}
+
+func (x *Update_None) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_None.ProtoReflect.Descriptor instead.
+func (*Update_None) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 1}
+}
+
+// TerraformerMoveNodePoolToAutoscaled is a message that once
+// processed by the Terraformer service a result is send back to
+// the Manager, the manager will consume the message and further
+// stages will only have a [MovedNodePoolToAutoscaled] message to
+// process.
+//
+// New, "desired", state needs to only be present in the terraformer
+// stage and all other services  need to only see what has been done
+// and ocasionally index the performed change on the nodepool which will
+// already be present in the [State] of the [Update] message.
+type Update_TerraformerMoveNodePoolToAutoscaled struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Nodepool      string                 `protobuf:"bytes,1,opt,name=nodepool,proto3" json:"nodepool,omitempty"`
+	Config        *AutoscalerConf        `protobuf:"bytes,2,opt,name=config,proto3" json:"config,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_TerraformerMoveNodePoolToAutoscaled) Reset() {
+	*x = Update_TerraformerMoveNodePoolToAutoscaled{}
+	mi := &file_spec_manifest_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_TerraformerMoveNodePoolToAutoscaled) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_TerraformerMoveNodePoolToAutoscaled) ProtoMessage() {}
+
+func (x *Update_TerraformerMoveNodePoolToAutoscaled) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_TerraformerMoveNodePoolToAutoscaled.ProtoReflect.Descriptor instead.
+func (*Update_TerraformerMoveNodePoolToAutoscaled) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 2}
+}
+
+func (x *Update_TerraformerMoveNodePoolToAutoscaled) GetNodepool() string {
 	if x != nil {
 		return x.Nodepool
 	}
 	return ""
 }
 
-func (x *UpdateState_K8SEndpoint) GetNode() string {
+func (x *Update_TerraformerMoveNodePoolToAutoscaled) GetConfig() *AutoscalerConf {
 	if x != nil {
-		return x.Node
+		return x.Config
+	}
+	return nil
+}
+
+type Update_MovedNodePoolToAutoscaled struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Nodepool      string                 `protobuf:"bytes,1,opt,name=nodepool,proto3" json:"nodepool,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_MovedNodePoolToAutoscaled) Reset() {
+	*x = Update_MovedNodePoolToAutoscaled{}
+	mi := &file_spec_manifest_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_MovedNodePoolToAutoscaled) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_MovedNodePoolToAutoscaled) ProtoMessage() {}
+
+func (x *Update_MovedNodePoolToAutoscaled) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_MovedNodePoolToAutoscaled.ProtoReflect.Descriptor instead.
+func (*Update_MovedNodePoolToAutoscaled) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 3}
+}
+
+func (x *Update_MovedNodePoolToAutoscaled) GetNodepool() string {
+	if x != nil {
+		return x.Nodepool
 	}
 	return ""
 }
 
-type UpdateState_LbEndpoint struct {
+// Does exactly the same thing as [TerraformerMoveNodePoolToAutoscaled]
+// but instead moves it to a fixed size nodepool.
+type Update_TerraformerMoveNodePoolFromAutoscaled struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Nodepool      string                 `protobuf:"bytes,1,opt,name=nodepool,proto3" json:"nodepool,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_TerraformerMoveNodePoolFromAutoscaled) Reset() {
+	*x = Update_TerraformerMoveNodePoolFromAutoscaled{}
+	mi := &file_spec_manifest_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_TerraformerMoveNodePoolFromAutoscaled) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_TerraformerMoveNodePoolFromAutoscaled) ProtoMessage() {}
+
+func (x *Update_TerraformerMoveNodePoolFromAutoscaled) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_TerraformerMoveNodePoolFromAutoscaled.ProtoReflect.Descriptor instead.
+func (*Update_TerraformerMoveNodePoolFromAutoscaled) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 4}
+}
+
+func (x *Update_TerraformerMoveNodePoolFromAutoscaled) GetNodepool() string {
+	if x != nil {
+		return x.Nodepool
+	}
+	return ""
+}
+
+type Update_MovedNodePoolFromAutoscaled struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Nodepool      string                 `protobuf:"bytes,1,opt,name=nodepool,proto3" json:"nodepool,omitempty"`
+	Config        *AutoscalerConf        `protobuf:"bytes,2,opt,name=config,proto3" json:"config,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_MovedNodePoolFromAutoscaled) Reset() {
+	*x = Update_MovedNodePoolFromAutoscaled{}
+	mi := &file_spec_manifest_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_MovedNodePoolFromAutoscaled) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_MovedNodePoolFromAutoscaled) ProtoMessage() {}
+
+func (x *Update_MovedNodePoolFromAutoscaled) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_MovedNodePoolFromAutoscaled.ProtoReflect.Descriptor instead.
+func (*Update_MovedNodePoolFromAutoscaled) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 5}
+}
+
+func (x *Update_MovedNodePoolFromAutoscaled) GetNodepool() string {
+	if x != nil {
+		return x.Nodepool
+	}
+	return ""
+}
+
+func (x *Update_MovedNodePoolFromAutoscaled) GetConfig() *AutoscalerConf {
+	if x != nil {
+		return x.Config
+	}
+	return nil
+}
+
+// TerraformerAddLoadBalancer is a message that once processed
+// by the Terraformer service and a result is send back to the
+// Manager, the manager will consume the message further stages
+// will only have a [AddedLoadBalancer] message to process.
+//
+// New, "desired", state needs only to be present in the terraformer
+// stage and all other services need to only see what has been done
+// and ocasionally index the loadbalancer, which will already be present
+// in the [State] of the [Update] message.
+type Update_TerraformerAddLoadBalancer struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Handle        *LBcluster             `protobuf:"bytes,1,opt,name=handle,proto3" json:"handle,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_TerraformerAddLoadBalancer) Reset() {
+	*x = Update_TerraformerAddLoadBalancer{}
+	mi := &file_spec_manifest_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_TerraformerAddLoadBalancer) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_TerraformerAddLoadBalancer) ProtoMessage() {}
+
+func (x *Update_TerraformerAddLoadBalancer) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_TerraformerAddLoadBalancer.ProtoReflect.Descriptor instead.
+func (*Update_TerraformerAddLoadBalancer) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 6}
+}
+
+func (x *Update_TerraformerAddLoadBalancer) GetHandle() *LBcluster {
+	if x != nil {
+		return x.Handle
+	}
+	return nil
+}
+
+type Update_AddedLoadBalancer struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Handle        string                 `protobuf:"bytes,1,opt,name=handle,proto3" json:"handle,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_AddedLoadBalancer) Reset() {
+	*x = Update_AddedLoadBalancer{}
+	mi := &file_spec_manifest_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_AddedLoadBalancer) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_AddedLoadBalancer) ProtoMessage() {}
+
+func (x *Update_AddedLoadBalancer) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_AddedLoadBalancer.ProtoReflect.Descriptor instead.
+func (*Update_AddedLoadBalancer) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 7}
+}
+
+func (x *Update_AddedLoadBalancer) GetHandle() string {
+	if x != nil {
+		return x.Handle
+	}
+	return ""
+}
+
+// TerraformerDeleteLoadBalancerNodes is a message that is processed by the
+// Terraformer service and a result is send back to the Manager, it will consume
+// the message and further stages will only have a [DeletedLoadBalancerNodes]
+// message to process.
+//
+// Old, "current", state needs to only be present in the Terraformer stage and
+// all other services need to only see the changes after the deletion for
+// reconciliation which will already be present in the [State] of the [Update]
+// message.
+type Update_TerraformerDeleteLoadBalancerNodes struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Id of the loadbalancer.
+	Handle string `protobuf:"bytes,1,opt,name=handle,proto3" json:"handle,omitempty"`
+	// Whether the NodePool itself
+	// was deleted from the cluster.
+	// Meaning that all nodes of the
+	// nodepool were deleted.
+	WithNodePool bool `protobuf:"varint,2,opt,name=withNodePool,proto3" json:"withNodePool,omitempty"`
+	// Affected Nodepool.
+	Nodepool string `protobuf:"bytes,3,opt,name=nodepool,proto3" json:"nodepool,omitempty"`
+	// Nodes that were deleted.
+	Nodes []string `protobuf:"bytes,4,rep,name=nodes,proto3" json:"nodes,omitempty"`
+	// Unreachable infrastructure that is optionally set
+	// for the deletion process, in which presense, connecting
+	// to the unreachable infrastructure should be omitted.
+	Unreachable   *Unreachable `protobuf:"bytes,5,opt,name=unreachable,proto3,oneof" json:"unreachable,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_TerraformerDeleteLoadBalancerNodes) Reset() {
+	*x = Update_TerraformerDeleteLoadBalancerNodes{}
+	mi := &file_spec_manifest_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_TerraformerDeleteLoadBalancerNodes) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_TerraformerDeleteLoadBalancerNodes) ProtoMessage() {}
+
+func (x *Update_TerraformerDeleteLoadBalancerNodes) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_TerraformerDeleteLoadBalancerNodes.ProtoReflect.Descriptor instead.
+func (*Update_TerraformerDeleteLoadBalancerNodes) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 8}
+}
+
+func (x *Update_TerraformerDeleteLoadBalancerNodes) GetHandle() string {
+	if x != nil {
+		return x.Handle
+	}
+	return ""
+}
+
+func (x *Update_TerraformerDeleteLoadBalancerNodes) GetWithNodePool() bool {
+	if x != nil {
+		return x.WithNodePool
+	}
+	return false
+}
+
+func (x *Update_TerraformerDeleteLoadBalancerNodes) GetNodepool() string {
+	if x != nil {
+		return x.Nodepool
+	}
+	return ""
+}
+
+func (x *Update_TerraformerDeleteLoadBalancerNodes) GetNodes() []string {
+	if x != nil {
+		return x.Nodes
+	}
+	return nil
+}
+
+func (x *Update_TerraformerDeleteLoadBalancerNodes) GetUnreachable() *Unreachable {
+	if x != nil {
+		return x.Unreachable
+	}
+	return nil
+}
+
+type Update_DeletedLoadBalancerNodes struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Unreachable infrastructure that is optionally set
+	// for the deletion process, in which presense, connecting
+	// to the unreachable infrastructure should be omitted.
+	Unreachable *Unreachable `protobuf:"bytes,1,opt,name=unreachable,proto3,oneof" json:"unreachable,omitempty"`
+	// id of the loadbalancer.
+	Handle string `protobuf:"bytes,2,opt,name=handle,proto3" json:"handle,omitempty"`
+	// Types that are valid to be assigned to Kind:
+	//
+	//	*Update_DeletedLoadBalancerNodes_Whole
+	//	*Update_DeletedLoadBalancerNodes_Partial_
+	Kind          isUpdate_DeletedLoadBalancerNodes_Kind `protobuf_oneof:"Kind"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_DeletedLoadBalancerNodes) Reset() {
+	*x = Update_DeletedLoadBalancerNodes{}
+	mi := &file_spec_manifest_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_DeletedLoadBalancerNodes) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_DeletedLoadBalancerNodes) ProtoMessage() {}
+
+func (x *Update_DeletedLoadBalancerNodes) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_DeletedLoadBalancerNodes.ProtoReflect.Descriptor instead.
+func (*Update_DeletedLoadBalancerNodes) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 9}
+}
+
+func (x *Update_DeletedLoadBalancerNodes) GetUnreachable() *Unreachable {
+	if x != nil {
+		return x.Unreachable
+	}
+	return nil
+}
+
+func (x *Update_DeletedLoadBalancerNodes) GetHandle() string {
+	if x != nil {
+		return x.Handle
+	}
+	return ""
+}
+
+func (x *Update_DeletedLoadBalancerNodes) GetKind() isUpdate_DeletedLoadBalancerNodes_Kind {
+	if x != nil {
+		return x.Kind
+	}
+	return nil
+}
+
+func (x *Update_DeletedLoadBalancerNodes) GetWhole() *Update_DeletedLoadBalancerNodes_WholeNodePool {
+	if x != nil {
+		if x, ok := x.Kind.(*Update_DeletedLoadBalancerNodes_Whole); ok {
+			return x.Whole
+		}
+	}
+	return nil
+}
+
+func (x *Update_DeletedLoadBalancerNodes) GetPartial() *Update_DeletedLoadBalancerNodes_Partial {
+	if x != nil {
+		if x, ok := x.Kind.(*Update_DeletedLoadBalancerNodes_Partial_); ok {
+			return x.Partial
+		}
+	}
+	return nil
+}
+
+type isUpdate_DeletedLoadBalancerNodes_Kind interface {
+	isUpdate_DeletedLoadBalancerNodes_Kind()
+}
+
+type Update_DeletedLoadBalancerNodes_Whole struct {
+	Whole *Update_DeletedLoadBalancerNodes_WholeNodePool `protobuf:"bytes,3,opt,name=whole,proto3,oneof"`
+}
+
+type Update_DeletedLoadBalancerNodes_Partial_ struct {
+	Partial *Update_DeletedLoadBalancerNodes_Partial `protobuf:"bytes,4,opt,name=partial,proto3,oneof"`
+}
+
+func (*Update_DeletedLoadBalancerNodes_Whole) isUpdate_DeletedLoadBalancerNodes_Kind() {}
+
+func (*Update_DeletedLoadBalancerNodes_Partial_) isUpdate_DeletedLoadBalancerNodes_Kind() {}
+
+// TerraformerAddLoadBalancerNodes is a message that is processed by the
+// Terraformer service and a result is send back to the Manager, it will
+// consume the message and further stages will only have a [AddedLoadBalancerNodes]
+// message to process.
+//
+// New, "desired", state needs only to be present in the Terraformer stage and
+// all other services need to only see what has been done which will already
+// be present in the [State] of the [Update] message.
+type Update_TerraformerAddLoadBalancerNodes struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Id of the loadbalancer.
+	Handle string `protobuf:"bytes,1,opt,name=handle,proto3" json:"handle,omitempty"`
+	// Types that are valid to be assigned to Kind:
+	//
+	//	*Update_TerraformerAddLoadBalancerNodes_Existing_
+	//	*Update_TerraformerAddLoadBalancerNodes_New_
+	Kind          isUpdate_TerraformerAddLoadBalancerNodes_Kind `protobuf_oneof:"Kind"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_TerraformerAddLoadBalancerNodes) Reset() {
+	*x = Update_TerraformerAddLoadBalancerNodes{}
+	mi := &file_spec_manifest_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_TerraformerAddLoadBalancerNodes) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_TerraformerAddLoadBalancerNodes) ProtoMessage() {}
+
+func (x *Update_TerraformerAddLoadBalancerNodes) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_TerraformerAddLoadBalancerNodes.ProtoReflect.Descriptor instead.
+func (*Update_TerraformerAddLoadBalancerNodes) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 10}
+}
+
+func (x *Update_TerraformerAddLoadBalancerNodes) GetHandle() string {
+	if x != nil {
+		return x.Handle
+	}
+	return ""
+}
+
+func (x *Update_TerraformerAddLoadBalancerNodes) GetKind() isUpdate_TerraformerAddLoadBalancerNodes_Kind {
+	if x != nil {
+		return x.Kind
+	}
+	return nil
+}
+
+func (x *Update_TerraformerAddLoadBalancerNodes) GetExisting() *Update_TerraformerAddLoadBalancerNodes_Existing {
+	if x != nil {
+		if x, ok := x.Kind.(*Update_TerraformerAddLoadBalancerNodes_Existing_); ok {
+			return x.Existing
+		}
+	}
+	return nil
+}
+
+func (x *Update_TerraformerAddLoadBalancerNodes) GetNew() *Update_TerraformerAddLoadBalancerNodes_New {
+	if x != nil {
+		if x, ok := x.Kind.(*Update_TerraformerAddLoadBalancerNodes_New_); ok {
+			return x.New
+		}
+	}
+	return nil
+}
+
+type isUpdate_TerraformerAddLoadBalancerNodes_Kind interface {
+	isUpdate_TerraformerAddLoadBalancerNodes_Kind()
+}
+
+type Update_TerraformerAddLoadBalancerNodes_Existing_ struct {
+	Existing *Update_TerraformerAddLoadBalancerNodes_Existing `protobuf:"bytes,2,opt,name=existing,proto3,oneof"`
+}
+
+type Update_TerraformerAddLoadBalancerNodes_New_ struct {
+	New *Update_TerraformerAddLoadBalancerNodes_New `protobuf:"bytes,3,opt,name=new,proto3,oneof"`
+}
+
+func (*Update_TerraformerAddLoadBalancerNodes_Existing_) isUpdate_TerraformerAddLoadBalancerNodes_Kind() {
+}
+
+func (*Update_TerraformerAddLoadBalancerNodes_New_) isUpdate_TerraformerAddLoadBalancerNodes_Kind() {}
+
+type Update_AddedLoadBalancerNodes struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Handle        string                 `protobuf:"bytes,1,opt,name=handle,proto3" json:"handle,omitempty"`
+	NewNodePool   bool                   `protobuf:"varint,2,opt,name=newNodePool,proto3" json:"newNodePool,omitempty"`
+	NodePool      string                 `protobuf:"bytes,3,opt,name=nodePool,proto3" json:"nodePool,omitempty"`
+	Nodes         []string               `protobuf:"bytes,4,rep,name=nodes,proto3" json:"nodes,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_AddedLoadBalancerNodes) Reset() {
+	*x = Update_AddedLoadBalancerNodes{}
+	mi := &file_spec_manifest_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_AddedLoadBalancerNodes) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_AddedLoadBalancerNodes) ProtoMessage() {}
+
+func (x *Update_AddedLoadBalancerNodes) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_AddedLoadBalancerNodes.ProtoReflect.Descriptor instead.
+func (*Update_AddedLoadBalancerNodes) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 11}
+}
+
+func (x *Update_AddedLoadBalancerNodes) GetHandle() string {
+	if x != nil {
+		return x.Handle
+	}
+	return ""
+}
+
+func (x *Update_AddedLoadBalancerNodes) GetNewNodePool() bool {
+	if x != nil {
+		return x.NewNodePool
+	}
+	return false
+}
+
+func (x *Update_AddedLoadBalancerNodes) GetNodePool() string {
+	if x != nil {
+		return x.NodePool
+	}
+	return ""
+}
+
+func (x *Update_AddedLoadBalancerNodes) GetNodes() []string {
+	if x != nil {
+		return x.Nodes
+	}
+	return nil
+}
+
+// DeleteLoadBalnacerRoles works with the [State] that is part of
+// the [Update] message, thus no "message consuming" needs to happen.
+type Update_DeleteLoadBalancerRoles struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Handle        string                 `protobuf:"bytes,1,opt,name=handle,proto3" json:"handle,omitempty"`
+	Roles         []string               `protobuf:"bytes,2,rep,name=roles,proto3" json:"roles,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_DeleteLoadBalancerRoles) Reset() {
+	*x = Update_DeleteLoadBalancerRoles{}
+	mi := &file_spec_manifest_proto_msgTypes[39]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_DeleteLoadBalancerRoles) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_DeleteLoadBalancerRoles) ProtoMessage() {}
+
+func (x *Update_DeleteLoadBalancerRoles) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[39]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_DeleteLoadBalancerRoles.ProtoReflect.Descriptor instead.
+func (*Update_DeleteLoadBalancerRoles) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 12}
+}
+
+func (x *Update_DeleteLoadBalancerRoles) GetHandle() string {
+	if x != nil {
+		return x.Handle
+	}
+	return ""
+}
+
+func (x *Update_DeleteLoadBalancerRoles) GetRoles() []string {
+	if x != nil {
+		return x.Roles
+	}
+	return nil
+}
+
+// TerraformerAddLoadBalancerRoles is a message that is processed by the
+// Terraformer service and a result is send back to the Manager, it will
+// consume the message and further stages will only have a [AddedLoadBalancerRoles]
+// message to process.
+//
+// New, "desired", state needs only to be present in the Terraformer stage and
+// all other services need to only see what has been done which will already
+// be present in the [State] of the [Update] message.
+type Update_TerraformerAddLoadBalancerRoles struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Handle        string                 `protobuf:"bytes,1,opt,name=handle,proto3" json:"handle,omitempty"`
+	Roles         []*Role                `protobuf:"bytes,2,rep,name=roles,proto3" json:"roles,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_TerraformerAddLoadBalancerRoles) Reset() {
+	*x = Update_TerraformerAddLoadBalancerRoles{}
+	mi := &file_spec_manifest_proto_msgTypes[40]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_TerraformerAddLoadBalancerRoles) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_TerraformerAddLoadBalancerRoles) ProtoMessage() {}
+
+func (x *Update_TerraformerAddLoadBalancerRoles) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[40]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_TerraformerAddLoadBalancerRoles.ProtoReflect.Descriptor instead.
+func (*Update_TerraformerAddLoadBalancerRoles) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 13}
+}
+
+func (x *Update_TerraformerAddLoadBalancerRoles) GetHandle() string {
+	if x != nil {
+		return x.Handle
+	}
+	return ""
+}
+
+func (x *Update_TerraformerAddLoadBalancerRoles) GetRoles() []*Role {
+	if x != nil {
+		return x.Roles
+	}
+	return nil
+}
+
+type Update_AddedLoadBalancerRoles struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Handle        string                 `protobuf:"bytes,1,opt,name=handle,proto3" json:"handle,omitempty"`
+	Roles         []string               `protobuf:"bytes,2,rep,name=roles,proto3" json:"roles,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_AddedLoadBalancerRoles) Reset() {
+	*x = Update_AddedLoadBalancerRoles{}
+	mi := &file_spec_manifest_proto_msgTypes[41]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_AddedLoadBalancerRoles) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_AddedLoadBalancerRoles) ProtoMessage() {}
+
+func (x *Update_AddedLoadBalancerRoles) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[41]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_AddedLoadBalancerRoles.ProtoReflect.Descriptor instead.
+func (*Update_AddedLoadBalancerRoles) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 14}
+}
+
+func (x *Update_AddedLoadBalancerRoles) GetHandle() string {
+	if x != nil {
+		return x.Handle
+	}
+	return ""
+}
+
+func (x *Update_AddedLoadBalancerRoles) GetRoles() []string {
+	if x != nil {
+		return x.Roles
+	}
+	return nil
+}
+
+// TerraformerReplaceDns is a message that once processed by the
+// Terraformer service and a result is send back to the Manager,
+// it will consume the message and further stages will only have
+// a [ReplacedDns] message to process.
+//
+// New, "desired", state needs only to be present in the terraformer
+// stage and all other services need to only see what has been done and
+// occasionally index the LoadBalancer, which will already be present
+// in the [State] of the [Update] message.
+type Update_TerraformerReplaceDns struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Loadbalancer ID to which the new [Dns] is going to created for.
+	Handle string `protobuf:"bytes,1,opt,name=handle,proto3" json:"handle,omitempty"`
+	// The new dns to replace the old within [LoadBalancerId].
+	Dns *DNS `protobuf:"bytes,2,opt,name=dns,proto3" json:"dns,omitempty"`
+	// If the [Dns] is part of a Api loadbalancer this
+	// field will be set to give extra information for
+	// when changing the Api endpoint from the old to
+	// the new.
+	OldApiEndpoint *string `protobuf:"bytes,3,opt,name=oldApiEndpoint,proto3,oneof" json:"oldApiEndpoint,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *Update_TerraformerReplaceDns) Reset() {
+	*x = Update_TerraformerReplaceDns{}
+	mi := &file_spec_manifest_proto_msgTypes[42]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_TerraformerReplaceDns) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_TerraformerReplaceDns) ProtoMessage() {}
+
+func (x *Update_TerraformerReplaceDns) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[42]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_TerraformerReplaceDns.ProtoReflect.Descriptor instead.
+func (*Update_TerraformerReplaceDns) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 15}
+}
+
+func (x *Update_TerraformerReplaceDns) GetHandle() string {
+	if x != nil {
+		return x.Handle
+	}
+	return ""
+}
+
+func (x *Update_TerraformerReplaceDns) GetDns() *DNS {
+	if x != nil {
+		return x.Dns
+	}
+	return nil
+}
+
+func (x *Update_TerraformerReplaceDns) GetOldApiEndpoint() string {
+	if x != nil && x.OldApiEndpoint != nil {
+		return *x.OldApiEndpoint
+	}
+	return ""
+}
+
+type Update_ReplacedDns struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Handle         string                 `protobuf:"bytes,1,opt,name=handle,proto3" json:"handle,omitempty"`
+	OldApiEndpoint *string                `protobuf:"bytes,2,opt,name=oldApiEndpoint,proto3,oneof" json:"oldApiEndpoint,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *Update_ReplacedDns) Reset() {
+	*x = Update_ReplacedDns{}
+	mi := &file_spec_manifest_proto_msgTypes[43]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_ReplacedDns) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_ReplacedDns) ProtoMessage() {}
+
+func (x *Update_ReplacedDns) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[43]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_ReplacedDns.ProtoReflect.Descriptor instead.
+func (*Update_ReplacedDns) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 16}
+}
+
+func (x *Update_ReplacedDns) GetHandle() string {
+	if x != nil {
+		return x.Handle
+	}
+	return ""
+}
+
+func (x *Update_ReplacedDns) GetOldApiEndpoint() string {
+	if x != nil && x.OldApiEndpoint != nil {
+		return *x.OldApiEndpoint
+	}
+	return ""
+}
+
+// DeleteLoadBalancer works with the [State] that is part of the [Update]
+// message, thus no "message consuming" needs to happen.
+type Update_DeleteLoadBalancer struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	Handle string                 `protobuf:"bytes,1,opt,name=handle,proto3" json:"handle,omitempty"`
+	// Unreachable infrastructure that is optionally set
+	// for the deletion process, in which presense, connecting
+	// to the unreachable infrastructure should be omitted.
+	Unreachable   *Unreachable `protobuf:"bytes,2,opt,name=unreachable,proto3,oneof" json:"unreachable,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_DeleteLoadBalancer) Reset() {
+	*x = Update_DeleteLoadBalancer{}
+	mi := &file_spec_manifest_proto_msgTypes[44]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_DeleteLoadBalancer) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_DeleteLoadBalancer) ProtoMessage() {}
+
+func (x *Update_DeleteLoadBalancer) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[44]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_DeleteLoadBalancer.ProtoReflect.Descriptor instead.
+func (*Update_DeleteLoadBalancer) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 17}
+}
+
+func (x *Update_DeleteLoadBalancer) GetHandle() string {
+	if x != nil {
+		return x.Handle
+	}
+	return ""
+}
+
+func (x *Update_DeleteLoadBalancer) GetUnreachable() *Unreachable {
+	if x != nil {
+		return x.Unreachable
+	}
+	return nil
+}
+
+// ApiEndpoint works with the [State] that is part of the [Update] message
+// thus no "message consuming" needs to happen.
+type Update_ApiEndpoint struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	State             ApiEndpointChangeState `protobuf:"varint,1,opt,name=state,proto3,enum=spec.ApiEndpointChangeState" json:"state,omitempty"`
 	CurrentEndpointId string                 `protobuf:"bytes,2,opt,name=currentEndpointId,proto3" json:"currentEndpointId,omitempty"`
@@ -2213,21 +3691,21 @@ type UpdateState_LbEndpoint struct {
 	sizeCache         protoimpl.SizeCache
 }
 
-func (x *UpdateState_LbEndpoint) Reset() {
-	*x = UpdateState_LbEndpoint{}
-	mi := &file_spec_manifest_proto_msgTypes[26]
+func (x *Update_ApiEndpoint) Reset() {
+	*x = Update_ApiEndpoint{}
+	mi := &file_spec_manifest_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *UpdateState_LbEndpoint) String() string {
+func (x *Update_ApiEndpoint) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*UpdateState_LbEndpoint) ProtoMessage() {}
+func (*Update_ApiEndpoint) ProtoMessage() {}
 
-func (x *UpdateState_LbEndpoint) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifest_proto_msgTypes[26]
+func (x *Update_ApiEndpoint) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2238,59 +3716,57 @@ func (x *UpdateState_LbEndpoint) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use UpdateState_LbEndpoint.ProtoReflect.Descriptor instead.
-func (*UpdateState_LbEndpoint) Descriptor() ([]byte, []int) {
-	return file_spec_manifest_proto_rawDescGZIP(), []int{18, 1}
+// Deprecated: Use Update_ApiEndpoint.ProtoReflect.Descriptor instead.
+func (*Update_ApiEndpoint) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 18}
 }
 
-func (x *UpdateState_LbEndpoint) GetState() ApiEndpointChangeState {
+func (x *Update_ApiEndpoint) GetState() ApiEndpointChangeState {
 	if x != nil {
 		return x.State
 	}
 	return ApiEndpointChangeState_NoChange
 }
 
-func (x *UpdateState_LbEndpoint) GetCurrentEndpointId() string {
+func (x *Update_ApiEndpoint) GetCurrentEndpointId() string {
 	if x != nil {
 		return x.CurrentEndpointId
 	}
 	return ""
 }
 
-func (x *UpdateState_LbEndpoint) GetDesiredEndpointId() string {
+func (x *Update_ApiEndpoint) GetDesiredEndpointId() string {
 	if x != nil {
 		return x.DesiredEndpointId
 	}
 	return ""
 }
 
-type DeleteState_K8S struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// if set, the whole k8s cluster and all of its attached
-	// loadbalancers should be destroyed.
-	Destroy bool `protobuf:"varint,1,opt,name=destroy,proto3" json:"destroy,omitempty"`
-	// if 'destroy' is not set, the deletion process should look at
-	// the specifies nodepools and their nodes which should be deleted.
-	Nodepools     map[string]*DeletedNodes `protobuf:"bytes,2,rep,name=nodepools,proto3" json:"nodepools,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+// K8sOnlyApiEndpoint works with the [State] that is part of the [Update]
+// message, thus no "message consuming" needs to happen.
+type Update_K8SOnlyApiEndpoint struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Nodepool      string                 `protobuf:"bytes,1,opt,name=nodepool,proto3" json:"nodepool,omitempty"`
+	Node          string                 `protobuf:"bytes,2,opt,name=node,proto3" json:"node,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *DeleteState_K8S) Reset() {
-	*x = DeleteState_K8S{}
-	mi := &file_spec_manifest_proto_msgTypes[27]
+func (x *Update_K8SOnlyApiEndpoint) Reset() {
+	*x = Update_K8SOnlyApiEndpoint{}
+	mi := &file_spec_manifest_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *DeleteState_K8S) String() string {
+func (x *Update_K8SOnlyApiEndpoint) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*DeleteState_K8S) ProtoMessage() {}
+func (*Update_K8SOnlyApiEndpoint) ProtoMessage() {}
 
-func (x *DeleteState_K8S) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifest_proto_msgTypes[27]
+func (x *Update_K8SOnlyApiEndpoint) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2301,85 +3777,2069 @@ func (x *DeleteState_K8S) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use DeleteState_K8S.ProtoReflect.Descriptor instead.
-func (*DeleteState_K8S) Descriptor() ([]byte, []int) {
-	return file_spec_manifest_proto_rawDescGZIP(), []int{19, 0}
+// Deprecated: Use Update_K8SOnlyApiEndpoint.ProtoReflect.Descriptor instead.
+func (*Update_K8SOnlyApiEndpoint) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 19}
 }
 
-func (x *DeleteState_K8S) GetDestroy() bool {
+func (x *Update_K8SOnlyApiEndpoint) GetNodepool() string {
 	if x != nil {
-		return x.Destroy
-	}
-	return false
-}
-
-func (x *DeleteState_K8S) GetNodepools() map[string]*DeletedNodes {
-	if x != nil {
-		return x.Nodepools
-	}
-	return nil
-}
-
-type DeleteState_LoadBalancer struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// id of the loadbalancer.
-	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	// if set, the whole loadbalancer cluster will be destroyed.
-	Destroy bool `protobuf:"varint,2,opt,name=destroy,proto3" json:"destroy,omitempty"`
-	// if 'destroy' is not set, the deletion process should look at
-	// the specifies nodepools and their nodes which should be deleted.
-	Nodepools     map[string]*DeletedNodes `protobuf:"bytes,3,rep,name=nodepools,proto3" json:"nodepools,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *DeleteState_LoadBalancer) Reset() {
-	*x = DeleteState_LoadBalancer{}
-	mi := &file_spec_manifest_proto_msgTypes[28]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DeleteState_LoadBalancer) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DeleteState_LoadBalancer) ProtoMessage() {}
-
-func (x *DeleteState_LoadBalancer) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_manifest_proto_msgTypes[28]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DeleteState_LoadBalancer.ProtoReflect.Descriptor instead.
-func (*DeleteState_LoadBalancer) Descriptor() ([]byte, []int) {
-	return file_spec_manifest_proto_rawDescGZIP(), []int{19, 1}
-}
-
-func (x *DeleteState_LoadBalancer) GetId() string {
-	if x != nil {
-		return x.Id
+		return x.Nodepool
 	}
 	return ""
 }
 
-func (x *DeleteState_LoadBalancer) GetDestroy() bool {
+func (x *Update_K8SOnlyApiEndpoint) GetNode() string {
 	if x != nil {
-		return x.Destroy
+		return x.Node
+	}
+	return ""
+}
+
+// ApiPortOnCluster works with the [State] that is part of the [Update] message
+// thus no "message consuming" needs to happen.
+type Update_ApiPortOnCluster struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Open          bool                   `protobuf:"varint,1,opt,name=open,proto3" json:"open,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_ApiPortOnCluster) Reset() {
+	*x = Update_ApiPortOnCluster{}
+	mi := &file_spec_manifest_proto_msgTypes[47]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_ApiPortOnCluster) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_ApiPortOnCluster) ProtoMessage() {}
+
+func (x *Update_ApiPortOnCluster) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[47]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_ApiPortOnCluster.ProtoReflect.Descriptor instead.
+func (*Update_ApiPortOnCluster) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 20}
+}
+
+func (x *Update_ApiPortOnCluster) GetOpen() bool {
+	if x != nil {
+		return x.Open
 	}
 	return false
 }
 
-func (x *DeleteState_LoadBalancer) GetNodepools() map[string]*DeletedNodes {
+// AnsiblerReplaceProxySettings is a message that once processed
+// by the Ansibler service a result is send back to the Manager,
+// it will consume the message and further stages will only have
+// a [ReplacedProxySettings] message to process.
+//
+// New, "desired", state needs only to be present in the ansibler
+// stage and all other services need to only see what has been done
+// which will already be present in the [State] of the [Update] message.
+type Update_AnsiblerReplaceProxySettings struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Proxy         *InstallationProxy     `protobuf:"bytes,1,opt,name=proxy,proto3" json:"proxy,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_AnsiblerReplaceProxySettings) Reset() {
+	*x = Update_AnsiblerReplaceProxySettings{}
+	mi := &file_spec_manifest_proto_msgTypes[48]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_AnsiblerReplaceProxySettings) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_AnsiblerReplaceProxySettings) ProtoMessage() {}
+
+func (x *Update_AnsiblerReplaceProxySettings) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[48]
 	if x != nil {
-		return x.Nodepools
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_AnsiblerReplaceProxySettings.ProtoReflect.Descriptor instead.
+func (*Update_AnsiblerReplaceProxySettings) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 21}
+}
+
+func (x *Update_AnsiblerReplaceProxySettings) GetProxy() *InstallationProxy {
+	if x != nil {
+		return x.Proxy
+	}
+	return nil
+}
+
+type Update_ReplacedProxySettings struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_ReplacedProxySettings) Reset() {
+	*x = Update_ReplacedProxySettings{}
+	mi := &file_spec_manifest_proto_msgTypes[49]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_ReplacedProxySettings) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_ReplacedProxySettings) ProtoMessage() {}
+
+func (x *Update_ReplacedProxySettings) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[49]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_ReplacedProxySettings.ProtoReflect.Descriptor instead.
+func (*Update_ReplacedProxySettings) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 22}
+}
+
+type Update_TerraformerReplaceRoleExternalSettings struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	Handle string                 `protobuf:"bytes,1,opt,name=handle,proto3" json:"handle,omitempty"`
+	Role   string                 `protobuf:"bytes,2,opt,name=role,proto3" json:"role,omitempty"`
+	// updated settings.
+	RoleType      RoleType `protobuf:"varint,3,opt,name=roleType,proto3,enum=spec.RoleType" json:"roleType,omitempty"`
+	Protocol      string   `protobuf:"bytes,4,opt,name=protocol,proto3" json:"protocol,omitempty"`
+	Port          int32    `protobuf:"varint,5,opt,name=port,proto3" json:"port,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_TerraformerReplaceRoleExternalSettings) Reset() {
+	*x = Update_TerraformerReplaceRoleExternalSettings{}
+	mi := &file_spec_manifest_proto_msgTypes[50]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_TerraformerReplaceRoleExternalSettings) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_TerraformerReplaceRoleExternalSettings) ProtoMessage() {}
+
+func (x *Update_TerraformerReplaceRoleExternalSettings) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[50]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_TerraformerReplaceRoleExternalSettings.ProtoReflect.Descriptor instead.
+func (*Update_TerraformerReplaceRoleExternalSettings) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 23}
+}
+
+func (x *Update_TerraformerReplaceRoleExternalSettings) GetHandle() string {
+	if x != nil {
+		return x.Handle
+	}
+	return ""
+}
+
+func (x *Update_TerraformerReplaceRoleExternalSettings) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+func (x *Update_TerraformerReplaceRoleExternalSettings) GetRoleType() RoleType {
+	if x != nil {
+		return x.RoleType
+	}
+	return RoleType_ApiServer
+}
+
+func (x *Update_TerraformerReplaceRoleExternalSettings) GetProtocol() string {
+	if x != nil {
+		return x.Protocol
+	}
+	return ""
+}
+
+func (x *Update_TerraformerReplaceRoleExternalSettings) GetPort() int32 {
+	if x != nil {
+		return x.Port
+	}
+	return 0
+}
+
+type Update_ReplacedRoleExternalSettings struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Handle        string                 `protobuf:"bytes,1,opt,name=handle,proto3" json:"handle,omitempty"`
+	Role          string                 `protobuf:"bytes,2,opt,name=role,proto3" json:"role,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_ReplacedRoleExternalSettings) Reset() {
+	*x = Update_ReplacedRoleExternalSettings{}
+	mi := &file_spec_manifest_proto_msgTypes[51]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_ReplacedRoleExternalSettings) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_ReplacedRoleExternalSettings) ProtoMessage() {}
+
+func (x *Update_ReplacedRoleExternalSettings) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[51]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_ReplacedRoleExternalSettings.ProtoReflect.Descriptor instead.
+func (*Update_ReplacedRoleExternalSettings) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 24}
+}
+
+func (x *Update_ReplacedRoleExternalSettings) GetHandle() string {
+	if x != nil {
+		return x.Handle
+	}
+	return ""
+}
+
+func (x *Update_ReplacedRoleExternalSettings) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+type Update_AnsiblerReplaceRoleInternalSettings struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	Handle string                 `protobuf:"bytes,1,opt,name=handle,proto3" json:"handle,omitempty"`
+	Role   string                 `protobuf:"bytes,2,opt,name=role,proto3" json:"role,omitempty"`
+	// updated settings.
+	TargetPort    int32          `protobuf:"varint,3,opt,name=targetPort,proto3" json:"targetPort,omitempty"`
+	Settings      *Role_Settings `protobuf:"bytes,4,opt,name=settings,proto3" json:"settings,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_AnsiblerReplaceRoleInternalSettings) Reset() {
+	*x = Update_AnsiblerReplaceRoleInternalSettings{}
+	mi := &file_spec_manifest_proto_msgTypes[52]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_AnsiblerReplaceRoleInternalSettings) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_AnsiblerReplaceRoleInternalSettings) ProtoMessage() {}
+
+func (x *Update_AnsiblerReplaceRoleInternalSettings) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[52]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_AnsiblerReplaceRoleInternalSettings.ProtoReflect.Descriptor instead.
+func (*Update_AnsiblerReplaceRoleInternalSettings) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 25}
+}
+
+func (x *Update_AnsiblerReplaceRoleInternalSettings) GetHandle() string {
+	if x != nil {
+		return x.Handle
+	}
+	return ""
+}
+
+func (x *Update_AnsiblerReplaceRoleInternalSettings) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+func (x *Update_AnsiblerReplaceRoleInternalSettings) GetTargetPort() int32 {
+	if x != nil {
+		return x.TargetPort
+	}
+	return 0
+}
+
+func (x *Update_AnsiblerReplaceRoleInternalSettings) GetSettings() *Role_Settings {
+	if x != nil {
+		return x.Settings
+	}
+	return nil
+}
+
+type Update_ReplacedRoleInternalSettings struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Handle        string                 `protobuf:"bytes,1,opt,name=handle,proto3" json:"handle,omitempty"`
+	Role          string                 `protobuf:"bytes,2,opt,name=role,proto3" json:"role,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_ReplacedRoleInternalSettings) Reset() {
+	*x = Update_ReplacedRoleInternalSettings{}
+	mi := &file_spec_manifest_proto_msgTypes[53]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_ReplacedRoleInternalSettings) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_ReplacedRoleInternalSettings) ProtoMessage() {}
+
+func (x *Update_ReplacedRoleInternalSettings) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[53]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_ReplacedRoleInternalSettings.ProtoReflect.Descriptor instead.
+func (*Update_ReplacedRoleInternalSettings) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 26}
+}
+
+func (x *Update_ReplacedRoleInternalSettings) GetHandle() string {
+	if x != nil {
+		return x.Handle
+	}
+	return ""
+}
+
+func (x *Update_ReplacedRoleInternalSettings) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+// AnsiblerReplaceTargetPools is a message that once processed
+// by the Ansibler service a result is send back to the Manager,
+// it will consume the message and further stages will only have
+// a [ReplacedTargetPools] message to process.
+//
+// New, "desired", state needs only to be present in the ansibler
+// stage and all other services need to only see what has been done
+// which will already be present in the [State] of the [Update] message.
+type Update_AnsiblerReplaceTargetPools struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	Handle string                 `protobuf:"bytes,1,opt,name=handle,proto3" json:"handle,omitempty"`
+	// Role to target pools
+	Roles         map[string]*Update_AnsiblerReplaceTargetPools_TargetPools `protobuf:"bytes,2,rep,name=roles,proto3" json:"roles,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_AnsiblerReplaceTargetPools) Reset() {
+	*x = Update_AnsiblerReplaceTargetPools{}
+	mi := &file_spec_manifest_proto_msgTypes[54]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_AnsiblerReplaceTargetPools) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_AnsiblerReplaceTargetPools) ProtoMessage() {}
+
+func (x *Update_AnsiblerReplaceTargetPools) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[54]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_AnsiblerReplaceTargetPools.ProtoReflect.Descriptor instead.
+func (*Update_AnsiblerReplaceTargetPools) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 27}
+}
+
+func (x *Update_AnsiblerReplaceTargetPools) GetHandle() string {
+	if x != nil {
+		return x.Handle
+	}
+	return ""
+}
+
+func (x *Update_AnsiblerReplaceTargetPools) GetRoles() map[string]*Update_AnsiblerReplaceTargetPools_TargetPools {
+	if x != nil {
+		return x.Roles
+	}
+	return nil
+}
+
+type Update_ReplacedTargetPools struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	Handle string                 `protobuf:"bytes,1,opt,name=handle,proto3" json:"handle,omitempty"`
+	// Role to target pools.
+	Roles         map[string]*Update_ReplacedTargetPools_TargetPools `protobuf:"bytes,2,rep,name=roles,proto3" json:"roles,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_ReplacedTargetPools) Reset() {
+	*x = Update_ReplacedTargetPools{}
+	mi := &file_spec_manifest_proto_msgTypes[55]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_ReplacedTargetPools) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_ReplacedTargetPools) ProtoMessage() {}
+
+func (x *Update_ReplacedTargetPools) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[55]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_ReplacedTargetPools.ProtoReflect.Descriptor instead.
+func (*Update_ReplacedTargetPools) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 28}
+}
+
+func (x *Update_ReplacedTargetPools) GetHandle() string {
+	if x != nil {
+		return x.Handle
+	}
+	return ""
+}
+
+func (x *Update_ReplacedTargetPools) GetRoles() map[string]*Update_ReplacedTargetPools_TargetPools {
+	if x != nil {
+		return x.Roles
+	}
+	return nil
+}
+
+// UpgradeVersion works with the [State] that is part of the [Update]
+// message, thus no "message consuming" needs to happen.
+type Update_UpgradeVersion struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Version       string                 `protobuf:"bytes,1,opt,name=version,proto3" json:"version,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_UpgradeVersion) Reset() {
+	*x = Update_UpgradeVersion{}
+	mi := &file_spec_manifest_proto_msgTypes[56]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_UpgradeVersion) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_UpgradeVersion) ProtoMessage() {}
+
+func (x *Update_UpgradeVersion) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[56]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_UpgradeVersion.ProtoReflect.Descriptor instead.
+func (*Update_UpgradeVersion) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 29}
+}
+
+func (x *Update_UpgradeVersion) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+// KuberPatchNodes is a message that once processed by the Kuber service
+// and a result is send back to the Manager, it will consume the message
+// and further stages will only have a [PatchedNodes] message to process.
+//
+// New, "desired", state needs only to be present in the kuber stage and
+// all other services need to only see what has been done which will already
+// be present in the [State] of the [Update] message.
+type Update_KuberPatchNodes struct {
+	state         protoimpl.MessageState              `protogen:"open.v1"`
+	Add           *Update_KuberPatchNodes_AddBatch    `protobuf:"bytes,1,opt,name=add,proto3" json:"add,omitempty"`
+	Remove        *Update_KuberPatchNodes_RemoveBatch `protobuf:"bytes,2,opt,name=remove,proto3" json:"remove,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_KuberPatchNodes) Reset() {
+	*x = Update_KuberPatchNodes{}
+	mi := &file_spec_manifest_proto_msgTypes[57]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_KuberPatchNodes) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_KuberPatchNodes) ProtoMessage() {}
+
+func (x *Update_KuberPatchNodes) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[57]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_KuberPatchNodes.ProtoReflect.Descriptor instead.
+func (*Update_KuberPatchNodes) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 30}
+}
+
+func (x *Update_KuberPatchNodes) GetAdd() *Update_KuberPatchNodes_AddBatch {
+	if x != nil {
+		return x.Add
+	}
+	return nil
+}
+
+func (x *Update_KuberPatchNodes) GetRemove() *Update_KuberPatchNodes_RemoveBatch {
+	if x != nil {
+		return x.Remove
+	}
+	return nil
+}
+
+type Update_PatchedNodes struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_PatchedNodes) Reset() {
+	*x = Update_PatchedNodes{}
+	mi := &file_spec_manifest_proto_msgTypes[58]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_PatchedNodes) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_PatchedNodes) ProtoMessage() {}
+
+func (x *Update_PatchedNodes) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[58]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_PatchedNodes.ProtoReflect.Descriptor instead.
+func (*Update_PatchedNodes) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 31}
+}
+
+// KuberDeleteK8sNodes is a message that is processed by the Kuber service
+// and a result is send back to the Manager, it will consume the message
+// and further stages will only have a [DeletedK8sNodes] message to process.
+//
+// Old, "current", state needs to only be present in the Kuber stage and
+// all other services need to only see the changes after the deletion for
+// reconciliation which will already be present in the [State] of the [Update]
+// message.
+type Update_KuberDeleteK8SNodes struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Whether the NodePool itself
+	// was deleted from the cluster.
+	// Meaning that all nodes of the
+	// nodepool were deleted.
+	//
+	// Note that with autoscaling its
+	// possible to have a zero sized
+	// nodepool so this is only set
+	// if the nodepool is removed from
+	// the cluster.
+	WithNodePool bool `protobuf:"varint,1,opt,name=withNodePool,proto3" json:"withNodePool,omitempty"`
+	// Affected Nodepool.
+	Nodepool string `protobuf:"bytes,2,opt,name=nodepool,proto3" json:"nodepool,omitempty"`
+	// Nodes that were deleted.
+	Nodes []string `protobuf:"bytes,3,rep,name=nodes,proto3" json:"nodes,omitempty"`
+	// Unreachable infrastructure that is optionally set
+	// for the deletion process, in which presense, connecting
+	// to the unreachable infrastructure should be omitted.
+	Unreachable   *Unreachable `protobuf:"bytes,4,opt,name=unreachable,proto3,oneof" json:"unreachable,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_KuberDeleteK8SNodes) Reset() {
+	*x = Update_KuberDeleteK8SNodes{}
+	mi := &file_spec_manifest_proto_msgTypes[59]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_KuberDeleteK8SNodes) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_KuberDeleteK8SNodes) ProtoMessage() {}
+
+func (x *Update_KuberDeleteK8SNodes) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[59]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_KuberDeleteK8SNodes.ProtoReflect.Descriptor instead.
+func (*Update_KuberDeleteK8SNodes) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 32}
+}
+
+func (x *Update_KuberDeleteK8SNodes) GetWithNodePool() bool {
+	if x != nil {
+		return x.WithNodePool
+	}
+	return false
+}
+
+func (x *Update_KuberDeleteK8SNodes) GetNodepool() string {
+	if x != nil {
+		return x.Nodepool
+	}
+	return ""
+}
+
+func (x *Update_KuberDeleteK8SNodes) GetNodes() []string {
+	if x != nil {
+		return x.Nodes
+	}
+	return nil
+}
+
+func (x *Update_KuberDeleteK8SNodes) GetUnreachable() *Unreachable {
+	if x != nil {
+		return x.Unreachable
+	}
+	return nil
+}
+
+type Update_DeletedK8SNodes struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Unreachable infrastructure that is optionally set
+	// for the deletion process, in which presense, connecting
+	// to the unreachable infrastructure should be omitted.
+	Unreachable *Unreachable `protobuf:"bytes,1,opt,name=unreachable,proto3,oneof" json:"unreachable,omitempty"`
+	// Types that are valid to be assigned to Kind:
+	//
+	//	*Update_DeletedK8SNodes_Whole
+	//	*Update_DeletedK8SNodes_Partial_
+	Kind          isUpdate_DeletedK8SNodes_Kind `protobuf_oneof:"Kind"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_DeletedK8SNodes) Reset() {
+	*x = Update_DeletedK8SNodes{}
+	mi := &file_spec_manifest_proto_msgTypes[60]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_DeletedK8SNodes) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_DeletedK8SNodes) ProtoMessage() {}
+
+func (x *Update_DeletedK8SNodes) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[60]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_DeletedK8SNodes.ProtoReflect.Descriptor instead.
+func (*Update_DeletedK8SNodes) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 33}
+}
+
+func (x *Update_DeletedK8SNodes) GetUnreachable() *Unreachable {
+	if x != nil {
+		return x.Unreachable
+	}
+	return nil
+}
+
+func (x *Update_DeletedK8SNodes) GetKind() isUpdate_DeletedK8SNodes_Kind {
+	if x != nil {
+		return x.Kind
+	}
+	return nil
+}
+
+func (x *Update_DeletedK8SNodes) GetWhole() *Update_DeletedK8SNodes_WholeNodePool {
+	if x != nil {
+		if x, ok := x.Kind.(*Update_DeletedK8SNodes_Whole); ok {
+			return x.Whole
+		}
+	}
+	return nil
+}
+
+func (x *Update_DeletedK8SNodes) GetPartial() *Update_DeletedK8SNodes_Partial {
+	if x != nil {
+		if x, ok := x.Kind.(*Update_DeletedK8SNodes_Partial_); ok {
+			return x.Partial
+		}
+	}
+	return nil
+}
+
+type isUpdate_DeletedK8SNodes_Kind interface {
+	isUpdate_DeletedK8SNodes_Kind()
+}
+
+type Update_DeletedK8SNodes_Whole struct {
+	Whole *Update_DeletedK8SNodes_WholeNodePool `protobuf:"bytes,2,opt,name=whole,proto3,oneof"`
+}
+
+type Update_DeletedK8SNodes_Partial_ struct {
+	Partial *Update_DeletedK8SNodes_Partial `protobuf:"bytes,3,opt,name=partial,proto3,oneof"`
+}
+
+func (*Update_DeletedK8SNodes_Whole) isUpdate_DeletedK8SNodes_Kind() {}
+
+func (*Update_DeletedK8SNodes_Partial_) isUpdate_DeletedK8SNodes_Kind() {}
+
+// TerraformerAddK8sNodes is a message that is processed by the Terraformer service
+// and a result is send back to the Manager, it will consume the message
+// and further stages will only have a [AddedK8sNodes] message to process.
+//
+// New, "desired", state needs only to be present in the Terraformer stage and
+// all other services need to only see what has been done which will already
+// be present in the [State] of the [Update] message.
+type Update_TerraformerAddK8SNodes struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Kind:
+	//
+	//	*Update_TerraformerAddK8SNodes_Existing_
+	//	*Update_TerraformerAddK8SNodes_New_
+	Kind          isUpdate_TerraformerAddK8SNodes_Kind `protobuf_oneof:"Kind"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_TerraformerAddK8SNodes) Reset() {
+	*x = Update_TerraformerAddK8SNodes{}
+	mi := &file_spec_manifest_proto_msgTypes[61]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_TerraformerAddK8SNodes) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_TerraformerAddK8SNodes) ProtoMessage() {}
+
+func (x *Update_TerraformerAddK8SNodes) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[61]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_TerraformerAddK8SNodes.ProtoReflect.Descriptor instead.
+func (*Update_TerraformerAddK8SNodes) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 34}
+}
+
+func (x *Update_TerraformerAddK8SNodes) GetKind() isUpdate_TerraformerAddK8SNodes_Kind {
+	if x != nil {
+		return x.Kind
+	}
+	return nil
+}
+
+func (x *Update_TerraformerAddK8SNodes) GetExisting() *Update_TerraformerAddK8SNodes_Existing {
+	if x != nil {
+		if x, ok := x.Kind.(*Update_TerraformerAddK8SNodes_Existing_); ok {
+			return x.Existing
+		}
+	}
+	return nil
+}
+
+func (x *Update_TerraformerAddK8SNodes) GetNew() *Update_TerraformerAddK8SNodes_New {
+	if x != nil {
+		if x, ok := x.Kind.(*Update_TerraformerAddK8SNodes_New_); ok {
+			return x.New
+		}
+	}
+	return nil
+}
+
+type isUpdate_TerraformerAddK8SNodes_Kind interface {
+	isUpdate_TerraformerAddK8SNodes_Kind()
+}
+
+type Update_TerraformerAddK8SNodes_Existing_ struct {
+	Existing *Update_TerraformerAddK8SNodes_Existing `protobuf:"bytes,1,opt,name=existing,proto3,oneof"`
+}
+
+type Update_TerraformerAddK8SNodes_New_ struct {
+	New *Update_TerraformerAddK8SNodes_New `protobuf:"bytes,2,opt,name=new,proto3,oneof"`
+}
+
+func (*Update_TerraformerAddK8SNodes_Existing_) isUpdate_TerraformerAddK8SNodes_Kind() {}
+
+func (*Update_TerraformerAddK8SNodes_New_) isUpdate_TerraformerAddK8SNodes_Kind() {}
+
+type Update_AddedK8SNodes struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	NewNodePool   bool                   `protobuf:"varint,1,opt,name=newNodePool,proto3" json:"newNodePool,omitempty"`
+	Nodepool      string                 `protobuf:"bytes,2,opt,name=nodepool,proto3" json:"nodepool,omitempty"`
+	Nodes         []string               `protobuf:"bytes,3,rep,name=nodes,proto3" json:"nodes,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_AddedK8SNodes) Reset() {
+	*x = Update_AddedK8SNodes{}
+	mi := &file_spec_manifest_proto_msgTypes[62]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_AddedK8SNodes) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_AddedK8SNodes) ProtoMessage() {}
+
+func (x *Update_AddedK8SNodes) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[62]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_AddedK8SNodes.ProtoReflect.Descriptor instead.
+func (*Update_AddedK8SNodes) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 35}
+}
+
+func (x *Update_AddedK8SNodes) GetNewNodePool() bool {
+	if x != nil {
+		return x.NewNodePool
+	}
+	return false
+}
+
+func (x *Update_AddedK8SNodes) GetNodepool() string {
+	if x != nil {
+		return x.Nodepool
+	}
+	return ""
+}
+
+func (x *Update_AddedK8SNodes) GetNodes() []string {
+	if x != nil {
+		return x.Nodes
+	}
+	return nil
+}
+
+type Update_DeletedLoadBalancerNodes_WholeNodePool struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The nodepool that was deleted from the current
+	// state along with all of its nodes.
+	Nodepool      *NodePool `protobuf:"bytes,1,opt,name=nodepool,proto3" json:"nodepool,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_DeletedLoadBalancerNodes_WholeNodePool) Reset() {
+	*x = Update_DeletedLoadBalancerNodes_WholeNodePool{}
+	mi := &file_spec_manifest_proto_msgTypes[63]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_DeletedLoadBalancerNodes_WholeNodePool) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_DeletedLoadBalancerNodes_WholeNodePool) ProtoMessage() {}
+
+func (x *Update_DeletedLoadBalancerNodes_WholeNodePool) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[63]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_DeletedLoadBalancerNodes_WholeNodePool.ProtoReflect.Descriptor instead.
+func (*Update_DeletedLoadBalancerNodes_WholeNodePool) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 9, 0}
+}
+
+func (x *Update_DeletedLoadBalancerNodes_WholeNodePool) GetNodepool() *NodePool {
+	if x != nil {
+		return x.Nodepool
+	}
+	return nil
+}
+
+type Update_DeletedLoadBalancerNodes_Partial struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The nodepool which was modified with the
+	// deletion of the nodes, which is still present
+	// in the [State] passed along the [Update] msg.
+	Nodepool string `protobuf:"bytes,1,opt,name=nodepool,proto3" json:"nodepool,omitempty"`
+	// The nodes that were deleted.
+	Nodes []*Node `protobuf:"bytes,2,rep,name=nodes,proto3" json:"nodes,omitempty"`
+	// Map of keys for each node.
+	// Will only be set if the partially
+	// deleted nodes were part of a static
+	// nodepool.
+	// [<Node Endpoint>]<Key>.
+	StaticNodeKeys map[string]string `protobuf:"bytes,3,rep,name=staticNodeKeys,proto3" json:"staticNodeKeys,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *Update_DeletedLoadBalancerNodes_Partial) Reset() {
+	*x = Update_DeletedLoadBalancerNodes_Partial{}
+	mi := &file_spec_manifest_proto_msgTypes[64]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_DeletedLoadBalancerNodes_Partial) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_DeletedLoadBalancerNodes_Partial) ProtoMessage() {}
+
+func (x *Update_DeletedLoadBalancerNodes_Partial) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[64]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_DeletedLoadBalancerNodes_Partial.ProtoReflect.Descriptor instead.
+func (*Update_DeletedLoadBalancerNodes_Partial) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 9, 1}
+}
+
+func (x *Update_DeletedLoadBalancerNodes_Partial) GetNodepool() string {
+	if x != nil {
+		return x.Nodepool
+	}
+	return ""
+}
+
+func (x *Update_DeletedLoadBalancerNodes_Partial) GetNodes() []*Node {
+	if x != nil {
+		return x.Nodes
+	}
+	return nil
+}
+
+func (x *Update_DeletedLoadBalancerNodes_Partial) GetStaticNodeKeys() map[string]string {
+	if x != nil {
+		return x.StaticNodeKeys
+	}
+	return nil
+}
+
+type Update_TerraformerAddLoadBalancerNodes_Existing struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The nodepool which is to be modified with the
+	// addition of new nodes, which is already present
+	// in the [State] passed along the [Update] msg.
+	Nodepool string `protobuf:"bytes,1,opt,name=nodepool,proto3" json:"nodepool,omitempty"`
+	// Nodes to be added.
+	Nodes         []*Node `protobuf:"bytes,2,rep,name=nodes,proto3" json:"nodes,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_TerraformerAddLoadBalancerNodes_Existing) Reset() {
+	*x = Update_TerraformerAddLoadBalancerNodes_Existing{}
+	mi := &file_spec_manifest_proto_msgTypes[66]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_TerraformerAddLoadBalancerNodes_Existing) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_TerraformerAddLoadBalancerNodes_Existing) ProtoMessage() {}
+
+func (x *Update_TerraformerAddLoadBalancerNodes_Existing) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[66]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_TerraformerAddLoadBalancerNodes_Existing.ProtoReflect.Descriptor instead.
+func (*Update_TerraformerAddLoadBalancerNodes_Existing) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 10, 0}
+}
+
+func (x *Update_TerraformerAddLoadBalancerNodes_Existing) GetNodepool() string {
+	if x != nil {
+		return x.Nodepool
+	}
+	return ""
+}
+
+func (x *Update_TerraformerAddLoadBalancerNodes_Existing) GetNodes() []*Node {
+	if x != nil {
+		return x.Nodes
+	}
+	return nil
+}
+
+type Update_TerraformerAddLoadBalancerNodes_New struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The new nodepool which is to be added to the
+	// [State] passed along the [Update] msg.
+	Nodepool      *NodePool `protobuf:"bytes,1,opt,name=nodepool,proto3" json:"nodepool,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_TerraformerAddLoadBalancerNodes_New) Reset() {
+	*x = Update_TerraformerAddLoadBalancerNodes_New{}
+	mi := &file_spec_manifest_proto_msgTypes[67]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_TerraformerAddLoadBalancerNodes_New) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_TerraformerAddLoadBalancerNodes_New) ProtoMessage() {}
+
+func (x *Update_TerraformerAddLoadBalancerNodes_New) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[67]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_TerraformerAddLoadBalancerNodes_New.ProtoReflect.Descriptor instead.
+func (*Update_TerraformerAddLoadBalancerNodes_New) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 10, 1}
+}
+
+func (x *Update_TerraformerAddLoadBalancerNodes_New) GetNodepool() *NodePool {
+	if x != nil {
+		return x.Nodepool
+	}
+	return nil
+}
+
+type Update_AnsiblerReplaceTargetPools_TargetPools struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Pools         []string               `protobuf:"bytes,1,rep,name=pools,proto3" json:"pools,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_AnsiblerReplaceTargetPools_TargetPools) Reset() {
+	*x = Update_AnsiblerReplaceTargetPools_TargetPools{}
+	mi := &file_spec_manifest_proto_msgTypes[68]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_AnsiblerReplaceTargetPools_TargetPools) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_AnsiblerReplaceTargetPools_TargetPools) ProtoMessage() {}
+
+func (x *Update_AnsiblerReplaceTargetPools_TargetPools) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[68]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_AnsiblerReplaceTargetPools_TargetPools.ProtoReflect.Descriptor instead.
+func (*Update_AnsiblerReplaceTargetPools_TargetPools) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 27, 0}
+}
+
+func (x *Update_AnsiblerReplaceTargetPools_TargetPools) GetPools() []string {
+	if x != nil {
+		return x.Pools
+	}
+	return nil
+}
+
+type Update_ReplacedTargetPools_TargetPools struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Pools         []string               `protobuf:"bytes,1,rep,name=pools,proto3" json:"pools,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_ReplacedTargetPools_TargetPools) Reset() {
+	*x = Update_ReplacedTargetPools_TargetPools{}
+	mi := &file_spec_manifest_proto_msgTypes[70]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_ReplacedTargetPools_TargetPools) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_ReplacedTargetPools_TargetPools) ProtoMessage() {}
+
+func (x *Update_ReplacedTargetPools_TargetPools) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[70]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_ReplacedTargetPools_TargetPools.ProtoReflect.Descriptor instead.
+func (*Update_ReplacedTargetPools_TargetPools) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 28, 0}
+}
+
+func (x *Update_ReplacedTargetPools_TargetPools) GetPools() []string {
+	if x != nil {
+		return x.Pools
+	}
+	return nil
+}
+
+type Update_KuberPatchNodes_ListOfTaints struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Taints        []*Taint               `protobuf:"bytes,1,rep,name=taints,proto3" json:"taints,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_KuberPatchNodes_ListOfTaints) Reset() {
+	*x = Update_KuberPatchNodes_ListOfTaints{}
+	mi := &file_spec_manifest_proto_msgTypes[72]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_KuberPatchNodes_ListOfTaints) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_KuberPatchNodes_ListOfTaints) ProtoMessage() {}
+
+func (x *Update_KuberPatchNodes_ListOfTaints) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[72]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_KuberPatchNodes_ListOfTaints.ProtoReflect.Descriptor instead.
+func (*Update_KuberPatchNodes_ListOfTaints) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 30, 0}
+}
+
+func (x *Update_KuberPatchNodes_ListOfTaints) GetTaints() []*Taint {
+	if x != nil {
+		return x.Taints
+	}
+	return nil
+}
+
+type Update_KuberPatchNodes_ListOfLabelKeys struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Labels        []string               `protobuf:"bytes,1,rep,name=labels,proto3" json:"labels,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_KuberPatchNodes_ListOfLabelKeys) Reset() {
+	*x = Update_KuberPatchNodes_ListOfLabelKeys{}
+	mi := &file_spec_manifest_proto_msgTypes[73]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_KuberPatchNodes_ListOfLabelKeys) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_KuberPatchNodes_ListOfLabelKeys) ProtoMessage() {}
+
+func (x *Update_KuberPatchNodes_ListOfLabelKeys) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[73]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_KuberPatchNodes_ListOfLabelKeys.ProtoReflect.Descriptor instead.
+func (*Update_KuberPatchNodes_ListOfLabelKeys) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 30, 1}
+}
+
+func (x *Update_KuberPatchNodes_ListOfLabelKeys) GetLabels() []string {
+	if x != nil {
+		return x.Labels
+	}
+	return nil
+}
+
+type Update_KuberPatchNodes_ListOfAnnotationKeys struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Annotations   []string               `protobuf:"bytes,1,rep,name=annotations,proto3" json:"annotations,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_KuberPatchNodes_ListOfAnnotationKeys) Reset() {
+	*x = Update_KuberPatchNodes_ListOfAnnotationKeys{}
+	mi := &file_spec_manifest_proto_msgTypes[74]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_KuberPatchNodes_ListOfAnnotationKeys) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_KuberPatchNodes_ListOfAnnotationKeys) ProtoMessage() {}
+
+func (x *Update_KuberPatchNodes_ListOfAnnotationKeys) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[74]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_KuberPatchNodes_ListOfAnnotationKeys.ProtoReflect.Descriptor instead.
+func (*Update_KuberPatchNodes_ListOfAnnotationKeys) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 30, 2}
+}
+
+func (x *Update_KuberPatchNodes_ListOfAnnotationKeys) GetAnnotations() []string {
+	if x != nil {
+		return x.Annotations
+	}
+	return nil
+}
+
+type Update_KuberPatchNodes_MapOfLabels struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Labels        map[string]string      `protobuf:"bytes,1,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_KuberPatchNodes_MapOfLabels) Reset() {
+	*x = Update_KuberPatchNodes_MapOfLabels{}
+	mi := &file_spec_manifest_proto_msgTypes[75]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_KuberPatchNodes_MapOfLabels) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_KuberPatchNodes_MapOfLabels) ProtoMessage() {}
+
+func (x *Update_KuberPatchNodes_MapOfLabels) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[75]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_KuberPatchNodes_MapOfLabels.ProtoReflect.Descriptor instead.
+func (*Update_KuberPatchNodes_MapOfLabels) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 30, 3}
+}
+
+func (x *Update_KuberPatchNodes_MapOfLabels) GetLabels() map[string]string {
+	if x != nil {
+		return x.Labels
+	}
+	return nil
+}
+
+type Update_KuberPatchNodes_MapOfAnnotations struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Annotations   map[string]string      `protobuf:"bytes,1,rep,name=annotations,proto3" json:"annotations,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_KuberPatchNodes_MapOfAnnotations) Reset() {
+	*x = Update_KuberPatchNodes_MapOfAnnotations{}
+	mi := &file_spec_manifest_proto_msgTypes[76]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_KuberPatchNodes_MapOfAnnotations) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_KuberPatchNodes_MapOfAnnotations) ProtoMessage() {}
+
+func (x *Update_KuberPatchNodes_MapOfAnnotations) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[76]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_KuberPatchNodes_MapOfAnnotations.ProtoReflect.Descriptor instead.
+func (*Update_KuberPatchNodes_MapOfAnnotations) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 30, 4}
+}
+
+func (x *Update_KuberPatchNodes_MapOfAnnotations) GetAnnotations() map[string]string {
+	if x != nil {
+		return x.Annotations
+	}
+	return nil
+}
+
+type Update_KuberPatchNodes_RemoveBatch struct {
+	state         protoimpl.MessageState                                  `protogen:"open.v1"`
+	Taints        map[string]*Update_KuberPatchNodes_ListOfTaints         `protobuf:"bytes,1,rep,name=taints,proto3" json:"taints,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Annotations   map[string]*Update_KuberPatchNodes_ListOfAnnotationKeys `protobuf:"bytes,2,rep,name=annotations,proto3" json:"annotations,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Labels        map[string]*Update_KuberPatchNodes_ListOfLabelKeys      `protobuf:"bytes,3,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_KuberPatchNodes_RemoveBatch) Reset() {
+	*x = Update_KuberPatchNodes_RemoveBatch{}
+	mi := &file_spec_manifest_proto_msgTypes[77]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_KuberPatchNodes_RemoveBatch) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_KuberPatchNodes_RemoveBatch) ProtoMessage() {}
+
+func (x *Update_KuberPatchNodes_RemoveBatch) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[77]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_KuberPatchNodes_RemoveBatch.ProtoReflect.Descriptor instead.
+func (*Update_KuberPatchNodes_RemoveBatch) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 30, 5}
+}
+
+func (x *Update_KuberPatchNodes_RemoveBatch) GetTaints() map[string]*Update_KuberPatchNodes_ListOfTaints {
+	if x != nil {
+		return x.Taints
+	}
+	return nil
+}
+
+func (x *Update_KuberPatchNodes_RemoveBatch) GetAnnotations() map[string]*Update_KuberPatchNodes_ListOfAnnotationKeys {
+	if x != nil {
+		return x.Annotations
+	}
+	return nil
+}
+
+func (x *Update_KuberPatchNodes_RemoveBatch) GetLabels() map[string]*Update_KuberPatchNodes_ListOfLabelKeys {
+	if x != nil {
+		return x.Labels
+	}
+	return nil
+}
+
+type Update_KuberPatchNodes_AddBatch struct {
+	state         protoimpl.MessageState                              `protogen:"open.v1"`
+	Taints        map[string]*Update_KuberPatchNodes_ListOfTaints     `protobuf:"bytes,1,rep,name=taints,proto3" json:"taints,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Labels        map[string]*Update_KuberPatchNodes_MapOfLabels      `protobuf:"bytes,2,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Annotations   map[string]*Update_KuberPatchNodes_MapOfAnnotations `protobuf:"bytes,3,rep,name=annotations,proto3" json:"annotations,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_KuberPatchNodes_AddBatch) Reset() {
+	*x = Update_KuberPatchNodes_AddBatch{}
+	mi := &file_spec_manifest_proto_msgTypes[78]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_KuberPatchNodes_AddBatch) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_KuberPatchNodes_AddBatch) ProtoMessage() {}
+
+func (x *Update_KuberPatchNodes_AddBatch) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[78]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_KuberPatchNodes_AddBatch.ProtoReflect.Descriptor instead.
+func (*Update_KuberPatchNodes_AddBatch) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 30, 6}
+}
+
+func (x *Update_KuberPatchNodes_AddBatch) GetTaints() map[string]*Update_KuberPatchNodes_ListOfTaints {
+	if x != nil {
+		return x.Taints
+	}
+	return nil
+}
+
+func (x *Update_KuberPatchNodes_AddBatch) GetLabels() map[string]*Update_KuberPatchNodes_MapOfLabels {
+	if x != nil {
+		return x.Labels
+	}
+	return nil
+}
+
+func (x *Update_KuberPatchNodes_AddBatch) GetAnnotations() map[string]*Update_KuberPatchNodes_MapOfAnnotations {
+	if x != nil {
+		return x.Annotations
+	}
+	return nil
+}
+
+type Update_DeletedK8SNodes_WholeNodePool struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The nodepool that was deleted from the current
+	// state along with all of its nodes.
+	Nodepool      *NodePool `protobuf:"bytes,1,opt,name=nodepool,proto3" json:"nodepool,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_DeletedK8SNodes_WholeNodePool) Reset() {
+	*x = Update_DeletedK8SNodes_WholeNodePool{}
+	mi := &file_spec_manifest_proto_msgTypes[87]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_DeletedK8SNodes_WholeNodePool) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_DeletedK8SNodes_WholeNodePool) ProtoMessage() {}
+
+func (x *Update_DeletedK8SNodes_WholeNodePool) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[87]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_DeletedK8SNodes_WholeNodePool.ProtoReflect.Descriptor instead.
+func (*Update_DeletedK8SNodes_WholeNodePool) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 33, 0}
+}
+
+func (x *Update_DeletedK8SNodes_WholeNodePool) GetNodepool() *NodePool {
+	if x != nil {
+		return x.Nodepool
+	}
+	return nil
+}
+
+type Update_DeletedK8SNodes_Partial struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The nodepool which was modified with the
+	// deletion of the nodes, which is still present
+	// in the [State] passed along the [Update] msg.
+	Nodepool string `protobuf:"bytes,1,opt,name=nodepool,proto3" json:"nodepool,omitempty"`
+	// Nodes that were deleted.
+	Nodes []*Node `protobuf:"bytes,2,rep,name=nodes,proto3" json:"nodes,omitempty"`
+	// Map of keys for each node.
+	// Will only be set if the partially
+	// deleted nodes were part of a static
+	// nodepool.
+	// [<Node Endpoint>]<Key>.
+	StaticNodeKeys map[string]string `protobuf:"bytes,3,rep,name=staticNodeKeys,proto3" json:"staticNodeKeys,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *Update_DeletedK8SNodes_Partial) Reset() {
+	*x = Update_DeletedK8SNodes_Partial{}
+	mi := &file_spec_manifest_proto_msgTypes[88]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_DeletedK8SNodes_Partial) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_DeletedK8SNodes_Partial) ProtoMessage() {}
+
+func (x *Update_DeletedK8SNodes_Partial) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[88]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_DeletedK8SNodes_Partial.ProtoReflect.Descriptor instead.
+func (*Update_DeletedK8SNodes_Partial) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 33, 1}
+}
+
+func (x *Update_DeletedK8SNodes_Partial) GetNodepool() string {
+	if x != nil {
+		return x.Nodepool
+	}
+	return ""
+}
+
+func (x *Update_DeletedK8SNodes_Partial) GetNodes() []*Node {
+	if x != nil {
+		return x.Nodes
+	}
+	return nil
+}
+
+func (x *Update_DeletedK8SNodes_Partial) GetStaticNodeKeys() map[string]string {
+	if x != nil {
+		return x.StaticNodeKeys
+	}
+	return nil
+}
+
+type Update_TerraformerAddK8SNodes_Existing struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The nodepool which is to be modified with the
+	// addition of new nodes, which is already present
+	// in the [State] passed along the [Update] msg.
+	Nodepool string `protobuf:"bytes,1,opt,name=nodepool,proto3" json:"nodepool,omitempty"`
+	// Nodes to be added.
+	Nodes         []*Node `protobuf:"bytes,2,rep,name=nodes,proto3" json:"nodes,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_TerraformerAddK8SNodes_Existing) Reset() {
+	*x = Update_TerraformerAddK8SNodes_Existing{}
+	mi := &file_spec_manifest_proto_msgTypes[90]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_TerraformerAddK8SNodes_Existing) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_TerraformerAddK8SNodes_Existing) ProtoMessage() {}
+
+func (x *Update_TerraformerAddK8SNodes_Existing) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[90]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_TerraformerAddK8SNodes_Existing.ProtoReflect.Descriptor instead.
+func (*Update_TerraformerAddK8SNodes_Existing) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 34, 0}
+}
+
+func (x *Update_TerraformerAddK8SNodes_Existing) GetNodepool() string {
+	if x != nil {
+		return x.Nodepool
+	}
+	return ""
+}
+
+func (x *Update_TerraformerAddK8SNodes_Existing) GetNodes() []*Node {
+	if x != nil {
+		return x.Nodes
+	}
+	return nil
+}
+
+type Update_TerraformerAddK8SNodes_New struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The new nodepool which is to be added to the
+	// [State] passed along the [Update] msg.
+	Nodepool      *NodePool `protobuf:"bytes,1,opt,name=nodepool,proto3" json:"nodepool,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Update_TerraformerAddK8SNodes_New) Reset() {
+	*x = Update_TerraformerAddK8SNodes_New{}
+	mi := &file_spec_manifest_proto_msgTypes[91]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Update_TerraformerAddK8SNodes_New) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Update_TerraformerAddK8SNodes_New) ProtoMessage() {}
+
+func (x *Update_TerraformerAddK8SNodes_New) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[91]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Update_TerraformerAddK8SNodes_New.ProtoReflect.Descriptor instead.
+func (*Update_TerraformerAddK8SNodes_New) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{16, 34, 1}
+}
+
+func (x *Update_TerraformerAddK8SNodes_New) GetNodepool() *NodePool {
+	if x != nil {
+		return x.Nodepool
+	}
+	return nil
+}
+
+type TaskResult_Error struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Kind          TaskResult_Error_Kind  `protobuf:"varint,1,opt,name=kind,proto3,enum=spec.TaskResult_Error_Kind" json:"kind,omitempty"`
+	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TaskResult_Error) Reset() {
+	*x = TaskResult_Error{}
+	mi := &file_spec_manifest_proto_msgTypes[92]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TaskResult_Error) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TaskResult_Error) ProtoMessage() {}
+
+func (x *TaskResult_Error) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[92]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TaskResult_Error.ProtoReflect.Descriptor instead.
+func (*TaskResult_Error) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{20, 0}
+}
+
+func (x *TaskResult_Error) GetKind() TaskResult_Error_Kind {
+	if x != nil {
+		return x.Kind
+	}
+	return TaskResult_Error_FATAL
+}
+
+func (x *TaskResult_Error) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+// None specifies that nothing should be done as a result of
+// processing a task other than acknowledging that the task
+// was processed, and thus moving to next task, if any.
+type TaskResult_None struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TaskResult_None) Reset() {
+	*x = TaskResult_None{}
+	mi := &file_spec_manifest_proto_msgTypes[93]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TaskResult_None) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TaskResult_None) ProtoMessage() {}
+
+func (x *TaskResult_None) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[93]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TaskResult_None.ProtoReflect.Descriptor instead.
+func (*TaskResult_None) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{20, 1}
+}
+
+// UpdateState specifies the current state should be updated
+// as changes may have been done to it. All of the values
+// are optionals and the receiving end should make sense of
+// them.
+// Any non-nil value signals an update that should be handled.
+type TaskResult_UpdateState struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// If the [k8s] field is set then its current state should be merged/replaced
+	// with the state in this message.
+	K8S *K8Scluster `protobuf:"bytes,1,opt,name=k8s,proto3,oneof" json:"k8s,omitempty"`
+	// Updates the loadbalancers that are attached to the [k8s] cluster.
+	// The loadbalancers in this message should only update existing matching
+	// loadbalancers and or add newly created ones.
+	//
+	// If any loadbalancers are missing while they're present in the current state
+	// they should not be deleted, as for that there is an explicit task result [ClearState].
+	LoadBalancers *LoadBalancers `protobuf:"bytes,2,opt,name=loadBalancers,proto3,oneof" json:"loadBalancers,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TaskResult_UpdateState) Reset() {
+	*x = TaskResult_UpdateState{}
+	mi := &file_spec_manifest_proto_msgTypes[94]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TaskResult_UpdateState) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TaskResult_UpdateState) ProtoMessage() {}
+
+func (x *TaskResult_UpdateState) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[94]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TaskResult_UpdateState.ProtoReflect.Descriptor instead.
+func (*TaskResult_UpdateState) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{20, 2}
+}
+
+func (x *TaskResult_UpdateState) GetK8S() *K8Scluster {
+	if x != nil {
+		return x.K8S
+	}
+	return nil
+}
+
+func (x *TaskResult_UpdateState) GetLoadBalancers() *LoadBalancers {
+	if x != nil {
+		return x.LoadBalancers
+	}
+	return nil
+}
+
+// ClearState specifies cluster IDs which should be cleared as changes
+// processed by a scheduled task destroyed the infrastructure.
+// Any non-nil value signals an update that should be done.
+type TaskResult_ClearState struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// If the kuberentes cluster is specified than all of its loadbalancers
+	// should be deleted even if they're not specified within this message.
+	K8S *bool `protobuf:"varint,1,opt,name=k8s,proto3,oneof" json:"k8s,omitempty"`
+	// ID of the loadbalancers that should be cleared.
+	LoadBalancersIDs []string `protobuf:"bytes,2,rep,name=loadBalancersIDs,proto3" json:"loadBalancersIDs,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *TaskResult_ClearState) Reset() {
+	*x = TaskResult_ClearState{}
+	mi := &file_spec_manifest_proto_msgTypes[95]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TaskResult_ClearState) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TaskResult_ClearState) ProtoMessage() {}
+
+func (x *TaskResult_ClearState) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_manifest_proto_msgTypes[95]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TaskResult_ClearState.ProtoReflect.Descriptor instead.
+func (*TaskResult_ClearState) Descriptor() ([]byte, []int) {
+	return file_spec_manifest_proto_rawDescGZIP(), []int{20, 3}
+}
+
+func (x *TaskResult_ClearState) GetK8S() bool {
+	if x != nil && x.K8S != nil {
+		return *x.K8S
+	}
+	return false
+}
+
+func (x *TaskResult_ClearState) GetLoadBalancersIDs() []string {
+	if x != nil {
+		return x.LoadBalancersIDs
 	}
 	return nil
 }
@@ -2388,7 +5848,7 @@ var File_spec_manifest_proto protoreflect.FileDescriptor
 
 const file_spec_manifest_proto_rawDesc = "" +
 	"\n" +
-	"\x13spec/manifest.proto\x12\x04spec\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13spec/nodepool.proto\x1a\x0espec/dns.proto\"\x9c\x02\n" +
+	"\x13spec/manifest.proto\x12\x04spec\x1a\x19google/protobuf/any.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x0espec/dns.proto\x1a\x13spec/nodepool.proto\x1a\x0fspec/pass.proto\"\x9c\x02\n" +
 	"\x06Config\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\x04R\aversion\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12/\n" +
@@ -2407,12 +5867,11 @@ const file_spec_manifest_proto_rawDesc = "" +
 	"\aPending\x10\x00\x12\r\n" +
 	"\tScheduled\x10\x01\x12\b\n" +
 	"\x04Done\x10\x02\x12\t\n" +
-	"\x05Error\x10\x03\"\xae\x01\n" +
+	"\x05Error\x10\x03\"\x8b\x01\n" +
 	"\fClusterState\x12(\n" +
-	"\acurrent\x18\x01 \x01(\v2\x0e.spec.ClustersR\acurrent\x12(\n" +
-	"\adesired\x18\x02 \x01(\v2\x0e.spec.ClustersR\adesired\x12$\n" +
-	"\x06events\x18\x03 \x01(\v2\f.spec.EventsR\x06events\x12$\n" +
-	"\x05state\x18\x04 \x01(\v2\x0e.spec.WorkflowR\x05state\"i\n" +
+	"\acurrent\x18\x01 \x01(\v2\x0e.spec.ClustersR\acurrent\x12$\n" +
+	"\x05state\x18\x04 \x01(\v2\x0e.spec.WorkflowR\x05state\x12+\n" +
+	"\binFlight\x18\x05 \x01(\v2\x0f.spec.TaskEventR\binFlight\"i\n" +
 	"\bClusters\x12\"\n" +
 	"\x03k8s\x18\x01 \x01(\v2\x10.spec.K8sclusterR\x03k8s\x129\n" +
 	"\rloadBalancers\x18\x02 \x01(\v2\x13.spec.LoadBalancersR\rloadBalancers\"<\n" +
@@ -2420,24 +5879,21 @@ const file_spec_manifest_proto_rawDesc = "" +
 	"\bclusters\x18\x01 \x03(\v2\x0f.spec.LBclusterR\bclusters\"E\n" +
 	"\x11KubernetesContext\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1c\n" +
-	"\tnamespace\x18\x02 \x01(\tR\tnamespace\"\xc4\x02\n" +
-	"\bWorkflow\x12*\n" +
-	"\x05stage\x18\x01 \x01(\x0e2\x14.spec.Workflow.StageR\x05stage\x12-\n" +
+	"\tnamespace\x18\x02 \x01(\tR\tnamespace\"\xbb\x01\n" +
+	"\x10FinishedWorkflow\x12-\n" +
+	"\x06status\x18\x01 \x01(\x0e2\x15.spec.Workflow.StatusR\x06status\x12(\n" +
+	"\x0ftaskDescription\x18\x02 \x01(\tR\x0ftaskDescription\x12\x14\n" +
+	"\x05stage\x18\x03 \x01(\tR\x05stage\x128\n" +
+	"\ttimestamp\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\"\xd4\x01\n" +
+	"\bWorkflow\x12-\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x15.spec.Workflow.StatusR\x06status\x12 \n" +
-	"\vdescription\x18\x03 \x01(\tR\vdescription\"\x8a\x01\n" +
-	"\x05Stage\x12\b\n" +
-	"\x04NONE\x10\x00\x12\x0f\n" +
-	"\vTERRAFORMER\x10\x01\x12\f\n" +
-	"\bANSIBLER\x10\x02\x12\x0f\n" +
-	"\vKUBE_ELEVEN\x10\x03\x12\t\n" +
-	"\x05KUBER\x10\x04\x12\x17\n" +
-	"\x13DESTROY_TERRAFORMER\x10\a\x12\x11\n" +
-	"\rDESTROY_KUBER\x10\b\x12\x10\n" +
-	"\fDELETE_NODES\x10\t\".\n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\x122\n" +
+	"\bprevious\x18\t \x03(\v2\x16.spec.FinishedWorkflowR\bprevious\"C\n" +
 	"\x06Status\x12\b\n" +
 	"\x04DONE\x10\x00\x12\t\n" +
 	"\x05ERROR\x10\x01\x12\x0f\n" +
-	"\vIN_PROGRESS\x10\x02\"\xe2\x01\n" +
+	"\vIN_PROGRESS\x10\x02\x12\x13\n" +
+	"\x0fWAIT_FOR_PICKUP\x10\x03\"\xe2\x01\n" +
 	"\n" +
 	"K8scluster\x123\n" +
 	"\vclusterInfo\x18\x01 \x01(\v2\x11.spec.ClusterInfoR\vclusterInfo\x12\x18\n" +
@@ -2463,106 +5919,343 @@ const file_spec_manifest_proto_rawDesc = "" +
 	"\x11InstallationProxy\x12\x12\n" +
 	"\x04mode\x18\x01 \x01(\tR\x04mode\x12\x1a\n" +
 	"\bendpoint\x18\x02 \x01(\tR\bendpoint\x12\x18\n" +
-	"\anoProxy\x18\x03 \x01(\tR\anoProxy\"p\n" +
-	"\tProxyEnvs\x12\x1d\n" +
-	"\x02op\x18\x01 \x01(\x0e2\r.spec.ProxyOpR\x02op\x12\"\n" +
-	"\fhttpProxyUrl\x18\x02 \x01(\tR\fhttpProxyUrl\x12 \n" +
-	"\vnoProxyList\x18\x03 \x01(\tR\vnoProxyList\"\xee\x02\n" +
+	"\anoProxy\x18\x03 \x01(\tR\anoProxy\"\xee\x02\n" +
 	"\x04Role\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
 	"\bprotocol\x18\x02 \x01(\tR\bprotocol\x12\x12\n" +
 	"\x04port\x18\x03 \x01(\x05R\x04port\x12\x1e\n" +
 	"\n" +
 	"targetPort\x18\x04 \x01(\x05R\n" +
-	"targetPort\x12 \n" +
-	"\vtargetPools\x18\a \x03(\tR\vtargetPools\x12*\n" +
-	"\broleType\x18\x06 \x01(\x0e2\x0e.spec.RoleTypeR\broleType\x12/\n" +
+	"targetPort\x12*\n" +
+	"\broleType\x18\x06 \x01(\x0e2\x0e.spec.RoleTypeR\broleType\x12 \n" +
+	"\vtargetPools\x18\a \x03(\tR\vtargetPools\x12/\n" +
 	"\bsettings\x18\b \x01(\v2\x13.spec.Role.SettingsR\bsettings\x1a\x82\x01\n" +
 	"\bSettings\x12$\n" +
 	"\rproxyProtocol\x18\x01 \x01(\bR\rproxyProtocol\x12&\n" +
 	"\x0estickySessions\x18\x02 \x01(\bR\x0estickySessions\x12(\n" +
-	"\x10envoy_admin_port\x18\x03 \x01(\x05R\x0eenvoyAdminPort\"c\n" +
-	"\x06Events\x12'\n" +
-	"\x06events\x18\x01 \x03(\v2\x0f.spec.TaskEventR\x06events\x12\x10\n" +
-	"\x03ttl\x18\x02 \x01(\x05R\x03ttl\x12\x1e\n" +
-	"\n" +
-	"autoscaled\x18\x03 \x01(\bR\n" +
-	"autoscaled\"\xe1\x01\n" +
+	"\x10envoy_admin_port\x18\x03 \x01(\x05R\x0eenvoyAdminPort\"\xd5\x02\n" +
 	"\tTaskEvent\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x128\n" +
 	"\ttimestamp\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x12!\n" +
 	"\x05event\x18\x03 \x01(\x0e2\v.spec.EventR\x05event\x12\x1e\n" +
 	"\x04task\x18\x04 \x01(\v2\n" +
 	".spec.TaskR\x04task\x12 \n" +
-	"\vdescription\x18\x05 \x01(\tR\vdescription\x12%\n" +
-	"\aonError\x18\a \x01(\v2\v.spec.RetryR\aonError\"\xe0\x02\n" +
-	"\x05Retry\x12,\n" +
-	"\x06repeat\x18\x03 \x01(\v2\x12.spec.Retry.RepeatH\x00R\x06repeat\x122\n" +
-	"\brollback\x18\x04 \x01(\v2\x14.spec.Retry.RollbackH\x00R\brollback\x1a\xbb\x01\n" +
-	"\x06Repeat\x12+\n" +
-	"\x04kind\x18\x01 \x01(\x0e2\x17.spec.Retry.Repeat.KindR\x04kind\x12 \n" +
-	"\vcurrentTick\x18\x02 \x01(\rR\vcurrentTick\x12\x1c\n" +
-	"\tstopAfter\x18\x03 \x01(\rR\tstopAfter\x12\x1e\n" +
+	"\vdescription\x18\x05 \x01(\tR\vdescription\x12'\n" +
+	"\bpipeline\x18\b \x03(\v2\v.spec.StageR\bpipeline\x12\"\n" +
+	"\fcurrentStage\x18\t \x01(\rR\fcurrentStage\x12:\n" +
+	"\rlowerPriority\x18\x15 \x01(\v2\x0f.spec.TaskEventH\x00R\rlowerPriority\x88\x01\x01B\x10\n" +
+	"\x0e_lowerPriority\"\x93\x04\n" +
+	"\vUnreachable\x12F\n" +
 	"\n" +
-	"retryAfter\x18\x04 \x01(\rR\n" +
-	"retryAfter\"$\n" +
-	"\x04Kind\x12\v\n" +
-	"\aENDLESS\x10\x00\x12\x0f\n" +
-	"\vEXPONENTIAL\x10\x01\x1a1\n" +
-	"\bRollback\x12%\n" +
-	"\x05tasks\x18\x01 \x03(\v2\x0f.spec.TaskEventR\x05tasksB\x04\n" +
-	"\x02Do\"\xbf\x01\n" +
-	"\x04Task\x123\n" +
-	"\vcreateState\x18\x01 \x01(\v2\x11.spec.CreateStateR\vcreateState\x123\n" +
-	"\vupdateState\x18\x02 \x01(\v2\x11.spec.UpdateStateR\vupdateState\x123\n" +
-	"\vdeleteState\x18\x03 \x01(\v2\x11.spec.DeleteStateR\vdeleteState\x12\x18\n" +
-	"\aoptions\x18\x04 \x01(\x04R\aoptions\"X\n" +
-	"\vCreateState\x12\"\n" +
-	"\x03k8s\x18\x01 \x01(\v2\x10.spec.K8sclusterR\x03k8s\x12%\n" +
-	"\x03lbs\x18\x02 \x01(\v2\x13.spec.LoadBalancersR\x03lbs\"\xe5\x03\n" +
-	"\vUpdateState\x12\"\n" +
-	"\x03k8s\x18\x01 \x01(\v2\x10.spec.K8sclusterR\x03k8s\x12%\n" +
-	"\x03lbs\x18\x02 \x01(\v2\x13.spec.LoadBalancersR\x03lbs\x12O\n" +
-	"\x12newControlEndpoint\x18\x03 \x01(\v2\x1d.spec.UpdateState.K8sEndpointH\x00R\x12newControlEndpoint\x12J\n" +
-	"\x10lbEndpointChange\x18\x04 \x01(\v2\x1c.spec.UpdateState.LbEndpointH\x00R\x10lbEndpointChange\x1a=\n" +
-	"\vK8sEndpoint\x12\x1a\n" +
-	"\bnodepool\x18\x01 \x01(\tR\bnodepool\x12\x12\n" +
-	"\x04node\x18\x02 \x01(\tR\x04node\x1a\x9c\x01\n" +
-	"\n" +
-	"LbEndpoint\x122\n" +
+	"kubernetes\x18\x01 \x01(\v2&.spec.Unreachable.UnreachableNodePoolsR\n" +
+	"kubernetes\x12J\n" +
+	"\rloadbalancers\x18\x02 \x03(\v2$.spec.Unreachable.LoadbalancersEntryR\rloadbalancers\x1a3\n" +
+	"\x13ListOfNodeEndpoints\x12\x1c\n" +
+	"\tendpoints\x18\x01 \x03(\tR\tendpoints\x1a\xd0\x01\n" +
+	"\x14UnreachableNodePools\x12S\n" +
+	"\tnodepools\x18\x01 \x03(\v25.spec.Unreachable.UnreachableNodePools.NodepoolsEntryR\tnodepools\x1ac\n" +
+	"\x0eNodepoolsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12;\n" +
+	"\x05value\x18\x02 \x01(\v2%.spec.Unreachable.ListOfNodeEndpointsR\x05value:\x028\x01\x1ah\n" +
+	"\x12LoadbalancersEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12<\n" +
+	"\x05value\x18\x02 \x01(\v2&.spec.Unreachable.UnreachableNodePoolsR\x05value:\x028\x01\"c\n" +
+	"\x06Create\x12\"\n" +
+	"\x03k8s\x18\x01 \x01(\v2\x10.spec.K8sclusterR\x03k8s\x125\n" +
+	"\rloadBalancers\x18\x02 \x03(\v2\x0f.spec.LBclusterR\rloadBalancers\"\xa0N\n" +
+	"\x06Update\x12(\n" +
+	"\x05state\x18\x01 \x01(\v2\x12.spec.Update.StateR\x05state\x12'\n" +
+	"\x04none\x18\x02 \x01(\v2\x11.spec.Update.NoneH\x00R\x04none\x12W\n" +
+	"\x11tfAddLoadBalancer\x18\x03 \x01(\v2'.spec.Update.TerraformerAddLoadBalancerH\x00R\x11tfAddLoadBalancer\x12f\n" +
+	"\x16tfAddLoadBalancerNodes\x18\x04 \x01(\v2,.spec.Update.TerraformerAddLoadBalancerNodesH\x00R\x16tfAddLoadBalancerNodes\x12H\n" +
+	"\ftfReplaceDns\x18\x05 \x01(\v2\".spec.Update.TerraformerReplaceDnsH\x00R\ftfReplaceDns\x12K\n" +
+	"\rtfAddK8sNodes\x18\x06 \x01(\v2#.spec.Update.TerraformerAddK8sNodesH\x00R\rtfAddK8sNodes\x12f\n" +
+	"\x16tfAddLoadBalancerRoles\x18\a \x01(\v2,.spec.Update.TerraformerAddLoadBalancerRolesH\x00R\x16tfAddLoadBalancerRoles\x12o\n" +
+	"\x19tfDeleteLoadBalancerNodes\x18\b \x01(\v2/.spec.Update.TerraformerDeleteLoadBalancerNodesH\x00R\x19tfDeleteLoadBalancerNodes\x12r\n" +
+	"\x1atfMoveNodePoolToAutoscaled\x18\t \x01(\v20.spec.Update.TerraformerMoveNodePoolToAutoscaledH\x00R\x1atfMoveNodePoolToAutoscaled\x12x\n" +
+	"\x1ctfMoveNodePoolFromAutoscaled\x18\n" +
+	" \x01(\v22.spec.Update.TerraformerMoveNodePoolFromAutoscaledH\x00R\x1ctfMoveNodePoolFromAutoscaled\x12{\n" +
+	"\x1dtfReplaceRoleExternalSettings\x18\f \x01(\v23.spec.Update.TerraformerReplaceRoleExternalSettingsH\x00R\x1dtfReplaceRoleExternalSettings\x12U\n" +
+	"\x0fansReplaceProxy\x18\x0e \x01(\v2).spec.Update.AnsiblerReplaceProxySettingsH\x00R\x0fansReplaceProxy\x12_\n" +
+	"\x15ansReplaceTargetPools\x18\x0f \x01(\v2'.spec.Update.AnsiblerReplaceTargetPoolsH\x00R\x15ansReplaceTargetPools\x12z\n" +
+	"\x1eansReplaceRoleInternalSettings\x18\x10 \x01(\v20.spec.Update.AnsiblerReplaceRoleInternalSettingsH\x00R\x1eansReplaceRoleInternalSettings\x12@\n" +
+	"\vkpatchNodes\x18\x12 \x01(\v2\x1c.spec.Update.KuberPatchNodesH\x00R\vkpatchNodes\x12F\n" +
+	"\fkDeleteNodes\x18\x13 \x01(\v2 .spec.Update.KuberDeleteK8sNodesH\x00R\fkDeleteNodes\x12N\n" +
+	"\x11addedLoadBalancer\x18\x15 \x01(\v2\x1e.spec.Update.AddedLoadBalancerH\x00R\x11addedLoadBalancer\x12]\n" +
+	"\x16addedLoadBalancerNodes\x18\x16 \x01(\v2#.spec.Update.AddedLoadBalancerNodesH\x00R\x16addedLoadBalancerNodes\x12<\n" +
+	"\vreplacedDns\x18\x17 \x01(\v2\x18.spec.Update.ReplacedDnsH\x00R\vreplacedDns\x12B\n" +
+	"\raddedK8sNodes\x18\x18 \x01(\v2\x1a.spec.Update.AddedK8sNodesH\x00R\raddedK8sNodes\x12J\n" +
+	"\rreplacedProxy\x18\x19 \x01(\v2\".spec.Update.ReplacedProxySettingsH\x00R\rreplacedProxy\x12?\n" +
+	"\fpatchedNodes\x18\x1a \x01(\v2\x19.spec.Update.PatchedNodesH\x00R\fpatchedNodes\x12]\n" +
+	"\x16addedLoadBalancerRoles\x18\x1b \x01(\v2#.spec.Update.AddedLoadBalancerRolesH\x00R\x16addedLoadBalancerRoles\x12T\n" +
+	"\x13replacedTargetPools\x18\x1c \x01(\v2 .spec.Update.ReplacedTargetPoolsH\x00R\x13replacedTargetPools\x12f\n" +
+	"\x19movedNodePoolToAutoscaled\x18\x1d \x01(\v2&.spec.Update.MovedNodePoolToAutoscaledH\x00R\x19movedNodePoolToAutoscaled\x12l\n" +
+	"\x1bmovedNodePoolFromAutoscaled\x18\x1e \x01(\v2(.spec.Update.MovedNodePoolFromAutoscaledH\x00R\x1bmovedNodePoolFromAutoscaled\x12o\n" +
+	"\x1creplacedRoleInternalSettings\x18\x1f \x01(\v2).spec.Update.ReplacedRoleInternalSettingsH\x00R\x1creplacedRoleInternalSettings\x12o\n" +
+	"\x1creplacedRoleExternalSettings\x18  \x01(\v2).spec.Update.ReplacedRoleExternalSettingsH\x00R\x1creplacedRoleExternalSettings\x12Q\n" +
+	"\x12deleteLoadBalancer\x18\" \x01(\v2\x1f.spec.Update.DeleteLoadBalancerH\x00R\x12deleteLoadBalancer\x12H\n" +
+	"\x0fdeletedK8sNodes\x18# \x01(\v2\x1c.spec.Update.DeletedK8sNodesH\x00R\x0fdeletedK8sNodes\x12c\n" +
+	"\x18deletedLoadBalancerNodes\x18$ \x01(\v2%.spec.Update.DeletedLoadBalancerNodesH\x00R\x18deletedLoadBalancerNodes\x12`\n" +
+	"\x17deleteLoadBalancerRoles\x18% \x01(\v2$.spec.Update.DeleteLoadBalancerRolesH\x00R\x17deleteLoadBalancerRoles\x12<\n" +
+	"\vapiEndpoint\x18& \x01(\v2\x18.spec.Update.ApiEndpointH\x00R\vapiEndpoint\x12G\n" +
+	"\x0eclusterApiPort\x18' \x01(\v2\x1d.spec.Update.ApiPortOnClusterH\x00R\x0eclusterApiPort\x12I\n" +
+	"\x0ek8sApiEndpoint\x18( \x01(\v2\x1f.spec.Update.K8sOnlyApiEndpointH\x00R\x0ek8sApiEndpoint\x12E\n" +
+	"\x0eupgradeVersion\x18) \x01(\v2\x1b.spec.Update.UpgradeVersionH\x00R\x0eupgradeVersion\x1ab\n" +
+	"\x05State\x12\"\n" +
+	"\x03k8s\x18\x01 \x01(\v2\x10.spec.K8sclusterR\x03k8s\x125\n" +
+	"\rloadBalancers\x18\x02 \x03(\v2\x0f.spec.LBclusterR\rloadBalancers\x1a\x06\n" +
+	"\x04None\x1ao\n" +
+	"#TerraformerMoveNodePoolToAutoscaled\x12\x1a\n" +
+	"\bnodepool\x18\x01 \x01(\tR\bnodepool\x12,\n" +
+	"\x06config\x18\x02 \x01(\v2\x14.spec.AutoscalerConfR\x06config\x1a7\n" +
+	"\x19MovedNodePoolToAutoscaled\x12\x1a\n" +
+	"\bnodepool\x18\x01 \x01(\tR\bnodepool\x1aC\n" +
+	"%TerraformerMoveNodePoolFromAutoscaled\x12\x1a\n" +
+	"\bnodepool\x18\x01 \x01(\tR\bnodepool\x1ag\n" +
+	"\x1bMovedNodePoolFromAutoscaled\x12\x1a\n" +
+	"\bnodepool\x18\x01 \x01(\tR\bnodepool\x12,\n" +
+	"\x06config\x18\x02 \x01(\v2\x14.spec.AutoscalerConfR\x06config\x1aE\n" +
+	"\x1aTerraformerAddLoadBalancer\x12'\n" +
+	"\x06handle\x18\x01 \x01(\v2\x0f.spec.LBclusterR\x06handle\x1a+\n" +
+	"\x11AddedLoadBalancer\x12\x16\n" +
+	"\x06handle\x18\x01 \x01(\tR\x06handle\x1a\xdc\x01\n" +
+	"\"TerraformerDeleteLoadBalancerNodes\x12\x16\n" +
+	"\x06handle\x18\x01 \x01(\tR\x06handle\x12\"\n" +
+	"\fwithNodePool\x18\x02 \x01(\bR\fwithNodePool\x12\x1a\n" +
+	"\bnodepool\x18\x03 \x01(\tR\bnodepool\x12\x14\n" +
+	"\x05nodes\x18\x04 \x03(\tR\x05nodes\x128\n" +
+	"\vunreachable\x18\x05 \x01(\v2\x11.spec.UnreachableH\x00R\vunreachable\x88\x01\x01B\x0e\n" +
+	"\f_unreachable\x1a\xd1\x04\n" +
+	"\x18DeletedLoadBalancerNodes\x128\n" +
+	"\vunreachable\x18\x01 \x01(\v2\x11.spec.UnreachableH\x01R\vunreachable\x88\x01\x01\x12\x16\n" +
+	"\x06handle\x18\x02 \x01(\tR\x06handle\x12K\n" +
+	"\x05whole\x18\x03 \x01(\v23.spec.Update.DeletedLoadBalancerNodes.WholeNodePoolH\x00R\x05whole\x12I\n" +
+	"\apartial\x18\x04 \x01(\v2-.spec.Update.DeletedLoadBalancerNodes.PartialH\x00R\apartial\x1a;\n" +
+	"\rWholeNodePool\x12*\n" +
+	"\bnodepool\x18\x01 \x01(\v2\x0e.spec.NodePoolR\bnodepool\x1a\xf5\x01\n" +
+	"\aPartial\x12\x1a\n" +
+	"\bnodepool\x18\x01 \x01(\tR\bnodepool\x12 \n" +
+	"\x05nodes\x18\x02 \x03(\v2\n" +
+	".spec.NodeR\x05nodes\x12i\n" +
+	"\x0estaticNodeKeys\x18\x03 \x03(\v2A.spec.Update.DeletedLoadBalancerNodes.Partial.StaticNodeKeysEntryR\x0estaticNodeKeys\x1aA\n" +
+	"\x13StaticNodeKeysEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x06\n" +
+	"\x04KindB\x0e\n" +
+	"\f_unreachable\x1a\xd9\x02\n" +
+	"\x1fTerraformerAddLoadBalancerNodes\x12\x16\n" +
+	"\x06handle\x18\x01 \x01(\tR\x06handle\x12S\n" +
+	"\bexisting\x18\x02 \x01(\v25.spec.Update.TerraformerAddLoadBalancerNodes.ExistingH\x00R\bexisting\x12D\n" +
+	"\x03new\x18\x03 \x01(\v20.spec.Update.TerraformerAddLoadBalancerNodes.NewH\x00R\x03new\x1aH\n" +
+	"\bExisting\x12\x1a\n" +
+	"\bnodepool\x18\x01 \x01(\tR\bnodepool\x12 \n" +
+	"\x05nodes\x18\x02 \x03(\v2\n" +
+	".spec.NodeR\x05nodes\x1a1\n" +
+	"\x03New\x12*\n" +
+	"\bnodepool\x18\x01 \x01(\v2\x0e.spec.NodePoolR\bnodepoolB\x06\n" +
+	"\x04Kind\x1a\x84\x01\n" +
+	"\x16AddedLoadBalancerNodes\x12\x16\n" +
+	"\x06handle\x18\x01 \x01(\tR\x06handle\x12 \n" +
+	"\vnewNodePool\x18\x02 \x01(\bR\vnewNodePool\x12\x1a\n" +
+	"\bnodePool\x18\x03 \x01(\tR\bnodePool\x12\x14\n" +
+	"\x05nodes\x18\x04 \x03(\tR\x05nodes\x1aG\n" +
+	"\x17DeleteLoadBalancerRoles\x12\x16\n" +
+	"\x06handle\x18\x01 \x01(\tR\x06handle\x12\x14\n" +
+	"\x05roles\x18\x02 \x03(\tR\x05roles\x1a[\n" +
+	"\x1fTerraformerAddLoadBalancerRoles\x12\x16\n" +
+	"\x06handle\x18\x01 \x01(\tR\x06handle\x12 \n" +
+	"\x05roles\x18\x02 \x03(\v2\n" +
+	".spec.RoleR\x05roles\x1aF\n" +
+	"\x16AddedLoadBalancerRoles\x12\x16\n" +
+	"\x06handle\x18\x01 \x01(\tR\x06handle\x12\x14\n" +
+	"\x05roles\x18\x02 \x03(\tR\x05roles\x1a\x8c\x01\n" +
+	"\x15TerraformerReplaceDns\x12\x16\n" +
+	"\x06handle\x18\x01 \x01(\tR\x06handle\x12\x1b\n" +
+	"\x03dns\x18\x02 \x01(\v2\t.spec.DNSR\x03dns\x12+\n" +
+	"\x0eoldApiEndpoint\x18\x03 \x01(\tH\x00R\x0eoldApiEndpoint\x88\x01\x01B\x11\n" +
+	"\x0f_oldApiEndpoint\x1ae\n" +
+	"\vReplacedDns\x12\x16\n" +
+	"\x06handle\x18\x01 \x01(\tR\x06handle\x12+\n" +
+	"\x0eoldApiEndpoint\x18\x02 \x01(\tH\x00R\x0eoldApiEndpoint\x88\x01\x01B\x11\n" +
+	"\x0f_oldApiEndpoint\x1av\n" +
+	"\x12DeleteLoadBalancer\x12\x16\n" +
+	"\x06handle\x18\x01 \x01(\tR\x06handle\x128\n" +
+	"\vunreachable\x18\x02 \x01(\v2\x11.spec.UnreachableH\x00R\vunreachable\x88\x01\x01B\x0e\n" +
+	"\f_unreachable\x1a\x9d\x01\n" +
+	"\vApiEndpoint\x122\n" +
 	"\x05state\x18\x01 \x01(\x0e2\x1c.spec.ApiEndpointChangeStateR\x05state\x12,\n" +
 	"\x11currentEndpointId\x18\x02 \x01(\tR\x11currentEndpointId\x12,\n" +
-	"\x11desiredEndpointId\x18\x03 \x01(\tR\x11desiredEndpointIdB\x10\n" +
-	"\x0eEndpointChange\"\xfa\x03\n" +
-	"\vDeleteState\x12'\n" +
-	"\x03k8s\x18\x01 \x01(\v2\x15.spec.DeleteState.K8sR\x03k8s\x120\n" +
-	"\x03lbs\x18\x02 \x03(\v2\x1e.spec.DeleteState.LoadBalancerR\x03lbs\x1a\xb5\x01\n" +
-	"\x03K8s\x12\x18\n" +
-	"\adestroy\x18\x01 \x01(\bR\adestroy\x12B\n" +
-	"\tnodepools\x18\x02 \x03(\v2$.spec.DeleteState.K8s.NodepoolsEntryR\tnodepools\x1aP\n" +
-	"\x0eNodepoolsEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12(\n" +
-	"\x05value\x18\x02 \x01(\v2\x12.spec.DeletedNodesR\x05value:\x028\x01\x1a\xd7\x01\n" +
-	"\fLoadBalancer\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
-	"\adestroy\x18\x02 \x01(\bR\adestroy\x12K\n" +
-	"\tnodepools\x18\x03 \x03(\v2-.spec.DeleteState.LoadBalancer.NodepoolsEntryR\tnodepools\x1aP\n" +
-	"\x0eNodepoolsEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12(\n" +
-	"\x05value\x18\x02 \x01(\v2\x12.spec.DeletedNodesR\x05value:\x028\x01\"V\n" +
-	"\fDeletedNodes\x12\x14\n" +
-	"\x05nodes\x18\x01 \x03(\tR\x05nodes\x120\n" +
-	"\x13keepNodePoolIfEmpty\x18\x02 \x01(\bR\x13keepNodePoolIfEmpty**\n" +
-	"\aProxyOp\x12\b\n" +
-	"\x04NONE\x10\x00\x12\f\n" +
-	"\bMODIFIED\x10\x01\x12\a\n" +
-	"\x03OFF\x10\x02*&\n" +
+	"\x11desiredEndpointId\x18\x03 \x01(\tR\x11desiredEndpointId\x1aD\n" +
+	"\x12K8sOnlyApiEndpoint\x12\x1a\n" +
+	"\bnodepool\x18\x01 \x01(\tR\bnodepool\x12\x12\n" +
+	"\x04node\x18\x02 \x01(\tR\x04node\x1a&\n" +
+	"\x10ApiPortOnCluster\x12\x12\n" +
+	"\x04open\x18\x01 \x01(\bR\x04open\x1aM\n" +
+	"\x1cAnsiblerReplaceProxySettings\x12-\n" +
+	"\x05proxy\x18\x01 \x01(\v2\x17.spec.InstallationProxyR\x05proxy\x1a\x17\n" +
+	"\x15ReplacedProxySettings\x1a\xb0\x01\n" +
+	"&TerraformerReplaceRoleExternalSettings\x12\x16\n" +
+	"\x06handle\x18\x01 \x01(\tR\x06handle\x12\x12\n" +
+	"\x04role\x18\x02 \x01(\tR\x04role\x12*\n" +
+	"\broleType\x18\x03 \x01(\x0e2\x0e.spec.RoleTypeR\broleType\x12\x1a\n" +
+	"\bprotocol\x18\x04 \x01(\tR\bprotocol\x12\x12\n" +
+	"\x04port\x18\x05 \x01(\x05R\x04port\x1aJ\n" +
+	"\x1cReplacedRoleExternalSettings\x12\x16\n" +
+	"\x06handle\x18\x01 \x01(\tR\x06handle\x12\x12\n" +
+	"\x04role\x18\x02 \x01(\tR\x04role\x1a\xa2\x01\n" +
+	"#AnsiblerReplaceRoleInternalSettings\x12\x16\n" +
+	"\x06handle\x18\x01 \x01(\tR\x06handle\x12\x12\n" +
+	"\x04role\x18\x02 \x01(\tR\x04role\x12\x1e\n" +
+	"\n" +
+	"targetPort\x18\x03 \x01(\x05R\n" +
+	"targetPort\x12/\n" +
+	"\bsettings\x18\x04 \x01(\v2\x13.spec.Role.SettingsR\bsettings\x1aJ\n" +
+	"\x1cReplacedRoleInternalSettings\x12\x16\n" +
+	"\x06handle\x18\x01 \x01(\tR\x06handle\x12\x12\n" +
+	"\x04role\x18\x02 \x01(\tR\x04role\x1a\x92\x02\n" +
+	"\x1aAnsiblerReplaceTargetPools\x12\x16\n" +
+	"\x06handle\x18\x01 \x01(\tR\x06handle\x12H\n" +
+	"\x05roles\x18\x02 \x03(\v22.spec.Update.AnsiblerReplaceTargetPools.RolesEntryR\x05roles\x1a#\n" +
+	"\vTargetPools\x12\x14\n" +
+	"\x05pools\x18\x01 \x03(\tR\x05pools\x1am\n" +
+	"\n" +
+	"RolesEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12I\n" +
+	"\x05value\x18\x02 \x01(\v23.spec.Update.AnsiblerReplaceTargetPools.TargetPoolsR\x05value:\x028\x01\x1a\xfd\x01\n" +
+	"\x13ReplacedTargetPools\x12\x16\n" +
+	"\x06handle\x18\x01 \x01(\tR\x06handle\x12A\n" +
+	"\x05roles\x18\x02 \x03(\v2+.spec.Update.ReplacedTargetPools.RolesEntryR\x05roles\x1a#\n" +
+	"\vTargetPools\x12\x14\n" +
+	"\x05pools\x18\x01 \x03(\tR\x05pools\x1af\n" +
+	"\n" +
+	"RolesEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12B\n" +
+	"\x05value\x18\x02 \x01(\v2,.spec.Update.ReplacedTargetPools.TargetPoolsR\x05value:\x028\x01\x1a*\n" +
+	"\x0eUpgradeVersion\x12\x18\n" +
+	"\aversion\x18\x01 \x01(\tR\aversion\x1a\xf8\r\n" +
+	"\x0fKuberPatchNodes\x127\n" +
+	"\x03add\x18\x01 \x01(\v2%.spec.Update.KuberPatchNodes.AddBatchR\x03add\x12@\n" +
+	"\x06remove\x18\x02 \x01(\v2(.spec.Update.KuberPatchNodes.RemoveBatchR\x06remove\x1a3\n" +
+	"\fListOfTaints\x12#\n" +
+	"\x06taints\x18\x01 \x03(\v2\v.spec.TaintR\x06taints\x1a)\n" +
+	"\x0fListOfLabelKeys\x12\x16\n" +
+	"\x06labels\x18\x01 \x03(\tR\x06labels\x1a8\n" +
+	"\x14ListOfAnnotationKeys\x12 \n" +
+	"\vannotations\x18\x01 \x03(\tR\vannotations\x1a\x96\x01\n" +
+	"\vMapOfLabels\x12L\n" +
+	"\x06labels\x18\x01 \x03(\v24.spec.Update.KuberPatchNodes.MapOfLabels.LabelsEntryR\x06labels\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a\xb4\x01\n" +
+	"\x10MapOfAnnotations\x12`\n" +
+	"\vannotations\x18\x01 \x03(\v2>.spec.Update.KuberPatchNodes.MapOfAnnotations.AnnotationsEntryR\vannotations\x1a>\n" +
+	"\x10AnnotationsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a\xc8\x04\n" +
+	"\vRemoveBatch\x12L\n" +
+	"\x06taints\x18\x01 \x03(\v24.spec.Update.KuberPatchNodes.RemoveBatch.TaintsEntryR\x06taints\x12[\n" +
+	"\vannotations\x18\x02 \x03(\v29.spec.Update.KuberPatchNodes.RemoveBatch.AnnotationsEntryR\vannotations\x12L\n" +
+	"\x06labels\x18\x03 \x03(\v24.spec.Update.KuberPatchNodes.RemoveBatch.LabelsEntryR\x06labels\x1ad\n" +
+	"\vTaintsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12?\n" +
+	"\x05value\x18\x02 \x01(\v2).spec.Update.KuberPatchNodes.ListOfTaintsR\x05value:\x028\x01\x1aq\n" +
+	"\x10AnnotationsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12G\n" +
+	"\x05value\x18\x02 \x01(\v21.spec.Update.KuberPatchNodes.ListOfAnnotationKeysR\x05value:\x028\x01\x1ag\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12B\n" +
+	"\x05value\x18\x02 \x01(\v2,.spec.Update.KuberPatchNodes.ListOfLabelKeysR\x05value:\x028\x01\x1a\xb4\x04\n" +
+	"\bAddBatch\x12I\n" +
+	"\x06taints\x18\x01 \x03(\v21.spec.Update.KuberPatchNodes.AddBatch.TaintsEntryR\x06taints\x12I\n" +
+	"\x06labels\x18\x02 \x03(\v21.spec.Update.KuberPatchNodes.AddBatch.LabelsEntryR\x06labels\x12X\n" +
+	"\vannotations\x18\x03 \x03(\v26.spec.Update.KuberPatchNodes.AddBatch.AnnotationsEntryR\vannotations\x1ad\n" +
+	"\vTaintsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12?\n" +
+	"\x05value\x18\x02 \x01(\v2).spec.Update.KuberPatchNodes.ListOfTaintsR\x05value:\x028\x01\x1ac\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12>\n" +
+	"\x05value\x18\x02 \x01(\v2(.spec.Update.KuberPatchNodes.MapOfLabelsR\x05value:\x028\x01\x1am\n" +
+	"\x10AnnotationsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12C\n" +
+	"\x05value\x18\x02 \x01(\v2-.spec.Update.KuberPatchNodes.MapOfAnnotationsR\x05value:\x028\x01\x1a\x0e\n" +
+	"\fPatchedNodes\x1a\xb5\x01\n" +
+	"\x13KuberDeleteK8sNodes\x12\"\n" +
+	"\fwithNodePool\x18\x01 \x01(\bR\fwithNodePool\x12\x1a\n" +
+	"\bnodepool\x18\x02 \x01(\tR\bnodepool\x12\x14\n" +
+	"\x05nodes\x18\x03 \x03(\tR\x05nodes\x128\n" +
+	"\vunreachable\x18\x04 \x01(\v2\x11.spec.UnreachableH\x00R\vunreachable\x88\x01\x01B\x0e\n" +
+	"\f_unreachable\x1a\x95\x04\n" +
+	"\x0fDeletedK8sNodes\x128\n" +
+	"\vunreachable\x18\x01 \x01(\v2\x11.spec.UnreachableH\x01R\vunreachable\x88\x01\x01\x12B\n" +
+	"\x05whole\x18\x02 \x01(\v2*.spec.Update.DeletedK8sNodes.WholeNodePoolH\x00R\x05whole\x12@\n" +
+	"\apartial\x18\x03 \x01(\v2$.spec.Update.DeletedK8sNodes.PartialH\x00R\apartial\x1a;\n" +
+	"\rWholeNodePool\x12*\n" +
+	"\bnodepool\x18\x01 \x01(\v2\x0e.spec.NodePoolR\bnodepool\x1a\xec\x01\n" +
+	"\aPartial\x12\x1a\n" +
+	"\bnodepool\x18\x01 \x01(\tR\bnodepool\x12 \n" +
+	"\x05nodes\x18\x02 \x03(\v2\n" +
+	".spec.NodeR\x05nodes\x12`\n" +
+	"\x0estaticNodeKeys\x18\x03 \x03(\v28.spec.Update.DeletedK8sNodes.Partial.StaticNodeKeysEntryR\x0estaticNodeKeys\x1aA\n" +
+	"\x13StaticNodeKeysEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x06\n" +
+	"\x04KindB\x0e\n" +
+	"\f_unreachable\x1a\xa6\x02\n" +
+	"\x16TerraformerAddK8sNodes\x12J\n" +
+	"\bexisting\x18\x01 \x01(\v2,.spec.Update.TerraformerAddK8sNodes.ExistingH\x00R\bexisting\x12;\n" +
+	"\x03new\x18\x02 \x01(\v2'.spec.Update.TerraformerAddK8sNodes.NewH\x00R\x03new\x1aH\n" +
+	"\bExisting\x12\x1a\n" +
+	"\bnodepool\x18\x01 \x01(\tR\bnodepool\x12 \n" +
+	"\x05nodes\x18\x02 \x03(\v2\n" +
+	".spec.NodeR\x05nodes\x1a1\n" +
+	"\x03New\x12*\n" +
+	"\bnodepool\x18\x01 \x01(\v2\x0e.spec.NodePoolR\bnodepoolB\x06\n" +
+	"\x04Kind\x1ac\n" +
+	"\rAddedK8sNodes\x12 \n" +
+	"\vnewNodePool\x18\x01 \x01(\bR\vnewNodePool\x12\x1a\n" +
+	"\bnodepool\x18\x02 \x01(\tR\bnodepool\x12\x14\n" +
+	"\x05nodes\x18\x03 \x03(\tR\x05nodesB\a\n" +
+	"\x05Delta\"c\n" +
+	"\x06Delete\x12\"\n" +
+	"\x03k8s\x18\x01 \x01(\v2\x10.spec.K8sclusterR\x03k8s\x125\n" +
+	"\rloadBalancers\x18\x02 \x03(\v2\x0f.spec.LBclusterR\rloadBalancers\"\x84\x01\n" +
+	"\x04Task\x12&\n" +
+	"\x06create\x18\a \x01(\v2\f.spec.CreateH\x00R\x06create\x12&\n" +
+	"\x06update\x18\b \x01(\v2\f.spec.UpdateH\x00R\x06update\x12&\n" +
+	"\x06delete\x18\t \x01(\v2\f.spec.DeleteH\x00R\x06deleteB\x04\n" +
+	"\x02Do\"T\n" +
+	"\x04Work\x12\x1e\n" +
+	"\x04task\x18\x01 \x01(\v2\n" +
+	".spec.TaskR\x04task\x12,\n" +
+	"\x06passes\x18\x02 \x03(\v2\x14.google.protobuf.AnyR\x06passes\"\xdd\x04\n" +
+	"\n" +
+	"TaskResult\x121\n" +
+	"\x05error\x18\x01 \x01(\v2\x16.spec.TaskResult.ErrorH\x01R\x05error\x88\x01\x01\x12+\n" +
+	"\x04none\x18\x02 \x01(\v2\x15.spec.TaskResult.NoneH\x00R\x04none\x126\n" +
+	"\x06update\x18\x03 \x01(\v2\x1c.spec.TaskResult.UpdateStateH\x00R\x06update\x123\n" +
+	"\x05clear\x18\x04 \x01(\v2\x1b.spec.TaskResult.ClearStateH\x00R\x05clear\x1az\n" +
+	"\x05Error\x12/\n" +
+	"\x04kind\x18\x01 \x01(\x0e2\x1b.spec.TaskResult.Error.KindR\x04kind\x12 \n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\"\x1e\n" +
+	"\x04Kind\x12\t\n" +
+	"\x05FATAL\x10\x00\x12\v\n" +
+	"\aPARTIAL\x10\x01\x1a\x06\n" +
+	"\x04None\x1a\x90\x01\n" +
+	"\vUpdateState\x12'\n" +
+	"\x03k8s\x18\x01 \x01(\v2\x10.spec.K8sclusterH\x00R\x03k8s\x88\x01\x01\x12>\n" +
+	"\rloadBalancers\x18\x02 \x01(\v2\x13.spec.LoadBalancersH\x01R\rloadBalancers\x88\x01\x01B\x06\n" +
+	"\x04_k8sB\x10\n" +
+	"\x0e_loadBalancers\x1aW\n" +
+	"\n" +
+	"ClearState\x12\x15\n" +
+	"\x03k8s\x18\x01 \x01(\bH\x00R\x03k8s\x88\x01\x01\x12*\n" +
+	"\x10loadBalancersIDs\x18\x02 \x03(\tR\x10loadBalancersIDsB\x06\n" +
+	"\x04_k8sB\b\n" +
+	"\x06ResultB\b\n" +
+	"\x06_error*&\n" +
 	"\bRoleType\x12\r\n" +
 	"\tApiServer\x10\x00\x12\v\n" +
-	"\aIngress\x10\x01*\x1e\n" +
-	"\vClusterType\x12\a\n" +
-	"\x03K8s\x10\x00\x12\x06\n" +
-	"\x02LB\x10\x01*8\n" +
+	"\aIngress\x10\x01*8\n" +
 	"\x05Event\x12\v\n" +
 	"\aUNKNOWN\x10\x00\x12\n" +
 	"\n" +
@@ -2590,107 +6283,266 @@ func file_spec_manifest_proto_rawDescGZIP() []byte {
 	return file_spec_manifest_proto_rawDescData
 }
 
-var file_spec_manifest_proto_enumTypes = make([]protoimpl.EnumInfo, 9)
-var file_spec_manifest_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
+var file_spec_manifest_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
+var file_spec_manifest_proto_msgTypes = make([]protoimpl.MessageInfo, 96)
 var file_spec_manifest_proto_goTypes = []any{
-	(ProxyOp)(0),                     // 0: spec.ProxyOp
-	(RoleType)(0),                    // 1: spec.RoleType
-	(ClusterType)(0),                 // 2: spec.ClusterType
-	(Event)(0),                       // 3: spec.Event
-	(ApiEndpointChangeState)(0),      // 4: spec.ApiEndpointChangeState
-	(Manifest_State)(0),              // 5: spec.Manifest.State
-	(Workflow_Stage)(0),              // 6: spec.Workflow.Stage
-	(Workflow_Status)(0),             // 7: spec.Workflow.Status
-	(Retry_Repeat_Kind)(0),           // 8: spec.Retry.Repeat.Kind
-	(*Config)(nil),                   // 9: spec.Config
-	(*Manifest)(nil),                 // 10: spec.Manifest
-	(*ClusterState)(nil),             // 11: spec.ClusterState
-	(*Clusters)(nil),                 // 12: spec.Clusters
-	(*LoadBalancers)(nil),            // 13: spec.LoadBalancers
-	(*KubernetesContext)(nil),        // 14: spec.KubernetesContext
-	(*Workflow)(nil),                 // 15: spec.Workflow
-	(*K8Scluster)(nil),               // 16: spec.K8scluster
-	(*LBcluster)(nil),                // 17: spec.LBcluster
-	(*ClusterInfo)(nil),              // 18: spec.ClusterInfo
-	(*InstallationProxy)(nil),        // 19: spec.InstallationProxy
-	(*ProxyEnvs)(nil),                // 20: spec.ProxyEnvs
-	(*Role)(nil),                     // 21: spec.Role
-	(*Events)(nil),                   // 22: spec.Events
-	(*TaskEvent)(nil),                // 23: spec.TaskEvent
-	(*Retry)(nil),                    // 24: spec.Retry
-	(*Task)(nil),                     // 25: spec.Task
-	(*CreateState)(nil),              // 26: spec.CreateState
-	(*UpdateState)(nil),              // 27: spec.UpdateState
-	(*DeleteState)(nil),              // 28: spec.DeleteState
-	(*DeletedNodes)(nil),             // 29: spec.DeletedNodes
-	nil,                              // 30: spec.Config.ClustersEntry
-	(*Role_Settings)(nil),            // 31: spec.Role.Settings
-	(*Retry_Repeat)(nil),             // 32: spec.Retry.Repeat
-	(*Retry_Rollback)(nil),           // 33: spec.Retry.Rollback
-	(*UpdateState_K8SEndpoint)(nil),  // 34: spec.UpdateState.K8sEndpoint
-	(*UpdateState_LbEndpoint)(nil),   // 35: spec.UpdateState.LbEndpoint
-	(*DeleteState_K8S)(nil),          // 36: spec.DeleteState.K8s
-	(*DeleteState_LoadBalancer)(nil), // 37: spec.DeleteState.LoadBalancer
-	nil,                              // 38: spec.DeleteState.K8s.NodepoolsEntry
-	nil,                              // 39: spec.DeleteState.LoadBalancer.NodepoolsEntry
-	(*DNS)(nil),                      // 40: spec.DNS
-	(*NodePool)(nil),                 // 41: spec.NodePool
-	(*timestamppb.Timestamp)(nil),    // 42: google.protobuf.Timestamp
+	(RoleType)(0),                            // 0: spec.RoleType
+	(Event)(0),                               // 1: spec.Event
+	(ApiEndpointChangeState)(0),              // 2: spec.ApiEndpointChangeState
+	(Manifest_State)(0),                      // 3: spec.Manifest.State
+	(Workflow_Status)(0),                     // 4: spec.Workflow.Status
+	(TaskResult_Error_Kind)(0),               // 5: spec.TaskResult.Error.Kind
+	(*Config)(nil),                           // 6: spec.Config
+	(*Manifest)(nil),                         // 7: spec.Manifest
+	(*ClusterState)(nil),                     // 8: spec.ClusterState
+	(*Clusters)(nil),                         // 9: spec.Clusters
+	(*LoadBalancers)(nil),                    // 10: spec.LoadBalancers
+	(*KubernetesContext)(nil),                // 11: spec.KubernetesContext
+	(*FinishedWorkflow)(nil),                 // 12: spec.FinishedWorkflow
+	(*Workflow)(nil),                         // 13: spec.Workflow
+	(*K8Scluster)(nil),                       // 14: spec.K8scluster
+	(*LBcluster)(nil),                        // 15: spec.LBcluster
+	(*ClusterInfo)(nil),                      // 16: spec.ClusterInfo
+	(*InstallationProxy)(nil),                // 17: spec.InstallationProxy
+	(*Role)(nil),                             // 18: spec.Role
+	(*TaskEvent)(nil),                        // 19: spec.TaskEvent
+	(*Unreachable)(nil),                      // 20: spec.Unreachable
+	(*Create)(nil),                           // 21: spec.Create
+	(*Update)(nil),                           // 22: spec.Update
+	(*Delete)(nil),                           // 23: spec.Delete
+	(*Task)(nil),                             // 24: spec.Task
+	(*Work)(nil),                             // 25: spec.Work
+	(*TaskResult)(nil),                       // 26: spec.TaskResult
+	nil,                                      // 27: spec.Config.ClustersEntry
+	(*Role_Settings)(nil),                    // 28: spec.Role.Settings
+	(*Unreachable_ListOfNodeEndpoints)(nil),  // 29: spec.Unreachable.ListOfNodeEndpoints
+	(*Unreachable_UnreachableNodePools)(nil), // 30: spec.Unreachable.UnreachableNodePools
+	nil,                                      // 31: spec.Unreachable.LoadbalancersEntry
+	nil,                                      // 32: spec.Unreachable.UnreachableNodePools.NodepoolsEntry
+	(*Update_State)(nil),                     // 33: spec.Update.State
+	(*Update_None)(nil),                      // 34: spec.Update.None
+	(*Update_TerraformerMoveNodePoolToAutoscaled)(nil),    // 35: spec.Update.TerraformerMoveNodePoolToAutoscaled
+	(*Update_MovedNodePoolToAutoscaled)(nil),              // 36: spec.Update.MovedNodePoolToAutoscaled
+	(*Update_TerraformerMoveNodePoolFromAutoscaled)(nil),  // 37: spec.Update.TerraformerMoveNodePoolFromAutoscaled
+	(*Update_MovedNodePoolFromAutoscaled)(nil),            // 38: spec.Update.MovedNodePoolFromAutoscaled
+	(*Update_TerraformerAddLoadBalancer)(nil),             // 39: spec.Update.TerraformerAddLoadBalancer
+	(*Update_AddedLoadBalancer)(nil),                      // 40: spec.Update.AddedLoadBalancer
+	(*Update_TerraformerDeleteLoadBalancerNodes)(nil),     // 41: spec.Update.TerraformerDeleteLoadBalancerNodes
+	(*Update_DeletedLoadBalancerNodes)(nil),               // 42: spec.Update.DeletedLoadBalancerNodes
+	(*Update_TerraformerAddLoadBalancerNodes)(nil),        // 43: spec.Update.TerraformerAddLoadBalancerNodes
+	(*Update_AddedLoadBalancerNodes)(nil),                 // 44: spec.Update.AddedLoadBalancerNodes
+	(*Update_DeleteLoadBalancerRoles)(nil),                // 45: spec.Update.DeleteLoadBalancerRoles
+	(*Update_TerraformerAddLoadBalancerRoles)(nil),        // 46: spec.Update.TerraformerAddLoadBalancerRoles
+	(*Update_AddedLoadBalancerRoles)(nil),                 // 47: spec.Update.AddedLoadBalancerRoles
+	(*Update_TerraformerReplaceDns)(nil),                  // 48: spec.Update.TerraformerReplaceDns
+	(*Update_ReplacedDns)(nil),                            // 49: spec.Update.ReplacedDns
+	(*Update_DeleteLoadBalancer)(nil),                     // 50: spec.Update.DeleteLoadBalancer
+	(*Update_ApiEndpoint)(nil),                            // 51: spec.Update.ApiEndpoint
+	(*Update_K8SOnlyApiEndpoint)(nil),                     // 52: spec.Update.K8sOnlyApiEndpoint
+	(*Update_ApiPortOnCluster)(nil),                       // 53: spec.Update.ApiPortOnCluster
+	(*Update_AnsiblerReplaceProxySettings)(nil),           // 54: spec.Update.AnsiblerReplaceProxySettings
+	(*Update_ReplacedProxySettings)(nil),                  // 55: spec.Update.ReplacedProxySettings
+	(*Update_TerraformerReplaceRoleExternalSettings)(nil), // 56: spec.Update.TerraformerReplaceRoleExternalSettings
+	(*Update_ReplacedRoleExternalSettings)(nil),           // 57: spec.Update.ReplacedRoleExternalSettings
+	(*Update_AnsiblerReplaceRoleInternalSettings)(nil),    // 58: spec.Update.AnsiblerReplaceRoleInternalSettings
+	(*Update_ReplacedRoleInternalSettings)(nil),           // 59: spec.Update.ReplacedRoleInternalSettings
+	(*Update_AnsiblerReplaceTargetPools)(nil),             // 60: spec.Update.AnsiblerReplaceTargetPools
+	(*Update_ReplacedTargetPools)(nil),                    // 61: spec.Update.ReplacedTargetPools
+	(*Update_UpgradeVersion)(nil),                         // 62: spec.Update.UpgradeVersion
+	(*Update_KuberPatchNodes)(nil),                        // 63: spec.Update.KuberPatchNodes
+	(*Update_PatchedNodes)(nil),                           // 64: spec.Update.PatchedNodes
+	(*Update_KuberDeleteK8SNodes)(nil),                    // 65: spec.Update.KuberDeleteK8sNodes
+	(*Update_DeletedK8SNodes)(nil),                        // 66: spec.Update.DeletedK8sNodes
+	(*Update_TerraformerAddK8SNodes)(nil),                 // 67: spec.Update.TerraformerAddK8sNodes
+	(*Update_AddedK8SNodes)(nil),                          // 68: spec.Update.AddedK8sNodes
+	(*Update_DeletedLoadBalancerNodes_WholeNodePool)(nil), // 69: spec.Update.DeletedLoadBalancerNodes.WholeNodePool
+	(*Update_DeletedLoadBalancerNodes_Partial)(nil),       // 70: spec.Update.DeletedLoadBalancerNodes.Partial
+	nil, // 71: spec.Update.DeletedLoadBalancerNodes.Partial.StaticNodeKeysEntry
+	(*Update_TerraformerAddLoadBalancerNodes_Existing)(nil), // 72: spec.Update.TerraformerAddLoadBalancerNodes.Existing
+	(*Update_TerraformerAddLoadBalancerNodes_New)(nil),      // 73: spec.Update.TerraformerAddLoadBalancerNodes.New
+	(*Update_AnsiblerReplaceTargetPools_TargetPools)(nil),   // 74: spec.Update.AnsiblerReplaceTargetPools.TargetPools
+	nil, // 75: spec.Update.AnsiblerReplaceTargetPools.RolesEntry
+	(*Update_ReplacedTargetPools_TargetPools)(nil), // 76: spec.Update.ReplacedTargetPools.TargetPools
+	nil, // 77: spec.Update.ReplacedTargetPools.RolesEntry
+	(*Update_KuberPatchNodes_ListOfTaints)(nil),         // 78: spec.Update.KuberPatchNodes.ListOfTaints
+	(*Update_KuberPatchNodes_ListOfLabelKeys)(nil),      // 79: spec.Update.KuberPatchNodes.ListOfLabelKeys
+	(*Update_KuberPatchNodes_ListOfAnnotationKeys)(nil), // 80: spec.Update.KuberPatchNodes.ListOfAnnotationKeys
+	(*Update_KuberPatchNodes_MapOfLabels)(nil),          // 81: spec.Update.KuberPatchNodes.MapOfLabels
+	(*Update_KuberPatchNodes_MapOfAnnotations)(nil),     // 82: spec.Update.KuberPatchNodes.MapOfAnnotations
+	(*Update_KuberPatchNodes_RemoveBatch)(nil),          // 83: spec.Update.KuberPatchNodes.RemoveBatch
+	(*Update_KuberPatchNodes_AddBatch)(nil),             // 84: spec.Update.KuberPatchNodes.AddBatch
+	nil,                                                 // 85: spec.Update.KuberPatchNodes.MapOfLabels.LabelsEntry
+	nil,                                                 // 86: spec.Update.KuberPatchNodes.MapOfAnnotations.AnnotationsEntry
+	nil,                                                 // 87: spec.Update.KuberPatchNodes.RemoveBatch.TaintsEntry
+	nil,                                                 // 88: spec.Update.KuberPatchNodes.RemoveBatch.AnnotationsEntry
+	nil,                                                 // 89: spec.Update.KuberPatchNodes.RemoveBatch.LabelsEntry
+	nil,                                                 // 90: spec.Update.KuberPatchNodes.AddBatch.TaintsEntry
+	nil,                                                 // 91: spec.Update.KuberPatchNodes.AddBatch.LabelsEntry
+	nil,                                                 // 92: spec.Update.KuberPatchNodes.AddBatch.AnnotationsEntry
+	(*Update_DeletedK8SNodes_WholeNodePool)(nil), // 93: spec.Update.DeletedK8sNodes.WholeNodePool
+	(*Update_DeletedK8SNodes_Partial)(nil),       // 94: spec.Update.DeletedK8sNodes.Partial
+	nil,                                          // 95: spec.Update.DeletedK8sNodes.Partial.StaticNodeKeysEntry
+	(*Update_TerraformerAddK8SNodes_Existing)(nil), // 96: spec.Update.TerraformerAddK8sNodes.Existing
+	(*Update_TerraformerAddK8SNodes_New)(nil),      // 97: spec.Update.TerraformerAddK8sNodes.New
+	(*TaskResult_Error)(nil),                       // 98: spec.TaskResult.Error
+	(*TaskResult_None)(nil),                        // 99: spec.TaskResult.None
+	(*TaskResult_UpdateState)(nil),                 // 100: spec.TaskResult.UpdateState
+	(*TaskResult_ClearState)(nil),                  // 101: spec.TaskResult.ClearState
+	(*timestamppb.Timestamp)(nil),                  // 102: google.protobuf.Timestamp
+	(*DNS)(nil),                                    // 103: spec.DNS
+	(*NodePool)(nil),                               // 104: spec.NodePool
+	(*Stage)(nil),                                  // 105: spec.Stage
+	(*anypb.Any)(nil),                              // 106: google.protobuf.Any
+	(*AutoscalerConf)(nil),                         // 107: spec.AutoscalerConf
+	(*Node)(nil),                                   // 108: spec.Node
+	(*Taint)(nil),                                  // 109: spec.Taint
 }
 var file_spec_manifest_proto_depIdxs = []int32{
-	14, // 0: spec.Config.k8sCtx:type_name -> spec.KubernetesContext
-	10, // 1: spec.Config.manifest:type_name -> spec.Manifest
-	30, // 2: spec.Config.clusters:type_name -> spec.Config.ClustersEntry
-	5,  // 3: spec.Manifest.state:type_name -> spec.Manifest.State
-	12, // 4: spec.ClusterState.current:type_name -> spec.Clusters
-	12, // 5: spec.ClusterState.desired:type_name -> spec.Clusters
-	22, // 6: spec.ClusterState.events:type_name -> spec.Events
-	15, // 7: spec.ClusterState.state:type_name -> spec.Workflow
-	16, // 8: spec.Clusters.k8s:type_name -> spec.K8scluster
-	13, // 9: spec.Clusters.loadBalancers:type_name -> spec.LoadBalancers
-	17, // 10: spec.LoadBalancers.clusters:type_name -> spec.LBcluster
-	6,  // 11: spec.Workflow.stage:type_name -> spec.Workflow.Stage
-	7,  // 12: spec.Workflow.status:type_name -> spec.Workflow.Status
-	18, // 13: spec.K8scluster.clusterInfo:type_name -> spec.ClusterInfo
-	19, // 14: spec.K8scluster.installationProxy:type_name -> spec.InstallationProxy
-	18, // 15: spec.LBcluster.clusterInfo:type_name -> spec.ClusterInfo
-	21, // 16: spec.LBcluster.roles:type_name -> spec.Role
-	40, // 17: spec.LBcluster.dns:type_name -> spec.DNS
-	41, // 18: spec.ClusterInfo.nodePools:type_name -> spec.NodePool
-	0,  // 19: spec.ProxyEnvs.op:type_name -> spec.ProxyOp
-	1,  // 20: spec.Role.roleType:type_name -> spec.RoleType
-	31, // 21: spec.Role.settings:type_name -> spec.Role.Settings
-	23, // 22: spec.Events.events:type_name -> spec.TaskEvent
-	42, // 23: spec.TaskEvent.timestamp:type_name -> google.protobuf.Timestamp
-	3,  // 24: spec.TaskEvent.event:type_name -> spec.Event
-	25, // 25: spec.TaskEvent.task:type_name -> spec.Task
-	24, // 26: spec.TaskEvent.onError:type_name -> spec.Retry
-	32, // 27: spec.Retry.repeat:type_name -> spec.Retry.Repeat
-	33, // 28: spec.Retry.rollback:type_name -> spec.Retry.Rollback
-	26, // 29: spec.Task.createState:type_name -> spec.CreateState
-	27, // 30: spec.Task.updateState:type_name -> spec.UpdateState
-	28, // 31: spec.Task.deleteState:type_name -> spec.DeleteState
-	16, // 32: spec.CreateState.k8s:type_name -> spec.K8scluster
-	13, // 33: spec.CreateState.lbs:type_name -> spec.LoadBalancers
-	16, // 34: spec.UpdateState.k8s:type_name -> spec.K8scluster
-	13, // 35: spec.UpdateState.lbs:type_name -> spec.LoadBalancers
-	34, // 36: spec.UpdateState.newControlEndpoint:type_name -> spec.UpdateState.K8sEndpoint
-	35, // 37: spec.UpdateState.lbEndpointChange:type_name -> spec.UpdateState.LbEndpoint
-	36, // 38: spec.DeleteState.k8s:type_name -> spec.DeleteState.K8s
-	37, // 39: spec.DeleteState.lbs:type_name -> spec.DeleteState.LoadBalancer
-	11, // 40: spec.Config.ClustersEntry.value:type_name -> spec.ClusterState
-	8,  // 41: spec.Retry.Repeat.kind:type_name -> spec.Retry.Repeat.Kind
-	23, // 42: spec.Retry.Rollback.tasks:type_name -> spec.TaskEvent
-	4,  // 43: spec.UpdateState.LbEndpoint.state:type_name -> spec.ApiEndpointChangeState
-	38, // 44: spec.DeleteState.K8s.nodepools:type_name -> spec.DeleteState.K8s.NodepoolsEntry
-	39, // 45: spec.DeleteState.LoadBalancer.nodepools:type_name -> spec.DeleteState.LoadBalancer.NodepoolsEntry
-	29, // 46: spec.DeleteState.K8s.NodepoolsEntry.value:type_name -> spec.DeletedNodes
-	29, // 47: spec.DeleteState.LoadBalancer.NodepoolsEntry.value:type_name -> spec.DeletedNodes
-	48, // [48:48] is the sub-list for method output_type
-	48, // [48:48] is the sub-list for method input_type
-	48, // [48:48] is the sub-list for extension type_name
-	48, // [48:48] is the sub-list for extension extendee
-	0,  // [0:48] is the sub-list for field type_name
+	11,  // 0: spec.Config.k8sCtx:type_name -> spec.KubernetesContext
+	7,   // 1: spec.Config.manifest:type_name -> spec.Manifest
+	27,  // 2: spec.Config.clusters:type_name -> spec.Config.ClustersEntry
+	3,   // 3: spec.Manifest.state:type_name -> spec.Manifest.State
+	9,   // 4: spec.ClusterState.current:type_name -> spec.Clusters
+	13,  // 5: spec.ClusterState.state:type_name -> spec.Workflow
+	19,  // 6: spec.ClusterState.inFlight:type_name -> spec.TaskEvent
+	14,  // 7: spec.Clusters.k8s:type_name -> spec.K8scluster
+	10,  // 8: spec.Clusters.loadBalancers:type_name -> spec.LoadBalancers
+	15,  // 9: spec.LoadBalancers.clusters:type_name -> spec.LBcluster
+	4,   // 10: spec.FinishedWorkflow.status:type_name -> spec.Workflow.Status
+	102, // 11: spec.FinishedWorkflow.timestamp:type_name -> google.protobuf.Timestamp
+	4,   // 12: spec.Workflow.status:type_name -> spec.Workflow.Status
+	12,  // 13: spec.Workflow.previous:type_name -> spec.FinishedWorkflow
+	16,  // 14: spec.K8scluster.clusterInfo:type_name -> spec.ClusterInfo
+	17,  // 15: spec.K8scluster.installationProxy:type_name -> spec.InstallationProxy
+	16,  // 16: spec.LBcluster.clusterInfo:type_name -> spec.ClusterInfo
+	18,  // 17: spec.LBcluster.roles:type_name -> spec.Role
+	103, // 18: spec.LBcluster.dns:type_name -> spec.DNS
+	104, // 19: spec.ClusterInfo.nodePools:type_name -> spec.NodePool
+	0,   // 20: spec.Role.roleType:type_name -> spec.RoleType
+	28,  // 21: spec.Role.settings:type_name -> spec.Role.Settings
+	102, // 22: spec.TaskEvent.timestamp:type_name -> google.protobuf.Timestamp
+	1,   // 23: spec.TaskEvent.event:type_name -> spec.Event
+	24,  // 24: spec.TaskEvent.task:type_name -> spec.Task
+	105, // 25: spec.TaskEvent.pipeline:type_name -> spec.Stage
+	19,  // 26: spec.TaskEvent.lowerPriority:type_name -> spec.TaskEvent
+	30,  // 27: spec.Unreachable.kubernetes:type_name -> spec.Unreachable.UnreachableNodePools
+	31,  // 28: spec.Unreachable.loadbalancers:type_name -> spec.Unreachable.LoadbalancersEntry
+	14,  // 29: spec.Create.k8s:type_name -> spec.K8scluster
+	15,  // 30: spec.Create.loadBalancers:type_name -> spec.LBcluster
+	33,  // 31: spec.Update.state:type_name -> spec.Update.State
+	34,  // 32: spec.Update.none:type_name -> spec.Update.None
+	39,  // 33: spec.Update.tfAddLoadBalancer:type_name -> spec.Update.TerraformerAddLoadBalancer
+	43,  // 34: spec.Update.tfAddLoadBalancerNodes:type_name -> spec.Update.TerraformerAddLoadBalancerNodes
+	48,  // 35: spec.Update.tfReplaceDns:type_name -> spec.Update.TerraformerReplaceDns
+	67,  // 36: spec.Update.tfAddK8sNodes:type_name -> spec.Update.TerraformerAddK8sNodes
+	46,  // 37: spec.Update.tfAddLoadBalancerRoles:type_name -> spec.Update.TerraformerAddLoadBalancerRoles
+	41,  // 38: spec.Update.tfDeleteLoadBalancerNodes:type_name -> spec.Update.TerraformerDeleteLoadBalancerNodes
+	35,  // 39: spec.Update.tfMoveNodePoolToAutoscaled:type_name -> spec.Update.TerraformerMoveNodePoolToAutoscaled
+	37,  // 40: spec.Update.tfMoveNodePoolFromAutoscaled:type_name -> spec.Update.TerraformerMoveNodePoolFromAutoscaled
+	56,  // 41: spec.Update.tfReplaceRoleExternalSettings:type_name -> spec.Update.TerraformerReplaceRoleExternalSettings
+	54,  // 42: spec.Update.ansReplaceProxy:type_name -> spec.Update.AnsiblerReplaceProxySettings
+	60,  // 43: spec.Update.ansReplaceTargetPools:type_name -> spec.Update.AnsiblerReplaceTargetPools
+	58,  // 44: spec.Update.ansReplaceRoleInternalSettings:type_name -> spec.Update.AnsiblerReplaceRoleInternalSettings
+	63,  // 45: spec.Update.kpatchNodes:type_name -> spec.Update.KuberPatchNodes
+	65,  // 46: spec.Update.kDeleteNodes:type_name -> spec.Update.KuberDeleteK8sNodes
+	40,  // 47: spec.Update.addedLoadBalancer:type_name -> spec.Update.AddedLoadBalancer
+	44,  // 48: spec.Update.addedLoadBalancerNodes:type_name -> spec.Update.AddedLoadBalancerNodes
+	49,  // 49: spec.Update.replacedDns:type_name -> spec.Update.ReplacedDns
+	68,  // 50: spec.Update.addedK8sNodes:type_name -> spec.Update.AddedK8sNodes
+	55,  // 51: spec.Update.replacedProxy:type_name -> spec.Update.ReplacedProxySettings
+	64,  // 52: spec.Update.patchedNodes:type_name -> spec.Update.PatchedNodes
+	47,  // 53: spec.Update.addedLoadBalancerRoles:type_name -> spec.Update.AddedLoadBalancerRoles
+	61,  // 54: spec.Update.replacedTargetPools:type_name -> spec.Update.ReplacedTargetPools
+	36,  // 55: spec.Update.movedNodePoolToAutoscaled:type_name -> spec.Update.MovedNodePoolToAutoscaled
+	38,  // 56: spec.Update.movedNodePoolFromAutoscaled:type_name -> spec.Update.MovedNodePoolFromAutoscaled
+	59,  // 57: spec.Update.replacedRoleInternalSettings:type_name -> spec.Update.ReplacedRoleInternalSettings
+	57,  // 58: spec.Update.replacedRoleExternalSettings:type_name -> spec.Update.ReplacedRoleExternalSettings
+	50,  // 59: spec.Update.deleteLoadBalancer:type_name -> spec.Update.DeleteLoadBalancer
+	66,  // 60: spec.Update.deletedK8sNodes:type_name -> spec.Update.DeletedK8sNodes
+	42,  // 61: spec.Update.deletedLoadBalancerNodes:type_name -> spec.Update.DeletedLoadBalancerNodes
+	45,  // 62: spec.Update.deleteLoadBalancerRoles:type_name -> spec.Update.DeleteLoadBalancerRoles
+	51,  // 63: spec.Update.apiEndpoint:type_name -> spec.Update.ApiEndpoint
+	53,  // 64: spec.Update.clusterApiPort:type_name -> spec.Update.ApiPortOnCluster
+	52,  // 65: spec.Update.k8sApiEndpoint:type_name -> spec.Update.K8sOnlyApiEndpoint
+	62,  // 66: spec.Update.upgradeVersion:type_name -> spec.Update.UpgradeVersion
+	14,  // 67: spec.Delete.k8s:type_name -> spec.K8scluster
+	15,  // 68: spec.Delete.loadBalancers:type_name -> spec.LBcluster
+	21,  // 69: spec.Task.create:type_name -> spec.Create
+	22,  // 70: spec.Task.update:type_name -> spec.Update
+	23,  // 71: spec.Task.delete:type_name -> spec.Delete
+	24,  // 72: spec.Work.task:type_name -> spec.Task
+	106, // 73: spec.Work.passes:type_name -> google.protobuf.Any
+	98,  // 74: spec.TaskResult.error:type_name -> spec.TaskResult.Error
+	99,  // 75: spec.TaskResult.none:type_name -> spec.TaskResult.None
+	100, // 76: spec.TaskResult.update:type_name -> spec.TaskResult.UpdateState
+	101, // 77: spec.TaskResult.clear:type_name -> spec.TaskResult.ClearState
+	8,   // 78: spec.Config.ClustersEntry.value:type_name -> spec.ClusterState
+	32,  // 79: spec.Unreachable.UnreachableNodePools.nodepools:type_name -> spec.Unreachable.UnreachableNodePools.NodepoolsEntry
+	30,  // 80: spec.Unreachable.LoadbalancersEntry.value:type_name -> spec.Unreachable.UnreachableNodePools
+	29,  // 81: spec.Unreachable.UnreachableNodePools.NodepoolsEntry.value:type_name -> spec.Unreachable.ListOfNodeEndpoints
+	14,  // 82: spec.Update.State.k8s:type_name -> spec.K8scluster
+	15,  // 83: spec.Update.State.loadBalancers:type_name -> spec.LBcluster
+	107, // 84: spec.Update.TerraformerMoveNodePoolToAutoscaled.config:type_name -> spec.AutoscalerConf
+	107, // 85: spec.Update.MovedNodePoolFromAutoscaled.config:type_name -> spec.AutoscalerConf
+	15,  // 86: spec.Update.TerraformerAddLoadBalancer.handle:type_name -> spec.LBcluster
+	20,  // 87: spec.Update.TerraformerDeleteLoadBalancerNodes.unreachable:type_name -> spec.Unreachable
+	20,  // 88: spec.Update.DeletedLoadBalancerNodes.unreachable:type_name -> spec.Unreachable
+	69,  // 89: spec.Update.DeletedLoadBalancerNodes.whole:type_name -> spec.Update.DeletedLoadBalancerNodes.WholeNodePool
+	70,  // 90: spec.Update.DeletedLoadBalancerNodes.partial:type_name -> spec.Update.DeletedLoadBalancerNodes.Partial
+	72,  // 91: spec.Update.TerraformerAddLoadBalancerNodes.existing:type_name -> spec.Update.TerraformerAddLoadBalancerNodes.Existing
+	73,  // 92: spec.Update.TerraformerAddLoadBalancerNodes.new:type_name -> spec.Update.TerraformerAddLoadBalancerNodes.New
+	18,  // 93: spec.Update.TerraformerAddLoadBalancerRoles.roles:type_name -> spec.Role
+	103, // 94: spec.Update.TerraformerReplaceDns.dns:type_name -> spec.DNS
+	20,  // 95: spec.Update.DeleteLoadBalancer.unreachable:type_name -> spec.Unreachable
+	2,   // 96: spec.Update.ApiEndpoint.state:type_name -> spec.ApiEndpointChangeState
+	17,  // 97: spec.Update.AnsiblerReplaceProxySettings.proxy:type_name -> spec.InstallationProxy
+	0,   // 98: spec.Update.TerraformerReplaceRoleExternalSettings.roleType:type_name -> spec.RoleType
+	28,  // 99: spec.Update.AnsiblerReplaceRoleInternalSettings.settings:type_name -> spec.Role.Settings
+	75,  // 100: spec.Update.AnsiblerReplaceTargetPools.roles:type_name -> spec.Update.AnsiblerReplaceTargetPools.RolesEntry
+	77,  // 101: spec.Update.ReplacedTargetPools.roles:type_name -> spec.Update.ReplacedTargetPools.RolesEntry
+	84,  // 102: spec.Update.KuberPatchNodes.add:type_name -> spec.Update.KuberPatchNodes.AddBatch
+	83,  // 103: spec.Update.KuberPatchNodes.remove:type_name -> spec.Update.KuberPatchNodes.RemoveBatch
+	20,  // 104: spec.Update.KuberDeleteK8sNodes.unreachable:type_name -> spec.Unreachable
+	20,  // 105: spec.Update.DeletedK8sNodes.unreachable:type_name -> spec.Unreachable
+	93,  // 106: spec.Update.DeletedK8sNodes.whole:type_name -> spec.Update.DeletedK8sNodes.WholeNodePool
+	94,  // 107: spec.Update.DeletedK8sNodes.partial:type_name -> spec.Update.DeletedK8sNodes.Partial
+	96,  // 108: spec.Update.TerraformerAddK8sNodes.existing:type_name -> spec.Update.TerraformerAddK8sNodes.Existing
+	97,  // 109: spec.Update.TerraformerAddK8sNodes.new:type_name -> spec.Update.TerraformerAddK8sNodes.New
+	104, // 110: spec.Update.DeletedLoadBalancerNodes.WholeNodePool.nodepool:type_name -> spec.NodePool
+	108, // 111: spec.Update.DeletedLoadBalancerNodes.Partial.nodes:type_name -> spec.Node
+	71,  // 112: spec.Update.DeletedLoadBalancerNodes.Partial.staticNodeKeys:type_name -> spec.Update.DeletedLoadBalancerNodes.Partial.StaticNodeKeysEntry
+	108, // 113: spec.Update.TerraformerAddLoadBalancerNodes.Existing.nodes:type_name -> spec.Node
+	104, // 114: spec.Update.TerraformerAddLoadBalancerNodes.New.nodepool:type_name -> spec.NodePool
+	74,  // 115: spec.Update.AnsiblerReplaceTargetPools.RolesEntry.value:type_name -> spec.Update.AnsiblerReplaceTargetPools.TargetPools
+	76,  // 116: spec.Update.ReplacedTargetPools.RolesEntry.value:type_name -> spec.Update.ReplacedTargetPools.TargetPools
+	109, // 117: spec.Update.KuberPatchNodes.ListOfTaints.taints:type_name -> spec.Taint
+	85,  // 118: spec.Update.KuberPatchNodes.MapOfLabels.labels:type_name -> spec.Update.KuberPatchNodes.MapOfLabels.LabelsEntry
+	86,  // 119: spec.Update.KuberPatchNodes.MapOfAnnotations.annotations:type_name -> spec.Update.KuberPatchNodes.MapOfAnnotations.AnnotationsEntry
+	87,  // 120: spec.Update.KuberPatchNodes.RemoveBatch.taints:type_name -> spec.Update.KuberPatchNodes.RemoveBatch.TaintsEntry
+	88,  // 121: spec.Update.KuberPatchNodes.RemoveBatch.annotations:type_name -> spec.Update.KuberPatchNodes.RemoveBatch.AnnotationsEntry
+	89,  // 122: spec.Update.KuberPatchNodes.RemoveBatch.labels:type_name -> spec.Update.KuberPatchNodes.RemoveBatch.LabelsEntry
+	90,  // 123: spec.Update.KuberPatchNodes.AddBatch.taints:type_name -> spec.Update.KuberPatchNodes.AddBatch.TaintsEntry
+	91,  // 124: spec.Update.KuberPatchNodes.AddBatch.labels:type_name -> spec.Update.KuberPatchNodes.AddBatch.LabelsEntry
+	92,  // 125: spec.Update.KuberPatchNodes.AddBatch.annotations:type_name -> spec.Update.KuberPatchNodes.AddBatch.AnnotationsEntry
+	78,  // 126: spec.Update.KuberPatchNodes.RemoveBatch.TaintsEntry.value:type_name -> spec.Update.KuberPatchNodes.ListOfTaints
+	80,  // 127: spec.Update.KuberPatchNodes.RemoveBatch.AnnotationsEntry.value:type_name -> spec.Update.KuberPatchNodes.ListOfAnnotationKeys
+	79,  // 128: spec.Update.KuberPatchNodes.RemoveBatch.LabelsEntry.value:type_name -> spec.Update.KuberPatchNodes.ListOfLabelKeys
+	78,  // 129: spec.Update.KuberPatchNodes.AddBatch.TaintsEntry.value:type_name -> spec.Update.KuberPatchNodes.ListOfTaints
+	81,  // 130: spec.Update.KuberPatchNodes.AddBatch.LabelsEntry.value:type_name -> spec.Update.KuberPatchNodes.MapOfLabels
+	82,  // 131: spec.Update.KuberPatchNodes.AddBatch.AnnotationsEntry.value:type_name -> spec.Update.KuberPatchNodes.MapOfAnnotations
+	104, // 132: spec.Update.DeletedK8sNodes.WholeNodePool.nodepool:type_name -> spec.NodePool
+	108, // 133: spec.Update.DeletedK8sNodes.Partial.nodes:type_name -> spec.Node
+	95,  // 134: spec.Update.DeletedK8sNodes.Partial.staticNodeKeys:type_name -> spec.Update.DeletedK8sNodes.Partial.StaticNodeKeysEntry
+	108, // 135: spec.Update.TerraformerAddK8sNodes.Existing.nodes:type_name -> spec.Node
+	104, // 136: spec.Update.TerraformerAddK8sNodes.New.nodepool:type_name -> spec.NodePool
+	5,   // 137: spec.TaskResult.Error.kind:type_name -> spec.TaskResult.Error.Kind
+	14,  // 138: spec.TaskResult.UpdateState.k8s:type_name -> spec.K8scluster
+	10,  // 139: spec.TaskResult.UpdateState.loadBalancers:type_name -> spec.LoadBalancers
+	140, // [140:140] is the sub-list for method output_type
+	140, // [140:140] is the sub-list for method input_type
+	140, // [140:140] is the sub-list for extension type_name
+	140, // [140:140] is the sub-list for extension extendee
+	0,   // [0:140] is the sub-list for field type_name
 }
 
 func init() { file_spec_manifest_proto_init() }
@@ -2698,23 +6550,87 @@ func file_spec_manifest_proto_init() {
 	if File_spec_manifest_proto != nil {
 		return
 	}
-	file_spec_nodepool_proto_init()
 	file_spec_dns_proto_init()
-	file_spec_manifest_proto_msgTypes[15].OneofWrappers = []any{
-		(*Retry_Repeat_)(nil),
-		(*Retry_Rollback_)(nil),
+	file_spec_nodepool_proto_init()
+	file_spec_pass_proto_init()
+	file_spec_manifest_proto_msgTypes[13].OneofWrappers = []any{}
+	file_spec_manifest_proto_msgTypes[16].OneofWrappers = []any{
+		(*Update_None_)(nil),
+		(*Update_TfAddLoadBalancer)(nil),
+		(*Update_TfAddLoadBalancerNodes)(nil),
+		(*Update_TfReplaceDns)(nil),
+		(*Update_TfAddK8SNodes)(nil),
+		(*Update_TfAddLoadBalancerRoles)(nil),
+		(*Update_TfDeleteLoadBalancerNodes)(nil),
+		(*Update_TfMoveNodePoolToAutoscaled)(nil),
+		(*Update_TfMoveNodePoolFromAutoscaled)(nil),
+		(*Update_TfReplaceRoleExternalSettings)(nil),
+		(*Update_AnsReplaceProxy)(nil),
+		(*Update_AnsReplaceTargetPools)(nil),
+		(*Update_AnsReplaceRoleInternalSettings)(nil),
+		(*Update_KpatchNodes)(nil),
+		(*Update_KDeleteNodes)(nil),
+		(*Update_AddedLoadBalancer_)(nil),
+		(*Update_AddedLoadBalancerNodes_)(nil),
+		(*Update_ReplacedDns_)(nil),
+		(*Update_AddedK8SNodes_)(nil),
+		(*Update_ReplacedProxy)(nil),
+		(*Update_PatchedNodes_)(nil),
+		(*Update_AddedLoadBalancerRoles_)(nil),
+		(*Update_ReplacedTargetPools_)(nil),
+		(*Update_MovedNodePoolToAutoscaled_)(nil),
+		(*Update_MovedNodePoolFromAutoscaled_)(nil),
+		(*Update_ReplacedRoleInternalSettings_)(nil),
+		(*Update_ReplacedRoleExternalSettings_)(nil),
+		(*Update_DeleteLoadBalancer_)(nil),
+		(*Update_DeletedK8SNodes_)(nil),
+		(*Update_DeletedLoadBalancerNodes_)(nil),
+		(*Update_DeleteLoadBalancerRoles_)(nil),
+		(*Update_ApiEndpoint_)(nil),
+		(*Update_ClusterApiPort)(nil),
+		(*Update_K8SApiEndpoint)(nil),
+		(*Update_UpgradeVersion_)(nil),
 	}
 	file_spec_manifest_proto_msgTypes[18].OneofWrappers = []any{
-		(*UpdateState_NewControlEndpoint)(nil),
-		(*UpdateState_LbEndpointChange)(nil),
+		(*Task_Create)(nil),
+		(*Task_Update)(nil),
+		(*Task_Delete)(nil),
 	}
+	file_spec_manifest_proto_msgTypes[20].OneofWrappers = []any{
+		(*TaskResult_None_)(nil),
+		(*TaskResult_Update)(nil),
+		(*TaskResult_Clear)(nil),
+	}
+	file_spec_manifest_proto_msgTypes[35].OneofWrappers = []any{}
+	file_spec_manifest_proto_msgTypes[36].OneofWrappers = []any{
+		(*Update_DeletedLoadBalancerNodes_Whole)(nil),
+		(*Update_DeletedLoadBalancerNodes_Partial_)(nil),
+	}
+	file_spec_manifest_proto_msgTypes[37].OneofWrappers = []any{
+		(*Update_TerraformerAddLoadBalancerNodes_Existing_)(nil),
+		(*Update_TerraformerAddLoadBalancerNodes_New_)(nil),
+	}
+	file_spec_manifest_proto_msgTypes[42].OneofWrappers = []any{}
+	file_spec_manifest_proto_msgTypes[43].OneofWrappers = []any{}
+	file_spec_manifest_proto_msgTypes[44].OneofWrappers = []any{}
+	file_spec_manifest_proto_msgTypes[59].OneofWrappers = []any{}
+	file_spec_manifest_proto_msgTypes[60].OneofWrappers = []any{
+		(*Update_DeletedK8SNodes_Whole)(nil),
+		(*Update_DeletedK8SNodes_Partial_)(nil),
+	}
+	file_spec_manifest_proto_msgTypes[61].OneofWrappers = []any{
+		(*Update_TerraformerAddK8SNodes_Existing_)(nil),
+		(*Update_TerraformerAddK8SNodes_New_)(nil),
+	}
+	file_spec_manifest_proto_msgTypes[94].OneofWrappers = []any{}
+	file_spec_manifest_proto_msgTypes[95].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_spec_manifest_proto_rawDesc), len(file_spec_manifest_proto_rawDesc)),
-			NumEnums:      9,
-			NumMessages:   31,
+			NumEnums:      6,
+			NumMessages:   96,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

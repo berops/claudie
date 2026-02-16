@@ -1,0 +1,104 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: autoscaler-config-{{ .ClusterID }}
+  labels:
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: cluster-autoscaler
+    app.kubernetes.io/instance: cluster-autoscaler-{{ .ClusterID }}
+    app.kubernetes.io/component: cluster-autoscaler
+data:
+  cloud-config: |-
+    address: "localhost:{{ .AdapterPort }}"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: autoscaler-{{ .ClusterID }}
+  labels:
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/name: cluster-autoscaler
+    app.kubernetes.io/instance: cluster-autoscaler-{{ .ClusterID }}
+    app.kubernetes.io/component: cluster-autoscaler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: claudie
+      app.kubernetes.io/name: cluster-autoscaler
+      app.kubernetes.io/instance: cluster-autoscaler-{{ .ClusterID }}
+      app.kubernetes.io/component: cluster-autoscaler
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/part-of: claudie
+        app.kubernetes.io/name: cluster-autoscaler
+        app.kubernetes.io/instance: cluster-autoscaler-{{ .ClusterID }}
+        app.kubernetes.io/component: cluster-autoscaler
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8085"
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 3000
+        fsGroup: 2000
+      containers:
+        - name: autoscaler-adapter
+          imagePullPolicy: IfNotPresent
+          image: ghcr.io/berops/claudie/autoscaler-adapter
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - all
+          env:
+            - name: ADAPTER_PORT
+              value: "{{ .AdapterPort }}"
+            - name: CLUSTER_NAME
+              value: {{ .ClusterName }}
+            - name: PROJECT_NAME
+              value: {{ .ProjectName }}
+            - name: OPERATOR_HOSTNAME
+              value: "{{ .OperatorHostname }}"
+            - name: OPERATOR_PORT
+              value: "{{ .OperatorPort }}"
+          resources:
+            requests:
+              cpu: 80m
+              memory: 100Mi
+            limits:
+              cpu: 160m
+          ports:
+            - containerPort: {{ .AdapterPort }}
+        - name: cluster-autoscaler
+          image: registry.k8s.io/autoscaling/cluster-autoscaler:{{ .KubernetesVersion }}
+          resources:
+            requests:
+              cpu: 100m
+              memory: 300Mi
+          command:
+            - ./cluster-autoscaler
+            - --cloud-provider=externalgrpc
+            - --cloud-config=/etc/claudie/cloud-config/cloud-config
+            - --kubeconfig=/etc/claudie/kubeconfig/kubeconfig
+            - --ignore-daemonsets-utilization=true
+            - --balance-similar-node-groups=true
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: kubeconfig
+              mountPath: /etc/claudie/kubeconfig
+              readOnly: true
+            - name: cloud-config
+              mountPath: /etc/claudie/cloud-config
+              readOnly: true
+      volumes:
+        - name: kubeconfig
+          secret:
+            secretName: {{ .ClusterID }}-kubeconfig
+        - name: cloud-config
+          configMap:
+            name: autoscaler-config-{{ .ClusterID }}

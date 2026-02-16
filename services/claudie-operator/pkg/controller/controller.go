@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"time"
 
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
@@ -114,20 +115,34 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	// what to do next.
 	currentState := v1beta1manifest.InputManifestStatus{Clusters: make(map[string]v1beta1manifest.ClustersStatus)}
 
-	var deleted bool
-	var previousChecksum []byte
-	var configExists bool
-	var configState spec.Manifest_State
-	var manifestRescheduled bool
+	var (
+		// whether the config is currently marked for
+		// deletion.
+		markedForDeletion bool
+
+		// Whether the config is/was deleted.
+		deleted bool
+
+		// Last applied checksum of the config.
+		lastChecksum []byte
+
+		// Whether the config already exists.
+		alreadyExists bool
+
+		// Current state of the config.
+		configState spec.Manifest_State
+	)
 
 	for _, config := range resp.Config {
 		if inputManifest.GetNamespacedNameDashed() != config.Name {
 			continue
 		}
-		configExists = true
+
+		markedForDeletion = config.Manifest.Raw == "" && len(config.Manifest.Checksum) == 0
+
 		configState = config.Manifest.State
-		previousChecksum = config.Manifest.Checksum
-		manifestRescheduled = !bytes.Equal(config.Manifest.LastAppliedChecksum, config.Manifest.Checksum)
+		lastChecksum = config.Manifest.Checksum
+		alreadyExists = true
 
 		var currentManifest manifest.Manifest
 		if err := yaml.Unmarshal([]byte(config.GetManifest().GetRaw()), &currentManifest); err != nil {
@@ -154,16 +169,54 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 		var deletedCount int
 		for cluster, state := range config.Clusters {
-			if state.Current == nil && state.Desired == nil {
+			if state.Current == nil {
 				deletedCount++
 			}
-			currentState.Clusters[cluster] = v1beta1manifest.ClustersStatus{
-				State:   state.State.GetStatus().String(),
-				Phase:   state.State.GetStage().String(),
-				Message: state.State.GetDescription(),
+
+			stage := "None"
+			if state.InFlight != nil && len(state.InFlight.Pipeline) > 0 {
+				current := state.InFlight.Pipeline[state.InFlight.CurrentStage]
+				switch current.StageKind.(type) {
+				case *spec.Stage_Ansibler:
+					stage = "Ansibler"
+				case *spec.Stage_KubeEleven:
+					stage = "KubeEleven"
+				case *spec.Stage_Kuber:
+					stage = "Kuber"
+				case *spec.Stage_Terraformer:
+					stage = "Terraformer"
+				default:
+					stage = "Unknown"
+				}
 			}
+
+			status := v1beta1manifest.ClustersStatus{
+				State:    state.State.GetStatus().String(),
+				Phase:    stage,
+				Message:  state.State.GetDescription(),
+				Previous: make([]v1beta1manifest.FinishedWorkflow, 0, 1),
+			}
+
+			for _, p := range state.State.Previous {
+				fw := v1beta1manifest.FinishedWorkflow{
+					Status:          p.Status.String(),
+					Stage:           p.Stage,
+					TaskDescription: p.TaskDescription,
+					Timestamp:       "",
+				}
+
+				if p.Timestamp != nil {
+					fw.Timestamp = p.Timestamp.AsTime().UTC().Format(time.RFC3339)
+				}
+
+				status.Previous = append(status.Previous, fw)
+			}
+
+			currentState.Clusters[cluster] = status
 		}
 		deleted = deletedCount == len(config.Clusters)
+
+		break
 	}
 
 	// Check if input-manifest has been updated
@@ -174,16 +227,16 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, err
 	}
 	inputManifestChecksum := hash.Digest(string(inputManifestMarshalled))
-	inputManifestUpdated := !bytes.Equal(inputManifestChecksum, previousChecksum)
+	inputManifestUpdated := !bytes.Equal(inputManifestChecksum, lastChecksum)
 
-	switch {
-	case configState == spec.Manifest_Pending:
-		currentState.State = v1beta1manifest.STATUS_NEW
-	case configState == spec.Manifest_Scheduled || manifestRescheduled:
+	switch configState {
+	case spec.Manifest_Pending:
+		currentState.State = v1beta1manifest.STATUS_WATCH
+	case spec.Manifest_Scheduled:
 		currentState.State = v1beta1manifest.STATUS_IN_PROGRESS
-	case configState == spec.Manifest_Done:
+	case spec.Manifest_Done:
 		currentState.State = v1beta1manifest.STATUS_DONE
-	case configState == spec.Manifest_Error:
+	case spec.Manifest_Error:
 		currentState.State = v1beta1manifest.STATUS_ERROR
 	}
 
@@ -198,87 +251,72 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			}
 		}
 	} else {
-		if !configExists {
+		if !alreadyExists {
 			log.Info("Config has been destroyed. Removing finalizer.", "status", currentState.State)
+
 			controllerutil.RemoveFinalizer(inputManifest, finalizerName)
 			if err := r.kc.Update(ctx, inputManifest); err != nil {
 				return ctrl.Result{}, fmt.Errorf("failed removing finalizer: %w", err)
 			}
+
 			return ctrl.Result{}, nil
-		}
-
-		if configState == spec.Manifest_Scheduled {
-			inputManifest.SetUpdateResourceStatus(currentState)
-			if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
-				return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
-			}
-			for cluster, wf := range currentState.Clusters {
-				log.Info("Refreshing state", "cluster", cluster, "stage", wf.Phase, "status", wf.State)
-			}
-			return ctrl.Result{RequeueAfter: REQUEUE_IN_PROGRES}, nil
-		}
-
-		if controllerutil.ContainsFinalizer(inputManifest, finalizerName) {
-			// Prevent calling deleteConfig repeatedly
-			if inputManifest.Status.State == v1beta1manifest.STATUS_SCHEDULED_FOR_DELETION || deleted {
-				return ctrl.Result{RequeueAfter: REQUEUE_NEW}, nil
-			}
-			// schedule deletion of manifest
-			inputManifest.SetDeletingStatus()
-			if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
-				return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
-			}
-			log.Info("Calling delete config")
-			if err := r.DeleteConfig(ctx, rawManifest.Name); err != nil {
-				return ctrl.Result{}, err
-			}
-			return ctrl.Result{RequeueAfter: REQUEUE_DELETE}, nil
-		}
-		return ctrl.Result{RequeueAfter: REQUEUE_DELETE}, nil
-	}
-
-	provisioning := configState == spec.Manifest_Pending || configState == spec.Manifest_Scheduled
-	provisioning = provisioning || manifestRescheduled
-	if provisioning {
-		// CREATE LOGIC
-		// Call create config if it not present in DB
-		if !configExists {
-			// Prevent calling createConfig, when the inputManifest
-			// won't make it yet to DB
-			if inputManifest.Status.State == v1beta1manifest.STATUS_NEW {
-				return ctrl.Result{RequeueAfter: REQUEUE_NEW}, nil
-			}
-			inputManifest.SetNewResourceStatus()
-			if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
-				return ctrl.Result{}, fmt.Errorf("failed executing finalizer: %w", err)
-			}
-			log.Info("Calling create config")
-			if err := r.CreateConfig(ctx, &rawManifest, inputManifest.Name, inputManifest.Namespace); err != nil {
-				return ctrl.Result{}, err
-			}
-			return ctrl.Result{RequeueAfter: REQUEUE_NEW}, nil
 		}
 
 		inputManifest.SetUpdateResourceStatus(currentState)
 
-		// InputManifest is not provisioning but is in a retry loop, allow updating it.
-		waitOnInput := configState == spec.Manifest_Pending
-		waitOnInput = waitOnInput && manifestRescheduled
-		waitOnInput = waitOnInput && inputManifestUpdated
-		waitOnInput = waitOnInput && inputManifest.DeletionTimestamp.IsZero()
-		if waitOnInput {
-			log.Info("InputManifest has been updated", "status", currentState.State)
-			if err := r.CreateConfig(ctx, &rawManifest, inputManifest.Name, inputManifest.Namespace); err != nil {
-				return ctrl.Result{}, err
-			}
-			return ctrl.Result{RequeueAfter: REQUEUE_UPDATE}, nil
-		}
-
-		// PROVISIONING LOGIC
-		// Refresh inputManifest.status fields
 		if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 		}
+
+		for cluster, wf := range currentState.Clusters {
+			log.Info("Refreshing state", "cluster", cluster, "stage", wf.Phase, "status", wf.State)
+		}
+
+		if controllerutil.ContainsFinalizer(inputManifest, finalizerName) {
+			// Prevent calling deleteConfig repeatedly
+			if markedForDeletion || deleted {
+				return ctrl.Result{RequeueAfter: REQUEUE_WATCH}, nil
+			}
+
+			// schedule deletion of manifest
+			log.Info("Calling delete config")
+
+			if err := r.DeleteConfig(ctx, rawManifest.Name); err != nil {
+				return ctrl.Result{}, err
+			}
+
+			inputManifest.SetDeletingStatus()
+			if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
+				return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
+			}
+
+			return ctrl.Result{RequeueAfter: REQUEUE_IN_PROGRES}, nil
+		}
+		return ctrl.Result{RequeueAfter: REQUEUE_IN_PROGRES}, nil
+	}
+
+	if !alreadyExists {
+		log.Info("Calling create config")
+
+		if err := r.CreateConfig(ctx, &rawManifest, inputManifest.Name, inputManifest.Namespace); err != nil {
+			return ctrl.Result{}, err
+		}
+
+		inputManifest.SetWatchResourceStatus()
+		if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed executing finalizer: %w", err)
+		}
+
+		return ctrl.Result{RequeueAfter: REQUEUE_WATCH}, nil
+	}
+
+	if configState == spec.Manifest_Scheduled {
+		inputManifest.SetUpdateResourceStatus(currentState)
+
+		if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
+		}
+
 		for cluster, wf := range currentState.Clusters {
 			log.Info("Refreshing state", "cluster", cluster, "stage", wf.Phase, "status", wf.State)
 		}
@@ -286,40 +324,56 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{RequeueAfter: REQUEUE_IN_PROGRES}, nil
 	}
 
-	// ERROR logic
-	// Refresh cluster status, message an error and end the reconcile,
-	// Continue the workflow, to update/end reconcile loop.
 	if configState == spec.Manifest_Error {
-		// No updates to the inputManifest, output an error and finish the reconcile
 		inputManifest.SetUpdateResourceStatus(currentState)
+
 		if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 		}
-		r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", buildProvisioningError(currentState).Error())
+
+		r.Recorder.
+			Event(
+				inputManifest,
+				corev1.EventTypeWarning,
+				"ProvisioningFailed",
+				buildProvisioningError(currentState).Error(),
+			)
+
 		log.Error(buildProvisioningError(currentState), "Error while building")
+
+		// fallthrough here, to allow updating, if any.
 	}
 
 	// Update logic if the input manifest has been updated
 	// only when the resource is not scheduled for deletion
 	if inputManifestUpdated && inputManifest.DeletionTimestamp.IsZero() {
-		inputManifest.SetUpdateResourceStatus(currentState)
-		if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
-			return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
-		}
-		log.Info("InputManifest has been updated", "status", currentState.State)
+		log.Info("Updating InputManifest", "status", currentState.State)
+
 		if err := r.CreateConfig(ctx, &rawManifest, inputManifest.Name, inputManifest.Namespace); err != nil {
 			return ctrl.Result{}, err
 		}
+
+		inputManifest.SetUpdateResourceStatus(currentState)
+
+		if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
+		}
+
 		return ctrl.Result{RequeueAfter: REQUEUE_UPDATE}, nil
 	}
 
-	// End of reconcile loop, update cluster status - don't requeue the inputManifest object
+	if configState == spec.Manifest_Done {
+		log.Info("Build completed", "status", currentState.State)
+
+		// fallthrough here, to re-queue the input manifest for reconciliation again.
+	}
+
 	inputManifest.SetUpdateResourceStatus(currentState)
 	if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
 	}
-	log.Info("Build completed", "status", currentState.State)
-	return ctrl.Result{}, nil
+
+	return ctrl.Result{RequeueAfter: REQUEUE_UPDATE}, nil
 }
 
 func nodepoolImmutabilityCheck(desired, current *manifest.DynamicNodePool) error {
@@ -328,7 +382,7 @@ func nodepoolImmutabilityCheck(desired, current *manifest.DynamicNodePool) error
 	}
 
 	if desired.ServerType != current.ServerType {
-		return fmt.Errorf("dynamic nodepools are immutable, changing the server type for %s is not allowed, only 'count' and autoscaling' fields are allowed to be modified, consider creating a new nodepool", current.Name)
+		return fmt.Errorf("dynamic nodepools are immutable, changing the server type, from %s to %s, for %s is not allowed, only 'count' and autoscaling' fields are allowed to be modified, consider creating a new nodepool", current.ServerType, desired.ServerType, current.Name)
 	}
 
 	if desired.Image != current.Image {

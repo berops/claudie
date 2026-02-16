@@ -30,10 +30,11 @@ const (
 
 	getEtcdPodsCmd = "get pods -n kube-system --no-headers -o custom-columns=\":metadata.name\" | grep etcd"
 
-	exportEtcdEnvsCmd = `
-		export ETCDCTL_CACERT=/etc/kubernetes/pki/etcd/ca.crt &&
-		export ETCDCTL_CERT=/etc/kubernetes/pki/etcd/healthcheck-client.crt &&
-		export ETCDCTL_KEY=/etc/kubernetes/pki/etcd/healthcheck-client.key`
+	etcdCerts = ` \
+		--cacert=/etc/kubernetes/pki/etcd/ca.crt \
+		--cert=/etc/kubernetes/pki/etcd/healthcheck-client.crt \
+		--key=/etc/kubernetes/pki/etcd/healthcheck-client.key
+	`
 
 	kubectlTimeout = 3 * 60 // cancel kubectl command after kubectlTimeout seconds
 )
@@ -130,6 +131,18 @@ func (k *Kubectl) KubectlTaintRemove(nodeName string, key, value, effect string)
 	defer cleanup()
 
 	command := fmt.Sprintf("kubectl taint nodes %s %s=%s:%s- %s", nodeName, key, value, effect, arg)
+	return k.run(command)
+}
+
+// KubectlTaint adds a taint to the node.
+func (k *Kubectl) KubectlTaint(nodeName string, key, value, effect string) error {
+	arg, cleanup, err := k.getKubeconfig()
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+
+	command := fmt.Sprintf("kubectl taint nodes %s %s=%s:%s %s", nodeName, key, value, effect, arg)
 	return k.run(command)
 }
 
@@ -236,8 +249,14 @@ func (k *Kubectl) KubectlExecEtcd(etcdPod, etcdctlCmd string) ([]byte, error) {
 	}
 	defer cleanup()
 
-	kcExecEtcdCmd := fmt.Sprintf("kubectl %s -n kube-system exec -i %s -- /bin/sh -c \" %s && %s \"",
-		arg, etcdPod, exportEtcdEnvsCmd, etcdctlCmd)
+	kcExecEtcdCmd := fmt.Sprintf(
+		"kubectl %s -n kube-system exec -i %s -- etcdctl %s %s",
+		arg,
+		etcdPod,
+		etcdctlCmd,
+		etcdCerts,
+	)
+
 	return k.runWithOutput(kcExecEtcdCmd)
 }
 
@@ -274,12 +293,26 @@ func (k Kubectl) run(command string, options ...string) error {
 	cmd.Dir = k.Directory
 	cmd.Stdout = k.Stdout
 	cmd.Stderr = k.Stderr
+
 	if err := cmd.Run(); err != nil {
+		if k.MaxKubectlRetries < 0 {
+			return err
+		}
+
 		retryCount := k.MaxKubectlRetries
 		if k.MaxKubectlRetries == 0 {
 			retryCount = defaultMaxKubectlRetries
 		}
-		retryCmd := comm.Cmd{Command: command, Options: options, Dir: k.Directory, CommandTimeout: kubectlTimeout, Stdout: k.Stdout, Stderr: k.Stderr}
+
+		retryCmd := comm.Cmd{
+			Command:        command,
+			Options:        options,
+			Dir:            k.Directory,
+			CommandTimeout: kubectlTimeout,
+			Stdout:         k.Stdout,
+			Stderr:         k.Stderr,
+		}
+
 		if err = retryCmd.RetryCommand(retryCount); err != nil {
 			return err
 		}
@@ -297,6 +330,9 @@ func (k Kubectl) runWithOutput(command string, options ...string) ([]byte, error
 	//NOTE: Do not set custom Stdout/Stderr as that would pollute the output.
 	result, err = cmd.CombinedOutput()
 	if err != nil {
+		if k.MaxKubectlRetries < 0 {
+			return nil, err
+		}
 		retryCount := k.MaxKubectlRetries
 		if k.MaxKubectlRetries == 0 {
 			retryCount = defaultMaxKubectlRetries

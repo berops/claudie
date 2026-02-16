@@ -110,7 +110,6 @@ kubectl get pods -n claudie
 
 NAME                                READY   STATUS      RESTARTS      AGE
 ansibler-6f4557cf74-b4dts           1/1     Running     0             18m
-builder-5d68987c86-qdfd5            1/1     Running     0             18m
 claudie-operator-6d9ddc7f8b-hv84c   1/1     Running     0             18m
 manager-5d75bfffc6-d9qfm            1/1     Running     0             18m
 kube-eleven-556cfdfd98-jq6hl        1/1     Running     0             18m

@@ -22,7 +22,7 @@ RUN go mod download
 COPY . .
 
 #Change the directory
-WORKDIR /go/services/terraformer/server
+WORKDIR /go/services/terraformer/cmd/worker
 
 #Compile the golang code to /out, CGO_ENABLE=0 removes cross compile dependencies
 RUN CGO_ENABLED=0 go build
@@ -38,14 +38,14 @@ LABEL org.opencontainers.image.description="Image for Terraformer from Claudie"
 #Copy the binaries to empty base image
 COPY --from=build /go/tofu/tofu /usr/local/bin
 
-COPY --from=build /go/services/terraformer/server/server /bin/services/terraformer/server/server
+COPY --from=build /go/services/terraformer/cmd/worker/worker /bin/services/terraformer/worker
 
 COPY --from=build /usr/bin/git /usr/bin/git
 
 RUN apk --no-cache add bash git
 
-#Run server
+#Run worker
 WORKDIR /bin
-ENTRYPOINT [ "./services/terraformer/server/server" ]
+ENTRYPOINT [ "./services/terraformer/worker" ]
 
 #NOTE: We cannot use scratch image for our dockerfile since we are using shell commands to execute commands inside the code

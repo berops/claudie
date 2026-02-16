@@ -91,7 +91,6 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     ```text
     NAME                           READY   STATUS      RESTARTS        AGE
     ansibler-5c6c776b75-82c2q      1/1     Running     0               8m10s
-    builder-59f9d44596-n2qzm       1/1     Running     0               8m10s
     manager-5d76c89b4d-tb6h4       1/1     Running     1 (6m37s ago)   8m10s
     claudie-operator-5755b7bc69-5l84h      1/1     Running     0               8m10s
     kube-eleven-64468cd5bd-qp4d4   1/1     Running     0               8m10s

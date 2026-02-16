@@ -12,10 +12,10 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func (g *GRPC) GetConfig(ctx context.Context, request *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
+func (s *Service) GetConfig(ctx context.Context, request *pb.GetConfigRequest) (*pb.GetConfigResponse, error) {
 	log.Debug().Msgf("Received request for config: %q", request.Name)
 
-	cfg, err := g.Store.GetConfig(ctx, request.Name)
+	cfg, err := s.store.GetConfig(ctx, request.Name)
 	if err != nil {
 		if !errors.Is(err, store.ErrNotFoundOrDirty) {
 			return nil, status.Errorf(codes.Internal, "failed to check existence for config %q: %v", request.Name, err)
