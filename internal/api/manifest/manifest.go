@@ -28,6 +28,7 @@ type Provider struct {
 	Cloudflare []Cloudflare `yaml:"cloudflare"`
 	HetznerDNS []HetznerDNS `yaml:"hetznerdns"`
 	Openstack  []Openstack  `yaml:"openstack"`
+	Exoscale   []Exoscale   `yaml:"exoscale"`
 }
 
 type HetznerDNS struct {
@@ -97,6 +98,13 @@ type Openstack struct {
 	ApplicationCredentialId     string              `validate:"required" yaml:"applicationCredentialId"`
 	ApplicationCredentialSecret string              `validate:"required" yaml:"applicationCredentialSecret"`
 	Templates                   *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
+}
+
+type Exoscale struct {
+	Name      string              `validate:"required,max=15" yaml:"name"`
+	ApiKey    string              `validate:"required" yaml:"apiKey"`
+	ApiSecret string              `validate:"required" yaml:"apiSecret"`
+	Templates *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
 }
 
 // NodePools describes nodepools used for either kubernetes clusters

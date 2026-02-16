@@ -527,6 +527,7 @@ spec:
                       - cloudflare
                       - hetznerdns
                       - openstack
+                      - exoscale
                       type: string
                     secretRef:
                       description: |-

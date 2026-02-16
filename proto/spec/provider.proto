@@ -48,6 +48,10 @@ message OpenstackProvider {
   string applicationCredentialSecret = 5;
 }
 
+message ExoscaleProvider {
+  string apiKey = 1;
+  string apiSecret = 2;
+}
 
 message Provider {
   string specName = 1;
@@ -62,6 +66,7 @@ message Provider {
     AzureProvider azure = 8;
     CloudflareProvider cloudflare = 9;
     OpenstackProvider openstack = 11;
+    ExoscaleProvider exoscale = 12;
   }
 
   TemplateRepository templates = 13;

@@ -48,5 +48,11 @@ terraform {
         version = "3.3.2"
     }
     {{- end }}
+    {{- if .Exoscale }}
+    exoscale = {
+      source  = "exoscale/exoscale"
+      version = "~> 0.68"
+    }
+    {{- end }}
   }
 }
