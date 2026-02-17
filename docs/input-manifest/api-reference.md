@@ -288,7 +288,7 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
 ## Provider Spec
 
-Provider spec is an additional specification built on top of the data from any of the provider instance. Here are provider configuration examples for each individual provider: [aws](providers/aws.md), [azure](providers/azure.md), [gcp](providers/gcp.md), [cloudflare](providers/cloudflare.md), [hetzner](providers/hetzner.md) and [oci](providers/oci.md).
+Provider spec is an additional specification built on top of the data from any of the provider instance. Here are provider configuration examples for each individual provider: [aws](providers/aws.md), [azure](providers/azure.md), [exoscale](providers/exoscale.md), [gcp](providers/gcp.md), [cloudflare](providers/cloudflare.md), [hetzner](providers/hetzner.md) and [oci](providers/oci.md).
 
 - `name`
 

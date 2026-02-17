@@ -79,6 +79,7 @@ nav:
           - AWS: input-manifest/providers/aws.md
           - Azure: input-manifest/providers/azure.md
           - Cloudflare: input-manifest/providers/cloudflare.md
+          - Exoscale: input-manifest/providers/exoscale.md
           - GCP: input-manifest/providers/gcp.md
           - Hetzner: input-manifest/providers/hetzner.md
           - OCI: input-manifest/providers/oci.md

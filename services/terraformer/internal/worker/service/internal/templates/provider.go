@@ -117,5 +117,7 @@ func getDNSProvider(dns *spec.DNS, data *usedProvidersTemplateData) {
 		data.Cloudflare = true
 	case "hetznerdns":
 		data.HetznerDNS = true
+	case "exoscale":
+		data.Exoscale = true
 	}
 }
