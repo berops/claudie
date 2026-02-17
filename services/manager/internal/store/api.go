@@ -131,10 +131,11 @@ type TaskEvent struct {
 }
 
 type Workflow struct {
-	Status      string             `bson:"status"`
-	Description string             `bson:"description"`
-	Timestamp   string             `bson:"timestamp"`
-	Previous    []FinishedWorkflow `bson:"previous"`
+	Status            string             `bson:"status"`
+	Description       string             `bson:"description"`
+	Timestamp         string             `bson:"timestamp"`
+	Previous          []FinishedWorkflow `bson:"previous"`
+	TicksUntilRefresh int32              `bson:"ticksUntilRefresh"`
 }
 
 type FinishedWorkflow struct {

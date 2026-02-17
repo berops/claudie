@@ -40,6 +40,13 @@ const (
 	NotReady
 )
 
+// Ticks for infrastructure refresh are the number of Manager ticks that
+// are set after each scheduled task. This value is decrement every iteration
+// of the reconciliation loop below when no task has been identified.
+//
+// Once this value reaches zero, a refresh of the infrastructure will be scheduled.
+const TicksForInfrastructureRefresh = 100 // * [PendingTick] ~= 35mins
+
 // Schedules tasks based on the difference between the current and desired state.
 // No changes to the passed in values are done. The passed in `desired` and `pending`
 // states will not be modified in any way.
@@ -343,6 +350,71 @@ Failed to extract state from failed 'InFlight' state: %v
 					// signal a NotReady, to propagate the changes but dont' scheduled
 					// anything.
 					clusterResult[cluster] = NotReady
+				} else {
+					// There was no InFlight state and also no task to be scheduled
+					// decrement ticks and check whether a refresh of the infrastructure
+					// should be issued.
+					clusterResult[cluster] = NotReady
+
+					state.State.TicksUntilRefresh = max(state.State.TicksUntilRefresh, 0)
+					state.State.TicksUntilRefresh -= 1
+
+					if state.State.TicksUntilRefresh <= 0 {
+						clusterResult[cluster] = Reschedule
+
+						logger.
+							Info().
+							Msg("No task was scheduled for a while, issueing a refresh of the infrastructure")
+
+						logger.
+							Info().
+							Msg("Verifying reachability of the cluster before scheduling task to work on")
+
+						// Before scheduling any new task, healthcheck the reachability of the
+						// build infrastructure to avoid any issues with unreachable nodes during
+						// the building of the task, in which case this takes a higher priority
+						// then the scheduled task.
+						rhc, err := HealthCheckNodeReachability(logger, current)
+						if err != nil {
+							clusterResult[cluster] = NotReady
+
+							state.State.Status = spec.Workflow_ERROR
+							state.State.Description = fmt.Sprintf(
+								"Can't schedule task, failed to determine reachability of nodes of the clusters: %v",
+								err,
+							)
+
+							logger.Error().Msg(state.State.Description)
+							break event_switch
+						}
+
+						next, err := handleClusterReachability(logger, current, desired, diff, rhc, hc)
+						if err != nil {
+							clusterResult[cluster] = NotReady
+
+							logger.
+								Debug().
+								Msg("Propagating error for unreachable nodes without working on any task")
+
+							state.State.Status = spec.Workflow_ERROR
+							state.State.Description = err.Error()
+							logger.Error().Msg(state.State.Description)
+							break event_switch
+						}
+						if next != nil {
+							clusterResult[cluster] = Reschedule
+
+							logger.
+								Info().
+								Msg("Scheduled Task with higher priority for unreachable nodes on the kubernetes level")
+
+							next.LowerPriority = lastTask
+							state.InFlight = next
+							break event_switch
+						}
+
+						state.InFlight = ScheduleRefreshInfrastructure(current)
+					}
 				}
 			}
 		}
@@ -357,6 +429,8 @@ Failed to extract state from failed 'InFlight' state: %v
 			state.State = &spec.Workflow{
 				Status:   spec.Workflow_WAIT_FOR_PICKUP,
 				Previous: prev,
+				// A scheduled task will reset the number of ticks for the infrastructure reset.
+				TicksUntilRefresh: TicksForInfrastructureRefresh,
 			}
 		case NotReady, Noop:
 		}
@@ -578,16 +652,16 @@ func handleUpdate(hc HealthCheckStatus, diff DiffResult, current, desired *spec.
 		return next
 	}
 
-	if hc.Cluster.VpnDrift {
-		return ScheduleRefreshVPN(kr.Diff.Proxy.CurrentUsed, current)
-	}
-
 	if next := LoadBalancersLowPriority(lbr); next != nil {
 		return next
 	}
 
 	if next := KubernetesLowPriority(kr); next != nil {
 		return next
+	}
+
+	if hc.Cluster.VpnDrift {
+		return ScheduleRefreshVPN(kr.Diff.Proxy.CurrentUsed, current)
 	}
 
 	return nil

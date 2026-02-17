@@ -15,218 +15,8 @@ import (
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
 func ScheduleCreateCluster(desired *spec.Clusters) *spec.TaskEvent {
-	// Stages
-	var (
-		tf = spec.Stage_Terraformer{
-			Terraformer: &spec.StageTerraformer{
-				Description: &spec.StageDescription{
-					About:      "Creating infrastructure for the new cluster",
-					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-				},
-				SubPasses: []*spec.StageTerraformer_SubPass{
-					{
-						Kind: spec.StageTerraformer_BUILD_INFRASTRUCTURE,
-						Description: &spec.StageDescription{
-							About:      "Building desired state infrastructure",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-				},
-			},
-		}
-
-		ansProxy = spec.Stage_Ansibler{
-			Ansibler: &spec.StageAnsibler{
-				Description: &spec.StageDescription{
-					About:      "Configuring newly spawned cluster infrastructure",
-					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-				},
-				SubPasses: []*spec.StageAnsibler_SubPass{
-					{
-						Kind: spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES,
-						Description: &spec.StageDescription{
-							About:      "Updating HttpProxy,NoProxy environment variables to be used by the package manager",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-					{
-						Kind: spec.StageAnsibler_INSTALL_NODE_REQUIREMENTS,
-						Description: &spec.StageDescription{
-							About:      "Installing pre-requisites on all of the nodes of the cluster",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-					{
-						Kind: spec.StageAnsibler_INSTALL_TEE_OVERRIDE,
-						Description: &spec.StageDescription{
-							About:      "Installing Tee override for newly added nodes",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-					{
-						Kind: spec.StageAnsibler_INSTALL_VPN,
-						Description: &spec.StageDescription{
-							About:      "Setting up VPN across the nodes of the kuberentes and loadbalancer clusters",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-					{
-						Kind: spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES,
-						Description: &spec.StageDescription{
-							About:      "Updating HttpProxy,NoProxy environment variables, after populating private addresses on nodes",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-					{
-						Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
-						Description: &spec.StageDescription{
-							About:      "Reconciling Envoy service across the loadbalancer nodes",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-					// NOTE: there is no need to Commit Proxy envs as this is a create task
-				},
-			},
-		}
-
-		ansNoProxy = spec.Stage_Ansibler{
-			Ansibler: &spec.StageAnsibler{
-				Description: &spec.StageDescription{
-					About:      "Configuring newly spawned cluster infrastructure",
-					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-				},
-				SubPasses: []*spec.StageAnsibler_SubPass{
-					{
-						Kind: spec.StageAnsibler_INSTALL_NODE_REQUIREMENTS,
-						Description: &spec.StageDescription{
-							About:      "Installing pre-requisites on all of the nodes of the cluster",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-					{
-						Kind: spec.StageAnsibler_INSTALL_TEE_OVERRIDE,
-						Description: &spec.StageDescription{
-							About:      "Installing Tee override for newly added nodes",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-					{
-						Kind: spec.StageAnsibler_INSTALL_VPN,
-						Description: &spec.StageDescription{
-							About:      "Setting up VPN across the nodes of the kuberentes and loadbalancer clusters",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-					{
-						Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
-						Description: &spec.StageDescription{
-							About:      "Reconciling Envoy service across the loadbalancer nodes",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-				},
-			},
-		}
-
-		kubeeleven = spec.Stage_KubeEleven{
-			KubeEleven: &spec.StageKubeEleven{
-				Description: &spec.StageDescription{
-					About:      "Building kubernetes cluster out of the spawned infrastructure",
-					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-				},
-				SubPasses: []*spec.StageKubeEleven_SubPass{
-					{
-						Kind: spec.StageKubeEleven_RECONCILE_CLUSTER,
-						Description: &spec.StageDescription{
-							About:      "Creating kubernetes cluster from the set up infrastructure",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-				},
-			},
-		}
-
-		kuber = spec.Stage_Kuber{
-			Kuber: &spec.StageKuber{
-				Description: &spec.StageDescription{
-					About:      "Configuring cluster",
-					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-				},
-				SubPasses: []*spec.StageKuber_SubPass{
-					{
-						Kind: spec.StageKuber_DEPLOY_KUBELET_CSR_APPROVER,
-						Description: &spec.StageDescription{
-							About:      "Deploying kubelet csr-approver",
-							ErrorLevel: spec.ErrorLevel_ERROR_WARN,
-						},
-					},
-					{
-						Kind: spec.StageKuber_PATCH_NODES,
-						Description: &spec.StageDescription{
-							About:      "Patching nodes",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-					{
-						Kind: spec.StageKuber_DEPLOY_LONGHORN,
-						Description: &spec.StageDescription{
-							About:      "Deploying longhorn for storage",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-					{
-						Kind: spec.StageKuber_RECONCILE_LONGHORN_STORAGE_CLASSES,
-						Description: &spec.StageDescription{
-							About:      "Reconciling longhorn claudie storage classes",
-							ErrorLevel: spec.ErrorLevel_ERROR_WARN,
-						},
-					},
-				},
-			},
-		}
-	)
-
-	var (
-		createK8s = proto.Clone(desired.GetK8S()).(*spec.K8Scluster)
-		createLbs = proto.Clone(desired.GetLoadBalancers()).(*spec.LoadBalancers)
-		createOp  = spec.Create{
-			K8S:           createK8s,
-			LoadBalancers: createLbs.GetClusters(),
-		}
-	)
-
-	pipeline := []*spec.Stage{
-		{StageKind: &tf},
-		{StageKind: nil},
-		{StageKind: &kubeeleven},
-		{StageKind: &kuber},
-	}
-
-	if UsesProxy(desired.K8S) {
-		pipeline[1].StageKind = &ansProxy
-	} else {
-		pipeline[1].StageKind = &ansNoProxy
-	}
-
-	if len(nodepools.Autoscaled(createK8s.ClusterInfo.NodePools)) > 0 {
-		kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, &spec.StageKuber_SubPass{
-			Kind: spec.StageKuber_ENABLE_LONGHORN_CA,
-			Description: &spec.StageDescription{
-				About:      "Enabling cluster-autoscaler support in longhorn",
-				ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-			},
-		})
-	}
-
-	if len(createLbs.Clusters) > 0 {
-		kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, &spec.StageKuber_SubPass{
-			Kind: spec.StageKuber_STORE_LB_SCRAPE_CONFIG,
-			Description: &spec.StageDescription{
-				About:      "Storing scrape config for loadbalancers",
-				ErrorLevel: spec.ErrorLevel_ERROR_WARN,
-			},
-		})
-	}
+	inFlight := proto.Clone(desired).(*spec.Clusters)
+	pipeline := CreatePipeline(inFlight, true)
 
 	return &spec.TaskEvent{
 		Id:        uuid.New().String(),
@@ -234,7 +24,10 @@ func ScheduleCreateCluster(desired *spec.Clusters) *spec.TaskEvent {
 		Event:     spec.Event_CREATE,
 		Task: &spec.Task{
 			Do: &spec.Task_Create{
-				Create: &createOp,
+				Create: &spec.Create{
+					K8S:           inFlight.K8S,
+					LoadBalancers: inFlight.LoadBalancers.Clusters,
+				},
 			},
 		},
 		Description: "creating cluster",
@@ -435,4 +228,251 @@ func ScheduleRefreshVPN(usesProxy bool, current *spec.Clusters) *spec.TaskEvent 
 		Description: "Refreshing VPN",
 		Pipeline:    pipeline,
 	}
+}
+
+func ScheduleRefreshInfrastructure(current *spec.Clusters) *spec.TaskEvent {
+	inFlight := proto.Clone(current).(*spec.Clusters)
+	// For the refresh it is expected that the cluster already exists
+	// and that all of the infrastructure is reachable, thus the `false`
+	// value passed to the [CreatePipeline] func.
+	pipeline := CreatePipeline(inFlight, false)
+
+	return &spec.TaskEvent{
+		Id:        uuid.New().String(),
+		Timestamp: timestamppb.New(time.Now().UTC()),
+		Event:     spec.Event_UPDATE,
+		Task: &spec.Task{
+			Do: &spec.Task_Update{
+				Update: &spec.Update{
+					State: &spec.Update_State{
+						K8S:           inFlight.K8S,
+						LoadBalancers: inFlight.LoadBalancers.Clusters,
+					},
+					Delta: &spec.Update_None_{},
+				},
+			},
+		},
+		Description: "Refreshing infrastructure to match current state",
+		Pipeline:    pipeline,
+	}
+}
+
+// CreatePipeline returns the pipeline for creating a cluster from scratch
+// based on the passed in state.
+func CreatePipeline(clusters *spec.Clusters, isCreate bool) []*spec.Stage {
+	// Stages
+	var (
+		tf = spec.Stage_Terraformer{
+			Terraformer: &spec.StageTerraformer{
+				Description: &spec.StageDescription{
+					About:      "Creating infrastructure for the new cluster",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+				SubPasses: []*spec.StageTerraformer_SubPass{
+					{
+						Kind: spec.StageTerraformer_BUILD_INFRASTRUCTURE,
+						Description: &spec.StageDescription{
+							About:      "Building desired state infrastructure",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+				},
+			},
+		}
+
+		ansProxy = spec.Stage_Ansibler{
+			Ansibler: &spec.StageAnsibler{
+				Description: &spec.StageDescription{
+					About:      "Configuring newly spawned cluster infrastructure",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+				SubPasses: []*spec.StageAnsibler_SubPass{
+					{
+						Kind: spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES,
+						Description: &spec.StageDescription{
+							About:      "Updating HttpProxy,NoProxy environment variables to be used by the package manager",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
+						Kind: spec.StageAnsibler_INSTALL_NODE_REQUIREMENTS,
+						Description: &spec.StageDescription{
+							About:      "Installing pre-requisites on all of the nodes of the cluster",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
+						Kind: spec.StageAnsibler_INSTALL_TEE_OVERRIDE,
+						Description: &spec.StageDescription{
+							About:      "Installing Tee override for newly added nodes",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
+						Kind: spec.StageAnsibler_INSTALL_VPN,
+						Description: &spec.StageDescription{
+							About:      "Setting up VPN across the nodes of the kuberentes and loadbalancer clusters",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
+						Kind: spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES,
+						Description: &spec.StageDescription{
+							About:      "Updating HttpProxy,NoProxy environment variables, after populating private addresses on nodes",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
+						Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
+						Description: &spec.StageDescription{
+							About:      "Reconciling Envoy service across the loadbalancer nodes",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					// NOTE: there is no need to Commit Proxy envs, if the pipeline is used for creation.
+				},
+			},
+		}
+
+		ansNoProxy = spec.Stage_Ansibler{
+			Ansibler: &spec.StageAnsibler{
+				Description: &spec.StageDescription{
+					About:      "Configuring newly spawned cluster infrastructure",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+				SubPasses: []*spec.StageAnsibler_SubPass{
+					{
+						Kind: spec.StageAnsibler_INSTALL_NODE_REQUIREMENTS,
+						Description: &spec.StageDescription{
+							About:      "Installing pre-requisites on all of the nodes of the cluster",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
+						Kind: spec.StageAnsibler_INSTALL_TEE_OVERRIDE,
+						Description: &spec.StageDescription{
+							About:      "Installing Tee override for newly added nodes",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
+						Kind: spec.StageAnsibler_INSTALL_VPN,
+						Description: &spec.StageDescription{
+							About:      "Setting up VPN across the nodes of the kuberentes and loadbalancer clusters",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
+						Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
+						Description: &spec.StageDescription{
+							About:      "Reconciling Envoy service across the loadbalancer nodes",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+				},
+			},
+		}
+
+		kubeeleven = spec.Stage_KubeEleven{
+			KubeEleven: &spec.StageKubeEleven{
+				Description: &spec.StageDescription{
+					About:      "Building kubernetes cluster out of the spawned infrastructure",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+				SubPasses: []*spec.StageKubeEleven_SubPass{
+					{
+						Kind: spec.StageKubeEleven_RECONCILE_CLUSTER,
+						Description: &spec.StageDescription{
+							About:      "Creating kubernetes cluster from the set up infrastructure",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+				},
+			},
+		}
+
+		kuber = spec.Stage_Kuber{
+			Kuber: &spec.StageKuber{
+				Description: &spec.StageDescription{
+					About:      "Configuring cluster",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+				SubPasses: []*spec.StageKuber_SubPass{
+					{
+						Kind: spec.StageKuber_DEPLOY_KUBELET_CSR_APPROVER,
+						Description: &spec.StageDescription{
+							About:      "Deploying kubelet csr-approver",
+							ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+						},
+					},
+					{
+						Kind: spec.StageKuber_PATCH_NODES,
+						Description: &spec.StageDescription{
+							About:      "Patching nodes",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
+						Kind: spec.StageKuber_DEPLOY_LONGHORN,
+						Description: &spec.StageDescription{
+							About:      "Deploying longhorn for storage",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
+						Kind: spec.StageKuber_RECONCILE_LONGHORN_STORAGE_CLASSES,
+						Description: &spec.StageDescription{
+							About:      "Reconciling longhorn claudie storage classes",
+							ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+						},
+					},
+				},
+			},
+		}
+	)
+
+	if !isCreate {
+		ansProxy.Ansibler.SubPasses = append(ansProxy.Ansibler.SubPasses, &spec.StageAnsibler_SubPass{
+			Kind: spec.StageAnsibler_COMMIT_PROXY_ENVS,
+			Description: &spec.StageDescription{
+				About:      "Commiting updated proxy environment variables",
+				ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+			},
+		})
+	}
+
+	pipeline := []*spec.Stage{
+		{StageKind: &tf},
+		{StageKind: nil},
+		{StageKind: &kubeeleven},
+		{StageKind: &kuber},
+	}
+
+	if UsesProxy(clusters.K8S) {
+		pipeline[1].StageKind = &ansProxy
+	} else {
+		pipeline[1].StageKind = &ansNoProxy
+	}
+
+	if len(nodepools.Autoscaled(clusters.K8S.ClusterInfo.NodePools)) > 0 {
+		kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, &spec.StageKuber_SubPass{
+			Kind: spec.StageKuber_ENABLE_LONGHORN_CA,
+			Description: &spec.StageDescription{
+				About:      "Enabling cluster-autoscaler support in longhorn",
+				ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+			},
+		})
+	}
+
+	if len(clusters.LoadBalancers.Clusters) > 0 {
+		kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, &spec.StageKuber_SubPass{
+			Kind: spec.StageKuber_STORE_LB_SCRAPE_CONFIG,
+			Description: &spec.StageDescription{
+				About:      "Storing scrape config for loadbalancers",
+				ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+			},
+		})
+	}
+
+	return pipeline
 }

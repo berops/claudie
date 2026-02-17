@@ -19,16 +19,24 @@ func build(
 ) {
 	logger.Info().Msg("Building Infrastructure")
 
-	action, ok := tracker.Task.Do.(*spec.Task_Create)
-	if !ok {
+	var (
+		k8s *spec.K8Scluster
+		lbs []*spec.LBcluster
+	)
+
+	switch action := tracker.Task.Do.(type) {
+	case *spec.Task_Create:
+		k8s = action.Create.K8S
+		lbs = action.Create.LoadBalancers
+	case *spec.Task_Update:
+		k8s = action.Update.State.K8S
+		lbs = action.Update.State.LoadBalancers
+	default:
 		logger.
 			Warn().
-			Msgf("Received task with action %T while wanting to create new infrastructure, assuming the task was misscheduled, ignoring", tracker.Task.Do)
+			Msgf("Received task with action %T while wanting to refresh infrastructure, assuming the task was misscheduled, ignoring", tracker.Task.Do)
 		return
 	}
-
-	k8s := action.Create.K8S
-	lbs := action.Create.LoadBalancers
 
 	if k8s == nil {
 		logger.
@@ -47,6 +55,9 @@ func build(
 	buildLogger := logger.With().Str("cluster", cluster.Id()).Logger()
 
 	if err := BuildK8Scluster(buildLogger, cluster); err != nil {
+		// Some of the infrastructure might have failed to build,
+		// nevertheless, we still send back the updated state for
+		// the manager to resolve the diff.
 		buildLogger.Err(err).Msg("Failed to reconcile cluster")
 
 		tracker.Diagnostics.Push(err)

@@ -782,9 +782,14 @@ type Workflow struct {
 	// additional information describing the state.
 	Description string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
 	// Information about previously finished workflows.
-	Previous      []*FinishedWorkflow `protobuf:"bytes,9,rep,name=previous,proto3" json:"previous,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Previous []*FinishedWorkflow `protobuf:"bytes,9,rep,name=previous,proto3" json:"previous,omitempty"`
+	// Ticks until refresh are the number of ticks until a refresh
+	// of the infrastructure is to be scheduled. Once this value reaches
+	// 0 the refresh of the infrastructure should be scheduled and this
+	// value should be reset back to its original starting value.
+	TicksUntilRefresh int32 `protobuf:"varint,10,opt,name=ticksUntilRefresh,proto3" json:"ticksUntilRefresh,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *Workflow) Reset() {
@@ -836,6 +841,13 @@ func (x *Workflow) GetPrevious() []*FinishedWorkflow {
 		return x.Previous
 	}
 	return nil
+}
+
+func (x *Workflow) GetTicksUntilRefresh() int32 {
+	if x != nil {
+		return x.TicksUntilRefresh
+	}
+	return 0
 }
 
 // K8scluster represents a single kubernetes cluster specified in the manifest.
@@ -5884,11 +5896,13 @@ const file_spec_manifest_proto_rawDesc = "" +
 	"\x06status\x18\x01 \x01(\x0e2\x15.spec.Workflow.StatusR\x06status\x12(\n" +
 	"\x0ftaskDescription\x18\x02 \x01(\tR\x0ftaskDescription\x12\x14\n" +
 	"\x05stage\x18\x03 \x01(\tR\x05stage\x128\n" +
-	"\ttimestamp\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\"\xd4\x01\n" +
+	"\ttimestamp\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\"\x82\x02\n" +
 	"\bWorkflow\x12-\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x15.spec.Workflow.StatusR\x06status\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x122\n" +
-	"\bprevious\x18\t \x03(\v2\x16.spec.FinishedWorkflowR\bprevious\"C\n" +
+	"\bprevious\x18\t \x03(\v2\x16.spec.FinishedWorkflowR\bprevious\x12,\n" +
+	"\x11ticksUntilRefresh\x18\n" +
+	" \x01(\x05R\x11ticksUntilRefresh\"C\n" +
 	"\x06Status\x12\b\n" +
 	"\x04DONE\x10\x00\x12\t\n" +
 	"\x05ERROR\x10\x01\x12\x0f\n" +

@@ -416,62 +416,6 @@ func Static(nodepools []*spec.NodePool) []*spec.NodePool {
 	return static
 }
 
-func CommonDynamicNodes(currentNp, desiredNp []*spec.NodePool) []*spec.NodePool {
-	dynamic := make(map[string]*spec.NodePool)
-	for _, np := range currentNp {
-		if np.GetDynamicNodePool() != nil {
-			dynamic[np.Name] = np
-		}
-	}
-
-	return commonNodes(dynamic, desiredNp)
-}
-
-func CommonStaticNodes(currentNp, desiredNp []*spec.NodePool) []*spec.NodePool {
-	static := make(map[string]*spec.NodePool)
-	for _, np := range currentNp {
-		if np.GetStaticNodePool() != nil {
-			static[np.Name] = np
-		}
-	}
-
-	return commonNodes(static, desiredNp)
-}
-
-func commonNodes(currControlNps map[string]*spec.NodePool, desiredNp []*spec.NodePool) []*spec.NodePool {
-	var commonNps []*spec.NodePool
-
-	for _, np := range desiredNp {
-		if currNp, exists := currControlNps[np.Name]; exists {
-			currNodeMap := make(map[string]*spec.Node)
-			for _, node := range currNp.Nodes {
-				currNodeMap[node.Name] = node
-			}
-			var commonNodes []*spec.Node
-			for _, node := range np.Nodes {
-				if _, exists := currNodeMap[node.Name]; exists {
-					commonNodes = append(commonNodes, node)
-				}
-			}
-
-			if len(commonNodes) > 0 {
-				// copy everything except Nodes
-				commonNodePool := &spec.NodePool{
-					Type:        currNp.Type,
-					Name:        currNp.Name,
-					Nodes:       commonNodes,
-					IsControl:   currNp.IsControl,
-					Labels:      currNp.Labels,
-					Annotations: currNp.Annotations,
-				}
-				commonNps = append(commonNps, commonNodePool)
-			}
-		}
-	}
-
-	return commonNps
-}
-
 func MatchNameAndHashWithTemplate(nodepoolType, nodepoolName string) (t, h string) {
 	if len(nodepoolName) != len(nodepoolType)+hash.Length+1 {
 		return

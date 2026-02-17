@@ -23,7 +23,7 @@ import (
 const (
 	// PendingTick represents the interval at which each manifest state is checked
 	// while in the [manifest.Pending] state.
-	PendingTick = 15 * time.Second
+	PendingTick = 20 * time.Second
 
 	// Tick represents the interval at which each manifest state is checked while
 	// in the [manifest.Pending] state.
@@ -228,7 +228,7 @@ func (s *Service) WatchForPendingDocuments(ctx context.Context) error {
 			logger.Debug().Msg("No task to be worked on, skip updating DB representation")
 			continue
 		case NotReady:
-			logger.Info().Msgf("manifest is not ready to be scheduled, retrying again later")
+			logger.Debug().Msgf("manifest is not ready to be scheduled, retrying again later")
 		case Reschedule:
 			pending.Manifest.State = spec.Manifest_Scheduled
 			logger.Debug().Msgf("Scheduling for intermediate tasks after which the config will be rescheduled again")
