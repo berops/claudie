@@ -59,7 +59,7 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 ## What's Changed
 - Use native state locking provided by OpenTofu instead of relying on DynamoDB [#1906](https://github.com/berops/Claudie/pull/1906)
 
-- Upgrade kubeone to v1.12.1. Claudie now supports building the following Kubernetes versions: `32,33,34` [#1913](https://github.com/berops/Claudie/pull/1913)
+- Upgrade kubeone to v1.12.1. Claudie now supports building the following Kubernetes versions: `v1.32, v1.33, v1.34` [#1913](https://github.com/berops/Claudie/pull/1913)
 
 - Making use of a provider cache in the `Terraformer`, essentially removing the time spent downloading the provider on a cache hit [#1907](https://github.com/berops/Claudie/pull/1907)
 
