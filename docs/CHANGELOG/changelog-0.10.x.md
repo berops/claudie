@@ -3,7 +3,7 @@
 
 !!! warning "Several major internal changes have been made to Claudie. While the `v0.10.0` version should be backward compatible with `v0.9.16`, it was not possible to test all possible cluster configuration scenarios. We advise creating backups before upgrading to v0.10.0 and later versions."
 
-!!! note "only v0.10.0 should be backwards compatible with the v0.9.16 version any other v0.10.x version will not have this guarantee"
+!!! note "Only v0.10.0 should be backwards compatible with the v0.9.16 version. Any other v0.10.x version will not have this guarantee."
 
 
 ## Most notable changes (TL;DR)
@@ -11,7 +11,7 @@
 - After deploying claudie version `v0.10.0` the reconciliation loop will be initiated after the first `kubectl apply -f <your-input-manifest>` 
   that has a change in the desired state compared to the last applied version.
 
-- Longhorn v1.9.2 will now be deployed for clusters build with claudie. For existing clusters build with `v0.9.16` manual steps need to be done 
+- Longhorn v1.9.2 will now be deployed for clusters built with claudie. For existing clusters build with `v0.9.16` manual steps need to be done 
   before deploying claudie `v0.10.0`:
     - Please read about the manual steps [here](https://longhorn.io/docs/1.9.2/deploy/upgrade/#manual-checks-before-upgrade)
 
@@ -21,7 +21,7 @@
 
 - The identification and scheduling of tasks has been overhauled. Claudie now has an initial version of a reconciliation loop. In the v0.9.x versions of Claudie, whenever a change was detected after running `kubectl apply -f <your-input-manifest>` Claudie stopped and did not continue to health check or fix the error, even if the error was simply a network inconvenience, upon either a failure or success of building that change. As of now, with the reconciliation loop, every `kubectl apply -f <your-input-manifest>` will explicitly state the desired state of your clusters, and Claudie will try endlessly to reach that desired state. This means that, in the event of any errors, changes will be reverted and then reapplied, along with health checking, which helps identify potential misconfigurations or infrastructure issues. Claudie will then try to auto-repair these issues, if possible. The goal is to further improve the reconciliation loop with each release.
 
-- DynamoDB was removed in favor of native locking supported by newer versions of OpenTofu which ship with claudie `v0.10.x`
+- DynamoDB was removed in favor of native locking supported by newer versions of OpenTofu which ship with Claudie `v0.10.x`
 
 ## Deployment
 
@@ -31,7 +31,7 @@ To deploy Claudie `v0.10.X`, please:
 
 2. Verify the checksum with `sha256` (optional)
 
-   We provide checksums in `claudie_checksum.txt` you can verify the downloaded yaml files againts the provided checksums.
+   We provide checksums in `claudie_checksum.txt` you can verify the downloaded yaml files against the provided checksums.
 
 3. Install Claudie using `kubectl`
 
@@ -58,11 +58,11 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 ## What's Changed
 - Use native state locking provided by OpenTofu instead of relying on DynamoDB [#1906](https://github.com/berops/claudie/pull/1906)
 
-- Upgrade kubeone to v1.12.1. Claudie now supports building the following kuberentes versions: `32,33,34` [#1913](https://github.com/berops/claudie/pull/1913)
+- Upgrade kubeone to v1.12.1. Claudie now supports building the following kubernetes versions: `32,33,34` [#1913](https://github.com/berops/claudie/pull/1913)
 
-- Making use of a provider cache in the `Terraformer` essentially removing the time spend downloading the provider on a cache hit [#1907](https://github.com/berops/claudie/pull/1907)
+- Making use of a provider cache in the `Terraformer`, essentially removing the time spent downloading the provider on a cache hit [#1907](https://github.com/berops/claudie/pull/1907)
 
-- Preventing kubeone to override `config.toml` which would collide with `NvidiaGPU` operator overrites [#1916](https://github.com/berops/claudie/pull/1916)
+- Preventing kubeone from overriding `config.toml` which would collide with `NvidiaGPU` operator overrides [#1916](https://github.com/berops/claudie/pull/1916)
 
 - Longhorn will now be deployed with the `best-effort` data-locality setting [#1933](https://github.com/berops/claudie/pull/1933)
 
@@ -70,15 +70,15 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 
 - Genesis Cloud provider support dropped [#1941](https://github.com/berops/claudie/pull/1941)
 
-- The `zone` field is now optional for dynamic nodepools defined in the Input Manifest. If omitted claudie will automatically distributed the nodes across zones [#1947](https://github.com/berops/claudie/pull/1947)
+- The `zone` field is now optional for dynamic nodepools defined in the Input Manifest. If omitted, Claudie will automatically distribute the nodes across zones [#1947](https://github.com/berops/claudie/pull/1947)
 
 - Claudie will now deploy longhorn with version 1.9.2 [#1956](https://github.com/berops/claudie/pull/1956).
   [Manual steps](https://longhorn.io/docs/1.9.2/deploy/upgrade/#manual-checks-before-upgrade) need to be done before
   upgrading to claudie `v0.10.0` for longhorn.
 
 - Claudie will now support GPU guest accelerator for GCP nodepools [#1952](https://github.com/berops/claudie/pull/1952) 
-  Previously this was not possible to communicate this information to the templates used to spawn the infrastructure with
-  the new changes the GPU type and Count will now be passed to the templates correctly spawning a VM with the requested GPU.
+  Previously, it was not possible to communicate this information to the templates used to spawn the infrastructure. With
+  the new changes, the GPU type and count will now be passed to the templates, correctly spawning a VM with the requested GPU.
 
   ```
    nodePools:
