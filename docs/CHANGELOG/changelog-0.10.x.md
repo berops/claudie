@@ -20,7 +20,10 @@
 
 - The BuilderTTL field, which was internal to Claudie's task dispatching process, was completely removed in favor of a work queue. Previously, when the BuilderTTL reached 0, a new diff with the current desired state was made, even if the scheduled task did not finish. Thus, it was possible for another task to be dispatched. This is no longer possible, as the move to NATS requires an explicit acknowledgment of the task to progress the building of the cluster.
 
-- The identification and scheduling of tasks has been overhauled. Claudie now has an initial version of a reconciliation loop. In the v0.9.x versions of Claudie, whenever a change was detected after running `kubectl apply -f <your-input-manifest>` Claudie stopped and did not continue to health check or fix the error, even if the error was simply a network inconvenience, upon either a failure or success of building that change. As of now, with the reconciliation loop, every `kubectl apply -f <your-input-manifest>` will explicitly state the desired state of your clusters, and Claudie will try endlessly to reach that desired state. This means that, in the event of any errors, changes will be reverted and then reapplied, along with health checking, which helps identify potential misconfigurations or infrastructure issues. Claudie will then try to auto-repair these issues, if possible. The goal is to further improve the reconciliation loop with each release.
+- The identification and scheduling of tasks has been overhauled. Claudie now has an initial version of a reconciliation loop. In the v0.9.x versions of Claudie, whenever a change was detected after running `kubectl apply -f <your-input-manifest>` 
+  Claudie stopped and did not continue to health check or fix the error, even if the error was simply a network inconvenience, upon either a failure or success of building that change. As of now, with the reconciliation loop, every
+  `kubectl apply -f <your-input-manifest>` will explicitly state the desired state of your clusters, and Claudie will try endlessly to reach that desired state. This means that, in the event of any errors, changes will be reverted and then
+   reapplied, along with health checking, which helps identify potential misconfigurations or infrastructure issues. Claudie will then try to auto-repair these issues, if possible. The goal is to further improve the reconciliation loop with each release.
 
 - DynamoDB was removed in favor of native locking supported by newer versions of OpenTofu which ship with Claudie `v0.10.x`
 
@@ -99,7 +102,7 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 
 - Initial version of the reconciliation loop was added to Claudie [#1951](https://github.com/berops/claudie/pull/1951)
   Claudie will now endlessly healthcheck and try to fix errors on identified tasks. While currently this only resolves
-  basic scenarios, as unreachable nodes, the aim is to broaden this with every release.
+  basic scenarios, such as unreachable nodes, the aim is to broaden this with every release.
   
 - Claudie will no longer expect NGINX to be installed on existing clusters [#1980](https://github.com/berops/claudie/pull/1980)
 
