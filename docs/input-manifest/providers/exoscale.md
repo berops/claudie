@@ -25,10 +25,10 @@ If you wish to use Exoscale as your DNS provider where Claudie creates DNS recor
 !!! warning "Exoscale is not my domain registrar"
     If you haven't acquired a domain via Exoscale and wish to utilize Exoscale for hosting your zone, you will need to point your domain's nameservers to Exoscale's DNS servers (`ns1.exoscale.io`, `ns1.exoscale.com`, `ns1.exoscale.net`, `ns1.exoscale.ch`). Alternatively, you can delegate a subdomain to Exoscale.
 
-## Available zones
-Exoscale operates in the following zones:
+## Available regions
+Exoscale operates in the following regions:
 
-| Zone | Location |
+| Region | Location |
 |------|----------|
 | `ch-gva-2` | Geneva, Switzerland |
 | `de-fra-1` | Frankfurt, Germany |
