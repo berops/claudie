@@ -131,6 +131,9 @@ func (c ClusterBuilder) ReconcileNodePools() error {
 				if target != n.Name {
 					continue
 				}
+				if ip == "" {
+					return fmt.Errorf("node %q from nodepool %q has no public address assigned", n.Name, nodepool.Name)
+				}
 				found = true
 				n.Public = fmt.Sprint(ip)
 				break

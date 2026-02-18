@@ -285,10 +285,11 @@ func ConvertFromGRPCWorkflow(w *spec.Workflow) Workflow {
 		previous = append(previous, fw)
 	}
 	return Workflow{
-		Status:      w.GetStatus().String(),
-		Description: w.GetDescription(),
-		Timestamp:   time.Now().UTC().Format(time.RFC3339),
-		Previous:    previous,
+		Status:            w.GetStatus().String(),
+		Description:       w.GetDescription(),
+		Timestamp:         time.Now().UTC().Format(time.RFC3339),
+		Previous:          previous,
+		TicksUntilRefresh: w.TicksUntilRefresh,
 	}
 }
 
@@ -311,9 +312,10 @@ func ConvertToGRPCWorkflow(w Workflow) *spec.Workflow {
 	}
 
 	return &spec.Workflow{
-		Status:      spec.Workflow_Status(spec.Workflow_Status_value[w.Status]),
-		Description: w.Description,
-		Previous:    previous,
+		Status:            spec.Workflow_Status(spec.Workflow_Status_value[w.Status]),
+		Description:       w.Description,
+		Previous:          previous,
+		TicksUntilRefresh: w.TicksUntilRefresh,
 	}
 }
 

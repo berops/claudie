@@ -35,6 +35,13 @@ var (
 
 	// Ack wait time in minutes for processing incoming NATS messages.
 	AckWait = time.Duration(envs.GetOrDefaultInt("MANAGER_ACK_WAIT_TIME", 8)) * time.Minute
+
+	// Ticks for infrastructure refresh are the number of Manager ticks that
+	// are set after each scheduled task. This value is decrement every iteration
+	// of the reconciliation loop below when no task has been identified.
+	//
+	// Once this value reaches zero, a refresh of the infrastructure will be scheduled.
+	TicksForInfrastructureRefresh = int32(envs.GetOrDefaultInt("MANAGER_TICK_FOR_INFRA_REFRESH", 100 /* * [PendingTick] ~= 35mins */))
 )
 
 var _ pb.ManagerServiceServer = (*Service)(nil)
