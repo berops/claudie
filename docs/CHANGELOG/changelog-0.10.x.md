@@ -9,8 +9,8 @@
 
 ## Most notable changes (TL;DR)
 
-- After deploying Claudie version `v0.10.0` the reconciliation loop will be initiated after the first `kubectl apply -f <your-input-manifest>` 
-  that initiates a change compared to the last applied version of that input manifest.
+- This version introduces a regular loop that will periodically ensure that the created infrastructure always matches the specs from the InputManifest and it is aligned and corrected if it drifts. 
+  This mechanism will be applied on any newly created clusters. Clusters imported from older versions of Claudie will become regularly reconciled after their first modification in InputManifest.
 
 - Longhorn v1.9.2 will now be deployed for clusters built with Claudie. For existing clusters built with `v0.9.16` manual steps need to be done 
   before deploying Claudie `v0.10.0`:
