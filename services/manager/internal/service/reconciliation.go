@@ -40,13 +40,6 @@ const (
 	NotReady
 )
 
-// Ticks for infrastructure refresh are the number of Manager ticks that
-// are set after each scheduled task. This value is decrement every iteration
-// of the reconciliation loop below when no task has been identified.
-//
-// Once this value reaches zero, a refresh of the infrastructure will be scheduled.
-const TicksForInfrastructureRefresh = 100 // * [PendingTick] ~= 35mins
-
 // Schedules tasks based on the difference between the current and desired state.
 // No changes to the passed in values are done. The passed in `desired` and `pending`
 // states will not be modified in any way.
