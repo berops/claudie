@@ -102,7 +102,7 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
   
 - Claudie will no longer expect NGINX to be installed on existing clusters [#1980](https://github.com/berops/claudie/pull/1980)
 
-- Part of the reconcilation loop is to refresh the current state infrastructure periodically after no tasks has been identified [#1979](https://github.com/berops/claudie/pull/1979)
+- Part of the reconciliation loop is to refresh the current state infrastructure periodically after no tasks have been identified [#1979](https://github.com/berops/claudie/pull/1979)
 
 ## Bug fixes
 
