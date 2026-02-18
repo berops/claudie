@@ -146,27 +146,27 @@ func extractPatchFromUpdate(update *spec.Update) (*spec.Update_KuberPatchNodes, 
 
 func buildPatchAllNodes(k8s *spec.K8Scluster) *spec.Update_KuberPatchNodes {
 	patch := &spec.Update_KuberPatchNodes{
-		Add:    new(spec.Update_KuberPatchNodes_AddBatch),
-		Remove: new(spec.Update_KuberPatchNodes_RemoveBatch),
+		Add: &spec.Update_KuberPatchNodes_AddBatch{
+			Taints:      map[string]*spec.Update_KuberPatchNodes_ListOfTaints{},
+			Labels:      map[string]*spec.Update_KuberPatchNodes_MapOfLabels{},
+			Annotations: map[string]*spec.Update_KuberPatchNodes_MapOfAnnotations{},
+		},
+		Remove: &spec.Update_KuberPatchNodes_RemoveBatch{
+			Taints:      map[string]*spec.Update_KuberPatchNodes_ListOfTaints{},
+			Annotations: map[string]*spec.Update_KuberPatchNodes_ListOfAnnotationKeys{},
+			Labels:      map[string]*spec.Update_KuberPatchNodes_ListOfLabelKeys{},
+		},
 	}
 
 	for _, np := range k8s.ClusterInfo.NodePools {
-		patch.Add = &spec.Update_KuberPatchNodes_AddBatch{
-			Taints: map[string]*spec.Update_KuberPatchNodes_ListOfTaints{
-				np.Name: {
-					Taints: np.Taints,
-				},
-			},
-			Labels: map[string]*spec.Update_KuberPatchNodes_MapOfLabels{
-				np.Name: {
-					Labels: np.Labels,
-				},
-			},
-			Annotations: map[string]*spec.Update_KuberPatchNodes_MapOfAnnotations{
-				np.Name: {
-					Annotations: np.Annotations,
-				},
-			},
+		patch.Add.Taints[np.Name] = &spec.Update_KuberPatchNodes_ListOfTaints{
+			Taints: np.Taints,
+		}
+		patch.Add.Labels[np.Name] = &spec.Update_KuberPatchNodes_MapOfLabels{
+			Labels: np.Labels,
+		}
+		patch.Add.Annotations[np.Name] = &spec.Update_KuberPatchNodes_MapOfAnnotations{
+			Annotations: np.Annotations,
 		}
 	}
 
