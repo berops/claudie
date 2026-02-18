@@ -9,7 +9,7 @@
 
 ## Most notable changes (TL;DR)
 
-- After deploying claudie version `v0.10.0` the reconciliation loop will be initiated after the first `kubectl apply -f <your-input-manifest>` 
+- After deploying Claudie version `v0.10.0` the reconciliation loop will be initiated after the first `kubectl apply -f <your-input-manifest>` 
   that has a change in the desired state compared to the last applied version.
 
 - Longhorn v1.9.2 will now be deployed for clusters built with claudie. For existing clusters build with `v0.9.16` manual steps need to be done 
