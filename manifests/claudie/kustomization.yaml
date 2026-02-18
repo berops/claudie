@@ -56,7 +56,6 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
 - name: ghcr.io/berops/claudie/ansibler
-<<<<<<< feat/exoscale-support
   newTag: 0cd11a2-3899
 - name: ghcr.io/berops/claudie/autoscaler-adapter
   newTag: 0cd11a2-3899
@@ -70,18 +69,3 @@ images:
   newTag: 0cd11a2-3899
 - name: ghcr.io/berops/claudie/terraformer
   newTag: 0cd11a2-3899
-=======
-  newTag: 3929424-3901
-- name: ghcr.io/berops/claudie/autoscaler-adapter
-  newTag: 3929424-3901
-- name: ghcr.io/berops/claudie/claudie-operator
-  newTag: 3929424-3901
-- name: ghcr.io/berops/claudie/kube-eleven
-  newTag: 3929424-3901
-- name: ghcr.io/berops/claudie/kuber
-  newTag: 3929424-3901
-- name: ghcr.io/berops/claudie/manager
-  newTag: 3929424-3901
-- name: ghcr.io/berops/claudie/terraformer
-  newTag: 3929424-3901
->>>>>>> master
