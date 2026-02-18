@@ -29,6 +29,16 @@ func reconcileInfrastructure(
 	}
 
 	switch delta := action.Update.Delta.(type) {
+	case *spec.Update_None_:
+		logger.Info().Msg("Refreshing whole infrastructure")
+
+		// Refreshing the whole infrastructure means refreshing
+		// both the kubernetes cluster infra and all of its attached
+		// loadbalancers.
+		//
+		// Since refreshing the infrastructure is currently equivalent
+		// to building it, re-use the code.
+		build(logger, projectName, processLimit, tracker)
 	case *spec.Update_TfReplaceRoleExternalSettings:
 		action := ReplaceRoleExternalSettings{
 			State:   state,

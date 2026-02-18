@@ -128,8 +128,8 @@ func ping4(logger zerolog.Logger, conn *icmp.PacketConn, id, seq int, dst *net.U
 func Ping(logger zerolog.Logger, count int, dst string) error {
 	dstAddr := &net.UDPAddr{IP: net.ParseIP(dst)}
 	if dstAddr.IP == nil {
-		logger.Warn().Msgf("Received invalid IP address to ping %q, skipping unreachability check", dst)
-		return nil
+		logger.Warn().Msgf("Received invalid IP address to ping %q, considering as unreachable", dst)
+		return fmt.Errorf("unhealthy connection: %w, invalid IP address %q", ErrEchoTimeout, dst)
 	}
 
 	conn, err := icmp.ListenPacket("udp4", "0.0.0.0")

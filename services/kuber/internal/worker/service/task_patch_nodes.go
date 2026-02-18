@@ -19,30 +19,7 @@ func PatchNodes(logger zerolog.Logger, processlimit *semaphore.Weighted, workers
 	switch do := tracker.Task.Do.(type) {
 	case *spec.Task_Create:
 		k8s = do.Create.K8S
-		patch = &spec.Update_KuberPatchNodes{
-			Add:    new(spec.Update_KuberPatchNodes_AddBatch),
-			Remove: new(spec.Update_KuberPatchNodes_RemoveBatch),
-		}
-
-		for _, np := range k8s.ClusterInfo.NodePools {
-			patch.Add = &spec.Update_KuberPatchNodes_AddBatch{
-				Taints: map[string]*spec.Update_KuberPatchNodes_ListOfTaints{
-					np.Name: {
-						Taints: np.Taints,
-					},
-				},
-				Labels: map[string]*spec.Update_KuberPatchNodes_MapOfLabels{
-					np.Name: {
-						Labels: np.Labels,
-					},
-				},
-				Annotations: map[string]*spec.Update_KuberPatchNodes_MapOfAnnotations{
-					np.Name: {
-						Annotations: np.Annotations,
-					},
-				},
-			}
-		}
+		patch = buildPatchAllNodes(k8s)
 	case *spec.Task_Update:
 		var ok bool
 		patch, ok = extractPatchFromUpdate(do.Update)
@@ -132,6 +109,8 @@ func updateExistingAnnotationsLabelsTaints(k8s *spec.K8Scluster, add *spec.Updat
 
 func extractPatchFromUpdate(update *spec.Update) (*spec.Update_KuberPatchNodes, bool) {
 	switch delta := update.Delta.(type) {
+	case *spec.Update_None_:
+		return buildPatchAllNodes(update.State.K8S), true
 	case *spec.Update_KpatchNodes:
 		return delta.KpatchNodes, true
 	case *spec.Update_AddedK8SNodes_:
@@ -163,4 +142,33 @@ func extractPatchFromUpdate(update *spec.Update) (*spec.Update_KuberPatchNodes, 
 	default:
 		return nil, false
 	}
+}
+
+func buildPatchAllNodes(k8s *spec.K8Scluster) *spec.Update_KuberPatchNodes {
+	patch := &spec.Update_KuberPatchNodes{
+		Add: &spec.Update_KuberPatchNodes_AddBatch{
+			Taints:      map[string]*spec.Update_KuberPatchNodes_ListOfTaints{},
+			Labels:      map[string]*spec.Update_KuberPatchNodes_MapOfLabels{},
+			Annotations: map[string]*spec.Update_KuberPatchNodes_MapOfAnnotations{},
+		},
+		Remove: &spec.Update_KuberPatchNodes_RemoveBatch{
+			Taints:      map[string]*spec.Update_KuberPatchNodes_ListOfTaints{},
+			Annotations: map[string]*spec.Update_KuberPatchNodes_ListOfAnnotationKeys{},
+			Labels:      map[string]*spec.Update_KuberPatchNodes_ListOfLabelKeys{},
+		},
+	}
+
+	for _, np := range k8s.ClusterInfo.NodePools {
+		patch.Add.Taints[np.Name] = &spec.Update_KuberPatchNodes_ListOfTaints{
+			Taints: np.Taints,
+		}
+		patch.Add.Labels[np.Name] = &spec.Update_KuberPatchNodes_MapOfLabels{
+			Labels: np.Labels,
+		}
+		patch.Add.Annotations[np.Name] = &spec.Update_KuberPatchNodes_MapOfAnnotations{
+			Annotations: np.Annotations,
+		}
+	}
+
+	return patch
 }

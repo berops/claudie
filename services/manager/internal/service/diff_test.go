@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/internal/spectesting"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/google/go-cmp/cmp"
@@ -21,9 +22,11 @@ func TestNodePoolsDiff_Table(t *testing.T) {
 	}
 
 	tests := []struct {
-		Name string
-		args args
-		want NodePoolsDiffResult
+		Name      string
+		args      args
+		want      NodePoolsDiffResult
+		commonOld NodePoolsViewType
+		commonNew NodePoolsViewType
 	}{
 		{
 			Name: "ok-deleting-adding-nodes",
@@ -47,6 +50,14 @@ func TestNodePoolsDiff_Table(t *testing.T) {
 				},
 				Added: NodePoolsViewType{},
 			},
+			commonOld: NodePoolsViewType{
+				"1": []string{"1"},
+				"2": []string{"5"},
+			},
+			commonNew: NodePoolsViewType{
+				"1": []string{"1"},
+				"2": []string{"5"},
+			},
 		},
 		{
 			Name: "ok-adding-only-nodes",
@@ -67,6 +78,14 @@ func TestNodePoolsDiff_Table(t *testing.T) {
 					"1": []string{"6"},
 				},
 				Added: NodePoolsViewType{},
+			},
+			commonOld: NodePoolsViewType{
+				"1": []string{"1"},
+				"2": []string{"4", "5"},
+			},
+			commonNew: NodePoolsViewType{
+				"1": []string{"1"},
+				"2": []string{"4", "5"},
 			},
 		},
 		{
@@ -92,6 +111,14 @@ func TestNodePoolsDiff_Table(t *testing.T) {
 					"3": []string{"9"},
 				},
 			},
+			commonOld: NodePoolsViewType{
+				"1": []string{"1"},
+				"2": []string{"4", "5"},
+			},
+			commonNew: NodePoolsViewType{
+				"1": []string{"1"},
+				"2": []string{"4", "5"},
+			},
 		},
 	}
 
@@ -100,6 +127,14 @@ func TestNodePoolsDiff_Table(t *testing.T) {
 			t.Parallel()
 			got := NodePoolsDiff(tt.args.old, tt.args.new)
 			if diff := cmp.Diff(got, tt.want); diff != "" {
+				t.Fatal(diff)
+			}
+
+			if diff := cmp.Diff(tt.args.old, tt.commonOld); diff != "" {
+				t.Fatal(diff)
+			}
+
+			if diff := cmp.Diff(tt.args.new, tt.commonNew); diff != "" {
 				t.Fatal(diff)
 			}
 		})
@@ -176,11 +211,19 @@ func TestNodePoolsDiff_All(t *testing.T) {
 
 	currentResult := iter(rng, desiredK8sCluster.ClusterInfo)
 
+	commonDynamicNodes := findCommonDynamicNodes(currentK8sCluster.ClusterInfo, desiredK8sCluster.ClusterInfo)
+	commonStaticNodes := findCommonStaticNodes(currentK8sCluster.ClusterInfo, desiredK8sCluster.ClusterInfo)
+
 	currentDynamic, currentStatic := NodePoolsView(currentK8sCluster.ClusterInfo)
 	desiredDynamic, desiredStatic := NodePoolsView(desiredK8sCluster.ClusterInfo)
 
 	dynamicDiff := NodePoolsDiff(currentDynamic, desiredDynamic)
 	staticDiff := NodePoolsDiff(currentStatic, desiredStatic)
+
+	assert.Empty(t, cmp.Diff(currentDynamic, desiredDynamic))
+	assert.Empty(t, cmp.Diff(currentStatic, desiredStatic))
+	assert.Empty(t, cmp.Diff(desiredDynamic, commonDynamicNodes))
+	assert.Empty(t, cmp.Diff(desiredStatic, commonStaticNodes))
 
 	assert.Equal(t, len(currentResult.deletedCounts), len(dynamicDiff.Deleted)+len(staticDiff.Deleted))
 
@@ -340,11 +383,19 @@ func TestNodePoolsDiff_PartialAdd_Deletion(t *testing.T) {
 		currentResult := iter(rng, desiredK8sCluster.ClusterInfo)
 		mergeWithOlder(&currentResult)
 
+		commonDynamicNodes := findCommonDynamicNodes(currentK8sCluster.ClusterInfo, desiredK8sCluster.ClusterInfo)
+		commonStaticNodes := findCommonStaticNodes(currentK8sCluster.ClusterInfo, desiredK8sCluster.ClusterInfo)
+
 		currentDynamic, currentStatic := NodePoolsView(currentK8sCluster.ClusterInfo)
 		desiredDynamic, desiredStatic := NodePoolsView(desiredK8sCluster.ClusterInfo)
 
 		dynamicDiff := NodePoolsDiff(currentDynamic, desiredDynamic)
 		staticDiff := NodePoolsDiff(currentStatic, desiredStatic)
+
+		assert.Empty(t, cmp.Diff(currentDynamic, desiredDynamic))
+		assert.Empty(t, cmp.Diff(currentStatic, desiredStatic))
+		assert.Empty(t, cmp.Diff(desiredDynamic, commonDynamicNodes))
+		assert.Empty(t, cmp.Diff(desiredStatic, commonStaticNodes))
 
 		assert.Equal(
 			t,
@@ -538,5 +589,59 @@ func helperNodepoolNames(ci *spec.ClusterInfo) []string {
 	for _, np := range ci.NodePools {
 		result = append(result, np.Name)
 	}
+	return result
+}
+
+func findCommonDynamicNodes(left, right *spec.ClusterInfo) map[string][]string {
+	result := make(map[string][]string)
+
+	for _, np := range left.NodePools {
+		if np.GetDynamicNodePool() == nil {
+			continue
+		}
+
+		other := nodepools.FindByName(np.Name, right.NodePools)
+		if other == nil {
+			continue
+		}
+
+		result[np.Name] = []string{}
+
+		for _, n := range np.Nodes {
+			for _, on := range other.Nodes {
+				if n.Name == on.Name {
+					result[np.Name] = append(result[np.Name], n.Name)
+				}
+			}
+		}
+	}
+
+	return result
+}
+
+func findCommonStaticNodes(left, right *spec.ClusterInfo) map[string][]string {
+	result := make(map[string][]string)
+
+	for _, np := range left.NodePools {
+		if np.GetStaticNodePool() == nil {
+			continue
+		}
+
+		other := nodepools.FindByName(np.Name, right.NodePools)
+		if other == nil {
+			continue
+		}
+
+		result[np.Name] = []string{}
+
+		for _, n := range np.Nodes {
+			for _, on := range other.Nodes {
+				if n.Name == on.Name {
+					result[np.Name] = append(result[np.Name], n.Name)
+				}
+			}
+		}
+	}
+
 	return result
 }

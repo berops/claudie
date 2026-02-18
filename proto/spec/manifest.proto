@@ -88,6 +88,12 @@ message Workflow {
 
   // Information about previously finished workflows.
   repeated FinishedWorkflow previous = 9;
+
+  // Ticks until refresh are the number of ticks until a refresh
+  // of the infrastructure is to be scheduled. Once this value reaches
+  // 0 the refresh of the infrastructure should be scheduled and this
+  // value should be reset back to its original starting value.
+  int32 ticksUntilRefresh = 10;
 }
 
 // K8scluster represents a single kubernetes cluster specified in the manifest.

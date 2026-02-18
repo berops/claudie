@@ -15,7 +15,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const PreviouslyCachedWorkflowResults = 2
+const PreviouslyCachedWorkflowResults = 3
 
 type (
 	Work struct {
@@ -144,6 +144,8 @@ func ProcessTask(ctx context.Context, stores Stores, work Work) (acknowledge boo
 		cluster.State = store.Workflow{
 			Status:   spec.Workflow_WAIT_FOR_PICKUP.String(),
 			Previous: slices.Clone(cluster.State.Previous),
+			// A scheduled task will reset the number of ticks for the infrastructure reset.
+			TicksUntilRefresh: TicksForInfrastructureRefresh,
 		}
 
 		if err := stores.store.UpdateConfig(ctx, im); err != nil {
@@ -293,6 +295,8 @@ func processTaskWithError(
 			cluster.State = store.Workflow{
 				Status:   spec.Workflow_WAIT_FOR_PICKUP.String(),
 				Previous: slices.Clone(cluster.State.Previous),
+				// A scheduled task will reset the number of ticks for the infrastructure reset.
+				TicksUntilRefresh: TicksForInfrastructureRefresh,
 			}
 
 			if err := stores.store.UpdateConfig(ctx, im); err != nil {
