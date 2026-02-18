@@ -280,10 +280,28 @@ func CreatePipeline(clusters *spec.Clusters, isCreate bool) []*spec.Stage {
 			},
 		}
 
+		tfUpdate = spec.Stage_Terraformer{
+			Terraformer: &spec.StageTerraformer{
+				Description: &spec.StageDescription{
+					About:      "Refreshing infrastructure for the cluster",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+				SubPasses: []*spec.StageTerraformer_SubPass{
+					{
+						Kind: spec.StageTerraformer_UPDATE_INFRASTRUCTURE,
+						Description: &spec.StageDescription{
+							About:      "Building desired state infrastructure",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+				},
+			},
+		}
+
 		ansProxy = spec.Stage_Ansibler{
 			Ansibler: &spec.StageAnsibler{
 				Description: &spec.StageDescription{
-					About:      "Configuring newly spawned cluster infrastructure",
+					About:      "Configuring cluster infrastructure",
 					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 				},
 				SubPasses: []*spec.StageAnsibler_SubPass{
@@ -337,7 +355,7 @@ func CreatePipeline(clusters *spec.Clusters, isCreate bool) []*spec.Stage {
 		ansNoProxy = spec.Stage_Ansibler{
 			Ansibler: &spec.StageAnsibler{
 				Description: &spec.StageDescription{
-					About:      "Configuring newly spawned cluster infrastructure",
+					About:      "Configuring cluster infrastructure",
 					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 				},
 				SubPasses: []*spec.StageAnsibler_SubPass{
@@ -376,7 +394,7 @@ func CreatePipeline(clusters *spec.Clusters, isCreate bool) []*spec.Stage {
 		kubeeleven = spec.Stage_KubeEleven{
 			KubeEleven: &spec.StageKubeEleven{
 				Description: &spec.StageDescription{
-					About:      "Building kubernetes cluster out of the spawned infrastructure",
+					About:      "Reconciling kubernetes cluster",
 					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 				},
 				SubPasses: []*spec.StageKubeEleven_SubPass{
@@ -435,17 +453,23 @@ func CreatePipeline(clusters *spec.Clusters, isCreate bool) []*spec.Stage {
 		ansProxy.Ansibler.SubPasses = append(ansProxy.Ansibler.SubPasses, &spec.StageAnsibler_SubPass{
 			Kind: spec.StageAnsibler_COMMIT_PROXY_ENVS,
 			Description: &spec.StageDescription{
-				About:      "Commiting updated proxy environment variables",
+				About:      "Committing updated proxy environment variables",
 				ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 			},
 		})
 	}
 
 	pipeline := []*spec.Stage{
-		{StageKind: &tf},
+		{StageKind: nil},
 		{StageKind: nil},
 		{StageKind: &kubeeleven},
 		{StageKind: &kuber},
+	}
+
+	if isCreate {
+		pipeline[0].StageKind = &tf
+	} else {
+		pipeline[0].StageKind = &tfUpdate
 	}
 
 	if UsesProxy(clusters.K8S) {

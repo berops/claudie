@@ -364,7 +364,7 @@ Failed to extract state from failed 'InFlight' state: %v
 
 						logger.
 							Info().
-							Msg("No task was scheduled for a while, issueing a refresh of the infrastructure")
+							Msg("No task was scheduled for a while, issuing a refresh of the infrastructure")
 
 						logger.
 							Info().
