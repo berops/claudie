@@ -6,9 +6,6 @@ var (
 	//go:embed all-node-inventory.goini
 	AllNodesInventoryTemplate string
 
-	//go:embed uninstall-nginx.goyml
-	UninstallNginx string
-
 	//go:embed deploy-envoy.goyml
 	EnvoyTemplate string
 
