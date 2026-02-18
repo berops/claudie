@@ -58,7 +58,7 @@ The secret for an Exoscale provider must include the following mandatory fields:
 kubectl create secret generic exoscale-secret-1 --namespace=<your-namespace> --from-literal=apikey='<your-api-key>' --from-literal=apisecret='<your-api-secret>'
 ```
 
-### Single provider, multi region cluster example
+### Single-provider, multi-region cluster example
 
 ```yaml
 apiVersion: claudie.io/v1beta1
@@ -81,7 +81,7 @@ spec:
         providerSpec:
           # Name of the provider instance.
           name: exoscale-1
-          # Zone of the nodepool.
+          # Region of the nodepool.
           region: ch-gva-2
         count: 1
         # Instance type name.
@@ -93,7 +93,7 @@ spec:
         providerSpec:
           # Name of the provider instance.
           name: exoscale-1
-          # Zone of the nodepool.
+          # Region of the nodepool.
           region: de-fra-1
         count: 2
         # Instance type name.
@@ -106,7 +106,7 @@ spec:
         providerSpec:
           # Name of the provider instance.
           name: exoscale-1
-          # Zone of the nodepool.
+          # Region of the nodepool.
           region: at-vie-1
         count: 2
         # Instance type name.
@@ -128,7 +128,7 @@ spec:
             - compute-2-exo
 ```
 
-### Multi provider, multi region clusters example
+### Multi-provider, multi-region clusters example
 
 ```bash
 kubectl create secret generic exoscale-secret-1 --namespace=<your-namespace> --from-literal=apikey='<your-api-key>' --from-literal=apisecret='<your-api-secret>'
@@ -161,7 +161,7 @@ spec:
         providerSpec:
           # Name of the provider instance.
           name: exoscale-1
-          # Zone of the nodepool.
+          # Region of the nodepool.
           region: ch-gva-2
         count: 1
         # Instance type name.
@@ -173,7 +173,7 @@ spec:
         providerSpec:
           # Name of the provider instance.
           name: exoscale-2
-          # Zone of the nodepool.
+          # Region of the nodepool.
           region: de-fra-1
         count: 2
         # Instance type name.
@@ -185,7 +185,7 @@ spec:
         providerSpec:
           # Name of the provider instance.
           name: exoscale-1
-          # Zone of the nodepool.
+          # Region of the nodepool.
           region: ch-gva-2
         count: 2
         # Instance type name.
@@ -198,7 +198,7 @@ spec:
         providerSpec:
           # Name of the provider instance.
           name: exoscale-2
-          # Zone of the nodepool.
+          # Region of the nodepool.
           region: at-vie-1
         count: 2
         # Instance type name.

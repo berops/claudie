@@ -152,8 +152,8 @@ func getTypeInfoExoscale(rawInfo []egoscale.InstanceType) map[string]*InstanceIn
 		// Exoscale server type format: "family.size" (e.g., "standard.medium")
 		name := fmt.Sprintf("%s.%s", it.Family, it.Size)
 		m[name] = &InstanceInfo{
-			cpu:        it.Cpus,
-			memory:     it.Memory,
+			cpu:    it.Cpus,
+			memory: it.Memory, // Exoscale API returns memory in bytes, no conversion needed.
 			nvidiaGpus: it.Gpus,
 		}
 	}

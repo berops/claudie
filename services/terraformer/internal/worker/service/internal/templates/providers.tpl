@@ -51,7 +51,7 @@ terraform {
     {{- if .Exoscale }}
     exoscale = {
       source  = "exoscale/exoscale"
-      version = "~> 0.68"
+      version = "~> 0.68.0"
     }
     {{- end }}
   }
