@@ -71,6 +71,11 @@ spec:
   providers:
     - name: exoscale-1
       providerType: exoscale
+      # Exoscale templates are supported from claudie-config v0.9.17+
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.9.17
+        path: "templates/terraformer/exoscale"
       secretRef:
         name: exoscale-secret-1
         namespace: <your-namespace>
@@ -146,11 +151,21 @@ spec:
   providers:
     - name: exoscale-1
       providerType: exoscale
+      # Exoscale templates are supported from claudie-config v0.9.17+
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.9.17
+        path: "templates/terraformer/exoscale"
       secretRef:
         name: exoscale-secret-1
         namespace: <your-namespace>
     - name: exoscale-2
       providerType: exoscale
+      # Exoscale templates are supported from claudie-config v0.9.17+
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.9.17
+        path: "templates/terraformer/exoscale"
       secretRef:
         name: exoscale-secret-2
         namespace: <your-namespace>
