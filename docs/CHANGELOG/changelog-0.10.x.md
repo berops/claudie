@@ -1,5 +1,6 @@
 # Claudie `v0.10`
 
+!!! warning "Upgrade to this release from previous version requires manual intervention (due to the Longhorn version upgrade)."
 
 !!! warning "Several major internal changes have been made to Claudie. While the `v0.10.0` version should be backward compatible with `v0.9.16`, it was not possible to test all possible cluster configuration scenarios. We advise creating backups before upgrading to v0.10.0 and later versions."
 
