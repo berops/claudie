@@ -3,9 +3,12 @@ package node_manager
 import (
 	"strings"
 
+	"fmt"
+
 	"cloud.google.com/go/compute/apiv1/computepb"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	egoscale "github.com/exoscale/egoscale/v3"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/flavors"
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"github.com/oracle/oci-go-sdk/v65/core"
@@ -138,6 +141,20 @@ func getTypeInfoOpenstack(rawInfo []flavors.Flavor) map[string]*InstanceInfo {
 		m[flavor.Name] = &InstanceInfo{
 			cpu:    int64(flavor.VCPUs),
 			memory: int64(flavor.RAM) * 1024 * 1024, // Convert to bytes
+		}
+	}
+	return m
+}
+
+func getTypeInfoExoscale(rawInfo []egoscale.InstanceType) map[string]*InstanceInfo {
+	m := make(map[string]*InstanceInfo, len(rawInfo))
+	for _, it := range rawInfo {
+		// Exoscale server type format: "family.size" (e.g., "standard.medium")
+		name := fmt.Sprintf("%s.%s", it.Family, it.Size)
+		m[name] = &InstanceInfo{
+			cpu:        it.Cpus,
+			memory:     it.Memory, // Exoscale API returns memory in bytes, no conversion needed.
+			nvidiaGpus: it.Gpus,
 		}
 	}
 	return m

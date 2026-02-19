@@ -67,6 +67,15 @@ spec:
       secretRef:
         name: azure-sponsorship-secret
         namespace: e2e-secrets
+    - name: exoscale-1
+      providerType: exoscale
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.9.17
+        path: "templates/terraformer/exoscale"
+      secretRef:
+        name: exoscale-secret
+        namespace: e2e-secrets
     - name: ovh-1
       providerType: openstack
       templates:
@@ -209,6 +218,20 @@ spec:
         annotations:
           claudie.io/example-annotation: >
             ["test-set1"]
+      - name: exo-cmpt-nodes
+        providerSpec:
+          name: exoscale-1
+          region: ch-gva-2
+        count: 1
+        serverType: standard.medium
+        image: "Linux Ubuntu 24.04 LTS 64-bit"
+        storageDiskSize: 50
+        labels:
+          test-set: test-set1
+        annotations:
+          claudie.io/example-annotation: >
+            ["test-set1"]
+
       - name: ovh-ctrl-nodes
         providerSpec:
           name: ovh-1
@@ -252,6 +275,7 @@ spec:
             - htz-ctrl-nodes
           compute:
             - htz-cmpt-nodes
+            - exo-cmpt-nodes
       - name: ts1-gcp-cluster-test-set-no1
         version: "1.34.0"
         network: 192.168.2.0/24

@@ -28,6 +28,7 @@ type usedProvidersTemplateData struct {
 	Cloudflare bool
 	HetznerDNS bool
 	Openstack  bool
+	Exoscale   bool
 }
 
 // CreateUsedProviderDNS creates provider file used for DNS management.
@@ -89,6 +90,9 @@ func getProvidersUsed(nodepools []*spec.DynamicNodePool, data *usedProvidersTemp
 		if nodepool.Provider.CloudProviderName == "openstack" {
 			data.Openstack = true
 		}
+		if nodepool.Provider.CloudProviderName == "exoscale" {
+			data.Exoscale = true
+		}
 	}
 }
 
@@ -113,5 +117,7 @@ func getDNSProvider(dns *spec.DNS, data *usedProvidersTemplateData) {
 		data.Cloudflare = true
 	case "hetznerdns":
 		data.HetznerDNS = true
+	case "exoscale":
+		data.Exoscale = true
 	}
 }

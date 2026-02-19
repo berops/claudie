@@ -122,6 +122,65 @@ spec:
     - Common GPU types: `nvidia-tesla-t4`, `nvidia-tesla-v100`, `nvidia-tesla-a100`, `nvidia-l4`
     - GPU instances cannot be live migrated, so they will be terminated during maintenance events
 
+## Exoscale GPU Example
+
+For [Exoscale](providers/exoscale.md), GPU instances have the GPU built into the instance type (like AWS), so no additional `machineSpec` configuration is needed. Simply use a GPU instance type such as `gpu2.small` as the `serverType`:
+
+```yaml
+apiVersion: claudie.io/v1beta1
+kind: InputManifest
+metadata:
+  name: exoscale-gpu-example
+  labels:
+    app.kubernetes.io/part-of: claudie
+spec:
+  providers:
+    - name: exoscale-1
+      providerType: exoscale
+      # Exoscale templates are supported from claudie-config v0.9.17+
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.9.17
+        path: "templates/terraformer/exoscale"
+      secretRef:
+        name: exoscale-secret
+        namespace: secrets
+
+  nodePools:
+    dynamic:
+    - name: control-exo
+      providerSpec:
+        name: exoscale-1
+        region: ch-gva-2
+      count: 1
+      serverType: standard.medium
+      image: "Linux Ubuntu 24.04 LTS 64-bit"
+
+    - name: gpu-exo
+      providerSpec:
+        name: exoscale-1
+        region: at-vie-1
+      count: 1
+      serverType: gpu2.small
+      image: "Linux Ubuntu 24.04 LTS 64-bit"
+      storageDiskSize: 50
+
+  kubernetes:
+    clusters:
+      - name: gpu-example
+        version: v1.31.0
+        network: 172.16.2.0/24
+        pools:
+          control:
+            - control-exo
+          compute:
+            - gpu-exo
+```
+
+!!! note "Exoscale GPU Requirements"
+    - GPU instance types require account authorization from Exoscale. Contact [Exoscale support](https://portal.exoscale.com/support) to enable GPU quota.
+    - Available GPU types and zones may change. List current offerings with `exo compute instance-type list --verbose | grep -i gpu` or check the [Exoscale pricing page](https://www.exoscale.com/pricing/#/compute).
+
 ## Deploying the GPU Operator
 
 After the `InputManifest` has been successfully built by Claudie, deploy the `gpu-operator` to the `gpu-example` Kubernetes cluster.

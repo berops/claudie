@@ -41,3 +41,4 @@ services/terraformer/templates/
 # Claude
 .claude/
 CLAUDE.md
+*PLAN.md

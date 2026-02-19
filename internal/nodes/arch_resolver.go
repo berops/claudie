@@ -86,6 +86,8 @@ func (r *DynamicNodePoolResolver) resolve(np *spec.DynamicNodePool) (Arch, error
 		return resolveAzure(np)
 	case "openstack":
 		return resolveOpenstack(np)
+	case "exoscale":
+		return resolveExoscale(np)
 	default:
 		return "", fmt.Errorf("%q not supported", np.GetProvider().GetCloudProviderName())
 	}
@@ -94,6 +96,11 @@ func (r *DynamicNodePoolResolver) resolve(np *spec.DynamicNodePool) (Arch, error
 func resolveOpenstack(np *spec.DynamicNodePool) (Arch, error) {
 	// As of October 3, 2025, there is no way to determine the OpenStack
 	// architecture resolution based on the image or server type/flavor.
+	return Amd64, nil
+}
+
+func resolveExoscale(np *spec.DynamicNodePool) (Arch, error) {
+	// Exoscale primarily offers AMD64 instances.
 	return Amd64, nil
 }
 

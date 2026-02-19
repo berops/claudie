@@ -39,6 +39,7 @@ type NodeManager struct {
 	azureVMs     map[string]*InstanceInfo
 	ociVMs       map[string]*InstanceInfo
 	openstackVMs map[string]*InstanceInfo
+	exoscaleVMs  map[string]*InstanceInfo
 
 	// Provider-region-zone cache
 	cacheProviderMap map[string]struct{}
@@ -88,6 +89,10 @@ func (nm *NodeManager) Refresh(autoscaled []*spec.NodePool) error {
 				}
 			case "openstack":
 				if err := nm.cacheOpenstack(dyn); err != nil {
+					return err
+				}
+			case "exoscale":
+				if err := nm.cacheExoscale(dyn); err != nil {
 					return err
 				}
 			}
@@ -163,6 +168,10 @@ func (nm *NodeManager) InstanceInfo(np *spec.DynamicNodePool) *InstanceInfo {
 		}
 	case "openstack":
 		if ti, ok := nm.openstackVMs[np.ServerType]; ok {
+			return ti
+		}
+	case "exoscale":
+		if ti, ok := nm.exoscaleVMs[np.ServerType]; ok {
 			return ti
 		}
 	}

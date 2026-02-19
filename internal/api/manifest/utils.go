@@ -229,6 +229,30 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 		}
 	}
 
+	for _, exoConf := range ds.Providers.Exoscale {
+		if exoConf.Name == providerSpecName {
+			t := &spec.TemplateRepository{
+				Repository: exoConf.Templates.Repository,
+				Tag:        exoConf.Templates.Tag,
+				Path:       exoConf.Templates.Path,
+			}
+			if err := FetchCommitHash(t); err != nil {
+				return nil, err
+			}
+			return &spec.Provider{
+				SpecName: providerSpecName,
+				ProviderType: &spec.Provider_Exoscale{
+					Exoscale: &spec.ExoscaleProvider{
+						ApiKey:    exoConf.ApiKey,
+						ApiSecret: exoConf.ApiSecret,
+					},
+				},
+				CloudProviderName: "exoscale",
+				Templates:         t,
+			}, nil
+		}
+	}
+
 	return nil, fmt.Errorf("failed to find provider with name: %s", providerSpecName)
 }
 
@@ -550,6 +574,11 @@ func (ds *Manifest) ForEachProvider(do func(name, typ string, tmpls **TemplateRe
 	}
 	for i, c := range ds.Providers.Openstack {
 		if !do(c.Name, "openstack", &ds.Providers.Openstack[i].Templates) {
+			return
+		}
+	}
+	for i, c := range ds.Providers.Exoscale {
+		if !do(c.Name, "exoscale", &ds.Providers.Exoscale[i].Templates) {
 			return
 		}
 	}
