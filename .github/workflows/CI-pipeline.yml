@@ -265,8 +265,12 @@ jobs:
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
           git add claudie/kustomization.yaml
           git add testing-framework/kustomization.yaml
-          git commit -m "Auto commit - update kustomization.yaml"
-          git push
+          if ! git diff --cached --quiet; then
+            git commit -m "Auto commit - update kustomization.yaml"
+            git push
+          else
+            echo "No changes to commit. Proceeding..."
+          fi
 
   #--------------------------------------------------------------------------------------------------
   deploy-and-monitor:
