@@ -85,6 +85,8 @@ func (pr *Provider) Credentials() string {
 		return p.Cloudflare.Token
 	case *Provider_Openstack:
 		return p.Openstack.ApplicationCredentialSecret
+	case *Provider_Exoscale:
+		return p.Exoscale.ApiSecret
 	default:
 		panic(fmt.Sprintf("unexpected type %T", pr.ProviderType))
 	}

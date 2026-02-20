@@ -18,6 +18,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/berops/claudie/internal/generics"
 	"github.com/berops/claudie/proto/pb/spec"
+	egoscale "github.com/exoscale/egoscale/v3"
+	exocredentials "github.com/exoscale/egoscale/v3/credentials"
 	"github.com/gophercloud/gophercloud/v2"
 	"github.com/gophercloud/gophercloud/v2/openstack"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/flavors"
@@ -210,5 +212,21 @@ func (nm *NodeManager) cacheOpenstack(np *spec.DynamicNodePool) error {
 		return fmt.Errorf("openstack client got error : %w", err)
 	}
 	nm.openstackVMs = getTypeInfoOpenstack(allFlavors)
+	return nil
+}
+
+func (nm *NodeManager) cacheExoscale(np *spec.DynamicNodePool) error {
+	creds := exocredentials.NewStaticCredentials(np.Provider.GetExoscale().ApiKey, np.Provider.GetExoscale().ApiSecret)
+	client, err := egoscale.NewClient(creds)
+	if err != nil {
+		return fmt.Errorf("exoscale client got error: %w", err)
+	}
+
+	resp, err := client.ListInstanceTypes(context.Background())
+	if err != nil {
+		return fmt.Errorf("exoscale client got error: %w", err)
+	}
+
+	nm.exoscaleVMs = getTypeInfoExoscale(resp.InstanceTypes)
 	return nil
 }

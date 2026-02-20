@@ -200,6 +200,22 @@ func constructInputManifest(
 				ApplicationCredentialSecret: strings.TrimSpace(osAppCredSecret),
 				Templates:                   p.Templates,
 			})
+		case v1beta1manifest.EXOSCALE:
+			exoApiKey, err := p.GetSecretField(v1beta1manifest.EXOSCALE_API_KEY)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+			exoApiSecret, err := p.GetSecretField(v1beta1manifest.EXOSCALE_API_SECRET)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+
+			providers.Exoscale = append(providers.Exoscale, manifest.Exoscale{
+				Name:      p.ProviderName,
+				ApiKey:    strings.TrimSpace(exoApiKey),
+				ApiSecret: strings.TrimSpace(exoApiSecret),
+				Templates: p.Templates,
+			})
 		}
 	}
 

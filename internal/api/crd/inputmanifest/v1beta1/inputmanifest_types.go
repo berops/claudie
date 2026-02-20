@@ -35,6 +35,7 @@ const (
 	HETZNER_DNS ProviderType = "hetznerdns"
 	OCI         ProviderType = "oci"
 	OPENSTACK   ProviderType = "openstack"
+	EXOSCALE    ProviderType = "exoscale"
 )
 
 type SecretField string
@@ -63,6 +64,8 @@ const (
 	OS_PROJECT_ID                    SecretField = "projectid"
 	OS_APPLICATION_CREDENTIAL_ID     SecretField = "applicationcredentialid"
 	OS_APPLICATION_CREDENTIAL_SECRET SecretField = "applicationcredentialsecret"
+	EXOSCALE_API_KEY                 SecretField = "apikey"
+	EXOSCALE_API_SECRET              SecretField = "apisecret"
 )
 
 // ProviderWithData helper type that assist in conversion
@@ -87,7 +90,7 @@ type Provider struct {
 	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:MinLength=1
 	ProviderName string `json:"name"`
-	// +kubebuilder:validation:Enum=gcp;hetzner;aws;oci;azure;cloudflare;hetznerdns;openstack;
+	// +kubebuilder:validation:Enum=gcp;hetzner;aws;oci;azure;cloudflare;hetznerdns;openstack;exoscale;
 	ProviderType ProviderType           `json:"providerType"`
 	SecretRef    corev1.SecretReference `json:"secretRef"`
 	// External templates for building the cluster infrastructure.
