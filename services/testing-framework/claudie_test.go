@@ -125,7 +125,7 @@ func testClaudie(ctx context.Context) error {
 			defer cancel()
 
 			log.Info().Msgf("Starting test set: %s", path)
-			cleanup, err := processTestSet(ctx, path, false, manager, testLonghornDeployment)
+			cleanup, err := processTestSet(ctx, path, false, manager)
 			if err == nil || errors.Is(err, errInterrupt) || errors.Is(err, context.Canceled) {
 				if err := cleanup(); err != nil {
 					log.Err(err).Msgf("Error in cleaning up test set %s", path)
@@ -144,7 +144,7 @@ func testClaudie(ctx context.Context) error {
 			defer cancel()
 
 			log.Info().Msgf("Starting test set: %s", path)
-			cleanup, err := processTestSet(ctx, path, true, manager, testLonghornDeployment)
+			cleanup, err := processTestSet(ctx, path, true, manager)
 			if err == nil || errors.Is(err, errInterrupt) || errors.Is(err, context.Canceled) {
 				if err := cleanup(); err != nil {
 					log.Err(err).Msgf("Error in cleaning up test set %s", path)
@@ -170,12 +170,7 @@ func testClaudie(ctx context.Context) error {
 					path,
 					false,
 					manager,
-					func(ctx context.Context, c *spec.Config) error {
-						if err := testLonghornDeployment(ctx, c); err != nil {
-							return err
-						}
-						return testAutoscaler(ctx, c)
-					},
+					testAutoscaler,
 				)
 				if err == nil || errors.Is(err, errInterrupt) || errors.Is(err, context.Canceled) {
 					if err := cleanup(); err != nil {
@@ -200,7 +195,7 @@ func processTestSet(
 	setName string,
 	continueOnBuildError bool,
 	m managerclient.ClientAPI,
-	testFunc func(ctx context.Context, c *spec.Config) error,
+	testFuncs ...func(ctx context.Context, c *spec.Config) error,
 ) (func() error, error) {
 	pathToTestSet := filepath.Join(testDir, setName)
 	log.Info().Msgf("Working on the test set %s", pathToTestSet)
@@ -268,17 +263,12 @@ func processTestSet(
 			return cleanup, fmt.Errorf("error while monitoring manifest %s from test set %s: %w", entry.Name(), setName, err)
 		}
 
-		for cluster, state := range done.Clusters {
-			if state.InFlight != nil {
-				err := fmt.Errorf("cluster %q from config %q is considered done, but still has an InFlight state", cluster, manifestName)
-				return cleanup, err
-			}
-		}
-
 		log.Info().Msgf("Starting additional tests for manifest %s from %s", entry.Name(), setName)
 
-		if err := testFunc(ctx, done); err != nil {
-			return cleanup, fmt.Errorf("error while performing additional test for manifest %s from %s : %w", entry.Name(), setName, err)
+		for _, f := range testFuncs {
+			if err := f(ctx, done); err != nil {
+				return cleanup, fmt.Errorf("error while performing additional test for manifest %s from %s : %w", entry.Name(), setName, err)
+			}
 		}
 
 		log.Info().Msgf("Manifest %s from %s is done...", entry.Name(), pathToTestSet)

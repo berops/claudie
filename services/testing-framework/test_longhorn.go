@@ -9,6 +9,7 @@ import (
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/proto/pb/spec"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -25,12 +26,18 @@ type KubectlOutputJSON struct {
 }
 
 // testLonghornDeployment function will perform actions needed to confirm that longhorn has been successfully deployed in the cluster
-func testLonghornDeployment(ctx context.Context, config *spec.Config) error {
-	for _, cluster := range config.Clusters {
-		if cluster.GetCurrent() == nil {
+func testLonghornDeployment(ctx context.Context, clusters map[string]*spec.ClusterState) error {
+	for _, cluster := range clusters {
+		if cluster.Current == nil || cluster.Current.K8S == nil || cluster.Current.K8S.Kubeconfig == "" {
 			log.Debug().Msgf("cluster %q has no current state", cluster)
 			continue
 		}
+
+		logger := log.
+			With().
+			Str("cluster", cluster.Current.K8S.ClusterInfo.Id()).
+			Logger()
+
 		// check number of nodes in nodes.longhorn.io
 		k := kubectl.Kubectl{
 			Kubeconfig:        cluster.Current.K8S.Kubeconfig,
@@ -42,11 +49,11 @@ func testLonghornDeployment(ctx context.Context, config *spec.Config) error {
 
 		clusterName := cluster.Current.K8S.ClusterInfo.Name
 
-		if err := checkLonghornNodes(ctx, cluster.Current.K8S, k); err != nil {
+		if err := checkLonghornNodes(ctx, logger, cluster.Current.K8S, k); err != nil {
 			return fmt.Errorf("error while checking the nodes.longhorn.io in cluster %s : %w", cluster, err)
 		}
 
-		if err := checkLonghornPods(ctx, clusterName, k); err != nil {
+		if err := checkLonghornPods(ctx, logger, clusterName, k); err != nil {
 			return fmt.Errorf("error while checking if all pods from longhorn-system are ready in cluster %s: %w", clusterName, err)
 		}
 	}
@@ -54,7 +61,7 @@ func testLonghornDeployment(ctx context.Context, config *spec.Config) error {
 }
 
 // checkLonghornNodes will check if the count of nodes.longhorn.io is same as number of schedulable nodes
-func checkLonghornNodes(ctx context.Context, cluster *spec.K8Scluster, kubectl kubectl.Kubectl) error {
+func checkLonghornNodes(ctx context.Context, logger zerolog.Logger, cluster *spec.K8Scluster, kubectl kubectl.Kubectl) error {
 	readyCheck := 0
 	workerCount := 0
 	//count the worker nodes
@@ -92,13 +99,16 @@ func checkLonghornNodes(ctx context.Context, cluster *spec.K8Scluster, kubectl k
 				return fmt.Errorf("the count of schedulable nodes (%d) is not equal to nodes.longhorn.io (%d) in cluster %s", workerCount, nodeCountFound, cluster.ClusterInfo.Name)
 			}
 			time.Sleep(time.Duration(sleepSecPods) * time.Second)
-			log.Info().Msgf("Waiting for nodes.longhorn.io to be initialized in cluster %s... [ %ds elapsed ]", cluster.ClusterInfo.Name, readyCheck)
+
+			logger.
+				Info().
+				Msgf("Waiting for nodes.longhorn.io to be initialized in cluster %s... [ %ds elapsed ]", cluster.ClusterInfo.Name, readyCheck)
 		}
 	}
 }
 
 // checkLonghornPods will check if the pods in longhorn-system namespace are in ready state
-func checkLonghornPods(ctx context.Context, clusterName string, kubectl kubectl.Kubectl) error {
+func checkLonghornPods(ctx context.Context, logger zerolog.Logger, clusterName string, kubectl kubectl.Kubectl) error {
 	readyCheck := 0
 	for {
 		select {
@@ -109,9 +119,11 @@ func checkLonghornPods(ctx context.Context, clusterName string, kubectl kubectl.
 			if err != nil {
 				return fmt.Errorf("error while getting the status of the pods in longhorn-system in cluster %s : %w", clusterName, err)
 			}
-			ready, err := parsePodsOutput(out)
+			ready, err := parsePodsOutput(logger, out)
 			if err != nil {
-				log.Warn().Msgf("Error while parsing kubectl output for longhorn pods in %s : %v", clusterName, err)
+				logger.
+					Warn().
+					Msgf("Error while parsing kubectl output for longhorn pods in %s : %v", clusterName, err)
 			}
 			// if some are not ready, wait sleepSecPods seconds
 			if !ready {
@@ -124,7 +136,10 @@ func checkLonghornPods(ctx context.Context, clusterName string, kubectl kubectl.
 				return fmt.Errorf("pods in longhorn-system took too long to initialize in cluster %s", clusterName)
 			}
 			time.Sleep(time.Duration(sleepSecPods) * time.Second)
-			log.Info().Msgf("Waiting for pods from longhorn-system namespace in cluster %s to be in ready state... [ %ds elapsed ]", clusterName, readyCheck)
+
+			logger.
+				Info().
+				Msgf("Waiting for pods from longhorn-system namespace in cluster %s to be in ready state... [ %ds elapsed ]", clusterName, readyCheck)
 		}
 	}
 }
@@ -143,7 +158,7 @@ func parseNodesOutput(out []byte) (int, error) {
 
 // function will parse kubectl json output regarding the longhorn pods
 // returns true if every pod is ready, false otherwise
-func parsePodsOutput(out []byte) (bool, error) {
+func parsePodsOutput(logger zerolog.Logger, out []byte) (bool, error) {
 	// parse output
 	var parsedJSON KubectlOutputJSON
 	err := json.Unmarshal(out, &parsedJSON)
@@ -179,7 +194,9 @@ func parsePodsOutput(out []byte) (bool, error) {
 			ready := readyField["ready"].(bool)
 			// if not ready, return false
 			if !ready {
-				log.Info().Msgf("Container %s is not ready yet...", conStat.(map[string]interface{})["name"].(string))
+				logger.
+					Info().
+					Msgf("Container %s is not ready yet...", conStat.(map[string]interface{})["name"].(string))
 				return false, nil
 			}
 		}

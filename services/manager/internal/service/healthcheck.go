@@ -169,7 +169,7 @@ func healthCheckVPN(state *spec.Clusters) (bool, error) {
 
 	signer, err := ssh.ParsePrivateKey([]byte(key))
 	if err != nil {
-		return false, fmt.Errorf("node has an invalid private key: %w", err)
+		return false, fmt.Errorf("node %q has an invalid private key: %w", public, err)
 	}
 
 	cfg := ssh.ClientConfig{
