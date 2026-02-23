@@ -59,10 +59,7 @@ spec:
               memory: 2000Mi
           env:
             - name: NATS_CLUSTER_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: env
-                  key: NATS_CLUSTER_URL
+              value: "nats://nats.$(NAMESPACE).svc.cluster.local"
             - name: NATS_CLUSTER_SIZE
               valueFrom:
                 configMapKeyRef:
