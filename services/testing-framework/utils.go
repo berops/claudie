@@ -48,7 +48,7 @@ func waitForDoneOrError(ctx context.Context, manager managerclient.CrudAPI, set 
 		case <-ctx.Done():
 			return nil, errInterrupt
 			// This is triggered every 10 seconds and the reconciliation loop is triggered every 20 seconds
-			// With these timeouts the 9 iterations needed should be enought for deciding if its done or error.
+			// With these timeouts the 9 iterations needed should be enough for deciding if its done or error.
 		case <-ticker.C:
 			elapsed += sleepSec
 			log.Info().Msgf("Waiting for %s from %s to finish... [ %ds elapsed ]", set.Manifest, set.Set, elapsed)
@@ -123,7 +123,8 @@ func waitForDoneOrError(ctx context.Context, manager managerclient.CrudAPI, set 
 				done = 0
 
 				if failed == iterationsNeeded {
-					var err error
+					err := errors.New("input manifest failed")
+
 					if validateErr := validateState(ctx, res.Config.Clusters); validateErr != nil {
 						err = errors.Join(err, validateErr)
 					}
@@ -279,8 +280,6 @@ func buildExpectedPeerList(cluster *spec.ClusterState) []Peer {
 }
 
 func validateWireguardSetup(nps []*spec.NodePool, expectedPeerList []Peer) error {
-	const sshPort = "22"
-
 	for _, np := range nps {
 		for _, n := range np.Nodes {
 			var sshKey string
@@ -316,68 +315,77 @@ func validateWireguardSetup(nps []*spec.NodePool, expectedPeerList []Peer) error
 				Timeout: 2 * time.Second,
 			}
 
-			endpoint := net.JoinHostPort(n.Public, sshPort)
-			client, err := ssh.Dial("tcp", endpoint, &cfg)
-			if err != nil {
-				return err
+			if err := checkWireguardPeers(n, expectedPeerList, &cfg); err != nil {
+				return fmt.Errorf("wireguard peer check failed: %w", err)
 			}
-			defer client.Close()
+		}
+	}
 
-			session, err := client.NewSession()
-			if err != nil {
-				return err
-			}
-			defer session.Close()
+	return nil
+}
 
-			// According to the documentation the output of wiregaurd is safe to be
-			// parsed, even within scripts
-			// https://manpages.debian.org/unstable/wireguard-tools/wg.8.en.html#show
-			b, err := session.Output("wg show all dump")
-			if err != nil {
-				return err
-			}
+func checkWireguardPeers(thisNode *spec.Node, peerList []Peer, cfg *ssh.ClientConfig) error {
+	const sshPort = "22"
+	endpoint := net.JoinHostPort(thisNode.Public, sshPort)
+	client, err := ssh.Dial("tcp", endpoint, cfg)
+	if err != nil {
+		return err
+	}
+	defer client.Close()
 
-			output := strings.TrimSpace(string(b))
+	session, err := client.NewSession()
+	if err != nil {
+		return err
+	}
+	defer session.Close()
 
-			var fetchedPeers []string
-			for line := range strings.SplitSeq(output, "\n") {
-				line := strings.TrimSpace(line)
-				if line == "" {
-					continue
-				}
+	// According to the documentation the output of wireguard is safe to be
+	// parsed, even within scripts
+	// https://manpages.debian.org/unstable/wireguard-tools/wg.8.en.html#show
+	b, err := session.Output("wg show all dump")
+	if err != nil {
+		return err
+	}
 
-				fields := strings.Split(line, "\t")
-				if len(fields) != 9 {
-					continue
-				}
-				fetchedPeers = append(fetchedPeers, line)
-			}
+	output := strings.TrimSpace(string(b))
 
-			expectedPeerList := slices.Clone(expectedPeerList)
+	var fetchedPeers []string
+	for line := range strings.SplitSeq(output, "\n") {
+		line := strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
 
-			// exlude self from list
-			expectedPeerList = slices.DeleteFunc(
-				expectedPeerList,
-				func(s Peer) bool { return s.Public == n.Public && s.Private == n.Private },
-			)
+		fields := strings.Split(line, "\t")
+		if len(fields) != 9 {
+			continue
+		}
+		fetchedPeers = append(fetchedPeers, line)
+	}
 
-			if len(fetchedPeers) != len(expectedPeerList) {
-				return fmt.Errorf(
-					"mismtached wireguard peer list %v:%v",
-					len(fetchedPeers),
-					len(expectedPeerList),
-				)
-			}
+	expectedPeerList := slices.Clone(peerList)
 
-			// go over the expected peers and match a line in the fetched peers.
-			for _, p := range expectedPeerList {
-				ok := slices.ContainsFunc(fetchedPeers, func(s string) bool {
-					return strings.Contains(s, p.Public) && strings.Contains(s, p.Private)
-				})
-				if !ok {
-					return fmt.Errorf("peer %#v is missing from node %q", p, n.Name)
-				}
-			}
+	// exclude self from list
+	expectedPeerList = slices.DeleteFunc(
+		expectedPeerList,
+		func(s Peer) bool { return s.Public == thisNode.Public && s.Private == thisNode.Private },
+	)
+
+	if len(fetchedPeers) != len(expectedPeerList) {
+		return fmt.Errorf(
+			"mismatched wireguard peer list %v:%v",
+			len(fetchedPeers),
+			len(expectedPeerList),
+		)
+	}
+
+	// go over the expected peers and match a line in the fetched peers.
+	for _, p := range expectedPeerList {
+		ok := slices.ContainsFunc(fetchedPeers, func(s string) bool {
+			return strings.Contains(s, p.Public) && strings.Contains(s, p.Private)
+		})
+		if !ok {
+			return fmt.Errorf("peer %#v is missing from node %q", p, thisNode.Name)
 		}
 	}
 
