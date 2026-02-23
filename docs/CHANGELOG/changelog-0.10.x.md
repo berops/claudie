@@ -126,4 +126,4 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 
 ## Bug fixes
 
-- Fixed GCP autoscaler adapter crashing when the `zone` field is omitted from the InputManifest. The adapter now defaults to `{region}-b` for machine type lookups and uses aggregated list requests [#1989](https://github.com/berops/claudie/pull/1989)
+- Fixed GCP autoscaler adapter crashing when the `zone` field is omitted from the InputManifest. The adapter now uses aggregated list requests to query machine types across all zones [#1989](https://github.com/berops/claudie/pull/1989)
