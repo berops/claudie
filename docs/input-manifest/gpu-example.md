@@ -137,10 +137,10 @@ spec:
   providers:
     - name: exoscale-1
       providerType: exoscale
-      # Exoscale templates are supported from claudie-config v0.9.17+
+      # Exoscale templates are supported from claudie-config v0.9.18+
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.17
+        tag: v0.9.18
         path: "templates/terraformer/exoscale"
       secretRef:
         name: exoscale-secret
