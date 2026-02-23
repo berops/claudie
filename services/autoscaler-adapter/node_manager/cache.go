@@ -103,9 +103,11 @@ func (nm *NodeManager) cacheGcp(np *spec.DynamicNodePool) error {
 
 	// Use project-scoped aggregated list to avoid requiring a specific zone.
 	maxResults := uint32(defaultMaxResults)
+	retPartialSuccess := true
 	req := &computepb.AggregatedListMachineTypesRequest{
-		Project:    np.Provider.GetGcp().Project,
-		MaxResults: &maxResults,
+		Project:              np.Provider.GetGcp().Project,
+		MaxResults:           &maxResults,
+		ReturnPartialSuccess: &retPartialSuccess,
 	}
 	it := computeService.AggregatedList(context.Background(), req)
 	machineTypes := make([]*computepb.MachineType, 0)
