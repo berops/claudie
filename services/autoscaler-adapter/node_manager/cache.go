@@ -103,10 +103,16 @@ func (nm *NodeManager) cacheGcp(np *spec.DynamicNodePool) error {
 
 	// Define request and parameters
 	maxResults := uint32(defaultMaxResults)
+	zone := np.Zone
+	if zone == "" {
+		// Machine type availability is the same across all zones in a GCP region,
+		// so default to any zone suffix when zone is not explicitly set.
+		zone = np.Region + "-b"
+	}
 	req := &computepb.ListMachineTypesRequest{
 		Project:    np.Provider.GetGcp().Project,
 		MaxResults: &maxResults,
-		Zone:       np.Zone,
+		Zone:       zone,
 	}
 	// List services
 	it := computeService.List(context.Background(), req)
