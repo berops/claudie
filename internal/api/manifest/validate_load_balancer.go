@@ -200,7 +200,7 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 			return fmt.Errorf("provider %q used inside cluster %q is not defined", cluster.DNS.Provider, cluster.Name)
 		}
 
-		if !slices.Contains([]string{"gcp", "aws", "azure", "oci", "cloudflare", "exoscale"}, providerTyp) {
+		if !slices.Contains([]string{"gcp", "aws", "azure", "oci", "cloudflare", "hetzner", "exoscale"}, providerTyp) {
 			return fmt.Errorf("provider %q used inside cluster %q exists but is not a supported provider", cluster.DNS.Provider, cluster.Name)
 		}
 
