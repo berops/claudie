@@ -12,7 +12,6 @@ type (
 	FakeProviderAzureOption      func(gcp *spec.Provider_Azure)
 	FakeProviderAWSOption        func(gcp *spec.Provider_Aws)
 	FakeProviderOciOption        func(gcp *spec.Provider_Oci)
-	FakeProviderHetznerdnsOption func(gcp *spec.Provider_Hetznerdns)
 	FakeProviderHetznerOption    func(gcp *spec.Provider_Hetzner)
 	FakeProviderGCPOption        func(gcp *spec.Provider_Gcp)
 	FakeRepositoryOption         func(t *spec.TemplateRepository)
@@ -202,12 +201,6 @@ func WithProviderOciPrivateKey(id string) FakeProviderOciOption {
 	}
 }
 
-func WithProviderHetznerdnsToken(k string) FakeProviderHetznerdnsOption {
-	return func(a *spec.Provider_Hetznerdns) {
-		a.Hetznerdns.Token = k
-	}
-}
-
 func WithProviderHetznerToken(k string) FakeProviderHetznerOption {
 	return func(a *spec.Provider_Hetzner) {
 		a.Hetzner.Token = k
@@ -257,12 +250,6 @@ func WithProviderGCP(typ *spec.Provider_Gcp) FakeProviderOption {
 }
 
 func WithProviderHetzner(typ *spec.Provider_Hetzner) FakeProviderOption {
-	return func(a *spec.Provider) {
-		a.ProviderType = typ
-	}
-}
-
-func WithProviderHetznerdns(typ *spec.Provider_Hetznerdns) FakeProviderOption {
 	return func(a *spec.Provider) {
 		a.ProviderType = typ
 	}
@@ -586,16 +573,6 @@ func CreateFakeProviderAWS(opts ...FakeProviderAWSOption) *spec.Provider_Aws {
 func CreateFakeProviderOci(opts ...FakeProviderOciOption) *spec.Provider_Oci {
 	gcp := &spec.Provider_Oci{
 		Oci: &spec.OCIProvider{},
-	}
-	for _, o := range opts {
-		o(gcp)
-	}
-	return gcp
-}
-
-func CreateFakeProviderHetznerdns(opts ...FakeProviderHetznerdnsOption) *spec.Provider_Hetznerdns {
-	gcp := &spec.Provider_Hetznerdns{
-		Hetznerdns: &spec.HetznerDNSProvider{},
 	}
 	for _, o := range opts {
 		o(gcp)

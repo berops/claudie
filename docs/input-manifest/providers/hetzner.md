@@ -12,17 +12,6 @@ data:
 type: Opaque
 ```
 
-## DNS example
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: hetznerdns-secret
-data:
-  apitoken: <base64-encoded-dns-api-token>
-type: Opaque
-```
-
 !!! warning "No Load-Balanced DNS Support on Hetzner" 
     Hetzner does not support load-balanced DNS records with health checks. In the event of a virtual machine failure, the corresponding DNS A record will remain active and will not be automatically removed from the DNS database.
 
@@ -32,12 +21,6 @@ You can create Hetzner API credentials by following [this guide](https://docs.he
 ```bash
 Read & Write
 ```
-
-## Create Hetzner DNS credentials
-You can create Hetzner DNS credentials by following [this guide](https://docs.hetzner.com/dns-console/dns/general/api-access-token/).
-
-!!! note "DNS provider specification"
-    The provider for DNS is different from the one for the Cloud.
 
 ## DNS setup
 If you wish to use Hetzner as your DNS provider where Claudie creates DNS records pointing to Claudie managed clusters, you will need to create a **public DNS zone** by following [this guide](https://docs.hetzner.com/dns-console/dns/general/getting-started-dns/).

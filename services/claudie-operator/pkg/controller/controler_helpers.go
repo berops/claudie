@@ -159,16 +159,6 @@ func constructInputManifest(
 				Templates: p.Templates,
 			})
 
-		case v1beta1manifest.HETZNER_DNS:
-			hetznerDNSCredentials, err := p.GetSecretField(v1beta1manifest.HETZNER_DNS_API_TOKEN)
-			if err != nil {
-				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
-			}
-			providers.HetznerDNS = append(providers.HetznerDNS, manifest.HetznerDNS{
-				Name:      p.ProviderName,
-				ApiToken:  strings.TrimSpace(hetznerDNSCredentials),
-				Templates: p.Templates,
-			})
 		case v1beta1manifest.OPENSTACK:
 			osAuthURL, err := p.GetSecretField(v1beta1manifest.OS_AUTH_URL)
 			if err != nil {

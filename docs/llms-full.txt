@@ -1928,19 +1928,6 @@ type: Opaque
 
 ```
 
-## DNS example(https://docs.claudie.io/latest/input-manifest/providers/hetzner/\#dns-example)
-
-```
-apiVersion: v1
-kind: Secret
-metadata:
-  name: hetznerdns-secret
-data:
-  apitoken: a1V0UmcxcGdqQ1JhYXBQbWQ3cEFJalZnaHVyWG8xY24=
-type: Opaque
-
-```
-
 No Load-Balanced DNS Support on Hetzner
 
 Hetzner does not support load-balanced DNS records with health checks. In the event of a virtual machine failure, the corresponding DNS A record will remain active and will not be automatically removed from the DNS database.
@@ -1953,14 +1940,6 @@ You can create Hetzner API credentials by following [this guide](https://docs.he
 Read & Write
 
 ```
-
-## Create Hetzner DNS credentials(https://docs.claudie.io/latest/input-manifest/providers/hetzner/\#create-hetzner-dns-credentials)
-
-You can create Hetzner DNS credentials by following [this guide](https://docs.hetzner.com/dns-console/dns/general/api-access-token/).
-
-DNS provider specification
-
-The provider for DNS is different from the one for the Cloud.
 
 ## DNS setup(https://docs.claudie.io/latest/input-manifest/providers/hetzner/\#dns-setup)
 
@@ -2758,7 +2737,7 @@ spec:
   # Every supported provider has an example in this input manifest.
   # providers:
   #   - name:
-  #       providerType:   # Type of the provider secret [aws|azure|gcp|oci|hetzner|hetznerdns|cloudflare].
+  #       providerType:   # Type of the provider secret [aws|azure|gcp|oci|hetzner|cloudflare].
   #       templates:      # external templates used to build the infrastructure by that given provider. If omitted default templates will be used.
   #         repository:   # publicly available git repository where the templates can be acquired
   #         tag:          # optional tag. If set is used to checkout to a specific hash commit of the git repository.
@@ -2767,16 +2746,6 @@ spec:
   #         name:         # Name of the secret resource.
   #         namespace:    # Namespace of the secret resource.
   providers:
-    # Hetzner DNS provider.
-    - name: hetznerdns-1
-      providerType: hetznerdns
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        path: "templates/terraformer/hetznerdns"
-      secretRef:
-        name: hetznerdns-secret-1
-        namespace: example-namespace
-
     # Cloudflare DNS provider.
     - name: cloudflare-1
       providerType: cloudflare
@@ -3165,7 +3134,7 @@ spec:
           - https
         dns:
           dnsZone: dns-zone
-          provider: hetznerdns-1
+          provider: hetzner-1
         targetedK8s: dev-cluster
         pools:
           - loadbalancer-1
@@ -3608,7 +3577,6 @@ Type of a provider. The providerType defines mandatory fields that has to be inc
 | `cloudflare` | [Cloudflare](https://docs.claudie.io/latest/input-manifest/api-reference/#cloudflare) provider type |
 | `gcp` | [GCP](https://docs.claudie.io/latest/input-manifest/api-reference/#gcp) provider type |
 | `hetzner` | [Hetzner](https://docs.claudie.io/latest/input-manifest/api-reference/#hetzner) provider type |
-| `hetznerdns` | [Hetzner](https://docs.claudie.io/latest/input-manifest/api-reference/#hetznerdns) DNS provider type |
 | `oci` | [OCI](https://docs.claudie.io/latest/input-manifest/api-reference/#oci) provider type |
 
 - `secretRef` [SecretRef](https://docs.claudie.io/latest/input-manifest/api-reference/#secretref)
@@ -3635,20 +3603,6 @@ Namespace of the secret which holds data for the particular cloud provider insta
 
 The fields that need to be included in a Kubernetes Secret resource to utilize the Cloudflare provider.
 To find out how to configure Cloudflare follow the instructions [here](https://docs.claudie.io/latest/input-manifest/providers/cloudflare/)
-
-- `apitoken`
-
-Credentials for the provider (API token).
-
-- `templates`
-- `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
-- `tag`: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.
-- `path`: specifies the path for a specific provider within the `repository` where the source template files are located.
-
-### HetznerDNS(https://docs.claudie.io/latest/input-manifest/api-reference/\#hetznerdns)
-
-The fields that need to be included in a Kubernetes Secret resource to utilize the HetznerDNS provider.
-To find out how to configure HetznerDNS follow the instructions [here](https://docs.claudie.io/latest/input-manifest/providers/hetzner/)
 
 - `apitoken`
 

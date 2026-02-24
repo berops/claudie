@@ -26,7 +26,6 @@ type usedProvidersTemplateData struct {
 	Oci        bool
 	Azure      bool
 	Cloudflare bool
-	HetznerDNS bool
 	Openstack  bool
 	Exoscale   bool
 }
@@ -115,8 +114,6 @@ func getDNSProvider(dns *spec.DNS, data *usedProvidersTemplateData) {
 		data.Azure = true
 	case "cloudflare":
 		data.Cloudflare = true
-	case "hetznerdns":
-		data.HetznerDNS = true
 	case "exoscale":
 		data.Exoscale = true
 	}

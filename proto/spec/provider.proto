@@ -1,5 +1,6 @@
 syntax = "proto3";
 package spec;
+
 option go_package = "github.com/berops/claudie/proto/pb/spec";
 
 message GCPProvider {
@@ -8,10 +9,6 @@ message GCPProvider {
 }
 
 message HetznerProvider {
-  string token = 1;
-}
-
-message HetznerDNSProvider {
   string token = 1;
 }
 
@@ -57,10 +54,10 @@ message Provider {
   string specName = 1;
   string cloudProviderName = 2;
 
+  // = 5; deprecated hetznerdns.
   oneof ProviderType {
     GCPProvider gcp = 3;
     HetznerProvider hetzner = 4;
-    HetznerDNSProvider hetznerdns = 5;
     OCIProvider oci = 6;
     AWSProvider aws = 7;
     AzureProvider azure = 8;

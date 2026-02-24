@@ -95,9 +95,6 @@ providers:
       tenantId: "tenant id"
       clientId: "client id"
       clientSecret: "client secret"
-  hetznerdns:
-    - name: hetznerdns-1
-      apiToken: "api token"
   cloudflare:
     - name: cloudflare-1
       apiToken: "api token"

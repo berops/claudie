@@ -269,7 +269,7 @@ type (
 		// DNS records were created with. It is expected that the template
 		// files in the DNS directory that create the DNS records also expose
 		// the Domain name of the endpoint.
-		// For example (in the case of our own hetznerdns template files):
+		// For example (in the case of our own hetzner dns template files):
 		//
 		// output "{{ .Data.ClusterName }}-{{ .Data.ClusterHash }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
 		// 	value = { "{{ .Data.ClusterName }}-{{ .Data.ClusterHash }}-endpoint" = format("%s.%s", "{{ .Data.HostnameHash }}", "{{ .Data.DNSZone }}")}

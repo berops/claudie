@@ -12,7 +12,7 @@ spec:
   # Every supported provider has an example in this input manifest.
   # providers:
   #   - name:
-  #       providerType:   # Type of the provider secret [aws|azure|gcp|oci|hetzner|hetznerdns|cloudflare].
+  #       providerType:   # Type of the provider secret [aws|azure|gcp|oci|hetzner|cloudflare].
   #       templates:      # external templates used to build the infrastructure by that given provider. If omitted default templates will be used.
   #         repository:   # publicly available git repository where the templates can be acquired
   #         tag:          # optional tag. If set is used to checkout to a specific hash commit of the git repository.
@@ -21,16 +21,6 @@ spec:
   #         name:         # Name of the secret resource.
   #         namespace:    # Namespace of the secret resource.
   providers:
-    # Hetzner DNS provider.
-    - name: hetznerdns-1
-      providerType: hetznerdns
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        path: "templates/terraformer/hetznerdns"
-      secretRef:
-        name: hetznerdns-secret-1
-        namespace: example-namespace
-
     # Cloudflare DNS provider.
     - name: cloudflare-1
       providerType: cloudflare
@@ -421,7 +411,7 @@ spec:
           - https
         dns:
           dnsZone: dns-zone
-          provider: hetznerdns-1
+          provider: hetzner-1
         targetedK8s: dev-cluster
         pools:
           - loadbalancer-1
