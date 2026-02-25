@@ -117,50 +117,6 @@ func (x *HetznerProvider) GetToken() string {
 	return ""
 }
 
-type HetznerDNSProvider struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *HetznerDNSProvider) Reset() {
-	*x = HetznerDNSProvider{}
-	mi := &file_spec_provider_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *HetznerDNSProvider) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*HetznerDNSProvider) ProtoMessage() {}
-
-func (x *HetznerDNSProvider) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_provider_proto_msgTypes[2]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use HetznerDNSProvider.ProtoReflect.Descriptor instead.
-func (*HetznerDNSProvider) Descriptor() ([]byte, []int) {
-	return file_spec_provider_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *HetznerDNSProvider) GetToken() string {
-	if x != nil {
-		return x.Token
-	}
-	return ""
-}
-
 type OCIProvider struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	UserOCID        string                 `protobuf:"bytes,1,opt,name=userOCID,proto3" json:"userOCID,omitempty"`
@@ -174,7 +130,7 @@ type OCIProvider struct {
 
 func (x *OCIProvider) Reset() {
 	*x = OCIProvider{}
-	mi := &file_spec_provider_proto_msgTypes[3]
+	mi := &file_spec_provider_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -186,7 +142,7 @@ func (x *OCIProvider) String() string {
 func (*OCIProvider) ProtoMessage() {}
 
 func (x *OCIProvider) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_provider_proto_msgTypes[3]
+	mi := &file_spec_provider_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -199,7 +155,7 @@ func (x *OCIProvider) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OCIProvider.ProtoReflect.Descriptor instead.
 func (*OCIProvider) Descriptor() ([]byte, []int) {
-	return file_spec_provider_proto_rawDescGZIP(), []int{3}
+	return file_spec_provider_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *OCIProvider) GetUserOCID() string {
@@ -247,7 +203,7 @@ type AWSProvider struct {
 
 func (x *AWSProvider) Reset() {
 	*x = AWSProvider{}
-	mi := &file_spec_provider_proto_msgTypes[4]
+	mi := &file_spec_provider_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -259,7 +215,7 @@ func (x *AWSProvider) String() string {
 func (*AWSProvider) ProtoMessage() {}
 
 func (x *AWSProvider) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_provider_proto_msgTypes[4]
+	mi := &file_spec_provider_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -272,7 +228,7 @@ func (x *AWSProvider) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AWSProvider.ProtoReflect.Descriptor instead.
 func (*AWSProvider) Descriptor() ([]byte, []int) {
-	return file_spec_provider_proto_rawDescGZIP(), []int{4}
+	return file_spec_provider_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *AWSProvider) GetSecretKey() string {
@@ -301,7 +257,7 @@ type AzureProvider struct {
 
 func (x *AzureProvider) Reset() {
 	*x = AzureProvider{}
-	mi := &file_spec_provider_proto_msgTypes[5]
+	mi := &file_spec_provider_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -313,7 +269,7 @@ func (x *AzureProvider) String() string {
 func (*AzureProvider) ProtoMessage() {}
 
 func (x *AzureProvider) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_provider_proto_msgTypes[5]
+	mi := &file_spec_provider_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -326,7 +282,7 @@ func (x *AzureProvider) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AzureProvider.ProtoReflect.Descriptor instead.
 func (*AzureProvider) Descriptor() ([]byte, []int) {
-	return file_spec_provider_proto_rawDescGZIP(), []int{5}
+	return file_spec_provider_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *AzureProvider) GetSubscriptionID() string {
@@ -367,7 +323,7 @@ type CloudflareProvider struct {
 
 func (x *CloudflareProvider) Reset() {
 	*x = CloudflareProvider{}
-	mi := &file_spec_provider_proto_msgTypes[6]
+	mi := &file_spec_provider_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -379,7 +335,7 @@ func (x *CloudflareProvider) String() string {
 func (*CloudflareProvider) ProtoMessage() {}
 
 func (x *CloudflareProvider) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_provider_proto_msgTypes[6]
+	mi := &file_spec_provider_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -392,7 +348,7 @@ func (x *CloudflareProvider) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CloudflareProvider.ProtoReflect.Descriptor instead.
 func (*CloudflareProvider) Descriptor() ([]byte, []int) {
-	return file_spec_provider_proto_rawDescGZIP(), []int{6}
+	return file_spec_provider_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *CloudflareProvider) GetToken() string {
@@ -422,7 +378,7 @@ type OpenstackProvider struct {
 
 func (x *OpenstackProvider) Reset() {
 	*x = OpenstackProvider{}
-	mi := &file_spec_provider_proto_msgTypes[7]
+	mi := &file_spec_provider_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -434,7 +390,7 @@ func (x *OpenstackProvider) String() string {
 func (*OpenstackProvider) ProtoMessage() {}
 
 func (x *OpenstackProvider) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_provider_proto_msgTypes[7]
+	mi := &file_spec_provider_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -447,7 +403,7 @@ func (x *OpenstackProvider) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OpenstackProvider.ProtoReflect.Descriptor instead.
 func (*OpenstackProvider) Descriptor() ([]byte, []int) {
-	return file_spec_provider_proto_rawDescGZIP(), []int{7}
+	return file_spec_provider_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *OpenstackProvider) GetAuthURL() string {
@@ -495,7 +451,7 @@ type ExoscaleProvider struct {
 
 func (x *ExoscaleProvider) Reset() {
 	*x = ExoscaleProvider{}
-	mi := &file_spec_provider_proto_msgTypes[8]
+	mi := &file_spec_provider_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -507,7 +463,7 @@ func (x *ExoscaleProvider) String() string {
 func (*ExoscaleProvider) ProtoMessage() {}
 
 func (x *ExoscaleProvider) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_provider_proto_msgTypes[8]
+	mi := &file_spec_provider_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -520,7 +476,7 @@ func (x *ExoscaleProvider) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExoscaleProvider.ProtoReflect.Descriptor instead.
 func (*ExoscaleProvider) Descriptor() ([]byte, []int) {
-	return file_spec_provider_proto_rawDescGZIP(), []int{8}
+	return file_spec_provider_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ExoscaleProvider) GetApiKey() string {
@@ -541,11 +497,12 @@ type Provider struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	SpecName          string                 `protobuf:"bytes,1,opt,name=specName,proto3" json:"specName,omitempty"`
 	CloudProviderName string                 `protobuf:"bytes,2,opt,name=cloudProviderName,proto3" json:"cloudProviderName,omitempty"`
+	// = 5; deprecated hetznerdns.
+	//
 	// Types that are valid to be assigned to ProviderType:
 	//
 	//	*Provider_Gcp
 	//	*Provider_Hetzner
-	//	*Provider_Hetznerdns
 	//	*Provider_Oci
 	//	*Provider_Aws
 	//	*Provider_Azure
@@ -560,7 +517,7 @@ type Provider struct {
 
 func (x *Provider) Reset() {
 	*x = Provider{}
-	mi := &file_spec_provider_proto_msgTypes[9]
+	mi := &file_spec_provider_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -572,7 +529,7 @@ func (x *Provider) String() string {
 func (*Provider) ProtoMessage() {}
 
 func (x *Provider) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_provider_proto_msgTypes[9]
+	mi := &file_spec_provider_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -585,7 +542,7 @@ func (x *Provider) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Provider.ProtoReflect.Descriptor instead.
 func (*Provider) Descriptor() ([]byte, []int) {
-	return file_spec_provider_proto_rawDescGZIP(), []int{9}
+	return file_spec_provider_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *Provider) GetSpecName() string {
@@ -622,15 +579,6 @@ func (x *Provider) GetHetzner() *HetznerProvider {
 	if x != nil {
 		if x, ok := x.ProviderType.(*Provider_Hetzner); ok {
 			return x.Hetzner
-		}
-	}
-	return nil
-}
-
-func (x *Provider) GetHetznerdns() *HetznerDNSProvider {
-	if x != nil {
-		if x, ok := x.ProviderType.(*Provider_Hetznerdns); ok {
-			return x.Hetznerdns
 		}
 	}
 	return nil
@@ -709,10 +657,6 @@ type Provider_Hetzner struct {
 	Hetzner *HetznerProvider `protobuf:"bytes,4,opt,name=hetzner,proto3,oneof"`
 }
 
-type Provider_Hetznerdns struct {
-	Hetznerdns *HetznerDNSProvider `protobuf:"bytes,5,opt,name=hetznerdns,proto3,oneof"`
-}
-
 type Provider_Oci struct {
 	Oci *OCIProvider `protobuf:"bytes,6,opt,name=oci,proto3,oneof"`
 }
@@ -741,8 +685,6 @@ func (*Provider_Gcp) isProvider_ProviderType() {}
 
 func (*Provider_Hetzner) isProvider_ProviderType() {}
 
-func (*Provider_Hetznerdns) isProvider_ProviderType() {}
-
 func (*Provider_Oci) isProvider_ProviderType() {}
 
 func (*Provider_Aws) isProvider_ProviderType() {}
@@ -767,7 +709,7 @@ type TemplateRepository struct {
 
 func (x *TemplateRepository) Reset() {
 	*x = TemplateRepository{}
-	mi := &file_spec_provider_proto_msgTypes[10]
+	mi := &file_spec_provider_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -779,7 +721,7 @@ func (x *TemplateRepository) String() string {
 func (*TemplateRepository) ProtoMessage() {}
 
 func (x *TemplateRepository) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_provider_proto_msgTypes[10]
+	mi := &file_spec_provider_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -792,7 +734,7 @@ func (x *TemplateRepository) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TemplateRepository.ProtoReflect.Descriptor instead.
 func (*TemplateRepository) Descriptor() ([]byte, []int) {
-	return file_spec_provider_proto_rawDescGZIP(), []int{10}
+	return file_spec_provider_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *TemplateRepository) GetRepository() string {
@@ -832,8 +774,6 @@ const file_spec_provider_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x18\n" +
 	"\aproject\x18\x02 \x01(\tR\aproject\"'\n" +
 	"\x0fHetznerProvider\x12\x14\n" +
-	"\x05token\x18\x01 \x01(\tR\x05token\"*\n" +
-	"\x12HetznerDNSProvider\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\"\xbd\x01\n" +
 	"\vOCIProvider\x12\x1a\n" +
 	"\buserOCID\x18\x01 \x01(\tR\buserOCID\x12 \n" +
@@ -862,15 +802,12 @@ const file_spec_provider_proto_rawDesc = "" +
 	"\x1bapplicationCredentialSecret\x18\x05 \x01(\tR\x1bapplicationCredentialSecret\"H\n" +
 	"\x10ExoscaleProvider\x12\x16\n" +
 	"\x06apiKey\x18\x01 \x01(\tR\x06apiKey\x12\x1c\n" +
-	"\tapiSecret\x18\x02 \x01(\tR\tapiSecret\"\xd8\x04\n" +
+	"\tapiSecret\x18\x02 \x01(\tR\tapiSecret\"\x9c\x04\n" +
 	"\bProvider\x12\x1a\n" +
 	"\bspecName\x18\x01 \x01(\tR\bspecName\x12,\n" +
 	"\x11cloudProviderName\x18\x02 \x01(\tR\x11cloudProviderName\x12%\n" +
 	"\x03gcp\x18\x03 \x01(\v2\x11.spec.GCPProviderH\x00R\x03gcp\x121\n" +
-	"\ahetzner\x18\x04 \x01(\v2\x15.spec.HetznerProviderH\x00R\ahetzner\x12:\n" +
-	"\n" +
-	"hetznerdns\x18\x05 \x01(\v2\x18.spec.HetznerDNSProviderH\x00R\n" +
-	"hetznerdns\x12%\n" +
+	"\ahetzner\x18\x04 \x01(\v2\x15.spec.HetznerProviderH\x00R\ahetzner\x12%\n" +
 	"\x03oci\x18\x06 \x01(\v2\x11.spec.OCIProviderH\x00R\x03oci\x12%\n" +
 	"\x03aws\x18\a \x01(\v2\x11.spec.AWSProviderH\x00R\x03aws\x12+\n" +
 	"\x05azure\x18\b \x01(\v2\x13.spec.AzureProviderH\x00R\x05azure\x12:\n" +
@@ -904,36 +841,34 @@ func file_spec_provider_proto_rawDescGZIP() []byte {
 	return file_spec_provider_proto_rawDescData
 }
 
-var file_spec_provider_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_spec_provider_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_spec_provider_proto_goTypes = []any{
 	(*GCPProvider)(nil),        // 0: spec.GCPProvider
 	(*HetznerProvider)(nil),    // 1: spec.HetznerProvider
-	(*HetznerDNSProvider)(nil), // 2: spec.HetznerDNSProvider
-	(*OCIProvider)(nil),        // 3: spec.OCIProvider
-	(*AWSProvider)(nil),        // 4: spec.AWSProvider
-	(*AzureProvider)(nil),      // 5: spec.AzureProvider
-	(*CloudflareProvider)(nil), // 6: spec.CloudflareProvider
-	(*OpenstackProvider)(nil),  // 7: spec.OpenstackProvider
-	(*ExoscaleProvider)(nil),   // 8: spec.ExoscaleProvider
-	(*Provider)(nil),           // 9: spec.Provider
-	(*TemplateRepository)(nil), // 10: spec.TemplateRepository
+	(*OCIProvider)(nil),        // 2: spec.OCIProvider
+	(*AWSProvider)(nil),        // 3: spec.AWSProvider
+	(*AzureProvider)(nil),      // 4: spec.AzureProvider
+	(*CloudflareProvider)(nil), // 5: spec.CloudflareProvider
+	(*OpenstackProvider)(nil),  // 6: spec.OpenstackProvider
+	(*ExoscaleProvider)(nil),   // 7: spec.ExoscaleProvider
+	(*Provider)(nil),           // 8: spec.Provider
+	(*TemplateRepository)(nil), // 9: spec.TemplateRepository
 }
 var file_spec_provider_proto_depIdxs = []int32{
-	0,  // 0: spec.Provider.gcp:type_name -> spec.GCPProvider
-	1,  // 1: spec.Provider.hetzner:type_name -> spec.HetznerProvider
-	2,  // 2: spec.Provider.hetznerdns:type_name -> spec.HetznerDNSProvider
-	3,  // 3: spec.Provider.oci:type_name -> spec.OCIProvider
-	4,  // 4: spec.Provider.aws:type_name -> spec.AWSProvider
-	5,  // 5: spec.Provider.azure:type_name -> spec.AzureProvider
-	6,  // 6: spec.Provider.cloudflare:type_name -> spec.CloudflareProvider
-	7,  // 7: spec.Provider.openstack:type_name -> spec.OpenstackProvider
-	8,  // 8: spec.Provider.exoscale:type_name -> spec.ExoscaleProvider
-	10, // 9: spec.Provider.templates:type_name -> spec.TemplateRepository
-	10, // [10:10] is the sub-list for method output_type
-	10, // [10:10] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	0, // 0: spec.Provider.gcp:type_name -> spec.GCPProvider
+	1, // 1: spec.Provider.hetzner:type_name -> spec.HetznerProvider
+	2, // 2: spec.Provider.oci:type_name -> spec.OCIProvider
+	3, // 3: spec.Provider.aws:type_name -> spec.AWSProvider
+	4, // 4: spec.Provider.azure:type_name -> spec.AzureProvider
+	5, // 5: spec.Provider.cloudflare:type_name -> spec.CloudflareProvider
+	6, // 6: spec.Provider.openstack:type_name -> spec.OpenstackProvider
+	7, // 7: spec.Provider.exoscale:type_name -> spec.ExoscaleProvider
+	9, // 8: spec.Provider.templates:type_name -> spec.TemplateRepository
+	9, // [9:9] is the sub-list for method output_type
+	9, // [9:9] is the sub-list for method input_type
+	9, // [9:9] is the sub-list for extension type_name
+	9, // [9:9] is the sub-list for extension extendee
+	0, // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_spec_provider_proto_init() }
@@ -941,10 +876,9 @@ func file_spec_provider_proto_init() {
 	if File_spec_provider_proto != nil {
 		return
 	}
-	file_spec_provider_proto_msgTypes[9].OneofWrappers = []any{
+	file_spec_provider_proto_msgTypes[8].OneofWrappers = []any{
 		(*Provider_Gcp)(nil),
 		(*Provider_Hetzner)(nil),
-		(*Provider_Hetznerdns)(nil),
 		(*Provider_Oci)(nil),
 		(*Provider_Aws)(nil),
 		(*Provider_Azure)(nil),
@@ -952,14 +886,14 @@ func file_spec_provider_proto_init() {
 		(*Provider_Openstack)(nil),
 		(*Provider_Exoscale)(nil),
 	}
-	file_spec_provider_proto_msgTypes[10].OneofWrappers = []any{}
+	file_spec_provider_proto_msgTypes[9].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_spec_provider_proto_rawDesc), len(file_spec_provider_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   11,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

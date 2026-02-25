@@ -68,12 +68,6 @@ func init() {
 	ProviderTypeOption["hetzner"] = func(a any) FakeProviderOption {
 		return WithProviderHetzner(a.(*spec.Provider_Hetzner))
 	}
-	KnownProviderTypes["hetznerdns"] = CreateFakeProviderHetznerdns(
-		WithProviderHetznerdnsToken("dnstoken"),
-	)
-	ProviderTypeOption["hetznerdns"] = func(a any) FakeProviderOption {
-		return WithProviderHetznerdns(a.(*spec.Provider_Hetznerdns))
-	}
 	KnownProviderTypes["oci"] = CreateFakeProviderOci(
 		WithProviderOciID("oci-id"),
 		WithProviderOciTenancy("oci-tenancy"),

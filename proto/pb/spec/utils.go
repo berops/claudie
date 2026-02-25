@@ -73,8 +73,6 @@ func (pr *Provider) Credentials() string {
 		return p.Gcp.Key
 	case *Provider_Hetzner:
 		return p.Hetzner.Token
-	case *Provider_Hetznerdns:
-		return p.Hetznerdns.Token
 	case *Provider_Oci:
 		return p.Oci.PrivateKey
 	case *Provider_Aws:

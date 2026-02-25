@@ -525,7 +525,6 @@ spec:
                       - oci
                       - azure
                       - cloudflare
-                      - hetznerdns
                       - openstack
                       - exoscale
                       type: string

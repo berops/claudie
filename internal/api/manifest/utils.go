@@ -179,29 +179,6 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 		}
 	}
 
-	for _, hetznerDNSConfig := range ds.Providers.HetznerDNS {
-		if hetznerDNSConfig.Name == providerSpecName {
-			t := &spec.TemplateRepository{
-				Repository: hetznerDNSConfig.Templates.Repository,
-				Tag:        hetznerDNSConfig.Templates.Tag,
-				Path:       hetznerDNSConfig.Templates.Path,
-			}
-			if err := FetchCommitHash(t); err != nil {
-				return nil, err
-			}
-			return &spec.Provider{
-				SpecName: providerSpecName,
-				ProviderType: &spec.Provider_Hetznerdns{
-					Hetznerdns: &spec.HetznerDNSProvider{
-						Token: hetznerDNSConfig.ApiToken,
-					},
-				},
-				CloudProviderName: "hetznerdns",
-				Templates:         t,
-			}, nil
-		}
-	}
-
 	for _, os := range ds.Providers.Openstack {
 		if os.Name == providerSpecName {
 			t := &spec.TemplateRepository{
@@ -567,11 +544,6 @@ func (ds *Manifest) ForEachProvider(do func(name, typ string, tmpls **TemplateRe
 		}
 	}
 
-	for i, c := range ds.Providers.HetznerDNS {
-		if !do(c.Name, "hetznerdns", &ds.Providers.HetznerDNS[i].Templates) {
-			return
-		}
-	}
 	for i, c := range ds.Providers.Openstack {
 		if !do(c.Name, "openstack", &ds.Providers.Openstack[i].Templates) {
 			return

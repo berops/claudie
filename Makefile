@@ -1,7 +1,7 @@
 .PHONY: proto manager terraformer ansibler kubeEleven test database minio containerimgs crd crd-apply controller-gen kind-load-images nats  kind-deploy
 
 # Enforce same version of protoc
-PROTOC_VERSION = "29.5"
+PROTOC_VERSION = "33.4"
 CURRENT_VERSION = $$(protoc --version | awk '{print $$2}')
 # Generate all .proto files
 proto:

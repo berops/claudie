@@ -26,15 +26,8 @@ type Provider struct {
 	OCI        []OCI        `yaml:"oci"`
 	Azure      []Azure      `yaml:"azure"`
 	Cloudflare []Cloudflare `yaml:"cloudflare"`
-	HetznerDNS []HetznerDNS `yaml:"hetznerdns"`
 	Openstack  []Openstack  `yaml:"openstack"`
 	Exoscale   []Exoscale   `yaml:"exoscale"`
-}
-
-type HetznerDNS struct {
-	Name      string              `validate:"required,max=15" yaml:"name"`
-	ApiToken  string              `validate:"required" yaml:"apiToken"`
-	Templates *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
 }
 
 type Cloudflare struct {
