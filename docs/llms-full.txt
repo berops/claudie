@@ -139,7 +139,7 @@ Before you begin, please make sure you have the following prerequisites installe
 
 
 ```
-kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.19.3/cert-manager.yaml
 
 ```
 
@@ -383,7 +383,7 @@ For adding support for other cloud providers, open an issue or propose a PR.
 04. One of the prerequisites is `cert-manager`, deploy it with the following command:
 
     ```
-    kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml
+    kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.19.3/cert-manager.yaml
 
     ```
 
@@ -4927,7 +4927,7 @@ We expect that your default `kubeconfig` points to the new Management Cluster, i
 2. Install cert manager to the new Management Cluster by executing:
 
 ```
-kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.19.3/cert-manager.yaml
 
 ```
 

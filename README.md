@@ -72,7 +72,7 @@ Before you begin, please make sure you have the following prerequisites installe
 
 2. Claudie requires the installation of cert-manager in your Management Cluster. To install cert-manager, use the following command:
     ```bash
-    kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml
+    kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.19.3/cert-manager.yaml
     ```
 
 

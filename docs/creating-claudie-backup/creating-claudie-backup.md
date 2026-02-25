@@ -82,7 +82,7 @@ We expect that your default `kubeconfig` points to the new Management Cluster, i
 1. Repeat the step to install Velero, but now on the new Management Cluster.
 2. Install cert manager to the new Management Cluster by executing:
 ```bash
-kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.19.3/cert-manager.yaml
 ```
 3. To restore the state that was stored in the S3 bucket execute
 ```bash
