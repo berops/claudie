@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand/v2"
 	"net"
 	"slices"
 	"strings"
@@ -321,8 +322,15 @@ func validateWireguardSetup(nps []*spec.NodePool, expectedPeerList []Peer) error
 				Timeout: 2 * time.Second,
 			}
 
-			if err := checkWireguardPeers(n, expectedPeerList, &cfg); err != nil {
-				return fmt.Errorf("wireguard peer check failed: %w", err)
+			for range 10 {
+				if err = checkWireguardPeers(n, expectedPeerList, &cfg); err == nil {
+					break
+				}
+				time.Sleep(150 + time.Duration(rand.IntN(150)))
+			}
+
+			if err != nil {
+				return fmt.Errorf("wireguard peers failed: %w", err)
 			}
 		}
 	}
