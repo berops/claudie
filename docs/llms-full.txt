@@ -2737,7 +2737,7 @@ spec:
   # Every supported provider has an example in this input manifest.
   # providers:
   #   - name:
-  #       providerType:   # Type of the provider secret [aws|azure|gcp|oci|hetzner|cloudflare].
+  #       providerType:   # Type of the provider secret [aws|azure|gcp|oci|hetzner|openstack|exoscale|cloudflare].
   #       templates:      # external templates used to build the infrastructure by that given provider. If omitted default templates will be used.
   #         repository:   # publicly available git repository where the templates can be acquired
   #         tag:          # optional tag. If set is used to checkout to a specific hash commit of the git repository.
