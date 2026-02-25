@@ -13,15 +13,6 @@ spec:
       secretRef:
         name: gcp-secret
         namespace: e2e-secrets
-    - name: hetznerdns-1
-      providerType: hetznerdns
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.19
-        path: "templates/terraformer/hetznerdns"
-      secretRef:
-        name: hetznerdns-secret
-        namespace: e2e-secrets
     - name: hetzner-1
       providerType: hetzner
       templates:

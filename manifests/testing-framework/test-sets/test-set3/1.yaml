@@ -13,15 +13,6 @@ spec:
       secretRef:
         name: gcp-secret
         namespace: e2e-secrets
-    - name: hetznerdns-1
-      providerType: hetznerdns
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.19
-        path: "templates/terraformer/hetznerdns"
-      secretRef:
-        name: hetznerdns-secret
-        namespace: e2e-secrets
     - name: oci-1
       providerType: oci
       templates:
@@ -191,7 +182,7 @@ spec:
           - apiserver-lb-2
         dns:
           dnsZone: claudie.org
-          provider: hetznerdns-1
+          provider: hetzner-1
         targetedK8s: ts3-c-2-cluster-test-set-no3
         pools:
           - gcp-ldbl-nodes
@@ -200,7 +191,7 @@ spec:
           - app-port
         dns:
           dnsZone: claudie.org
-          provider: hetznerdns-1
+          provider: hetzner-1
           hostname: main
           alternativeNames:
             - other2
