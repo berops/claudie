@@ -27,15 +27,14 @@ import (
 type ProviderType string
 
 const (
-	AWS         ProviderType = "aws"
-	AZURE       ProviderType = "azure"
-	CLOUDFLARE  ProviderType = "cloudflare"
-	GCP         ProviderType = "gcp"
-	HETZNER     ProviderType = "hetzner"
-	HETZNER_DNS ProviderType = "hetznerdns"
-	OCI         ProviderType = "oci"
-	OPENSTACK   ProviderType = "openstack"
-	EXOSCALE    ProviderType = "exoscale"
+	AWS        ProviderType = "aws"
+	AZURE      ProviderType = "azure"
+	CLOUDFLARE ProviderType = "cloudflare"
+	GCP        ProviderType = "gcp"
+	HETZNER    ProviderType = "hetzner"
+	OCI        ProviderType = "oci"
+	OPENSTACK  ProviderType = "openstack"
+	EXOSCALE   ProviderType = "exoscale"
 )
 
 type SecretField string
@@ -90,7 +89,7 @@ type Provider struct {
 	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:MinLength=1
 	ProviderName string `json:"name"`
-	// +kubebuilder:validation:Enum=gcp;hetzner;aws;oci;azure;cloudflare;hetznerdns;openstack;exoscale;
+	// +kubebuilder:validation:Enum=gcp;hetzner;aws;oci;azure;cloudflare;openstack;exoscale;
 	ProviderType ProviderType           `json:"providerType"`
 	SecretRef    corev1.SecretReference `json:"secretRef"`
 	// External templates for building the cluster infrastructure.

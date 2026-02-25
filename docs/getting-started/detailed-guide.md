@@ -54,7 +54,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
 4. One of the prerequisites is `cert-manager`, deploy it with the following command:
 
     ```bash
-    kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml
+    kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.19.3/cert-manager.yaml
     ```
 
 5. Download latest Claudie release:

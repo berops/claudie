@@ -105,8 +105,8 @@ func Test_getDNS(t *testing.T) {
 				from: &manifest.Manifest{
 					Name: "test",
 					Providers: manifest.Provider{
-						HetznerDNS: []manifest.HetznerDNS{
-							{Name: "test-provider", ApiToken: "test-token", Templates: &manifest.TemplateRepository{
+						Hetzner: []manifest.Hetzner{
+							{Name: "test-provider", Credentials: "test-token", Templates: &manifest.TemplateRepository{
 								Repository: "https://github.com/berops/claudie-config",
 								Tag:        strPtr("v0.1.2"),
 								Path:       "/templates/terraformer/gcp",
@@ -120,8 +120,8 @@ func Test_getDNS(t *testing.T) {
 				Hostname: "test-hostname",
 				Provider: &spec.Provider{
 					SpecName:          "test-provider",
-					CloudProviderName: "hetznerdns",
-					ProviderType:      &spec.Provider_Hetznerdns{Hetznerdns: &spec.HetznerDNSProvider{Token: "test-token"}},
+					CloudProviderName: "hetzner",
+					ProviderType:      &spec.Provider_Hetzner{Hetzner: &spec.HetznerProvider{Token: "test-token"}},
 					Templates: &spec.TemplateRepository{
 						Repository: "https://github.com/berops/claudie-config",
 						Tag:        strPtr("v0.1.2"),
@@ -173,8 +173,8 @@ func Test_createLBClustersFromManifest(t *testing.T) {
 					},
 					Name: "ok-overwrite-existing-lbs",
 					Providers: manifest.Provider{
-						HetznerDNS: []manifest.HetznerDNS{
-							{Name: "test-provider", ApiToken: "test-token", Templates: &manifest.TemplateRepository{
+						Hetzner: []manifest.Hetzner{
+							{Name: "test-provider", Credentials: "test-token", Templates: &manifest.TemplateRepository{
 								Repository: "https://github.com/berops/claudie-config",
 								Path:       "/templates/terraformer/gcp",
 							}},
@@ -229,8 +229,8 @@ func Test_createLBClustersFromManifest(t *testing.T) {
 										Hostname: "test-hostname-worker",
 										Provider: &spec.Provider{
 											SpecName:          "test-provider",
-											CloudProviderName: "hetznerdns",
-											ProviderType:      &spec.Provider_Hetznerdns{Hetznerdns: &spec.HetznerDNSProvider{Token: "test-token"}},
+											CloudProviderName: "hetzner",
+											ProviderType:      &spec.Provider_Hetzner{Hetzner: &spec.HetznerProvider{Token: "test-token"}},
 											Templates:         &spec.TemplateRepository{},
 										},
 									},
@@ -255,8 +255,8 @@ func Test_createLBClustersFromManifest(t *testing.T) {
 										Hostname: "test-hostname",
 										Provider: &spec.Provider{
 											SpecName:          "test-provider",
-											CloudProviderName: "hetznerdns",
-											ProviderType:      &spec.Provider_Hetznerdns{Hetznerdns: &spec.HetznerDNSProvider{Token: "test-token"}},
+											CloudProviderName: "hetzner",
+											ProviderType:      &spec.Provider_Hetzner{Hetzner: &spec.HetznerProvider{Token: "test-token"}},
 											Templates:         &spec.TemplateRepository{},
 										},
 									},
@@ -293,8 +293,8 @@ func Test_createLBClustersFromManifest(t *testing.T) {
 					},
 					Name: "ok-overwrite-existing-lbs",
 					Providers: manifest.Provider{
-						HetznerDNS: []manifest.HetznerDNS{
-							{Name: "test-provider", ApiToken: "test-token", Templates: &manifest.TemplateRepository{
+						Hetzner: []manifest.Hetzner{
+							{Name: "test-provider", Credentials: "test-token", Templates: &manifest.TemplateRepository{
 								Repository: "https://github.com/berops/claudie-config",
 								Path:       "/templates/terraformer/gcp",
 							}},
@@ -347,8 +347,8 @@ func Test_createLBClustersFromManifest(t *testing.T) {
 									Hostname: "test-hostname-worker",
 									Provider: &spec.Provider{
 										SpecName:          "test-provider",
-										CloudProviderName: "hetznerdns",
-										ProviderType:      &spec.Provider_Hetznerdns{Hetznerdns: &spec.HetznerDNSProvider{Token: "test-token"}},
+										CloudProviderName: "hetzner",
+										ProviderType:      &spec.Provider_Hetzner{Hetzner: &spec.HetznerProvider{Token: "test-token"}},
 										Templates:         &spec.TemplateRepository{},
 									},
 								},
@@ -373,8 +373,8 @@ func Test_createLBClustersFromManifest(t *testing.T) {
 									Hostname: "test-hostname",
 									Provider: &spec.Provider{
 										SpecName:          "test-provider",
-										CloudProviderName: "hetznerdns",
-										ProviderType:      &spec.Provider_Hetznerdns{Hetznerdns: &spec.HetznerDNSProvider{Token: "test-token"}},
+										CloudProviderName: "hetzner",
+										ProviderType:      &spec.Provider_Hetzner{Hetzner: &spec.HetznerProvider{Token: "test-token"}},
 										Templates:         &spec.TemplateRepository{},
 									},
 								},
@@ -409,8 +409,8 @@ func Test_createLBClustersFromManifest(t *testing.T) {
 					},
 					Name: "ok-overwrite-existing-lbs",
 					Providers: manifest.Provider{
-						HetznerDNS: []manifest.HetznerDNS{
-							{Name: "test-provider", ApiToken: "test-token", Templates: &manifest.TemplateRepository{
+						Hetzner: []manifest.Hetzner{
+							{Name: "test-provider", Credentials: "test-token", Templates: &manifest.TemplateRepository{
 								Repository: "https://github.com/berops/claudie-config",
 								Path:       "/templates/terraformer/gcp",
 							}},
@@ -465,8 +465,8 @@ func Test_createLBClustersFromManifest(t *testing.T) {
 										Hostname: "test-hostname-worker",
 										Provider: &spec.Provider{
 											SpecName:          "test-provider",
-											CloudProviderName: "hetznerdns",
-											ProviderType:      &spec.Provider_Hetznerdns{Hetznerdns: &spec.HetznerDNSProvider{Token: "test-token"}},
+											CloudProviderName: "hetzner",
+											ProviderType:      &spec.Provider_Hetzner{Hetzner: &spec.HetznerProvider{Token: "test-token"}},
 											Templates:         &spec.TemplateRepository{},
 										},
 									},
@@ -491,8 +491,8 @@ func Test_createLBClustersFromManifest(t *testing.T) {
 										Hostname: "test-hostname",
 										Provider: &spec.Provider{
 											SpecName:          "test-provider",
-											CloudProviderName: "hetznerdns",
-											ProviderType:      &spec.Provider_Hetznerdns{Hetznerdns: &spec.HetznerDNSProvider{Token: "test-token"}},
+											CloudProviderName: "hetzner",
+											ProviderType:      &spec.Provider_Hetzner{Hetzner: &spec.HetznerProvider{Token: "test-token"}},
 											Templates:         &spec.TemplateRepository{},
 										},
 									},
@@ -553,8 +553,8 @@ func Test_createK8sClustersFromManifest(t *testing.T) {
 						}},
 					},
 					Providers: manifest.Provider{
-						HetznerDNS: []manifest.HetznerDNS{
-							{Name: "test-provider", ApiToken: "test-token", Templates: &manifest.TemplateRepository{
+						Hetzner: []manifest.Hetzner{
+							{Name: "test-provider", Credentials: "test-token", Templates: &manifest.TemplateRepository{
 								Repository: "https://github.com/berops/claudie-config",
 								Path:       "/templates/terraformer/gcp",
 							}},
@@ -603,8 +603,8 @@ func Test_createK8sClustersFromManifest(t *testing.T) {
 						}},
 					},
 					Providers: manifest.Provider{
-						HetznerDNS: []manifest.HetznerDNS{
-							{Name: "test-provider", ApiToken: "test-token", Templates: &manifest.TemplateRepository{
+						Hetzner: []manifest.Hetzner{
+							{Name: "test-provider", Credentials: "test-token", Templates: &manifest.TemplateRepository{
 								Repository: "https://github.com/berops/claudie-config",
 								Path:       "/templates/terraformer/gcp",
 							}},

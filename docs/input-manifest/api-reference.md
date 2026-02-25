@@ -47,7 +47,6 @@ needs to be defined.
   | `exoscale`     | [Exoscale](#exoscale) provider type         |
   | `gcp`          | [GCP](#gcp) provider type                   |
   | `hetzner`      | [Hetzner](#hetzner) provider type           |
-  | `hetznerdns`   | [Hetzner](#hetznerdns) DNS provider type    |
   | `oci`          | [OCI](#oci) provider type                   |
 
 - `secretRef` [SecretRef](#secretref)
@@ -74,20 +73,6 @@ Support for more cloud providers is in the [roadmap](https://github.com/berops/c
 
 The fields that need to be included in a Kubernetes Secret resource to utilize the Cloudflare provider.
 To find out how to configure Cloudflare follow the instructions [here](./providers/cloudflare.md)
-
-- `apitoken`
-
-  Credentials for the provider (API token).
-
-- `templates`
-  - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
-  - `tag`: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.
-  - `path`: specifies the path for a specific provider within the `repository` where the source template files are located.
-
-### HetznerDNS
-
-The fields that need to be included in a Kubernetes Secret resource to utilize the HetznerDNS provider.
-To find out how to configure HetznerDNS follow the instructions [here](./providers/hetzner.md)
 
 - `apitoken`
 

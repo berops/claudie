@@ -1,13 +1,14 @@
 syntax = "proto3";
 
 package spec;
-option go_package = "github.com/berops/claudie/proto/pb/spec";
 
 import "spec/provider.proto";
 
+option go_package = "github.com/berops/claudie/proto/pb/spec";
+
 message AlternativeName {
-    string hostname = 1;
-    string endpoint = 2;
+  string hostname = 1;
+  string endpoint = 2;
 }
 
 // DNS holds general information about the DNS records.

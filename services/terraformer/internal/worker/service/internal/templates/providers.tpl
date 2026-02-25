@@ -36,12 +36,6 @@ terraform {
       version = "4.52.1"
     }
     {{- end }}
-    {{- if .HetznerDNS }}
-    hetznerdns = {
-      source  = "timohirt/hetznerdns"
-      version = "2.2.0"
-    }
-    {{- end }}
     {{- if .Openstack }}
     openstack = {
         source = "terraform-provider-openstack/openstack"

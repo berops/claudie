@@ -117,3 +117,13 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 - Deletion process was fixed for newer versions of Kubernetes [#1919](https://github.com/berops/claudie/pull/1919)
 
 - Deploy `kubelet-csr-approver` to approve kubelet server CSRs [#1934](https://github.com/berops/claudie/pull/1934)
+
+## v0.10.1
+
+## What's Changed
+
+- Exoscale template version bumped to `v0.9.18`
+
+## Bug fixes
+
+- Fixed GCP autoscaler adapter crashing when the `zone` field is omitted from the InputManifest. The adapter now uses aggregated list requests to query machine types across all zones [#1989](https://github.com/berops/claudie/pull/1989)

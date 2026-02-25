@@ -101,26 +101,25 @@ func (nm *NodeManager) cacheGcp(np *spec.DynamicNodePool) error {
 		}
 	}()
 
-	// Define request and parameters
+	// Use project-scoped aggregated list to avoid requiring a specific zone.
 	maxResults := uint32(defaultMaxResults)
-	req := &computepb.ListMachineTypesRequest{
-		Project:    np.Provider.GetGcp().Project,
-		MaxResults: &maxResults,
-		Zone:       np.Zone,
+	retPartialSuccess := true
+	req := &computepb.AggregatedListMachineTypesRequest{
+		Project:              np.Provider.GetGcp().Project,
+		MaxResults:           &maxResults,
+		ReturnPartialSuccess: &retPartialSuccess,
 	}
-	// List services
-	it := computeService.List(context.Background(), req)
+	it := computeService.AggregatedList(context.Background(), req)
 	machineTypes := make([]*computepb.MachineType, 0)
-	// Use while loop to support paging
 	for {
-		mt, err := it.Next()
+		pair, err := it.Next()
 		if errors.Is(err, iterator.Done) {
 			break
 		}
 		if err != nil {
 			return fmt.Errorf("GCP client got error while looping: %w", err)
 		}
-		machineTypes = append(machineTypes, mt)
+		machineTypes = append(machineTypes, pair.Value.GetMachineTypes()...)
 	}
 	nm.gcpVMs = generics.MergeMaps(getTypeInfoGcp(machineTypes), nm.gcpVMs)
 
