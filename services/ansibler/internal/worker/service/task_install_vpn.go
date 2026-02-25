@@ -29,7 +29,7 @@ type VPNInfo struct {
 	NodepoolsInfos []*NodepoolsInfo
 }
 
-// InstallVPN install wiregaurd VPN across all of the Loadbalancer and kubernetes nodes.
+// InstallVPN install wireguard VPN across all of the Loadbalancer and kubernetes nodes.
 func InstallVPN(
 	logger zerolog.Logger,
 	projectName string,

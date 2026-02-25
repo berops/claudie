@@ -50,16 +50,6 @@ spec:
             limits:
               memory: 2250Mi
           env:
-            - name: NATS_CLUSTER_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: env
-                  key: NATS_CLUSTER_URL
-            - name: NATS_CLUSTER_SIZE
-              valueFrom:
-                configMapKeyRef:
-                  name: env
-                  key: NATS_CLUSTER_SIZE
             - name: ANSIBLER_CONCURRENT_CLUSTERS
               valueFrom:
                 configMapKeyRef:
@@ -81,6 +71,17 @@ spec:
                 configMapKeyRef:
                   name: env
                   key: GOLANG_LOG
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: NATS_CLUSTER_URL
+              value: "nats://nats.$(NAMESPACE).svc.cluster.local"
+            - name: NATS_CLUSTER_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: NATS_CLUSTER_SIZE
           ports:
             - containerPort: 50053
             - name: "metrics"

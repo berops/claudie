@@ -7,7 +7,7 @@ spec:
     - name: gcp-1
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.15
+        tag: v0.9.19
         path: "templates/terraformer/gcp"
       providerType: gcp
       secretRef:
@@ -16,7 +16,7 @@ spec:
     - name: gcp-2
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.15
+        tag: v0.9.19
         path: "templates/terraformer/gcp"
       providerType: gcp
       secretRef:
