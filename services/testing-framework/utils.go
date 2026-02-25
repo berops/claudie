@@ -23,7 +23,7 @@ import (
 
 const (
 	maxTimeout     = 24_500  // max allowed time for one manifest to finish in [seconds]
-	sleepSec       = 10      // seconds for one cycle of config check
+	sleepSec       = 8       // seconds for one cycle of config check
 	maxTimeoutSave = 60 * 12 // max allowed time for config to be found in the database
 )
 
@@ -38,7 +38,7 @@ func waitForDoneOrError(ctx context.Context, manager managerclient.CrudAPI, set 
 
 	// How many reconciliation iterations are needed for a definitive answer
 	// of whether the input manifest is in error or done.
-	const iterationsNeeded = 9
+	const iterationsNeeded = 10
 
 	var done int
 	var failed int
@@ -62,6 +62,12 @@ func waitForDoneOrError(ctx context.Context, manager managerclient.CrudAPI, set 
 			}
 
 			switch res.Config.Manifest.State {
+			case spec.Manifest_Scheduled:
+				done = 0
+
+				// On scheduled only reset the done counter as the failed
+				// counter needs to stay the same if it is crashlooping in a
+				// reconciliation loop.
 			case spec.Manifest_Pending:
 				clustersErrored := 0
 				for _, s := range res.Config.Clusters {
