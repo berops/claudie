@@ -674,7 +674,7 @@ func shouldRescheduleInFlight(inFlight *spec.TaskEvent) bool {
 
 	// Anything related to deletion, api endpoint or version upgrades
 	// needs to be rescheduled again as these tasks cannot be rolled back.
-	switch update.Update.Delta.(type) {
+	switch typ := update.Update.Delta.(type) {
 	case
 		*spec.Update_ApiEndpoint_,
 
@@ -690,11 +690,23 @@ func shouldRescheduleInFlight(inFlight *spec.TaskEvent) bool {
 		*spec.Update_KDeleteNodes,
 		*spec.Update_DeletedK8SNodes_,
 
-		*spec.Update_TfReplaceDns,
-		*spec.Update_ReplacedDns_,
-
 		*spec.Update_UpgradeVersion_:
 		return true
+	case
+		*spec.Update_ReplacedDns_:
+		// Only retry replace dns tasks after
+		// it was successfully replaced in terraformer,
+		// but only for Api DNS tasks. Non-Api related
+		// tasks should be retryable by reverting back.
+		//
+		// The task could have failed in terraformer, but even
+		// on failure, partial updates could be propagated to the
+		// manager and thus the scheduled `TfReplaceDns` msg could
+		// be consumed and replaced with a `ReplacedDns` msg. To
+		// be certain check that we are no longer in the terraformer stage.
+		// See `process_task.go`:[processTaskWithError]
+		return typ.ReplacedDns.OldApiEndpoint != nil &&
+			inFlight.Pipeline[inFlight.CurrentStage].GetTerraformer() == nil
 	default:
 		return false
 	}
