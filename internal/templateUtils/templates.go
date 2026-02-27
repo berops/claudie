@@ -11,6 +11,8 @@ import (
 	"text/template"
 
 	"github.com/Masterminds/sprig/v3"
+	"github.com/berops/claudie/internal/nodepools"
+	"github.com/berops/claudie/proto/pb/spec"
 )
 
 // directory - output directory
@@ -65,6 +67,7 @@ func LoadTemplate(tplFile string) (*template.Template, error) {
 	funcMap["replaceAll"] = strings.ReplaceAll
 	funcMap["extractNetmaskFromCIDR"] = ExtractNetmaskFromCIDR
 	funcMap["hasExtension"] = HasExtension
+	funcMap["sshPort"] = func(np *spec.NodePool) int32 { return nodepools.SSHPort(np) }
 
 	tpl, err := template.New("").Funcs(funcMap).Parse(tplFile)
 	if err != nil {

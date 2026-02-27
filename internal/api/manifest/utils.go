@@ -6,6 +6,7 @@ import (
 	"math"
 	"slices"
 
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -333,6 +334,7 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.Nod
 				Labels:      nodePool.Labels,
 				Annotations: nodePool.Annotations,
 				Taints:      getTaints(nodePool.Taints),
+				SshPort:     nodepools.NewSSHPort,
 				// The nodes are left empty, as the desired state
 				// in the manifest does not specify each of the nodes
 				// individually, just the count of the nodes that the
@@ -370,6 +372,7 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.Nod
 				Labels:      nodePool.Labels,
 				Annotations: nodePool.Annotations,
 				Taints:      taints,
+				SshPort:     nodepools.NewSSHPort,
 				Type: &spec.NodePool_StaticNodePool{
 					StaticNodePool: &spec.StaticNodePool{
 						NodeKeys: keys,

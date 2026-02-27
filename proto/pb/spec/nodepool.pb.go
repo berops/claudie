@@ -203,7 +203,11 @@ type NodePool struct {
 	// User defined taints.
 	Taints []*Taint `protobuf:"bytes,7,rep,name=taints,proto3" json:"taints,omitempty"`
 	// User definded annotations.
-	Annotations   map[string]string `protobuf:"bytes,8,rep,name=annotations,proto3" json:"annotations,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Annotations map[string]string `protobuf:"bytes,8,rep,name=annotations,proto3" json:"annotations,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// SSH port used to connect to nodes in this nodepool.
+	// 0 means default (port 22) for backwards compatibility with old nodepools.
+	// New nodepools are assigned port 22522.
+	SshPort       int32 `protobuf:"varint,9,opt,name=sshPort,proto3" json:"sshPort,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -303,6 +307,13 @@ func (x *NodePool) GetAnnotations() map[string]string {
 		return x.Annotations
 	}
 	return nil
+}
+
+func (x *NodePool) GetSshPort() int32 {
+	if x != nil {
+		return x.SshPort
+	}
+	return 0
 }
 
 type isNodePool_Type interface {
@@ -818,7 +829,7 @@ var File_spec_nodepool_proto protoreflect.FileDescriptor
 
 const file_spec_nodepool_proto_rawDesc = "" +
 	"\n" +
-	"\x13spec/nodepool.proto\x12\x04spec\x1a\x13spec/provider.proto\"\x80\x04\n" +
+	"\x13spec/nodepool.proto\x12\x04spec\x1a\x13spec/provider.proto\"\x9a\x04\n" +
 	"\bNodePool\x12A\n" +
 	"\x0fdynamicNodePool\x18\x01 \x01(\v2\x15.spec.DynamicNodePoolH\x00R\x0fdynamicNodePool\x12>\n" +
 	"\x0estaticNodePool\x18\x02 \x01(\v2\x14.spec.StaticNodePoolH\x00R\x0estaticNodePool\x12\x12\n" +
@@ -828,7 +839,8 @@ const file_spec_nodepool_proto_rawDesc = "" +
 	"\tisControl\x18\x05 \x01(\bR\tisControl\x122\n" +
 	"\x06labels\x18\x06 \x03(\v2\x1a.spec.NodePool.LabelsEntryR\x06labels\x12#\n" +
 	"\x06taints\x18\a \x03(\v2\v.spec.TaintR\x06taints\x12A\n" +
-	"\vannotations\x18\b \x03(\v2\x1f.spec.NodePool.AnnotationsEntryR\vannotations\x1a9\n" +
+	"\vannotations\x18\b \x03(\v2\x1f.spec.NodePool.AnnotationsEntryR\vannotations\x12\x18\n" +
+	"\asshPort\x18\t \x01(\x05R\asshPort\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a>\n" +
