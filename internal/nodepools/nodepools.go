@@ -164,6 +164,7 @@ func PartialCopyWithNodeFilter(np *spec.NodePool, nodes []string) *spec.NodePool
 		Labels:      np.Labels,
 		Taints:      np.Taints,
 		Annotations: np.Annotations,
+		SshPort:     np.SshPort,
 	}
 
 	for _, n := range np.Nodes {
@@ -211,6 +212,7 @@ func PartialCopyWithReplacedNodes(np *spec.NodePool, nodes []*spec.Node, nodeKey
 		Labels:      np.Labels,
 		Taints:      np.Taints,
 		Annotations: np.Annotations,
+		SshPort:     np.SshPort,
 	}
 
 	// To avoid issues with possible node counts, deep clone the node type itself.
