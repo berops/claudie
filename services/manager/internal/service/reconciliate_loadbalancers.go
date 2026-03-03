@@ -828,40 +828,53 @@ func ScheduleReplaceDns(
 		prev := current.LoadBalancers.Clusters[cid.Index].Dns.GetEndpoint()
 		toReplace.OldApiEndpoint = &prev
 
-		pipeline = append(pipeline, &spec.Stage{
-			StageKind: &spec.Stage_Ansibler{
-				Ansibler: &spec.StageAnsibler{
+		ansStage := spec.Stage_Ansibler{
+			Ansibler: &spec.StageAnsibler{
+				Description: &spec.StageDescription{
+					About:      "Configuring infrastructure of the cluster",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+				SubPasses: []*spec.StageAnsibler_SubPass{},
+			},
+		}
+
+		if useProxy {
+			ansStage.Ansibler.SubPasses = []*spec.StageAnsibler_SubPass{
+				{
+					Kind: spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES,
 					Description: &spec.StageDescription{
-						About:      "Configuring infrastructure of the cluster",
+						About:      "Updating HttpProxy,NoProxy environment variables",
 						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 					},
-					SubPasses: []*spec.StageAnsibler_SubPass{
-						{
-							Kind: spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES,
-							Description: &spec.StageDescription{
-								About:      "Updating HttpProxy,NoProxy environment variables",
-								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-							},
-						},
-						{
-							Kind: spec.StageAnsibler_DETERMINE_API_ENDPOINT_CHANGE,
-							Description: &spec.StageDescription{
-								About:      fmt.Sprintf("Moving API endpoint from %q to the newly configured DNS", prev),
-								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-							},
-						},
-						{
-							Kind: spec.StageAnsibler_COMMIT_PROXY_ENVS,
-							Description: &spec.StageDescription{
-								About:      "Committing proxy environment variables",
-								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-							},
-						},
+				},
+				{
+					Kind: spec.StageAnsibler_DETERMINE_API_ENDPOINT_CHANGE,
+					Description: &spec.StageDescription{
+						About:      fmt.Sprintf("Moving API endpoint from %q to the newly configured DNS", prev),
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 					},
 				},
-			},
-		})
+				{
+					Kind: spec.StageAnsibler_COMMIT_PROXY_ENVS,
+					Description: &spec.StageDescription{
+						About:      "Committing proxy environment variables",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+				},
+			}
+		} else {
+			ansStage.Ansibler.SubPasses = []*spec.StageAnsibler_SubPass{
+				{
+					Kind: spec.StageAnsibler_DETERMINE_API_ENDPOINT_CHANGE,
+					Description: &spec.StageDescription{
+						About:      fmt.Sprintf("Moving API endpoint from %q to the newly configured DNS", prev),
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+				},
+			}
+		}
 
+		pipeline = append(pipeline, &spec.Stage{StageKind: &ansStage})
 		pipeline = append(pipeline, &spec.Stage{
 			StageKind: &spec.Stage_KubeEleven{
 				KubeEleven: &spec.StageKubeEleven{
@@ -881,7 +894,6 @@ func ScheduleReplaceDns(
 				},
 			},
 		})
-
 		pipeline = append(pipeline, &spec.Stage{
 			StageKind: &spec.Stage_Kuber{
 				Kuber: &spec.StageKuber{
@@ -922,33 +934,31 @@ func ScheduleReplaceDns(
 				},
 			},
 		})
-	} else {
-		if useProxy {
-			pipeline = append(pipeline, &spec.Stage{StageKind: &spec.Stage_Ansibler{
-				Ansibler: &spec.StageAnsibler{
-					Description: &spec.StageDescription{
-						About:      "Configuring nodes after DNS change",
-						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-					},
-					SubPasses: []*spec.StageAnsibler_SubPass{
-						{
-							Kind: spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES,
-							Description: &spec.StageDescription{
-								About:      "Updating HttpProxy,NoProxy environment variables",
-								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-							},
+	} else if useProxy {
+		pipeline = append(pipeline, &spec.Stage{StageKind: &spec.Stage_Ansibler{
+			Ansibler: &spec.StageAnsibler{
+				Description: &spec.StageDescription{
+					About:      "Configuring nodes after DNS change",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+				SubPasses: []*spec.StageAnsibler_SubPass{
+					{
+						Kind: spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES,
+						Description: &spec.StageDescription{
+							About:      "Updating HttpProxy,NoProxy environment variables",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 						},
-						{
-							Kind: spec.StageAnsibler_COMMIT_PROXY_ENVS,
-							Description: &spec.StageDescription{
-								About:      "Committing proxy environment variables",
-								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-							},
+					},
+					{
+						Kind: spec.StageAnsibler_COMMIT_PROXY_ENVS,
+						Description: &spec.StageDescription{
+							About:      "Committing proxy environment variables",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 						},
 					},
 				},
-			}})
-		}
+			},
+		}})
 	}
 
 	updateOp := spec.Update{

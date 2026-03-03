@@ -694,6 +694,11 @@ func shouldRescheduleInFlight(inFlight *spec.TaskEvent) bool {
 		return true
 	case
 		*spec.Update_ReplacedDns_:
+		if int(inFlight.CurrentStage) >= len(inFlight.Pipeline) {
+			// Invalidly scheduled task, do not reschedule.
+			return false
+		}
+
 		// Only retry replace dns tasks after
 		// it was successfully replaced in terraformer,
 		// but only for Api DNS tasks. Non-Api related
