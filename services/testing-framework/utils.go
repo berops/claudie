@@ -39,7 +39,7 @@ func waitForDoneOrError(ctx context.Context, manager managerclient.CrudAPI, set 
 
 	// How many reconciliation iterations are needed for a definitive answer
 	// of whether the input manifest is in error or done.
-	const iterationsNeeded = 10
+	const iterationsNeeded = 15
 
 	var done int
 	var failed int
