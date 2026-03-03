@@ -243,6 +243,7 @@ func (c *ClusterBuilder) generateFiles(clusterDir string) error {
 						Nodes:     np.Nodes,
 						Details:   np.GetDynamicNodePool(),
 						IsControl: np.IsControl,
+						SshPort:   nodepools.SSHPort(np),
 					})
 
 					if err := fileutils.CreateKey(dnp.GetPublicKey(), clusterDir, np.GetName()); err != nil {

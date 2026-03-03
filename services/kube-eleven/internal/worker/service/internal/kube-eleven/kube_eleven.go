@@ -199,6 +199,7 @@ func (k *KubeEleven) getClusterNodes() []*NodepoolInfo {
 					return strings.TrimPrefix(name, fmt.Sprintf("%s-", k.K8sCluster.ClusterInfo.Id()))
 				}),
 				IsDynamic: true,
+				SshPort:   nodepools.SSHPort(nodepool),
 			}
 		} else if nodepool.GetStaticNodePool() != nil {
 			nodepoolInfo = &NodepoolInfo{

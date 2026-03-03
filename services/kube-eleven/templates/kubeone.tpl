@@ -39,6 +39,7 @@ controlPlane:
     {{- if $nodepool.IsDynamic }}
     sshUsername: root
     sshPrivateKeyFile: '{{ $nodepool.NodepoolName }}.pem'
+    sshPort: {{ $nodepool.SshPort }}
     {{- else }}
     sshUsername: '{{ $nodeInfo.Node.Username }}'
     sshPrivateKeyFile: './{{ $nodeInfo.Name }}.pem'
@@ -64,6 +65,7 @@ staticWorkers:
     {{- if $nodepool.IsDynamic }}
     sshUsername: root
     sshPrivateKeyFile: '{{ $nodepool.NodepoolName }}.pem'
+    sshPort: {{ $nodepool.SshPort }}
     {{- else }}
     sshUsername: '{{ $nodeInfo.Node.Username }}'
     sshPrivateKeyFile: './{{ $nodeInfo.Name }}.pem'
