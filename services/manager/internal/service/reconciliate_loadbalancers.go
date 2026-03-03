@@ -175,6 +175,13 @@ func PreKubernetesDiff(r LoadBalancersReconciliate) *spec.TaskEvent {
 // are not invalidated. This function does not modify the input in any way and also the
 // returned [spec.TaskEvent] does not hold or share any memory to related to the input.
 func PostKubernetesDiff(r LoadBalancersReconciliate) *spec.TaskEvent {
+	// Additions must also be handled after additions/modifications to the kubernetes cluster
+	// due to the possiblity of having new roles/targetpools that may not yet exist in the
+	// current state otherwise.
+	for _, lb := range r.Diff.Added {
+		return ScheduleJoinLoadBalancer(r.Proxy.CurrentUsed, r.Current, r.Desired, lb)
+	}
+
 	for lb, modified := range r.Diff.Modified {
 		cid := LoadBalancerIdentifier{
 			Id:    lb,
@@ -192,6 +199,18 @@ func PostKubernetesDiff(r LoadBalancersReconciliate) *spec.TaskEvent {
 		if len(modified.Roles.Added) > 0 {
 			return ScheduleAddRoles(r.Current, r.Desired, cid, did, modified.Roles.Added)
 		}
+	}
+
+	for lb, modified := range r.Diff.Modified {
+		cid := LoadBalancerIdentifier{
+			Id:    lb,
+			Index: modified.CurrentIdx,
+		}
+		did := LoadBalancerIdentifier{
+			Id:    lb,
+			Index: modified.DesiredIdx,
+		}
+
 		if len(modified.Roles.Deleted) > 0 {
 			return ScheduleDeleteRoles(r.Current, cid, modified.Roles.Deleted)
 		}
@@ -205,14 +224,7 @@ func PostKubernetesDiff(r LoadBalancersReconciliate) *spec.TaskEvent {
 		}
 	}
 
-	// Additions must also be handled after additions/modifications to the kubernetes cluster
-	// due to the possiblity of having new roles/targetpools that may not yet exist in the
-	// current state otherwise.
-	for _, lb := range r.Diff.Added {
-		return ScheduleJoinLoadBalancer(r.Proxy.CurrentUsed, r.Current, r.Desired, lb)
-	}
-
-	// Deletion need to follow after addition.
+	// Deletion need to follow after addition/modifications.
 	for _, lb := range r.Diff.Deleted {
 		return ScheduleDeleteLoadBalancer(r.Proxy.CurrentUsed, r.Current, lb)
 	}
@@ -813,8 +825,8 @@ func ScheduleReplaceDns(
 	}
 
 	if desired.LoadBalancers.Clusters[did.Index].IsApiEndpoint() && apiEndpoint {
-		prev := current.LoadBalancers.Clusters[cid.Index].Dns
-		toReplace.OldApiEndpoint = &prev.Endpoint
+		prev := current.LoadBalancers.Clusters[cid.Index].Dns.GetEndpoint()
+		toReplace.OldApiEndpoint = &prev
 
 		pipeline = append(pipeline, &spec.Stage{
 			StageKind: &spec.Stage_Ansibler{
@@ -834,7 +846,7 @@ func ScheduleReplaceDns(
 						{
 							Kind: spec.StageAnsibler_DETERMINE_API_ENDPOINT_CHANGE,
 							Description: &spec.StageDescription{
-								About:      fmt.Sprintf("Moving API endpoint from %q to the newly configured DNS", prev.Endpoint),
+								About:      fmt.Sprintf("Moving API endpoint from %q to the newly configured DNS", prev),
 								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 							},
 						},
@@ -1512,6 +1524,8 @@ func ScheduleDeleteRoles(current *spec.Clusters, cid LoadBalancerIdentifier, rol
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
 func ScheduleAddRoles(current, desired *spec.Clusters, cid, did LoadBalancerIdentifier, roles []string) *spec.TaskEvent {
+	inFlight := proto.Clone(current).(*spec.Clusters)
+
 	var toAdd []*spec.Role
 	for _, role := range desired.LoadBalancers.Clusters[did.Index].Roles {
 		if slices.Contains(roles, role.Name) {
@@ -1519,7 +1533,22 @@ func ScheduleAddRoles(current, desired *spec.Clusters, cid, did LoadBalancerIden
 		}
 	}
 
-	inFlight := proto.Clone(current).(*spec.Clusters)
+	// For duplicate ports assign a 0 which will result
+	// in the OS chosing an ephemeral port, which will
+	// later be overwritten by the actual requested port
+	// by future reconciliation loops.
+	currentEnvoyAdminPorts := make(map[int32]struct{})
+	for _, lb := range inFlight.LoadBalancers.Clusters {
+		for _, role := range lb.Roles {
+			currentEnvoyAdminPorts[role.Settings.EnvoyAdminPort] = struct{}{}
+		}
+	}
+	for _, n := range toAdd {
+		if _, ok := currentEnvoyAdminPorts[n.Settings.EnvoyAdminPort]; ok {
+			n.Settings.EnvoyAdminPort = 0
+		}
+	}
+
 	return &spec.TaskEvent{
 		Id:        uuid.New().String(),
 		Timestamp: timestamppb.New(time.Now().UTC()),
