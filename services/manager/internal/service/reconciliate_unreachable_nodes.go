@@ -162,6 +162,16 @@ func HandleKubernetesUnreachableNodes(logger zerolog.Logger, r KubernetesUnreach
 		errUnreachable = errors.Join(errUnreachable, fmt.Errorf("nodepool %q has %v unreachable kubernetes node/s: %s", np, len(ips), errMsg.String()))
 	}
 
+	if errUnreachable == nil {
+		// All nodes are reachable.
+		//
+		// In here it could be the case, that the Api endpoint is unreachable
+		// (for example possibly DNS misconfigured or other reasons), but we should
+		// not block on that as claudie's periodic reconciliation could possibly
+		// resolve it.
+		return nil, nil
+	}
+
 	if r.Hc.ApiEndpoint.Unreachable || len(r.Hc.Cluster.Nodes) == 0 {
 		// We are not able to retrieve the actuall nodes within the kubernetes cluster.
 		//

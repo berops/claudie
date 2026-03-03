@@ -629,7 +629,7 @@ func transferDns(current, desired *spec.LBcluster) {
 
 	// transfer the endpoint if the hostname did not change.
 	if desired.Dns.Hostname != "" {
-		if desired.Dns.Hostname == current.Dns.Hostname {
+		if desired.Dns.Hostname == current.Dns.Hostname && desired.Dns.DnsZone == current.Dns.DnsZone {
 			desired.Dns.Endpoint = current.Dns.Endpoint
 		}
 		return
