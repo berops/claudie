@@ -175,6 +175,13 @@ func PreKubernetesDiff(r LoadBalancersReconciliate) *spec.TaskEvent {
 // are not invalidated. This function does not modify the input in any way and also the
 // returned [spec.TaskEvent] does not hold or share any memory to related to the input.
 func PostKubernetesDiff(r LoadBalancersReconciliate) *spec.TaskEvent {
+	// Additions must also be handled after additions/modifications to the kubernetes cluster
+	// due to the possiblity of having new roles/targetpools that may not yet exist in the
+	// current state otherwise.
+	for _, lb := range r.Diff.Added {
+		return ScheduleJoinLoadBalancer(r.Proxy.CurrentUsed, r.Current, r.Desired, lb)
+	}
+
 	for lb, modified := range r.Diff.Modified {
 		cid := LoadBalancerIdentifier{
 			Id:    lb,
@@ -192,6 +199,18 @@ func PostKubernetesDiff(r LoadBalancersReconciliate) *spec.TaskEvent {
 		if len(modified.Roles.Added) > 0 {
 			return ScheduleAddRoles(r.Current, r.Desired, cid, did, modified.Roles.Added)
 		}
+	}
+
+	for lb, modified := range r.Diff.Modified {
+		cid := LoadBalancerIdentifier{
+			Id:    lb,
+			Index: modified.CurrentIdx,
+		}
+		did := LoadBalancerIdentifier{
+			Id:    lb,
+			Index: modified.DesiredIdx,
+		}
+
 		if len(modified.Roles.Deleted) > 0 {
 			return ScheduleDeleteRoles(r.Current, cid, modified.Roles.Deleted)
 		}
@@ -205,14 +224,7 @@ func PostKubernetesDiff(r LoadBalancersReconciliate) *spec.TaskEvent {
 		}
 	}
 
-	// Additions must also be handled after additions/modifications to the kubernetes cluster
-	// due to the possiblity of having new roles/targetpools that may not yet exist in the
-	// current state otherwise.
-	for _, lb := range r.Diff.Added {
-		return ScheduleJoinLoadBalancer(r.Proxy.CurrentUsed, r.Current, r.Desired, lb)
-	}
-
-	// Deletion need to follow after addition.
+	// Deletion need to follow after addition/modifications.
 	for _, lb := range r.Diff.Deleted {
 		return ScheduleDeleteLoadBalancer(r.Proxy.CurrentUsed, r.Current, lb)
 	}
@@ -812,57 +824,57 @@ func ScheduleReplaceDns(
 		},
 	}
 
-	if useProxy {
-		pipeline = append(pipeline, &spec.Stage{StageKind: &spec.Stage_Ansibler{
+	if desired.LoadBalancers.Clusters[did.Index].IsApiEndpoint() && apiEndpoint {
+		prev := current.LoadBalancers.Clusters[cid.Index].Dns.GetEndpoint()
+		toReplace.OldApiEndpoint = &prev
+
+		ansStage := spec.Stage_Ansibler{
 			Ansibler: &spec.StageAnsibler{
 				Description: &spec.StageDescription{
-					About:      "Configuring nodes after DNS change",
+					About:      "Configuring infrastructure of the cluster",
 					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 				},
-				SubPasses: []*spec.StageAnsibler_SubPass{
-					{
-						Kind: spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES,
-						Description: &spec.StageDescription{
-							About:      "Updating HttpProxy,NoProxy environment variables",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-					{
-						Kind: spec.StageAnsibler_COMMIT_PROXY_ENVS,
-						Description: &spec.StageDescription{
-							About:      "Committing proxy environment variables",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-				},
+				SubPasses: []*spec.StageAnsibler_SubPass{},
 			},
-		}})
-	}
+		}
 
-	if desired.LoadBalancers.Clusters[did.Index].IsApiEndpoint() && apiEndpoint {
-		pst := current.LoadBalancers.Clusters[cid.Index].Dns
-		toReplace.OldApiEndpoint = &pst.Endpoint
-
-		pipeline = append(pipeline, &spec.Stage{
-			StageKind: &spec.Stage_Ansibler{
-				Ansibler: &spec.StageAnsibler{
+		if useProxy {
+			ansStage.Ansibler.SubPasses = []*spec.StageAnsibler_SubPass{
+				{
+					Kind: spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES,
 					Description: &spec.StageDescription{
-						About:      "Configuring infrastructure of the cluster",
+						About:      "Updating HttpProxy,NoProxy environment variables",
 						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 					},
-					SubPasses: []*spec.StageAnsibler_SubPass{
-						{
-							Kind: spec.StageAnsibler_DETERMINE_API_ENDPOINT_CHANGE,
-							Description: &spec.StageDescription{
-								About:      fmt.Sprintf("Moving API endpoint from %q to the newly configured DNS", pst.Endpoint),
-								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-							},
-						},
+				},
+				{
+					Kind: spec.StageAnsibler_DETERMINE_API_ENDPOINT_CHANGE,
+					Description: &spec.StageDescription{
+						About:      fmt.Sprintf("Moving API endpoint from %q to the newly configured DNS", prev),
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 					},
 				},
-			},
-		})
+				{
+					Kind: spec.StageAnsibler_COMMIT_PROXY_ENVS,
+					Description: &spec.StageDescription{
+						About:      "Committing proxy environment variables",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+				},
+			}
+		} else {
+			ansStage.Ansibler.SubPasses = []*spec.StageAnsibler_SubPass{
+				{
+					Kind: spec.StageAnsibler_DETERMINE_API_ENDPOINT_CHANGE,
+					Description: &spec.StageDescription{
+						About:      fmt.Sprintf("Moving API endpoint from %q to the newly configured DNS", prev),
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+				},
+			}
+		}
 
+		pipeline = append(pipeline, &spec.Stage{StageKind: &ansStage})
 		pipeline = append(pipeline, &spec.Stage{
 			StageKind: &spec.Stage_KubeEleven{
 				KubeEleven: &spec.StageKubeEleven{
@@ -882,7 +894,6 @@ func ScheduleReplaceDns(
 				},
 			},
 		})
-
 		pipeline = append(pipeline, &spec.Stage{
 			StageKind: &spec.Stage_Kuber{
 				Kuber: &spec.StageKuber{
@@ -923,6 +934,31 @@ func ScheduleReplaceDns(
 				},
 			},
 		})
+	} else if useProxy {
+		pipeline = append(pipeline, &spec.Stage{StageKind: &spec.Stage_Ansibler{
+			Ansibler: &spec.StageAnsibler{
+				Description: &spec.StageDescription{
+					About:      "Configuring nodes after DNS change",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+				SubPasses: []*spec.StageAnsibler_SubPass{
+					{
+						Kind: spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES,
+						Description: &spec.StageDescription{
+							About:      "Updating HttpProxy,NoProxy environment variables",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
+						Kind: spec.StageAnsibler_COMMIT_PROXY_ENVS,
+						Description: &spec.StageDescription{
+							About:      "Committing proxy environment variables",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+				},
+			},
+		}})
 	}
 
 	updateOp := spec.Update{
@@ -1498,6 +1534,8 @@ func ScheduleDeleteRoles(current *spec.Clusters, cid LoadBalancerIdentifier, rol
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the two passed in states.
 func ScheduleAddRoles(current, desired *spec.Clusters, cid, did LoadBalancerIdentifier, roles []string) *spec.TaskEvent {
+	inFlight := proto.Clone(current).(*spec.Clusters)
+
 	var toAdd []*spec.Role
 	for _, role := range desired.LoadBalancers.Clusters[did.Index].Roles {
 		if slices.Contains(roles, role.Name) {
@@ -1505,7 +1543,22 @@ func ScheduleAddRoles(current, desired *spec.Clusters, cid, did LoadBalancerIden
 		}
 	}
 
-	inFlight := proto.Clone(current).(*spec.Clusters)
+	// For duplicate ports assign a 0 which will result
+	// in the OS chosing an ephemeral port, which will
+	// later be overwritten by the actual requested port
+	// by future reconciliation loops.
+	currentEnvoyAdminPorts := make(map[int32]struct{})
+	for _, lb := range inFlight.LoadBalancers.Clusters {
+		for _, role := range lb.Roles {
+			currentEnvoyAdminPorts[role.Settings.EnvoyAdminPort] = struct{}{}
+		}
+	}
+	for _, n := range toAdd {
+		if _, ok := currentEnvoyAdminPorts[n.Settings.EnvoyAdminPort]; ok {
+			n.Settings.EnvoyAdminPort = 0
+		}
+	}
+
 	return &spec.TaskEvent{
 		Id:        uuid.New().String(),
 		Timestamp: timestamppb.New(time.Now().UTC()),
