@@ -159,3 +159,42 @@ func getTypeInfoExoscale(rawInfo []egoscale.InstanceType) map[string]*InstanceIn
 	}
 	return m
 }
+
+// CloudRift API response types for instance-types endpoint.
+type cloudRiftInstanceTypesResponse struct {
+	Data struct {
+		InstanceTypes []cloudRiftInstanceType `json:"instance_types"`
+	} `json:"data"`
+}
+
+type cloudRiftInstanceType struct {
+	Name     string               `json:"name"`
+	Variants []cloudRiftVariant   `json:"variants"`
+}
+
+type cloudRiftVariant struct {
+	Name     string `json:"name"`
+	CpuCount int32  `json:"cpu_count"`
+	GpuCount *int32 `json:"gpu_count"`
+	Disk     int64  `json:"disk"`
+	Dram     int64  `json:"dram"`
+}
+
+// getTypeInfoCloudRift converts CloudRift API instance types into a map keyed by variant name.
+func getTypeInfoCloudRift(instanceTypes []cloudRiftInstanceType) map[string]*InstanceInfo {
+	m := make(map[string]*InstanceInfo)
+	for _, it := range instanceTypes {
+		for _, v := range it.Variants {
+			info := &InstanceInfo{
+				cpu:    int64(v.CpuCount),
+				memory: v.Dram, // CloudRift API returns memory in bytes.
+				disk:   v.Disk, // CloudRift API returns disk in bytes.
+			}
+			if v.GpuCount != nil {
+				info.nvidiaGpus = int64(*v.GpuCount)
+			}
+			m[v.Name] = info
+		}
+	}
+	return m
+}
