@@ -210,6 +210,7 @@ func (k *KubeEleven) getClusterNodes() []*NodepoolInfo {
 				ProviderName:      sanitise.String(staticProviderName),
 				Nodes:             getNodeData(nodepool.Nodes, func(s string) string { return s }),
 				IsDynamic:         false,
+				SshPort:           nodepools.SSHPort(nodepool),
 			}
 		}
 		nodepoolInfos = append(nodepoolInfos, nodepoolInfo)
