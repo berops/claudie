@@ -3,6 +3,7 @@ package node_manager
 import (
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -227,5 +228,35 @@ func (nm *NodeManager) cacheExoscale(np *spec.DynamicNodePool) error {
 	}
 
 	nm.exoscaleVMs = getTypeInfoExoscale(resp.InstanceTypes)
+	return nil
+}
+
+func (nm *NodeManager) cacheCloudRift(np *spec.DynamicNodePool) error {
+	token := np.Provider.GetCloudrift().Token
+
+	reqBody := strings.NewReader(`{"version":"2025-06-10","data":{"selector":null}}`)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, "https://api.cloudrift.ai/api/v1/instance-types/list", reqBody)
+	if err != nil {
+		return fmt.Errorf("cloudrift client error: %w", err)
+	}
+	req.Header.Set("X-API-KEY", token)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("cloudrift client error: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("cloudrift API returned status %d", resp.StatusCode)
+	}
+
+	var result cloudRiftInstanceTypesResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return fmt.Errorf("cloudrift client error parsing response: %w", err)
+	}
+
+	nm.cloudriftVMs = getTypeInfoCloudRift(result.Data.InstanceTypes)
 	return nil
 }

@@ -28,6 +28,7 @@ type Provider struct {
 	Cloudflare []Cloudflare `yaml:"cloudflare"`
 	Openstack  []Openstack  `yaml:"openstack"`
 	Exoscale   []Exoscale   `yaml:"exoscale"`
+	CloudRift  []CloudRift  `yaml:"cloudrift"`
 }
 
 type Cloudflare struct {
@@ -97,6 +98,13 @@ type Exoscale struct {
 	Name      string              `validate:"required,max=15" yaml:"name"`
 	ApiKey    string              `validate:"required" yaml:"apiKey"`
 	ApiSecret string              `validate:"required" yaml:"apiSecret"`
+	Templates *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
+}
+
+type CloudRift struct {
+	Name      string              `validate:"required,max=15" yaml:"name"`
+	Token     string              `validate:"required" yaml:"token"`
+	TeamId    string              `validate:"omitempty" yaml:"teamId"`
 	Templates *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
 }
 

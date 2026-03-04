@@ -50,6 +50,11 @@ message ExoscaleProvider {
   string apiSecret = 2;
 }
 
+message CloudRiftProvider {
+  string token = 1;
+  optional string teamId = 2;
+}
+
 message Provider {
   string specName = 1;
   string cloudProviderName = 2;
@@ -64,6 +69,7 @@ message Provider {
     CloudflareProvider cloudflare = 9;
     OpenstackProvider openstack = 11;
     ExoscaleProvider exoscale = 12;
+    CloudRiftProvider cloudrift = 14;
   }
 
   TemplateRepository templates = 13;

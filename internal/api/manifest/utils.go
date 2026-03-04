@@ -230,6 +230,33 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 		}
 	}
 
+	for _, crConf := range ds.Providers.CloudRift {
+		if crConf.Name == providerSpecName {
+			t := &spec.TemplateRepository{
+				Repository: crConf.Templates.Repository,
+				Tag:        crConf.Templates.Tag,
+				Path:       crConf.Templates.Path,
+			}
+			if err := FetchCommitHash(t); err != nil {
+				return nil, err
+			}
+			cr := &spec.CloudRiftProvider{
+				Token: crConf.Token,
+			}
+			if crConf.TeamId != "" {
+				cr.TeamId = &crConf.TeamId
+			}
+			return &spec.Provider{
+				SpecName: providerSpecName,
+				ProviderType: &spec.Provider_Cloudrift{
+					Cloudrift: cr,
+				},
+				CloudProviderName: "cloudrift",
+				Templates:         t,
+			}, nil
+		}
+	}
+
 	return nil, fmt.Errorf("failed to find provider with name: %s", providerSpecName)
 }
 
@@ -551,6 +578,11 @@ func (ds *Manifest) ForEachProvider(do func(name, typ string, tmpls **TemplateRe
 	}
 	for i, c := range ds.Providers.Exoscale {
 		if !do(c.Name, "exoscale", &ds.Providers.Exoscale[i].Templates) {
+			return
+		}
+	}
+	for i, c := range ds.Providers.CloudRift {
+		if !do(c.Name, "cloudrift", &ds.Providers.CloudRift[i].Templates) {
 			return
 		}
 	}
