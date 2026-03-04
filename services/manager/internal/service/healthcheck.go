@@ -18,7 +18,6 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-
 // UnreachableNodesMap holds the nodepools and all of the nodes within
 // that nodepool that are unreachable via a Ping on the IPv4 public endpoint.
 type UnreachableIPv4Map = map[string][]string
