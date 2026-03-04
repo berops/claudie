@@ -93,7 +93,7 @@ func PopulateEnvoyAdminPorts(state *spec.Clusters) {
 	for _, lb := range state.GetLoadBalancers().GetClusters() {
 		used := make(map[int]struct{})
 		for _, r := range lb.Roles {
-			if r.Settings.EnvoyAdminPort >= 0 {
+			if r.Settings.EnvoyAdminPort > 0 {
 				used[int(r.Settings.EnvoyAdminPort)] = struct{}{}
 			}
 		}
@@ -109,7 +109,7 @@ func PopulateEnvoyAdminPorts(state *spec.Clusters) {
 		}
 
 		for _, r := range lb.Roles {
-			if r.Settings.EnvoyAdminPort < 0 {
+			if r.Settings.EnvoyAdminPort <= 0 {
 				p := freePorts[len(freePorts)-1]
 				freePorts = freePorts[:len(freePorts)-1]
 				r.Settings.EnvoyAdminPort = int32(p)

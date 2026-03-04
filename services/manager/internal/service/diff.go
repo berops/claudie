@@ -877,7 +877,7 @@ func determineLBApiEndpointChange(
 	)
 
 	for _, lb := range desiredLbs {
-		if lb.HasApiRole() {
+		if lb.HasApiRole() && lb.Dns != nil {
 			desired[lb.ClusterInfo.Id()] = lb
 			if first == nil {
 				first = lb
@@ -894,11 +894,15 @@ func determineLBApiEndpointChange(
 			return current.ClusterInfo.Id(), none, spec.ApiEndpointChangeState_DetachingLoadBalancer
 		}
 		if current.Dns == nil { // current state has no dns but there is at least one cluster in desired state.
+			// If it is the same cluster with the api server but the dns changed, schedule it.
+			if desired, ok := desired[current.ClusterInfo.Id()]; ok {
+				return current.ClusterInfo.Id(), desired.ClusterInfo.Id(), spec.ApiEndpointChangeState_EndpointRenamed
+			}
 			return none, first.ClusterInfo.Id(), spec.ApiEndpointChangeState_AttachingLoadBalancer
 		}
 		if desired, ok := desired[current.ClusterInfo.Id()]; ok {
 			if current.Dns.Endpoint != desired.Dns.Endpoint {
-				return current.ClusterInfo.Id(), first.ClusterInfo.Id(), spec.ApiEndpointChangeState_EndpointRenamed
+				return current.ClusterInfo.Id(), desired.ClusterInfo.Id(), spec.ApiEndpointChangeState_EndpointRenamed
 			}
 			return none, none, spec.ApiEndpointChangeState_NoChange
 		}

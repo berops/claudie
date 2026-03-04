@@ -3,6 +3,11 @@
   gather_facts: false
   become: true
   tasks:
+    - name: Reset ssh connection to allow changes to environment to affect 'current login user'
+      # This playbook works with modified environment variables so kill any SSH connections that are
+      # reused and force a new connection to be established.
+      ansible.builtin.meta: reset_connection
+
     - name: stop kubelet
       service:
         name: "{{ item }}"

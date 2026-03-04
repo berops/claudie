@@ -33,12 +33,24 @@ func replaceDns(
 
 	lb := action.State.LoadBalancers[idx]
 	if lb.Dns != nil {
+		current := lb.Dns
+
+		// If there is a current state update it to nil
+		// on either a success or a failure. When reporting
+		// back to the manager service it should recognize
+		// that the DNS reported nil, and make a proper diff
+		// to either revert back or move to the new DNS again.
+		lb.Dns = nil
+		update := tracker.Result.Update()
+		update.Loadbalancers(lb)
+		update.Commit()
+
 		dns := loadbalancer.DNS{
 			ProjectName:       projectName,
 			ClusterName:       lb.ClusterInfo.Name,
 			ClusterHash:       lb.ClusterInfo.Hash,
 			NodeIPs:           nodepools.PublicEndpoints(lb.ClusterInfo.NodePools),
-			Dns:               lb.Dns,
+			Dns:               current,
 			SpawnProcessLimit: processLimit,
 		}
 
@@ -47,14 +59,9 @@ func replaceDns(
 			tracker.Diagnostics.Push(err)
 			return
 		}
-
-		lb.Dns = nil
 	}
 
 	if action.Replace.Dns == nil {
-		update := tracker.Result.Update()
-		update.Loadbalancers(lb)
-		update.Commit()
 		return
 	}
 
