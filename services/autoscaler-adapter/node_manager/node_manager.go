@@ -39,8 +39,8 @@ type NodeManager struct {
 	azureVMs     map[string]*InstanceInfo
 	ociVMs       map[string]*InstanceInfo
 	openstackVMs map[string]*InstanceInfo
-	exoscaleVMs   map[string]*InstanceInfo
-	cloudriftVMs  map[string]*InstanceInfo
+	exoscaleVMs  map[string]*InstanceInfo
+	cloudriftVMs map[string]*InstanceInfo
 
 	// Provider-region-zone cache
 	cacheProviderMap map[string]struct{}
