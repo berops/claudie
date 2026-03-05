@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	compute "cloud.google.com/go/compute/apiv1"
 	"cloud.google.com/go/compute/apiv1/computepb"
@@ -33,7 +35,10 @@ import (
 )
 
 const (
-	defaultMaxResults = 30
+	defaultMaxResults       = 30
+	cloudRiftAPIVersion     = "2025-06-10"
+	cloudRiftAPIBaseURL     = "https://api.cloudrift.ai/api/v1"
+	cloudRiftRequestTimeout = 30 * time.Second
 )
 
 // cacheHetzner function uses hcloud-go module to query supported servers and their info. If the query is successful, the server info is saved in cache.
@@ -234,8 +239,11 @@ func (nm *NodeManager) cacheExoscale(np *spec.DynamicNodePool) error {
 func (nm *NodeManager) cacheCloudRift(np *spec.DynamicNodePool) error {
 	token := np.Provider.GetCloudrift().Token
 
-	reqBody := strings.NewReader(`{"version":"2025-06-10","data":{"selector":"All"}}`)
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, "https://api.cloudrift.ai/api/v1/instance-types/list", reqBody)
+	ctx, cancel := context.WithTimeout(context.Background(), cloudRiftRequestTimeout)
+	defer cancel()
+
+	reqBody := strings.NewReader(`{"version":"` + cloudRiftAPIVersion + `","data":{"selector":"All"}}`)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, cloudRiftAPIBaseURL+"/instance-types/list", reqBody)
 	if err != nil {
 		return fmt.Errorf("cloudrift client error: %w", err)
 	}
@@ -249,7 +257,8 @@ func (nm *NodeManager) cacheCloudRift(np *spec.DynamicNodePool) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("cloudrift API returned status %d", resp.StatusCode)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		return fmt.Errorf("cloudrift API returned status %d: %s", resp.StatusCode, string(body))
 	}
 
 	var result cloudRiftInstanceTypesResponse
