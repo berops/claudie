@@ -209,6 +209,10 @@ func PartialCopyWithReplacedNodes(np *spec.NodePool, nodes []*spec.Node, nodeKey
 		s := proto.Clone(typ.StaticNodePool).(*spec.StaticNodePool)
 		clear(s.NodeKeys)
 		maps.Copy(s.NodeKeys, nodeKeys)
+
+		cp.Type = &spec.NodePool_StaticNodePool{
+			StaticNodePool: s,
+		}
 	}
 
 	return cp
