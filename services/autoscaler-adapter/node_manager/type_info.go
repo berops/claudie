@@ -168,8 +168,8 @@ type cloudRiftInstanceTypesResponse struct {
 }
 
 type cloudRiftInstanceType struct {
-	Name     string               `json:"name"`
-	Variants []cloudRiftVariant   `json:"variants"`
+	Name     string             `json:"name"`
+	Variants []cloudRiftVariant `json:"variants"`
 }
 
 type cloudRiftVariant struct {

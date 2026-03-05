@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	wireguardPlaybook      = "../../ansible-playbooks/wireguard.yml"
+	wireguardPlaybook       = "../../ansible-playbooks/wireguard.yml"
 	cloudriftNATFixPlaybook = "../../ansible-playbooks/cloudrift-nat-fix.yml"
 )
 
