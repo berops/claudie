@@ -8,7 +8,7 @@ spec:
       providerType: hetzner
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.15
+        tag: v0.9.19
         path: "templates/terraformer/hetzner"
       secretRef:
         name: hetzner-secret
@@ -17,19 +17,10 @@ spec:
       providerType: azure
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.15
+        tag: v0.9.19
         path: "templates/terraformer/azure"
       secretRef:
         name: azure-sponsorship-secret
-        namespace: e2e-secrets
-    - name: hetznerdns-1
-      providerType: hetznerdns
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.15
-        path: "templates/terraformer/hetznerdns"
-      secretRef:
-        name: hetznerdns-secret
         namespace: e2e-secrets
   nodePools:
     dynamic:
@@ -81,7 +72,7 @@ spec:
           - apiserver-lb-hetzner
         dns:
           dnsZone: claudie.org
-          provider: hetznerdns-1
+          provider: hetzner-1
         targetedK8s: succeeds-on-last-4-cluster-0
         pools:
           - azr-nodes
@@ -90,7 +81,7 @@ spec:
           - lb-htz
         dns:
           dnsZone: claudie.org
-          provider: hetznerdns-1
+          provider: hetzner-1
         targetedK8s: succeeds-on-last-4-cluster-0
         pools:
           - htz-ctrl-nodes
