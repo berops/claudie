@@ -234,7 +234,7 @@ func (nm *NodeManager) cacheExoscale(np *spec.DynamicNodePool) error {
 func (nm *NodeManager) cacheCloudRift(np *spec.DynamicNodePool) error {
 	token := np.Provider.GetCloudrift().Token
 
-	reqBody := strings.NewReader(`{"version":"2025-06-10","data":{"selector":null}}`)
+	reqBody := strings.NewReader(`{"version":"2025-06-10","data":{"selector":"All"}}`)
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, "https://api.cloudrift.ai/api/v1/instance-types/list", reqBody)
 	if err != nil {
 		return fmt.Errorf("cloudrift client error: %w", err)

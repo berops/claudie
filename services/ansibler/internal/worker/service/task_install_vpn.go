@@ -19,7 +19,10 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-const wireguardPlaybook = "../../ansible-playbooks/wireguard.yml"
+const (
+	wireguardPlaybook      = "../../ansible-playbooks/wireguard.yml"
+	cloudriftNATFixPlaybook = "../../ansible-playbooks/cloudrift-nat-fix.yml"
+)
 
 type VPNInfo struct {
 	ClusterNetwork string
@@ -161,6 +164,19 @@ func installWireguardVPN(clusterID string, vpnInfo *VPNInfo, processLimit *semap
 		}
 	}
 
+	// Fix CloudRift NAT before WireGuard so that peer public IPs are
+	// redirected to LAN IPs, allowing the WireGuard tunnel to establish
+	// and kubeadm join to reach the API server.
+	if err := fixCloudRiftNAT(vpnInfo, clusterID, clusterDirectory, processLimit); err != nil {
+		return fmt.Errorf("error while fixing CloudRift NAT for %s : %w", clusterDirectory, err)
+	}
+
+	// Regenerate the full inventory since fixCloudRiftNAT overwrites it
+	// with CloudRift-only nodes.
+	if err := utils.GenerateInventoryFile(templates.AllNodesInventoryTemplate, clusterDirectory, data); err != nil {
+		return fmt.Errorf("error while recreating inventory file for %s : %w", clusterDirectory, err)
+	}
+
 	ansible := utils.Ansible{
 		Playbook:          wireguardPlaybook,
 		Inventory:         utils.InventoryFileName,
@@ -170,6 +186,61 @@ func installWireguardVPN(clusterID string, vpnInfo *VPNInfo, processLimit *semap
 
 	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("VPN - %s", clusterID)); err != nil {
 		return fmt.Errorf("error while running ansible for %s : %w", clusterDirectory, err)
+	}
+
+	return nil
+}
+
+// fixCloudRiftNAT adds iptables OUTPUT DNAT rules on CloudRift nodes so that
+// peer public IPs are redirected to their LAN IPs (discovered via Ansible
+// gather_facts). This works around CloudRift's local gateway sending TCP RST
+// instead of hairpinning traffic between VMs on the same subnet. Must run
+// before WireGuard so that the tunnel endpoints resolve over the LAN, and
+// before KubeEleven so that kubeadm join can reach the API server.
+func fixCloudRiftNAT(vpnInfo *VPNInfo, clusterID, clusterDirectory string, processLimit *semaphore.Weighted) error {
+	var cloudriftInfos []*NodepoolsInfo
+
+	for _, npi := range vpnInfo.NodepoolsInfos {
+		var dynPools []*spec.NodePool
+		for _, np := range npi.Nodepools.Dynamic {
+			if dyn := np.GetDynamicNodePool(); dyn != nil && dyn.Provider.CloudProviderName == "cloudrift" {
+				dynPools = append(dynPools, np)
+			}
+		}
+		if len(dynPools) > 0 {
+			cloudriftInfos = append(cloudriftInfos, &NodepoolsInfo{
+				Nodepools:      NodePools{Dynamic: dynPools},
+				ClusterID:      npi.ClusterID,
+				ClusterNetwork: npi.ClusterNetwork,
+			})
+		}
+	}
+
+	// Count total CloudRift nodes; need at least 2 for cross-node NAT to matter.
+	var totalNodes int
+	for _, npi := range cloudriftInfos {
+		for _, np := range npi.Nodepools.Dynamic {
+			totalNodes += len(np.Nodes)
+		}
+	}
+	if totalNodes < 2 {
+		return nil
+	}
+
+	data := AllNodesInventoryData{NodepoolsInfo: cloudriftInfos}
+	if err := utils.GenerateInventoryFile(templates.AllNodesInventoryTemplate, clusterDirectory, data); err != nil {
+		return fmt.Errorf("error while creating CloudRift NAT inventory file for %s : %w", clusterDirectory, err)
+	}
+
+	ansible := utils.Ansible{
+		Playbook:          cloudriftNATFixPlaybook,
+		Inventory:         utils.InventoryFileName,
+		Directory:         clusterDirectory,
+		SpawnProcessLimit: processLimit,
+	}
+
+	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("CloudRift NAT fix - %s", clusterID)); err != nil {
+		return fmt.Errorf("error while running CloudRift NAT fix ansible for %s : %w", clusterDirectory, err)
 	}
 
 	return nil
