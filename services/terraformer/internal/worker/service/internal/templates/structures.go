@@ -46,6 +46,9 @@ type (
 		// IsControl Specifies whether the nodepools is used as a control or compute nodepool within the cluster.
 		// In the context of LB cluster, nodepools can only be compute or "worker" nodepools.
 		IsControl bool
+		// SshPort is the SSH port used to connect to nodes in this nodepool.
+		// Old nodepools use 22, new nodepools use 22522.
+		SshPort int32
 	}
 )
 

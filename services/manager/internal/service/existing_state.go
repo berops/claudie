@@ -570,6 +570,10 @@ outer:
 					// name.
 					continue outer
 				}
+				// Transfer the SSH port from the current state. For old nodepools
+				// that predate the SSH port feature, SshPort will be 0 which
+				// resolves to port 22 at runtime for backwards compatibility.
+				desired.SshPort = current.SshPort
 				transferDynamicNodePool(current, desired)
 			case *spec.NodePool_StaticNodePool:
 				if desired.GetStaticNodePool() == nil {
@@ -579,6 +583,7 @@ outer:
 					// name.
 					continue outer
 				}
+				desired.SshPort = current.SshPort
 				transferStaticNodePool(current, desired)
 			}
 		}
