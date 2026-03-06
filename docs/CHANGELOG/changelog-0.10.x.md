@@ -133,7 +133,7 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 ## What's Changed
 - Hetzner DNS will now be considered to be part of the hetzner cloud (`hcloud`) provider within claudie [#1993](https://github.com/berops/claudie/pull/1993)
   If you're using hetzner for DNS you will also need to use the [`v0.9.19` templates](https://github.com/berops/claudie-config/releases/tag/v0.9.19) as from
-  this claudie version onwards the previous templates will not work with the old hetzner dns solution.
+  this Claudie version onwards the previous templates will not work with the old hetzner dns solution.
   
 - Claudie will now deploy longhorn with version 1.10.2 [#1998](https://github.com/berops/claudie/pull/1998)
   
