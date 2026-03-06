@@ -139,7 +139,7 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
   
   Before upgrading to this Claudie version from `v0.10.1`, detach all Longhorn volumes and follow the manual checks described here: https://longhorn.io/docs/1.10.2/deploy/upgrade/#manual-checks-before-upgrade
   
-  Additional manual steps may also be required to ensure Longhorn upgrades correctly. See the necessary steps look at the `Migration Requirement Before Longhorn v1.10 Upgrade` section in [Longhorn v1.10.1 release](https://github.com/longhorn/longhorn/releases/tag/v1.10.1)
+  Additional manual steps may also be required to ensure Longhorn upgrades correctly. To see the necessary steps, look at the `Migration Requirement Before Longhorn v1.10 Upgrade` section in [Longhorn v1.10.1 release](https://github.com/longhorn/longhorn/releases/tag/v1.10.1)
 
 
 ## Bug fixes
