@@ -143,4 +143,4 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 
 
 ## Bug fixes
-- Fix  api endpoint changes with proxy turned on [#1996](https://github.com/berops/claudie/pull/1996)
+- Fix API endpoint changes with proxy turned on [`#1996`](https://github.com/berops/claudie/pull/1996)
