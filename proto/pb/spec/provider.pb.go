@@ -493,6 +493,58 @@ func (x *ExoscaleProvider) GetApiSecret() string {
 	return ""
 }
 
+type CloudRiftProvider struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	TeamId        *string                `protobuf:"bytes,2,opt,name=teamId,proto3,oneof" json:"teamId,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CloudRiftProvider) Reset() {
+	*x = CloudRiftProvider{}
+	mi := &file_spec_provider_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CloudRiftProvider) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CloudRiftProvider) ProtoMessage() {}
+
+func (x *CloudRiftProvider) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_provider_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CloudRiftProvider.ProtoReflect.Descriptor instead.
+func (*CloudRiftProvider) Descriptor() ([]byte, []int) {
+	return file_spec_provider_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *CloudRiftProvider) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+func (x *CloudRiftProvider) GetTeamId() string {
+	if x != nil && x.TeamId != nil {
+		return *x.TeamId
+	}
+	return ""
+}
+
 type Provider struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	SpecName          string                 `protobuf:"bytes,1,opt,name=specName,proto3" json:"specName,omitempty"`
@@ -509,6 +561,7 @@ type Provider struct {
 	//	*Provider_Cloudflare
 	//	*Provider_Openstack
 	//	*Provider_Exoscale
+	//	*Provider_Cloudrift
 	ProviderType  isProvider_ProviderType `protobuf_oneof:"ProviderType"`
 	Templates     *TemplateRepository     `protobuf:"bytes,13,opt,name=templates,proto3" json:"templates,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -517,7 +570,7 @@ type Provider struct {
 
 func (x *Provider) Reset() {
 	*x = Provider{}
-	mi := &file_spec_provider_proto_msgTypes[8]
+	mi := &file_spec_provider_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -529,7 +582,7 @@ func (x *Provider) String() string {
 func (*Provider) ProtoMessage() {}
 
 func (x *Provider) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_provider_proto_msgTypes[8]
+	mi := &file_spec_provider_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -542,7 +595,7 @@ func (x *Provider) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Provider.ProtoReflect.Descriptor instead.
 func (*Provider) Descriptor() ([]byte, []int) {
-	return file_spec_provider_proto_rawDescGZIP(), []int{8}
+	return file_spec_provider_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *Provider) GetSpecName() string {
@@ -638,6 +691,15 @@ func (x *Provider) GetExoscale() *ExoscaleProvider {
 	return nil
 }
 
+func (x *Provider) GetCloudrift() *CloudRiftProvider {
+	if x != nil {
+		if x, ok := x.ProviderType.(*Provider_Cloudrift); ok {
+			return x.Cloudrift
+		}
+	}
+	return nil
+}
+
 func (x *Provider) GetTemplates() *TemplateRepository {
 	if x != nil {
 		return x.Templates
@@ -681,6 +743,10 @@ type Provider_Exoscale struct {
 	Exoscale *ExoscaleProvider `protobuf:"bytes,12,opt,name=exoscale,proto3,oneof"`
 }
 
+type Provider_Cloudrift struct {
+	Cloudrift *CloudRiftProvider `protobuf:"bytes,14,opt,name=cloudrift,proto3,oneof"`
+}
+
 func (*Provider_Gcp) isProvider_ProviderType() {}
 
 func (*Provider_Hetzner) isProvider_ProviderType() {}
@@ -697,6 +763,8 @@ func (*Provider_Openstack) isProvider_ProviderType() {}
 
 func (*Provider_Exoscale) isProvider_ProviderType() {}
 
+func (*Provider_Cloudrift) isProvider_ProviderType() {}
+
 type TemplateRepository struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Repository    string                 `protobuf:"bytes,1,opt,name=repository,proto3" json:"repository,omitempty"`
@@ -709,7 +777,7 @@ type TemplateRepository struct {
 
 func (x *TemplateRepository) Reset() {
 	*x = TemplateRepository{}
-	mi := &file_spec_provider_proto_msgTypes[9]
+	mi := &file_spec_provider_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -721,7 +789,7 @@ func (x *TemplateRepository) String() string {
 func (*TemplateRepository) ProtoMessage() {}
 
 func (x *TemplateRepository) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_provider_proto_msgTypes[9]
+	mi := &file_spec_provider_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -734,7 +802,7 @@ func (x *TemplateRepository) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TemplateRepository.ProtoReflect.Descriptor instead.
 func (*TemplateRepository) Descriptor() ([]byte, []int) {
-	return file_spec_provider_proto_rawDescGZIP(), []int{9}
+	return file_spec_provider_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *TemplateRepository) GetRepository() string {
@@ -802,7 +870,11 @@ const file_spec_provider_proto_rawDesc = "" +
 	"\x1bapplicationCredentialSecret\x18\x05 \x01(\tR\x1bapplicationCredentialSecret\"H\n" +
 	"\x10ExoscaleProvider\x12\x16\n" +
 	"\x06apiKey\x18\x01 \x01(\tR\x06apiKey\x12\x1c\n" +
-	"\tapiSecret\x18\x02 \x01(\tR\tapiSecret\"\x9c\x04\n" +
+	"\tapiSecret\x18\x02 \x01(\tR\tapiSecret\"Q\n" +
+	"\x11CloudRiftProvider\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\x12\x1b\n" +
+	"\x06teamId\x18\x02 \x01(\tH\x00R\x06teamId\x88\x01\x01B\t\n" +
+	"\a_teamId\"\xd5\x04\n" +
 	"\bProvider\x12\x1a\n" +
 	"\bspecName\x18\x01 \x01(\tR\bspecName\x12,\n" +
 	"\x11cloudProviderName\x18\x02 \x01(\tR\x11cloudProviderName\x12%\n" +
@@ -815,7 +887,8 @@ const file_spec_provider_proto_rawDesc = "" +
 	"cloudflare\x18\t \x01(\v2\x18.spec.CloudflareProviderH\x00R\n" +
 	"cloudflare\x127\n" +
 	"\topenstack\x18\v \x01(\v2\x17.spec.OpenstackProviderH\x00R\topenstack\x124\n" +
-	"\bexoscale\x18\f \x01(\v2\x16.spec.ExoscaleProviderH\x00R\bexoscale\x126\n" +
+	"\bexoscale\x18\f \x01(\v2\x16.spec.ExoscaleProviderH\x00R\bexoscale\x127\n" +
+	"\tcloudrift\x18\x0e \x01(\v2\x17.spec.CloudRiftProviderH\x00R\tcloudrift\x126\n" +
 	"\ttemplates\x18\r \x01(\v2\x18.spec.TemplateRepositoryR\ttemplatesB\x0e\n" +
 	"\fProviderType\"\x87\x01\n" +
 	"\x12TemplateRepository\x12\x1e\n" +
@@ -841,7 +914,7 @@ func file_spec_provider_proto_rawDescGZIP() []byte {
 	return file_spec_provider_proto_rawDescData
 }
 
-var file_spec_provider_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_spec_provider_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_spec_provider_proto_goTypes = []any{
 	(*GCPProvider)(nil),        // 0: spec.GCPProvider
 	(*HetznerProvider)(nil),    // 1: spec.HetznerProvider
@@ -851,24 +924,26 @@ var file_spec_provider_proto_goTypes = []any{
 	(*CloudflareProvider)(nil), // 5: spec.CloudflareProvider
 	(*OpenstackProvider)(nil),  // 6: spec.OpenstackProvider
 	(*ExoscaleProvider)(nil),   // 7: spec.ExoscaleProvider
-	(*Provider)(nil),           // 8: spec.Provider
-	(*TemplateRepository)(nil), // 9: spec.TemplateRepository
+	(*CloudRiftProvider)(nil),  // 8: spec.CloudRiftProvider
+	(*Provider)(nil),           // 9: spec.Provider
+	(*TemplateRepository)(nil), // 10: spec.TemplateRepository
 }
 var file_spec_provider_proto_depIdxs = []int32{
-	0, // 0: spec.Provider.gcp:type_name -> spec.GCPProvider
-	1, // 1: spec.Provider.hetzner:type_name -> spec.HetznerProvider
-	2, // 2: spec.Provider.oci:type_name -> spec.OCIProvider
-	3, // 3: spec.Provider.aws:type_name -> spec.AWSProvider
-	4, // 4: spec.Provider.azure:type_name -> spec.AzureProvider
-	5, // 5: spec.Provider.cloudflare:type_name -> spec.CloudflareProvider
-	6, // 6: spec.Provider.openstack:type_name -> spec.OpenstackProvider
-	7, // 7: spec.Provider.exoscale:type_name -> spec.ExoscaleProvider
-	9, // 8: spec.Provider.templates:type_name -> spec.TemplateRepository
-	9, // [9:9] is the sub-list for method output_type
-	9, // [9:9] is the sub-list for method input_type
-	9, // [9:9] is the sub-list for extension type_name
-	9, // [9:9] is the sub-list for extension extendee
-	0, // [0:9] is the sub-list for field type_name
+	0,  // 0: spec.Provider.gcp:type_name -> spec.GCPProvider
+	1,  // 1: spec.Provider.hetzner:type_name -> spec.HetznerProvider
+	2,  // 2: spec.Provider.oci:type_name -> spec.OCIProvider
+	3,  // 3: spec.Provider.aws:type_name -> spec.AWSProvider
+	4,  // 4: spec.Provider.azure:type_name -> spec.AzureProvider
+	5,  // 5: spec.Provider.cloudflare:type_name -> spec.CloudflareProvider
+	6,  // 6: spec.Provider.openstack:type_name -> spec.OpenstackProvider
+	7,  // 7: spec.Provider.exoscale:type_name -> spec.ExoscaleProvider
+	8,  // 8: spec.Provider.cloudrift:type_name -> spec.CloudRiftProvider
+	10, // 9: spec.Provider.templates:type_name -> spec.TemplateRepository
+	10, // [10:10] is the sub-list for method output_type
+	10, // [10:10] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_spec_provider_proto_init() }
@@ -876,7 +951,8 @@ func file_spec_provider_proto_init() {
 	if File_spec_provider_proto != nil {
 		return
 	}
-	file_spec_provider_proto_msgTypes[8].OneofWrappers = []any{
+	file_spec_provider_proto_msgTypes[8].OneofWrappers = []any{}
+	file_spec_provider_proto_msgTypes[9].OneofWrappers = []any{
 		(*Provider_Gcp)(nil),
 		(*Provider_Hetzner)(nil),
 		(*Provider_Oci)(nil),
@@ -885,15 +961,16 @@ func file_spec_provider_proto_init() {
 		(*Provider_Cloudflare)(nil),
 		(*Provider_Openstack)(nil),
 		(*Provider_Exoscale)(nil),
+		(*Provider_Cloudrift)(nil),
 	}
-	file_spec_provider_proto_msgTypes[9].OneofWrappers = []any{}
+	file_spec_provider_proto_msgTypes[10].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_spec_provider_proto_rawDesc), len(file_spec_provider_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

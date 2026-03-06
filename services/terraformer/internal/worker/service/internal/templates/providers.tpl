@@ -48,5 +48,11 @@ terraform {
       version = "~> 0.68.0"
     }
     {{- end }}
+    {{- if .CloudRift }}
+    cloudrift = {
+      source  = "berops/cloudrift"
+      version = "0.2.0"
+    }
+    {{- end }}
   }
 }
