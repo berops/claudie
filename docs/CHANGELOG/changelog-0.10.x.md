@@ -127,3 +127,17 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 ## Bug fixes
 
 - Fixed GCP autoscaler adapter crashing when the `zone` field is omitted from the InputManifest. The adapter now uses aggregated list requests to query machine types across all zones [#1989](https://github.com/berops/claudie/pull/1989)
+
+## v0.10.2
+
+## What's Changed
+- Hetzner DNS will now be considered to be part of the hetzner cloud (`hcloud`) provider within claudie [#1993](https://github.com/berops/claudie/pull/1993)
+  If you're using hetzner for DNS you will also need to use the [`v0.9.19` templates](https://github.com/berops/claudie-config/releases/tag/v0.9.19) as from
+  this claudie version onwards the previous templates will not work with the old hetzner dns solution.
+  
+- Claudie will now deploy longhorn with version 1.10.2 [#1998](https://github.com/berops/claudie/pull/1998)
+  Before upgrading to this claudie version from `v0.10.1` manual steps will be required to be executed for longhorn to upgrade correctly.
+  To see the necessary steps look at the `Migration Requirement Before Longhorn v1.10 Upgrade` section in [Longhorn v1.10.1 release](https://github.com/longhorn/longhorn/releases/tag/v1.10.1)
+
+## Bug fixes
+- Fix  api endpoint changes with proxy turned on [#1996](https://github.com/berops/claudie/pull/1996)
