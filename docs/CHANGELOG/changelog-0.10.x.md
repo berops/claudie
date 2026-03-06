@@ -136,8 +136,11 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
   this claudie version onwards the previous templates will not work with the old hetzner dns solution.
   
 - Claudie will now deploy longhorn with version 1.10.2 [#1998](https://github.com/berops/claudie/pull/1998)
-  Before upgrading to this claudie version from `v0.10.1` manual steps will be required to be executed for longhorn to upgrade correctly.
-  To see the necessary steps look at the `Migration Requirement Before Longhorn v1.10 Upgrade` section in [Longhorn v1.10.1 release](https://github.com/longhorn/longhorn/releases/tag/v1.10.1)
+  
+  Before upgrading to this Claudie version from `v0.10.1`, detach all Longhorn volumes and follow the manual checks described here: https://longhorn.io/docs/1.10.2/deploy/upgrade/#manual-checks-before-upgrade
+  
+  Additional manual steps may also be required to ensure Longhorn upgrades correctly. See the necessary steps look at the `Migration Requirement Before Longhorn v1.10 Upgrade` section in [Longhorn v1.10.1 release](https://github.com/longhorn/longhorn/releases/tag/v1.10.1)
+
 
 ## Bug fixes
 - Fix  api endpoint changes with proxy turned on [#1996](https://github.com/berops/claudie/pull/1996)
