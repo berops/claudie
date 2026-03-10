@@ -13,12 +13,5 @@
       loop: "{{ groups['all'] | difference([inventory_hostname]) }}"
       when: ansible_host.split('.')[0:3] | join('.') == hostvars[item].ansible_host.split('.')[0:3] | join('.')
 
-    - name: Install iptables-persistent
-      ansible.builtin.apt:
-        name: iptables-persistent
-        state: present
-      environment:
-        DEBIAN_FRONTEND: noninteractive
-
     - name: Save iptables rules
       ansible.builtin.shell: iptables-save > /etc/iptables/rules.v4
