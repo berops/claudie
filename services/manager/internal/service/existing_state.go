@@ -618,6 +618,11 @@ func transferDns(current, desired *spec.LBcluster) {
 		return
 	}
 
+	if current.Dns.DnsZone != desired.Dns.DnsZone {
+		// DnsZones do not match nothing can be transferred.
+		return
+	}
+
 	// transfer alternatives names.
 	for _, current := range current.Dns.AlternativeNames {
 		for _, desired := range desired.Dns.AlternativeNames {
@@ -629,7 +634,7 @@ func transferDns(current, desired *spec.LBcluster) {
 
 	// transfer the endpoint if the hostname did not change.
 	if desired.Dns.Hostname != "" {
-		if desired.Dns.Hostname == current.Dns.Hostname && desired.Dns.DnsZone == current.Dns.DnsZone {
+		if desired.Dns.Hostname == current.Dns.Hostname {
 			desired.Dns.Endpoint = current.Dns.Endpoint
 		}
 		return

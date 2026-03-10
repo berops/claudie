@@ -8,7 +8,7 @@ spec:
       providerType: oci
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.15
+        tag: v0.9.19
         path: "templates/terraformer/oci"
       secretRef:
         name: oci-secret

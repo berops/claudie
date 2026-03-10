@@ -169,7 +169,7 @@ func healthCheckVPN(state *spec.Clusters) (bool, error) {
 
 	signer, err := ssh.ParsePrivateKey([]byte(key))
 	if err != nil {
-		return false, fmt.Errorf("node has an invalid private key: %w", err)
+		return false, fmt.Errorf("node %q has an invalid private key: %w", public, err)
 	}
 
 	cfg := ssh.ClientConfig{
@@ -198,7 +198,7 @@ func healthCheckVPN(state *spec.Clusters) (bool, error) {
 	}
 	defer session.Close()
 
-	// According to the documentation the output of wiregaurd is safe to be
+	// According to the documentation the output of wireguard is safe to be
 	// parsed, even within scripts
 	// https://manpages.debian.org/unstable/wireguard-tools/wg.8.en.html#show
 	b, err := session.Output("wg show all peers")
@@ -211,7 +211,7 @@ func healthCheckVPN(state *spec.Clusters) (bool, error) {
 	for _, p := range slices.Collect(strings.SplitSeq(output, "\n")) {
 		// Claudie creates/expectets the peers to be connected on the
 		// wg0 interface, see ansible-playbook templates for configuring
-		// wiregaurd.
+		// wireguard.
 		if strings.Contains(p, "wg0") {
 			peers += 1
 		}

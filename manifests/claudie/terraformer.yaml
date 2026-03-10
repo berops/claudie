@@ -58,16 +58,6 @@ spec:
             limits:
               memory: 2000Mi
           env:
-            - name: NATS_CLUSTER_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: env
-                  key: NATS_CLUSTER_URL
-            - name: NATS_CLUSTER_SIZE
-              valueFrom:
-                configMapKeyRef:
-                  name: env
-                  key: NATS_CLUSTER_SIZE
             - name: TERRAFORMER_TOFU_PARALLELISM
               valueFrom:
                 configMapKeyRef:
@@ -116,6 +106,17 @@ spec:
                 configMapKeyRef:
                   name: env
                   key: AWS_REGION
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: NATS_CLUSTER_URL
+              value: "nats://nats.$(NAMESPACE).svc.cluster.local"
+            - name: NATS_CLUSTER_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: NATS_CLUSTER_SIZE
           ports:
             - containerPort: 50052
             - name: "metrics"

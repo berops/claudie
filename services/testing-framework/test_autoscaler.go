@@ -78,6 +78,8 @@ func testAutoscaler(ctx context.Context, config *spec.Config) error {
 		return nil
 	}
 
+	logger := log.With().Str("manifest", config.Name).Logger()
+
 	manager, err := managerclient.New(&log.Logger)
 	if err != nil {
 		return err
@@ -89,7 +91,12 @@ func testAutoscaler(ctx context.Context, config *spec.Config) error {
 
 		for _, cluster := range autoscaledClusters {
 			group.Go(func() error {
-				log.Info().Msgf("Deploying pods which should be ignored by autoscaler for cluster %s", cluster.ClusterInfo.Name)
+				logger := log.With().Str("cluster", cluster.ClusterInfo.Id()).Logger()
+
+				logger.
+					Info().
+					Msgf("Deploying pods which should be ignored by autoscaler for cluster %s", cluster.ClusterInfo.Name)
+
 				return applyDeployment(cluster, scaleUpDeploymentIgnored)
 			})
 		}
@@ -99,7 +106,10 @@ func testAutoscaler(ctx context.Context, config *spec.Config) error {
 		}
 	}
 
-	log.Info().Msgf("Waiting %d seconds to see if autoscaler starts the scale up [1/3]", scaleInogoreTimeout)
+	logger.
+		Info().
+		Msgf("Waiting %d seconds to see if autoscaler starts the scale up [1/3]", scaleInogoreTimeout)
+
 	for elapsed := 0; elapsed < scaleInogoreTimeout; elapsed += 30 {
 		time.Sleep(30 * time.Second)
 
@@ -113,14 +123,21 @@ func testAutoscaler(ctx context.Context, config *spec.Config) error {
 		}
 	}
 
-	log.Info().Msgf("Config %s has successfully passed autoscaling test [1/3]", config.Name)
+	logger.
+		Info().
+		Msgf("Config %s has successfully passed autoscaling test [1/3]", config.Name)
 
 	{
 		group := new(errgroup.Group)
 		// Apply scale up deployment.
 		for _, cluster := range autoscaledClusters {
 			group.Go(func() error {
-				log.Info().Msgf("Deploying pods which should trigger scale up by autoscaler for cluster %s", cluster.ClusterInfo.Name)
+				logger := log.With().Str("cluster", cluster.ClusterInfo.Id()).Logger()
+
+				logger.
+					Info().
+					Msgf("Deploying pods which should trigger scale up by autoscaler for cluster %s", cluster.ClusterInfo.Name)
+
 				return applyDeployment(cluster, scaleUpDeployment)
 			})
 		}
@@ -130,7 +147,10 @@ func testAutoscaler(ctx context.Context, config *spec.Config) error {
 	}
 
 	// Wait before checking for changes.
-	log.Info().Msgf("Waiting %d seconds to see if autoscaler starts the scale up [2/3]", scaleUpTimeout)
+	logger.
+		Info().
+		Msgf("Waiting %d seconds to see if autoscaler starts the scale up [2/3]", scaleUpTimeout)
+
 	scheduled := false
 	for elapsed := 0; elapsed < scaleUpTimeout; elapsed += 30 {
 		time.Sleep(30 * time.Second)
@@ -149,7 +169,9 @@ func testAutoscaler(ctx context.Context, config *spec.Config) error {
 		return fmt.Errorf("some cluster/s in config %s have not been scaled up, when they should have [2/3]", config.Name)
 	}
 
-	log.Info().Msgf("Config %s has successfully passed autoscaling test [2/3]", config.Name)
+	logger.
+		Info().
+		Msgf("Config %s has successfully passed autoscaling test [2/3]", config.Name)
 
 	done, err := waitForDoneOrError(ctx, manager, testset{
 		Config:   config.Name,
@@ -162,7 +184,7 @@ func testAutoscaler(ctx context.Context, config *spec.Config) error {
 
 	// Test longhorn.
 	// Get new config from DB with updated counts.
-	if err := testLonghornDeployment(ctx, done); err != nil {
+	if err := testLonghornDeployment(ctx, done.Clusters); err != nil {
 		return err
 	}
 
@@ -171,7 +193,12 @@ func testAutoscaler(ctx context.Context, config *spec.Config) error {
 
 		for _, cluster := range autoscaledClusters {
 			group.Go(func() error {
-				log.Info().Msgf("Removing pods which should trigger scale down by autoscaler for cluster %s [3/3]", cluster.ClusterInfo.Name)
+				logger := log.With().Str("cluster", cluster.ClusterInfo.Id()).Logger()
+
+				logger.
+					Info().
+					Msgf("Removing pods which should trigger scale down by autoscaler for cluster %s [3/3]", cluster.ClusterInfo.Name)
+
 				return removeDeployment(cluster, scaleUpDeployment)
 			})
 		}
@@ -181,7 +208,10 @@ func testAutoscaler(ctx context.Context, config *spec.Config) error {
 		}
 	}
 
-	log.Info().Msgf("Waiting %d seconds to let autoscaler start the scale down [3/3]", scaleDownTimeout)
+	logger.
+		Info().
+		Msgf("Waiting %d seconds to let autoscaler start the scale down [3/3]", scaleDownTimeout)
+
 	scheduled = false
 	for elapsed := 0; elapsed < scaleDownTimeout; elapsed += 30 {
 		time.Sleep(30 * time.Second)
@@ -200,7 +230,9 @@ func testAutoscaler(ctx context.Context, config *spec.Config) error {
 		return fmt.Errorf("some cluster/s in config %s have not been scaled down, when they should have [3/3]", config.Name)
 	}
 
-	log.Info().Msgf("Config %s has successfully passed autoscaling test [3/3]", config.Name)
+	logger.
+		Info().
+		Msgf("Config %s has successfully passed autoscaling test [3/3]", config.Name)
 
 	done, err = waitForDoneOrError(ctx, manager, testset{
 		Config:   config.Name,
@@ -211,7 +243,7 @@ func testAutoscaler(ctx context.Context, config *spec.Config) error {
 		return err
 	}
 
-	return testLonghornDeployment(ctx, done)
+	return testLonghornDeployment(ctx, done.Clusters)
 }
 
 // applyDeployment applies specified deployment into specified cluster.

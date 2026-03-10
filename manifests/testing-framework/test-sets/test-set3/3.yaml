@@ -8,25 +8,16 @@ spec:
       providerType: gcp
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.15
+        tag: v0.9.19
         path: "templates/terraformer/gcp"
       secretRef:
         name: gcp-secret
-        namespace: e2e-secrets
-    - name: hetznerdns-1
-      providerType: hetznerdns
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.15
-        path: "templates/terraformer/hetznerdns"
-      secretRef:
-        name: hetznerdns-secret
         namespace: e2e-secrets
     - name: hetzner-1
       providerType: hetzner
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.15
+        tag: v0.9.19
         path: "templates/terraformer/hetzner"
       secretRef:
         name: hetzner-secret
@@ -35,7 +26,7 @@ spec:
       providerType: cloudflare
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.15
+        tag: v0.9.19
         path: "templates/terraformer/cloudflare"
       secretRef:
         name: cloudflare-secret

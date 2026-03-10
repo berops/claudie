@@ -107,7 +107,7 @@ spec:
           command:
             - /jetstream-controller
           args:
-            - -s=nats://nats.claudie.svc.cluster.local:4222
+            - -s=nats://nats.$(POD_NAMESPACE).svc.cluster.local:4222
           env:
             - name: POD_NAME
               valueFrom:

@@ -54,16 +54,6 @@ spec:
             limits:
               cpu: 160m
           env:
-            - name: NATS_CLUSTER_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: env
-                  key: NATS_CLUSTER_URL
-            - name: NATS_CLUSTER_SIZE
-              valueFrom:
-                configMapKeyRef:
-                  name: env
-                  key: NATS_CLUSTER_SIZE
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
@@ -89,6 +79,13 @@ spec:
                 configMapKeyRef:
                   name: env
                   key: MANAGER_TICK_FOR_INFRA_REFRESH
+            - name: NATS_CLUSTER_URL
+              value: "nats://nats.$(NAMESPACE).svc.cluster.local"
+            - name: NATS_CLUSTER_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: NATS_CLUSTER_SIZE
           ports:
             - containerPort: 50055
             - name: "metrics"

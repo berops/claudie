@@ -32,3 +32,9 @@ Add
 to All generated resources.
 
 5. kustomize build ./nats | k apply -f -
+
+6. make use of the `POD_NAMESPACE` env for deploying `nack` by using:
+   ```
+   args:
+    - -s=nats://nats.$(POD_NAMESPACE).svc.cluster.local:4222
+   ```
