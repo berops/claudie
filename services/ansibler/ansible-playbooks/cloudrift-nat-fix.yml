@@ -1,0 +1,17 @@
+---
+- hosts: all
+  gather_facts: true
+  become: true
+  tasks:
+    - name: Add iptables DNAT for CloudRift peer nodes
+      ansible.builtin.iptables:
+        table: nat
+        chain: OUTPUT
+        destination: "{{ hostvars[item].ansible_host }}"
+        jump: DNAT
+        to_destination: "{{ hostvars[item].ansible_default_ipv4.address }}"
+      loop: "{{ groups['all'] | difference([inventory_hostname]) }}"
+      when: ansible_host.split('.')[0:3] | join('.') == hostvars[item].ansible_host.split('.')[0:3] | join('.')
+
+    - name: Save iptables rules
+      ansible.builtin.shell: iptables-save > /etc/iptables/rules.v4

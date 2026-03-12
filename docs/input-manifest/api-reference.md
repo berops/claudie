@@ -44,6 +44,7 @@ needs to be defined.
   | `aws`          | [AWS](#aws) provider type                   |
   | `azure`        | [Azure](#azure) provider type               |
   | `cloudflare`   | [Cloudflare](#cloudflare) provider type     |
+  | `cloudrift`    | [CloudRift](#cloudrift) provider type       |
   | `exoscale`     | [Exoscale](#exoscale) provider type         |
   | `gcp`          | [GCP](#gcp) provider type                   |
   | `hetzner`      | [Hetzner](#hetzner) provider type           |
@@ -77,6 +78,24 @@ To find out how to configure Cloudflare follow the instructions [here](./provide
 - `apitoken`
 
   Credentials for the provider (API token).
+
+- `templates`
+  - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
+  - `tag`: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.
+  - `path`: specifies the path for a specific provider within the `repository` where the source template files are located.
+
+### CloudRift
+
+The fields that need to be included in a Kubernetes Secret resource to utilize the CloudRift provider.
+To find out how to configure CloudRift provider and API credentials, follow the instructions [here](./providers/cloudrift.md).
+
+- `token`
+
+  Personal API key for your CloudRift account.
+
+- `teamid` *(optional)*
+
+  Team ID to provision VMs under a team account. If omitted, VMs are provisioned under the personal account associated with the token.
 
 - `templates`
   - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
@@ -292,7 +311,7 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
 ## Provider Spec
 
-Provider spec is an additional specification built on top of the data from any of the provider instance. Here are provider configuration examples for each individual provider: [aws](providers/aws.md), [azure](providers/azure.md), [exoscale](providers/exoscale.md), [gcp](providers/gcp.md), [cloudflare](providers/cloudflare.md), [hetzner](providers/hetzner.md) and [oci](providers/oci.md).
+Provider spec is an additional specification built on top of the data from any of the provider instance. Here are provider configuration examples for each individual provider: [aws](providers/aws.md), [azure](providers/azure.md), [cloudrift](providers/cloudrift.md), [exoscale](providers/exoscale.md), [gcp](providers/gcp.md), [cloudflare](providers/cloudflare.md), [hetzner](providers/hetzner.md) and [oci](providers/oci.md).
 
 - `name`
 

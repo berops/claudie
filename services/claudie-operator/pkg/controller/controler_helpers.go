@@ -206,6 +206,20 @@ func constructInputManifest(
 				ApiSecret: strings.TrimSpace(exoApiSecret),
 				Templates: p.Templates,
 			})
+		case v1beta1manifest.CLOUDRIFT:
+			crToken, err := p.GetSecretField(v1beta1manifest.CLOUDRIFT_TOKEN)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+			// team_id is optional — only read if present in the secret.
+			crTeamId, _ := p.GetSecretField(v1beta1manifest.CLOUDRIFT_TEAM_ID)
+
+			providers.CloudRift = append(providers.CloudRift, manifest.CloudRift{
+				Name:      p.ProviderName,
+				Token:     strings.TrimSpace(crToken),
+				TeamId:    strings.TrimSpace(crTeamId),
+				Templates: p.Templates,
+			})
 		}
 	}
 

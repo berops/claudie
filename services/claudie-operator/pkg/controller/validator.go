@@ -108,6 +108,8 @@ func validateInputManifest(im *v1beta.InputManifest) error {
 			rawManifest.Providers.Openstack = append(rawManifest.Providers.Openstack, manifest.Openstack{Name: p.ProviderName})
 		case v1beta.EXOSCALE:
 			rawManifest.Providers.Exoscale = append(rawManifest.Providers.Exoscale, manifest.Exoscale{Name: p.ProviderName})
+		case v1beta.CLOUDRIFT:
+			rawManifest.Providers.CloudRift = append(rawManifest.Providers.CloudRift, manifest.CloudRift{Name: p.ProviderName})
 		}
 	}
 

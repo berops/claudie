@@ -3,10 +3,13 @@ package node_manager
 import (
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	compute "cloud.google.com/go/compute/apiv1"
 	"cloud.google.com/go/compute/apiv1/computepb"
@@ -32,7 +35,10 @@ import (
 )
 
 const (
-	defaultMaxResults = 30
+	defaultMaxResults       = 30
+	cloudRiftAPIVersion     = "2025-06-10"
+	cloudRiftAPIBaseURL     = "https://api.cloudrift.ai/api/v1"
+	cloudRiftRequestTimeout = 30 * time.Second
 )
 
 // cacheHetzner function uses hcloud-go module to query supported servers and their info. If the query is successful, the server info is saved in cache.
@@ -227,5 +233,39 @@ func (nm *NodeManager) cacheExoscale(np *spec.DynamicNodePool) error {
 	}
 
 	nm.exoscaleVMs = getTypeInfoExoscale(resp.InstanceTypes)
+	return nil
+}
+
+func (nm *NodeManager) cacheCloudRift(np *spec.DynamicNodePool) error {
+	token := np.Provider.GetCloudrift().Token
+
+	ctx, cancel := context.WithTimeout(context.Background(), cloudRiftRequestTimeout)
+	defer cancel()
+
+	reqBody := strings.NewReader(`{"version":"` + cloudRiftAPIVersion + `","data":{"selector":"All"}}`)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, cloudRiftAPIBaseURL+"/instance-types/list", reqBody)
+	if err != nil {
+		return fmt.Errorf("cloudrift client error: %w", err)
+	}
+	req.Header.Set("X-API-KEY", token)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("cloudrift client error: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		return fmt.Errorf("cloudrift API returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var result cloudRiftInstanceTypesResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return fmt.Errorf("cloudrift client error parsing response: %w", err)
+	}
+
+	nm.cloudriftVMs = getTypeInfoCloudRift(result.Data.InstanceTypes)
 	return nil
 }
