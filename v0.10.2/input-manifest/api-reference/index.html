@@ -615,6 +615,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../providers/cloudrift/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    CloudRift
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../providers/exoscale/" class="md-nav__link">
         
   
@@ -920,6 +943,15 @@
   <a href="#cloudflare" class="md-nav__link">
     <span class="md-ellipsis">
       Cloudflare
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cloudrift" class="md-nav__link">
+    <span class="md-ellipsis">
+      CloudRift
     </span>
   </a>
   
@@ -1948,6 +1980,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#cloudrift" class="md-nav__link">
+    <span class="md-ellipsis">
+      CloudRift
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#gcp" class="md-nav__link">
     <span class="md-ellipsis">
       GCP
@@ -2211,6 +2252,10 @@ needs to be defined.</p>
 <td><a href="#cloudflare">Cloudflare</a> provider type</td>
 </tr>
 <tr>
+<td><code>cloudrift</code></td>
+<td><a href="#cloudrift">CloudRift</a> provider type</td>
+</tr>
+<tr>
 <td><code>exoscale</code></td>
 <td><a href="#exoscale">Exoscale</a> provider type</td>
 </tr>
@@ -2253,6 +2298,23 @@ To find out how to configure Cloudflare follow the instructions <a href="../prov
 <li><code>apitoken</code></li>
 </ul>
 <p>Credentials for the provider (API token).</p>
+<ul>
+<li><code>templates</code></li>
+<li><code>repository</code>: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.</li>
+<li><code>tag</code>: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.</li>
+<li><code>path</code>: specifies the path for a specific provider within the <code>repository</code> where the source template files are located.</li>
+</ul>
+<h3 id="cloudrift">CloudRift<a class="headerlink" href="#cloudrift" title="Permanent link">&para;</a></h3>
+<p>The fields that need to be included in a Kubernetes Secret resource to utilize the CloudRift provider.
+To find out how to configure CloudRift provider and API credentials, follow the instructions <a href="../providers/cloudrift/">here</a>.</p>
+<ul>
+<li><code>token</code></li>
+</ul>
+<p>Personal API key for your CloudRift account.</p>
+<ul>
+<li><code>teamid</code> <em>(optional)</em></li>
+</ul>
+<p>Team ID to provision VMs under a team account. If omitted, VMs are provisioned under the personal account associated with the token.</p>
 <ul>
 <li><code>templates</code></li>
 <li><code>repository</code>: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.</li>
@@ -2452,7 +2514,7 @@ In OOP analogy, a dynamic nodepool would be a class that would get instantiated 
 <p>Array of user defined taints, which will be applied on every node in the node pool. This field is optional.</p>
 <p>To see the default taints Claudie applies on each node, refer to <a href="#default-taints">this section</a>.</p>
 <h2 id="provider-spec">Provider Spec<a class="headerlink" href="#provider-spec" title="Permanent link">&para;</a></h2>
-<p>Provider spec is an additional specification built on top of the data from any of the provider instance. Here are provider configuration examples for each individual provider: <a href="../providers/aws/">aws</a>, <a href="../providers/azure/">azure</a>, <a href="../providers/exoscale/">exoscale</a>, <a href="../providers/gcp/">gcp</a>, <a href="../providers/cloudflare/">cloudflare</a>, <a href="../providers/hetzner/">hetzner</a> and <a href="../providers/oci/">oci</a>.</p>
+<p>Provider spec is an additional specification built on top of the data from any of the provider instance. Here are provider configuration examples for each individual provider: <a href="../providers/aws/">aws</a>, <a href="../providers/azure/">azure</a>, <a href="../providers/cloudrift/">cloudrift</a>, <a href="../providers/exoscale/">exoscale</a>, <a href="../providers/gcp/">gcp</a>, <a href="../providers/cloudflare/">cloudflare</a>, <a href="../providers/hetzner/">hetzner</a> and <a href="../providers/oci/">oci</a>.</p>
 <ul>
 <li><code>name</code></li>
 </ul>
