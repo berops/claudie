@@ -55,6 +55,8 @@ message Node {
 
   // Status of the node.
   NodeStatus status = 6;
+  // Ssh port 
+  string sshPort = 7;
 }
 
 // NodeType specifies the type of the node.
