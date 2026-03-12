@@ -67,13 +67,23 @@ func LoadTemplate(tplFile string) (*template.Template, error) {
 	funcMap["replaceAll"] = strings.ReplaceAll
 	funcMap["extractNetmaskFromCIDR"] = ExtractNetmaskFromCIDR
 	funcMap["hasExtension"] = HasExtension
-	funcMap["sshPort"] = func(np *spec.NodePool) int32 { return nodepools.SSHPort(np) }
+	funcMap["nodeSshPort"] = NodeSSHPort
 
 	tpl, err := template.New("").Funcs(funcMap).Parse(tplFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse the template file : %w", err)
 	}
 	return tpl, nil
+}
+
+// NodeSSHPort returns the effective SSH port for a node.
+// If the node has a port from the terraform output, it is used.
+// Otherwise, falls back to the nodepool-level port (default 22).
+func NodeSSHPort(node *spec.Node, np *spec.NodePool) string {
+	if node.SshPort != "" {
+		return node.SshPort
+	}
+	return fmt.Sprintf("%d", nodepools.SSHPort(np))
 }
 
 // ExtractNetmaskFromCIDR extracts the netmask from the CIDR notation.
