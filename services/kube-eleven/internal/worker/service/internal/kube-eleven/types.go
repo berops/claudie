@@ -21,7 +21,6 @@ type (
 		Zone              string
 		CloudProviderName string
 		ProviderName      string
-		SshPort           int32
 	}
 
 	// templateData struct holds the data which will be used in creating
