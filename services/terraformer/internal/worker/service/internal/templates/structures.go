@@ -245,24 +245,21 @@ type (
 // All the following types grouped are passed in as "Outputs" from
 // using the generated template files.
 type (
-	// NodepoolIPs wrap the output data that is acquired from using the
-	// generated template files.
-	NodepoolIPs struct {
-		// IPs holds the IPv4 addresses of the spawned VM instances from the
-		// generated templates files. It is expected that the template files
-		// in the nodepool directory that spawn the VM instances also
-		// expose the IP addresses of the Instances.
-		// For example (in the case of our own hetzner template files):
-		//
-		// output "{{ $nodepool.Name }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
-		//  value = {
-		//    {{- range $node := $nodepool.Nodes }}
-		//        {{- $serverResourceName := printf "%s_%s" $node.Name $resourceSuffix }}
-		//        "${hcloud_server.{{ $serverResourceName }}.name}" = hcloud_server.{{ $serverResourceName }}.ipv4_address
-		//    {{- end }}
-		//  }
-		//}
-		IPs map[string]any `json:"-"`
+	// NodepoolOutput wraps the output data that is acquired from using the
+	// generated template files. Each entry maps a node name to its output
+	// value, which can be a plain IP string or a [IP, port] array.
+	// For example (in the case of our own hetzner template files):
+	//
+	// output "{{ $nodepool.Name }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
+	//  value = {
+	//    {{- range $node := $nodepool.Nodes }}
+	//        {{- $serverResourceName := printf "%s_%s" $node.Name $resourceSuffix }}
+	//        "${hcloud_server.{{ $serverResourceName }}.name}" = hcloud_server.{{ $serverResourceName }}.ipv4_address
+	//    {{- end }}
+	//  }
+	//}
+	NodepoolOutput struct {
+		Nodes map[string]any `json:"-"`
 	}
 
 	// DNSDomain wrap the output data that is acquired from using the

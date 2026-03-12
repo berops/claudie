@@ -121,21 +121,26 @@ func (c ClusterBuilder) ReconcileNodePools() error {
 		if err != nil {
 			return fmt.Errorf("error while getting output from tofu for %s : %w", nodepool.Name, err)
 		}
-		out, err := readIPs(output)
+		out, err := readNodeOutput(output)
 		if err != nil {
 			return fmt.Errorf("error while reading the tofu output for %s : %w", nodepool.Name, err)
 		}
 		for _, n := range nodepool.Nodes {
 			var found bool
-			for target, ip := range generics.IterateMapInOrder(out.IPs) {
+			for target, val := range generics.IterateMapInOrder(out.Nodes) {
 				if target != n.Name {
 					continue
+				}
+				ip, port, err := parseNodeOutput(val)
+				if err != nil {
+					return fmt.Errorf("node %q from nodepool %q: %w", n.Name, nodepool.Name, err)
 				}
 				if ip == "" {
 					return fmt.Errorf("node %q from nodepool %q has no public address assigned", n.Name, nodepool.Name)
 				}
 				found = true
-				n.Public = fmt.Sprint(ip)
+				n.Public = ip
+				n.SshPort = port
 				break
 			}
 			if !found {
@@ -290,11 +295,42 @@ func (c *ClusterBuilder) generateFiles(clusterDir string) error {
 	return nil
 }
 
-// readIPs reads json output format from tofu and unmarshal it into map[string]map[string]string readable by Go.
-func readIPs(data string) (templates.NodepoolIPs, error) {
-	var result templates.NodepoolIPs
-	// Unmarshal or Decode the JSON to the interface.
-	err := json.Unmarshal([]byte(data), &result.IPs)
+// parseNodeOutput extracts the IP and optional SSH port from a terraform output value.
+// The value can be either a string (just IP) or an array [IP, port].
+func parseNodeOutput(val any) (ip string, port string, err error) {
+	switch v := val.(type) {
+	case string:
+		return v, "", nil
+	case []any:
+		if len(v) == 0 {
+			return "", "", fmt.Errorf("empty output array")
+		}
+		ipStr, ok := v[0].(string)
+		if !ok {
+			return "", "", fmt.Errorf("expected string IP in output array, got %T", v[0])
+		}
+		if len(v) >= 2 {
+			portStr, ok := v[1].(string)
+			if !ok {
+				// Handle numeric port from JSON (float64).
+				if portNum, ok := v[1].(float64); ok {
+					portStr = fmt.Sprintf("%d", int(portNum))
+				} else {
+					return "", "", fmt.Errorf("expected string or number port in output array, got %T", v[1])
+				}
+			}
+			return ipStr, portStr, nil
+		}
+		return ipStr, "", nil
+	default:
+		return fmt.Sprint(val), "", nil
+	}
+}
+
+// readNodeOutput reads json output format from tofu and unmarshals it into a map of node names to their output values.
+func readNodeOutput(data string) (templates.NodepoolOutput, error) {
+	var result templates.NodepoolOutput
+	err := json.Unmarshal([]byte(data), &result.Nodes)
 	return result, err
 }
 
