@@ -76,14 +76,13 @@ func LoadTemplate(tplFile string) (*template.Template, error) {
 	return tpl, nil
 }
 
-// NodeSSHPort returns the effective SSH port for a node.
-// If the node has a port from the terraform output, it is used.
-// Otherwise, falls back to the nodepool-level port (default 22).
-func NodeSSHPort(node *spec.Node, np *spec.NodePool) string {
+// NodeSSHPort returns the SSH port for a node.
+// Uses the port from terraform output if present, otherwise defaults to DefaultSSHPort -> 22.
+func NodeSSHPort(node *spec.Node) string {
 	if node.SshPort != "" {
 		return node.SshPort
 	}
-	return fmt.Sprintf("%d", nodepools.SSHPort(np))
+	return fmt.Sprintf("%d", nodepools.DefaultSSHPort)
 }
 
 // ExtractNetmaskFromCIDR extracts the netmask from the CIDR notation.
