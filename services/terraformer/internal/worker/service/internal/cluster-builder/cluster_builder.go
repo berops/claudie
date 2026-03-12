@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/fileutils"
@@ -271,6 +272,15 @@ func (c *ClusterBuilder) generateFiles(clusterDir string) error {
 				Fingerprint:       hex.EncodeToString(hash.Digest128(filepath.Join(info.SpecName, path))),
 			}
 
+			// Collect unique SSH ports from all nodepools for this provider.
+			var sshPorts []int32
+			for _, np := range pools {
+				port := nodepools.SSHPort(np)
+				if !slices.Contains(sshPorts, port) {
+					sshPorts = append(sshPorts, port)
+				}
+			}
+
 			if err := g.GenerateNetworking(&templates.Networking{
 				ClusterData:   clusterData,
 				Provider:      p,
@@ -282,6 +292,7 @@ func (c *ClusterBuilder) generateFiles(clusterDir string) error {
 				LBData: templates.LBData{
 					Roles: c.LBInfo.Roles,
 				},
+				SshPorts: sshPorts,
 			}); err != nil {
 				return fmt.Errorf("failed to generate networking_common template files: %w", err)
 			}

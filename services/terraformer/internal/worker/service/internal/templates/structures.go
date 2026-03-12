@@ -177,6 +177,9 @@ type (
 		// for the firewall.
 		// This data will be set if the ClusterType within ClusterData of this object is of type "LB".
 		LBData LBData
+		// SshPorts holds the unique SSH ports used by the nodepools in this provider.
+		// Used to dynamically open firewall rules for the correct ports.
+		SshPorts []int32
 	}
 
 	// Nodepools wraps all data related to generating terraform files to spawn VM instances as described
@@ -254,7 +257,7 @@ type (
 	//  value = {
 	//    {{- range $node := $nodepool.Nodes }}
 	//        {{- $serverResourceName := printf "%s_%s" $node.Name $resourceSuffix }}
-	//        "${hcloud_server.{{ $serverResourceName }}.name}" = hcloud_server.{{ $serverResourceName }}.ipv4_address
+	//        "${hcloud_server.{{ $serverResourceName }}.name}" = hcloud_server.{{ $serverResourceName }}.ipv4_address, "{{ $nodepool.SshPort }}"
 	//    {{- end }}
 	//  }
 	//}
