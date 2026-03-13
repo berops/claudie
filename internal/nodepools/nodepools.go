@@ -32,6 +32,18 @@ func SSHPort(np *spec.NodePool) int32 {
 	return np.GetSshPort()
 }
 
+// NodeSSHPort returns the SSH port for a node based on its terraform output.
+// Returns DefaultSSHPort (22) if not set.
+func NodeSSHPort(node *spec.Node) int32 {
+	if node.GetSshPort() != "" {
+		var port int32
+		if _, err := fmt.Sscanf(node.GetSshPort(), "%d", &port); err == nil && port > 0 {
+			return port
+		}
+	}
+	return DefaultSSHPort
+}
+
 type RegionNetwork struct {
 	Region          string
 	ExternalNetwork string
@@ -534,7 +546,7 @@ func RandomNodePublicEndpoint(nps []*spec.NodePool) (username, endpoint, key str
 	if node.Username != "" && node.Username != username {
 		username = node.Username
 	}
-	sshPort = SSHPort(np)
+	sshPort = NodeSSHPort(node)
 
 	switch npt := np.Type.(type) {
 	case *spec.NodePool_DynamicNodePool:
