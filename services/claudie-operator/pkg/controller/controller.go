@@ -57,9 +57,6 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				// Uknown fatal error.
 				return ctrl.Result{}, err
 			}
-			// r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())
-			// log.Error(err, "secret not found", "will try again in", REQUEUE_AFTER_ERROR, "name", p.SecretRef.Name, "namespace", p.SecretRef.Namespace)
-			// return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
 		}
 
 		providersSecrets = append(providersSecrets, pwd)
