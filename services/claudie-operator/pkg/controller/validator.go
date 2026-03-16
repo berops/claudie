@@ -71,6 +71,28 @@ func (v *InputManifestValidator) ValidateCreate(ctx context.Context, obj runtime
 
 // ValidateUpdate defines the logic when a kubernetes obj resource is updated
 func (v *InputManifestValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+	o, ok := oldObj.(*v1beta.InputManifest)
+	if !ok {
+		return nil, fmt.Errorf("expected InputManifest for 'oldObj' but got %T", oldObj)
+	}
+
+	n, ok := newObj.(*v1beta.InputManifest)
+	if !ok {
+		return nil, fmt.Errorf("expected InputManifest for 'newOjb' but got %T", newObj)
+	}
+
+	nmap := getDynamicNodepoolsMap(o)
+	for _, desired := range n.Spec.NodePools.Dynamic {
+		current, exists := nmap[desired.Name]
+		if !exists {
+			continue
+		}
+
+		if err := nodepoolImmutabilityCheck(&desired, current); err != nil {
+			return nil, fmt.Errorf("immutability check for dynamic nodepools failed: %w", err)
+		}
+	}
+
 	return nil, v.validate(ctx, newObj)
 }
 
@@ -139,4 +161,76 @@ func validateInputManifest(im *v1beta.InputManifest) error {
 		return err
 	}
 	return nil
+}
+
+// getDynamicNodepoolsMap will read manifest from the given config and return map of provider names keyed by dynamic nodepool names
+func getDynamicNodepoolsMap(m *v1beta.InputManifest) map[string]*manifest.DynamicNodePool {
+	nmap := make(map[string]*manifest.DynamicNodePool)
+	for _, np := range m.Spec.NodePools.Dynamic {
+		nmap[np.Name] = &np
+	}
+
+	return nmap
+}
+
+func nodepoolImmutabilityCheck(desired, current *manifest.DynamicNodePool) error {
+	if desired.ProviderSpec != current.ProviderSpec {
+		return fmt.Errorf(
+			"dynamic nodepools are immutable, changing the provider specification from %s to %s for %s is not allowed, only 'count' and autoscaling' fields are allowed to be modified, consider creating a new nodepool",
+			safePrint(&current.ProviderSpec),
+			safePrint(&desired.ProviderSpec),
+			current.Name)
+	}
+
+	if desired.ServerType != current.ServerType {
+		return fmt.Errorf(
+			"dynamic nodepools are immutable, changing the server type, from %s to %s, for %s is not allowed, only 'count' and autoscaling' fields are allowed to be modified, consider creating a new nodepool",
+			current.ServerType,
+			desired.ServerType,
+			current.Name,
+		)
+	}
+
+	if desired.Image != current.Image {
+		return fmt.Errorf(
+			"dynamic nodepools are immutable, changing the image from %s to %s for %s is not allowed, only 'count' and autoscaling' fields are allowed to be modified, consider creating a new nodepool",
+			current.Image,
+			desired.Image,
+			current.Name,
+		)
+	}
+
+	storageDiskChanged := desired.StorageDiskSize == nil && current.StorageDiskSize != nil
+	storageDiskChanged = storageDiskChanged || (desired.StorageDiskSize != nil && current.StorageDiskSize == nil)
+	storageDiskChanged = storageDiskChanged || ((desired.StorageDiskSize != nil && current.StorageDiskSize != nil) && (*desired.StorageDiskSize != *current.StorageDiskSize))
+	if storageDiskChanged {
+		return fmt.Errorf(
+			"dynamic nodepools are immutable, changing the storage disk size from %s to %s for %s is not allowed, only 'count' and autoscaling' fields are allowed to be modified, consider creating a new nodepool",
+			safePrint(current.StorageDiskSize),
+			safePrint(desired.StorageDiskSize),
+			current.Name,
+		)
+	}
+
+	machineSpecChanged := desired.MachineSpec == nil && current.MachineSpec != nil
+	machineSpecChanged = machineSpecChanged || (desired.MachineSpec != nil && current.MachineSpec == nil)
+	machineSpecChanged = machineSpecChanged || ((desired.MachineSpec != nil && current.MachineSpec != nil) && (*desired.MachineSpec != *current.MachineSpec))
+	if machineSpecChanged {
+		return fmt.Errorf(
+			"dynamic nodepools are immutable, changing the machine spec from %s to %s for %s is not allowed, only 'count' and autoscaling' fields are allowed to be modified, consider creating a new nodepool",
+			safePrint(current.MachineSpec),
+			safePrint(desired.MachineSpec),
+			current.Name,
+		)
+	}
+
+	return nil
+}
+
+func safePrint[T any](p *T) string {
+	if p == nil {
+		return "<nil>"
+	}
+
+	return fmt.Sprintf("%+v", *p)
 }
