@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -33,7 +35,9 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	// Prepare the manifest.Manifest type
 	// Refresh the inputManifest object Secret Reference
 	providersSecrets := make([]v1beta1manifest.ProviderWithData, 0, len(inputManifest.Spec.Providers))
-	// Range over Provider objects and request the secret for each provider
+
+	var missingSecrets []string
+
 	for _, p := range inputManifest.Spec.Providers {
 		pwd := v1beta1manifest.ProviderWithData{
 			ProviderName: p.ProviderName,
@@ -47,11 +51,29 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 
 		if err := r.kc.Get(ctx, key, &pwd.Secret); err != nil {
-			r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())
-			log.Error(err, "secret not found", "will try again in", REQUEUE_AFTER_ERROR, "name", p.SecretRef.Name, "namespace", p.SecretRef.Namespace)
-			return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
+			if apierrors.IsNotFound(err) {
+				missingSecrets = append(missingSecrets, fmt.Sprintf("Provider: %s Secret: %s Namespace: %s", p.ProviderName, p.SecretRef.Name, p.SecretRef.Namespace))
+			} else {
+				// Uknown fatal error.
+				return ctrl.Result{}, err
+			}
 		}
+
 		providersSecrets = append(providersSecrets, pwd)
+	}
+
+	if len(missingSecrets) > 0 {
+		msg := fmt.Sprintf("the following secrets referenced inside providers were not found: %v", strings.Join(missingSecrets, ", "))
+
+		r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "SecretNotFound", msg)
+		log.Error(nil, msg, "reqeueAfter", REQUEUE_AFTER_ERROR)
+
+		inputManifest.SetWatchResourceStatusWithMsg(msg)
+		if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
+		}
+
+		return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
 	}
 
 	// Approximate size of the map to 5 nodes per nodepool
@@ -143,29 +165,6 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		configState = config.Manifest.State
 		lastChecksum = config.Manifest.Checksum
 		alreadyExists = true
-
-		var currentManifest manifest.Manifest
-		if err := yaml.Unmarshal([]byte(config.GetManifest().GetRaw()), &currentManifest); err != nil {
-			return ctrl.Result{}, err
-		}
-
-		nmap := getDynamicNodepoolsMap(&currentManifest)
-		for _, desired := range rawManifest.NodePools.Dynamic {
-			if current, exists := nmap[desired.Name]; exists {
-				if err := nodepoolImmutabilityCheck(&desired, current); err != nil {
-					log.Error(err, "immutability check for dynamic nodepools failed", "will try again in", REQUEUE_AFTER_ERROR)
-					// nodepool exists and user changed the immutable specs
-					r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())
-					inputManifest.SetUpdateResourceStatus(v1beta1manifest.InputManifestStatus{
-						State: v1beta1manifest.STATUS_ERROR,
-					})
-					if err := r.kc.Status().Update(ctx, inputManifest); err != nil {
-						return ctrl.Result{}, fmt.Errorf("failed updating status: %w", err)
-					}
-					return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
-				}
-			}
-		}
 
 		var deletedCount int
 		for cluster, state := range config.Clusters {
@@ -374,46 +373,6 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	return ctrl.Result{RequeueAfter: REQUEUE_UPDATE}, nil
-}
-
-func nodepoolImmutabilityCheck(desired, current *manifest.DynamicNodePool) error {
-	if desired.ProviderSpec != current.ProviderSpec {
-		return fmt.Errorf("dynamic nodepools are immutable, changing the provider specification for %s is not allowed, only 'count' and autoscaling' fields are allowed to be modified, consider creating a new nodepool", current.Name)
-	}
-
-	if desired.ServerType != current.ServerType {
-		return fmt.Errorf("dynamic nodepools are immutable, changing the server type, from %s to %s, for %s is not allowed, only 'count' and autoscaling' fields are allowed to be modified, consider creating a new nodepool", current.ServerType, desired.ServerType, current.Name)
-	}
-
-	if desired.Image != current.Image {
-		return fmt.Errorf("dynamic nodepools are immutable, changing the image for %s is not allowed, only 'count' and autoscaling' fields are allowed to be modified, consider creating a new nodepool", current.Name)
-	}
-
-	storageDiskChanged := desired.StorageDiskSize == nil && current.StorageDiskSize != nil
-	storageDiskChanged = storageDiskChanged || (desired.StorageDiskSize != nil && current.StorageDiskSize == nil)
-	storageDiskChanged = storageDiskChanged || ((desired.StorageDiskSize != nil && current.StorageDiskSize != nil) && (*desired.StorageDiskSize != *current.StorageDiskSize))
-	if storageDiskChanged {
-		return fmt.Errorf("dynamic nodepools are immutable, changing the storage disk size for %s is not allowed, only 'count' and autoscaling' fields are allowed to be modified, consider creating a new nodepool", current.Name)
-	}
-
-	machineSpecChanged := desired.MachineSpec == nil && current.MachineSpec != nil
-	machineSpecChanged = machineSpecChanged || (desired.MachineSpec != nil && current.MachineSpec == nil)
-	machineSpecChanged = machineSpecChanged || ((desired.MachineSpec != nil && current.MachineSpec != nil) && (*desired.MachineSpec != *current.MachineSpec))
-	if machineSpecChanged {
-		return fmt.Errorf("dynamic nodepools are immutable, changing the machine spec for %s is not allowed, only 'count' and autoscaling' fields are allowed to be modified, consider creating a new nodepool", current.Name)
-	}
-
-	return nil
-}
-
-// getDynamicNodepoolsMap will read manifest from the given config and return map of provider names keyed by dynamic nodepool names
-func getDynamicNodepoolsMap(m *manifest.Manifest) map[string]*manifest.DynamicNodePool {
-	nmap := make(map[string]*manifest.DynamicNodePool)
-	for _, np := range m.NodePools.Dynamic {
-		nmap[np.Name] = &np
-	}
-
-	return nmap
 }
 
 func setDefaultTemplates(m *manifest.Manifest) {

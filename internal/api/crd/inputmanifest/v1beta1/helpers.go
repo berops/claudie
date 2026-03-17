@@ -67,6 +67,10 @@ func (im *InputManifest) SetWatchResourceStatus() {
 	im.Status.State = STATUS_WATCH
 }
 
+func (im *InputManifest) SetWatchResourceStatusWithMsg(msg string) {
+	im.Status.State = fmt.Sprintf("%s (describe resource for detailed report)\n\n%s", STATUS_WATCH, msg)
+}
+
 func (im *InputManifest) SetUpdateResourceStatus(newStatus InputManifestStatus) {
 	im.Status = newStatus
 }
