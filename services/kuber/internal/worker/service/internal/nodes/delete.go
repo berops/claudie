@@ -1,11 +1,13 @@
 package nodes
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/berops/claudie/internal/clusters"
 	comm "github.com/berops/claudie/internal/command"
@@ -19,6 +21,8 @@ const (
 	longhornNamespace = "longhorn-system"
 
 	UnreachableNodesPingCount = clusters.PingRetryCount + 3
+
+	drainTimeout = 20 * time.Minute
 )
 
 // etcdMemberList wraps parsed structures that are
@@ -111,7 +115,7 @@ func NewDeleter(
 func (d *Deleter) DeleteNodes(logger zerolog.Logger) error {
 	kubectl := kubectl.Kubectl{
 		Kubeconfig:        d.kubeconfig,
-		MaxKubectlRetries: 5,
+		MaxKubectlRetries: 3,
 	}
 	kubectl.Stdout = comm.GetStdOut(d.clusterPrefix)
 	kubectl.Stderr = comm.GetStdErr(d.clusterPrefix)
@@ -178,8 +182,14 @@ func (d *Deleter) DeleteNodes(logger zerolog.Logger) error {
 		}
 
 		// kubectl drain <node-name> --ignore-daemonsets --delete-emptydir-data
-		if err := kubectl.KubectlDrain(master.k8sName); err != nil {
-			return fmt.Errorf("error while draining node %s from cluster: %w", master.k8sName, err)
+		if err := kubectl.KubectlDrainWithTimeout(drainTimeout, master.k8sName); err != nil {
+			if !errors.Is(err, context.DeadlineExceeded) {
+				return fmt.Errorf("error while draining node %s from cluster: %w", master.k8sName, err)
+			}
+
+			logger.
+				Info().
+				Msgf("timeout for draining node %q reached, continuing with deletion", master.k8sName)
 		}
 
 		// delete master nodes from etcd
@@ -240,8 +250,14 @@ func (d *Deleter) DeleteNodes(logger zerolog.Logger) error {
 		}
 
 		// kubectl drain <node-name> --ignore-daemonsets --delete-emptydir-data
-		if err := kubectl.KubectlDrain(worker.k8sName); err != nil {
-			return fmt.Errorf("error while draining node %s from cluster: %w", worker.k8sName, err)
+		if err := kubectl.KubectlDrainWithTimeout(drainTimeout, worker.k8sName); err != nil {
+			if !errors.Is(err, context.DeadlineExceeded) {
+				return fmt.Errorf("error while draining node %s from cluster: %w", worker.k8sName, err)
+			}
+
+			logger.
+				Info().
+				Msgf("timeout for draining node %q reached, continuing with deletion", worker.k8sName)
 		}
 
 		if err := d.deleteNodesByName(logger, kubectl, worker, k8snodes); err != nil {
