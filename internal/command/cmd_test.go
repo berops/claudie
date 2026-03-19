@@ -10,7 +10,10 @@ import (
 )
 
 func TestGetNewBackoff(t *testing.T) {
+	t.Parallel()
+
 	t.Run("gradual increase", func(t *testing.T) {
+		t.Parallel()
 		iterations := []struct {
 			iteration int
 			expected  time.Duration
@@ -37,6 +40,8 @@ func TestGetNewBackoff(t *testing.T) {
 	})
 
 	t.Run("each iteration is larger than the previous", func(t *testing.T) {
+		t.Parallel()
+
 		prev := getNewBackoff(0)
 		for i := 1; i <= 5; i++ {
 			curr := getNewBackoff(i)
@@ -48,6 +53,8 @@ func TestGetNewBackoff(t *testing.T) {
 	})
 
 	t.Run("does not exceed maxBackoff", func(t *testing.T) {
+		t.Parallel()
+
 		for _, i := range []int{100, 500, 1000} {
 			got := getNewBackoff(i)
 			if got > maxBackoff {
@@ -60,6 +67,8 @@ func TestGetNewBackoff(t *testing.T) {
 	})
 
 	t.Run("caps exactly at maxBackoff boundary", func(t *testing.T) {
+		t.Parallel()
+
 		// find the first iteration that should hit the cap
 		var capIteration int
 		for i := range 1000 {
@@ -93,7 +102,7 @@ func TestCmd(t *testing.T) {
 	t.Parallel()
 
 	//low commandTimeout - fail
-	cmd1 := Cmd{"sleep 2 && ls", nil, nil, "", nil, nil, 1}
+	cmd1 := Cmd{"sleep 2 && ls", nil, nil, "", nil, nil, 1 * time.Second}
 	err := cmd1.RetryCommand(1)
 	require.Error(t, err)
 
