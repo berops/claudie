@@ -304,7 +304,8 @@ func (k Kubectl) RolloutRestart(resource string, options ...string) error {
 // behaves exactly the same as [Kubectl.run], but uses a custom timeout for the command
 // on both the initial execution and on subsequent retries.
 func (k Kubectl) runWithTimeout(timeout time.Duration, command string, options ...string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	deadline := time.Now().Add(timeout)
+	ctx, cancel := context.WithDeadline(context.Background(), deadline)
 
 	cmd := exec.CommandContext(ctx, "bash", "-c", strings.Join(append([]string{command}, options...), " "))
 	cmd.Dir = k.Directory
@@ -327,11 +328,16 @@ func (k Kubectl) runWithTimeout(timeout time.Duration, command string, options .
 			retryCount = defaultMaxKubectlRetries
 		}
 
+		remaining := time.Until(deadline)
+		if remaining <= 0 {
+			return fmt.Errorf("%w: execution timeout exceeded before retries", context.DeadlineExceeded)
+		}
+
 		retryCmd := comm.Cmd{
 			Command:        command,
 			Options:        options,
 			Dir:            k.Directory,
-			CommandTimeout: timeout,
+			CommandTimeout: remaining,
 			Stdout:         k.Stdout,
 			Stderr:         k.Stderr,
 		}

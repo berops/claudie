@@ -22,7 +22,7 @@ const (
 
 	UnreachableNodesPingCount = clusters.PingRetryCount + 3
 
-	drainTimeout = 18 * time.Minute
+	drainTimeout = 30 * time.Minute
 )
 
 // etcdMemberList wraps parsed structures that are

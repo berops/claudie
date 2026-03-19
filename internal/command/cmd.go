@@ -225,15 +225,19 @@ func (c *Cmd) sanitisedCmd() string {
 
 // getNewBackoff returns a new backoff 5 * (2 ^ iteration), with the hard limit set at maxBackoff.
 func getNewBackoff(iteration int) time.Duration {
+	if iteration > 64 {
+		return maxBackoff
+	}
+
 	backoff := time.Duration(5*(math.Pow(2, float64(iteration)))) * time.Second
 	if backoff < 0 {
-		// underflow.
 		return maxBackoff
 	}
 	if backoff > maxBackoff {
 		// set hard max for exponential backoff
 		return maxBackoff
 	}
+
 	return backoff
 }
 
