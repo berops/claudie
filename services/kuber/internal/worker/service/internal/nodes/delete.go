@@ -243,6 +243,13 @@ func (d *Deleter) DeleteNodes(logger zerolog.Logger) error {
 			}
 		}
 
+		if err := disableDiskScheduling(kubectl, worker.k8sName); err != nil {
+			// not a fatal error.
+			logger.
+				Warn().
+				Msgf("failed to disable longhorn disk scheduling for node %q: %s", worker.k8sName, err)
+		}
+
 		// kubectl cordon <node-name> <args>
 		if err := kubectl.KubectlCordon(worker.k8sName); err != nil {
 			errDel = errors.Join(errDel, fmt.Errorf("error while cordon worker node %s from cluster: %w", worker.k8sName, err))
@@ -269,7 +276,11 @@ func (d *Deleter) DeleteNodes(logger zerolog.Logger) error {
 			// not a fatal error.
 			logger.
 				Warn().
-				Msgf("failed to delete unused replicas from replicas.longhorn.io, after node %s deletion: %s", worker.k8sName, err)
+				Msgf(
+					"failed to delete unused replicas from replicas.longhorn.io, after node %s deletion: %s",
+					worker.k8sName,
+					err,
+				)
 		}
 	}
 
