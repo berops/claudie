@@ -190,7 +190,7 @@ spec:
   kubernetes:
     clusters:
       - name: gcp-cluster
-        version: v1.31.0
+        version: v1.34.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -293,7 +293,7 @@ spec:
   kubernetes:
     clusters:
       - name: gcp-cluster
-        version: v1.31.0
+        version: v1.34.0
         network: 192.168.2.0/24
         pools:
           control:

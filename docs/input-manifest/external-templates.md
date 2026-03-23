@@ -13,7 +13,7 @@ spec:
       providerType: hetzner
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.8" # optional
+        tag: "v0.9.19" # optional
         path: "templates/terraformer/hetzner"
       secretRef:
         name: hetzner-secret
@@ -152,7 +152,7 @@ spec:
   kubernetes:
     clusters:
       - name: hetzner-cluster
-        version: v1.31.0
+        version: v1.34.0
         network: 192.168.2.0/24
         pools:
           control:
