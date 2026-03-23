@@ -1069,42 +1069,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#pending-state" class="md-nav__link">
-    <span class="md-ellipsis">
-      Pending State
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#scheduled-state" class="md-nav__link">
-    <span class="md-ellipsis">
-      Scheduled State
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#doneerror-state" class="md-nav__link">
-    <span class="md-ellipsis">
-      Done/Error State
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#flow_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      Flow
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -1157,7 +1121,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#flow_2" class="md-nav__link">
+  <a href="#flow_1" class="md-nav__link">
     <span class="md-ellipsis">
       Flow
     </span>
@@ -1940,42 +1904,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#pending-state" class="md-nav__link">
-    <span class="md-ellipsis">
-      Pending State
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#scheduled-state" class="md-nav__link">
-    <span class="md-ellipsis">
-      Scheduled State
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#doneerror-state" class="md-nav__link">
-    <span class="md-ellipsis">
-      Done/Error State
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#flow_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      Flow
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -2028,7 +1956,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#flow_2" class="md-nav__link">
+  <a href="#flow_1" class="md-nav__link">
     <span class="md-ellipsis">
       Flow
     </span>
@@ -2075,6 +2003,7 @@
 <h3 id="data-stores">Data stores<a class="headerlink" href="#data-stores" title="Permanent link">&para;</a></h3>
 <ul>
 <li><a href="https://github.com/berops/claudie/tree/master/manifests/claudie/mongo">MongoDB</a></li>
+<li><a href="https://github.com/berops/claudie/tree/master/manifests/claudie/nats">NATS</a></li>
 <li><a href="https://github.com/berops/claudie/tree/master/manifests/claudie/minio">Minio</a></li>
 </ul>
 <h3 id="tools-used">Tools used<a class="headerlink" href="#tools-used" title="Permanent link">&para;</a></h3>
@@ -2083,73 +2012,57 @@
 <li><a href="https://github.com/ansible/ansible">Ansible</a></li>
 <li><a href="https://github.com/kubermatic/kubeone">KubeOne</a></li>
 <li><a href="https://github.com/longhorn/longhorn">Longhorn</a></li>
-<li><a href="https://www.nginx.com/">Nginx</a></li>
-<li><a href="https://github.com/projectcalico/calico">Calico</a></li>
+<li><a href="https://www.envoyproxy.io/">Envoy</a></li>
+<li><a href="https://cilium.io/">Cilium</a></li>
 <li><a href="https://grpc.io/">gRPC</a></li>
 </ul>
 <h2 id="manager">Manager<a class="headerlink" href="#manager" title="Permanent link">&para;</a></h2>
-<p>Manger is the brain and main entry point for claudie.
-To build clusters users/services submit their configs to the manager service. The manager creates the desired state and schedules a number of jobs to be executed in order to achieve the desired state based on the current state. The jobs are pushed to a
-NATS worker queue from which the tasks are picked up by the targeted services.</p>
+<p>Manager is the brain and main entry point for claudie.
+To build clusters users/services submit their configs to the manager service. The manager creates the desired state and schedules a number of jobs to be executed in order to achieve the desired state based on the current state. The jobs are pushed to a NATS worker queue from which the tasks are picked up by the targeted services.</p>
 <p>For the API see the <a href="https://github.com/berops/claudie/blob/master/proto/manager.proto">GRPC definitions</a>.</p>
 <h3 id="flow">Flow<a class="headerlink" href="#flow" title="Permanent link">&para;</a></h3>
-<p>Each newly created manifest starts in the Pending state. Pending manifests
-are periodically checked and based on the specification provided in the applied configs, the desired
-state for each cluster, along with the tasks to be performed to achieve the desired state are created,
-after which the manifest is moved to the  scheduled state. Tasks from Scheduled manifests are picked up
-by worker services, gradually building the desired state. From this state, the manifest can end up in the 
+<p>Each newly created manifest starts in the Pending state. Pending manifests are periodically checked for
+changes from which the desired state for each cluster, along with the tasks to be performed to achieve the desired state are created,
+after which the manifest is moved to the scheduled state. Tasks from Scheduled manifests are picked up
+by worker services from <code>NATS</code> work queues, gradually building the desired state. From this state, the manifest can end up in either 
 Done or Error state. Any changes to the input manifest while it is in the Scheduled state will be reflected after 
 it is moved to the Done state. After which the cycle repeats.</p>
 <p>Each cluster has a current state and desired state based on which tasks are created. The desired state is created only
-once, when changes to the configuration are detected. Several tasks can be created that will gradually converge the current
-state to the desired state. Each time a task is picked up by the any of the worker services the relevant state from the current state
-is transferred to the task so that each task has up-to-date information about current infrastructure and its up to that
-respective service to build/modify/delete the missing pieces in the picked up task.</p>
-<p>Once a task is done building, either in error or successfully, the current state should be updated by communicating the
-changes back to the manager service so that the manager has the actual information about the current state of the infrastructure.</p>
+once, when changes to the configuration are detected. Several tasks can be created that will gradually, one task at a time,
+converge the current state to the desired state. Each time a task is picked up by the any of the worker services any relevant
+information about what should be done is already part of that scheduled task and the service needs to simply reflect those changes
+to the actual infrastructure to build/modify/delete the missing pieces.</p>
+<p>Once a task is done building, either in error or successfully, the current state, with any changes, is communicated back to the
+manager service so that it has the up-to-date information about the current state of the infrastructure for future tasks.</p>
 <h4 id="rolling-updates">Rolling updates<a class="headerlink" href="#rolling-updates" title="Permanent link">&para;</a></h4>
-<p>Unless otherwise specified, the default is to use the external templates located at https://github.com/berops/claudie-config to build the infrastructure for the dynamic nodepools. The templates provide reasonable defaults that anyone can use to build multi-provider clusters.</p>
-<p>As we understand that someone may need more specific scenarios, we allow these external templates to be overridden by the user, see https://docs.claudie.io/latest/input-manifest/external-templates/ for more information.
-By providing the ability to specify the templates that should be used when building the infrastructure of the InputManifest, there is one common scenario that we decided should be handled by the manager service, which is rolling updates.</p>
-<p>Rolling updates of nodepools are performed when a change to a provider's external templates is registered. The manager then checks that the external repository of the new templates exists and uses them to perform a rolling update of the already built infrastructure. The rolling update is performed in the following steps</p>
-<p><a class="glightbox" href="../rolling_update.png" data-type="image" data-width="100%" data-height="auto" data-desc-position="bottom"><img alt="rolling update" src="../rolling_update.png" /></a></p>
+<p>Unless otherwise specified, the default is to use the external templates located at <a href="https://github.com/berops/claudie-config">https://github.com/berops/claudie-config</a> to build the infrastructure for the dynamic nodepools. The templates provide reasonable defaults that anyone can use to build multi-provider clusters.</p>
+<p>As we understand that someone may need more specific scenarios, we allow these external templates to be overridden by the user, see <a href="https://docs.claudie.io/latest/input-manifest/external-templates/">https://docs.claudie.io/latest/input-manifest/external-templates/</a> for more information.</p>
+<p>By providing the ability to specify the templates that should be used when building the infrastructure of the InputManifest, there is one common scenario that we decided should be handled by the manager service, which is rolling updates.</p>
+<p>Rolling updates of nodepools are performed when a change to a provider's external templates is registered. The manager then checks that the external repository of the new templates exists and uses them to perform a rolling update of the already built infrastructure.</p>
 <p>If a failure occurs during the rolling update of a single Nodepool, the state is rolled back to the last possible working state. Rolling updates have a retry strategy that results in endless processing of rolling updates until it succeeds.</p>
 <p>If the rollback to the last working state fails, it will also be retried indefinitely, in which case it is up to the claudie user to repair the cluster so that the rolling update can continue.</p>
-<p>The individual states of the Input Manifest and how they are processed within manager are further visually described in the following sections.</p>
-<h3 id="pending-state">Pending State<a class="headerlink" href="#pending-state" title="Permanent link">&para;</a></h3>
-<p><a class="glightbox" href="../pending_state.png" data-type="image" data-width="100%" data-height="auto" data-desc-position="bottom"><img alt="pending state" src="../pending_state.png" /></a></p>
-<h3 id="scheduled-state">Scheduled State<a class="headerlink" href="#scheduled-state" title="Permanent link">&para;</a></h3>
-<p><a class="glightbox" href="../scheduled_state.png" data-type="image" data-width="100%" data-height="auto" data-desc-position="bottom"><img alt="scheduled state" src="../scheduled_state.png" /></a></p>
-<h3 id="doneerror-state">Done/Error State<a class="headerlink" href="#doneerror-state" title="Permanent link">&para;</a></h3>
-<p><a class="glightbox" href="../done_error_state.png" data-type="image" data-width="100%" data-height="auto" data-desc-position="bottom"><img alt="done/error state" src="../done_error_state.png" /></a></p>
-<h3 id="flow_1">Flow<a class="headerlink" href="#flow_1" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Periodically polls Manager for available tasks to be worked on.</li>
-<li>Communicates with Terraformer, Ansibler, Kube-eleven and Kuber</li>
-<li>After a task is completed, either successfully or not, the current state is updated along with the status, if errored.</li>
-</ul>
 <h2 id="terraformer">Terraformer<a class="headerlink" href="#terraformer" title="Permanent link">&para;</a></h2>
 <p>Terraformer creates or destroys infrastructure via Terraform calls.</p>
-<p>For the API see the <a href="https://github.com/berops/claudie/blob/master/proto/terraformer.proto">GRPC definitions</a>.</p>
+<p>Incoming tasks are picked up from the NATS worker queue.</p>
 <h2 id="ansibler">Ansibler<a class="headerlink" href="#ansibler" title="Permanent link">&para;</a></h2>
 <p>Ansibler uses Ansible to:</p>
 <ul>
 <li>set up Wireguard VPN between the infrastructure spawned in the Terraformer service. </li>
-<li>set up nginx load balancer for the infrastructure</li>
+<li>set up envoy load balancer for the infrastructure</li>
 <li>install dependencies for required by nodes in a kubernetes cluster</li>
 </ul>
-<p>For the API see the <a href="https://github.com/berops/claudie/blob/master/proto/ansibler.proto">GRPC definitions</a>.</p>
+<p>Incoming tasks are picked up from the NATS worker queue.</p>
 <h2 id="kube-eleven">Kube-eleven<a class="headerlink" href="#kube-eleven" title="Permanent link">&para;</a></h2>
 <p>Kube-eleven uses <a href="https://github.com/kubermatic/kubeone">KubeOne</a> to spin up a kubernetes clusters,
 out of the spawned and pre-configured infrastructure.</p>
-<p>For the API see the <a href="https://github.com/berops/claudie/blob/master/proto/kubeEleven.proto">GRPC definitions</a>.</p>
+<p>Incoming tasks are picked up from the NATS worker queue.</p>
 <h2 id="kuber">Kuber<a class="headerlink" href="#kuber" title="Permanent link">&para;</a></h2>
 <p>Kuber manipulates the cluster resources using <code>kubectl</code>.</p>
-<p>For the API see the <a href="https://github.com/berops/claudie/blob/master/proto/kuber.proto">GRPC definitions</a>.</p>
+<p>Incoming tasks are picked up from the NATS worker queue.</p>
 <h2 id="claudie-operator">Claudie-operator<a class="headerlink" href="#claudie-operator" title="Permanent link">&para;</a></h2>
 <p>Claudie-operator is a layer between the user and Claudie. It is a <code>InputManifest</code> Custom Resource Definition controller, 
 that will communicate with the <code>manager</code> service to communicate changes to the config made by the user.</p>
-<h3 id="flow_2">Flow<a class="headerlink" href="#flow_2" title="Permanent link">&para;</a></h3>
+<h3 id="flow_1">Flow<a class="headerlink" href="#flow_1" title="Permanent link">&para;</a></h3>
 <ul>
 <li>User applies a new InputManifest crd holding a configuration of the desired clusters</li>
 <li>Claudie-operator detects it and processes the created/modified input manifest</li>
