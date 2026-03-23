@@ -52,7 +52,7 @@ information about what should be done is already part of that scheduled task and
 to the actual infrastructure to build/modify/delete the missing pieces.
 
 Once a task is done building, either in error or successfully, the current state, with any changes, is communicated back to the
-manager service so that it has the up to date information about the current state of the infrastructure for future tasks.
+manager service so that it has the up-to-date information about the current state of the infrastructure for future tasks.
 
 #### Rolling updates
 
