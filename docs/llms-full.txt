@@ -520,7 +520,7 @@ nodePools:
 kubernetes:
     clusters:
       - name: my-super-cluster
-        version: v1.31.0
+        version: v1.34.0
         network: 192.168.2.0/24
         pools:
             control:
@@ -724,7 +724,7 @@ In this example, two AWS providers are used — one with access to compute resou
     kubernetes:
       clusters:
       - name: my-super-cluster
-        version: v1.31.0
+        version: v1.34.0
         network: 192.168.2.0/24
         pools:
             control:
@@ -1058,7 +1058,7 @@ spec:
   kubernetes:
     clusters:
       - name: aws-cluster
-        version: v1.31.0
+        version: v1.34.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -1164,7 +1164,7 @@ spec:
   kubernetes:
     clusters:
       - name: aws-cluster
-        version: v1.31.0
+        version: v1.34.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -1362,7 +1362,7 @@ spec:
   kubernetes:
     clusters:
       - name: azure-cluster
-        version: v1.31.0
+        version: v1.34.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -1466,7 +1466,7 @@ spec:
   kubernetes:
     clusters:
       - name: azure-cluster
-        version: v1.31.0
+        version: v1.34.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -1590,7 +1590,7 @@ spec:
   kubernetes:
     clusters:
       - name: cluster
-        version: v1.31.0
+        version: v1.34.0
         network: 192.168.2.0/24
         pools:
           control: []
@@ -1790,7 +1790,7 @@ spec:
   kubernetes:
     clusters:
       - name: gcp-cluster
-        version: v1.31.0
+        version: v1.34.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -1897,7 +1897,7 @@ spec:
   kubernetes:
     clusters:
       - name: gcp-cluster
-        version: v1.31.0
+        version: v1.34.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -2026,7 +2026,7 @@ spec:
   kubernetes:
     clusters:
       - name: hetzner-cluster
-        version: v1.31.0
+        version: v1.34.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -2132,7 +2132,7 @@ spec:
   kubernetes:
     clusters:
       - name: hetzner-cluster
-        version: v1.31.0
+        version: v1.34.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -2380,7 +2380,7 @@ spec:
   kubernetes:
     clusters:
       - name: oci-cluster
-        version: v1.31.0
+        version: v1.34.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -2496,7 +2496,7 @@ spec:
   kubernetes:
     clusters:
       - name: oci-cluster
-        version: v1.31.0
+        version: v1.34.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -2563,7 +2563,7 @@ spec:
   kubernetes:
     clusters:
       - name: oci-cluster
-        version: v1.31.0
+        version: v1.34.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -3206,7 +3206,7 @@ spec:
   kubernetes:
     clusters:
       - name: gpu-example
-        version: v1.31.0
+        version: v1.34.0
         network: 172.16.2.0/24
         pools:
           control:
@@ -3491,7 +3491,7 @@ spec:
   kubernetes:
     clusters:
       - name: hetzner-cluster
-        version: v1.31.0
+        version: v1.34.0
         network: 192.168.2.0/24
         pools:
           control:

@@ -13,25 +13,29 @@ Claudie relies on all services to be interconnected. If any of these services fa
     ```
 
     ```text
-    NAME                                   READY   STATUS      RESTARTS        AGE
-    ansibler-5c6c776b75-82c2q              1/1     Running     0               8m10s
-    manager-5d76c89b4d-tb6h4               1/1     Running     1 (6m37s ago)   8m10s
-    claudie-operator-5755b7bc69-5l84h      1/1     Running     0               8m10s
-    kube-eleven-64468cd5bd-qp4d4           1/1     Running     0               8m10s
-    kuber-698c4564c-dhsvg                  1/1     Running     0               8m10s
-    make-bucket-job-fb5sp                  0/1     Completed   0               8m10s
-    minio-0                                1/1     Running     0               8m10s
-    minio-1                                1/1     Running     0               8m10s
-    minio-2                                1/1     Running     0               8m10s
-    minio-3                                1/1     Running     0               8m10s
-    mongodb-67bf769957-9ct5z               1/1     Running     0               8m10s
-    terraformer-fd664b7ff-dd2h7            1/1     Running     0               8m9s
+    NAME                                READY   STATUS              RESTARTS       AGE
+    ansibler-6bf78cccf4-pnxrk           1/1     Running             0              3m20s
+    claudie-operator-64c9554c66-rvtr5   1/1     Running             0              3m19s
+    kube-eleven-7bd47945c5-kbpd6        1/1     Running             0              3m19s
+    kuber-64554ffffc-fkdj6              1/1     Running             0              3m19s
+    make-bucket-job-4mxw7               0/1     Completed           0              3m19s
+    manager-7696cb7f9-jfbwq             1/1     Running             0              3m19s
+    minio-0                             1/1     Running             0              3m19s
+    minio-1                             1/1     Running             0              3m19s
+    minio-2                             1/1     Running             0              3m19s
+    minio-3                             1/1     Running             0              3m19s
+    mongodb-85487bf568-qjw2k            1/1     Running             0              3m19s
+    nack-644748c7b7-p6z62               1/1     Running             0              3m19s
+    nats-0                              2/2     Running             0              3m19s
+    nats-1                              2/2     Running             0              3m19s
+    nats-2                              2/2     Running             0              3m19s
+    terraformer-5868fb7695-w49sw        1/1     Running             0              3m19s
     ```
 
 2. Check the `InputManifest` resource status to find out what is the actual cluster state.
 
     ```bash
-    kubectl get inputmanifests.claudie.io resourceName -o jsonpath={.status}
+    kubectl get inputmanifests.claudie.io <your-input-manifest-name> -o jsonpath={.status}
     ```
 
     ```text
@@ -78,14 +82,14 @@ We use Wireguard for secure node-to-node connectivity. However, it requires sett
 ### Hetzner and OCI node pools
 We're experiencing networking issues caused by the blacklisting of public IPs owned by Hetzner and OCI. This problem affects the Ansibler and Kube-eleven services, which fail when attempting to add GPG keys to access the Google repository for package downloads. Unfortunately, there's no straightforward solution to bypass this issue. The recommended approach is to allow the services to fail, remove failed cluster and attempt provisioning a new cluster with newly allocated IP addresses that are not blocked by Google.
 
-## Resolving issues with Terraform state lock
+## Resolving issues with Tofu state lock
 
 ~During normal operation, the content of this section should not be required. If you ended up here, it means there was likely a bug somewhere in Claudie. Please [open a bug report](https://github.com/berops/claudie/issues/new/choose) in that case and use the content of this section to troubleshoot your way out of it.
 
 First of all you have to get into the directory in the `terraformer` pod, where all terraform files are located. In order to do that, follow these steps:
 
 * `kubectl exec -it -n claudie <terraformer-pod-name> -- bash`
-* `cd ./services/terraformer/server/clusters/<cluster-name>`
+* `cd ./services/terraformer/clusters/<cluster-name>`
 
 ### Locked state
 
