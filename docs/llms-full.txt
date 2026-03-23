@@ -4167,7 +4167,7 @@ kubectl apply -f claudie.yaml
 
 ## Manager(https://docs.claudie.io/latest/claudie-workflow/claudie-workflow/\#manager)
 
-Manger is the brain and main entry point for claudie.
+Manager is the brain and main entry point for claudie.
 To build clusters users/services submit their configs to the manager service. The manager creates the desired state and schedules a number of jobs to be executed in order to achieve the desired state based on the current state. The jobs are pushed to NATS worker queue where respective services work on scheduled tasks.
 For the API see the [GRPC definitions](https://github.com/berops/claudie/blob/master/proto/manager.proto).
 
