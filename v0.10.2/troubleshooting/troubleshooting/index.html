@@ -1542,13 +1542,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#resolving-issues-with-tofu-state-lock" class="md-nav__link">
+  <a href="#resolving-issues-with-terraform-state-lock" class="md-nav__link">
     <span class="md-ellipsis">
-      Resolving issues with Tofu state lock
+      Resolving issues with Terraform state lock
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Resolving issues with Tofu state lock">
+    <nav class="md-nav" aria-label="Resolving issues with Terraform state lock">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1842,13 +1842,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#resolving-issues-with-tofu-state-lock" class="md-nav__link">
+  <a href="#resolving-issues-with-terraform-state-lock" class="md-nav__link">
     <span class="md-ellipsis">
-      Resolving issues with Tofu state lock
+      Resolving issues with Terraform state lock
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Resolving issues with Tofu state lock">
+    <nav class="md-nav" aria-label="Resolving issues with Terraform state lock">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1896,28 +1896,24 @@
 <p>Check if all Claudie services are running:</p>
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>claudie
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>NAME                                READY   STATUS              RESTARTS       AGE
-ansibler-6bf78cccf4-pnxrk           1/1     Running             0              3m20s
-claudie-operator-64c9554c66-rvtr5   1/1     Running             0              3m19s
-kube-eleven-7bd47945c5-kbpd6        1/1     Running             0              3m19s
-kuber-64554ffffc-fkdj6              1/1     Running             0              3m19s
-make-bucket-job-4mxw7               0/1     Completed           0              3m19s
-manager-7696cb7f9-jfbwq             1/1     Running             0              3m19s
-minio-0                             1/1     Running             0              3m19s
-minio-1                             1/1     Running             0              3m19s
-minio-2                             1/1     Running             0              3m19s
-minio-3                             1/1     Running             0              3m19s
-mongodb-85487bf568-qjw2k            1/1     Running             0              3m19s
-nack-644748c7b7-p6z62               1/1     Running             0              3m19s
-nats-0                              2/2     Running             0              3m19s
-nats-1                              2/2     Running             0              3m19s
-nats-2                              2/2     Running             0              3m19s
-terraformer-5868fb7695-w49sw        1/1     Running             0              3m19s
+<div class="highlight"><pre><span></span><code>NAME                                   READY   STATUS      RESTARTS        AGE
+ansibler-5c6c776b75-82c2q              1/1     Running     0               8m10s
+manager-5d76c89b4d-tb6h4               1/1     Running     1 (6m37s ago)   8m10s
+claudie-operator-5755b7bc69-5l84h      1/1     Running     0               8m10s
+kube-eleven-64468cd5bd-qp4d4           1/1     Running     0               8m10s
+kuber-698c4564c-dhsvg                  1/1     Running     0               8m10s
+make-bucket-job-fb5sp                  0/1     Completed   0               8m10s
+minio-0                                1/1     Running     0               8m10s
+minio-1                                1/1     Running     0               8m10s
+minio-2                                1/1     Running     0               8m10s
+minio-3                                1/1     Running     0               8m10s
+mongodb-67bf769957-9ct5z               1/1     Running     0               8m10s
+terraformer-fd664b7ff-dd2h7            1/1     Running     0               8m9s
 </code></pre></div>
 </li>
 <li>
 <p>Check the <code>InputManifest</code> resource status to find out what is the actual cluster state.</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>inputmanifests.claudie.io<span class="w"> </span>&lt;your-input-manifest-name&gt;<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">={</span>.status<span class="o">}</span>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>inputmanifests.claudie.io<span class="w"> </span>resourceName<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">={</span>.status<span class="o">}</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>  {
     &quot;clusters&quot;: {
@@ -1958,12 +1954,12 @@ terraformer-5868fb7695-w49sw        1/1     Running             0              3
 <p>We use Wireguard for secure node-to-node connectivity. However, it requires setting the MTU value to match that of Wireguard. While the host system interface MTU value is adjusted accordingly, networking issues may arise for services hosted on Claudie managed Kubernetes clusters. For example, we observed that the GitHub actions runner docker container had to be configured with an MTU value of <code>1380</code> to avoid network errors during <code>docker build</code> process.</p>
 <h3 id="hetzner-and-oci-node-pools">Hetzner and OCI node pools<a class="headerlink" href="#hetzner-and-oci-node-pools" title="Permanent link">&para;</a></h3>
 <p>We're experiencing networking issues caused by the blacklisting of public IPs owned by Hetzner and OCI. This problem affects the Ansibler and Kube-eleven services, which fail when attempting to add GPG keys to access the Google repository for package downloads. Unfortunately, there's no straightforward solution to bypass this issue. The recommended approach is to allow the services to fail, remove failed cluster and attempt provisioning a new cluster with newly allocated IP addresses that are not blocked by Google.</p>
-<h2 id="resolving-issues-with-tofu-state-lock">Resolving issues with Tofu state lock<a class="headerlink" href="#resolving-issues-with-tofu-state-lock" title="Permanent link">&para;</a></h2>
+<h2 id="resolving-issues-with-terraform-state-lock">Resolving issues with Terraform state lock<a class="headerlink" href="#resolving-issues-with-terraform-state-lock" title="Permanent link">&para;</a></h2>
 <p>~During normal operation, the content of this section should not be required. If you ended up here, it means there was likely a bug somewhere in Claudie. Please <a href="https://github.com/berops/claudie/issues/new/choose">open a bug report</a> in that case and use the content of this section to troubleshoot your way out of it.</p>
 <p>First of all you have to get into the directory in the <code>terraformer</code> pod, where all terraform files are located. In order to do that, follow these steps:</p>
 <ul>
 <li><code>kubectl exec -it -n claudie &lt;terraformer-pod-name&gt; -- bash</code></li>
-<li><code>cd ./services/terraformer/clusters/&lt;cluster-name&gt;</code></li>
+<li><code>cd ./services/terraformer/server/clusters/&lt;cluster-name&gt;</code></li>
 </ul>
 <h3 id="locked-state">Locked state<a class="headerlink" href="#locked-state" title="Permanent link">&para;</a></h3>
 <p>Once you are in the directory with all TF files, run the following command:</p>

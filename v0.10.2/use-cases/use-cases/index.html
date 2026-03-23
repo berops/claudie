@@ -1091,45 +1091,36 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-integration-of-gpu-nodes-into-kubernetes-for-ai-workloads" class="md-nav__link">
+  <a href="#1-cloud-bursting" class="md-nav__link">
     <span class="md-ellipsis">
-      1. Integration of GPU nodes into Kubernetes for AI workloads
+      1. Cloud-bursting
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-cloud-bursting" class="md-nav__link">
+  <a href="#2-cost-saving" class="md-nav__link">
     <span class="md-ellipsis">
-      2. Cloud-bursting
+      2. Cost-saving
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-cost-saving" class="md-nav__link">
+  <a href="#3-smart-layer-as-a-service-on-top-of-simple-cloud-providers" class="md-nav__link">
     <span class="md-ellipsis">
-      3. Cost-saving
+      3. Smart-layer-as-a-Service on top of simple cloud-providers
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-smart-layer-as-a-service-on-top-of-simple-cloud-providers" class="md-nav__link">
+  <a href="#4-service-interconnect" class="md-nav__link">
     <span class="md-ellipsis">
-      4. Smart-layer-as-a-Service on top of simple cloud-providers
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#5-service-interconnect" class="md-nav__link">
-    <span class="md-ellipsis">
-      5. Service interconnect
+      4. Service interconnect
     </span>
   </a>
   
@@ -1731,45 +1722,36 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-integration-of-gpu-nodes-into-kubernetes-for-ai-workloads" class="md-nav__link">
+  <a href="#1-cloud-bursting" class="md-nav__link">
     <span class="md-ellipsis">
-      1. Integration of GPU nodes into Kubernetes for AI workloads
+      1. Cloud-bursting
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-cloud-bursting" class="md-nav__link">
+  <a href="#2-cost-saving" class="md-nav__link">
     <span class="md-ellipsis">
-      2. Cloud-bursting
+      2. Cost-saving
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-cost-saving" class="md-nav__link">
+  <a href="#3-smart-layer-as-a-service-on-top-of-simple-cloud-providers" class="md-nav__link">
     <span class="md-ellipsis">
-      3. Cost-saving
+      3. Smart-layer-as-a-Service on top of simple cloud-providers
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-smart-layer-as-a-service-on-top-of-simple-cloud-providers" class="md-nav__link">
+  <a href="#4-service-interconnect" class="md-nav__link">
     <span class="md-ellipsis">
-      4. Smart-layer-as-a-Service on top of simple cloud-providers
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#5-service-interconnect" class="md-nav__link">
-    <span class="md-ellipsis">
-      5. Service interconnect
+      4. Service interconnect
     </span>
   </a>
   
@@ -1796,21 +1778,14 @@
 
 <h1 id="use-cases-and-customers">Use-cases and customers<a class="headerlink" href="#use-cases-and-customers" title="Permanent link">&para;</a></h1>
 <p>We foresee the following use-cases of the Claudie platform</p>
-<h2 id="1-integration-of-gpu-nodes-into-kubernetes-for-ai-workloads">1. Integration of GPU nodes into Kubernetes for AI workloads<a class="headerlink" href="#1-integration-of-gpu-nodes-into-kubernetes-for-ai-workloads" title="Permanent link">&para;</a></h2>
-<p>A company runs their production workloads on a standard Kubernetes cluster hosted with a cloud provider that offers no GPU instances, or only at a prohibitive cost. They need to execute GPU-intensive tasks such as model training, inference serving, or data preprocessing pipelines without migrating their entire cluster. Claudie allows them to attach GPU-enabled nodes from a specialized or alternative provider (e.g. CloudRift, Vast.ai, or any GPU servers with public IPv4) directly into their existing cluster with native support for GPU autoscaling.</p>
-<p>Typical client profile:</p>
-<ul>
-<li>startups building AI/ML products</li>
-<li>cost-conscious organizations looking to avoid GPU pricing from hyper-scale providers</li>
-</ul>
-<h2 id="2-cloud-bursting">2. Cloud-bursting<a class="headerlink" href="#2-cloud-bursting" title="Permanent link">&para;</a></h2>
+<h2 id="1-cloud-bursting">1. Cloud-bursting<a class="headerlink" href="#1-cloud-bursting" title="Permanent link">&para;</a></h2>
 <p>A company uses advanced cloud features in one of the hyper-scale providers (e.g. serverless Lambda and API Gateway functionality in AWS). They run a machine-learning application that they need to train for a pattern on a dataset. The learning phase requires significant compute resources. Claudie allows to extend the cluster in AWS (needed in order to access the AWS functionality) to Hetzner for saving the infrastructure costs of the machine-learning case.</p>
 <p>Typical client profiles:</p>
 <ul>
 <li>startups</li>
 <li>in need of significant computing power already in their early stages (e.g. AI/ML workloads)</li>
 </ul>
-<h2 id="3-cost-saving">3. Cost-saving<a class="headerlink" href="#3-cost-saving" title="Permanent link">&para;</a></h2>
+<h2 id="2-cost-saving">2. Cost-saving<a class="headerlink" href="#2-cost-saving" title="Permanent link">&para;</a></h2>
 <p>A company would like to utilize their on-premise or leased resources that they already invested into, but would like to:</p>
 <ol>
 <li>extend the capacity</li>
@@ -1822,14 +1797,14 @@
 <li>medium-size business</li>
 <li>possibly already familiar with containerized workload</li>
 </ul>
-<h2 id="4-smart-layer-as-a-service-on-top-of-simple-cloud-providers">4. Smart-layer-as-a-Service on top of simple cloud-providers<a class="headerlink" href="#4-smart-layer-as-a-service-on-top-of-simple-cloud-providers" title="Permanent link">&para;</a></h2>
+<h2 id="3-smart-layer-as-a-service-on-top-of-simple-cloud-providers">3. Smart-layer-as-a-Service on top of simple cloud-providers<a class="headerlink" href="#3-smart-layer-as-a-service-on-top-of-simple-cloud-providers" title="Permanent link">&para;</a></h2>
 <p>An existing customer of medium-size provider (e.g. Exoscale) would like to utilize features that are typical for hyper-scale providers. Their current provider does neither offer nor plan to offer such an advanced functionality.</p>
 <p>Typical client profile:</p>
 <ul>
 <li>established business</li>
 <li>need to access advanced managed features to innovate faster</li>
 </ul>
-<h2 id="5-service-interconnect">5. Service interconnect<a class="headerlink" href="#5-service-interconnect" title="Permanent link">&para;</a></h2>
+<h2 id="4-service-interconnect">4. Service interconnect<a class="headerlink" href="#4-service-interconnect" title="Permanent link">&para;</a></h2>
 <p>A company would like to access on-premise-hosted services and cloud-managed services from within the same cluster. For on-premise services the on-premise cluster node would egress the traffic. The cloud-hosted cluster nodes would deal with the egress traffic to the cloud-managed services.</p>
 <p>Typical client profile:</p>
 <ul>

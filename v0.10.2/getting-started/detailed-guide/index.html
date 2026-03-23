@@ -2053,23 +2053,19 @@ kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> <
 </ol>
 <p><div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>claudie<span class="w"> </span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>NAME                                READY   STATUS              RESTARTS       AGE
-ansibler-6bf78cccf4-pnxrk           1/1     Running             0              3m20s
-claudie-operator-64c9554c66-rvtr5   1/1     Running             0              3m19s
-kube-eleven-7bd47945c5-kbpd6        1/1     Running             0              3m19s
-kuber-64554ffffc-fkdj6              1/1     Running             0              3m19s
-make-bucket-job-4mxw7               0/1     Completed           0              3m19s
-manager-7696cb7f9-jfbwq             1/1     Running             0              3m19s
-minio-0                             1/1     Running             0              3m19s
-minio-1                             1/1     Running             0              3m19s
-minio-2                             1/1     Running             0              3m19s
-minio-3                             1/1     Running             0              3m19s
-mongodb-85487bf568-qjw2k            1/1     Running             0              3m19s
-nack-644748c7b7-p6z62               1/1     Running             0              3m19s
-nats-0                              2/2     Running             0              3m19s
-nats-1                              2/2     Running             0              3m19s
-nats-2                              2/2     Running             0              3m19s
-terraformer-5868fb7695-w49sw        1/1     Running             0              3m19s
+<div class="highlight"><pre><span></span><code>NAME                           READY   STATUS      RESTARTS        AGE
+ansibler-5c6c776b75-82c2q      1/1     Running     0               8m10s
+manager-5d76c89b4d-tb6h4       1/1     Running     1 (6m37s ago)   8m10s
+claudie-operator-5755b7bc69-5l84h      1/1     Running     0               8m10s
+kube-eleven-64468cd5bd-qp4d4   1/1     Running     0               8m10s
+kuber-698c4564c-dhsvg          1/1     Running     0               8m10s
+make-bucket-job-fb5sp          0/1     Completed   0               8m10s
+minio-0                        1/1     Running     0               8m10s
+minio-1                        1/1     Running     0               8m10s
+minio-2                        1/1     Running     0               8m10s
+minio-3                        1/1     Running     0               8m10s
+mongodb-67bf769957-9ct5z       1/1     Running     0               8m10s
+terraformer-fd664b7ff-dd2h7    1/1     Running     0               8m9s
 </code></pre></div></p>
 <div class="admonition warning">
 <p class="admonition-title">Changing the namespace</p>
@@ -2140,7 +2136,7 @@ kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="
 <span class="w">  </span><span class="nt">kubernetes</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">clusters</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-super-cluster</span>
-<span class="w">        </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.34.0</span>
+<span class="w">        </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.31.0</span>
 <span class="w">        </span><span class="nt">network</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.2.0/24</span>
 <span class="w">        </span><span class="nt">pools</span><span class="p">:</span>
 <span class="w">            </span><span class="nt">control</span><span class="p">:</span>
@@ -2194,9 +2190,8 @@ Here’s an example of <code>.status</code> fields in the <code>InputManifest</c
 <div class="highlight"><pre><span></span><code><span class="w">  </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;clusters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">&quot;my-super-cluster&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;creating cluster\n- Creating infrastructure for the new cluster\n  - Building desired state infrastructure&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;phase&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Terraformer&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;previous&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">        </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot; installing VPN&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;phase&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ANSIBLER&quot;</span><span class="p">,</span>
 <span class="w">        </span><span class="nt">&quot;state&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;IN_PROGRESS&quot;</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">},</span>
@@ -2211,37 +2206,17 @@ Here’s an example of <code>.status</code> fields in the <code>InputManifest</c
 <p class="admonition-title">Provisioning times may vary!</p>
 <p>Please note that cluster creation time may vary due to provisioning capacity and machine provisioning times of selected hyperscalers.</p>
 </div>
-<p>After finishing, the <code>InputManifest</code> state reflects that the cluster is provisioned, the state <code>WATCHING_FOR_CHANGES</code> indicates that the changes were built and that the <code>InputManifest</code> 
-sits idle until changes are detected.</p>
-<div class="highlight"><pre><span></span><code><span class="w">  </span><span class="p">{</span>
+<p>After finishing the <code>InputManifest</code> state reflects that the cluster is provisioned.</p>
+<div class="highlight"><pre><span></span><code><span class="err">kubec</span><span class="kc">tl</span><span class="w"> </span><span class="err">ge</span><span class="kc">t</span><span class="w"> </span><span class="err">i</span><span class="kc">n</span><span class="err">pu</span><span class="kc">t</span><span class="err">ma</span><span class="kc">n</span><span class="err">i</span><span class="kc">fests</span><span class="err">.claudie.io</span><span class="w"> </span><span class="err">cloud</span><span class="mi">-</span><span class="err">burs</span><span class="kc">t</span><span class="err">i</span><span class="kc">n</span><span class="err">g</span><span class="w"> </span><span class="mi">-</span><span class="err">o</span><span class="w"> </span><span class="err">jso</span><span class="kc">n</span><span class="err">pa</span><span class="kc">t</span><span class="err">h=</span><span class="p">{</span><span class="err">.s</span><span class="kc">tatus</span><span class="p">}</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="err">jq</span><span class="w"> </span><span class="err">.</span>
+<span class="w">  </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;clusters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">&quot;my-super-cluster&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;phase&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;None&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;previous&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">          </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;stage&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ANSIBLER&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;DONE&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;taskDescription&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;creating cluster\n- Configuring cluster infrastructure\n  - Installing pre-requisites on all of the nodes of the cluster\n  - Installing Tee override for newly added nodes\n  - Setting up VPN across the nodes of the kuberentes and loadbalancer clusters\n  - Reconciling Envoy service across the loadbalancer nodes&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-03-23T10:19:22Z&quot;</span>
-<span class="w">          </span><span class="p">},</span>
-<span class="w">          </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;stage&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;KUBE_ELEVEN&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;DONE&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;taskDescription&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;creating cluster\n- Reconciling kubernetes cluster\n  - Creating kubernetes cluster from the set up infrastructure&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-03-23T10:23:01Z&quot;</span>
-<span class="w">          </span><span class="p">},</span>
-<span class="w">          </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;stage&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;KUBER&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;DONE&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;taskDescription&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;creating cluster\n- Configuring cluster\n  - Deploying kubelet csr-approver\n  - Patching nodes\n  - Deploying longhorn for storage\n  - Reconciling longhorn claudie storage classes\n  - Storing scrape config for loadbalancers&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-03-23T10:23:18Z&quot;</span>
-<span class="w">          </span><span class="p">}</span>
-<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;phase&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;NONE&quot;</span><span class="p">,</span>
 <span class="w">        </span><span class="nt">&quot;state&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;DONE&quot;</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="nt">&quot;state&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;WATCHING_FOR_CHANGES&quot;</span>
-<span class="w">  </span><span class="p">}</span>
+<span class="w">    </span><span class="nt">&quot;state&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;DONE&quot;</span>
+<span class="w">  </span><span class="p">}</span><span class="w">    </span>
 </code></pre></div>
 </li>
 <li>
@@ -2258,13 +2233,13 @@ my-super-cluster-6ktx6rb-kubeconfig   Opaque   1      134m
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>secrets<span class="w"> </span>-n<span class="w"> </span>claudie<span class="w"> </span>-l<span class="w"> </span>claudie.io/output<span class="o">=</span>metadata<span class="w"> </span>-ojsonpath<span class="o">=</span><span class="s1">&#39;{.items[0].data.metadata}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.dynamic_nodepools | map_values(.nodepool_private_key)&#39;</span>
 </code></pre></div>
 <p>To recover public IP of your dynamic k8s nodes to connect to via SSH:
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>secrets<span class="w"> </span>-n<span class="w"> </span>claudie<span class="w"> </span>-l<span class="w"> </span>claudie.io/output<span class="o">=</span>metadata<span class="w"> </span>-ojsonpath<span class="o">=</span><span class="s1">&#39;{.items[0].data.metadata}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span>.dynamic_nodepools
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>secrets<span class="w"> </span>-n<span class="w"> </span>claudie<span class="w"> </span>-l<span class="w"> </span>claudie.io/output<span class="o">=</span>metadata<span class="w"> </span>-ojsonpath<span class="o">=</span><span class="s1">&#39;{.items[0].data.metadata}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span>.dynamic_nodepools.node_ips
 </code></pre></div></p>
 <p>In case you want to connect to your dynamic load balancer nodes via SSH, you can recover private SSH key:</p>
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>secrets<span class="w"> </span>-n<span class="w"> </span>claudie<span class="w"> </span>-l<span class="w"> </span>claudie.io/output<span class="o">=</span>metadata<span class="w"> </span>-ojsonpath<span class="o">=</span><span class="s1">&#39;{.items[0].data.metadata}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.dynamic_load_balancer_nodepools | .[]&#39;</span>
 </code></pre></div>
 <p>To recover public IP addresses of your dynamic load balancer nodes to connect to via SSH:</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>secrets<span class="w"> </span>-n<span class="w"> </span>claudie<span class="w"> </span>-l<span class="w"> </span>claudie.io/output<span class="o">=</span>metadata<span class="w"> </span>-ojsonpath<span class="o">=</span><span class="s1">&#39;{.items[0].data.metadata}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">&#39;.dynamic_load_balancer_nodepools[]&#39;</span>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>secrets<span class="w"> </span>-n<span class="w"> </span>claudie<span class="w"> </span>-l<span class="w"> </span>claudie.io/output<span class="o">=</span>metadata<span class="w"> </span>-ojsonpath<span class="o">=</span><span class="s1">&#39;{.items[0].data.metadata}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">&#39;.dynamic_load_balancer_nodepools[] | .node_ips&#39;</span>
 </code></pre></div>
 <p>Each secret created by Claudie has following labels:</p>
 <table>
@@ -2318,14 +2293,15 @@ kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="
 <span class="w">    </span><span class="nt">app.kubernetes.io/part-of</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claudie</span>
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">providers</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-1</span><span class="w">         </span><span class="c1"># newly added provider for cloud bursting.</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-1</span><span class="w">         </span><span class="c1"># add under nodePools.dynamic section</span>
 <span class="w">      </span><span class="nt">providerType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner</span>
 <span class="w">      </span><span class="nt">secretRef</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-secret-1</span>
 <span class="w">        </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;your-namespace&gt;</span><span class="w">        </span>
 <span class="w">  </span><span class="nt">nodePools</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">dynamic</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-worker</span><span class="w">  </span><span class="c1"># add under nodePools.dynamic section</span>
+<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">- name</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-worker</span><span class="w">  </span><span class="c1"># add under nodePools.dynamic section</span>
 <span class="w">        </span><span class="nt">providerSpec</span><span class="p">:</span>
 <span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hetzner-1</span><span class="w">   </span><span class="c1"># use your new hetzner provider hetzner-1 to create these nodes</span>
 <span class="w">            </span><span class="nt">region</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hel1</span>
@@ -2338,7 +2314,7 @@ kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="
 <span class="w">    </span><span class="nt">kubernetes</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">clusters</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-super-cluster</span>
-<span class="w">        </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.34.0</span>
+<span class="w">        </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.31.0</span>
 <span class="w">        </span><span class="nt">network</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.2.0/24</span>
 <span class="w">        </span><span class="nt">pools</span><span class="p">:</span>
 <span class="w">            </span><span class="nt">control</span><span class="p">:</span>
@@ -2353,7 +2329,7 @@ kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="
 <p>Update the crd with the new InputManifest to incorporate the desired changes.</p>
 <div class="admonition danger">
 <p class="admonition-title">Deleting existing secrets!</p>
-<p><strong>Deleting or replacing existing input manifest secrets triggers cluster deletion!</strong> To make changes to your existing clusters, generate a new secret value and re-apply it using the following command.</p>
+<p><strong>Deleting or replacing existing input manifest secrets triggers cluster deletion!</strong> To add new components to your existing clusters, generate a new secret value and apply it using the following command.</p>
 </div>
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>./inputmanifest-bursting.yaml
 </code></pre></div>
@@ -2397,11 +2373,9 @@ kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="
 <span class="w">        </span><span class="nt">targetedK8s</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-super-cluster</span>
 <span class="w">        </span><span class="nt">pools</span><span class="p">:</span>
 <span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aws-lb</span>
-</code></pre></div></p>
-<div class="admonition note">
-<p class="admonition-title">Load balancing</p>
-<p>Please refer how our load balancing works by reading our <a href="https://docs.claudie.io/latest/loadbalancing/loadbalancing-solution/">documentation</a>.</p>
-</div>
+</code></pre></div>
+    !!! note Load balancing
+        Please refer how our load balancing works by reading our <a href="https://docs.claudie.io/latest/loadbalancing/loadbalancing-solution/">documentation</a>.</p>
 </li>
 <li>
 <p>Update the InputManifest again with the new configuration.
@@ -2470,6 +2444,18 @@ kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="
 <td><code>info</code></td>
 <td>string</td>
 <td>Log level for all services. Can be either <code>info</code> or <code>debug</code>.</td>
+</tr>
+<tr>
+<td><code>HTTP_PROXY_MODE</code></td>
+<td><code>default</code></td>
+<td>string</td>
+<td><code>default</code>, <code>on</code> or <code>off</code>. <code>default</code> utilizes HTTP proxy only when there's at least one node in the K8s cluster from the Hetzner cloud provider. <code>on</code> uses HTTP proxy even when the K8s cluster doesn't have any nodes from the Hetzner. <code>off</code> turns off the usage of HTTP proxy. If the value isn't set or differs from <code>on</code> or <code>off</code> it always works with the <code>default</code>.</td>
+</tr>
+<tr>
+<td><code>HTTP_PROXY_URL</code></td>
+<td><code>http://proxy.claudie.io:8880</code></td>
+<td>string</td>
+<td>HTTP proxy URL used in kubeone <a href="https://docs.kubermatic.com/kubeone/latest/guides/proxy/">proxy configuration</a> to build the K8s cluster.</td>
 </tr>
 <tr>
 <td><code>DATABASE_HOSTNAME</code></td>
