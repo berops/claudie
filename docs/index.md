@@ -24,15 +24,15 @@ Claudie is a platform for managing multi-cloud and hybrid-cloud Kubernetes clust
 
 <div class="provider-grid" markdown>
 
-[![AWS](https://img.shields.io/badge/AWS-232F3E?style=for-the-badge&logo=amazonwebservices&logoColor=white)](./input-manifest/providers/aws.md)
-[![Azure](https://img.shields.io/badge/Azure-0078D4?style=for-the-badge&logo=microsoftazure&logoColor=white)](./input-manifest/providers/azure.md)
-[![GCP](https://img.shields.io/badge/GCP-4285F4?style=for-the-badge&logo=googlecloud&logoColor=white)](./input-manifest/providers/gcp.md)
-[![Hetzner](https://img.shields.io/badge/Hetzner-D50C2D?style=for-the-badge&logo=hetzner&logoColor=white)](./input-manifest/providers/hetzner.md)
-[![OCI](https://img.shields.io/badge/OCI-F80000?style=for-the-badge&logo=oracle&logoColor=white)](./input-manifest/providers/oci.md)
-[![Cloudflare](https://img.shields.io/badge/Cloudflare-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)](./input-manifest/providers/cloudflare.md)
-[![Exoscale](https://img.shields.io/badge/Exoscale-DA291C?style=for-the-badge&logo=exoscale&logoColor=white)](./input-manifest/providers/exoscale.md)
-[![OpenStack](https://img.shields.io/badge/OpenStack-ED1944?style=for-the-badge&logo=openstack&logoColor=white)](./input-manifest/providers/openstack.md)
-[![CloudRift](https://img.shields.io/badge/CloudRift-2e7da8?style=for-the-badge&logoColor=white)](./input-manifest/providers/cloudrift.md)
+[![AWS](https://img.shields.io/badge/AWS-232F3E?style=for-the-badge)](./input-manifest/providers/aws.md)
+[![Azure](https://img.shields.io/badge/Azure-0078D4?style=for-the-badge)](./input-manifest/providers/azure.md)
+[![GCP](https://img.shields.io/badge/GCP-4285F4?style=for-the-badge)](./input-manifest/providers/gcp.md)
+[![Hetzner](https://img.shields.io/badge/Hetzner-D50C2D?style=for-the-badge)](./input-manifest/providers/hetzner.md)
+[![OCI](https://img.shields.io/badge/OCI-F80000?style=for-the-badge)](./input-manifest/providers/oci.md)
+[![Cloudflare](https://img.shields.io/badge/Cloudflare-F38020?style=for-the-badge)](./input-manifest/providers/cloudflare.md)
+[![Exoscale](https://img.shields.io/badge/Exoscale-DA291C?style=for-the-badge)](./input-manifest/providers/exoscale.md)
+[![OpenStack](https://img.shields.io/badge/OpenStack-ED1944?style=for-the-badge)](./input-manifest/providers/openstack.md)
+[![CloudRift](https://img.shields.io/badge/CloudRift-2e7da8?style=for-the-badge)](./input-manifest/providers/cloudrift.md)
 
 </div>
 
