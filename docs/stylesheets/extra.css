@@ -76,11 +76,30 @@
   color: var(--claudie-blue-light);
 }
 
+/* ── Header logo: hide site name text, show only SVG logo ── */
+
+.md-logo img {
+  height: 36px;
+  width: auto;
+  max-width: none;
+}
+
+/* Swap logo for dark mode */
+[data-md-color-scheme="slate"] .md-logo img {
+  content: url("../assets/logo-dark.svg");
+}
+
+/* Hide site name — logo SVG contains "claudie Docs" */
+.md-header__topic:first-child .md-ellipsis {
+  display: none;
+}
+
+
 /* ── Header bar ── */
 [data-md-color-scheme="default"] .md-header {
   background: #ffffff;
   color: #333333;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12) !important;
 }
 
 [data-md-color-scheme="default"] .md-header .md-header__title,
@@ -101,6 +120,18 @@
 
 [data-md-color-scheme="default"] .md-search__icon {
   color: #999999;
+}
+
+[data-md-color-scheme="default"] .md-header__button[data-md-color-scheme] .md-icon,
+[data-md-color-scheme="default"] .md-header [data-md-toggle="palette"] .md-icon,
+[data-md-color-scheme="default"] form.md-header__option .md-icon {
+  color: #666666;
+}
+
+[data-md-color-scheme="default"] .md-header__button[data-md-color-scheme] .md-icon:hover,
+[data-md-color-scheme="default"] .md-header [data-md-toggle="palette"] .md-icon:hover,
+[data-md-color-scheme="default"] form.md-header__option .md-icon:hover {
+  color: var(--claudie-blue);
 }
 
 /* ── Admonitions ── */

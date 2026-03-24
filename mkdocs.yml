@@ -58,35 +58,26 @@ theme:
     - navigation.expand
     - navigation.top
     - navigation.indexes
-    - header.autohide
     - search.suggest
     - search.highlight
     - toc.follow
   palette:
-    - media: "(prefers-color-scheme)"
-      primary: custom
-      accent: custom
-      toggle:
-        icon: material/link
-        name: Switch to light mode
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
+    - scheme: default
       primary: custom
       accent: custom
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
+    - scheme: slate
       primary: custom
       accent: custom
       toggle:
         icon: material/brightness-4
-        name: Switch to system preference
+        name: Switch to light mode
   font:
     text: Inter
     code: JetBrains Mono
-  logo: hexagon_blue.png
+  logo: assets/logo-light.svg
   favicon: hexagon_blue.png
   custom_dir: docs/overrides
 
