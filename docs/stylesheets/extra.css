@@ -203,6 +203,61 @@
 }
 
 
+/* ── Hero section ── */
+.hero {
+  text-align: center;
+  padding: 2rem 1rem 1.5rem;
+}
+
+.hero h1 {
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 1rem;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.hero p:first-of-type {
+  font-size: 1.1rem;
+  color: #555;
+  max-width: 600px;
+  margin: 0 auto 1.5rem;
+  line-height: 1.6;
+}
+
+[data-md-color-scheme="slate"] .hero p:first-of-type {
+  color: #aaa;
+}
+
+.hero .md-button {
+  margin: 0.3rem;
+  border-radius: 6px;
+}
+
+.hero .md-button--primary {
+  background-color: var(--claudie-blue);
+  border-color: var(--claudie-blue);
+  color: #fff;
+}
+
+.hero .md-button--primary:hover {
+  background-color: var(--claudie-blue-dark);
+  border-color: var(--claudie-blue-dark);
+}
+
+/* ── Provider badges grid ── */
+.provider-grid p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.provider-grid a {
+  background-image: none !important;
+}
+
 /* ── Feedback widget ── */
 .md-feedback__icon:hover {
   color: var(--claudie-accent);
@@ -265,19 +320,6 @@ html {
   color: var(--claudie-blue-light);
 }
 
-/* ── Links underline animation ── */
-.md-typeset a:not(.md-nav__link):not(.md-header__button):not(.md-logo):not(.md-footer__link) {
-  text-decoration: none;
-  background-image: linear-gradient(var(--claudie-accent), var(--claudie-accent));
-  background-size: 0% 2px;
-  background-position: 0 100%;
-  background-repeat: no-repeat;
-  transition: background-size 0.25s ease;
-}
-
-.md-typeset a:not(.md-nav__link):not(.md-header__button):not(.md-logo):not(.md-footer__link):hover {
-  background-size: 100% 2px;
-}
 
 /* ── Header show/hide transition ── */
 .md-header {

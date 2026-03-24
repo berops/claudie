@@ -1,10 +1,40 @@
-# What is Claudie
+<div class="hero" markdown>
+
+# The last Kubernetes engine you'll ever need
+
+Build multi-cloud and hybrid-cloud Kubernetes clusters that mix and match nodepools across AWS, GCP, Azure, Hetzner, and more, managed through a single InputManifest.
+
+[Get Started](./getting-started/get-started-using-claudie.md){ .md-button .md-button--primary }
+[GitHub](https://github.com/berops/claudie){ .md-button }
+
+[![license](https://img.shields.io/github/license/berops/claudie?style=flat-square&color=2e7da8)](https://github.com/berops/claudie/blob/master/LICENSE)
+[![Go](https://img.shields.io/github/go-mod/go-version/berops/claudie?style=flat-square&color=2e7da8)](https://github.com/berops/claudie)
+[![Stars](https://img.shields.io/github/stars/berops/claudie?style=flat-square&color=2e7da8)](https://github.com/berops/claudie/stargazers)
+[![Contributors](https://img.shields.io/github/contributors/berops/claudie?style=flat-square&color=2e7da8)](https://github.com/berops/claudie/graphs/contributors)
+[![Last commit](https://img.shields.io/github/last-commit/berops/claudie?style=flat-square&color=2e7da8)](https://github.com/berops/claudie/commits)
+[![Slack](https://img.shields.io/badge/Slack-join-2e7da8?style=flat-square&logo=slack)](https://kubernetes.slack.com/archives/C05SW4GKPL3)
+
+</div>
+
+## What is Claudie
 
 Claudie is a platform for managing multi-cloud and hybrid-cloud Kubernetes clusters. These Kubernetes clusters can mix and match nodepools from various cloud providers, e.g. a single cluster can have a nodepool in AWS, another in GCP and another one on-premises. This is our opinionated way to build multi-cloud and hybrid-cloud Kubernetes infrastructure. On top of that Claudie supports Cluster Autoscaler on the managed clusters.
 
-## Vision
+## Supported Providers
 
-The purpose of Claudie is to become the final Kubernetes engine you'll ever need. It aims to build clusters that leverage features and costs across multiple cloud vendors and on-prem datacenters. A Kubernetes that you won't ever need to migrate away from.
+<div class="provider-grid" markdown>
+
+[![AWS](https://img.shields.io/badge/AWS-232F3E?style=for-the-badge&logo=amazonwebservices&logoColor=white)](./input-manifest/providers/aws.md)
+[![Azure](https://img.shields.io/badge/Azure-0078D4?style=for-the-badge&logo=microsoftazure&logoColor=white)](./input-manifest/providers/azure.md)
+[![GCP](https://img.shields.io/badge/GCP-4285F4?style=for-the-badge&logo=googlecloud&logoColor=white)](./input-manifest/providers/gcp.md)
+[![Hetzner](https://img.shields.io/badge/Hetzner-D50C2D?style=for-the-badge&logo=hetzner&logoColor=white)](./input-manifest/providers/hetzner.md)
+[![OCI](https://img.shields.io/badge/OCI-F80000?style=for-the-badge&logo=oracle&logoColor=white)](./input-manifest/providers/oci.md)
+[![Cloudflare](https://img.shields.io/badge/Cloudflare-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)](./input-manifest/providers/cloudflare.md)
+[![Exoscale](https://img.shields.io/badge/Exoscale-DA291C?style=for-the-badge&logo=exoscale&logoColor=white)](./input-manifest/providers/exoscale.md)
+[![OpenStack](https://img.shields.io/badge/OpenStack-ED1944?style=for-the-badge&logo=openstack&logoColor=white)](./input-manifest/providers/openstack.md)
+[![CloudRift](https://img.shields.io/badge/CloudRift-2e7da8?style=for-the-badge&logoColor=white)](./input-manifest/providers/cloudrift.md)
+
+</div>
 
 ## Use cases
 
@@ -14,14 +44,12 @@ Claudie has been built as an answer to the following Kubernetes challenges:
 * Data locality & compliance (e.g. GDPR)
 * Managed Kubernetes for providers that do not offer it
 * Cloud bursting
-* Service interconnet
+* Service interconnect
 * GPU & AI/ML workloads - Provision GPU nodes across multiple clouds, run NVIDIA GPU Operator, and leverage Cluster Autoscaler for GPU-aware scaling
 
 You can read more [here](./use-cases/use-cases.md).
 
 ## Features
-
-Claudie covers you with the following features functionalities:
 
 * Manage multi-cloud and hybrid-cloud Kubernetes clusters
 * Management via IaC
