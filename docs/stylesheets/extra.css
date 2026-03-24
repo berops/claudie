@@ -273,7 +273,7 @@ html {
 }
 
 /* ── Page content fade-in on navigation ── */
-@keyframes fadeSlideIn {
+@keyframes fade-slide-in {
   from {
     opacity: 0;
     transform: translateY(12px);
@@ -285,7 +285,7 @@ html {
 }
 
 .md-content__inner {
-  animation: fadeSlideIn 0.35s ease-out;
+  animation: fade-slide-in 0.35s ease-out;
 }
 
 /* ── Sidebar nav link hover transitions ── */
@@ -333,4 +333,20 @@ html {
 
 .md-search__input:focus {
   box-shadow: 0 0 0 3px rgba(46, 125, 168, 0.15);
+}
+
+/* ── Reduced motion preference ── */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .md-content__inner,
+  .md-nav__link,
+  .md-nav--secondary .md-nav__link,
+  .md-header,
+  .md-search__input {
+    animation: none !important;
+    transition: none !important;
+  }
 }
