@@ -1,6 +1,6 @@
 <div class="hero" markdown>
 
-# The last Kubernetes engine you'll ever need
+# Multi-cloud Kubernetes Redefined
 
 Build multi-cloud and hybrid-cloud Kubernetes clusters that mix and match nodepools across AWS, GCP, Azure, Hetzner, and more, managed through a single InputManifest.
 
