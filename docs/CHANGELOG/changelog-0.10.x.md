@@ -144,16 +144,3 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 
 ## Bug fixes
 - Fix API endpoint changes with proxy turned on [`#1996`](https://github.com/berops/claudie/pull/1996)
-
-## v0.10.3
-
-## What's Changed
-- Added [CloudRift](https://www.cloudrift.ai/) cloud provider support [#2000](https://github.com/berops/claudie/pull/2000)
-  
-- Updated longhorn to version v1.11.1 [#2007](https://github.com/berops/claudie/pull/2007)   
-  Before upgrading to this Claudie version from v0.10.2, detach all Longhorn volumes and follow the manual checks described here: <https://longhorn.io/docs/1.11.1/deploy/upgrade/#manual-checks-before-upgrade>
-
-- More validation of the input manifest was moved into the webhook for the operator so that more immediate feedback is given when `kubectl apply` is executed [#2008](https://github.com/berops/claudie/pull/2008)
-  
-- When a node is scheduled for deletion, its drain is now limited to a ~30 minute timeout, after which the node will be deleted  [#2011](https://github.com/berops/claudie/pull/2011)
-- For node deletion disk scheduling on the longhorn level will now be applied before the node is deleted [#2012](https://github.com/berops/claudie/pull/2012)
