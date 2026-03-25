@@ -86,15 +86,15 @@ nav:
       - index.md
       - Sitemap: sitemap/sitemap.md
   - Guides:
-      - Quick Start: getting-started/get-started-using-claudie.md
-      - Detailed guide: getting-started/detailed-guide.md
-      - Use Cases: use-cases/use-cases.md
+      - Quick start: getting-started/get-started-using-claudie.md
+      - Detailed start: getting-started/detailed-guide.md
+      - Use cases: use-cases/use-cases.md
       - Updating Claudie: update/update.md
-      - Creating Backups: creating-claudie-backup/creating-claudie-backup.md
+      - Creating backups: creating-claudie-backup/creating-claudie-backup.md
       - GPUs example: input-manifest/gpu-example.md
       - Hardening: hardening/hardening.md
       - Monitoring: monitoring/grafana.md
-      - HTTP Proxy: http-proxy/http-proxy.md
+      - HTTP proxy: http-proxy/http-proxy.md
       - Example InputManifest: input-manifest/example.md
       - Troubleshooting: troubleshooting/troubleshooting.md
   - Reference:
@@ -109,19 +109,19 @@ nav:
           - OCI: input-manifest/providers/oci.md
           - Openstack: input-manifest/providers/openstack.md
           - On Premise: input-manifest/providers/on-prem.md
-      - External Templates: input-manifest/external-templates.md
+      - External templates: input-manifest/external-templates.md
       - API reference: input-manifest/api-reference.md
       - Custom namespace: input-manifest/claudie-custom-ns.md
-      - Environment Variables: environment-settings/environment.md
+      - Environment variables: environment-settings/environment.md
   - Architecture:
-      - Claudie Workflow: claudie-workflow/claudie-workflow.md
+      - Claudie workflow: claudie-workflow/claudie-workflow.md
       - Storage: storage/storage-solution.md
       - Loadbalancing: loadbalancing/loadbalancing-solution.md
       - Autoscaling: autoscaling/autoscaling.md
   - Project:
       - FAQ: faq/FAQ.md
-      - Version Matrix: version-matrix/version-matrix.md
-      - Command Cheat Sheet: commands/commands.md
+      - Version matrix: version-matrix/version-matrix.md
+      - Command cheat sheet: commands/commands.md
       - Latency limitations: latency-limitations/latency-limitations.md
       - Roadmap: roadmap/roadmap.md
       - Contributing: contributing/contributing.md
