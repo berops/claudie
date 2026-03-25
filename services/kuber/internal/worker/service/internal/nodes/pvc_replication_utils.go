@@ -61,3 +61,16 @@ func removeReplicasOnDeletedNode(kc kubectl.Kubectl, node string) error {
 
 	return errAll
 }
+
+// Disables disk scheduling on the specified node. Needed when the node is about to be deleted.
+func disableDiskScheduling(kc kubectl.Kubectl, node string) error {
+	// https://longhorn.io/docs/archives/1.4.0/volumes-and-nodes/maintenance/#removing-a-node
+	return kc.KubectlPatch(
+		"nodes.longhorn.io",
+		node,
+		"{\"spec\":{\"allowScheduling\":false}}",
+		"--type=merge",
+		"-n",
+		longhornNamespace,
+	)
+}

@@ -2,12 +2,14 @@
 package kubectl
 
 import (
+	"context"
 	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/google/uuid"
@@ -36,7 +38,8 @@ const (
 		--key=/etc/kubernetes/pki/etcd/healthcheck-client.key
 	`
 
-	kubectlTimeout = 3 * 60 // cancel kubectl command after kubectlTimeout seconds
+	// Timeout used on kubectl commands that fail initially and are then retried.
+	kubectlTimeout = 180 * time.Second
 )
 
 // KubectlApply runs kubectl apply in k.Directory directory, with specified manifest
@@ -148,7 +151,8 @@ func (k *Kubectl) KubectlTaint(nodeName string, key, value, effect string) error
 
 // KubectlDrain runs kubectl drain in k.Directory, on a specified node with flags --ignore-daemonsets --delete-emptydir-data
 // example: kubectl drain node1 -> k.KubectlDrain("node1")
-func (k *Kubectl) KubectlDrain(nodeName string) error {
+// If the timeout expires before the command finishes the [context.DeadlineExceeded] error is returned.
+func (k *Kubectl) KubectlDrainWithTimeout(timeout time.Duration, nodeName string) error {
 	arg, cleanup, err := k.getKubeconfig()
 	if err != nil {
 		return err
@@ -156,7 +160,7 @@ func (k *Kubectl) KubectlDrain(nodeName string) error {
 	defer cleanup()
 
 	command := fmt.Sprintf("kubectl drain %s --ignore-daemonsets --delete-emptydir-data %s", nodeName, arg)
-	return k.run(command)
+	return k.runWithTimeout(timeout, command)
 }
 
 // KubectlDescribe runs kubectl describe in k.Directory, on a specified resource, resource name and specified namespace
@@ -286,7 +290,69 @@ func (k *Kubectl) KubectlCordon(nodeName string, options ...string) error {
 	return k.run(command, options...)
 }
 
-// run will run the command in a bash shell like "bash -c command options".
+func (k Kubectl) RolloutRestart(resource string, options ...string) error {
+	arg, cleanup, err := k.getKubeconfig()
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+
+	command := fmt.Sprintf("kubectl rollout restart %s %s", resource, arg)
+	return k.run(command, options...)
+}
+
+// behaves exactly the same as [Kubectl.run], but uses a custom timeout for the command
+// on both the initial execution and on subsequent retries.
+func (k Kubectl) runWithTimeout(timeout time.Duration, command string, options ...string) error {
+	deadline := time.Now().Add(timeout)
+	ctx, cancel := context.WithDeadline(context.Background(), deadline)
+
+	cmd := exec.CommandContext(ctx, "bash", "-c", strings.Join(append([]string{command}, options...), " "))
+	cmd.Dir = k.Directory
+	cmd.Stdout = k.Stdout
+	cmd.Stderr = k.Stderr
+
+	if err := cmd.Run(); err != nil {
+		if ctx.Err() != nil {
+			err = fmt.Errorf("%w:%w", err, ctx.Err())
+		}
+
+		cancel()
+
+		if k.MaxKubectlRetries < 0 {
+			return err
+		}
+
+		retryCount := k.MaxKubectlRetries
+		if k.MaxKubectlRetries == 0 {
+			retryCount = defaultMaxKubectlRetries
+		}
+
+		remaining := time.Until(deadline)
+		if remaining <= 0 {
+			return fmt.Errorf("%w: execution timeout exceeded before retries", context.DeadlineExceeded)
+		}
+
+		retryCmd := comm.Cmd{
+			Command:        command,
+			Options:        options,
+			Dir:            k.Directory,
+			CommandTimeout: remaining,
+			Stdout:         k.Stdout,
+			Stderr:         k.Stderr,
+		}
+
+		if err = retryCmd.RetryCommand(retryCount); err != nil {
+			return err
+		}
+	}
+
+	cancel()
+	return nil
+}
+
+// runs the command in a bash shell like "bash -c command options".
+// If the initial command fails subsequent retries will have an timeout of [kubectlTimeout].
 func (k Kubectl) run(command string, options ...string) error {
 	//nolint
 	cmd := exec.Command("bash", "-c", strings.Join(append([]string{command}, options...), " "))
@@ -321,6 +387,7 @@ func (k Kubectl) run(command string, options ...string) error {
 }
 
 // runWithOutput will run the command in a bash shell like "bash -c command options" and return the output
+// If the initial command fails subsequent retries will have an timeout of [kubectlTimeout].
 func (k Kubectl) runWithOutput(command string, options ...string) ([]byte, error) {
 	var result []byte
 	var err error
@@ -333,11 +400,19 @@ func (k Kubectl) runWithOutput(command string, options ...string) ([]byte, error
 		if k.MaxKubectlRetries < 0 {
 			return nil, err
 		}
+
 		retryCount := k.MaxKubectlRetries
 		if k.MaxKubectlRetries == 0 {
 			retryCount = defaultMaxKubectlRetries
 		}
-		cmd := comm.Cmd{Command: command, Options: options, Dir: k.Directory, CommandTimeout: kubectlTimeout}
+
+		cmd := comm.Cmd{
+			Command:        command,
+			Options:        options,
+			Dir:            k.Directory,
+			CommandTimeout: kubectlTimeout,
+		}
+
 		result, err = cmd.RetryCommandWithCombinedOutput(retryCount)
 		if err != nil {
 			return result, err
@@ -346,18 +421,8 @@ func (k Kubectl) runWithOutput(command string, options ...string) ([]byte, error
 	return result, nil
 }
 
-func (k Kubectl) RolloutRestart(resource string, options ...string) error {
-	arg, cleanup, err := k.getKubeconfig()
-	if err != nil {
-		return err
-	}
-	defer cleanup()
-
-	command := fmt.Sprintf("kubectl rollout restart %s %s", resource, arg)
-	return k.run(command, options...)
-}
-
-// getKubeconfig function returns either the "--kubeconfig <(echo ...)" if kubeconfig is specified, or empty string of none is given
+// getKubeconfig returns the string "--kubeconfig <path-to-kubeconfig>" to be used as an
+// argument to a shelled out `kubectl` command, empty if kubeconfig is not given.
 func (k Kubectl) getKubeconfig() (string, func(), error) {
 	if k.Kubeconfig == "" {
 		return "", func() {}, nil

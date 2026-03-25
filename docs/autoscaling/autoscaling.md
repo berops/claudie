@@ -51,4 +51,4 @@ The custom Claudie-Provider for the [Cluster-Autoscaler](https://github.com/kube
     nvidiaGpuCount: 1
   # OS image name
   image: ami-07eef52105e8a2059
-  ```
+```

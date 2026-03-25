@@ -16,7 +16,17 @@ Testing or simulating the Claudie autoscaling is not feasible when running Claud
 
 Since Claudie generates two types of output per cluster (node metadata and kubeconfig), testing these outputs is not possible because they are created as Kubernetes Secrets.
 
-## Requirements to run Claudie locally
+## Hardware requirements to run Claudie locally
+
+Running Claudie services requires sufficient CPU and memory resources to ensure stable operation. The system should be provisioned with enough capacity to accommodate both the resource **requests** and **limits** of the deployed services.  
+
+### Minimal Requirements
+
+- **Memory:** at least 8 GB  
+- **CPU:** at least 2 cores  
+- **Disk space:** at least 1 GB (for storing Tofu providers) 
+
+## Software requirements to run Claudie locally
 
 As Claudie uses number of external tools to build and manage clusters, it is important these tools are installed on your local system.
 
@@ -139,7 +149,7 @@ nodePools:
 kubernetes:
   clusters:
     - name: dev-test
-      version: v1.31.0
+      version: v1.34.0
       network: 192.168.2.0/24
       pools:
         control:

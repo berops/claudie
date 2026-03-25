@@ -89,21 +89,24 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     kubectl get pods -n claudie 
     ```
     ```text
-    NAME                           READY   STATUS      RESTARTS        AGE
-    ansibler-5c6c776b75-82c2q      1/1     Running     0               8m10s
-    manager-5d76c89b4d-tb6h4       1/1     Running     1 (6m37s ago)   8m10s
-    claudie-operator-5755b7bc69-5l84h      1/1     Running     0               8m10s
-    kube-eleven-64468cd5bd-qp4d4   1/1     Running     0               8m10s
-    kuber-698c4564c-dhsvg          1/1     Running     0               8m10s
-    make-bucket-job-fb5sp          0/1     Completed   0               8m10s
-    minio-0                        1/1     Running     0               8m10s
-    minio-1                        1/1     Running     0               8m10s
-    minio-2                        1/1     Running     0               8m10s
-    minio-3                        1/1     Running     0               8m10s
-    mongodb-67bf769957-9ct5z       1/1     Running     0               8m10s
-    terraformer-fd664b7ff-dd2h7    1/1     Running     0               8m9s
+    NAME                                READY   STATUS              RESTARTS       AGE
+    ansibler-6bf78cccf4-pnxrk           1/1     Running             0              3m20s
+    claudie-operator-64c9554c66-rvtr5   1/1     Running             0              3m19s
+    kube-eleven-7bd47945c5-kbpd6        1/1     Running             0              3m19s
+    kuber-64554ffffc-fkdj6              1/1     Running             0              3m19s
+    make-bucket-job-4mxw7               0/1     Completed           0              3m19s
+    manager-7696cb7f9-jfbwq             1/1     Running             0              3m19s
+    minio-0                             1/1     Running             0              3m19s
+    minio-1                             1/1     Running             0              3m19s
+    minio-2                             1/1     Running             0              3m19s
+    minio-3                             1/1     Running             0              3m19s
+    mongodb-85487bf568-qjw2k            1/1     Running             0              3m19s
+    nack-644748c7b7-p6z62               1/1     Running             0              3m19s
+    nats-0                              2/2     Running             0              3m19s
+    nats-1                              2/2     Running             0              3m19s
+    nats-2                              2/2     Running             0              3m19s
+    terraformer-5868fb7695-w49sw        1/1     Running             0              3m19s
     ```
-
     !!! warning "Changing the namespace" 
         By default, Claudie will monitor all namespaces, and it will watch for `Input Manifest` and provider `Secrets` in the cluster. If you would like limit the namespaces to watch - overwrite `CLAUDIE_NAMESPACES` environment variable in `claudie-operator` deployment. Example:
         ```
@@ -174,7 +177,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
       kubernetes:
         clusters:
           - name: my-super-cluster
-            version: v1.31.0
+            version: v1.34.0
             network: 192.168.2.0/24
             pools:
                 control:
@@ -230,36 +233,57 @@ This detailed guide for Claudie serves as a resource for providing an overview o
       {
         "clusters": {
           "my-super-cluster": {
-            "message": " installing VPN",
-            "phase": "ANSIBLER",
+            "message": "creating cluster\n- Creating infrastructure for the new cluster\n  - Building desired state infrastructure",
+            "phase": "Terraformer",
+            "previous": [],
             "state": "IN_PROGRESS"
           }
         },
         "state": "IN_PROGRESS"
       }
     ```
-
     !!! note "Claudie architecture"
         Claudie utilizes multiple services for cluster provisioning, refer to our [workflow documentation](https://docs.claudie.io/latest/claudie-workflow/claudie-workflow/) as to how it works under the hood.
 
     !!! warning "Provisioning times may vary!"
         Please note that cluster creation time may vary due to provisioning capacity and machine provisioning times of selected hyperscalers.
 
-    After finishing the `InputManifest` state reflects that the cluster is provisioned.
+    After finishing, the `InputManifest` state reflects that the cluster is provisioned, the state `WATCHING_FOR_CHANGES` indicates that the changes were built and that the `InputManifest` 
+    sits idle until changes are detected.
 
     ```json
-    kubectl get inputmanifests.claudie.io cloud-bursting -o jsonpath={.status} | jq .
       {
         "clusters": {
           "my-super-cluster": {
-            "phase": "NONE",
+            "phase": "None",
+            "previous": [
+              {
+                "stage": "ANSIBLER",
+                "status": "DONE",
+                "taskDescription": "creating cluster\n- Configuring cluster infrastructure\n  - Installing pre-requisites on all of the nodes of the cluster\n  - Installing Tee override for newly added nodes\n  - Setting up VPN across the nodes of the kuberentes and loadbalancer clusters\n  - Reconciling Envoy service across the loadbalancer nodes",
+                "timestamp": "2026-03-23T10:19:22Z"
+              },
+              {
+                "stage": "KUBE_ELEVEN",
+                "status": "DONE",
+                "taskDescription": "creating cluster\n- Reconciling kubernetes cluster\n  - Creating kubernetes cluster from the set up infrastructure",
+                "timestamp": "2026-03-23T10:23:01Z"
+              },
+              {
+                "stage": "KUBER",
+                "status": "DONE",
+                "taskDescription": "creating cluster\n- Configuring cluster\n  - Deploying kubelet csr-approver\n  - Patching nodes\n  - Deploying longhorn for storage\n  - Reconciling longhorn claudie storage classes\n  - Storing scrape config for loadbalancers",
+                "timestamp": "2026-03-23T10:23:18Z"
+              }
+            ],
             "state": "DONE"
           }
         },
-        "state": "DONE"
-      }    
-    ```
+        "state": "WATCHING_FOR_CHANGES"
+      }
 
+    ```
+    
 12. Claudie creates kubeconfig secret in claudie namespace:
 
     ```bash
@@ -284,7 +308,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
 
     To recover public IP of your dynamic k8s nodes to connect to via SSH:
     ```bash
-    kubectl get secrets -n claudie -l claudie.io/output=metadata -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r .dynamic_nodepools.node_ips
+    kubectl get secrets -n claudie -l claudie.io/output=metadata -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r .dynamic_nodepools
     ```
 
     In case you want to connect to your dynamic load balancer nodes via SSH, you can recover private SSH key:
@@ -296,7 +320,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     To recover public IP addresses of your dynamic load balancer nodes to connect to via SSH:
 
     ```bash
-    kubectl get secrets -n claudie -l claudie.io/output=metadata -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r '.dynamic_load_balancer_nodepools[] | .node_ips'
+    kubectl get secrets -n claudie -l claudie.io/output=metadata -ojsonpath='{.items[0].data.metadata}' | base64 -d | jq -r '.dynamic_load_balancer_nodepools[]'
     ```
 
     Each secret created by Claudie has following labels:
@@ -336,14 +360,13 @@ This detailed guide for Claudie serves as a resource for providing an overview o
         app.kubernetes.io/part-of: claudie
     spec:
       providers:
-        - name: hetzner-1         # add under nodePools.dynamic section
+        - name: hetzner-1         # newly added provider for cloud bursting.
           providerType: hetzner
           secretRef:
             name: hetzner-secret-1
             namespace: <your-namespace>        
       nodePools:
         dynamic:
-        ...
           - name: hetzner-worker  # add under nodePools.dynamic section
             providerSpec:
                 name: hetzner-1   # use your new hetzner provider hetzner-1 to create these nodes
@@ -357,7 +380,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
         kubernetes:
           clusters:
           - name: my-super-cluster
-            version: v1.31.0
+            version: v1.34.0
             network: 192.168.2.0/24
             pools:
                 control:
@@ -371,7 +394,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
 15. Update the crd with the new InputManifest to incorporate the desired changes.
 
     !!! danger "Deleting existing secrets!"
-        **Deleting or replacing existing input manifest secrets triggers cluster deletion!** To add new components to your existing clusters, generate a new secret value and apply it using the following command.
+        **Deleting or replacing existing input manifest secrets triggers cluster deletion!** To make changes to your existing clusters, generate a new secret value and re-apply it using the following command.
 
     ```bash
     kubectl apply -f ./inputmanifest-bursting.yaml
@@ -417,7 +440,8 @@ This detailed guide for Claudie serves as a resource for providing an overview o
             pools:
                 - aws-lb
     ```
-    !!! note Load balancing
+
+    !!! note "Load balancing"
         Please refer how our load balancing works by reading our [documentation](https://docs.claudie.io/latest/loadbalancing/loadbalancing-solution/).
 
 17. Update the InputManifest again with the new configuration.
@@ -469,8 +493,6 @@ All of the customisable settings can be found in `claudie/.env` file.
 | Variable               | Default       | Type   | Description                                                  |
 |------------------------|---------------| ------ |--------------------------------------------------------------|
 | `GOLANG_LOG`           | `info`        | string | Log level for all services. Can be either `info` or `debug`. |
-| `HTTP_PROXY_MODE`      | `default`     | string | `default`, `on` or `off`. `default` utilizes HTTP proxy only when there's at least one node in the K8s cluster from the Hetzner cloud provider. `on` uses HTTP proxy even when the K8s cluster doesn't have any nodes from the Hetzner. `off` turns off the usage of HTTP proxy. If the value isn't set or differs from `on` or `off` it always works with the `default`. |
-| `HTTP_PROXY_URL`       | `http://proxy.claudie.io:8880` | string | HTTP proxy URL used in kubeone [proxy configuration](https://docs.kubermatic.com/kubeone/latest/guides/proxy/) to build the K8s cluster. |
 | `DATABASE_HOSTNAME`    | `mongodb`     | string | Database hostname used for Claudie configs.                  |
 | `MANAGER_HOSTNAME`     | `manager`     | string | Manager service hostname.                                    |
 | `TERRAFORMER_HOSTNAME` | `terraformer` | string | Terraformer service hostname.                                |

@@ -108,19 +108,23 @@ We will now back up the state of the respective input manifests from MongoDB and
 ```bash
 kubectl get pods -n claudie
 
-NAME                                READY   STATUS      RESTARTS      AGE
-ansibler-6f4557cf74-b4dts           1/1     Running     0             18m
-claudie-operator-6d9ddc7f8b-hv84c   1/1     Running     0             18m
-manager-5d75bfffc6-d9qfm            1/1     Running     0             18m
-kube-eleven-556cfdfd98-jq6hl        1/1     Running     0             18m
-kuber-7f8cd4cd89-6ds2w              1/1     Running     0             18m
-make-bucket-job-9mjft               0/1     Completed   0             18m
-minio-0                             1/1     Running     0             18m
-minio-1                             1/1     Running     0             18m
-minio-2                             1/1     Running     0             18m
-minio-3                             1/1     Running     0             18m
-mongodb-6ccb5f5dff-ptdw2            1/1     Running     0             18m
-terraformer-66c6f67d98-pwr9t        1/1     Running     0             18m
+NAME                                READY   STATUS              RESTARTS       AGE
+ansibler-6bf78cccf4-pnxrk           1/1     Running             0              3m20s
+claudie-operator-64c9554c66-rvtr5   1/1     Running             0              3m19s
+kube-eleven-7bd47945c5-kbpd6        1/1     Running             0              3m19s
+kuber-64554ffffc-fkdj6              1/1     Running             0              3m19s
+make-bucket-job-4mxw7               0/1     Completed           0              3m19s
+manager-7696cb7f9-jfbwq             1/1     Running             0              3m19s
+minio-0                             1/1     Running             0              3m19s
+minio-1                             1/1     Running             0              3m19s
+minio-2                             1/1     Running             0              3m19s
+minio-3                             1/1     Running             0              3m19s
+mongodb-85487bf568-qjw2k            1/1     Running             0              3m19s
+nack-644748c7b7-p6z62               1/1     Running             0              3m19s
+nats-0                              2/2     Running             0              3m19s
+nats-1                              2/2     Running             0              3m19s
+nats-2                              2/2     Running             0              3m19s
+terraformer-5868fb7695-w49sw        1/1     Running             0              3m19s
 ```
 
 To backup state from MongoDB execute the following command
