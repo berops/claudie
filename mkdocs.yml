@@ -87,7 +87,7 @@ nav:
       - Sitemap: sitemap/sitemap.md
   - Guides:
       - Quick start: getting-started/get-started-using-claudie.md
-      - Detailed start: getting-started/detailed-guide.md
+      - Detailed guide: getting-started/detailed-guide.md
       - Use cases: use-cases/use-cases.md
       - Updating Claudie: update/update.md
       - Creating backups: creating-claudie-backup/creating-claudie-backup.md
