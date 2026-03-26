@@ -17,7 +17,7 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 )
 
 // Inside the K8s cluster, in the kube-public namespace there is a configmap named 'cluster-info'
