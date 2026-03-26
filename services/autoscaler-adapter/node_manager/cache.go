@@ -30,6 +30,7 @@ import (
 	"github.com/oracle/oci-go-sdk/v65/common"
 	"github.com/oracle/oci-go-sdk/v65/core"
 	"github.com/rs/zerolog/log"
+	"golang.org/x/oauth2/google"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 )
@@ -96,8 +97,16 @@ func (nm *NodeManager) cacheAws(np *spec.DynamicNodePool) error {
 
 // cacheGcp function uses google go module to query supported VMs and their info. If the query is successful, the VM info is saved in cache.
 func (nm *NodeManager) cacheGcp(np *spec.DynamicNodePool) error {
-	// Create client and create cache
-	computeService, err := compute.NewMachineTypesRESTClient(context.Background(), option.WithCredentialsJSON([]byte(np.Provider.GetGcp().Key)))
+	creds, err := google.CredentialsFromJSON(
+		context.Background(),
+		[]byte(np.Provider.GetGcp().Key),
+		compute.DefaultAuthScopes()...,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to parse GCP credentials: %w", err)
+	}
+
+	computeService, err := compute.NewMachineTypesRESTClient(context.Background(), option.WithCredentials(creds))
 	if err != nil {
 		return fmt.Errorf("GCP client got error : %w", err)
 	}

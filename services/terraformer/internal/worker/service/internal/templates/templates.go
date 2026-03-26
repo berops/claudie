@@ -142,6 +142,25 @@ func (r *Repository) Download(repository *spec.TemplateRepository) error {
 		return fmt.Errorf("failed to checkout for %q, repository %q: %w: %s", repository.CommitHash, repository.Repository, err, logs.String())
 	}
 
+	// Worktree is not supported by go-git.
+	// thus check if worktree is set.
+	//nolint
+	getWorktreeExtension := exec.Command("git", "config", "--local", "--get", "extensions.worktreeconfig")
+	getWorktreeExtension.Dir = gitDirectory
+
+	if err := getWorktreeExtension.Run(); err == nil {
+		logs.Reset()
+		//nolint
+		unsetWorktree := exec.Command("git", "config", "--local", "--unset", "extensions.worktreeconfig")
+		unsetWorktree.Dir = gitDirectory
+		unsetWorktree.Stdout = logs
+		unsetWorktree.Stderr = logs
+
+		if err := unsetWorktree.Run(); err != nil {
+			return fmt.Errorf("failed to unset worktree extension %q: %w: %s", repository.Repository, err, logs.String())
+		}
+	}
+
 	return nil
 }
 
