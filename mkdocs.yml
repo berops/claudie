@@ -85,10 +85,19 @@ nav:
   - Home:
       - index.md
       - Sitemap: sitemap/sitemap.md
-  - Getting Started:
-      - getting-started/get-started-using-claudie.md
+  - Guides:
+      - Quick start: getting-started/get-started-using-claudie.md
       - Detailed guide: getting-started/detailed-guide.md
-  - Configuration:
+      - Use cases: use-cases/use-cases.md
+      - Updating Claudie: update/update.md
+      - Creating backups: creating-claudie-backup/creating-claudie-backup.md
+      - GPUs example: input-manifest/gpu-example.md
+      - Hardening: hardening/hardening.md
+      - Monitoring: monitoring/grafana.md
+      - HTTP proxy: http-proxy/http-proxy.md
+      - Example InputManifest: input-manifest/example.md
+      - Troubleshooting: troubleshooting/troubleshooting.md
+  - Reference:
       - Providers:
           - AWS: input-manifest/providers/aws.md
           - Azure: input-manifest/providers/azure.md
@@ -100,29 +109,19 @@ nav:
           - OCI: input-manifest/providers/oci.md
           - Openstack: input-manifest/providers/openstack.md
           - On Premise: input-manifest/providers/on-prem.md
-      - Example yaml file: input-manifest/example.md
-      - GPUs example: input-manifest/gpu-example.md
-      - External Templates: input-manifest/external-templates.md
+      - External templates: input-manifest/external-templates.md
       - API reference: input-manifest/api-reference.md
       - Custom namespace: input-manifest/claudie-custom-ns.md
-      - Environment Variables: environment-settings/environment.md
+      - Environment variables: environment-settings/environment.md
   - Architecture:
-      - Claudie Workflow: claudie-workflow/claudie-workflow.md
+      - Claudie workflow: claudie-workflow/claudie-workflow.md
       - Storage: storage/storage-solution.md
       - Loadbalancing: loadbalancing/loadbalancing-solution.md
       - Autoscaling: autoscaling/autoscaling.md
-  - Guides:
-      - Use Cases: use-cases/use-cases.md
-      - Updating Claudie: update/update.md
-      - Creating Backups: creating-claudie-backup/creating-claudie-backup.md
-      - Hardening: hardening/hardening.md
-      - Monitoring: monitoring/grafana.md
-      - HTTP Proxy: http-proxy/http-proxy.md
-      - Command Cheat Sheet: commands/commands.md
-  - Reference:
+  - Project:
       - FAQ: faq/FAQ.md
-      - Troubleshooting: troubleshooting/troubleshooting.md
-      - Version Matrix: version-matrix/version-matrix.md
+      - Version matrix: version-matrix/version-matrix.md
+      - Command cheat sheet: commands/commands.md
       - Latency limitations: latency-limitations/latency-limitations.md
       - Roadmap: roadmap/roadmap.md
       - Contributing: contributing/contributing.md
