@@ -48,4 +48,4 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 ## v0.11.1
 
 ## What's Changed
-- General maintanance update by updating dependencies. [#2020](https://github.com/berops/claudie/pull/2020)
+- General maintenance update by updating dependencies. [`#2020`](https://github.com/berops/claudie/pull/2020)
