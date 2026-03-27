@@ -57,6 +57,16 @@ func (r *Repository) Download(repository *spec.TemplateRepository) error {
 	gitDirectory := filepath.Join(cloneDirectory, repository.CommitHash)
 
 	if fileutils.DirectoryExists(gitDirectory) {
+		getWorktreeExtension := exec.Command("git", "config", "--local", "--get", "extensions.worktreeconfig")
+		getWorktreeExtension.Dir = gitDirectory
+		if err := getWorktreeExtension.Run(); err == nil {
+			unsetWorktree := exec.Command("git", "config", "--local", "--unset", "extensions.worktreeconfig")
+			unsetWorktree.Dir = gitDirectory
+			if err := unsetWorktree.Run(); err != nil {
+				return fmt.Errorf("failed to unset worktree extension %q: %w", repository.Repository, err)
+			}
+		}
+
 		existingMirror, err := git.PlainOpen(gitDirectory)
 		if err != nil {
 			return fmt.Errorf("%q is not a valid local git repository: %w", gitDirectory, err)
