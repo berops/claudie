@@ -21,6 +21,7 @@ import (
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"github.com/rs/zerolog/log"
+	"golang.org/x/oauth2/google"
 	"google.golang.org/api/option"
 )
 
@@ -158,7 +159,16 @@ func resolveOci(np *spec.DynamicNodePool) (Arch, error) {
 }
 
 func resolveGcp(np *spec.DynamicNodePool) (Arch, error) {
-	imgClient, err := compute.NewImagesRESTClient(context.Background(), option.WithCredentialsJSON([]byte(np.Provider.GetGcp().Key)))
+	creds, err := google.CredentialsFromJSON(
+		context.Background(),
+		[]byte(np.Provider.GetGcp().Key),
+		compute.DefaultAuthScopes()...,
+	)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse GCP credentials: %w", err)
+	}
+
+	imgClient, err := compute.NewImagesRESTClient(context.Background(), option.WithCredentials(creds))
 	if err != nil {
 		return "", fmt.Errorf("failed to create GCP client error : %w", err)
 	}
