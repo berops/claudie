@@ -57,9 +57,11 @@ func (r *Repository) Download(repository *spec.TemplateRepository) error {
 	gitDirectory := filepath.Join(cloneDirectory, repository.CommitHash)
 
 	if fileutils.DirectoryExists(gitDirectory) {
+		//nolint
 		getWorktreeExtension := exec.Command("git", "config", "--local", "--get", "extensions.worktreeconfig")
 		getWorktreeExtension.Dir = gitDirectory
 		if err := getWorktreeExtension.Run(); err == nil {
+			//nolint
 			unsetWorktree := exec.Command("git", "config", "--local", "--unset", "extensions.worktreeconfig")
 			unsetWorktree.Dir = gitDirectory
 			if err := unsetWorktree.Run(); err != nil {
