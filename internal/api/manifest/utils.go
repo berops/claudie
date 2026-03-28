@@ -6,6 +6,7 @@ import (
 	"math"
 	"slices"
 
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -378,6 +379,7 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.Nod
 						Provider:            provider,
 						AutoscalerConfig:    autoscalerConf,
 						MachineSpec:         machineSpec,
+						SshPort:             nodepools.ClaudieSSHPort,
 					},
 				},
 			})

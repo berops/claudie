@@ -16,6 +16,31 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+const (
+	// DefaultSSHPort is the standard SSH port used by existing/legacy nodepools.
+	DefaultSSHPort = int32(22)
+	// ClaudieSSHPort is the SSH port used by newly created Claudie-managed VMs.
+	ClaudieSSHPort = int32(22522)
+)
+
+// SSHPort returns the effective SSH port for a nodepool and normalizes the
+// stored value in-place, replacing 0 with DefaultSSHPort.
+func SSHPort(np *spec.NodePool) int32 {
+	switch t := np.Type.(type) {
+	case *spec.NodePool_DynamicNodePool:
+		if t.DynamicNodePool.SshPort == 0 {
+			t.DynamicNodePool.SshPort = DefaultSSHPort
+		}
+		return t.DynamicNodePool.SshPort
+	case *spec.NodePool_StaticNodePool:
+		if t.StaticNodePool.SshPort == 0 {
+			t.StaticNodePool.SshPort = DefaultSSHPort
+		}
+		return t.StaticNodePool.SshPort
+	}
+	return DefaultSSHPort
+}
+
 type RegionNetwork struct {
 	Region          string
 	ExternalNetwork string
@@ -403,6 +428,7 @@ func Dynamic(nodepools []*spec.NodePool) []*spec.NodePool {
 	dynamic := make([]*spec.NodePool, 0, len(nodepools))
 	for _, n := range nodepools {
 		if n.GetDynamicNodePool() != nil {
+			SSHPort(n)
 			dynamic = append(dynamic, n)
 		}
 	}
@@ -414,6 +440,7 @@ func Static(nodepools []*spec.NodePool) []*spec.NodePool {
 	static := make([]*spec.NodePool, 0, len(nodepools))
 	for _, n := range nodepools {
 		if n.GetStaticNodePool() != nil {
+			SSHPort(n)
 			static = append(static, n)
 		}
 	}
@@ -497,35 +524,37 @@ func RandomDynamicNode(nodepools iter.Seq[*spec.NodePool]) *spec.Node {
 	return nodes[idx]
 }
 
-// Returns a random node public Endpoint and a SSH key to connect to it. Nil if there is none.
-func RandomNodePublicEndpoint(nps []*spec.NodePool) (string, string, string) {
+// Returns a random node public Endpoint, SSH key, and SSH port to connect to it. Empty strings if there is none.
+func RandomNodePublicEndpoint(nps []*spec.NodePool) (username, endpoint, key, sshPort string) {
 	if len(nps) == 0 {
-		return "", "", ""
+		return "", "", "", ""
 	}
 
 	idx := rand.IntN(len(nps))
 	np := nps[idx]
 
 	if len(np.Nodes) == 0 {
-		return "", "", ""
+		return "", "", "", ""
 	}
 
 	idx = rand.IntN(len(np.Nodes))
 	node := np.Nodes[idx]
 
-	endpoint := node.Public
-	username := "root"
+	endpoint = node.Public
+	username = "root"
 	if node.Username != "" && node.Username != username {
 		username = node.Username
 	}
 
-	switch np := np.Type.(type) {
+	port := fmt.Sprint(SSHPort(np))
+
+	switch t := np.Type.(type) {
 	case *spec.NodePool_DynamicNodePool:
-		return username, endpoint, np.DynamicNodePool.PrivateKey
+		return username, endpoint, t.DynamicNodePool.PrivateKey, port
 	case *spec.NodePool_StaticNodePool:
-		return username, endpoint, np.StaticNodePool.NodeKeys[node.Public]
+		return username, endpoint, t.StaticNodePool.NodeKeys[node.Public], port
 	default:
-		return "", "", ""
+		return "", "", "", ""
 	}
 }
 

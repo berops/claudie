@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/fileutils"
@@ -127,15 +128,26 @@ func (c ClusterBuilder) ReconcileNodePools() error {
 		}
 		for _, n := range nodepool.Nodes {
 			var found bool
-			for target, ip := range generics.IterateMapInOrder(out.IPs) {
+			for target, val := range generics.IterateMapInOrder(out.IPs) {
 				if target != n.Name {
 					continue
+				}
+				ip, port, err := parseNodeOutput(val)
+				if err != nil {
+					return fmt.Errorf("node %q from nodepool %q: %w", n.Name, nodepool.Name, err)
 				}
 				if ip == "" {
 					return fmt.Errorf("node %q from nodepool %q has no public address assigned", n.Name, nodepool.Name)
 				}
 				found = true
-				n.Public = fmt.Sprint(ip)
+				n.Public = ip
+				if port > 0 {
+					d.SshPort = port
+				} else {
+					// Old template returned just IP without port info.
+					// VM is using default SSH port 22.
+					d.SshPort = nodepools.DefaultSSHPort
+				}
 				break
 			}
 			if !found {
@@ -238,11 +250,14 @@ func (c *ClusterBuilder) generateFiles(clusterDir string) error {
 
 			for _, np := range pools {
 				if dnp := np.GetDynamicNodePool(); dnp != nil {
+					port := nodepools.SSHPort(np)
+					dnp.SshPort = port
 					nps = append(nps, templates.NodePoolInfo{
 						Name:      np.Name,
 						Nodes:     np.Nodes,
-						Details:   np.GetDynamicNodePool(),
+						Details:   dnp,
 						IsControl: np.IsControl,
+						SshPort:   port,
 					})
 
 					if err := fileutils.CreateKey(dnp.GetPublicKey(), clusterDir, np.GetName()); err != nil {
@@ -270,6 +285,7 @@ func (c *ClusterBuilder) generateFiles(clusterDir string) error {
 				Provider:      p,
 				Regions:       nodepools.ExtractRegions(nodepools.ExtractDynamic(pools)),
 				RegionNetwork: nodepools.ExtractRegionNetwork(nodepools.ExtractDynamic(pools)),
+				SshPorts:      sshPorts(pools),
 				K8sData: templates.K8sData{
 					HasAPIServer: c.K8sInfo.ExportPort6443,
 				},
@@ -287,6 +303,45 @@ func (c *ClusterBuilder) generateFiles(clusterDir string) error {
 	}
 
 	return nil
+}
+
+// sshPorts collects unique SSH ports from the given nodepools.
+func sshPorts(pools []*spec.NodePool) []int32 {
+	var ports []int32
+	for _, np := range pools {
+		port := nodepools.SSHPort(np)
+		if !slices.Contains(ports, port) {
+			ports = append(ports, port)
+		}
+	}
+	return ports
+}
+
+// parseNodeOutput extracts the IP and optional SSH port from a terraform output value.
+// Old templates output a string (just IP), new templates output [IP, port].
+func parseNodeOutput(val any) (ip string, port int32, err error) {
+	switch v := val.(type) {
+	case string:
+		return v, 0, nil
+	case []any:
+		if len(v) == 0 {
+			return "", 0, fmt.Errorf("empty output array")
+		}
+		ipStr := fmt.Sprint(v[0])
+		if len(v) >= 2 {
+			portStr := fmt.Sprint(v[1])
+			var p int
+			if _, err := fmt.Sscanf(portStr, "%d", &p); err == nil && p > 0 {
+				return ipStr, int32(p), nil
+			}
+		}
+		return ipStr, 0, nil
+	default:
+		if val == nil {
+			return "", 0, fmt.Errorf("nil output value")
+		}
+		return fmt.Sprint(val), 0, nil
+	}
 }
 
 // readIPs reads json output format from tofu and unmarshal it into map[string]map[string]string readable by Go.
