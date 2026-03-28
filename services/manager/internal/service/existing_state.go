@@ -394,6 +394,7 @@ func transferDynamicNodePool(current, desired *spec.NodePool) {
 	dnp.PublicKey = cnp.PublicKey
 	dnp.PrivateKey = cnp.PrivateKey
 	dnp.Cidr = cnp.Cidr
+	dnp.SshPort = cnp.SshPort
 
 	// Provider of a dynamic nodepool is also considered to be
 	// immutable. The only part that is allowed to be changed
