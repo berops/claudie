@@ -18,9 +18,6 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-// Port on which the ssh connection is established when healthchecking
-// individual nodes.
-const sshPort = "22"
 
 // UnreachableNodesMap holds the nodepools and all of the nodes within
 // that nodepool that are unreachable via a Ping on the IPv4 public endpoint.
@@ -161,7 +158,7 @@ func healthCheckVPN(state *spec.Clusters) (bool, error) {
 		nps = append(nps, lb.ClusterInfo.NodePools...)
 	}
 
-	username, public, key := nodepools.RandomNodePublicEndpoint(nps)
+	username, public, key, sshPort := nodepools.RandomNodePublicEndpoint(nps)
 	if key == "" {
 		// If there is no key, than there is no node. assume all is okay.
 		return true, nil
