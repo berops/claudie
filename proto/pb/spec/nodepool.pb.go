@@ -504,8 +504,10 @@ type DynamicNodePool struct {
 	Cidr string `protobuf:"bytes,14,opt,name=cidr,proto3" json:"cidr,omitempty"`
 	// Network Name with public IPs (required for Openstack)
 	ExternalNetworkName string `protobuf:"bytes,15,opt,name=externalNetworkName,proto3" json:"externalNetworkName,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	// SSH port for the nodes in this node pool. Default 0 means port 22.
+	SshPort       int32 `protobuf:"varint,16,opt,name=sshPort,proto3" json:"sshPort,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *DynamicNodePool) Reset() {
@@ -627,6 +629,13 @@ func (x *DynamicNodePool) GetExternalNetworkName() string {
 		return x.ExternalNetworkName
 	}
 	return ""
+}
+
+func (x *DynamicNodePool) GetSshPort() int32 {
+	if x != nil {
+		return x.SshPort
+	}
+	return 0
 }
 
 // MachineSpec further specifies the requested server type.
@@ -772,7 +781,9 @@ func (x *AutoscalerConf) GetTargetSize() int32 {
 type StaticNodePool struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Map of keys for each static node in [<Node Endpoint>]<Key> form.
-	NodeKeys      map[string]string `protobuf:"bytes,1,rep,name=nodeKeys,proto3" json:"nodeKeys,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	NodeKeys map[string]string `protobuf:"bytes,1,rep,name=nodeKeys,proto3" json:"nodeKeys,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// SSH port for the nodes in this node pool. Default 0 means port 22.
+	SshPort       int32 `protobuf:"varint,2,opt,name=sshPort,proto3" json:"sshPort,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -814,6 +825,13 @@ func (x *StaticNodePool) GetNodeKeys() map[string]string {
 	return nil
 }
 
+func (x *StaticNodePool) GetSshPort() int32 {
+	if x != nil {
+		return x.SshPort
+	}
+	return 0
+}
+
 var File_spec_nodepool_proto protoreflect.FileDescriptor
 
 const file_spec_nodepool_proto_rawDesc = "" +
@@ -846,7 +864,7 @@ const file_spec_nodepool_proto_rawDesc = "" +
 	"\x06public\x18\x03 \x01(\tR\x06public\x12*\n" +
 	"\bnodeType\x18\x04 \x01(\x0e2\x0e.spec.NodeTypeR\bnodeType\x12\x1a\n" +
 	"\busername\x18\x05 \x01(\tR\busername\x12(\n" +
-	"\x06status\x18\x06 \x01(\x0e2\x10.spec.NodeStatusR\x06status\"\xda\x03\n" +
+	"\x06status\x18\x06 \x01(\x0e2\x10.spec.NodeStatusR\x06status\"\xf4\x03\n" +
 	"\x0fDynamicNodePool\x12\x1e\n" +
 	"\n" +
 	"serverType\x18\x01 \x01(\tR\n" +
@@ -865,7 +883,8 @@ const file_spec_nodepool_proto_rawDesc = "" +
 	"privateKey\x18\f \x01(\tR\n" +
 	"privateKey\x12\x12\n" +
 	"\x04cidr\x18\x0e \x01(\tR\x04cidr\x120\n" +
-	"\x13externalNetworkName\x18\x0f \x01(\tR\x13externalNetworkName\"\x8f\x01\n" +
+	"\x13externalNetworkName\x18\x0f \x01(\tR\x13externalNetworkName\x12\x18\n" +
+	"\asshPort\x18\x10 \x01(\x05R\asshPort\"\x8f\x01\n" +
 	"\vMachineSpec\x12\x1a\n" +
 	"\bcpuCount\x18\x01 \x01(\x05R\bcpuCount\x12\x16\n" +
 	"\x06memory\x18\x02 \x01(\x05R\x06memory\x12&\n" +
@@ -876,9 +895,10 @@ const file_spec_nodepool_proto_rawDesc = "" +
 	"\x03max\x18\x02 \x01(\x05R\x03max\x12\x1e\n" +
 	"\n" +
 	"targetSize\x18\x03 \x01(\x05R\n" +
-	"targetSize\"\x8d\x01\n" +
+	"targetSize\"\xa7\x01\n" +
 	"\x0eStaticNodePool\x12>\n" +
-	"\bnodeKeys\x18\x01 \x03(\v2\".spec.StaticNodePool.NodeKeysEntryR\bnodeKeys\x1a;\n" +
+	"\bnodeKeys\x18\x01 \x03(\v2\".spec.StaticNodePool.NodeKeysEntryR\bnodeKeys\x12\x18\n" +
+	"\asshPort\x18\x02 \x01(\x05R\asshPort\x1a;\n" +
 	"\rNodeKeysEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*3\n" +

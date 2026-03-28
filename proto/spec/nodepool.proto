@@ -108,6 +108,8 @@ message DynamicNodePool {
   string cidr = 14;
   // Network Name with public IPs (required for Openstack)
   string externalNetworkName = 15;
+  // SSH port for the nodes in this node pool. Default 0 means port 22.
+  int32 sshPort = 16;
 }
 
 // MachineSpec further specifies the requested server type.
@@ -139,6 +141,8 @@ message AutoscalerConf {
 message StaticNodePool {
   // Map of keys for each static node in [<Node Endpoint>]<Key> form.
   map<string, string> nodeKeys = 1;
+  // SSH port for the nodes in this node pool. Default 0 means port 22.
+  int32 sshPort = 2;
 }
 
 // Enum used to replace data not present in static nodepools.
