@@ -46,6 +46,9 @@ type (
 		// IsControl Specifies whether the nodepools is used as a control or compute nodepool within the cluster.
 		// In the context of LB cluster, nodepools can only be compute or "worker" nodepools.
 		IsControl bool
+		// SshPort is the SSH port used to connect to nodes in this nodepool.
+		// Old nodepools use 22, new nodepools use 22522.
+		SshPort int32
 	}
 )
 
@@ -165,6 +168,9 @@ type (
 		//   {Region: "regionTwo", externalNetworkName: "ext-net-1"},
 		// ].
 		RegionNetwork []nodepools.RegionNetwork
+		// SshPorts holds the unique SSH ports used by the nodepools in this provider.
+		// Used to dynamically open firewall rules for the correct ports.
+		SshPorts []int32
 		// K8sData contains some additional information that may be needed during the generation of the
 		// terraform templates. Such as if A load balancer is attached to the K8s cluster with the ApiServer port.
 		// This data will be set if the ClusterType within ClusterData of this object is of type "K8s".
