@@ -402,6 +402,7 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.Nod
 				Type: &spec.NodePool_StaticNodePool{
 					StaticNodePool: &spec.StaticNodePool{
 						NodeKeys: keys,
+						SshPort:  nodePool.SshPort,
 					},
 				},
 			})
