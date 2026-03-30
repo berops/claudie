@@ -44,3 +44,8 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 - When a node is scheduled for deletion, its drain is now limited to a ~30 minute timeout, after which the node will be deleted  [#2011](https://github.com/berops/claudie/pull/2011)
 
 - For node deletion disk scheduling on the longhorn level will now be applied before the node is deleted [#2012](https://github.com/berops/claudie/pull/2012)
+
+## v0.11.1
+
+## What's Changed
+- General maintenance update by updating dependencies. [`#2020`](https://github.com/berops/claudie/pull/2020)
