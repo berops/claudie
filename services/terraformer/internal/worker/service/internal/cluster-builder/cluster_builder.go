@@ -249,14 +249,11 @@ func (c *ClusterBuilder) generateFiles(clusterDir string) error {
 
 			for _, np := range pools {
 				if dnp := np.GetDynamicNodePool(); dnp != nil {
-					port := nodepools.SSHPort(np)
-					dnp.SshPort = port
 					nps = append(nps, templates.NodePoolInfo{
 						Name:      np.Name,
 						Nodes:     np.Nodes,
 						Details:   dnp,
 						IsControl: np.IsControl,
-						SshPort:   port,
 					})
 
 					if err := fileutils.CreateKey(dnp.GetPublicKey(), clusterDir, np.GetName()); err != nil {

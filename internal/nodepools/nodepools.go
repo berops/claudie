@@ -426,7 +426,6 @@ func Dynamic(nodepools []*spec.NodePool) []*spec.NodePool {
 	dynamic := make([]*spec.NodePool, 0, len(nodepools))
 	for _, n := range nodepools {
 		if n.GetDynamicNodePool() != nil {
-			SSHPort(n)
 			dynamic = append(dynamic, n)
 		}
 	}
@@ -438,7 +437,6 @@ func Static(nodepools []*spec.NodePool) []*spec.NodePool {
 	static := make([]*spec.NodePool, 0, len(nodepools))
 	for _, n := range nodepools {
 		if n.GetStaticNodePool() != nil {
-			SSHPort(n)
 			static = append(static, n)
 		}
 	}
