@@ -2,13 +2,13 @@
 {{- range $lbNodepool := $.LBnodepools.Dynamic }}
     {{- range $lbNode :=  $lbNodepool.Nodes }}
 {{/*key.pem is taken from a directory where ansible-playbook is called, thus it does not need to specify path relative to inventory.ini*/}}
-{{ trimPrefix (printf "%s-%s-" $.Name $.Hash) $lbNode.Name }} ansible_user=root ansible_host={{ $lbNode.Public }} ansible_port={{ $lbNodepool.GetDynamicNodePool.SshPort }} private_ip={{ $lbNode.Private }} ansible_ssh_private_key_file={{ $lbNodepool.Name }}.pem ansible_ssh_extra_args="-o IdentitiesOnly=yes"
+{{ trimPrefix (printf "%s-%s-" $.Name $.Hash) $lbNode.Name }} ansible_user=root ansible_host={{ $lbNode.Public }} ansible_port={{ sshPort $lbNodepool }} private_ip={{ $lbNode.Private }} ansible_ssh_private_key_file={{ $lbNodepool.Name }}.pem ansible_ssh_extra_args="-o IdentitiesOnly=yes"
     {{- end }}
 {{- end }}
 
 {{- range $lbNodepool := $.LBnodepools.Static }}
     {{- range $lbNode :=  $lbNodepool.Nodes }}
 {{/*key.pem is taken from a directory where ansible-playbook is called, thus it does not need to specify path relative to inventory.ini*/}}
-{{ $lbNode.Name }} ansible_user={{ $lbNode.Username }} ansible_host={{ $lbNode.Public }} ansible_port={{ $lbNodepool.GetStaticNodePool.SshPort }} private_ip={{ $lbNode.Private }} ansible_ssh_private_key_file={{ $lbNode.Name }}.pem ansible_ssh_extra_args="-o IdentitiesOnly=yes"
+{{ $lbNode.Name }} ansible_user={{ $lbNode.Username }} ansible_host={{ $lbNode.Public }} ansible_port={{ sshPort $lbNodepool }} private_ip={{ $lbNode.Private }} ansible_ssh_private_key_file={{ $lbNode.Name }}.pem ansible_ssh_extra_args="-o IdentitiesOnly=yes"
     {{- end }}
 {{- end }}

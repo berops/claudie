@@ -24,19 +24,10 @@ const (
 // SSHPort returns the effective SSH port for a nodepool and normalizes the
 // stored value in-place, replacing 0 with DefaultSSHPort.
 func SSHPort(np *spec.NodePool) int32 {
-	switch t := np.Type.(type) {
-	case *spec.NodePool_DynamicNodePool:
-		if t.DynamicNodePool.SshPort == 0 {
-			t.DynamicNodePool.SshPort = DefaultSSHPort
-		}
-		return t.DynamicNodePool.SshPort
-	case *spec.NodePool_StaticNodePool:
-		if t.StaticNodePool.SshPort == 0 {
-			t.StaticNodePool.SshPort = DefaultSSHPort
-		}
-		return t.StaticNodePool.SshPort
+	if np.SshPort == 0 {
+		np.SshPort = DefaultSSHPort
 	}
-	return DefaultSSHPort
+	return np.SshPort
 }
 
 type RegionNetwork struct {

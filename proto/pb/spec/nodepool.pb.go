@@ -203,7 +203,9 @@ type NodePool struct {
 	// User defined taints.
 	Taints []*Taint `protobuf:"bytes,7,rep,name=taints,proto3" json:"taints,omitempty"`
 	// User definded annotations.
-	Annotations   map[string]string `protobuf:"bytes,8,rep,name=annotations,proto3" json:"annotations,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Annotations map[string]string `protobuf:"bytes,8,rep,name=annotations,proto3" json:"annotations,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// SSH port for the nodes in this node pool. Default 0 means port 22.
+	SshPort       int32 `protobuf:"varint,9,opt,name=sshPort,proto3" json:"sshPort,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -303,6 +305,13 @@ func (x *NodePool) GetAnnotations() map[string]string {
 		return x.Annotations
 	}
 	return nil
+}
+
+func (x *NodePool) GetSshPort() int32 {
+	if x != nil {
+		return x.SshPort
+	}
+	return 0
 }
 
 type isNodePool_Type interface {
@@ -504,10 +513,8 @@ type DynamicNodePool struct {
 	Cidr string `protobuf:"bytes,14,opt,name=cidr,proto3" json:"cidr,omitempty"`
 	// Network Name with public IPs (required for Openstack)
 	ExternalNetworkName string `protobuf:"bytes,15,opt,name=externalNetworkName,proto3" json:"externalNetworkName,omitempty"`
-	// SSH port for the nodes in this node pool. Default 0 means port 22.
-	SshPort       int32 `protobuf:"varint,16,opt,name=sshPort,proto3" json:"sshPort,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *DynamicNodePool) Reset() {
@@ -629,13 +636,6 @@ func (x *DynamicNodePool) GetExternalNetworkName() string {
 		return x.ExternalNetworkName
 	}
 	return ""
-}
-
-func (x *DynamicNodePool) GetSshPort() int32 {
-	if x != nil {
-		return x.SshPort
-	}
-	return 0
 }
 
 // MachineSpec further specifies the requested server type.
@@ -781,9 +781,7 @@ func (x *AutoscalerConf) GetTargetSize() int32 {
 type StaticNodePool struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Map of keys for each static node in [<Node Endpoint>]<Key> form.
-	NodeKeys map[string]string `protobuf:"bytes,1,rep,name=nodeKeys,proto3" json:"nodeKeys,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	// SSH port for the nodes in this node pool. Default 0 means port 22.
-	SshPort       int32 `protobuf:"varint,2,opt,name=sshPort,proto3" json:"sshPort,omitempty"`
+	NodeKeys      map[string]string `protobuf:"bytes,1,rep,name=nodeKeys,proto3" json:"nodeKeys,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -825,18 +823,11 @@ func (x *StaticNodePool) GetNodeKeys() map[string]string {
 	return nil
 }
 
-func (x *StaticNodePool) GetSshPort() int32 {
-	if x != nil {
-		return x.SshPort
-	}
-	return 0
-}
-
 var File_spec_nodepool_proto protoreflect.FileDescriptor
 
 const file_spec_nodepool_proto_rawDesc = "" +
 	"\n" +
-	"\x13spec/nodepool.proto\x12\x04spec\x1a\x13spec/provider.proto\"\x80\x04\n" +
+	"\x13spec/nodepool.proto\x12\x04spec\x1a\x13spec/provider.proto\"\x9a\x04\n" +
 	"\bNodePool\x12A\n" +
 	"\x0fdynamicNodePool\x18\x01 \x01(\v2\x15.spec.DynamicNodePoolH\x00R\x0fdynamicNodePool\x12>\n" +
 	"\x0estaticNodePool\x18\x02 \x01(\v2\x14.spec.StaticNodePoolH\x00R\x0estaticNodePool\x12\x12\n" +
@@ -846,7 +837,8 @@ const file_spec_nodepool_proto_rawDesc = "" +
 	"\tisControl\x18\x05 \x01(\bR\tisControl\x122\n" +
 	"\x06labels\x18\x06 \x03(\v2\x1a.spec.NodePool.LabelsEntryR\x06labels\x12#\n" +
 	"\x06taints\x18\a \x03(\v2\v.spec.TaintR\x06taints\x12A\n" +
-	"\vannotations\x18\b \x03(\v2\x1f.spec.NodePool.AnnotationsEntryR\vannotations\x1a9\n" +
+	"\vannotations\x18\b \x03(\v2\x1f.spec.NodePool.AnnotationsEntryR\vannotations\x12\x18\n" +
+	"\asshPort\x18\t \x01(\x05R\asshPort\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a>\n" +
@@ -864,7 +856,7 @@ const file_spec_nodepool_proto_rawDesc = "" +
 	"\x06public\x18\x03 \x01(\tR\x06public\x12*\n" +
 	"\bnodeType\x18\x04 \x01(\x0e2\x0e.spec.NodeTypeR\bnodeType\x12\x1a\n" +
 	"\busername\x18\x05 \x01(\tR\busername\x12(\n" +
-	"\x06status\x18\x06 \x01(\x0e2\x10.spec.NodeStatusR\x06status\"\xf4\x03\n" +
+	"\x06status\x18\x06 \x01(\x0e2\x10.spec.NodeStatusR\x06status\"\xda\x03\n" +
 	"\x0fDynamicNodePool\x12\x1e\n" +
 	"\n" +
 	"serverType\x18\x01 \x01(\tR\n" +
@@ -883,8 +875,7 @@ const file_spec_nodepool_proto_rawDesc = "" +
 	"privateKey\x18\f \x01(\tR\n" +
 	"privateKey\x12\x12\n" +
 	"\x04cidr\x18\x0e \x01(\tR\x04cidr\x120\n" +
-	"\x13externalNetworkName\x18\x0f \x01(\tR\x13externalNetworkName\x12\x18\n" +
-	"\asshPort\x18\x10 \x01(\x05R\asshPort\"\x8f\x01\n" +
+	"\x13externalNetworkName\x18\x0f \x01(\tR\x13externalNetworkName\"\x8f\x01\n" +
 	"\vMachineSpec\x12\x1a\n" +
 	"\bcpuCount\x18\x01 \x01(\x05R\bcpuCount\x12\x16\n" +
 	"\x06memory\x18\x02 \x01(\x05R\x06memory\x12&\n" +
@@ -895,10 +886,9 @@ const file_spec_nodepool_proto_rawDesc = "" +
 	"\x03max\x18\x02 \x01(\x05R\x03max\x12\x1e\n" +
 	"\n" +
 	"targetSize\x18\x03 \x01(\x05R\n" +
-	"targetSize\"\xa7\x01\n" +
+	"targetSize\"\x8d\x01\n" +
 	"\x0eStaticNodePool\x12>\n" +
-	"\bnodeKeys\x18\x01 \x03(\v2\".spec.StaticNodePool.NodeKeysEntryR\bnodeKeys\x12\x18\n" +
-	"\asshPort\x18\x02 \x01(\x05R\asshPort\x1a;\n" +
+	"\bnodeKeys\x18\x01 \x03(\v2\".spec.StaticNodePool.NodeKeysEntryR\bnodeKeys\x1a;\n" +
 	"\rNodeKeysEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*3\n" +

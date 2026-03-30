@@ -141,11 +141,7 @@ func (c ClusterBuilder) ReconcileNodePools() error {
 				found = true
 				n.Public = ip
 				if port > 0 {
-					d.SshPort = port
-				} else {
-					// Old template returned just IP without port info.
-					// VM is using default SSH port 22.
-					d.SshPort = nodepools.DefaultSSHPort
+					nodepool.SshPort = port
 				}
 				break
 			}

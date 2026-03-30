@@ -398,10 +398,10 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.Nod
 				Labels:      nodePool.Labels,
 				Annotations: nodePool.Annotations,
 				Taints:      taints,
+				SshPort:     resolveSSHPort(nodePool.SshPort),
 				Type: &spec.NodePool_StaticNodePool{
 					StaticNodePool: &spec.StaticNodePool{
 						NodeKeys: keys,
-						SshPort:  resolveSSHPort(nodePool.SshPort),
 					},
 				},
 			})
