@@ -262,6 +262,7 @@ spec:
     #         secretRef:    # Secret reference specification, holding private key which will be used to SSH into the node (as root or as a user specificed in the username attribute).
     #           name:       # Name of the secret resource.
     #           namespace:  # Namespace of the secret resource.
+    #     sshPort:          # SSH port used to connect to the static nodes. Defaults to 22 if not set. (optional)
     #     labels:           # Map of custom user defined labels for this nodepool. This field is optional and is ignored if used in Loadbalancer cluster. (optional)
     #     annotations:      # Map of user defined annotations, which will be applied on every node in the node pool. (optional)
     #     taints:           # Array of custom user defined taints for this nodepool. This field is optional and is ignored if used in Loadbalancer cluster. (optional)

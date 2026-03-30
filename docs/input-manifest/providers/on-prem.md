@@ -6,7 +6,7 @@ Claudie is designed to leverage your existing infrastructure and utilise it for 
 
 2. Connectivity between Static Nodes: Static nodes within the infrastructure should be able to communicate with each other using the specified endpoints. This connectivity is important for proper functioning of the Kubernetes cluster.
 
-3. SSH Access with Root Privileges: Claudie relies on SSH access to the nodes using the SSH key provided in the input manifest. The SSH key should grant root privileges to enable Claudie to perform required operations on the nodes.
+3. SSH Access with Root Privileges: Claudie relies on SSH access to the nodes using the SSH key provided in the input manifest. The SSH key should grant root privileges to enable Claudie to perform required operations on the nodes. By default, Claudie connects on port `22`. If your static nodes use a custom SSH port, you can specify it with the `sshPort` field on the static nodepool definition.
 
 4. Meeting the Kubernetes nodes requirements: Learn [more](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/#before-you-begin).
 
@@ -43,6 +43,7 @@ spec:
   nodePools:
     static:
         - name: control
+          # sshPort: 2222  # Optional: SSH port for connecting to static nodes. Defaults to 22.
           nodes:
             - endpoint: "192.168.10.1"
               secretRef:
@@ -50,6 +51,7 @@ spec:
                 namespace: <your-namespace>
 
         - name: compute
+          # sshPort: 2222  # Optional: SSH port for connecting to static nodes. Defaults to 22.
           nodes:
             - endpoint: "192.168.10.2"
               secretRef:

@@ -370,6 +370,10 @@ Static nodepools are defined for static machines which Claudie will not manage. 
 
   To see the default taints Claudie applies on each node, refer to [this section](#default-taints).
 
+- `sshPort`
+
+  SSH port used to connect to the static nodes in this node pool. This field is optional. If not specified, the default value of `22` is used.
+
 ## Static node
 
 Static node defines single static node from a static nodepool.
