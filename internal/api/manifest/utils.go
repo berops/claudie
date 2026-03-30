@@ -401,7 +401,7 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.Nod
 				Type: &spec.NodePool_StaticNodePool{
 					StaticNodePool: &spec.StaticNodePool{
 						NodeKeys: keys,
-						SshPort:  defaultSSHPort(nodePool.SshPort),
+						SshPort:  resolveSSHPort(nodePool.SshPort),
 					},
 				},
 			})
@@ -485,7 +485,7 @@ func staticNodes(np *StaticNodePool, isControl bool) []*spec.Node {
 	return nodes
 }
 
-func defaultSSHPort(port *int32) int32 {
+func resolveSSHPort(port *int32) int32 {
 	if port == nil {
 		return nodepools.DefaultSSHPort
 	}
