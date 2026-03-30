@@ -168,9 +168,6 @@ type (
 		//   {Region: "regionTwo", externalNetworkName: "ext-net-1"},
 		// ].
 		RegionNetwork []nodepools.RegionNetwork
-		// SshPorts holds the unique SSH ports used by the nodepools in this provider.
-		// Used to dynamically open firewall rules for the correct ports.
-		SshPorts []int32
 		// K8sData contains some additional information that may be needed during the generation of the
 		// terraform templates. Such as if A load balancer is attached to the K8s cluster with the ApiServer port.
 		// This data will be set if the ClusterType within ClusterData of this object is of type "K8s".

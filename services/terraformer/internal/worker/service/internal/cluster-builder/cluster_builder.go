@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"slices"
 
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/fileutils"
@@ -285,7 +284,6 @@ func (c *ClusterBuilder) generateFiles(clusterDir string) error {
 				Provider:      p,
 				Regions:       nodepools.ExtractRegions(nodepools.ExtractDynamic(pools)),
 				RegionNetwork: nodepools.ExtractRegionNetwork(nodepools.ExtractDynamic(pools)),
-				SshPorts:      sshPorts(pools),
 				K8sData: templates.K8sData{
 					HasAPIServer: c.K8sInfo.ExportPort6443,
 				},
@@ -303,18 +301,6 @@ func (c *ClusterBuilder) generateFiles(clusterDir string) error {
 	}
 
 	return nil
-}
-
-// sshPorts collects unique SSH ports from the given nodepools.
-func sshPorts(pools []*spec.NodePool) []int32 {
-	var ports []int32
-	for _, np := range pools {
-		port := nodepools.SSHPort(np)
-		if !slices.Contains(ports, port) {
-			ports = append(ports, port)
-		}
-	}
-	return ports
 }
 
 // parseNodeOutput extracts the IP and optional SSH port from a terraform output value.

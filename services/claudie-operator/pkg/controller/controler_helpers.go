@@ -248,7 +248,7 @@ func constructInputManifest(
 			Labels:      np.Labels,
 			Taints:      np.Taints,
 			Annotations: np.Annotations,
-			SshPort:     np.SshPort,
+			SshPort:     &np.SshPort,
 		})
 	}
 

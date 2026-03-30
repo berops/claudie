@@ -19,8 +19,6 @@ import (
 const (
 	// DefaultSSHPort is the standard SSH port used by existing/legacy nodepools.
 	DefaultSSHPort = int32(22)
-	// ClaudieSSHPort is the SSH port used by newly created Claudie-managed VMs.
-	ClaudieSSHPort = int32(22522)
 )
 
 // SSHPort returns the effective SSH port for a nodepool and normalizes the

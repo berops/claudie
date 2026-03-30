@@ -59,7 +59,6 @@ func CreateNodePoolForRollingUpdate(
 	inner.PublicKey = ""
 	inner.PrivateKey = ""
 	inner.Cidr = ""
-	inner.SshPort = nodepools.ClaudieSSHPort
 
 	// 2. Generate new keys.
 	if err := generateSSHKeys(newNodePool); err != nil {
