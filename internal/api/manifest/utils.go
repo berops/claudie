@@ -402,7 +402,7 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.Nod
 				Type: &spec.NodePool_StaticNodePool{
 					StaticNodePool: &spec.StaticNodePool{
 						NodeKeys: keys,
-						SshPort:  nodePool.SshPort,
+						SshPort:  defaultSSHPort(nodePool.SshPort),
 					},
 				},
 			})
@@ -484,6 +484,13 @@ func staticNodes(np *StaticNodePool, isControl bool) []*spec.Node {
 	}
 
 	return nodes
+}
+
+func defaultSSHPort(port int32) int32 {
+	if port == 0 {
+		return nodepools.DefaultSSHPort
+	}
+	return port
 }
 
 // getNodeKeys returns map of keys for static nodes in map[endpoint]key.
