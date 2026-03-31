@@ -181,7 +181,7 @@ func (x *CloudflareProvider) GetSubscription() (bool, error) {
 			return true, nil
 		}
 	}
-	return false, fmt.Errorf("subscription for Load Balancing not found")
+	return false, nil
 }
 
 func getCloudflareAPIResponse(url string, apiToken string) ([]byte, error) {

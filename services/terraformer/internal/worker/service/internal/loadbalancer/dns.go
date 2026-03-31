@@ -225,7 +225,7 @@ func (d *DNS) generateFiles(logger zerolog.Logger, dnsID, dnsDir string, dns *sp
 			return fmt.Errorf("error while checking cloudflare load balancing subscription: %w", err)
 		}
 		if !data.ProviderExtrasExtension.SubscriptionAllowsHA {
-			logger.Warn().Msgf("The token/account pair provided to the cloudflare provider %q does not have access to the necessary API endpoints to determine if HA loadbalancing can be used, defaulting to false", dns.Provider.SpecName)
+			logger.Warn().Msgf("No Load Balancing subscription found for cloudflare provider %q, HA loadbalancing will not be used", dns.Provider.SpecName)
 		} else {
 			logger.Info().Msgf("Found subscription for HA load balancing for cloudflare provider %q", dns.Provider.SpecName)
 		}
