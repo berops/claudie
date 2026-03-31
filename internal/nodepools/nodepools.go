@@ -116,6 +116,7 @@ func PartialCopyWithNodeExclusion(np *spec.NodePool, nodes []string) *spec.NodeP
 		Labels:      np.Labels,
 		Taints:      np.Taints,
 		Annotations: np.Annotations,
+		SshPort:     np.SshPort,
 	}
 
 	for _, n := range np.Nodes {
@@ -162,6 +163,7 @@ func PartialCopyWithNodeFilter(np *spec.NodePool, nodes []string) *spec.NodePool
 		Labels:      np.Labels,
 		Taints:      np.Taints,
 		Annotations: np.Annotations,
+		SshPort:     np.SshPort,
 	}
 
 	for _, n := range np.Nodes {
