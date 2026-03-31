@@ -50,6 +50,12 @@ Simply insert credentials to your cloud projects, define your cluster, and watch
   <img alt="Cluster diagram animation" src="docs/assets/cluster-diagram-animation-light.gif">
 </picture>
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/cluster-diagram-animation-dark.gif">
+  <source media="(prefers-color-scheme: light)" srcset="docs/assets/cluster-diagram-animation-light.gif">
+  <img alt="Cluster diagram animation" src="docs/assets/cluster-diagram-animation-light.gif">
+</picture>
+
 ### Management via IaC
 
 Declaratively define your infrastructure with a simple, easy to understand YAML [syntax](https://docs.claudie.io/latest/input-manifest/input-manifest/).
