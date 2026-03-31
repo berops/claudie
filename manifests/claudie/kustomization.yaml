@@ -56,16 +56,16 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
 - name: ghcr.io/berops/claudie/ansibler
-  newTag: 68f5ae9-4033
+  newTag: cb86452-4043
 - name: ghcr.io/berops/claudie/autoscaler-adapter
-  newTag: 68f5ae9-4033
+  newTag: cb86452-4043
 - name: ghcr.io/berops/claudie/claudie-operator
-  newTag: 68f5ae9-4033
+  newTag: cb86452-4043
 - name: ghcr.io/berops/claudie/kube-eleven
-  newTag: 68f5ae9-4033
+  newTag: cb86452-4043
 - name: ghcr.io/berops/claudie/kuber
-  newTag: 68f5ae9-4033
+  newTag: cb86452-4043
 - name: ghcr.io/berops/claudie/manager
-  newTag: 68f5ae9-4033
+  newTag: cb86452-4043
 - name: ghcr.io/berops/claudie/terraformer
-  newTag: 68f5ae9-4033
+  newTag: cb86452-4043
