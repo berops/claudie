@@ -2832,6 +2832,10 @@ In OOP analogy, a dynamic nodepool would be a class that would get instantiated 
 </ul>
 <p>Array of user defined taints, which will be applied on every node in the node pool. This field is optional.</p>
 <p>To see the default taints Claudie applies on each node, refer to <a href="#default-taints">this section</a>.</p>
+<ul>
+<li><code>sshPort</code></li>
+</ul>
+<p>SSH port used to connect to the static nodes in this node pool. This field is optional. If not specified, the default value of <code>22</code> is used.</p>
 <h2 id="static-node">Static node<a class="headerlink" href="#static-node" title="Permanent link">&para;</a></h2>
 <p>Static node defines single static node from a static nodepool.</p>
 <ul>
