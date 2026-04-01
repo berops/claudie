@@ -160,7 +160,7 @@ func (x *CloudflareProvider) GetSubscription() (bool, error) {
 		response, err = getCloudflareAPIResponse(urlSubscriptions, x.Token)
 		if err != nil {
 			if errors.Is(err, ErrCloudflareAPIForbidden) {
-				return false, nil
+				return false, ErrCloudflareAPIForbidden
 			}
 			time.Sleep((1 << i) * time.Second)
 			continue

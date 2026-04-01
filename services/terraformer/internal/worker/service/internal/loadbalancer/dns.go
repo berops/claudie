@@ -3,6 +3,7 @@ package loadbalancer
 import (
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -222,7 +223,11 @@ func (d *DNS) generateFiles(logger zerolog.Logger, dnsID, dnsDir string, dns *sp
 		var err error
 		data.ProviderExtrasExtension.SubscriptionAllowsHA, err = cloudflare.GetSubscription()
 		if err != nil {
-			return fmt.Errorf("error while checking cloudflare load balancing subscription: %w", err)
+			if errors.Is(err, spec.ErrCloudflareAPIForbidden) {
+				logger.Warn().Msgf("Cloudflare API forbidden for provider %q: token/account pair does not have access to the subscriptions API, HA loadbalancing will not be used", dns.Provider.SpecName)
+			} else {
+				return fmt.Errorf("error while checking cloudflare load balancing subscription: %w", err)
+			}
 		}
 		if !data.ProviderExtrasExtension.SubscriptionAllowsHA {
 			logger.Warn().Msgf("No Load Balancing subscription found for cloudflare provider %q, HA loadbalancing will not be used", dns.Provider.SpecName)
