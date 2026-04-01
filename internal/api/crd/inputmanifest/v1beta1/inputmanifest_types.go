@@ -123,6 +123,11 @@ type StaticNodePool struct {
 	Annotations map[string]string `json:"annotations"`
 	// +optional
 	Taints []corev1.Taint `json:"taints"`
+	// SSH port used to connect to the static nodes. Defaults to 22 if not set.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	SshPort int32 `json:"sshPort,omitempty"`
 }
 
 // StaticNode defines a single static node for a particular static nodepool.

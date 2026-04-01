@@ -462,6 +462,13 @@ spec:
                             - secretRef
                             type: object
                           type: array
+                        sshPort:
+                          description: SSH port used to connect to the static nodes.
+                            Defaults to 22 if not set.
+                          format: int32
+                          maximum: 65535
+                          minimum: 1
+                          type: integer
                         taints:
                           items:
                             description: |-

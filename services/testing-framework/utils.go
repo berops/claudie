@@ -290,6 +290,7 @@ func validateWireguardSetup(nps []*spec.NodePool, expectedPeerList []Peer) error
 	for _, np := range nps {
 		for _, n := range np.Nodes {
 			var sshKey string
+			port := nodepools.SSHPort(np)
 			username := n.Username
 			if username == "" {
 				username = "root"
@@ -323,7 +324,7 @@ func validateWireguardSetup(nps []*spec.NodePool, expectedPeerList []Peer) error
 			}
 
 			for range 10 {
-				if err = checkWireguardPeers(n, expectedPeerList, &cfg); err == nil {
+				if err = checkWireguardPeers(n, fmt.Sprint(port), expectedPeerList, &cfg); err == nil {
 					break
 				}
 				time.Sleep(150 + time.Duration(rand.IntN(150)))
@@ -338,8 +339,7 @@ func validateWireguardSetup(nps []*spec.NodePool, expectedPeerList []Peer) error
 	return nil
 }
 
-func checkWireguardPeers(thisNode *spec.Node, peerList []Peer, cfg *ssh.ClientConfig) error {
-	const sshPort = "22"
+func checkWireguardPeers(thisNode *spec.Node, sshPort string, peerList []Peer, cfg *ssh.ClientConfig) error {
 	endpoint := net.JoinHostPort(thisNode.Public, sshPort)
 	client, err := ssh.Dial("tcp", endpoint, cfg)
 	if err != nil {
