@@ -130,7 +130,7 @@ spec:
         count: 1
         serverType: t3.small
         #ubuntu
-        image: ami-0084a47cc718c111a
+        image: ami-0ff6a73a3d60a1223
         storageDiskSize: 50
 
       - name: azr-ldbl-nodes
