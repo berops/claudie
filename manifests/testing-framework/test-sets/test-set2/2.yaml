@@ -134,8 +134,8 @@ spec:
       - name: aws-ldbl-nodes
         providerSpec:
           name: aws-1
-          region: eu-central-1
-          zone: eu-central-1c
+          region: eu-west-1
+          zone: eu-west-1a
         count: 1
         serverType: t3.small
         #ubuntu
