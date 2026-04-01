@@ -10,6 +10,14 @@
   <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg"></a>
 </p>
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/cluster-diagram-animation-dark.webp">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/cluster-diagram-animation-light.webp">
+    <img alt="Claudie cluster diagram animation" src="docs/assets/cluster-diagram-animation-light.webp">
+  </picture>
+</p>
+
 ## Intro video
 
 <p align="center">
@@ -43,7 +51,13 @@ Read in more details [here](https://docs.claudie.io/latest/use-cases/use-cases/)
 Create fully-featured Kubernetes clusters composed of multiple different public Cloud providers and on-premise data center in an easy and secure manner.
 Simply insert credentials to your cloud projects, define your cluster, and watch how the infra spawns right in front of you.
 
-![](./docs/infra-diagram.png)
+<p align="center">
+  <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="docs/assets/cluster-diagram-v2-dark.png">
+      <source media="(prefers-color-scheme: light)" srcset="docs/assets/cluster-diagram-v2-light.png">
+      <img alt="Claudie cluster diagram – click to play" src="docs/assets/cluster-diagram-v2-light.png">
+    </picture>
+</p>
 
 ### Management via IaC
 

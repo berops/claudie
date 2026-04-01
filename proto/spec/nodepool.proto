@@ -24,6 +24,8 @@ message NodePool {
   repeated Taint taints = 7;
   // User definded annotations.
   map<string, string> annotations = 8;
+  // SSH port for the nodes in this node pool. Default 0 means port 22.
+  int32 sshPort = 9;
 }
 
 // Taint defines a custom defined taint for the node pools.

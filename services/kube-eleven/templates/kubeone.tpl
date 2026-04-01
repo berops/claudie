@@ -36,6 +36,7 @@ controlPlane:
     {{- if ge $nodeInfo.Node.NodeType 1}}
   - publicAddress: '{{ $nodeInfo.Node.Public }}'
     privateAddress: '{{ $nodeInfo.Node.Private }}'
+    sshPort: {{ $nodepool.SshPort }}
     {{- if $nodepool.IsDynamic }}
     sshUsername: root
     sshPrivateKeyFile: '{{ $nodepool.NodepoolName }}.pem'
@@ -61,6 +62,7 @@ staticWorkers:
     {{- if eq $nodeInfo.Node.NodeType 0}}
   - publicAddress: '{{ $nodeInfo.Node.Public }}'
     privateAddress: '{{ $nodeInfo.Node.Private }}'
+    sshPort: {{ $nodepool.SshPort }}
     {{- if $nodepool.IsDynamic }}
     sshUsername: root
     sshPrivateKeyFile: '{{ $nodepool.NodepoolName }}.pem'

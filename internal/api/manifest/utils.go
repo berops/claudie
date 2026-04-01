@@ -6,6 +6,7 @@ import (
 	"math"
 	"slices"
 
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -397,6 +398,7 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.Nod
 				Labels:      nodePool.Labels,
 				Annotations: nodePool.Annotations,
 				Taints:      taints,
+				SshPort:     resolveSSHPort(nodePool.SshPort),
 				Type: &spec.NodePool_StaticNodePool{
 					StaticNodePool: &spec.StaticNodePool{
 						NodeKeys: keys,
@@ -481,6 +483,13 @@ func staticNodes(np *StaticNodePool, isControl bool) []*spec.Node {
 	}
 
 	return nodes
+}
+
+func resolveSSHPort(port *int32) int32 {
+	if port == nil {
+		return nodepools.DefaultSSHPort
+	}
+	return *port
 }
 
 // getNodeKeys returns map of keys for static nodes in map[endpoint]key.
