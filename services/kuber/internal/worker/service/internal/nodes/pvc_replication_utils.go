@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/berops/claudie/internal/kubectl"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 )
 
 type ReplicaList struct {

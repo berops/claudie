@@ -5,13 +5,21 @@ repo_name: claudie
 
 markdown_extensions:
   - admonition
+  - attr_list
+  - md_in_html
   - pymdownx.details
   - pymdownx.superfences
   - pymdownx.inlinehilite
   - pymdownx.snippets
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
   - pymdownx.emoji:
-      emoji_index: !!python/name:materialx.emoji.twemoji
-      emoji_generator: !!python/name:materialx.emoji.to_svg
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.tabbed:
+      alternate_style: true
   - pymdownx.tasklist:
       custom_checkbox: true
   - toc:
@@ -42,39 +50,54 @@ theme:
   name: material
   features:
     - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.expand
     - navigation.top
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+    - toc.follow
   palette:
-    - media: "(prefers-color-scheme)"
-      primary: white
-      accent: black
-      toggle:
-        icon: material/link
-        name: Switch to light mode
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
-      primary: white
-      accent: black
+    - scheme: default
+      primary: custom
+      accent: custom
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      primary: black
-      accent: indigo
+    - scheme: slate
+      primary: custom
+      accent: custom
       toggle:
         icon: material/brightness-4
-        name: Switch to system preference
-  logo: hexagon_blue.png
+        name: Switch to light mode
+  font:
+    text: Inter
+    code: JetBrains Mono
+  logo: assets/logo-light.svg
   favicon: hexagon_blue.png
   custom_dir: docs/overrides
 
 nav:
-  - index.md
-  - Sitemap: sitemap/sitemap.md
-  - Getting Started:
-      - Getting started: getting-started/get-started-using-claudie.md
+  - Home:
+      - index.md
+      - Sitemap: sitemap/sitemap.md
+  - Guides:
+      - Quick start: getting-started/get-started-using-claudie.md
       - Detailed guide: getting-started/detailed-guide.md
-  - Input manifest:
+      - Use cases: use-cases/use-cases.md
+      - Updating Claudie: update/update.md
+      - Creating backups: creating-claudie-backup/creating-claudie-backup.md
+      - GPUs example: input-manifest/gpu-example.md
+      - Hardening: hardening/hardening.md
+      - Monitoring: monitoring/grafana.md
+      - HTTP proxy: http-proxy/http-proxy.md
+      - Example InputManifest: input-manifest/example.md
+      - Troubleshooting: troubleshooting/troubleshooting.md
+  - Reference:
       - Providers:
           - AWS: input-manifest/providers/aws.md
           - Azure: input-manifest/providers/azure.md
@@ -86,45 +109,46 @@ nav:
           - OCI: input-manifest/providers/oci.md
           - Openstack: input-manifest/providers/openstack.md
           - On Premise: input-manifest/providers/on-prem.md
-      - Example yaml file: input-manifest/example.md
-      - GPUs example: input-manifest/gpu-example.md
-      - External Templates: input-manifest/external-templates.md
+      - External templates: input-manifest/external-templates.md
       - API reference: input-manifest/api-reference.md
-      - Claudie in a custom namespace: input-manifest/claudie-custom-ns.md
-  - How Claudie works:
-      - Claudie Workflow: claudie-workflow/claudie-workflow.md
-      - Claudie Storage solution: storage/storage-solution.md
-      - Loadbalancing in Claudie: ./loadbalancing/loadbalancing-solution.md
-      - Autoscaling in Claudie: autoscaling/autoscaling.md
-  - Claudie Use Cases: use-cases/use-cases.md
-  - FAQ: faq/FAQ.md
-  - Roadmap for Claudie: roadmap/roadmap.md
-  - Contributing: contributing/contributing.md
-  - Changelog:
-      - Claudie v0.1: CHANGELOG/changelog-0.1.x.md
-      - Claudie v0.2: CHANGELOG/changelog-0.2.x.md
-      - Claudie v0.3: CHANGELOG/changelog-0.3.x.md
-      - Claudie v0.4: CHANGELOG/changelog-0.4.x.md
-      - Claudie v0.5: CHANGELOG/changelog-0.5.x.md
-      - Claudie v0.6: CHANGELOG/changelog-0.6.x.md
-      - Claudie v0.7: CHANGELOG/changelog-0.7.x.md
-      - Claudie v0.8: CHANGELOG/changelog-0.8.x.md
-      - Claudie v0.9: CHANGELOG/changelog-0.9.x.md
-      - Claudie v0.10: CHANGELOG/changelog-0.10.x.md
-  - Latency limitations: latency-limitations/latency-limitations.md
-  - Troubleshooting: troubleshooting/troubleshooting.md
-  - Creating Claudie Backup: creating-claudie-backup/creating-claudie-backup.md
-  - Claudie Hardening: hardening/hardening.md
-  - Prometheus Monitoring: monitoring/grafana.md
-  - Updating Claudie: update/update.md
-  - Command Cheat Sheet: commands/commands.md
-  - Version Matrix: version-matrix/version-matrix.md
-  - HTTP Proxy: http-proxy/http-proxy.md
-  - Configurable Environment Variables: environment-settings/environment.md
+      - Custom namespace: input-manifest/claudie-custom-ns.md
+      - Environment variables: environment-settings/environment.md
+  - Architecture:
+      - Claudie workflow: claudie-workflow/claudie-workflow.md
+      - Storage: storage/storage-solution.md
+      - Loadbalancing: loadbalancing/loadbalancing-solution.md
+      - Autoscaling: autoscaling/autoscaling.md
+  - Project:
+      - FAQ: faq/FAQ.md
+      - Version matrix: version-matrix/version-matrix.md
+      - Command cheat sheet: commands/commands.md
+      - Latency limitations: latency-limitations/latency-limitations.md
+      - Roadmap: roadmap/roadmap.md
+      - Contributing: contributing/contributing.md
+      - Changelog:
+          - v0.11: CHANGELOG/changelog-0.11.x.md
+          - v0.10: CHANGELOG/changelog-0.10.x.md
+          - v0.9: CHANGELOG/changelog-0.9.x.md
+          - v0.8: CHANGELOG/changelog-0.8.x.md
+          - v0.7: CHANGELOG/changelog-0.7.x.md
+          - v0.6: CHANGELOG/changelog-0.6.x.md
+          - v0.5: CHANGELOG/changelog-0.5.x.md
+          - v0.4: CHANGELOG/changelog-0.4.x.md
+          - v0.3: CHANGELOG/changelog-0.3.x.md
+          - v0.2: CHANGELOG/changelog-0.2.x.md
+          - v0.1: CHANGELOG/changelog-0.1.x.md
+
+extra_css:
+  - stylesheets/extra.css
 
 extra:
   version:
     provider: mike
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/berops/claudie
+    - icon: fontawesome/brands/slack
+      link: https://kubernetes.slack.com/archives/C05SW4GKPL3
   analytics:
     provider: plausible
     domain: docs.claudie.io

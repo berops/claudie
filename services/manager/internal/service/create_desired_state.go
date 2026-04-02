@@ -14,7 +14,7 @@ import (
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/rs/zerolog/log"
 
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 )
 
 const (

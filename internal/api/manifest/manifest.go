@@ -236,6 +236,9 @@ type StaticNodePool struct {
 	// User defined taints for this nodepool.
 	// +optional
 	Taints []k8sV1.Taint `validate:"omitempty" yaml:"taints" json:"taints"`
+	// SSH port used to connect to the static nodes. Defaults to 22 if not set.
+	// +optional
+	SshPort *int32 `validate:"omitempty,min=1,max=65535" yaml:"sshPort" json:"sshPort"`
 }
 
 // Node represents a static node assigned to a particular static nodepool.

@@ -127,15 +127,22 @@ func (c ClusterBuilder) ReconcileNodePools() error {
 		}
 		for _, n := range nodepool.Nodes {
 			var found bool
-			for target, ip := range generics.IterateMapInOrder(out.IPs) {
+			for target, val := range generics.IterateMapInOrder(out.IPs) {
 				if target != n.Name {
 					continue
+				}
+				ip, port, err := parseNodeOutput(val)
+				if err != nil {
+					return fmt.Errorf("node %q from nodepool %q: %w", n.Name, nodepool.Name, err)
 				}
 				if ip == "" {
 					return fmt.Errorf("node %q from nodepool %q has no public address assigned", n.Name, nodepool.Name)
 				}
 				found = true
-				n.Public = fmt.Sprint(ip)
+				n.Public = ip
+				if port > 0 {
+					nodepool.SshPort = port
+				}
 				break
 			}
 			if !found {
@@ -241,7 +248,7 @@ func (c *ClusterBuilder) generateFiles(clusterDir string) error {
 					nps = append(nps, templates.NodePoolInfo{
 						Name:      np.Name,
 						Nodes:     np.Nodes,
-						Details:   np.GetDynamicNodePool(),
+						Details:   dnp,
 						IsControl: np.IsControl,
 					})
 
@@ -287,6 +294,33 @@ func (c *ClusterBuilder) generateFiles(clusterDir string) error {
 	}
 
 	return nil
+}
+
+// parseNodeOutput extracts the IP and optional SSH port from a terraform output value.
+// Old templates output a string (just IP), new templates output [IP, port].
+func parseNodeOutput(val any) (ip string, port int32, err error) {
+	switch v := val.(type) {
+	case string:
+		return v, 0, nil
+	case []any:
+		if len(v) == 0 {
+			return "", 0, fmt.Errorf("empty output array")
+		}
+		ipStr := fmt.Sprint(v[0])
+		if len(v) >= 2 {
+			portStr := fmt.Sprint(v[1])
+			var p int
+			if _, err := fmt.Sscanf(portStr, "%d", &p); err == nil && p > 0 {
+				return ipStr, int32(p), nil
+			}
+		}
+		return ipStr, 0, nil
+	default:
+		if val == nil {
+			return "", 0, fmt.Errorf("nil output value")
+		}
+		return fmt.Sprint(val), 0, nil
+	}
 }
 
 // readIPs reads json output format from tofu and unmarshal it into map[string]map[string]string readable by Go.
