@@ -212,6 +212,40 @@ func PingNodes(logger zerolog.Logger, state *spec.Clusters) (map[string][]string
 	return k8sip, lbsip, err
 }
 
+func PingLoadBalancerNodes(logger zerolog.Logger, state *spec.Clusters) (map[string]map[string][]string, error) {
+	type nodemap = map[string]string
+
+	lbsNodes := make(map[string]nodemap)
+	for _, lb := range state.GetLoadBalancers().GetClusters() {
+		lbsNodes[lb.ClusterInfo.Id()] = make(nodemap)
+		for _, np := range lb.GetClusterInfo().GetNodePools() {
+			for _, n := range np.Nodes {
+				lbsNodes[lb.ClusterInfo.Id()][n.Public] = np.Name
+			}
+		}
+	}
+
+	var ips []string
+	for _, lbs := range lbsNodes {
+		ips = slices.AppendSeq(ips, maps.Keys(lbs))
+	}
+
+	lbsip := make(map[string]map[string][]string)
+	unreachable, err := pingAll(logger, pingConcurrentWorkers, ips, Ping)
+	for _, ip := range unreachable {
+		for lb, nodes := range lbsNodes {
+			if np, ok := nodes[ip]; ok {
+				if lbsip[lb] == nil {
+					lbsip[lb] = make(map[string][]string)
+				}
+				lbsip[lb][np] = append(lbsip[lb][np], ip)
+			}
+		}
+	}
+
+	return lbsip, err
+}
+
 func pingAll(
 	logger zerolog.Logger,
 	goroutineCount int,

@@ -43,8 +43,8 @@ const (
 // Schedules tasks based on the difference between the current and desired state.
 // No changes to the passed in values are done. The passed in `desired` and `pending`
 // states will not be modified in any way.
-func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) ScheduleResult {
-	PopulateEntriesForNewClusters(&pending.Clusters, desired)
+func reconciliate(pending *spec.Config, desiredStates map[string]*spec.Clusters) ScheduleResult {
+	PopulateEntriesForNewClusters(&pending.Clusters, desiredStates)
 
 	clusterResult := make(map[string]ScheduleResult, len(pending.Clusters))
 
@@ -58,11 +58,11 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 
 			// It is guaranteed by validation, that within a single InputManifest
 			// no two clusters (including LB) can share the same name.
-			current = state.Current
-			desired = desired[cluster]
+			current      = state.Current
+			desiredState = desiredStates[cluster]
 
 			isCurrentNil     = current == nil || (current.K8S == nil && len(current.LoadBalancers.Clusters) == 0)
-			isDesiredNil     = desired == nil || (desired.K8S == nil && len(desired.LoadBalancers.Clusters) == 0)
+			isDesiredNil     = desiredState == nil || (desiredState.K8S == nil && len(desiredState.LoadBalancers.Clusters) == 0)
 			hasInFlightState = state.InFlight != nil && state.InFlight.Task != nil
 
 			noop      = isCurrentNil && isDesiredNil && !hasInFlightState
@@ -101,7 +101,7 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 
 			// Choose API endpoint.
 			var ep bool
-			for _, lb := range desired.GetLoadBalancers().GetClusters() {
+			for _, lb := range desiredState.GetLoadBalancers().GetClusters() {
 				if lb.HasApiRole() {
 					lb.UsedApiEndpoint = true
 					ep = true
@@ -109,11 +109,11 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 				}
 			}
 			if !ep {
-				nps := desired.K8S.ClusterInfo.NodePools
+				nps := desiredState.K8S.ClusterInfo.NodePools
 				nodepools.FirstControlNode(nps).NodeType = spec.NodeType_apiEndpoint
 			}
 
-			state.InFlight = ScheduleCreateCluster(desired)
+			state.InFlight = ScheduleCreateCluster(desiredState)
 		case isDestroy:
 			del := current
 			if hasInFlightState {
@@ -181,7 +181,7 @@ func reconciliate(pending *spec.Config, desired map[string]*spec.Clusters) Sched
 			lastTask := state.InFlight
 
 			current := current
-			desired := desired
+			localDesired := desiredState
 			if lastTask != nil {
 				inFlight, err := lastTask.Task.MutableClusters()
 				if err != nil {
@@ -198,7 +198,7 @@ Failed to extract state from failed 'InFlight' state: %v
 
 				// If there is an InFlight, make it current and the actual
 				// current will be the desired state to roll back to.
-				current, desired = inFlight, current
+				current, localDesired = inFlight, current
 			}
 
 			// After the [HealthCheckStatus] and the [KubernetesDiff], [LoadBalancersDiff]
@@ -208,7 +208,7 @@ Failed to extract state from failed 'InFlight' state: %v
 			logger.Debug().Msg("Health checking current state")
 
 			hc := HealthCheck(logger, current)
-			diff := Diff(current, desired)
+			diff := Diff(current, localDesired)
 
 			if shouldRescheduleInFlight(lastTask) {
 				clusterResult[cluster] = Reschedule
@@ -221,7 +221,7 @@ Failed to extract state from failed 'InFlight' state: %v
 				// built infrastructure to avoid any issues with unreachable nodes during
 				// the building of the task, in which case this takes a higher priority
 				// then the scheduled task.
-				rhc, err := HealthCheckNodeReachability(logger, current)
+				rhc, err := HealthCheckNodeReachability(logger, current, hc)
 				if err != nil {
 					clusterResult[cluster] = NotReady
 
@@ -235,7 +235,10 @@ Failed to extract state from failed 'InFlight' state: %v
 					break event_switch
 				}
 
-				next, err := handleClusterReachability(logger, current, desired, diff, rhc, hc)
+				// For handling unreachable nodes use the actual `desiredState` as is in the
+				// InputManifest needs to be used as nodes could have been manually deleted by the user.
+				// Otherwise these changes will never be tracket and form a endless loop.
+				next, err := handleClusterReachability(logger, current, desiredState, diff, rhc, hc)
 				if err != nil {
 					logger.
 						Debug().
@@ -257,7 +260,11 @@ Failed to extract state from failed 'InFlight' state: %v
 					clusterResult[cluster] = NotReady
 					break event_switch
 				}
-				if next != nil {
+
+				// Check if the same task is being rescheduling due to a failure
+				// in the pipeline, if so, skip it. Only schedule tasks that are
+				// not equal
+				if next != nil && !areScheduledTasksEqual(lastTask, next) {
 					logger.
 						Info().
 						Msg("Scheduled Task with higher priority for unreachable nodes on the kubernetes level")
@@ -285,7 +292,7 @@ Failed to extract state from failed 'InFlight' state: %v
 				break
 			}
 
-			if state.InFlight = handleUpdate(hc, diff, current, desired); state.InFlight != nil {
+			if state.InFlight = handleUpdate(hc, diff, current, localDesired); state.InFlight != nil {
 				clusterResult[cluster] = Reschedule
 
 				logger.
@@ -296,7 +303,7 @@ Failed to extract state from failed 'InFlight' state: %v
 				// build infrastructure to avoid any issues with unreachable nodes during
 				// the building of the task, in which case this takes a higher priority
 				// then the scheduled task.
-				rhc, err := HealthCheckNodeReachability(logger, current)
+				rhc, err := HealthCheckNodeReachability(logger, current, hc)
 				if err != nil {
 					clusterResult[cluster] = NotReady
 
@@ -310,7 +317,10 @@ Failed to extract state from failed 'InFlight' state: %v
 					break event_switch
 				}
 
-				next, err := handleClusterReachability(logger, current, desired, diff, rhc, hc)
+				// For handling unreachable nodes use the actual `desiredState` as is in the
+				// InputManifest needs to be used as nodes could have been manually deleted by the user.
+				// Otherwise these changes will never be tracket and form a endless loop.
+				next, err := handleClusterReachability(logger, current, desiredState, diff, rhc, hc)
 				if err != nil {
 					clusterResult[cluster] = NotReady
 
@@ -323,7 +333,11 @@ Failed to extract state from failed 'InFlight' state: %v
 					logger.Error().Msg(state.State.Description)
 					break event_switch
 				}
-				if next != nil {
+
+				// Check if the same task is being rescheduling due to a failure
+				// in the pipeline, if so, skip it. Only schedule tasks that are
+				// not equal
+				if next != nil && !areScheduledTasksEqual(lastTask, next) {
 					clusterResult[cluster] = Reschedule
 
 					logger.
@@ -367,7 +381,7 @@ Failed to extract state from failed 'InFlight' state: %v
 						// build infrastructure to avoid any issues with unreachable nodes during
 						// the building of the task, in which case this takes a higher priority
 						// then the scheduled task.
-						rhc, err := HealthCheckNodeReachability(logger, current)
+						rhc, err := HealthCheckNodeReachability(logger, current, hc)
 						if err != nil {
 							clusterResult[cluster] = NotReady
 
@@ -381,7 +395,10 @@ Failed to extract state from failed 'InFlight' state: %v
 							break event_switch
 						}
 
-						next, err := handleClusterReachability(logger, current, desired, diff, rhc, hc)
+						// For handling unreachable nodes use the actual `desiredState` as is in the
+						// InputManifest needs to be used as nodes could have been manually deleted by the user.
+						// Otherwise these changes will never be tracket and form a endless loop.
+						next, err := handleClusterReachability(logger, current, desiredState, diff, rhc, hc)
 						if err != nil {
 							clusterResult[cluster] = NotReady
 
@@ -394,7 +411,11 @@ Failed to extract state from failed 'InFlight' state: %v
 							logger.Error().Msg(state.State.Description)
 							break event_switch
 						}
-						if next != nil {
+
+						// Check if the same task is being rescheduling due to a failure
+						// in the pipeline, if so, skip it. Only schedule tasks that are
+						// not equal
+						if next != nil && !areScheduledTasksEqual(lastTask, next) {
 							clusterResult[cluster] = Reschedule
 
 							logger.
@@ -722,15 +743,15 @@ func handleClusterReachability(
 	current *spec.Clusters,
 	desired *spec.Clusters,
 	diff DiffResult,
-	rhc UnreachableNodes,
+	ns UnknownNodeStatus,
 	hc HealthCheckStatus,
 ) (*spec.TaskEvent, error) {
 	kr := KubernetesUnreachableNodes{
-		Hc:          hc,
-		Unreachable: rhc,
-		Diff:        &diff.Kubernetes,
-		Current:     current,
-		Desired:     desired,
+		Hc:         hc,
+		NodeStatus: ns,
+		Diff:       &diff.Kubernetes,
+		Current:    current,
+		Desired:    desired,
 	}
 
 	next, err := HandleKubernetesUnreachableNodes(logger, kr)
@@ -743,11 +764,52 @@ func handleClusterReachability(
 
 	// Same as with the kubernetes unreachable nodes.
 	lbr := LoadBalancerUnreachableNodes{
-		Unreachable: rhc,
-		Diff:        &diff.Kubernetes,
-		Current:     current,
-		Desired:     desired,
+		NodeStatus: ns,
+		Diff:       &diff.Kubernetes,
+		Current:    current,
+		Desired:    desired,
 	}
 
 	return HandleLoadBalancerUnreachableNodes(lbr)
+}
+
+// Compares if two [spec.TaskEvent] tasks are equal, while ignoring
+// and recursive tasks within both, i.e. comparing only the top-level
+// fields that identify a single task.
+func areScheduledTasksEqual(a, b *spec.TaskEvent) bool {
+	if a == nil && b == nil {
+		return true
+	}
+
+	if a == nil && b != nil {
+		return false
+	}
+
+	if a != nil && b == nil {
+		return false
+	}
+
+	if a.Event != b.Event {
+		return false
+	}
+
+	if a.Description != b.Description {
+		return false
+	}
+
+	if len(a.Pipeline) != len(b.Pipeline) {
+		return false
+	}
+
+	for i := range a.Pipeline {
+		if !proto.Equal(a.Pipeline[i], b.Pipeline[i]) {
+			return false
+		}
+	}
+
+	if !proto.Equal(a.Task, b.Task) {
+		return false
+	}
+
+	return true
 }

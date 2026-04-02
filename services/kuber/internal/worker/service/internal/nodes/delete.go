@@ -83,22 +83,18 @@ func NewDeleter(
 	}
 
 	// find a control node that will not be deleted.
-	var (
-		controlNodes = slices.Collect(nodepools.Control(cluster.ClusterInfo.NodePools))
-		notDeleted   string
-	)
-
-	for _, cn := range controlNodes {
-		if !slices.Contains(deleteMaster, cn.Name) {
-			notDeleted = cn.Name
-			break
+	var notDeleted string
+	for cn := range nodepools.Control(cluster.ClusterInfo.NodePools) {
+		for _, n := range cn.Nodes {
+			if !slices.Contains(deleteMaster, n.Name) {
+				notDeleted = n.Name
+				break
+			}
 		}
 	}
 
 	if notDeleted == "" {
-		return nil, fmt.Errorf(
-			"out of the %v control nodes, after the deletion none will remain, invalid state", len(controlNodes),
-		)
+		return nil, fmt.Errorf("no control nodes, will remain after the deletion, invalid state")
 	}
 
 	return &Deleter{
