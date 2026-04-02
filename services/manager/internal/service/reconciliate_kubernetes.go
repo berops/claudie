@@ -749,24 +749,29 @@ func ScheduleAdditionsInNodePools(
 		// If the ApiServer is on the kubernetes cluster on addition of the
 		// control plane nodes the Kubeadm config map needs to be updated which
 		// is used during the join operation of new nodes.
-		if opts.HasApiServer && nodepools.FindByName(np, current.K8S.ClusterInfo.NodePools).IsControl {
-			kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, []*spec.StageKuber_SubPass{
-				{
-					Kind: spec.StageKuber_PATCH_KUBEADM,
-					Description: &spec.StageDescription{
-						About:      "Updating Kubeadm certSANs",
-						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+		if matchedNodePool := nodepools.FindByName(np, current.K8S.ClusterInfo.NodePools); matchedNodePool != nil {
+			if opts.HasApiServer && matchedNodePool.IsControl {
+				kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, []*spec.StageKuber_SubPass{
+					{
+						Kind: spec.StageKuber_PATCH_KUBEADM,
+						Description: &spec.StageDescription{
+							About:      "Updating Kubeadm certSANs",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
 					},
-				},
-				{
-					Kind: spec.StageKuber_CILIUM_RESTART,
-					Description: &spec.StageDescription{
-						About: "Rollout restart of cilium pods",
-						// Rollout restart failing is not a fatal error.
-						ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+					{
+						Kind: spec.StageKuber_CILIUM_RESTART,
+						Description: &spec.StageDescription{
+							About: "Rollout restart of cilium pods",
+							// Rollout restart failing is not a fatal error.
+							ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+						},
 					},
-				},
-			}...)
+				}...)
+			}
+		} else {
+			// Not possible to add nodes into a nodepool that is not tracked.
+			continue
 		}
 
 		// If changes to the nodepool affects any loadbalancer
@@ -841,6 +846,10 @@ func ScheduleAdditionsInNodePools(
 
 	for np, nodes := range diff.Added {
 		toAdd := nodepools.FindByName(np, desired.K8S.ClusterInfo.NodePools)
+		if toAdd == nil {
+			// Not possible to add an unknown nodepool.
+			continue
+		}
 		toAdd = proto.Clone(toAdd).(*spec.NodePool)
 
 		// If the ApiServer is on the kubernetes cluster on addition of the
@@ -1093,25 +1102,31 @@ func ScheduleDeletionsInNodePools(
 		// If the ApiServer is on the kubernetes cluster on deletion of the
 		// control plane nodes the Kubeadm config map needs to be updated which
 		// is used during the join operation of new nodes.
-		if opts.HasApiServer && nodepools.FindByName(np, current.K8S.ClusterInfo.NodePools).IsControl {
-			kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, []*spec.StageKuber_SubPass{
-				{
-					Kind: spec.StageKuber_PATCH_KUBEADM,
-					Description: &spec.StageDescription{
-						About:      "Updating Kubeadm certSANs",
-						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+		if matchedNodePool := nodepools.FindByName(np, current.K8S.ClusterInfo.NodePools); matchedNodePool != nil {
+			if opts.HasApiServer && matchedNodePool.IsControl {
+				kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, []*spec.StageKuber_SubPass{
+					{
+						Kind: spec.StageKuber_PATCH_KUBEADM,
+						Description: &spec.StageDescription{
+							About:      "Updating Kubeadm certSANs",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
 					},
-				},
-				{
-					Kind: spec.StageKuber_CILIUM_RESTART,
-					Description: &spec.StageDescription{
-						About: "Rollout restart of cilium pods",
-						// Rollout restart failing is not a fatal error.
-						ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+					{
+						Kind: spec.StageKuber_CILIUM_RESTART,
+						Description: &spec.StageDescription{
+							About: "Rollout restart of cilium pods",
+							// Rollout restart failing is not a fatal error.
+							ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+						},
 					},
-				},
-			}...)
+				}...)
+			}
 		}
+
+		// Contrary to addition, when deleting we do not skip if the nodepool is not found.
+		// As deleting from a not found nodepool should be handled gracefully by the existing
+		// services.
 
 		// If changes to the nodepool affects any loadbalancer
 		// also schedule a reconciliation of loadbalancers, as
@@ -1155,7 +1170,7 @@ func ScheduleDeletionsInNodePools(
 					},
 				},
 			},
-			Description: fmt.Sprintf("Deleting %v nodes from nodepool %s", len(nodes), np),
+			Description: fmt.Sprintf("Deleting %v nodes from nodepool %q", len(nodes), np),
 			Pipeline:    pipeline,
 		}
 	}
@@ -1164,25 +1179,31 @@ func ScheduleDeletionsInNodePools(
 		// If the ApiServer is on the kubernetes cluster on deletion of the
 		// control plane nodes the Kubeadm config map needs to be updated which
 		// is used during the join operation of new nodes.
-		if opts.HasApiServer && nodepools.FindByName(np, current.K8S.ClusterInfo.NodePools).IsControl {
-			kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, []*spec.StageKuber_SubPass{
-				{
-					Kind: spec.StageKuber_PATCH_KUBEADM,
-					Description: &spec.StageDescription{
-						About:      "Updating Kubeadm certSANs",
-						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+		if matchedNodePool := nodepools.FindByName(np, current.K8S.ClusterInfo.NodePools); matchedNodePool != nil {
+			if opts.HasApiServer && matchedNodePool.IsControl {
+				kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, []*spec.StageKuber_SubPass{
+					{
+						Kind: spec.StageKuber_PATCH_KUBEADM,
+						Description: &spec.StageDescription{
+							About:      "Updating Kubeadm certSANs",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
 					},
-				},
-				{
-					Kind: spec.StageKuber_CILIUM_RESTART,
-					Description: &spec.StageDescription{
-						About: "Rollout restart of cilium pods",
-						// Rollout restart failing is not a fatal error.
-						ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+					{
+						Kind: spec.StageKuber_CILIUM_RESTART,
+						Description: &spec.StageDescription{
+							About: "Rollout restart of cilium pods",
+							// Rollout restart failing is not a fatal error.
+							ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+						},
 					},
-				},
-			}...)
+				}...)
+			}
 		}
+
+		// Contrary to addition, when deleting we do not skip if the nodepool is not found.
+		// As deleting from a not found nodepool should be handled gracefully by the existing
+		// services.
 
 		// If the deletion of the last autoscaled nodepools is to be scheduled. Also remove
 		// the CA requirement for the cluster.
@@ -1249,7 +1270,7 @@ func ScheduleDeletionsInNodePools(
 					},
 				},
 			},
-			Description: fmt.Sprintf("Deleting nodepool %s", np),
+			Description: fmt.Sprintf("Deleting nodepool %q", np),
 			Pipeline:    pipeline,
 		}
 	}
