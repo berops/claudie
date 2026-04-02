@@ -807,9 +807,5 @@ func areScheduledTasksEqual(a, b *spec.TaskEvent) bool {
 		}
 	}
 
-	if !proto.Equal(a.Task, b.Task) {
-		return false
-	}
-
-	return true
+	return proto.Equal(a.Task, b.Task)
 }

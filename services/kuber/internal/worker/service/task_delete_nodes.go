@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/nodepools"
@@ -43,21 +44,23 @@ func DeleteNodes(logger zerolog.Logger, tracker Tracker) {
 			return
 		}
 
-		node := d.KDeleteNodes.Nodes[0]
-		isControl, err := isControlNode(node, k8s.Kubeconfig)
+		fullname := d.KDeleteNodes.Nodes[0]
+		strippedName := strings.TrimPrefix(fullname, fmt.Sprintf("%s-", k8s.ClusterInfo.Id()))
+
+		isControl, err := isControlNode(strippedName, k8s.Kubeconfig)
 		if err != nil {
 			logger.
 				Err(err).
-				Msgf("Failed to determine role for node %q within kubernetes cluster", node)
+				Msgf("Failed to determine role for node %q within kubernetes cluster", fullname)
 			tracker.Diagnostics.Push(err)
 			return
 		}
 
 		if isControl {
-			master = append(master, node)
+			master = append(master, fullname)
 			logger.Info().Msgf("Deleting %v control nodes", len(master))
 		} else {
-			worker = append(worker, node)
+			worker = append(worker, fullname)
 			logger.Info().Msgf("Deleting %v worker nodes", len(worker))
 		}
 
