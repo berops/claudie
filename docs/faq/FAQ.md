@@ -32,7 +32,7 @@ For a deeper dive into our test setup and results, see [our blog post](https://w
 
 ### How much do cloud egress charges add to the overall cost?
 
-Typically, the networking expenses account for ~10% of your provider bill. However, this number can vary significantly depending on your selection of cloud providers and can range between 0% and 50%, so we suggest you checking beforehand. In general, we recommend making your workloads geography- and provider-aware (e.g. with taints and affinities). We calculated some egress cost impact in this [blog post](https://claudie.io/egress-traffic-in-multi-cloud-kubernetes-do-i-need-to-worry/).
+Typically, the networking expenses account for ~10% of your provider bill. However, this number can vary significantly depending on your selection of cloud providers and can range between 0% and 50%, so we suggest checking beforehand. In general, we recommend making your workloads geography- and provider-aware (e.g. with taints and affinities). We calculated some egress cost impact in this [blog post](https://claudie.io/egress-traffic-in-multi-cloud-kubernetes-do-i-need-to-worry/).
 
 ### Is it safe to give Claudie my provider credentials and SSH keys?
 
