@@ -237,7 +237,7 @@ Failed to extract state from failed 'InFlight' state: %v
 
 				// For handling unreachable nodes use the actual `desiredState` as is in the
 				// InputManifest needs to be used as nodes could have been manually deleted by the user.
-				// Otherwise these changes will never be tracket and form a endless loop.
+				// Otherwise these changes will never be tracked and form a endless loop.
 				next, err := handleClusterReachability(logger, current, desiredState, diff, rhc, hc)
 				if err != nil {
 					logger.
@@ -319,7 +319,7 @@ Failed to extract state from failed 'InFlight' state: %v
 
 				// For handling unreachable nodes use the actual `desiredState` as is in the
 				// InputManifest needs to be used as nodes could have been manually deleted by the user.
-				// Otherwise these changes will never be tracket and form a endless loop.
+				// Otherwise these changes will never be tracked and form a endless loop.
 				next, err := handleClusterReachability(logger, current, desiredState, diff, rhc, hc)
 				if err != nil {
 					clusterResult[cluster] = NotReady
@@ -397,7 +397,7 @@ Failed to extract state from failed 'InFlight' state: %v
 
 						// For handling unreachable nodes use the actual `desiredState` as is in the
 						// InputManifest needs to be used as nodes could have been manually deleted by the user.
-						// Otherwise these changes will never be tracket and form a endless loop.
+						// Otherwise these changes will never be tracked and form a endless loop.
 						next, err := handleClusterReachability(logger, current, desiredState, diff, rhc, hc)
 						if err != nil {
 							clusterResult[cluster] = NotReady
