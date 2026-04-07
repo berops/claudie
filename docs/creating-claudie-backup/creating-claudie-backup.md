@@ -10,17 +10,19 @@ Claudie stores its state in 3 different places.
 
 -   Input Manifests are stored in <b>Mongo</b>.
 -   Terraform/OpenTofu state files are stored in **MinIO**. This same **MinIO** instance is utilized for the locking mechanism, leveraging [S3 native state locking](https://opentofu.org/blog/opentofu-1-10-0/) in OpenTofu.
-
+-   In flight scheduled tasks are stored within NATS.
 
 These are the only services that will have a PVC attached to it, the other are stateless.
 
 ## Backing up Claudie
 
+!!! note "During the backup procedure it is advised to scale down the following Claudie deployments (kuber, kube-eleven, ansibler, terraformer, manager) to 0 replicas to avoid issues"
+
 ### Using Velero
 
 This is the primary backup and restore method.
 
-!!! warning "Velero does not support HostPath volumes. If the PVCs in your management cluster are attached to such volumes (e.g. when running on Kind or MiniKube), the backup will not work. In this case, use the below backup method."
+!!! warning "Velero does not support HostPath volumes. If the PVCs in your management cluster are attached to such volumes (e.g. when running on Kind or MiniKube), the backup will not work. In this case, use the below manual backup method."
 
 All resources that are deployed or created by Claudie can be identified with the following label:
 
@@ -35,7 +37,7 @@ We'll walk through the following scenario step-by-step to back up claudie and th
 Claudie is already deployed on an existing Management Cluster and at least 1 Input Manifest has been applied. The state
 is backed up and the Management Cluster is replaced by a new one on which we restore the state.
 
-!!! note "To back up the resources we'll be using Velero version v1.11.0."
+!!! note "To back up the resources we'll be using Velero version v1.18.0."
 
 The following steps will all be executed with the existing Management Cluster in context.
 
@@ -53,7 +55,7 @@ The following steps will all be executed with the existing Management Cluster in
 ```bash 
 velero install \
 --provider aws \
---plugins velero/velero-plugin-for-aws:v1.6.0 \
+--plugins velero/velero-plugin-for-aws:v1.14.0 \
 --bucket $BUCKET \
 --secret-file ./credentials-velero \
 --backup-location-config region=$REGION \
@@ -93,6 +95,8 @@ Once all resources are restored, you should be able to deploy new input manifest
 
 ### Manual backup
 
+!!! note "During the backup procedure it is advised to scale down the following Claudie deployments (kuber, kube-eleven, ansibler, terraformer, manager) to 0 replicas to avoid issues"
+
 Claudie is already deployed on an existing Management Cluster and at least 1 Input Manifest has been applied.
 
 Create a directory where the backup of the state will be stored.
@@ -103,18 +107,13 @@ mkdir claudie-backup
 
 Put your Claudie inputmanifests into the created folder, e.g. `kubectl get InputManifest -A -oyaml > ./claudie-backup/all.yaml`
 
-We will now back up the state of the respective input manifests from MongoDB and MinIO.
+We will now back up the state of the respective input manifests from MongoDB and MinIO and any in flight scheduled tasks from NATS.
 
 ```bash
 kubectl get pods -n claudie
 
 NAME                                READY   STATUS              RESTARTS       AGE
-ansibler-6bf78cccf4-pnxrk           1/1     Running             0              3m20s
-claudie-operator-64c9554c66-rvtr5   1/1     Running             0              3m19s
-kube-eleven-7bd47945c5-kbpd6        1/1     Running             0              3m19s
-kuber-64554ffffc-fkdj6              1/1     Running             0              3m19s
 make-bucket-job-4mxw7               0/1     Completed           0              3m19s
-manager-7696cb7f9-jfbwq             1/1     Running             0              3m19s
 minio-0                             1/1     Running             0              3m19s
 minio-1                             1/1     Running             0              3m19s
 minio-2                             1/1     Running             0              3m19s
@@ -124,7 +123,6 @@ nack-644748c7b7-p6z62               1/1     Running             0              3
 nats-0                              2/2     Running             0              3m19s
 nats-1                              2/2     Running             0              3m19s
 nats-2                              2/2     Running             0              3m19s
-terraformer-5868fb7695-w49sw        1/1     Running             0              3m19s
 ```
 
 To backup state from MongoDB execute the following command
@@ -153,11 +151,21 @@ Download the state into the backup folder
 mc mirror claudie-minio/claudie-tf-state-files ./claudie-backup/<minio-backup-folder>
 ```
 
+Finally, to backup NATS
+
+```bash
+kubectl port-forward svc/nats -n claudie 4222:4222
+```
+
+```bash
+natscli account backup claudie-backup/<nats-backup-folder>
+```
+
 You now have everything you need to restore your input manifests to a new management cluster.
 
 !!! warning "These files will contain your credentials, DO NOT STORE THEM OUT IN THE PUBLIC!"
 
-To restore the state on your new management cluster you can follow these commands. We expect that your default `kubeconfig` points to the new Management Cluster, if it does not, you can override it in the following commands using `--kubeconfig ./path-to-config`.
+To restore the state on your new management cluster you can follow these commands. We expect that your default `kubeconfig` points to the new Management Cluster, if it does not, you can override it in the following commands using `--kubeconfig ./path-to-config`. Also that the Claudie services are scaled down to 0 replicas, to avoid any issues.
 
 Copy the collection into the MongoDB pod.
 
@@ -179,7 +187,19 @@ Port-forward the MinIO service and import the backed up state.
 mc cp --recursive ./claudie-backup/<minio-backup-folder> claudie-minio/claudie-tf-state-files
 ```
 
-You can now apply your Claudie inputmanifests which will be immediately in the `DONE` stage. You can verify this with
+Port-forward the NATS service, first delete `claudie-internal` stream, if it exists.
+
+```bash
+natscli stream rm claudie-internal
+```
+
+Then you will be able to restore the backup.
+
+```bash
+natscli account restore claudie-backup/<nats-backup-folder>
+```
+
+You can now scale the deployments back and apply your Claudie inputmanifests and any state that was restored should continue operating as normal.
 
 ```bash
 kubectl get inputmanifests -A
