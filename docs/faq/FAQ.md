@@ -1,57 +1,53 @@
-# Frequently Asked Question
+# Frequently Asked Questions
 
-We have prepared some of our most frequently asked question to help you out!
+Here are answers to some of the questions we get asked most often.
 
 ### Does Claudie make sense as a pure K8s orchestration on a single cloud-provider IaaS?
 
-Since Claudie specializes in multicloud, you will likely face some drawbacks, such as the need for a public IPv4 address for each node. Otherwise it works well in a single-provider mode.
-Using Claudie will also give you some advantages, such as scaling to multi-cloud as your needs change, or the autoscaler that Claudie provides.
+Claudie is built for multicloud, so running it on a single provider comes with some trade-offs — for example, every node needs a public IPv4 address. That said, it works well in single-provider mode and still gives you benefits like a built-in autoscaler and the flexibility to expand or burst to additional cloud providers in the future.
 
-### Which scenarios make sense for using Claudie and which don't?
+### When should I use Claudie, and when shouldn't I?
 
-Claudie aims to address the following scenarios, described in more detail on the [use-cases](../use-cases/use-cases.md) page:
+Claudie is a good fit for the following scenarios (described in more detail on the [use-cases](../use-cases/use-cases.md) page):
 
 - Cost savings
+- GPUs from neocloud
 - Data locality
 - Compliance (e.g. GDPR)
-- Managed Kubernetes for cloud providers that do not offer it
+- Managed Kubernetes for cloud providers that don't offer it
 - Cloud bursting
 - Service interconnect
 
-Using Claudie doesn't make sense when you rely on specific features of a cloud provider and necessarily tying yourself to that cloud provider.
+Claudie is probably not the right choice if you're running on a single cloud provider that already offers managed Kubernetes and you're happy to accept that lock-in — for example, because you want to take advantage of that provider's unique value proposition.
 
-### Is there any networking performance impact due to the introduction of the VPN layer?
+### Does the VPN layer affect networking performance?
 
-We compared the use of the VPN layer with other solutions and concluded that the impact on performance is negligible.  If you are interested in performed benchmarks, we summarized the results in [our blog post](https://www.berops.com/traffic-encryption-performance-in-kubernetes-clusters/).
+We benchmarked our VPN layer against other solutions and found the performance impact to be negligible. For details, see [our blog post](https://www.berops.com/traffic-encryption-performance-in-kubernetes-clusters/).
 
-### What is the performance impact of a geographically distributed control plane in Claudie?
+### How does a geographically distributed control plane affect performance?
 
-We have performed several tests and problems start to appear when the control nodes are geographically about 600 km apart. Although this is not an answer that fits all scenarios and should only be taken as a reference point.
+In our tests, we started seeing issues when control plane nodes were roughly 600 km or more apart. That said, your mileage may vary — treat this as a reference point rather than a hard rule.
 
-If you are interested in the tests we have run and a more detailed answer,
-you can read more in [our blog post](https://www.berops.com/evaluating-etcds-performance-in-multi-cloud/).
+For a deeper dive into our test setup and results, see [our blog post](https://www.berops.com/evaluating-etcds-performance-in-multi-cloud/).
 
-### Does the cloud provider traffic egress bill represent a significant part on the overall running costs?
+### How much do cloud egress charges add to the overall cost?
 
-Costs are individual and depend on the cost of the selected cloud provider and the type of workload running on the cluster based on the user's needs. Networking expenses can exceed 50% of your provider bill, therefore we recommend making your workload geography and provider aware (e.g. using taints and affinities).
+Typically, the networking expenses account for ~10% of your provider bill. However, this number can vary significantly depending on your selection of cloud providers and can range between 0% and 50%, so we suggest you checking beforehand. In general, we recommend making your workloads geography- and provider-aware (e.g. with taints and affinities). We calculated some egress cost impact in this [blog post](https://claudie.io/egress-traffic-in-multi-cloud-kubernetes-do-i-need-to-worry/).
 
-### Should I be worried about giving Claudie provider credentials, including ssh keys?
+### Is it safe to give Claudie my provider credentials and SSH keys?
 
-Provider credentials are created as secrets in the Management Cluster for Claudie which you then reference
-when creating the input manifest, that is passed to Claudie. Claudie only uses the credentials to create a connection
-to nodes in the case of static nodepools or to provision the required infrastructure in the case of dynamic nodepools. The credentials are as secure as your secret management allows.
+Your credentials are stored as Kubernetes secrets in the Management Cluster and referenced from the input manifest. Claudie only uses them to connect to existing nodes (static nodepools) or to provision new infrastructure (dynamic nodepools), so they're as secure as your cluster's secret management allows.
 
-We are transparent and all of our code is open-sourced, if in doubt you can always check for yourself.
+All of our code is open source — if you have any concerns, you can always audit it yourself.
 
-### Does each node need a public IP address?
+### Does every node need a public IP address?
 
-For dynamic nodepools, nodes created by Claudie in specified cloud providers, each node needs a public IP, for static nodepools no public IP is needed.
+Yes, for dynamic nodepools (nodes provisioned by Claudie in the cloud) every node needs a public IP. Static nodepools don't require one.
 
-### Is a GUI/CLI/ClusterAPI provider/Terraform provider planned?
+### Are there plans for a GUI, CLI, ClusterAPI provider, or Terraform provider?
 
-A GUI is not actively considered at this point in time. Other possibilities are
-openly discussed in [this github issue](https://github.com/berops/claudie/issues/33).
+A GUI isn't on the roadmap right now. Other options are being discussed in [this GitHub issue](https://github.com/berops/claudie/issues/33).
 
-### What is the roadmap for adding support for new cloud IaaS providers?
+### How hard is it to add support for a new cloud provider?
 
-Adding support for a new cloud provider is an easy task. Let us know your needs.
+Adding a new provider is straightforward. If you need one that isn't supported yet, let us know.
