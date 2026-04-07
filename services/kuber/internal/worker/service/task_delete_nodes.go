@@ -117,27 +117,18 @@ func isControlNode(name string, kubeconfig string) (bool, error) {
 		} `json:"metadata"`
 	}
 
-	var description struct {
-		Items []nodeOutput `json:"items"`
-	}
-
-	out, err := kc.KubectlGet("nodes", "-ojson")
+	out, err := kc.KubectlGet("nodes", name, "-ojson")
 	if err != nil {
 		return false, fmt.Errorf("failed to output nodes: %w", err)
 	}
 
+	var description nodeOutput
 	if err := json.Unmarshal(out, &description); err != nil {
 		return false, fmt.Errorf("failed to unmarshal node output: %w", err)
 	}
 
-	for _, i := range description.Items {
-		if i.Metadata.Name == name {
-			_, ok := i.Metadata.Labels["node-role.kubernetes.io/control-plane"]
-			return ok, nil
-		}
-	}
-
-	return false, fmt.Errorf("node %q not found in kubectl get nodes output", name)
+	_, ok := description.Metadata.Labels["node-role.kubernetes.io/control-plane"]
+	return ok, nil
 }
 
 func deleteNodes(logger zerolog.Logger, master, worker []string, k8s *spec.K8Scluster) error {
