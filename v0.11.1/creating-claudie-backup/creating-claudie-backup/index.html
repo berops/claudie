@@ -2066,13 +2066,17 @@ new cluster.</p>
 <ul>
 <li>Input Manifests are stored in <b>Mongo</b>.</li>
 <li>Terraform/OpenTofu state files are stored in <strong>MinIO</strong>. This same <strong>MinIO</strong> instance is utilized for the locking mechanism, leveraging <a href="https://opentofu.org/blog/opentofu-1-10-0/">S3 native state locking</a> in OpenTofu.</li>
+<li>In flight scheduled tasks are stored within NATS.</li>
 </ul>
 <p>These are the only services that will have a PVC attached to it, the other are stateless.</p>
 <h2 id="backing-up-claudie">Backing up Claudie<a class="headerlink" href="#backing-up-claudie" title="Permanent link">&para;</a></h2>
+<div class="admonition note">
+<p class="admonition-title">During the backup procedure it is advised to scale down the following Claudie deployments (kuber, kube-eleven, ansibler, terraformer, manager) to 0 replicas to avoid issues</p>
+</div>
 <h3 id="using-velero">Using Velero<a class="headerlink" href="#using-velero" title="Permanent link">&para;</a></h3>
 <p>This is the primary backup and restore method.</p>
 <div class="admonition warning">
-<p class="admonition-title">Velero does not support HostPath volumes. If the PVCs in your management cluster are attached to such volumes (e.g. when running on Kind or MiniKube), the backup will not work. In this case, use the below backup method.</p>
+<p class="admonition-title">Velero does not support HostPath volumes. If the PVCs in your management cluster are attached to such volumes (e.g. when running on Kind or MiniKube), the backup will not work. In this case, use the below manual backup method.</p>
 </div>
 <p>All resources that are deployed or created by Claudie can be identified with the following label:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>    app.kubernetes.io/part-of: claudie
@@ -2084,7 +2088,7 @@ new cluster.</p>
 <p>Claudie is already deployed on an existing Management Cluster and at least 1 Input Manifest has been applied. The state
 is backed up and the Management Cluster is replaced by a new one on which we restore the state.</p>
 <div class="admonition note">
-<p class="admonition-title">To back up the resources we'll be using Velero version v1.11.0.</p>
+<p class="admonition-title">To back up the resources we'll be using Velero version v1.18.0.</p>
 </div>
 <p>The following steps will all be executed with the existing Management Cluster in context.</p>
 <ol>
@@ -2104,7 +2108,7 @@ is backed up and the Management Cluster is replaced by a new one on which we res
 <li>Execute the following command to install Velero on the Management Cluster.
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>velero<span class="w"> </span>install<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>--provider<span class="w"> </span>aws<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>--plugins<span class="w"> </span>velero/velero-plugin-for-aws:v1.6.0<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>--plugins<span class="w"> </span>velero/velero-plugin-for-aws:v1.14.0<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>--bucket<span class="w"> </span><span class="nv">$BUCKET</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>--secret-file<span class="w"> </span>./credentials-velero<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>--backup-location-config<span class="w"> </span><span class="nv">region</span><span class="o">=</span><span class="nv">$REGION</span><span class="w"> </span><span class="se">\</span>
@@ -2136,31 +2140,28 @@ We expect that your default <code>kubeconfig</code> points to the new Management
 </ol>
 <p>Once all resources are restored, you should be able to deploy new input manifests and also modify existing infrastructure  without any problems.</p>
 <h3 id="manual-backup">Manual backup<a class="headerlink" href="#manual-backup" title="Permanent link">&para;</a></h3>
+<div class="admonition note">
+<p class="admonition-title">During the backup procedure it is advised to scale down the following Claudie deployments (kuber, kube-eleven, ansibler, terraformer, manager) to 0 replicas to avoid issues</p>
+</div>
 <p>Claudie is already deployed on an existing Management Cluster and at least 1 Input Manifest has been applied.</p>
 <p>Create a directory where the backup of the state will be stored.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>mkdir<span class="w"> </span>claudie-backup
 </span></code></pre></div>
 <p>Put your Claudie inputmanifests into the created folder, e.g. <code>kubectl get InputManifest -A -oyaml &gt; ./claudie-backup/all.yaml</code></p>
-<p>We will now back up the state of the respective input manifests from MongoDB and MinIO.</p>
+<p>We will now back up the state of the respective input manifests from MongoDB and MinIO and any in flight scheduled tasks from NATS.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>claudie
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>NAME<span class="w">                                </span>READY<span class="w">   </span>STATUS<span class="w">              </span>RESTARTS<span class="w">       </span>AGE
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>ansibler-6bf78cccf4-pnxrk<span class="w">           </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">             </span><span class="m">0</span><span class="w">              </span>3m20s
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>claudie-operator-64c9554c66-rvtr5<span class="w">   </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">             </span><span class="m">0</span><span class="w">              </span>3m19s
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>kube-eleven-7bd47945c5-kbpd6<span class="w">        </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">             </span><span class="m">0</span><span class="w">              </span>3m19s
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>kuber-64554ffffc-fkdj6<span class="w">              </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">             </span><span class="m">0</span><span class="w">              </span>3m19s
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>make-bucket-job-4mxw7<span class="w">               </span><span class="m">0</span>/1<span class="w">     </span>Completed<span class="w">           </span><span class="m">0</span><span class="w">              </span>3m19s
-</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>manager-7696cb7f9-jfbwq<span class="w">             </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">             </span><span class="m">0</span><span class="w">              </span>3m19s
-</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>minio-0<span class="w">                             </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">             </span><span class="m">0</span><span class="w">              </span>3m19s
-</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>minio-1<span class="w">                             </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">             </span><span class="m">0</span><span class="w">              </span>3m19s
-</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>minio-2<span class="w">                             </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">             </span><span class="m">0</span><span class="w">              </span>3m19s
-</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>minio-3<span class="w">                             </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">             </span><span class="m">0</span><span class="w">              </span>3m19s
-</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>mongodb-85487bf568-qjw2k<span class="w">            </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">             </span><span class="m">0</span><span class="w">              </span>3m19s
-</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>nack-644748c7b7-p6z62<span class="w">               </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">             </span><span class="m">0</span><span class="w">              </span>3m19s
-</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>nats-0<span class="w">                              </span><span class="m">2</span>/2<span class="w">     </span>Running<span class="w">             </span><span class="m">0</span><span class="w">              </span>3m19s
-</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>nats-1<span class="w">                              </span><span class="m">2</span>/2<span class="w">     </span>Running<span class="w">             </span><span class="m">0</span><span class="w">              </span>3m19s
-</span><span id="__span-7-18"><a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a>nats-2<span class="w">                              </span><span class="m">2</span>/2<span class="w">     </span>Running<span class="w">             </span><span class="m">0</span><span class="w">              </span>3m19s
-</span><span id="__span-7-19"><a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a>terraformer-5868fb7695-w49sw<span class="w">        </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">             </span><span class="m">0</span><span class="w">              </span>3m19s
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>make-bucket-job-4mxw7<span class="w">               </span><span class="m">0</span>/1<span class="w">     </span>Completed<span class="w">           </span><span class="m">0</span><span class="w">              </span>3m19s
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>minio-0<span class="w">                             </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">             </span><span class="m">0</span><span class="w">              </span>3m19s
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>minio-1<span class="w">                             </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">             </span><span class="m">0</span><span class="w">              </span>3m19s
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>minio-2<span class="w">                             </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">             </span><span class="m">0</span><span class="w">              </span>3m19s
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>minio-3<span class="w">                             </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">             </span><span class="m">0</span><span class="w">              </span>3m19s
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>mongodb-85487bf568-qjw2k<span class="w">            </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">             </span><span class="m">0</span><span class="w">              </span>3m19s
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>nack-644748c7b7-p6z62<span class="w">               </span><span class="m">1</span>/1<span class="w">     </span>Running<span class="w">             </span><span class="m">0</span><span class="w">              </span>3m19s
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>nats-0<span class="w">                              </span><span class="m">2</span>/2<span class="w">     </span>Running<span class="w">             </span><span class="m">0</span><span class="w">              </span>3m19s
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>nats-1<span class="w">                              </span><span class="m">2</span>/2<span class="w">     </span>Running<span class="w">             </span><span class="m">0</span><span class="w">              </span>3m19s
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>nats-2<span class="w">                              </span><span class="m">2</span>/2<span class="w">     </span>Running<span class="w">             </span><span class="m">0</span><span class="w">              </span>3m19s
 </span></code></pre></div>
 <p>To backup state from MongoDB execute the following command</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-n<span class="w"> </span>claudie<span class="w"> </span>&lt;mongodb-pod-name&gt;<span class="w"> </span>--<span class="w"> </span>sh<span class="w"> </span>-c<span class="w"> </span><span class="s1">&#39;mongoexport --uri=mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@localhost:27017/claudie -c inputManifests --authenticationDatabase admin&#39;</span><span class="w"> </span>&gt;<span class="w"> </span>claudie-backup/inputManifests
@@ -2177,25 +2178,36 @@ We expect that your default <code>kubeconfig</code> points to the new Management
 <p>Download the state into the backup folder</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>mc<span class="w"> </span>mirror<span class="w"> </span>claudie-minio/claudie-tf-state-files<span class="w"> </span>./claudie-backup/&lt;minio-backup-folder&gt;
 </span></code></pre></div>
+<p>Finally, to backup NATS</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>kubectl<span class="w"> </span>port-forward<span class="w"> </span>svc/nats<span class="w"> </span>-n<span class="w"> </span>claudie<span class="w"> </span><span class="m">4222</span>:4222
+</span></code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>natscli<span class="w"> </span>account<span class="w"> </span>backup<span class="w"> </span>claudie-backup/&lt;nats-backup-folder&gt;
+</span></code></pre></div>
 <p>You now have everything you need to restore your input manifests to a new management cluster.</p>
 <div class="admonition warning">
 <p class="admonition-title">These files will contain your credentials, DO NOT STORE THEM OUT IN THE PUBLIC!</p>
 </div>
-<p>To restore the state on your new management cluster you can follow these commands. We expect that your default <code>kubeconfig</code> points to the new Management Cluster, if it does not, you can override it in the following commands using <code>--kubeconfig ./path-to-config</code>.</p>
+<p>To restore the state on your new management cluster you can follow these commands. We expect that your default <code>kubeconfig</code> points to the new Management Cluster, if it does not, you can override it in the following commands using <code>--kubeconfig ./path-to-config</code>. Also that the Claudie services are scaled down to 0 replicas, to avoid any issues.</p>
 <p>Copy the collection into the MongoDB pod.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>kubectl<span class="w"> </span>cp<span class="w"> </span>./claudie-backup/inputManifests<span class="w"> </span>mongodb-&lt;mongodb-pod-name&gt;:/tmp/inputManifests<span class="w"> </span>-n<span class="w"> </span>claudie
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>kubectl<span class="w"> </span>cp<span class="w"> </span>./claudie-backup/inputManifests<span class="w"> </span>mongodb-&lt;mongodb-pod-name&gt;:/tmp/inputManifests<span class="w"> </span>-n<span class="w"> </span>claudie
 </span></code></pre></div>
 <p>Import the state to MongoDB.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-n<span class="w"> </span>claudie<span class="w"> </span>mongodb-&lt;mongodb-pod-name&gt;<span class="w"> </span>--<span class="w"> </span>sh<span class="w"> </span>-c<span class="w"> </span><span class="s1">&#39;mongoimport --uri=mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@localhost:27017/claudie -c inputManifests --authenticationDatabase admin --file /tmp/inputManifests&#39;</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-n<span class="w"> </span>claudie<span class="w"> </span>mongodb-&lt;mongodb-pod-name&gt;<span class="w"> </span>--<span class="w"> </span>sh<span class="w"> </span>-c<span class="w"> </span><span class="s1">&#39;mongoimport --uri=mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@localhost:27017/claudie -c inputManifests --authenticationDatabase admin --file /tmp/inputManifests&#39;</span>
 </span></code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Don't forget to delete the <code>/tmp/inputManifests</code> file</p>
 </div>
 <p>Port-forward the MinIO service and import the backed up state.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>mc<span class="w"> </span>cp<span class="w"> </span>--recursive<span class="w"> </span>./claudie-backup/&lt;minio-backup-folder&gt;<span class="w"> </span>claudie-minio/claudie-tf-state-files
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>mc<span class="w"> </span>cp<span class="w"> </span>--recursive<span class="w"> </span>./claudie-backup/&lt;minio-backup-folder&gt;<span class="w"> </span>claudie-minio/claudie-tf-state-files
 </span></code></pre></div>
-<p>You can now apply your Claudie inputmanifests which will be immediately in the <code>DONE</code> stage. You can verify this with</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>inputmanifests<span class="w"> </span>-A
+<p>Port-forward the NATS service, first delete <code>claudie-internal</code> stream, if it exists.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>natscli<span class="w"> </span>stream<span class="w"> </span>rm<span class="w"> </span>claudie-internal
+</span></code></pre></div>
+<p>Then you will be able to restore the backup.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>natscli<span class="w"> </span>account<span class="w"> </span>restore<span class="w"> </span>claudie-backup/&lt;nats-backup-folder&gt;
+</span></code></pre></div>
+<p>You can now scale the deployments back and apply your Claudie inputmanifests and any state that was restored should continue operating as normal.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>inputmanifests<span class="w"> </span>-A
 </span></code></pre></div>
 <p>Now you can make any new changes to your inputmanifests on the new management cluster and the state will be re-used. </p>
 <div class="admonition note">
