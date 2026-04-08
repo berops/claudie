@@ -270,6 +270,10 @@ func CopyNodes(dst, src *spec.NodePool, nodes []string) {
 func CloneTargetNodes(n *spec.NodePool, nodes []string) []*spec.Node {
 	var out []*spec.Node
 
+	if n == nil {
+		return out
+	}
+
 	for _, n := range n.Nodes {
 		if !slices.Contains(nodes, n.Name) {
 			continue

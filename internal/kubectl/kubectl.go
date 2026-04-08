@@ -121,7 +121,7 @@ func (k *Kubectl) KubectlTaintNodeShutdown(nodeName string) error {
 	}
 	defer cleanup()
 
-	command := fmt.Sprintf("kubectl taint nodes %s node.kubernetes.io/out-of-service=nodeshutdown:NoExecute %s", nodeName, arg)
+	command := fmt.Sprintf("kubectl taint nodes %s node.kubernetes.io/out-of-service=nodeshutdown:NoExecute --overwrite %s", nodeName, arg)
 	return k.run(command)
 }
 

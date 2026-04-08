@@ -49,3 +49,28 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 
 ## What's Changed
 - General maintenance update by updating dependencies. [`#2020`](https://github.com/berops/claudie/pull/2020)
+
+## v0.11.2
+
+## What's Changed
+- Add custom SSH port support for dynamic and static nodepools by [#2026](https://github.com/berops/claudie/pull/2026)
+  
+  The requirement of the SSH port to be opened at `22` has been dropped. It is now possible for external templates to define
+  their own SSH port to which Claudie will connect to. The same applies to static nodepools which have the option exposed in the InputManifest
+  
+```
+static:
+  - name: control
+    sshPort: 2222  # Optional: SSH port for connecting to static nodes. Defaults to 22.
+    nodes:
+      - endpoint: "192.168.10.1"
+        secretRef:
+          name: static-node-key
+          namespace: <your-namespace>
+```
+  
+- Gracefully handling missing Cloudflare Load Balancing [#2029](https://github.com/berops/claudie/pull/2029)
+  
+- Dynamic nodes within a Kubernetes cluster will now be healthchecked by Claudie and if they're unhealthy for more than 12 mins Claudie will trigger an auto-repair mechanism
+  in which the node is replaced by first deleting it and subsequently joining a new node into the cluster. [#2038](https://github.com/berops/claudie/pull/2038)
+
