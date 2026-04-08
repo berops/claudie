@@ -16,6 +16,9 @@ Build multi-cloud and hybrid-cloud Kubernetes clusters that mix and match nodepo
 
 </div>
 
+![Claudie cluster diagram](assets/cluster-diagram-animation-light.webp#only-light)
+![Claudie cluster diagram](assets/cluster-diagram-animation-dark.webp#only-dark)
+
 ## What is Claudie
 
 Claudie is a platform for managing multi-cloud and hybrid-cloud Kubernetes clusters. These Kubernetes clusters can mix and match nodepools from various cloud providers, e.g. a single cluster can have a nodepool in AWS, another in GCP and another one on-premises. This is our opinionated way to build multi-cloud and hybrid-cloud Kubernetes infrastructure. On top of that Claudie supports Cluster Autoscaler on the managed clusters.
