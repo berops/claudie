@@ -1,8 +1,10 @@
 package service
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"net"
 	"slices"
 	"strings"
@@ -16,19 +18,57 @@ import (
 	"github.com/rs/zerolog"
 
 	"golang.org/x/crypto/ssh"
+
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+type NodeOutput struct {
+	Kind string `json:"kind"`
+
+	Metadata struct {
+		Name string `json:"name"`
+	} `json:"metadata"`
+
+	Status struct {
+		Conditions []corev1.NodeCondition
+	}
+}
+
+type NodeDescription struct {
+	K8sName string
+	Ready   bool
+
+	IsStatic   bool
+	NodePool   string
+	PublicIPv4 string
+	IsControl  bool
+
+	// Could be omitted.
+	// If absent, can be interpreted as unknown state.
+	LastTransitionTime *metav1.Time
+}
 
 // UnreachableNodesMap holds the nodepools and all of the nodes within
 // that nodepool that are unreachable via a Ping on the IPv4 public endpoint.
 type UnreachableIPv4Map = map[string][]string
 
-type UnreachableNodes struct {
-	// Nodepools and their unreachable nodes in the kubernetes cluster.
-	Kubernetes UnreachableIPv4Map
+type UnknownNodeStatus struct {
+	// Nodepools and their nodes in the kubernetes cluster with unknown status
+	// that is read from the kubernetes API.
+	//
+	// This structure contains nodes that are:
+	//  - nodes with no reachable endpoint.
+	//  - present in the current state but not in the kubernetes cluster.
+	//  - present in the kubernetes cluster but not in the current state
+	//  - present in both but with Unknown status.
+	//
+	// If the Api server of the cluster is unreachable, this will be empty.
+	UnknownKubernetesNodes map[string][]NodeDescription
 
 	// Loadbalancers attached to the kubernetes cluster and for each
-	// of them Nodepools with the unreachable node within each.
-	LoadBalancers map[string]UnreachableIPv4Map
+	// of them Nodepools with the nodes for which the pings have failed.
+	UnknownLoadBalancersNodes map[string]UnreachableIPv4Map
 }
 
 // HealthCheckStatus report the status of the Infrastructure.
@@ -47,7 +87,11 @@ type HealthCheckStatus struct {
 
 	Cluster struct {
 		// Nodes, as returned by kubectl get nodes.
-		Nodes map[string]struct{}
+		//
+		// Note that some of the fields may be unset as
+		// the current state by claudie could be different
+		// than the actual nodes inside the kubernetes cluster.
+		Nodes map[string]*NodeDescription
 
 		// Whether the Port 6443 is exported on the control nodes.
 		ControlNodesHave6443 bool
@@ -57,20 +101,105 @@ type HealthCheckStatus struct {
 	}
 }
 
-// HealthCheckNodeReachability performs healthches across the nodes of the passed in [spec.Clusters] state.
+// HealthCheckNodeReachability performs healthchecks across the nodes of the passed in [spec.Clusters] state.
 // If there are any issues with the pinging of the nodes a non-nil error is returned which can be interpreted
 // as failing to fully determine if a node is reachable or not.
-func HealthCheckNodeReachability(logger zerolog.Logger, state *spec.Clusters) (UnreachableNodes, error) {
+func HealthCheckNodeReachability(
+	logger zerolog.Logger,
+	state *spec.Clusters,
+	hc HealthCheckStatus,
+) (UnknownNodeStatus, error) {
 	var (
 		err error
 
-		result = UnreachableNodes{
-			Kubernetes:    make(UnreachableIPv4Map),
-			LoadBalancers: make(map[string]UnreachableIPv4Map),
+		result = UnknownNodeStatus{
+			UnknownKubernetesNodes:    make(map[string][]NodeDescription),
+			UnknownLoadBalancersNodes: make(map[string]UnreachableIPv4Map),
 		}
 	)
 
-	result.Kubernetes, result.LoadBalancers, err = clusters.PingNodes(logger, state)
+	// If the api server is not reachable by claudie, we can't really
+	// make any assumptions about the reachability of the kubernetes nodes
+	// and thus simply default to considering them all healthy.
+	if !hc.ApiEndpoint.Unreachable {
+		clusterNodes := maps.Clone(hc.Cluster.Nodes)
+
+		for _, np := range state.K8S.ClusterInfo.NodePools {
+			for _, n := range np.Nodes {
+				// kubernetes names have stripped cluster prefix.
+				strippedName := strings.TrimPrefix(n.Name, fmt.Sprintf("%s-", state.K8S.ClusterInfo.Id()))
+
+				v, inCluster := clusterNodes[strippedName]
+
+				// Delete it from the cluster Nodes, to know we have processed it.
+				delete(clusterNodes, strippedName)
+
+				if n.Public == "" {
+					result.UnknownKubernetesNodes[np.Name] = append(result.UnknownKubernetesNodes[np.Name], NodeDescription{
+						K8sName:            strippedName,
+						Ready:              false,
+						IsStatic:           np.GetStaticNodePool() != nil,
+						NodePool:           np.Name,
+						PublicIPv4:         "",
+						IsControl:          np.IsControl,
+						LastTransitionTime: nil,
+					})
+
+					continue
+				}
+
+				if inCluster {
+					// node in the cluster.
+					if !v.Ready {
+						result.UnknownKubernetesNodes[v.NodePool] = append(result.UnknownKubernetesNodes[v.NodePool], NodeDescription{
+							K8sName:            v.K8sName,
+							Ready:              v.Ready,
+							IsStatic:           v.IsStatic,
+							NodePool:           v.NodePool,
+							PublicIPv4:         v.PublicIPv4,
+							IsControl:          v.IsControl,
+							LastTransitionTime: v.LastTransitionTime.DeepCopy(),
+						})
+					}
+				} else {
+					// in current state but not in cluster.
+					result.UnknownKubernetesNodes[np.Name] = append(result.UnknownKubernetesNodes[np.Name], NodeDescription{
+						K8sName:            strippedName,
+						Ready:              false,
+						IsStatic:           np.GetStaticNodePool() != nil,
+						NodePool:           np.Name,
+						PublicIPv4:         n.Public,
+						IsControl:          np.IsControl,
+						LastTransitionTime: nil,
+					})
+				}
+			}
+		}
+
+		// nodes that are in the k8s cluster but not in our tracked state.
+		for _, n := range clusterNodes {
+			result.UnknownKubernetesNodes[n.NodePool] = append(result.UnknownKubernetesNodes[n.NodePool], NodeDescription{
+				K8sName: n.K8sName,
+				Ready:   false, // since we do not track them, consider them as not ready.
+
+				// dynamic nodes are explicitcly tracked by claudie
+				// thus if there is a node in the k8s cluster and
+				// not tracked by claudie it has to be a static node.
+				IsStatic: true,
+
+				NodePool:           n.NodePool,
+				PublicIPv4:         n.PublicIPv4,
+				IsControl:          n.IsControl,
+				LastTransitionTime: nil,
+			})
+		}
+	} else {
+		logger.
+			Warn().
+			Msg("Api server unreachable, skip health-checking kubernetes nodes")
+	}
+
+	result.UnknownLoadBalancersNodes, err = clusters.PingLoadBalancerNodes(logger, state)
 	if err != nil {
 		if !errors.Is(err, clusters.ErrEchoTimeout) {
 			logger.
@@ -92,25 +221,88 @@ func HealthCheckNodeReachability(logger zerolog.Logger, state *spec.Clusters) (U
 // HealthCheck performs healthcheck across the kubernetes cluster of the passed in [spec.Clusters] state.
 func HealthCheck(logger zerolog.Logger, state *spec.Clusters) HealthCheckStatus {
 	var result HealthCheckStatus
-	result.Cluster.Nodes = make(map[string]struct{})
+	result.Cluster.Nodes = make(map[string]*NodeDescription)
 
 	kc := kubectl.Kubectl{
 		Kubeconfig:        state.K8S.Kubeconfig,
 		MaxKubectlRetries: -1,
 	}
 
-	n, err := kc.KubectlGetNodeNames()
+	out, err := kc.KubectlGet("nodes", "-ojson")
 	if err != nil {
-		logger.Warn().Msgf("Failed to retrieve nodes of the cluster via `kubectl`: %v", err)
-		// Does not necessarily mean the cluster is down
-		// the management cluster could have network issues.
-		n = []byte{}
+		logger.
+			Warn().
+			Msgf("Failed to retrieve nodes of the cluster via `kubectl`: %v", err)
+
+		out = []byte{}
 		result.ApiEndpoint.Unreachable = true
 	}
 
-	for node := range strings.SplitSeq(string(n), "\n") {
-		if node := strings.TrimSpace(node); node != "" {
-			result.Cluster.Nodes[node] = struct{}{}
+	var description struct {
+		Items []NodeOutput `json:"items"`
+	}
+
+	if err := json.Unmarshal(out, &description); err != nil {
+		logger.
+			Warn().
+			Msgf("failed to unmarshal json output from kubectl get nodes, ignoring: %v", err)
+
+		description.Items = nil
+		result.ApiEndpoint.Unreachable = true
+	}
+
+	if len(description.Items) == 0 {
+		// Does not necessarily mean the cluster is down
+		// the management cluster could have network issues.
+		result.ApiEndpoint.Unreachable = true
+	}
+
+	for _, n := range description.Items {
+		if strings.ToLower(n.Kind) == "node" {
+			// By default assume node is ready.
+			//
+			// The not-ready status needs to be explicitly
+			// read from the output of kubectl.
+			isReady := true
+			transitionTime := (*metav1.Time)(nil)
+			for _, cond := range n.Status.Conditions {
+				if cond.Type == corev1.NodeReady {
+					transitionTime = cond.LastTransitionTime.DeepCopy()
+					if cond.Status != corev1.ConditionTrue {
+						logger.
+							Warn().
+							Msgf("Kubernetes node %q is unhealthy with status: %q",
+								n.Metadata.Name,
+								cond.Status,
+							)
+
+						isReady = false
+					}
+				}
+			}
+
+			result.Cluster.Nodes[n.Metadata.Name] = &NodeDescription{
+				K8sName:            n.Metadata.Name,
+				Ready:              isReady,
+				LastTransitionTime: transitionTime,
+			}
+		}
+	}
+
+	if len(result.Cluster.Nodes) > 0 {
+		// Match the nodes with their public IPv4.
+		for _, np := range state.K8S.ClusterInfo.NodePools {
+			for _, n := range np.Nodes {
+				// kubernetes names have stripped cluster prefix.
+				strippedName := strings.TrimPrefix(n.Name, fmt.Sprintf("%s-", state.K8S.ClusterInfo.Id()))
+
+				if v, ok := result.Cluster.Nodes[strippedName]; ok {
+					v.IsStatic = np.GetStaticNodePool() != nil
+					v.NodePool = np.Name
+					v.PublicIPv4 = n.Public
+					v.IsControl = np.IsControl
+				}
+			}
 		}
 	}
 
