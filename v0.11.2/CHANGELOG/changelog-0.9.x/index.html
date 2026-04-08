@@ -1,0 +1,3394 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://docs.claudie.io/v0.11.2/CHANGELOG/changelog-0.9.x/">
+      
+      
+        <link rel="prev" href="../changelog-0.10.x/">
+      
+      
+        <link rel="next" href="../changelog-0.8.x/">
+      
+      
+      <link rel="icon" href="../../hexagon_blue.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.16">
+    
+    
+      
+        <title>v0.9 - Claudie Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.7e37652d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+  
+
+
+  <script
+  defer
+  data-domain="docs.claudie.io"
+  src="https://plausible.io/js/plausible.js"
+  
+></script>
+
+<script>
+  window.plausible = window.plausible || function () { (window.plausible.q = window.plausible.q || []).push(arguments) };
+
+  /* Register event handlers after documented loaded */
+  document.addEventListener("DOMContentLoaded", function () {
+    /* Set up search tracking */
+    if (document.forms.search) {
+      var query = document.forms.search.query;
+      query.addEventListener("blur", function() {
+        if (this.value) plausible("Search", { props: { search_term: this.value } });
+      })
+    }
+
+    /* Set up feedback, i.e. "Was this page helpful?" */
+    document$.subscribe(function () {
+      var feedback = document.forms.feedback;
+      if (typeof feedback === "undefined") return;
+
+      /* Send feedback to Plausible */
+      for (var button of feedback.querySelectorAll("[type=submit]")) {
+        button.addEventListener("click", function (ev) {
+          ev.preventDefault();
+
+          var page = document.location.pathname;
+          var value = this.getAttribute("data-md-value");
+          console.log("[feedback] User clicked", { value });
+          plausible(`Feedback: ${value}`);
+
+          /* Disable form and show note, if given */
+          feedback.firstElementChild.disabled = true;
+          var note = feedback.querySelector(".md-feedback__note [data-md-value='" + value + "']");
+          if (note) note.hidden = false;
+        })
+
+        /* Show feedback */
+        feedback.hidden = false;
+      }
+    });
+  });
+</script>
+  
+    <script>"undefined"!=typeof __md_analytics&&__md_analytics()</script>
+  
+
+    
+    
+    
+   <link href="../../assets/stylesheets/glightbox.min.css" rel="stylesheet"/><style>
+    html.glightbox-open { overflow: initial; height: 100%; }
+    .gslide-title { margin-top: 0px; user-select: text; }
+    .gslide-desc { color: #666; user-select: text; }
+    .gslide-image img { background: white; }
+    .gscrollbar-fixer { padding-right: 15px; }
+    .gdesc-inner { font-size: 0.75rem; }
+    body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color);}
+    body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color);}
+    body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color);}</style> <script src="../../assets/javascripts/glightbox.min.js"></script></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#claudie-v09" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+  
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Claudie Docs" class="md-header__button md-logo" aria-label="Claudie Docs" data-md-component="logo">
+      
+  <img src="../../assets/logo-light.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Claudie Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              v0.9
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/berops/claudie" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    claudie
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+  <script src="https://embed.small.chat/T4AJLK8EAC060GRC7LSE.js" async></script>
+
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Claudie Docs" class="md-nav__button md-logo" aria-label="Claudie Docs" data-md-component="logo">
+      
+  <img src="../../assets/logo-light.svg" alt="logo">
+
+    </a>
+    Claudie Docs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/berops/claudie" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    claudie
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../.." class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_1" id="__nav_1_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            Home
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sitemap/sitemap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Sitemap
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Guides
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Guides
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/get-started-using-claudie/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Quick start
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/detailed-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Detailed guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../use-cases/use-cases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Use cases
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../update/update/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Updating Claudie
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../creating-claudie-backup/creating-claudie-backup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Creating backups
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/gpu-example/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    GPUs example
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hardening/hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Hardening
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../monitoring/grafana/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Monitoring
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../http-proxy/http-proxy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    HTTP proxy
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/example/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Example InputManifest
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../troubleshooting/troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Troubleshooting
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Reference
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Reference
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_1" id="__nav_3_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Providers
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_1">
+            <span class="md-nav__icon md-icon"></span>
+            Providers
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/providers/aws/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AWS
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/providers/azure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Azure
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/providers/cloudflare/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Cloudflare
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/providers/cloudrift/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    CloudRift
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/providers/exoscale/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Exoscale
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/providers/gcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    GCP
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/providers/hetzner/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Hetzner
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/providers/oci/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    OCI
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/providers/openstack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Openstack
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/providers/on-prem/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    On Premise
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/external-templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    External templates
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/api-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    API reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../input-manifest/claudie-custom-ns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Custom namespace
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../environment-settings/environment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Environment variables
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Architecture
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Architecture
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../claudie-workflow/claudie-workflow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Claudie workflow
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../storage/storage-solution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Storage
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../loadbalancing/loadbalancing-solution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Loadbalancing
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../autoscaling/autoscaling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Autoscaling
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Project
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Project
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/FAQ/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    FAQ
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../version-matrix/version-matrix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Version matrix
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../commands/commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Command cheat sheet
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../latency-limitations/latency-limitations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Latency limitations
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../roadmap/roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Roadmap
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Contributing
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_7" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5_7" id="__nav_5_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Changelog
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_7_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5_7">
+            <span class="md-nav__icon md-icon"></span>
+            Changelog
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog-0.11.x/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    v0.11
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog-0.10.x/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    v0.10
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    v0.9
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    v0.9
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#most-notable-changes-tldr" class="md-nav__link">
+    <span class="md-ellipsis">
+      Most notable changes (TL;DR)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Most notable changes (TL;DR)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#experimental" class="md-nav__link">
+    <span class="md-ellipsis">
+      Experimental
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deployment
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v090" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.0
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's changed
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What&#39;s changed">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#experimental_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Experimental
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bug fixes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v091" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.1
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-changed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's Changed
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bug fixes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v092" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.2
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-changed_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's Changed
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bug fixes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v093" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.3
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bug fixes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v094" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.4
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bug fixes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v095" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.5
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bug fixes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v096" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.6
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bug fixes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v097" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.7
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-changed_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's Changed
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bug fixes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v098" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.8
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-changed_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's Changed
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bug fixes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v099" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.9
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-changed_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's Changed
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0910" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.10
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-changed_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's Changed
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bug fixes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0911" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.11
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-changed_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's Changed
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bug fixes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0912" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.12
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-changed_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's Changed
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0913" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.13
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-changed_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's Changed
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bug fixes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0914" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.14
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-changed_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's Changed
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0915" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.15
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bug fixes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0916" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.16
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-changed_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's Changed
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bug fixes
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog-0.8.x/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    v0.8
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog-0.7.x/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    v0.7
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog-0.6.x/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    v0.6
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog-0.5.x/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    v0.5
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog-0.4.x/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    v0.4
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog-0.3.x/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    v0.3
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog-0.2.x/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    v0.2
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog-0.1.x/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    v0.1
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#most-notable-changes-tldr" class="md-nav__link">
+    <span class="md-ellipsis">
+      Most notable changes (TL;DR)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Most notable changes (TL;DR)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#experimental" class="md-nav__link">
+    <span class="md-ellipsis">
+      Experimental
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deployment
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v090" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.0
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's changed
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What&#39;s changed">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#experimental_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Experimental
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bug fixes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v091" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.1
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-changed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's Changed
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bug fixes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v092" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.2
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-changed_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's Changed
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bug fixes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v093" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.3
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bug fixes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v094" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.4
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bug fixes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v095" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.5
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bug fixes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v096" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.6
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bug fixes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v097" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.7
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-changed_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's Changed
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bug fixes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v098" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.8
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-changed_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's Changed
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bug fixes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v099" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.9
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-changed_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's Changed
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0910" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.10
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-changed_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's Changed
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bug fixes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0911" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.11
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-changed_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's Changed
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bug fixes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0912" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.12
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-changed_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's Changed
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0913" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.13
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-changed_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's Changed
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bug fixes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0914" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.14
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-changed_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's Changed
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0915" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.15
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bug fixes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0916" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.9.16
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-changed_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's Changed
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bug-fixes_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bug fixes
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="claudie-v09">Claudie <code>v0.9</code><a class="headerlink" href="#claudie-v09" title="Permanent link">&para;</a></h1>
+<div class="admonition warning">
+<p class="admonition-title">Due to changes to the core of how Claudie works with terraform files and representation of the data in persistent storage the <code>v0.9.x</code> version will not be backwards compatible with clusters build using previous Claudie versions.</p>
+</div>
+<h2 id="most-notable-changes-tldr">Most notable changes (TL;DR)<a class="headerlink" href="#most-notable-changes-tldr" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Support for pluggable external terraform files was added, breaking the dependency of updated terraform files on a new Claudie version. The ability to arbitrarily change the templates used by Claudie was made available to the user. As a result, Claudie has implemented a rolling update of the infrastructure in case a change in the terraform templates is detected, by gradually updating the build cluster one nodepool at a time. </li>
+<li>Merged the Scheduler and Context-box service into a single called Manager.</li>
+<li>Each Nodepool now has its own SSH keys instead of sharing a single SSH key per kubernetes cluster.</li>
+</ul>
+<h3 id="experimental">Experimental<a class="headerlink" href="#experimental" title="Permanent link">&para;</a></h3>
+<ul>
+<li>We have added support for an HTTP proxy to be used when building Kubernetes clusters. This was mainly motivated by the issues we encountered while building multi-provider clusters, where some IP addresses assigned to some of the VMs were being misused and blacklisted/blocked in various registries. By using the HTTP proxy, it is possible to work around this and get the cluster built successfully.</li>
+</ul>
+<p>Currently the HTTP proxy is experimental, it is made available by modifying the <code>HTTP_PROXY_MODE</code> in the Claudie config map in the <code>claudie</code> namespace. The possible values are <code>(on|off|default)</code>. Default means that if a kubernetes cluster uses Hetzner nodepools, it will automatically switch to using the proxy, as we have encountered the most bad IP issues with Hetzner. By default the proxy is turned off.</p>
+<p>It should be noted that the proxy is still in an experimental phase, where the API for interacting with the proxy may change in the future. Therefore, clusters using this feature in this release run the risk of being backwards incompatible with future <code>0.9.x</code> releases, which will further stabilise the proxy API.</p>
+<h2 id="deployment">Deployment<a class="headerlink" href="#deployment" title="Permanent link">&para;</a></h2>
+<p>To deploy Claudie <code>v0.9.X</code>, please:</p>
+<ol>
+<li>
+<p>Download claudie.yaml from <a href="https://github.com/berops/claudie/releases">release page</a></p>
+</li>
+<li>
+<p>Verify the checksum with <code>sha256</code> (optional)</p>
+</li>
+</ol>
+<p>We provide checksums in <code>claudie_checksum.txt</code> you can verify the downloaded yaml files againts the provided checksums.</p>
+<ol>
+<li>Install Claudie using <code>kubectl</code></li>
+</ol>
+<blockquote>
+<p>We strongly recommend changing the default credentials for MongoDB, MinIO and DynamoDB before you deploy it.</p>
+</blockquote>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>kubectl apply -f https://github.com/berops/claudie/releases/latest/download/claudie.yaml
+</span></code></pre></div>
+<p>To further harden Claudie, you may want to deploy our pre-defined network policies:
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># for clusters using cilium as their CNI</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>https://github.com/berops/claudie/releases/latest/download/network-policy-cilium.yaml
+</span></code></pre></div>
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># other</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>https://github.com/berops/claudie/releases/latest/download/network-policy.yaml
+</span></code></pre></div></p>
+<h2 id="v090">v0.9.0<a class="headerlink" href="#v090" title="Permanent link">&para;</a></h2>
+<h2 id="whats-changed">What's changed<a class="headerlink" href="#whats-changed" title="Permanent link">&para;</a></h2>
+<ul>
+<li>
+<p>Support added for Ubuntu 24.04 in Azure and Hetzner <a href="https://github.com/berops/claudie/pull/1401">#1401</a></p>
+</li>
+<li>
+<p>Each nodepool now has its own SSH keys, a change from the previous state where all nodepools shared the same SSH keys.. <a href="https://github.com/berops/claudie/pull/1442">#1442</a></p>
+</li>
+<li>
+<p>Added support for pluggable external terraform files, breaking the dependency of updated terraform files on a new Claudie version. <a href="https://github.com/berops/claudie/pull/1460">#1460</a></p>
+</li>
+<li>
+<p>With the support of external terraform templates, the ability to arbitrarily change the templates used by Claudie was made available to the user. As a result, Claudie has implemented a rolling update of the infrastructure in case a change in the terraform templates is detected, by gradually updating the build cluster one nodepool at a time. <a href="https://github.com/berops/claudie/pull/1525">#1525</a></p>
+</li>
+<li>
+<p>The Scheduler and Context-Box microservices were merged into a single service called Manager. This was done because these two services were tightly coupled, and parts of the context box service were causing state correctness issues within Claudie and needed to be fixed. <a href="https://github.com/berops/claudie/pull/1498">#1498</a></p>
+</li>
+<li>
+<p>Latest supported kubernetes version is now  v1.30.x <a href="https://github.com/berops/claudie/pull/1501">#1498</a></p>
+</li>
+<li>
+<p>Logs in all microservices have been changed to always log what is being executed, rather than only when the LOG_LEVEL is set to debug. <a href="https://github.com/berops/claudie/pull/1507">#1507</a></p>
+</li>
+<li>
+<p>Longhron version was bumped from 1.6.0 to 1.7.0 <a href="https://github.com/berops/claudie/pull/1511">#1511</a></p>
+</li>
+<li>
+<p>When building a Kubernetes cluster without a load balancer for the API server, the generated kubeconfig will now work for all control plane nodes defined in the input manifest, instead of just one. <a href="https://github.com/berops/claudie/pull/1546">#1546</a></p>
+</li>
+</ul>
+<h3 id="experimental_1">Experimental<a class="headerlink" href="#experimental_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Support for a HTTP proxy was added. The HTTP Proxy can be turned on by setting the <code>HTTP_PROXY_MODE</code> environment variable in the Claudie config map to <code>on</code>  <a href="https://github.com/berops/claudie/pull/1440">#1440</a></li>
+</ul>
+<h2 id="bug-fixes">Bug fixes<a class="headerlink" href="#bug-fixes" title="Permanent link">&para;</a></h2>
+<ul>
+<li>In the case when the infrastructure fails to be build or is only partially build
+  the deletion process was stuck on acquiring a lock which was never created, this issue is no longer present <a href="https://github.com/berops/claudie/pull/1463">#1463</a></li>
+<li>The init process was added to the Ansible microservice because previously spawned Ansible playbooks left behind zombie processes that consumed resources. The init process takes care of cleaning up these processes. <a href="https://github.com/berops/claudie/pull/1527">#1527</a></li>
+<li>Fixed an edge case where part of the load balancer infrastructure was incorrectly destroyed when a failure occurred in the middle of the workflow. <a href="https://github.com/berops/claudie/pull/1533">#1533</a></li>
+<li>The whitespace when generating keys will no longer be trimmed <a href="https://github.com/berops/claudie/pull/1539">#1539</a></li>
+<li>GenesisCloud autoscaling will now correctly work <a href="https://github.com/berops/claudie/pull/1543">#1543</a></li>
+</ul>
+<h2 id="v091">v0.9.1<a class="headerlink" href="#v091" title="Permanent link">&para;</a></h2>
+<h2 id="whats-changed_1">What's Changed<a class="headerlink" href="#whats-changed_1" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Allow to overwrite the following default labels for static nodepools, which enables more customization for the static nodepools <a href="https://github.com/berops/claudie/pull/1550">#1550</a>
+    <div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>    claudie.io/provider=static-provider 
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    claudie.io/provider-instance=static-provider
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    topology.kubernetes.io/region=static-region
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    topology.kubernetes.io/zone=static-zone
+</span></code></pre></div></li>
+<li>In the previous release proxy was introduced as an experimental feature. This release further stabilizes the proxy interface by introducing the following options to be set within the InputManifest <a href="https://github.com/berops/claudie/pull/1540">#1540</a>
+    <div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>    kubernetes:
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    clusters:
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>      - name: proxy-example
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>        version: &quot;1.30.0&quot;
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>        network: 192.168.2.0/24
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>        installationProxy:
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>            mode: &quot;(on|off|default)&quot;
+</span></code></pre></div></li>
+<li>On  - proxy will be used across all nodes in the cluster at all times.</li>
+<li>Off - proxy will be turned of across the cluster.</li>
+<li>
+<p>Default - proxy will be turned on across the cluster for all nodes if the cluster contains at least one hetzner node.</p>
+<p>NOTE: if your cluster was build with the proxy turned on during the experimental phase, this change may or may not work, create backups before updating to the new version.</p>
+</li>
+<li>
+<p>When triggering a change of the the API endpoint of a cluster, an endless retry was added to the task executing the change as in the case of an error the cluster would endup malformed. This change will require user intervention to fix the underlying issue, if any occurs <a href="https://github.com/berops/claudie/pull/1577">#1577</a></p>
+</li>
+<li>
+<p>Basic reconciliation was added for autoscaled events in case of an error during the execution <a href="https://github.com/berops/claudie/pull/1582">#1582</a></p>
+<ul>
+<li>If error occurs during the addition of the node, claudie will rollback by deleting the added node and any associated infrastructure</li>
+<li>If errors occurs during the deletion of the node, claudie will retry the deletion multiple times</li>
+</ul>
+<p>For both of the cases it will retry the rollback or deletion of the node multiple times with an exponential backoff with up to an hour.</p>
+</li>
+</ul>
+<h2 id="bug-fixes_1">Bug fixes<a class="headerlink" href="#bug-fixes_1" title="Permanent link">&para;</a></h2>
+<ul>
+<li>
+<p>Up until now, if there was any invalid input in the InputManifest or the infrastructure was able to be only partially created, the InputManifest would end up with an error where only manual deletion would help to remove the partially constructed infrastructure, This was fixed, so that if anything fails during the addition of new infrastructure into the cluster, claudie will rollback to the last working point, by removing the partially created infrastructure <a href="https://github.com/berops/claudie/pull/1566">#1566</a></p>
+</li>
+<li>
+<p>Longhorn related issues, especially during node deletion resulted in many InputManifest issues, In this release we fixed the issues by switching to a different drain policy for longhorn replicas deployed across the nodes on the cluster, namely <code>block-for-eviction-if-last-replica</code><a href="https://github.com/berops/claudie/pull/1596">#1596</a> which results in:</p>
+<ul>
+<li>Protecting data by preventing the drain operation from completing until there is a healthy replica available for each volume available on another node.</li>
+<li>Automatically evicts replicas, so the user does not need to do it manually.</li>
+</ul>
+</li>
+</ul>
+<h2 id="v092">v0.9.2<a class="headerlink" href="#v092" title="Permanent link">&para;</a></h2>
+<h2 id="whats-changed_2">What's Changed<a class="headerlink" href="#whats-changed_2" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Node local dns will be deployed on all newly build clusters <a href="https://github.com/berops/claudie/pull/1603">#1603</a>.
+  For existing clusters that were build using older Claudie version, this change will deploy the <code>node-local-dns</code> into the cluster
+  but it will not automatically work. Manual work needs to done, by first editing the <code>kubelet-config</code> ConfigMap in the <code>kube-system</code> namespace of the cluster
+  to change the DNS address to the address of the <code>node-local-dns</code> and then on each node the following changes need to be done: <a href="https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-reconfigure/#reflecting-the-kubelet-changes">applying-kubelet-configuration-changes</a>.</li>
+</ul>
+<h2 id="bug-fixes_2">Bug fixes<a class="headerlink" href="#bug-fixes_2" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Improved validation errors when zero nodes are defined in a nodepool <a href="https://github.com/berops/claudie/pull/1605">#1605</a></li>
+<li>Claudie will now correctly recognize a change in the kubernetes version to perform an update <a href="https://github.com/berops/claudie/pull/1607">#1607</a></li>
+<li>Kubernetes secrets with provider credentials that contain leading or trailing whitespace will now be trimmed, avoiding issues with generated terraform templates <a href="https://github.com/berops/claudie/pull/1606">#1606</a></li>
+<li>Changing the API endpoint will now correctly work, after the recent kubeone version update <a href="https://github.com/berops/claudie/pull/1619">#1619</a></li>
+</ul>
+<h2 id="v093">v0.9.3<a class="headerlink" href="#v093" title="Permanent link">&para;</a></h2>
+<h2 id="bug-fixes_3">Bug fixes<a class="headerlink" href="#bug-fixes_3" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Correctly turn HTTP proxy on/off <a href="https://github.com/berops/claudie/pull/1636">#1636</a>.
+  HTTP proxy feature introduced in v0.9.1 was not working correctly mostly when switching between the on/off mode.</li>
+</ul>
+<h2 id="v094">v0.9.4<a class="headerlink" href="#v094" title="Permanent link">&para;</a></h2>
+<h2 id="bug-fixes_4">Bug fixes<a class="headerlink" href="#bug-fixes_4" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Fix backwards compatibility with changes introduced in Claudie version 0.9.3 for clusters build using older versions 0.9.x <a href="https://github.com/berops/claudie/pull/1651">#1651</a>.
+ If you built your cluster using the Claudie version 0.9.3, you can ignore this minor release.</li>
+</ul>
+<h2 id="v095">v0.9.5<a class="headerlink" href="#v095" title="Permanent link">&para;</a></h2>
+<h2 id="bug-fixes_5">Bug fixes<a class="headerlink" href="#bug-fixes_5" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Correclty assign CIDR to loadbalancer nodepools <a href="https://github.com/berops/claudie/pull/1654">#1654</a>.
+  This issue was prelevant mostly when working with loadbalancer from cloud providers that were not hetzner.</li>
+</ul>
+<h2 id="v096">v0.9.6<a class="headerlink" href="#v096" title="Permanent link">&para;</a></h2>
+<h2 id="bug-fixes_6">Bug fixes<a class="headerlink" href="#bug-fixes_6" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Fixed issue where failing to build a load balancer would cause Claudie to hang if the DNS part failed <a href="https://github.com/berops/claudie/pull/1660">#1660</a>.
+  Claudie will now recover from this scenario and it is possible for the user to specify the correct DNS settings in the InputManifest to fixed the reported issue.</li>
+</ul>
+<h2 id="v097">v0.9.7<a class="headerlink" href="#v097" title="Permanent link">&para;</a></h2>
+<h2 id="whats-changed_3">What's Changed<a class="headerlink" href="#whats-changed_3" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Additional settings were added to roles for LoadBalancers. <a href="https://github.com/berops/claudie/pull/1685">#1685</a>.</li>
+</ul>
+<p>It is now possible to configure adding/removing proxy protocol and sticky sessions.</p>
+<p><code>stickySessions</code> will always forward traffic to the same node based on the IP hash.</p>
+<p><code>proxyProtocol</code> will turn on the proxy protocol. If used, the application to which the traffic is redirected must support this protocol.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>  loadBalancers:
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>  roles:
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    - name: example-role
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>      protocol: tcp
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>      port: 6443
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>      targetPort: 6443
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>      targetPools:
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>        - htz-kube-nodes
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>      # added
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>      settings:
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>        proxyProtocol: off (default will be on)
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>        stickySession: on. (default will be off)
+</span></code></pre></div>
+<h2 id="bug-fixes_7">Bug fixes<a class="headerlink" href="#bug-fixes_7" title="Permanent link">&para;</a></h2>
+<ul>
+<li>If any of the nodes become unreachable, Claudie will report the problem and will not work on any changes until the connectivity issue is resolved. <a href="https://github.com/berops/claudie/pull/1658">#1658</a></li>
+</ul>
+<p>For unreachable nodes within the kubernetes cluster, Claudie will give you the options of resolving the issue or removing the node from the InputManifest or via <code>kubectl</code>, Claudie will report the following issue
+  <div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>fix the unreachable nodes by either:
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a> - fixing the connectivity issue
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a> - if the connectivity issue cannot be resolved, you can:
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>   - delete the whole nodepool from the kubernetes cluster in the InputManifest
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>   - delete the selected unreachable node/s manually from the cluster via &#39;kubectl&#39;
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>     - if its a static node you will also need to remove it from the InputManifest
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>     - if its a dynamic node claudie will replace it.
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>     NOTE: if the unreachable node is the kube-apiserver, claudie will not be able to recover
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>           after the deletion.
+</span></code></pre></div></p>
+<p>For unreachable nodes within the loadbalancer cluster, Claudie will give you the options of resolving the issue or removing the nodepool or load balancer from the InputManifest, Claudie will report the following issue
+  <div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>fix the unreachable nodes by either:
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a> - fixing the connectivity issue
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a> - if the connectivity issue cannot be resolved, you can:
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>   - delete the whole nodepool from the loadbalancer cluster in the InputManifest
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>   - delete the whole loadbalancer cluster from the InputManifest
+</span></code></pre></div></p>
+<ul>
+<li>
+<p>It may be the case that the cluster-autoscaler image may not share the same version as the specified kubernetes version in the InputManifest. Claudie will now correctly recognize this and pick the latest available cluster-autoscaler image <a href="https://github.com/berops/claudie/pull/1680">#1680</a></p>
+</li>
+<li>
+<p>Claudie will now set the limits of max open file descriptors on each node to 65535 <a href="https://github.com/berops/claudie/pull/1679">#1679</a></p>
+</li>
+</ul>
+<h2 id="v098">v0.9.8<a class="headerlink" href="#v098" title="Permanent link">&para;</a></h2>
+<h2 id="whats-changed_4">What's Changed<a class="headerlink" href="#whats-changed_4" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Added support for alternative names for load balancers <a href="https://github.com/berops/claudie/pull/1693">#1693</a></li>
+</ul>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="w">   </span><span class="nt">dns</span><span class="p">:</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">     </span><span class="nt">dnsZone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">example.com</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">     </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">example</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">     </span><span class="nt">hostname</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">     </span><span class="nt">alternativeNames</span><span class="p">:</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">       </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">other</span>
+</span></code></pre></div>
+<p>Templates that Claudie uses by default, will be updated separately to make use of the alternative names.</p>
+<h2 id="bug-fixes_8">Bug fixes<a class="headerlink" href="#bug-fixes_8" title="Permanent link">&para;</a></h2>
+<ul>
+<li>If the current state was not built and some of the nodes did not have an assigned IP address, Claudie would fail to correctly determine if the nodes were reachable. <a href="https://github.com/berops/claudie/pull/1691">#1691</a></li>
+<li>Claudie will now increase the limits for <code>fs.inotify</code> to a higher number, as depending on the workload on each node, reaching the limits would result in an error from which Claudie would not recover. <a href="https://github.com/berops/claudie/pull/1696">#1696</a> </li>
+<li>Annotations for static nodepools will now be correctly propagated. <a href="https://github.com/berops/claudie/pull/1696">#1696</a> </li>
+</ul>
+<h2 id="v099">v0.9.9<a class="headerlink" href="#v099" title="Permanent link">&para;</a></h2>
+<h2 id="whats-changed_5">What's Changed<a class="headerlink" href="#whats-changed_5" title="Permanent link">&para;</a></h2>
+<ul>
+<li>
+<p>General maintenance release, updated dependencies used by Claudie <a href="https://github.com/berops/claudie/pull/1709">#1709</a></p>
+</li>
+<li>
+<p>Upgrading Longhorn from version 1.7.0 to version 1.8.1 <a href="https://github.com/berops/claudie/pull/1709">#1709</a></p>
+</li>
+</ul>
+<p>After upgrading Longhorn to the newer version, some pods of the old and new versions will coexist if your cluster uses a PVC that uses the Longhorn storage class (which is the default), as they would reference the old v1.7.0.</p>
+<p>To upgrade the volumes to the newer version, it's possible to use the Longhorn UI to set <code>Settings &gt; Concurrent Automatic Engine Upgrade Per Node Limit</code> to a value greater than 0 to upgrade old volumes.
+  This is a setting that controls how Longhorn automatically upgrades volumes’ engines to the new default engine image after upgrading Longhorn manager. More on: https://longhorn.io/docs/1.8.1/deploy/upgrade/auto-upgrade-engine/</p>
+<p>Once the upgrade is complete, the old engine image pods and the instance manager will be terminated after ~60 minutes of non-use (after all volumes have been upgraded to use the latest Longhorn version) You can also follow the official Longhorn post on this: https://longhorn.io/kb/troubleshooting-some-old-instance-manager-pods-are-still-running-after-upgrade/</p>
+<h2 id="v0910">v0.9.10<a class="headerlink" href="#v0910" title="Permanent link">&para;</a></h2>
+<h2 id="whats-changed_6">What's Changed<a class="headerlink" href="#whats-changed_6" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Decrease the amount of retries for cleanup of static nodes during deletion from 4 to 2 <a href="https://github.com/berops/claudie/pull/1729">#1729</a></li>
+</ul>
+<h2 id="bug-fixes_9">Bug fixes<a class="headerlink" href="#bug-fixes_9" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Fix panic when deleting clusters with static nodes for which DNS was not built correctly <a href="https://github.com/berops/claudie/pull/1724">#1724</a></li>
+<li>Fix propagation of desired state from operator to manager service <a href="https://github.com/berops/claudie/pull/1726">#1726</a></li>
+<li>Fix multiple HTTP proxy environment variables present in <code>/etc/environment</code> <a href="https://github.com/berops/claudie/pull/1727">#1727</a></li>
+<li>Fix partial DNS apply, which would left part of the infrastructure untracked <a href="https://github.com/berops/claudie/pull/1728">#1728</a></li>
+</ul>
+<h2 id="v0911">v0.9.11<a class="headerlink" href="#v0911" title="Permanent link">&para;</a></h2>
+<h2 id="whats-changed_7">What's Changed<a class="headerlink" href="#whats-changed_7" title="Permanent link">&para;</a></h2>
+<p><strong>READ ME: A lot of core changes are made in this release, before updating an already deployed Claudie instance, make sure you have working backups of your kuberentes clusters</strong></p>
+<ul>
+<li>
+<p>InputManifest was extended to also include a NoProxy list in the proxy settings to bypass the proxy for the listed endpoints, if used. <a href="https://github.com/berops/claudie/pull/1745">#1745</a>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>kubernetes:
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>    clusters:
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>      - name: proxy-example
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>        version: &quot;1.30.0&quot;
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>        network: 192.168.2.0/24
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>        installationProxy:
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>            mode: &quot;on&quot;
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>            noProxy: &quot;.suse.com&quot;
+</span></code></pre></div></p>
+</li>
+<li>
+<p>Update kubeone to 1.10 <a href="https://github.com/berops/claudie/pull/1749">#1749</a></p>
+</li>
+<li>Migrate to OpenTofu <code>v1.6.2</code> from terraform <code>v1.5.7</code> <a href="https://github.com/berops/claudie/pull/1755">#1755</a></li>
+</ul>
+<p><strong>READ ME: OpenTofu 1.6.2 is compatible with the previosly used Terraform version 1.5.7, while claudie will take care of the update, make sure you have working backups if you are updating an already deployed Claudie instance, in case of a disaster scenario</strong></p>
+<ul>
+<li>Add <code>sprig</code> to all templates used within claudie <a href="https://github.com/berops/claudie/pull/1768">#1768</a></li>
+<li>
+<p>Builder will now support faster termination and wait only on the current task being processed instead of the whole workflow <a href="https://github.com/berops/claudie/pull/1770">#1770</a></p>
+</li>
+<li>
+<p>Claudie will now support proper HA DNS Loadbalancing #<a href="https://github.com/berops/claudie/pull/1777">1777</a></p>
+</li>
+</ul>
+<p><strong>This feature will be available with the latest claudie templates <a href="https://github.com/berops/claudie-config/releases/tag/v0.9.11"><code>v0.9.11</code></a></strong></p>
+<p><strong>READ ME: for already deployed Claudie instances, if you used Cloudflare as a provider you will need to update your secret to also include the <a href="https://docs.claudie.io/v0.9.11/input-manifest/providers/cloudflare/">Accound ID</a> the token was created for.</strong></p>
+<ul>
+<li>NGINX was replaced by Envoy on Loadbalancers. https://github.com/berops/claudie/pull/1735</li>
+</ul>
+<p><strong>READ ME: If you update an already deployed Claudie instance, this is a one time update that will introduce a small downtime of the services while NGINX is being replaced with Envoy.</strong></p>
+<ul>
+<li>
+<p>Upgraded all terraform providers to the latest possible version that still supports the claudie templates version <code>v0.9.8</code> <a href="https://github.com/berops/claudie/pull/1782">#1782</a></p>
+</li>
+<li>
+<p>Claudie will now perform a rollout restart for the NVIDIA GPU operator daemonset as part of the workflow, which overwrites the <code>/etc/containerd/config.yml</code>. <a href="https://github.com/berops/claudie/pull/1790">#1790</a></p>
+</li>
+</ul>
+<h2 id="bug-fixes_10">Bug fixes<a class="headerlink" href="#bug-fixes_10" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Return partially updated state instead of always defaulting to current state after error in deletion <a href="https://github.com/berops/claudie/pull/1793">#1793</a></li>
+<li>Restarting SSH session after updating environmnet variables, is now part of the ansible workflow, which previosly caused issue in which the updated environment variables were not reflected in a re-used SSH connection <a href="https://github.com/berops/claudie/pull/1792">#1792</a></li>
+<li>Fixed a memory leak in the autoscaler service. <a href="https://github.com/berops/claudie/pull/1787">#1787</a></li>
+</ul>
+<h2 id="v0912">v0.9.12<a class="headerlink" href="#v0912" title="Permanent link">&para;</a></h2>
+<h2 id="whats-changed_8">What's Changed<a class="headerlink" href="#whats-changed_8" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Retries were added to reading the output from OpenTofu, which could occasionally fail. <a href="https://github.com/berops/claudie/pull/1824">#1824</a></li>
+<li>Increased concurrency limits to decrease the build time of larger clusters. This change also affects Claudie's memory requirements, which should fit within 8 GB. <a href="https://github.com/berops/claudie/pull/1819">#1819</a></li>
+<li>For autoscaled events, Terraformer will now skip refreshing the LoadBalancers and DNS infrastructure, if present. <a href="https://github.com/berops/claudie/pull/1830">#1830</a></li>
+</ul>
+<h2 id="v0913">v0.9.13<a class="headerlink" href="#v0913" title="Permanent link">&para;</a></h2>
+<h2 id="whats-changed_9">What's Changed<a class="headerlink" href="#whats-changed_9" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Concurrency limits are now configurable <a href="https://github.com/berops/claudie/pull/1838">#1838</a></li>
+<li>Autoscaled nodepools are now limited to 256 nodes <a href="https://github.com/berops/claudie/pull/1839">#1839</a></li>
+<li>Metadata secret will now be updated after node deletion <a href="https://github.com/berops/claudie/pull/1841">#1841</a></li>
+<li>Builder TTL has been made configurable via the <code>BUILDER_TTL</code> env, with a default value of 2 hours <a href="https://github.com/berops/claudie/pull/1850">#1850</a></li>
+</ul>
+<h2 id="bug-fixes_11">Bug fixes<a class="headerlink" href="#bug-fixes_11" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Prometheus metric for currently deleted nodes has been fixed <a href="https://github.com/berops/claudie/pull/1849">#1849</a></li>
+</ul>
+<h2 id="v0914">v0.9.14<a class="headerlink" href="#v0914" title="Permanent link">&para;</a></h2>
+<h2 id="whats-changed_10">What's Changed<a class="headerlink" href="#whats-changed_10" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Correctly remove taints,annotations,labels <a href="https://github.com/berops/claudie/pull/1852">#1852</a></li>
+<li>In some cases unnecessary tasks were spawned which would prolong the building of the cluster without any side-effect, these have been removed <a href="https://github.com/berops/claudie/pull/1856">#1856</a></li>
+<li>
+<p>Expand machine spec to contain number of GPUs <a href="https://github.com/berops/claudie/pull/1854">#1854</a>
+  Inside the NodePool specification it is now possible to specify the number of GPUs the instance has
+  which is made use of when autoscaling based on GPU workload.
+<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>- name: autoscaled
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>  providerSpec:
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>   name: aws
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>   region: eu-central-1
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>   zone: eu-central-1a
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>  autoscaler:
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>    min: 0
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>    max: 20
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>  # GPU machine type name.
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>  serverType: g4dn.xlarge
+</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>  machineSpec:
+</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>    # explicitly specify how many GPU&#39;s the instance type provides.
+</span><span id="__span-10-13"><a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a>    nvidiaGpu: 1
+</span><span id="__span-10-14"><a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a>  image: ami-07eef52105e8a2059
+</span></code></pre></div></p>
+</li>
+<li>
+<p>Add support for OpenStack provider, with the main aim of supporting the openstack offering from <a href="https://www.ovhcloud.com/en/">OVH</a> <a href="https://github.com/berops/claudie/pull/1857">#1857</a>
+  It is now possible to use an openstack provider within the InputManifest.
+  The support for openstack has been added in the <code>v0.9.14</code> version of the claudie templates.
+<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>    - name: ovh-1
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>      providerType: openstack
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>      templates:
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>        repository: &quot;https://github.com/berops/claudie-config&quot;
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>        tag: v0.9.14
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>        path: &quot;templates/terraformer/openstack&quot;
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>      secretRef:
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>        name: ovh-secret
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>        namespace: e2e-secrets
+</span></code></pre></div></p>
+</li>
+</ul>
+<h2 id="v0915">v0.9.15<a class="headerlink" href="#v0915" title="Permanent link">&para;</a></h2>
+<h2 id="bug-fixes_12">Bug fixes<a class="headerlink" href="#bug-fixes_12" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Fixes issues with incompatible docker api in the ansibler service that resulted in the error from <a href="https://github.com/berops/claudie/issues/1885">#1885</a></li>
+</ul>
+<h2 id="v0916">v0.9.16<a class="headerlink" href="#v0916" title="Permanent link">&para;</a></h2>
+<h2 id="whats-changed_11">What's Changed<a class="headerlink" href="#whats-changed_11" title="Permanent link">&para;</a></h2>
+<ul>
+<li>The open stack provider will now use image names instead of image ids, this was due to the possibility of the ids being replaced by the provider and no longer valid <a href="https://github.com/berops/claudie/pull/1902">#1902</a></li>
+</ul>
+<h2 id="bug-fixes_13">Bug fixes<a class="headerlink" href="#bug-fixes_13" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Fix cloudflare account id propagation when updating to newer claudie versions <a href="https://github.com/berops/claudie/pull/1904">#1904</a></li>
+</ul>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  <form class="md-feedback" name="feedback" hidden>
+    <fieldset>
+      <legend class="md-feedback__title">
+        Was this doc helpful?
+      </legend>
+      <div class="md-feedback__inner">
+        <div class="md-feedback__list">
+          
+            <button class="md-feedback__icon md-icon" type="submit" title="Yes, it was" data-md-value="good">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 12a8 8 0 0 0-8-8 8 8 0 0 0-8 8 8 8 0 0 0 8 8 8 8 0 0 0 8-8m2 0a10 10 0 0 1-10 10A10 10 0 0 1 2 12 10 10 0 0 1 12 2a10 10 0 0 1 10 10M10 9.5c0 .8-.7 1.5-1.5 1.5S7 10.3 7 9.5 7.7 8 8.5 8s1.5.7 1.5 1.5m7 0c0 .8-.7 1.5-1.5 1.5S14 10.3 14 9.5 14.7 8 15.5 8s1.5.7 1.5 1.5m-5 7.73c-1.75 0-3.29-.73-4.19-1.81L9.23 14c.45.72 1.52 1.23 2.77 1.23s2.32-.51 2.77-1.23l1.42 1.42c-.9 1.08-2.44 1.81-4.19 1.81"/></svg>
+            </button>
+          
+            <button class="md-feedback__icon md-icon" type="submit" title="No, it could be a lot better" data-md-value="bad">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 12a8 8 0 0 0-8-8 8 8 0 0 0-8 8 8 8 0 0 0 8 8 8 8 0 0 0 8-8m2 0a10 10 0 0 1-10 10A10 10 0 0 1 2 12 10 10 0 0 1 12 2a10 10 0 0 1 10 10m-6.5-4c.8 0 1.5.7 1.5 1.5s-.7 1.5-1.5 1.5-1.5-.7-1.5-1.5.7-1.5 1.5-1.5M10 9.5c0 .8-.7 1.5-1.5 1.5S7 10.3 7 9.5 7.7 8 8.5 8s1.5.7 1.5 1.5m2 4.5c1.75 0 3.29.72 4.19 1.81l-1.42 1.42C14.32 16.5 13.25 16 12 16s-2.32.5-2.77 1.23l-1.42-1.42C8.71 14.72 10.25 14 12 14"/></svg>
+            </button>
+          
+        </div>
+        <div class="md-feedback__note">
+          
+            <div data-md-value="good" hidden>
+              
+              
+                
+              
+              
+              
+                
+                
+              
+              Thanks for your feedback!
+            </div>
+          
+            <div data-md-value="bad" hidden>
+              
+              
+                
+              
+              
+              
+                
+                
+              
+              Thanks for your feedback! Help us improve this page by using our <a href="/latest/feedback/feedback-form/" target="_blank" rel="noopener">feedback form</a>.
+            </div>
+          
+        </div>
+      </div>
+    </fieldset>
+  </form>
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      For enterprise support reach out via
+<a
+  href="mailto:claudie@berops,com"
+  onmouseover="this.href=this.href.replace(',', '.')">
+  claudie@berops.com
+</a>
+
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/berops/claudie" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path fill="currentColor" d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://kubernetes.slack.com/archives/C05SW4GKPL3" target="_blank" rel="noopener" title="kubernetes.slack.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path fill="currentColor" d="M94.1 315.1c0 25.9-21.2 47.1-47.1 47.1S0 341 0 315.1 21.2 268 47.1 268h47.1v47.1zm23.7 0c0-25.9 21.2-47.1 47.1-47.1s47.1 21.2 47.1 47.1v117.8c0 25.9-21.2 47.1-47.1 47.1s-47.1-21.2-47.1-47.1zm47.1-189c-25.9 0-47.1-21.2-47.1-47.1s21.2-47 47.1-47S212 53.2 212 79.1v47.1h-47.1zm0 23.7c25.9 0 47.1 21.2 47.1 47.1S190.8 244 164.9 244H47.1C21.2 244 0 222.8 0 196.9s21.2-47.1 47.1-47.1zm189 47.1c0-25.9 21.2-47.1 47.1-47.1s47 21.2 47 47.1-21.2 47.1-47.1 47.1h-47.1v-47.1zm-23.7 0c0 25.9-21.2 47.1-47.1 47.1S236 222.8 236 196.9V79.1c0-25.9 21.2-47.1 47.1-47.1s47.1 21.2 47.1 47.1zm-47.1 189c25.9 0 47.1 21.2 47.1 47.1s-21.2 47-47.1 47-47.1-21.2-47.1-47.1v-47.1h47.1zm0-23.7c-25.9 0-47.1-21.2-47.1-47.1s21.2-47.1 47.1-47.1h117.8c25.9 0 47.1 21.2 47.1 47.1s-21.2 47.1-47.1 47.1z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.copy", "content.code.annotate", "content.tabs.link", "navigation.instant", "navigation.tracking", "navigation.sections", "navigation.expand", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "toc.follow"], "search": "../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.50899def.min.js"></script>
+      
+    
+  <script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(() => { lightbox.reload() });
+</script></body>
+</html>
