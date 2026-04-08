@@ -51,7 +51,7 @@ terraform {
     {{- if .CloudRift }}
     cloudrift = {
       source  = "berops/cloudrift"
-      version = "0.2.0"
+      version = "~> 0.2.0"
     }
     {{- end }}
   }
