@@ -82,6 +82,18 @@ func DeleteNodes(logger zerolog.Logger, tracker Tracker) {
 	}
 
 	if len(master) == 0 && len(worker) == 0 {
+		if d.KDeleteNodes.WithNodePool {
+			logger.
+				Info().
+				Msgf("Removing nodepool %q with 0 nodes", d.KDeleteNodes.Nodepool)
+
+			k8s.ClusterInfo.NodePools = nodepools.DeleteByName(k8s.ClusterInfo.NodePools, d.KDeleteNodes.Nodepool)
+
+			update := tracker.Result.Update()
+			update.Kubernetes(k8s)
+			update.Commit()
+		}
+
 		return
 	}
 
