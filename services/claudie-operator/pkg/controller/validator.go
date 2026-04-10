@@ -176,7 +176,7 @@ func getDynamicNodepoolsMap(m *v1beta.InputManifest) map[string]*manifest.Dynami
 func nodepoolImmutabilityCheck(desired, current *manifest.DynamicNodePool) error {
 	if desired.ProviderSpec != current.ProviderSpec {
 		return fmt.Errorf(
-			"dynamic nodepools are immutable, changing the provider specification from %q to %q for %q is not allowed, only 'count' and autoscaling' fields are allowed to be modified, consider removing %q and creating a new one",
+			"dynamic nodepools are immutable, changing the provider specification from %q to %q for %q is not allowed, only 'count' and 'autoscaling' fields are allowed to be modified, consider removing %q and creating a new one",
 			safePrint(&current.ProviderSpec),
 			safePrint(&desired.ProviderSpec),
 			current.Name,
@@ -186,7 +186,7 @@ func nodepoolImmutabilityCheck(desired, current *manifest.DynamicNodePool) error
 
 	if desired.ServerType != current.ServerType {
 		return fmt.Errorf(
-			"dynamic nodepools are immutable, changing the server type, from %q to %q, for %q is not allowed, only 'count' and autoscaling' fields are allowed to be modified, consider removing %q and creating a new one",
+			"dynamic nodepools are immutable, changing the server type, from %q to %q, for %q is not allowed, only 'count' and 'autoscaling' fields are allowed to be modified, consider removing %q and creating a new one",
 			current.ServerType,
 			desired.ServerType,
 			current.Name,
@@ -196,7 +196,7 @@ func nodepoolImmutabilityCheck(desired, current *manifest.DynamicNodePool) error
 
 	if desired.Image != current.Image {
 		return fmt.Errorf(
-			"dynamic nodepools are immutable, changing the image from %q to %q for %q is not allowed, only 'count' and autoscaling' fields are allowed to be modified, consider removing %q and creating a new one",
+			"dynamic nodepools are immutable, changing the image from %q to %q for %q is not allowed, only 'count' and 'autoscaling' fields are allowed to be modified, consider removing %q and creating a new one",
 			current.Image,
 			desired.Image,
 			current.Name,
@@ -209,7 +209,7 @@ func nodepoolImmutabilityCheck(desired, current *manifest.DynamicNodePool) error
 	storageDiskChanged = storageDiskChanged || ((desired.StorageDiskSize != nil && current.StorageDiskSize != nil) && (*desired.StorageDiskSize != *current.StorageDiskSize))
 	if storageDiskChanged {
 		return fmt.Errorf(
-			"dynamic nodepools are immutable, changing the storage disk size from %q to %q for %q is not allowed, only 'count' and autoscaling' fields are allowed to be modified, consider removing %q and creating a new one",
+			"dynamic nodepools are immutable, changing the storage disk size from %q to %q for %q is not allowed, only 'count' and 'autoscaling' fields are allowed to be modified, consider removing %q and creating a new one",
 			safePrint(current.StorageDiskSize),
 			safePrint(desired.StorageDiskSize),
 			current.Name,
@@ -222,7 +222,7 @@ func nodepoolImmutabilityCheck(desired, current *manifest.DynamicNodePool) error
 	machineSpecChanged = machineSpecChanged || ((desired.MachineSpec != nil && current.MachineSpec != nil) && (*desired.MachineSpec != *current.MachineSpec))
 	if machineSpecChanged {
 		return fmt.Errorf(
-			"dynamic nodepools are immutable, changing the machine spec from %q to %q for %q is not allowed, only 'count' and autoscaling' fields are allowed to be modified, consider removing %q and creating a new one",
+			"dynamic nodepools are immutable, changing the machine spec from %q to %q for %q is not allowed, only 'count' and 'autoscaling' fields are allowed to be modified, consider removing %q and creating a new one",
 			safePrint(current.MachineSpec),
 			safePrint(desired.MachineSpec),
 			current.Name,
