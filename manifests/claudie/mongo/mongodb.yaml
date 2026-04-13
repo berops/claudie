@@ -26,7 +26,7 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /data/db
-          image: mongo:5
+          image: mongo:6
           resources:
             requests:
               cpu: 100m
