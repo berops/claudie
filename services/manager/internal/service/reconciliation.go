@@ -177,6 +177,43 @@ func reconciliate(pending *spec.Config, desiredStates map[string]*spec.Clusters)
 
 			clusterResult[cluster] = Noop
 
+			// Update credentials for the current state/InFlight task.
+			//
+			// This is done as the very first step, before any diffs and
+			// or healthchecks, as this is a pure loopback task which
+			// does not leave the manager service and can be updated
+			// in-place.
+			var updatedCredentials bool
+			if state.InFlight != nil {
+				inFlight, err := state.InFlight.Task.MutableClusters()
+				if err != nil {
+					state.State.Status = spec.Workflow_ERROR
+					state.State.Description = fmt.Sprintf(`
+Failed to extract state from failed 'InFlight' state: %v
+`, err)
+					logger.Error().Msg(state.State.Description)
+					break event_switch
+				}
+				updatedCredentials = updateCredentials(inFlight, desiredState)
+			}
+			updatedCredentials = updateCredentials(current, desiredState) || updatedCredentials
+
+			if updatedCredentials {
+				clusterResult[cluster] = NotReady
+
+				logger.Info().Msg("Propagating credentials update")
+
+				// When updating the credentials skip all
+				// of the other work done in here until the
+				// next iteration of the reconciliation.
+				//
+				// This effectively updates the credentials
+				// in-place and any other tasks that would
+				// have executed this iteration will be done
+				// next iteration of the reconciliation loop.
+				continue
+			}
+
 			// Could be nil or could be a Task that failed.
 			lastTask := state.InFlight
 
@@ -808,4 +845,80 @@ func areScheduledTasksEqual(a, b *spec.TaskEvent) bool {
 	}
 
 	return proto.Equal(a.Task, b.Task)
+}
+
+// Updates the credentials in the `current` state with the credentials from `desired`, but
+// only if the credentials are different. If atleast one credential was updated [true] is returned.
+func updateCredentials(current, desired *spec.Clusters) (updated bool) {
+	for _, cnp := range current.GetK8S().GetClusterInfo().GetNodePools() {
+		dnp := nodepools.FindByName(cnp.Name, desired.GetK8S().GetClusterInfo().GetNodePools())
+		if dnp == nil {
+			continue
+		}
+
+		if updateNodePoolCredentials(cnp, dnp) {
+			updated = true
+		}
+	}
+
+	for _, clb := range current.GetLoadBalancers().GetClusters() {
+		di := clusters.IndexLoadbalancerById(clb.ClusterInfo.Id(), desired.GetLoadBalancers().GetClusters())
+		if di < 0 {
+			continue
+		}
+
+		dlb := desired.LoadBalancers.Clusters[di]
+
+		for _, cnp := range clb.ClusterInfo.NodePools {
+			dnp := nodepools.FindByName(cnp.Name, dlb.ClusterInfo.NodePools)
+			if dnp == nil {
+				continue
+			}
+
+			if updateNodePoolCredentials(cnp, dnp) {
+				updated = true
+			}
+		}
+
+		if !clb.Dns.Provider.CredentialsEqual(dlb.Dns.Provider) {
+			clb.Dns.Provider.CopyCredentials(dlb.Dns.Provider)
+			updated = true
+		}
+	}
+
+	return
+}
+
+func updateNodePoolCredentials(current, desired *spec.NodePool) (updated bool) {
+	switch cnp := current.Type.(type) {
+	case *spec.NodePool_DynamicNodePool:
+		dnp, ok := desired.Type.(*spec.NodePool_DynamicNodePool)
+		if !ok {
+			return
+		}
+
+		if !cnp.DynamicNodePool.Provider.CredentialsEqual(dnp.DynamicNodePool.Provider) {
+			cnp.DynamicNodePool.Provider.CopyCredentials(dnp.DynamicNodePool.Provider)
+			updated = true
+		}
+	case *spec.NodePool_StaticNodePool:
+		dnp, ok := desired.Type.(*spec.NodePool_StaticNodePool)
+		if !ok {
+			return
+		}
+
+		for ep, key := range cnp.StaticNodePool.NodeKeys {
+			if newKey, ok := dnp.StaticNodePool.NodeKeys[ep]; ok && key != newKey {
+				cnp.StaticNodePool.NodeKeys[ep] = newKey
+				updated = true
+			}
+		}
+
+	default:
+		log.
+			Warn().
+			Msg("unknown nodepool, can't propagate updating credentials")
+	}
+
+	return
 }
