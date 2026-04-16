@@ -92,6 +92,181 @@ func (pr *Provider) Credentials() string {
 	}
 }
 
+func (pr *Provider) CopyCredentials(other *Provider) {
+	if pr == nil {
+		return
+	}
+
+	if other == nil {
+		return
+	}
+
+	switch p := pr.ProviderType.(type) {
+	case *Provider_Aws:
+		o, ok := other.ProviderType.(*Provider_Aws)
+		if !ok {
+			return
+		}
+
+		p.Aws.AccessKey = o.Aws.AccessKey
+		p.Aws.SecretKey = o.Aws.SecretKey
+	case *Provider_Azure:
+		o, ok := other.ProviderType.(*Provider_Azure)
+		if !ok {
+			return
+		}
+
+		p.Azure.ClientSecret = o.Azure.ClientSecret
+	case *Provider_Cloudflare:
+		o, ok := other.ProviderType.(*Provider_Cloudflare)
+		if !ok {
+			return
+		}
+
+		p.Cloudflare.Token = o.Cloudflare.Token
+	case *Provider_Cloudrift:
+		o, ok := other.ProviderType.(*Provider_Cloudrift)
+		if !ok {
+			return
+		}
+
+		p.Cloudrift.Token = o.Cloudrift.Token
+	case *Provider_Exoscale:
+		o, ok := other.ProviderType.(*Provider_Exoscale)
+		if !ok {
+			return
+		}
+
+		p.Exoscale.ApiSecret = o.Exoscale.ApiSecret
+		p.Exoscale.ApiKey = o.Exoscale.ApiKey
+	case *Provider_Gcp:
+		o, ok := other.ProviderType.(*Provider_Gcp)
+		if !ok {
+			return
+		}
+
+		p.Gcp.Key = o.Gcp.Key
+	case *Provider_Hetzner:
+		o, ok := other.ProviderType.(*Provider_Hetzner)
+		if !ok {
+			return
+		}
+
+		p.Hetzner.Token = o.Hetzner.Token
+	case *Provider_Oci:
+		o, ok := other.ProviderType.(*Provider_Oci)
+		if !ok {
+			return
+		}
+
+		p.Oci.KeyFingerprint = o.Oci.KeyFingerprint
+		p.Oci.PrivateKey = o.Oci.PrivateKey
+	case *Provider_Openstack:
+		o, ok := other.ProviderType.(*Provider_Openstack)
+		if !ok {
+			return
+		}
+
+		p.Openstack.ApplicationCredentialID = o.Openstack.ApplicationCredentialID
+		p.Openstack.ApplicationCredentialSecret = o.Openstack.ApplicationCredentialSecret
+	default:
+		// do nothing.
+	}
+}
+
+// Checks whether these two providers have the same credentials.
+func (pr *Provider) CredentialsEqual(other *Provider) (equal bool) {
+	if pr == nil {
+		return
+	}
+
+	if other == nil {
+		return
+	}
+
+	switch p := pr.ProviderType.(type) {
+	case *Provider_Aws:
+		o, ok := other.ProviderType.(*Provider_Aws)
+		if !ok {
+			return
+		}
+
+		accessKey := p.Aws.AccessKey == o.Aws.AccessKey
+		secretKey := p.Aws.SecretKey == o.Aws.SecretKey
+
+		equal = accessKey && secretKey
+	case *Provider_Azure:
+		o, ok := other.ProviderType.(*Provider_Azure)
+		if !ok {
+			return
+		}
+
+		equal = p.Azure.ClientSecret == o.Azure.ClientSecret
+	case *Provider_Cloudflare:
+		o, ok := other.ProviderType.(*Provider_Cloudflare)
+		if !ok {
+			return
+		}
+
+		equal = p.Cloudflare.Token == o.Cloudflare.Token
+	case *Provider_Cloudrift:
+		o, ok := other.ProviderType.(*Provider_Cloudrift)
+		if !ok {
+			return
+		}
+
+		equal = p.Cloudrift.Token == o.Cloudrift.Token
+	case *Provider_Exoscale:
+		o, ok := other.ProviderType.(*Provider_Exoscale)
+		if !ok {
+			return
+		}
+
+		apiSecret := p.Exoscale.ApiSecret == o.Exoscale.ApiSecret
+		apiKey := p.Exoscale.ApiKey == o.Exoscale.ApiKey
+
+		equal = apiSecret && apiKey
+	case *Provider_Gcp:
+		o, ok := other.ProviderType.(*Provider_Gcp)
+		if !ok {
+			return
+		}
+
+		equal = p.Gcp.Key == o.Gcp.Key
+	case *Provider_Hetzner:
+		o, ok := other.ProviderType.(*Provider_Hetzner)
+		if !ok {
+			return
+		}
+
+		equal = p.Hetzner.Token == o.Hetzner.Token
+	case *Provider_Oci:
+		o, ok := other.ProviderType.(*Provider_Oci)
+		if !ok {
+			return
+		}
+
+		fingerprint := p.Oci.KeyFingerprint == o.Oci.KeyFingerprint
+		key := p.Oci.PrivateKey == o.Oci.PrivateKey
+
+		equal = fingerprint && key
+	case *Provider_Openstack:
+		o, ok := other.ProviderType.(*Provider_Openstack)
+		if !ok {
+			return
+		}
+
+		id := p.Openstack.ApplicationCredentialID == o.Openstack.ApplicationCredentialID
+		secret := p.Openstack.ApplicationCredentialSecret == o.Openstack.ApplicationCredentialSecret
+
+		equal = id && secret
+	default:
+		// do nothing.
+	}
+
+	return
+}
+
 // MustExtractTargetPath returns the target path of the external template repository.
 // If the URL of the repository is invalid this functions panics.
 // The target path is the path where the templates should be downloaded on the local
