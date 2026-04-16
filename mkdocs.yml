@@ -126,6 +126,7 @@ nav:
       - Roadmap: roadmap/roadmap.md
       - Contributing: contributing/contributing.md
       - Changelog:
+          - v0.12: CHANGELOG/changelog-0.12.x.md
           - v0.11: CHANGELOG/changelog-0.11.x.md
           - v0.10: CHANGELOG/changelog-0.10.x.md
           - v0.9: CHANGELOG/changelog-0.9.x.md
