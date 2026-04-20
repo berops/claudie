@@ -124,7 +124,7 @@ Claudie cannot determine automatically when a StatefulSet has finished replicati
     - Provision the new nodes
     - Drain and delete all old nodes that are **not** labeled
     - Skip the labeled nodes and log `node <name> has upgrade-lock label, skipping drain`
-    - Keep the DELETE_NODES task in a retry loop, rechecking the label every ~25 seconds
+    - Keep the DELETE_NODES task in a retry loop, rechecking the label on each reconcile cycle
 
 3. **Verify your workload is safe to move.** Check that your StatefulSet has fully replicated data to pods on the new nodes. Use whatever tool is appropriate for your workload (e.g. `mongosh rs.status()`, `pg_stat_replication`, cluster health APIs, etc.).
 
@@ -132,7 +132,7 @@ Claudie cannot determine automatically when a StatefulSet has finished replicati
     ```bash
     kubectl label node <node-name> claudie.io/upgrade-lock-
     ```
-    Claudie's next retry (within ~30 seconds) will detect the removal, drain the node, and complete the rolling update.
+    Claudie's next reconcile cycle will detect the removal, drain the node, and complete the rolling update.
 
 ### Important notes
 
