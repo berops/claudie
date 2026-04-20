@@ -4,6 +4,7 @@ package kubectl
 import (
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -147,6 +148,36 @@ func (k *Kubectl) KubectlTaint(nodeName string, key, value, effect string) error
 
 	command := fmt.Sprintf("kubectl taint nodes %s %s=%s:%s %s", nodeName, key, value, effect, arg)
 	return k.run(command)
+}
+
+// KubectlNodeHasLabel checks whether the node has a label with the given key, regardless of value.
+// It fetches the full labels map as JSON and tests key presence in Go so that label keys with
+// dots and slashes are handled uniformly, and the check returns true even when the label value
+// is an empty string.
+func (k *Kubectl) KubectlNodeHasLabel(nodeName, labelKey string) (bool, error) {
+	arg, cleanup, err := k.getKubeconfig()
+	if err != nil {
+		return false, err
+	}
+	defer cleanup()
+
+	command := fmt.Sprintf(`kubectl get node %s -o json %s`, nodeName, arg)
+	out, err := k.runWithOutput(command)
+	if err != nil {
+		return false, err
+	}
+
+	var node struct {
+		Metadata struct {
+			Labels map[string]string `json:"labels"`
+		} `json:"metadata"`
+	}
+	if err := json.Unmarshal(out, &node); err != nil {
+		return false, fmt.Errorf("failed to parse node %q labels: %w", nodeName, err)
+	}
+
+	_, ok := node.Metadata.Labels[labelKey]
+	return ok, nil
 }
 
 // KubectlDrain runs kubectl drain in k.Directory, on a specified node with flags --ignore-daemonsets --delete-emptydir-data
