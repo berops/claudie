@@ -146,9 +146,15 @@ func (d *Deleter) DeleteNodes(logger zerolog.Logger) error {
 			continue
 		}
 
-		if hasLock, err := kubectl.KubectlNodeHasLabel(master.k8sName, upgradeLockLabelKey); err != nil {
-			logger.Warn().Err(err).Msgf("failed to check upgrade-lock label on node %s, proceeding with drain", master.k8sName)
-		} else if hasLock {
+		hasLock, err := kubectl.KubectlNodeHasLabel(master.k8sName, upgradeLockLabelKey)
+		if err != nil {
+			// Fail closed: treat the node as locked so the task is retried
+			// instead of draining on a transient kubectl failure.
+			logger.Warn().Err(err).Msgf("failed to check upgrade-lock label on node %s, deferring drain", master.k8sName)
+			locked = true
+			continue
+		}
+		if hasLock {
 			logger.Info().Msgf("node %s has upgrade-lock label, skipping drain", master.k8sName)
 			locked = true
 			continue
@@ -223,9 +229,15 @@ func (d *Deleter) DeleteNodes(logger zerolog.Logger) error {
 			continue
 		}
 
-		if hasLock, err := kubectl.KubectlNodeHasLabel(worker.k8sName, upgradeLockLabelKey); err != nil {
-			logger.Warn().Err(err).Msgf("failed to check upgrade-lock label on node %s, proceeding with drain", worker.k8sName)
-		} else if hasLock {
+		hasLock, err := kubectl.KubectlNodeHasLabel(worker.k8sName, upgradeLockLabelKey)
+		if err != nil {
+			// Fail closed: treat the node as locked so the task is retried
+			// instead of draining on a transient kubectl failure.
+			logger.Warn().Err(err).Msgf("failed to check upgrade-lock label on node %s, deferring drain", worker.k8sName)
+			locked = true
+			continue
+		}
+		if hasLock {
 			logger.Info().Msgf("node %s has upgrade-lock label, skipping drain", worker.k8sName)
 			locked = true
 			continue
