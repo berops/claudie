@@ -23,7 +23,13 @@ const (
 	UnreachableNodesPingCount = clusters.PingRetryCount + 3
 
 	drainTimeout = 30 * time.Minute
+
+	upgradeLockLabelKey = "claudie.io/upgrade-lock"
 )
+
+// ErrUpgradeLocked is returned when one or more nodes were skipped during
+// drain because they have the claudie.io/upgrade-lock label set by the operator.
+var ErrUpgradeLocked = errors.New("nodes with claudie.io/upgrade-lock label skipped, waiting for operator to remove label")
 
 // etcdMemberList wraps parsed structures that are
 // needed from the output of the `etcdctl member list`
@@ -129,6 +135,7 @@ func (d *Deleter) DeleteNodes(logger zerolog.Logger) error {
 		}
 	}
 	var errDel error
+	var locked bool
 
 	// Remove master nodes sequentially to minimise risk of faults in etcd
 	for _, master := range d.masterNodes {
@@ -136,6 +143,14 @@ func (d *Deleter) DeleteNodes(logger zerolog.Logger) error {
 			logger.
 				Warn().
 				Msgf("Node with name %s not found in cluster", master.k8sName)
+			continue
+		}
+
+		if hasLock, err := kubectl.KubectlNodeHasLabel(master.k8sName, upgradeLockLabelKey); err != nil {
+			logger.Warn().Err(err).Msgf("failed to check upgrade-lock label on node %s, proceeding with drain", master.k8sName)
+		} else if hasLock {
+			logger.Info().Msgf("node %s has upgrade-lock label, skipping drain", master.k8sName)
+			locked = true
 			continue
 		}
 
@@ -205,6 +220,14 @@ func (d *Deleter) DeleteNodes(logger zerolog.Logger) error {
 			logger.
 				Warn().
 				Msgf("Node with name %s not found in cluster", worker.k8sName)
+			continue
+		}
+
+		if hasLock, err := kubectl.KubectlNodeHasLabel(worker.k8sName, upgradeLockLabelKey); err != nil {
+			logger.Warn().Err(err).Msgf("failed to check upgrade-lock label on node %s, proceeding with drain", worker.k8sName)
+		} else if hasLock {
+			logger.Info().Msgf("node %s has upgrade-lock label, skipping drain", worker.k8sName)
+			locked = true
 			continue
 		}
 
@@ -280,6 +303,9 @@ func (d *Deleter) DeleteNodes(logger zerolog.Logger) error {
 		}
 	}
 
+	if locked {
+		return errors.Join(errDel, ErrUpgradeLocked)
+	}
 	return errDel
 }
 

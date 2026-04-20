@@ -149,6 +149,25 @@ func (k *Kubectl) KubectlTaint(nodeName string, key, value, effect string) error
 	return k.run(command)
 }
 
+// KubectlNodeHasLabel checks whether the node has a label with the given key, regardless of value.
+func (k *Kubectl) KubectlNodeHasLabel(nodeName, labelKey string) (bool, error) {
+	arg, cleanup, err := k.getKubeconfig()
+	if err != nil {
+		return false, err
+	}
+	defer cleanup()
+
+	command := fmt.Sprintf(
+		`kubectl get node %s -o jsonpath='{.metadata.labels.%s}' %s`,
+		nodeName, strings.ReplaceAll(labelKey, ".", `\.`), arg,
+	)
+	out, err := k.runWithOutput(command)
+	if err != nil {
+		return false, err
+	}
+	return len(strings.TrimSpace(string(out))) > 0, nil
+}
+
 // KubectlDrain runs kubectl drain in k.Directory, on a specified node with flags --ignore-daemonsets --delete-emptydir-data
 // example: kubectl drain node1 -> k.KubectlDrain("node1")
 // If the timeout expires before the command finishes the [context.DeadlineExceeded] error is returned.
