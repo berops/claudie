@@ -242,7 +242,7 @@ func fixHairpinNAT(vpnInfo *VPNInfo, clusterID, clusterDirectory string, process
 			if dyn == nil {
 				continue
 			}
-			key := dyn.Provider.SpecName + "__" + npi.ClusterID
+			key := dyn.Provider.SpecName + "__" + npi.ClusterID + "__" + dyn.Region
 			groupCounts[key] += len(np.Nodes)
 		}
 	}
