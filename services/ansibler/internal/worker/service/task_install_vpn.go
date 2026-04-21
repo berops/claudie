@@ -232,14 +232,28 @@ func fixHairpinNAT(vpnInfo *VPNInfo, clusterID, clusterDirectory string, process
 		}
 	}
 
-	// Count total affected nodes; need at least 2 for cross-node NAT to matter.
-	var totalNodes int
+	// Count nodes per hairpin group (specName + clusterID) — DNAT rules only
+	// fire between peers in the same group, so the fix is only useful if at
+	// least one group has 2+ nodes.
+	groupCounts := make(map[string]int)
 	for _, npi := range hairpinInfos {
 		for _, np := range npi.Nodepools.Dynamic {
-			totalNodes += len(np.Nodes)
+			dyn := np.GetDynamicNodePool()
+			if dyn == nil {
+				continue
+			}
+			key := dyn.Provider.SpecName + "__" + npi.ClusterID
+			groupCounts[key] += len(np.Nodes)
 		}
 	}
-	if totalNodes < 2 {
+	hasPair := false
+	for _, n := range groupCounts {
+		if n >= 2 {
+			hasPair = true
+			break
+		}
+	}
+	if !hasPair {
 		return nil
 	}
 
