@@ -20,9 +20,19 @@ import (
 )
 
 const (
-	wireguardPlaybook       = "../../ansible-playbooks/wireguard.yml"
-	cloudriftNATFixPlaybook = "../../ansible-playbooks/cloudrift-nat-fix.yml"
+	wireguardPlaybook     = "../../ansible-playbooks/wireguard.yml"
+	natHairpinFixPlaybook = "../../ansible-playbooks/nat-hairpin-fix.yml"
 )
+
+// hairpinNATProviders lists cloud providers whose same-project, floating-IP
+// traffic hairpins through a NAT gateway that can rewrite the source port,
+// breaking WireGuard tunnels between peers on the same network. The fix
+// (see fixHairpinNAT) installs local DNAT rules so peers reach each other
+// over private IPs instead of the public hairpin path.
+var hairpinNATProviders = map[string]struct{}{
+	"cloudrift": {},
+	"openstack": {},
+}
 
 type VPNInfo struct {
 	ClusterNetwork string
@@ -164,15 +174,15 @@ func installWireguardVPN(clusterID string, vpnInfo *VPNInfo, processLimit *semap
 		}
 	}
 
-	// Fix CloudRift NAT before WireGuard so that peer public IPs are
+	// Fix hairpin NAT before WireGuard so that peer public IPs are
 	// redirected to LAN IPs, allowing the WireGuard tunnel to establish
 	// and kubeadm join to reach the API server.
-	if err := fixCloudRiftNAT(vpnInfo, clusterID, clusterDirectory, processLimit); err != nil {
-		return fmt.Errorf("error while fixing CloudRift NAT for %s : %w", clusterDirectory, err)
+	if err := fixHairpinNAT(vpnInfo, clusterID, clusterDirectory, processLimit); err != nil {
+		return fmt.Errorf("error while fixing hairpin NAT for %s : %w", clusterDirectory, err)
 	}
 
-	// Regenerate the full inventory since fixCloudRiftNAT overwrites it
-	// with CloudRift-only nodes.
+	// Regenerate the full inventory since fixHairpinNAT overwrites it
+	// with hairpin-provider-only nodes.
 	if err := utils.GenerateInventoryFile(templates.AllNodesInventoryTemplate, clusterDirectory, data); err != nil {
 		return fmt.Errorf("error while recreating inventory file for %s : %w", clusterDirectory, err)
 	}
@@ -191,24 +201,30 @@ func installWireguardVPN(clusterID string, vpnInfo *VPNInfo, processLimit *semap
 	return nil
 }
 
-// fixCloudRiftNAT adds iptables OUTPUT DNAT rules on CloudRift nodes so that
-// peer public IPs are redirected to their LAN IPs (discovered via Ansible
-// gather_facts). This works around CloudRift's local gateway sending TCP RST
-// instead of hairpinning traffic between VMs on the same subnet. Must run
+// fixHairpinNAT adds iptables OUTPUT DNAT rules on nodes of providers whose
+// floating-IP hairpin path can rewrite the source port (see hairpinNATProviders),
+// so that peer public IPs are redirected to their LAN IPs (discovered via Ansible
+// gather_facts). This works around provider-side NAT behavior (CloudRift's local
+// gateway sending TCP RST, OpenStack Neutron's SNAT port randomization) that
+// otherwise breaks WireGuard tunnels between VMs on the same subnet. Must run
 // before WireGuard so that the tunnel endpoints resolve over the LAN, and
 // before KubeEleven so that kubeadm join can reach the API server.
-func fixCloudRiftNAT(vpnInfo *VPNInfo, clusterID, clusterDirectory string, processLimit *semaphore.Weighted) error {
-	var cloudriftInfos []*NodepoolsInfo
+func fixHairpinNAT(vpnInfo *VPNInfo, clusterID, clusterDirectory string, processLimit *semaphore.Weighted) error {
+	var hairpinInfos []*NodepoolsInfo
 
 	for _, npi := range vpnInfo.NodepoolsInfos {
 		var dynPools []*spec.NodePool
 		for _, np := range npi.Nodepools.Dynamic {
-			if dyn := np.GetDynamicNodePool(); dyn != nil && dyn.Provider.CloudProviderName == "cloudrift" {
+			dyn := np.GetDynamicNodePool()
+			if dyn == nil {
+				continue
+			}
+			if _, ok := hairpinNATProviders[dyn.Provider.CloudProviderName]; ok {
 				dynPools = append(dynPools, np)
 			}
 		}
 		if len(dynPools) > 0 {
-			cloudriftInfos = append(cloudriftInfos, &NodepoolsInfo{
+			hairpinInfos = append(hairpinInfos, &NodepoolsInfo{
 				Nodepools:      NodePools{Dynamic: dynPools},
 				ClusterID:      npi.ClusterID,
 				ClusterNetwork: npi.ClusterNetwork,
@@ -216,9 +232,9 @@ func fixCloudRiftNAT(vpnInfo *VPNInfo, clusterID, clusterDirectory string, proce
 		}
 	}
 
-	// Count total CloudRift nodes; need at least 2 for cross-node NAT to matter.
+	// Count total affected nodes; need at least 2 for cross-node NAT to matter.
 	var totalNodes int
-	for _, npi := range cloudriftInfos {
+	for _, npi := range hairpinInfos {
 		for _, np := range npi.Nodepools.Dynamic {
 			totalNodes += len(np.Nodes)
 		}
@@ -227,20 +243,20 @@ func fixCloudRiftNAT(vpnInfo *VPNInfo, clusterID, clusterDirectory string, proce
 		return nil
 	}
 
-	data := AllNodesInventoryData{NodepoolsInfo: cloudriftInfos}
-	if err := utils.GenerateInventoryFile(templates.AllNodesInventoryTemplate, clusterDirectory, data); err != nil {
-		return fmt.Errorf("error while creating CloudRift NAT inventory file for %s : %w", clusterDirectory, err)
+	data := AllNodesInventoryData{NodepoolsInfo: hairpinInfos}
+	if err := utils.GenerateInventoryFile(templates.NatHairpinInventoryTemplate, clusterDirectory, data); err != nil {
+		return fmt.Errorf("error while creating hairpin NAT inventory file for %s : %w", clusterDirectory, err)
 	}
 
 	ansible := utils.Ansible{
-		Playbook:          cloudriftNATFixPlaybook,
+		Playbook:          natHairpinFixPlaybook,
 		Inventory:         utils.InventoryFileName,
 		Directory:         clusterDirectory,
 		SpawnProcessLimit: processLimit,
 	}
 
-	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("CloudRift NAT fix - %s", clusterID)); err != nil {
-		return fmt.Errorf("error while running CloudRift NAT fix ansible for %s : %w", clusterDirectory, err)
+	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("NAT hairpin fix - %s", clusterID)); err != nil {
+		return fmt.Errorf("error while running NAT hairpin fix ansible for %s : %w", clusterDirectory, err)
 	}
 
 	return nil
