@@ -216,9 +216,6 @@ func fixHairpinNAT(vpnInfo *VPNInfo, clusterID, clusterDirectory string, process
 		var dynPools []*spec.NodePool
 		for _, np := range npi.Nodepools.Dynamic {
 			dyn := np.GetDynamicNodePool()
-			if dyn == nil {
-				continue
-			}
 			if _, ok := hairpinNATProviders[dyn.Provider.CloudProviderName]; ok {
 				dynPools = append(dynPools, np)
 			}
@@ -239,9 +236,6 @@ func fixHairpinNAT(vpnInfo *VPNInfo, clusterID, clusterDirectory string, process
 	for _, npi := range hairpinInfos {
 		for _, np := range npi.Nodepools.Dynamic {
 			dyn := np.GetDynamicNodePool()
-			if dyn == nil {
-				continue
-			}
 			key := dyn.Provider.SpecName + "__" + npi.ClusterID + "__" + dyn.Region
 			groupCounts[key] += len(np.Nodes)
 		}
