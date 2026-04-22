@@ -232,9 +232,9 @@ func fixHairpinNAT(vpnInfo *VPNInfo, clusterID, clusterDirectory string, process
 		}
 	}
 
-	// Count nodes per hairpin group (specName + clusterID) — DNAT rules only
-	// fire between peers in the same group, so the fix is only useful if at
-	// least one group has 2+ nodes.
+	// Count nodes per hairpin group (specName + clusterID + region). DNAT
+	// rules only fire between peers in the same group, so the fix is only
+	// useful if at least one group has 2+ nodes.
 	groupCounts := make(map[string]int)
 	for _, npi := range hairpinInfos {
 		for _, np := range npi.Nodepools.Dynamic {
