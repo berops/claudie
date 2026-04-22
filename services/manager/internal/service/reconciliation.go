@@ -177,6 +177,36 @@ func reconciliate(pending *spec.Config, desiredStates map[string]*spec.Clusters)
 
 			clusterResult[cluster] = Noop
 
+			{
+				// Check historical counters for any loopback changes that
+				// needs to be done before looking at scheduling tasks,
+				for np, counter := range state.Counters.K8SNodePoolScaleUpFailed {
+					// If a nodepool fails to scale up 3x reset the `TargetSize`
+					// of the autoscaled nodepool back to the current size.
+					if counter > 2 {
+						if nodepool := nodepools.FindByName(np, current.K8S.ClusterInfo.NodePools); nodepool != nil {
+							dyn := nodepool.GetDynamicNodePool()
+
+							logger.
+								Warn().
+								Msgf(
+									"Nodepool %q failed to scale up %vx to target size %v, target size will now be set to %v",
+									np,
+									counter,
+									dyn.AutoscalerConfig.TargetSize,
+									dyn.Count,
+								)
+
+							dyn.AutoscalerConfig.TargetSize = dyn.Count
+							delete(state.Counters.K8SNodePoolScaleUpFailed, np)
+
+							clusterResult[cluster] = NotReady
+							continue
+						}
+					}
+				}
+			}
+
 			// Update credentials for the current state/InFlight task.
 			//
 			// This is done as the very first step, before any diffs and

@@ -82,6 +82,12 @@ type ClusterState struct {
 	Current  Clusters   `bson:"current"`
 	InFlight *TaskEvent `bson:"inFlight"`
 	State    Workflow   `bson:"state"`
+	Counters Counters   `bson:"counters"`
+}
+
+type Counters struct {
+	// Autoscaled nodepools for which the scheduled scaleup failed.
+	K8sNodePoolScaleUpFailed map[string]int64 `bson:"k8sNodepoolScaleUpFailed"`
 }
 
 type Clusters struct {
