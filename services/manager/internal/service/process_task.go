@@ -270,6 +270,7 @@ func processTaskWithError(
 			PopulateTaskErrorCounters(inFlight.Task, &cluster.Counters)
 		}
 
+		// nolint
 		inFlight = nil
 	}
 
