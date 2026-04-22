@@ -247,6 +247,20 @@ func processTaskWithError(
 		isStageWarn    = stage.Description.ErrorLevel == spec.ErrorLevel_ERROR_WARN.String()
 	)
 
+	{
+		isInError := cluster.State.Status == spec.Workflow_ERROR.String()
+		if !isInError {
+			// Populate counters only on tasks that are about to be set to Errored.
+			inFlight, err := store.ConvertToGRPCTaskEvent(cluster.InFlight)
+			if err == nil {
+				PopulateTaskErrorCounters(inFlight.Task, &cluster.Counters)
+			}
+
+			// nolint
+			inFlight = nil
+		}
+	}
+
 	// About to advance a failed task.
 	// Store the result in the previously finished workflows.
 	previous := store.FinishedWorkflow{
@@ -262,17 +276,6 @@ func processTaskWithError(
 
 	cluster.State.Status = spec.Workflow_ERROR.String()
 	cluster.State.Description = work.Result.Error.Description
-
-	{
-		// Populate counters
-		inFlight, err := store.ConvertToGRPCTaskEvent(cluster.InFlight)
-		if err == nil {
-			PopulateTaskErrorCounters(inFlight.Task, &cluster.Counters)
-		}
-
-		// nolint
-		inFlight = nil
-	}
 
 	if isErrorPartial {
 		if err := propagateResult(logger, cluster, work.Result); err != nil {

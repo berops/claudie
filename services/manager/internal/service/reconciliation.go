@@ -205,6 +205,12 @@ func reconciliate(pending *spec.Config, desiredStates map[string]*spec.Clusters)
 						}
 					}
 				}
+
+				// If there was atleast one nodepool for which the target size
+				// was changed, skip the below task scheduling.
+				if clusterResult[cluster] == NotReady {
+					break event_switch
+				}
 			}
 
 			// Update credentials for the current state/InFlight task.
