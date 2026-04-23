@@ -526,4 +526,7 @@ func PopulateTaskSuccessCounters(task *spec.Task, counters *store.Counters) {
 	if changed := update.GetTfMoveNodePoolFromAutoscaled(); changed != nil {
 		delete(counters.K8sNodePoolScaleUpFailed, changed.Nodepool)
 	}
+	if changed := update.GetMovedNodePoolFromAutoscaled(); changed != nil {
+		delete(counters.K8sNodePoolScaleUpFailed, changed.Nodepool)
+	}
 }
