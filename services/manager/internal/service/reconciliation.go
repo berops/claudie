@@ -184,25 +184,44 @@ func reconciliate(pending *spec.Config, desiredStates map[string]*spec.Clusters)
 					// If a nodepool fails to scale up 3x reset the `TargetSize`
 					// of the autoscaled nodepool back to the current size.
 					if counter > 2 {
-						if nodepool := nodepools.FindByName(np, current.K8S.ClusterInfo.NodePools); nodepool != nil {
-							dyn := nodepool.GetDynamicNodePool()
-
-							logger.
-								Warn().
-								Msgf(
-									"Nodepool %q failed to scale up %vx to target size %v, target size will now be set to %v",
-									np,
-									counter,
-									dyn.AutoscalerConfig.TargetSize,
-									dyn.Count,
-								)
-
-							dyn.AutoscalerConfig.TargetSize = dyn.Count
+						nodepool := nodepools.FindByName(np, current.K8S.ClusterInfo.NodePools)
+						if nodepool == nil {
+							// Nodepool is missing from current state, remove counter.
 							delete(state.Counters.K8SNodePoolScaleUpFailed, np)
-
 							clusterResult[cluster] = NotReady
 							continue
 						}
+
+						dyn := nodepool.GetDynamicNodePool()
+						if dyn == nil {
+							// NodePool is no longer dynamic.
+							delete(state.Counters.K8SNodePoolScaleUpFailed, np)
+							clusterResult[cluster] = NotReady
+							continue
+						}
+
+						if dyn.GetAutoscalerConfig() == nil {
+							// NodePool is no longer autoscaled.
+							delete(state.Counters.K8SNodePoolScaleUpFailed, np)
+							clusterResult[cluster] = NotReady
+							continue
+						}
+
+						logger.
+							Warn().
+							Msgf(
+								"Nodepool %q failed to scale up %vx to target size %v, target size will now be set to %v",
+								np,
+								counter,
+								dyn.AutoscalerConfig.TargetSize,
+								dyn.Count,
+							)
+
+						dyn.AutoscalerConfig.TargetSize = dyn.Count
+						delete(state.Counters.K8SNodePoolScaleUpFailed, np)
+
+						clusterResult[cluster] = NotReady
+						continue
 					}
 				}
 

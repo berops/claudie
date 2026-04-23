@@ -513,10 +513,7 @@ func PopulateTaskSuccessCounters(task *spec.Task, counters *store.Counters) {
 	}
 
 	if addk8s := update.GetAddedK8SNodes(); addk8s != nil {
-		np := nodepools.FindByName(addk8s.Nodepool, update.State.K8S.ClusterInfo.NodePools)
-		if nodepools.IsAutoscaled(np) && len(addk8s.Nodes) > 0 {
-			delete(counters.K8sNodePoolScaleUpFailed, addk8s.Nodepool)
-		}
+		delete(counters.K8sNodePoolScaleUpFailed, addk8s.Nodepool)
 	}
 
 	if del := update.GetDeletedK8SNodes(); del != nil {
@@ -524,5 +521,9 @@ func PopulateTaskSuccessCounters(task *spec.Task, counters *store.Counters) {
 		case *spec.Update_DeletedK8SNodes_Whole:
 			delete(counters.K8sNodePoolScaleUpFailed, kind.Whole.Nodepool.Name)
 		}
+	}
+
+	if changed := update.GetTfMoveNodePoolFromAutoscaled(); changed != nil {
+		delete(counters.K8sNodePoolScaleUpFailed, changed.Nodepool)
 	}
 }
