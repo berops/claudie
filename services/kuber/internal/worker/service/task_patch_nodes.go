@@ -1,8 +1,10 @@
 package service
 
 import (
+	"cmp"
 	"maps"
 	"slices"
+	"strings"
 
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -103,6 +105,18 @@ func updateExistingAnnotationsLabelsTaints(k8s *spec.K8Scluster, add *spec.Updat
 
 		if m, ok := add.Taints[np.Name]; ok {
 			np.Taints = append(np.Taints, m.Taints...)
+
+			slices.SortFunc(np.Taints, func(l, r *spec.Taint) int {
+				return cmp.Or(
+					strings.Compare(l.Effect, r.Effect),
+					strings.Compare(l.Key, r.Key),
+					strings.Compare(l.Value, r.Value),
+				)
+			})
+
+			np.Taints = slices.CompactFunc(np.Taints, func(l, r *spec.Taint) bool {
+				return l.Effect == r.Effect && l.Key == r.Key && l.Value == r.Value
+			})
 		}
 	}
 }
