@@ -6,6 +6,9 @@ var (
 	//go:embed all-node-inventory.goini
 	AllNodesInventoryTemplate string
 
+	//go:embed nat-hairpin-inventory.goini
+	NatHairpinInventoryTemplate string
+
 	//go:embed deploy-envoy.goyml
 	EnvoyTemplate string
 
