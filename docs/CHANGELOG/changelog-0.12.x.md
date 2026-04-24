@@ -65,3 +65,28 @@ kubectl exec -it <primary-mongo-pod> -n claudie -- mongosh \
 
 ## Bug fixes
 - Fixed deletion of zero sized nodepools that would result in an endless reconciliation loop [#2049](https://github.com/berops/claudie/pull/2049)
+
+
+## v0.12.1
+
+## What's Changed
+- New feature introduced 'upgrade-lock' label. When set on nodes, it signals to Claudie to skip node drain on those nodes, blocking the workflow of pending changes until the label is removed from the nodes. [#2062](https://github.com/berops/claudie/pull/2062)
+```
+# Before triggering an update
+kubectl label node <node-name> claudie.io/upgrade-lock=true
+
+# Apply updated InputManifest
+kubectl apply -f manifest.yaml
+
+# Claudie drains unlabeled nodes, skips labeled ones, and retries
+# Verify replication/health on your workload
+
+# Release the node when safe
+kubectl label node <node-name> claudie.io/upgrade-lock-
+```
+
+- For some of the newly added providers (Openstack), NAT hairpin has been introduced for some of the networking shortcomings as a workaround to make Claudie work correctly. [#2066](https://github.com/berops/claudie/pull/2066)
+  
+- Duplicate Taint definitions for Nodepools will now be removed. [#2070](https://github.com/berops/claudie/pull/2070)
+  
+- For autoscaled nodepools if a scaleup fails at least 3x Claudie will now consider that as a failure and will stop autoscaling instead of retrying indefinitely [#2069](https://github.com/berops/claudie/pull/2069)
