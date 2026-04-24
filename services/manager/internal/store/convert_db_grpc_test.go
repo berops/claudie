@@ -1265,6 +1265,7 @@ func TestConvertToDBAndBack(t *testing.T) {
 						},
 					},
 				},
+				Counters: &spec.Counters{},
 				State: &spec.Workflow{
 					Status:      spec.Workflow_DONE,
 					Description: "Some description",

@@ -2,6 +2,7 @@ package store
 
 import (
 	"fmt"
+	"maps"
 	"time"
 
 	"github.com/berops/claudie/proto/pb/spec"
@@ -501,6 +502,13 @@ func ConvertToGRPCClusterState(cluster *ClusterState) (*spec.ClusterState, error
 		Current:  current,
 		State:    ConvertToGRPCWorkflow(cluster.State),
 		InFlight: i,
+		Counters: &spec.Counters{
+			K8SNodePoolScaleUpFailed: maps.Clone(cluster.Counters.K8sNodePoolScaleUpFailed),
+		},
+	}
+
+	if out.Counters.K8SNodePoolScaleUpFailed == nil {
+		out.Counters.K8SNodePoolScaleUpFailed = make(map[string]int64)
 	}
 
 	return &out, nil
@@ -521,6 +529,13 @@ func ConvertFromGRPCClusterState(cluster *spec.ClusterState) (*ClusterState, err
 		Current:  clusters,
 		InFlight: task,
 		State:    ConvertFromGRPCWorkflow(cluster.State),
+		Counters: Counters{
+			K8sNodePoolScaleUpFailed: maps.Clone(cluster.GetCounters().GetK8SNodePoolScaleUpFailed()),
+		},
+	}
+
+	if out.Counters.K8sNodePoolScaleUpFailed == nil {
+		out.Counters.K8sNodePoolScaleUpFailed = make(map[string]int64)
 	}
 
 	return &out, nil

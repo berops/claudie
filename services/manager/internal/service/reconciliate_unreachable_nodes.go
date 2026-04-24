@@ -84,10 +84,10 @@ func HandleKubernetesUnreachableNodes(logger zerolog.Logger, r KubernetesUnreach
 			if cnp.IsControl {
 				controlpools := slices.Collect(nodepools.Control(r.Current.K8S.ClusterInfo.NodePools))
 				if len(controlpools) == 1 {
-					// Deleting last control plane nodepool will result in an invalid cluster.
+					// Deleting nodes from the last control plane nodepool will result in an invalid cluster.
 					errUnreachable = errors.Join(
 						errUnreachable,
-						fmt.Errorf("can't delete nodepool %q with unreachable nodes, the "+
+						fmt.Errorf("can't delete unreachable nodes from nodepool %q, the "+
 							"nodepool is the last control nodepool, the deletion would result in a broken cluster",
 							np,
 						),
@@ -124,11 +124,17 @@ func HandleKubernetesUnreachableNodes(logger zerolog.Logger, r KubernetesUnreach
 			}
 
 			diff := NodePoolsDiffResult{
-				Deleted: make(NodePoolsViewType, len(cnp.Nodes)),
+				PartiallyDeleted: make(NodePoolsViewType, len(nodes)),
 			}
 
-			for _, n := range cnp.Nodes {
-				diff.Deleted[cnp.Name] = append(diff.Deleted[cnp.Name], n.Name)
+			for _, n := range nodes {
+				if n.IsStatic {
+					diff.PartiallyDeleted[cnp.Name] = append(diff.PartiallyDeleted[cnp.Name], n.K8sName)
+				} else {
+					// k8s names have the cluster ID stripped.
+					fullname := fmt.Sprintf("%s-%s", r.Current.K8S.ClusterInfo.Id(), n.K8sName)
+					diff.PartiallyDeleted[cnp.Name] = append(diff.PartiallyDeleted[cnp.Name], fullname)
+				}
 			}
 
 			next := ScheduleDeletionsInNodePools(r.Current, &diff, opts)

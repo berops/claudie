@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/berops/claudie/internal/loggerutils"
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/manager/internal/service/metrics"
 	"github.com/berops/claudie/services/manager/internal/store"
@@ -246,6 +247,20 @@ func processTaskWithError(
 		isStageWarn    = stage.Description.ErrorLevel == spec.ErrorLevel_ERROR_WARN.String()
 	)
 
+	{
+		isInError := cluster.State.Status == spec.Workflow_ERROR.String()
+		if !isInError {
+			// Populate counters only on tasks that are about to be set to Errored.
+			inFlight, err := store.ConvertToGRPCTaskEvent(cluster.InFlight)
+			if err == nil {
+				PopulateTaskErrorCounters(inFlight.Task, &cluster.Counters)
+			}
+
+			// nolint
+			inFlight = nil
+		}
+	}
+
 	// About to advance a failed task.
 	// Store the result in the previously finished workflows.
 	previous := store.FinishedWorkflow{
@@ -425,6 +440,8 @@ func propagateInFlightState(state *store.ClusterState) error {
 		return err
 	}
 
+	PopulateTaskSuccessCounters(t, &state.Counters)
+
 	// If this was a task that was scheduled in front
 	// of a previous task, replace the old state there with
 	// 'this' state, as 'this' state is build upon that previous
@@ -458,4 +475,58 @@ func propagateInFlightState(state *store.ClusterState) error {
 
 	state.Current = cs
 	return nil
+}
+
+// Populates counters after encountering any error during the execution of the task.
+func PopulateTaskErrorCounters(task *spec.Task, counters *store.Counters) {
+	update := task.GetUpdate()
+	if update == nil {
+		return
+	}
+
+	// Failed in terraformer.
+	if addk8s := update.GetTfAddK8SNodes(); addk8s != nil {
+		switch kind := addk8s.Kind.(type) {
+		case *spec.Update_TerraformerAddK8SNodes_Existing_:
+			np := nodepools.FindByName(kind.Existing.Nodepool, update.State.K8S.ClusterInfo.NodePools)
+			if nodepools.IsAutoscaled(np) && len(kind.Existing.Nodes) > 0 {
+				counters.K8sNodePoolScaleUpFailed[kind.Existing.Nodepool] += 1
+			}
+		}
+	}
+
+	// Failed somewhere after terraformer.
+	if addk8s := update.GetAddedK8SNodes(); addk8s != nil {
+		np := nodepools.FindByName(addk8s.Nodepool, update.State.K8S.ClusterInfo.NodePools)
+		if nodepools.IsAutoscaled(np) && len(addk8s.Nodes) > 0 {
+			counters.K8sNodePoolScaleUpFailed[addk8s.Nodepool] += 1
+		}
+	}
+}
+
+// Populates counters after no error has been encountered during the execution of the
+// task and the task has completed its pipeline.
+func PopulateTaskSuccessCounters(task *spec.Task, counters *store.Counters) {
+	update := task.GetUpdate()
+	if update == nil {
+		return
+	}
+
+	if addk8s := update.GetAddedK8SNodes(); addk8s != nil {
+		delete(counters.K8sNodePoolScaleUpFailed, addk8s.Nodepool)
+	}
+
+	if del := update.GetDeletedK8SNodes(); del != nil {
+		switch kind := del.Kind.(type) {
+		case *spec.Update_DeletedK8SNodes_Whole:
+			delete(counters.K8sNodePoolScaleUpFailed, kind.Whole.Nodepool.Name)
+		}
+	}
+
+	if changed := update.GetTfMoveNodePoolFromAutoscaled(); changed != nil {
+		delete(counters.K8sNodePoolScaleUpFailed, changed.Nodepool)
+	}
+	if changed := update.GetMovedNodePoolFromAutoscaled(); changed != nil {
+		delete(counters.K8sNodePoolScaleUpFailed, changed.Nodepool)
+	}
 }

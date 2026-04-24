@@ -37,10 +37,15 @@ message Manifest {
   State state = 4;
 }
 
+message Counters {
+  map<string, int64> k8sNodePoolScaleUpFailed = 1;
+}
+
 message ClusterState {
   Clusters current = 1;
   Workflow state = 4;
   TaskEvent inFlight = 5;
+  Counters counters = 6;
 }
 
 message Clusters {
