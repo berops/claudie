@@ -24,7 +24,7 @@ import (
 
 const (
 	maxTimeout     = 24_500  // max allowed time for one manifest to finish in [seconds]
-	sleepSec       = 15      // seconds for one cycle of config check
+	sleepSec       = 14      // seconds for one cycle of config check
 	maxTimeoutSave = 60 * 12 // max allowed time for config to be found in the database
 )
 
@@ -39,7 +39,7 @@ func waitForDoneOrError(ctx context.Context, manager managerclient.CrudAPI, set 
 
 	// How many reconciliation iterations are needed for a definitive answer
 	// of whether the input manifest is in error or done.
-	const iterationsNeeded = 20
+	const iterationsNeeded = 22
 
 	var done int
 	var failed int
