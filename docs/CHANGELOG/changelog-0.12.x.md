@@ -89,4 +89,4 @@ kubectl label node <node-name> claudie.io/upgrade-lock-
   
 - Duplicate Taint definitions for Nodepools will now be removed. [#2070](https://github.com/berops/claudie/pull/2070)
   
-- For autoscaled nodepools if a scaleup fails at least 3x Claudie will now consider that as a failure and will stop autoscaling instead of re-trying infinitely [#2069](https://github.com/berops/claudie/pull/2069)
+- For autoscaled nodepools if a scaleup fails at least 3x Claudie will now consider that as a failure and will stop autoscaling instead of retrying indefinitely [#2069](https://github.com/berops/claudie/pull/2069)
