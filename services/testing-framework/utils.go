@@ -39,7 +39,7 @@ func waitForDoneOrError(ctx context.Context, manager managerclient.CrudAPI, set 
 
 	// How many reconciliation iterations are needed for a definitive answer
 	// of whether the input manifest is in error or done.
-	const iterationsNeeded = 22
+	const iterationsNeeded = 20
 
 	var done int
 	var failed int
@@ -287,8 +287,15 @@ func buildExpectedPeerList(cluster *spec.ClusterState) []Peer {
 }
 
 func validateWireguardSetup(nps []*spec.NodePool, expectedPeerList []Peer) error {
+	var hairpinNATProviders = map[string]struct{}{
+		"cloudrift": {},
+		"openstack": {},
+	}
+
 	for _, np := range nps {
 		for _, n := range np.Nodes {
+			var isHairpinProvider bool
+
 			var sshKey string
 			port := nodepools.SSHPort(np)
 			username := n.Username
@@ -299,6 +306,7 @@ func validateWireguardSetup(nps []*spec.NodePool, expectedPeerList []Peer) error
 			switch typ := np.Type.(type) {
 			case *spec.NodePool_DynamicNodePool:
 				sshKey = typ.DynamicNodePool.PrivateKey
+				_, isHairpinProvider = hairpinNATProviders[typ.DynamicNodePool.Provider.CloudProviderName]
 			case *spec.NodePool_StaticNodePool:
 				sshKey = typ.StaticNodePool.NodeKeys[n.Public]
 			default:
@@ -324,7 +332,7 @@ func validateWireguardSetup(nps []*spec.NodePool, expectedPeerList []Peer) error
 			}
 
 			for range 10 {
-				if err = checkWireguardPeers(n, fmt.Sprint(port), expectedPeerList, &cfg); err == nil {
+				if err = checkWireguardPeers(isHairpinProvider, n, fmt.Sprint(port), expectedPeerList, &cfg); err == nil {
 					break
 				}
 				time.Sleep(150 + time.Duration(rand.IntN(150)))
@@ -339,7 +347,13 @@ func validateWireguardSetup(nps []*spec.NodePool, expectedPeerList []Peer) error
 	return nil
 }
 
-func checkWireguardPeers(thisNode *spec.Node, sshPort string, peerList []Peer, cfg *ssh.ClientConfig) error {
+func checkWireguardPeers(
+	isHairpinProvider bool,
+	thisNode *spec.Node,
+	sshPort string,
+	peerList []Peer,
+	cfg *ssh.ClientConfig,
+) error {
 	endpoint := net.JoinHostPort(thisNode.Public, sshPort)
 	client, err := ssh.Dial("tcp", endpoint, cfg)
 	if err != nil {
@@ -396,6 +410,9 @@ func checkWireguardPeers(thisNode *spec.Node, sshPort string, peerList []Peer, c
 	// go over the expected peers and match a line in the fetched peers.
 	for _, p := range expectedPeerList {
 		ok := slices.ContainsFunc(fetchedPeers, func(s string) bool {
+			if isHairpinProvider {
+				return strings.Contains(s, p.Private)
+			}
 			return strings.Contains(s, p.Public) && strings.Contains(s, p.Private)
 		})
 		if !ok {
