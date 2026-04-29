@@ -21,7 +21,7 @@ jobs:
     name: Create a new  docs release
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.head_ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -30,7 +30,7 @@ jobs:
         run: |
           R=${GITHUB_REF#"refs/tags/"}
           echo "RELEASE=$R" >> $GITHUB_ENV
-      
+
       - name: Set up git author
         run: |
           git config --global user.name "${GITHUB_ACTOR}"
@@ -44,15 +44,15 @@ jobs:
         run: |
           filename="mkdocs.yml"
           start_line=$(sed -n '/- Changelog:/=' "$filename")
-          
-          changelogs_from_dir=$(ls ./docs/CHANGELOG) 
+
+          changelogs_from_dir=$(ls ./docs/CHANGELOG)
           changelogs_from_mkdocs_file=$(grep -Eo "CHANGELOG/changelog-[0-9]+\.[0-9]+\.x\.md" "$filename" | awk -F'/' '{print $2}')
-          
+
           changelogs_mkdocs_arr=( $changelogs_from_mkdocs_file )
           changelogs_dir_arr=( $changelogs_from_dir )
-          
+
           new_changelog_file=""
-          
+
           # check if all files from CHANGELOG dir are present in mkdocs.yml
           for value in "${changelogs_dir_arr[@]}"; do
               if [[ ! " ${changelogs_mkdocs_arr[@]} " =~ " $value " ]]; then
@@ -60,17 +60,17 @@ jobs:
                   new_changelog_file=$value
               fi
           done
-          
+
           # add new navigation entry only, when there is a new changelog file
           if [[ -n "$new_changelog_file" ]]; then
               echo "Found new changelog file"
-          
+
               version=$(echo $new_changelog_file | grep -oE [0-9]+\.[0-9]+)
-          
+
               navigation_entry="Claudie v$version: CHANGELOG/$new_changelog_file"
-          
+
               new_entry_line=$(($start_line + ${#changelogs_dir_arr[@]}))
-          
+
               sed -i "${new_entry_line}i\\
               - ${navigation_entry}" $filename
 
@@ -80,24 +80,24 @@ jobs:
 
               # commit and push
               git commit -am "add new changelog file to mkdocs.yml"
-          
+
               git push --set-upstream origin feat/add-reference-to-new-changelog-${RELEASE}
-          
+
               echo "Altered mkdocs.yml with new Changelog navigation entry was commited and pushed to origin"
 
               gh pr create --title "Add reference to new Changelog ${RELEASE}" --body "Add reference to new Changelog file in mkdocs.yml"
           else
               echo "There isn't a new changelog file"
           fi
-          
+
       # NOTE: the pipeline will fail, if gh-pages branch isn't created!!!
       - name: Git fetch gh-pages
         run: git fetch origin gh-pages
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
-          python-version: '3.13' 
+          python-version: "3.13"
 
       - name: Install Python dependencies
         run: pip install -r requirements.txt
@@ -110,8 +110,8 @@ jobs:
       # --push flag in the latest cmd is necessary, when you want to apply changes in gh-pages branch and also in GH Pages
       - name: Deploy new docs version
         run: mike deploy ${RELEASE} latest --update-aliases --push
-      
-      # The llms files need to be located in the root path of a website 
+
+      # The llms files need to be located in the root path of a website
       - name: Copy llms files to root of gh-pages
         run: |
           set -e
