@@ -35,12 +35,12 @@ func NewWebhook(
 		CertDir: dir,
 	})
 
-	hookServer.Register(path, admission.WithCustomValidator(
+	validator := admission.WithValidator[runtime.Object](
 		scheme,
-		&v1beta.InputManifest{},
 		&InputManifestValidator{log, kc},
-	))
+	)
 
+	hookServer.Register(path, validator)
 	return hookServer
 }
 

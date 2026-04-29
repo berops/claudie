@@ -22,7 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/tools/events"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -49,7 +49,7 @@ const (
 type InputManifestReconciler struct {
 	kc       client.Client
 	Scheme   *runtime.Scheme
-	Recorder record.EventRecorder
+	Recorder events.EventRecorder
 	Logger   logr.Logger
 	*usecases.Usecases
 }
@@ -58,7 +58,7 @@ type InputManifestReconciler struct {
 func New(kclient client.Client,
 	scheme *runtime.Scheme,
 	logger logr.Logger,
-	recorder record.EventRecorder,
+	recorder events.EventRecorder,
 	usecase usecases.Usecases,
 ) *InputManifestReconciler {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))

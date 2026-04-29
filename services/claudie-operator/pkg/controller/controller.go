@@ -65,7 +65,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	if len(missingSecrets) > 0 {
 		msg := fmt.Sprintf("the following secrets referenced inside providers were not found: %v", strings.Join(missingSecrets, ", "))
 
-		r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "SecretNotFound", msg)
+		r.Recorder.Eventf(inputManifest, nil, corev1.EventTypeWarning, "SecretNotFound", "FetchingSecrets", msg)
 		log.Error(nil, msg, "reqeueAfter", REQUEUE_AFTER_ERROR)
 
 		inputManifest.SetWatchResourceStatusWithMsg(msg)
@@ -84,7 +84,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		for _, n := range s.Nodes {
 			var snwd v1beta1manifest.StaticNodeWithData
 			if err := r.kc.Get(ctx, client.ObjectKey{Name: n.SecretRef.Name, Namespace: n.SecretRef.Namespace}, &snwd.Secret); err != nil {
-				r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())
+				r.Recorder.Eventf(inputManifest, nil, corev1.EventTypeWarning, "ProvisioningFailed", "FetchingSecrets", err.Error())
 				log.Error(err, "secret not found", "will try again in", REQUEUE_AFTER_ERROR, "name", n.SecretRef.Name, "namespace", n.SecretRef.Namespace)
 				return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
 			}
@@ -104,7 +104,14 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	rawManifest, err := constructInputManifest(*inputManifest, providersSecrets, staticNodeSecrets)
 	if err != nil {
 		log.Error(err, "error while using referenced secrets", "will try again in", REQUEUE_AFTER_ERROR)
-		r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())
+		r.Recorder.Eventf(
+			inputManifest,
+			nil,
+			corev1.EventTypeWarning,
+			"ProvisioningFailed",
+			"FetchingSecrets",
+			err.Error(),
+		)
 		return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
 	}
 
@@ -117,7 +124,14 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	// with an err, and generate an Kubernetes Event
 	if err := rawManifest.Providers.Validate(); err != nil {
 		log.Error(err, "error while validating referenced secrets", "will try again in", REQUEUE_AFTER_ERROR)
-		r.Recorder.Event(inputManifest, corev1.EventTypeWarning, "ProvisioningFailed", err.Error())
+		r.Recorder.Eventf(
+			inputManifest,
+			nil,
+			corev1.EventTypeWarning,
+			"ProvisioningFailed",
+			"ValidatingInputManifest",
+			err.Error(),
+		)
 		inputManifest.SetUpdateResourceStatus(v1beta1manifest.InputManifestStatus{
 			State: v1beta1manifest.STATUS_ERROR,
 		})
@@ -331,10 +345,12 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 
 		r.Recorder.
-			Event(
+			Eventf(
 				inputManifest,
+				nil,
 				corev1.EventTypeWarning,
 				"ProvisioningFailed",
+				"WorkflowFailed",
 				buildProvisioningError(currentState).Error(),
 			)
 
