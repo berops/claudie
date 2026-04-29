@@ -65,7 +65,15 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	if len(missingSecrets) > 0 {
 		msg := fmt.Sprintf("the following secrets referenced inside providers were not found: %v", strings.Join(missingSecrets, ", "))
 
-		r.Recorder.Eventf(inputManifest, nil, corev1.EventTypeWarning, "SecretNotFound", "FetchingSecrets", msg)
+		r.Recorder.Eventf(
+			inputManifest,
+			nil,
+			corev1.EventTypeWarning,
+			"SecretNotFound",
+			"FetchingSecrets",
+			"%s",
+			msg,
+		)
 		log.Error(nil, msg, "reqeueAfter", REQUEUE_AFTER_ERROR)
 
 		inputManifest.SetWatchResourceStatusWithMsg(msg)
@@ -84,7 +92,15 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		for _, n := range s.Nodes {
 			var snwd v1beta1manifest.StaticNodeWithData
 			if err := r.kc.Get(ctx, client.ObjectKey{Name: n.SecretRef.Name, Namespace: n.SecretRef.Namespace}, &snwd.Secret); err != nil {
-				r.Recorder.Eventf(inputManifest, nil, corev1.EventTypeWarning, "ProvisioningFailed", "FetchingSecrets", err.Error())
+				r.Recorder.Eventf(
+					inputManifest,
+					nil,
+					corev1.EventTypeWarning,
+					"ProvisioningFailed",
+					"FetchingSecrets",
+					"%v",
+					err,
+				)
 				log.Error(err, "secret not found", "will try again in", REQUEUE_AFTER_ERROR, "name", n.SecretRef.Name, "namespace", n.SecretRef.Namespace)
 				return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
 			}
@@ -110,7 +126,8 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			corev1.EventTypeWarning,
 			"ProvisioningFailed",
 			"FetchingSecrets",
-			err.Error(),
+			"%v",
+			err,
 		)
 		return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
 	}
@@ -130,7 +147,8 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			corev1.EventTypeWarning,
 			"ProvisioningFailed",
 			"ValidatingInputManifest",
-			err.Error(),
+			"%v",
+			err,
 		)
 		inputManifest.SetUpdateResourceStatus(v1beta1manifest.InputManifestStatus{
 			State: v1beta1manifest.STATUS_ERROR,
@@ -351,7 +369,8 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				corev1.EventTypeWarning,
 				"ProvisioningFailed",
 				"WorkflowFailed",
-				buildProvisioningError(currentState).Error(),
+				"%v",
+				buildProvisioningError(currentState),
 			)
 
 		log.Error(buildProvisioningError(currentState), "Error while building")
