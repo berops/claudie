@@ -30,6 +30,7 @@ import (
 	"github.com/oracle/oci-go-sdk/v65/common"
 	"github.com/oracle/oci-go-sdk/v65/core"
 	"github.com/rs/zerolog/log"
+	"golang.org/x/oauth2/clientcredentials"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
@@ -40,6 +41,11 @@ const (
 	cloudRiftAPIVersion     = "2025-06-10"
 	cloudRiftAPIBaseURL     = "https://api.cloudrift.ai/api/v1"
 	cloudRiftRequestTimeout = 30 * time.Second
+
+	verdaAPIBaseURL     = "https://api.verda.com/v1"
+	verdaTokenURL       = "https://api.verda.com/v1/oauth2/token"
+	verdaScope          = "cloud-api-v1"
+	verdaRequestTimeout = 30 * time.Second
 )
 
 // cacheHetzner function uses hcloud-go module to query supported servers and their info. If the query is successful, the server info is saved in cache.
@@ -276,5 +282,52 @@ func (nm *NodeManager) cacheCloudRift(np *spec.DynamicNodePool) error {
 	}
 
 	nm.cloudriftVMs = getTypeInfoCloudRift(result.Data.InstanceTypes)
+	return nil
+}
+
+// cacheVerda fetches the Verda Cloud instance-type catalog using OAuth2 client_credentials.
+// The OpenTofu provider handles auth itself for terraform-side resource calls; this is the
+// only place in Claudie that talks to Verda's REST API directly.
+func (nm *NodeManager) cacheVerda(np *spec.DynamicNodePool) error {
+	v := np.Provider.GetVerda()
+	baseURL := verdaAPIBaseURL
+	if v.GetBaseUrl() != "" {
+		baseURL = strings.TrimRight(v.GetBaseUrl(), "/")
+	}
+
+	cfg := clientcredentials.Config{
+		ClientID:     v.GetClientId(),
+		ClientSecret: v.GetClientSecret(),
+		TokenURL:     verdaTokenURL,
+		Scopes:       []string{verdaScope},
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), verdaRequestTimeout)
+	defer cancel()
+
+	httpClient := cfg.Client(ctx)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/instance-types", nil)
+	if err != nil {
+		return fmt.Errorf("verda client error: %w", err)
+	}
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("verda client error: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		return fmt.Errorf("verda API returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var result verdaInstanceTypesResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return fmt.Errorf("verda client error parsing response: %w", err)
+	}
+
+	nm.verdaVMs = getTypeInfoVerda(result)
 	return nil
 }

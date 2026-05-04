@@ -41,6 +41,7 @@ type NodeManager struct {
 	openstackVMs map[string]*InstanceInfo
 	exoscaleVMs  map[string]*InstanceInfo
 	cloudriftVMs map[string]*InstanceInfo
+	verdaVMs     map[string]*InstanceInfo
 
 	// Provider-region-zone cache
 	cacheProviderMap map[string]struct{}
@@ -98,6 +99,10 @@ func (nm *NodeManager) Refresh(autoscaled []*spec.NodePool) error {
 				}
 			case "cloudrift":
 				if err := nm.cacheCloudRift(dyn); err != nil {
+					return err
+				}
+			case "verda":
+				if err := nm.cacheVerda(dyn); err != nil {
 					return err
 				}
 			}
@@ -181,6 +186,10 @@ func (nm *NodeManager) InstanceInfo(np *spec.DynamicNodePool) *InstanceInfo {
 		}
 	case "cloudrift":
 		if ti, ok := nm.cloudriftVMs[np.ServerType]; ok {
+			return ti
+		}
+	case "verda":
+		if ti, ok := nm.verdaVMs[np.ServerType]; ok {
 			return ti
 		}
 	}
