@@ -535,6 +535,7 @@ spec:
                       - openstack
                       - exoscale
                       - cloudrift
+                      - verda
                       type: string
                     secretRef:
                       description: |-

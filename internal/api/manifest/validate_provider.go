@@ -122,6 +122,17 @@ func (p *Provider) Validate() error {
 		names[c.Name] = true
 	}
 
+	for _, c := range p.Verda {
+		if err := c.Validate(); err != nil {
+			return fmt.Errorf("failed to validate provider %q: %w", c.Name, err)
+		}
+
+		if _, ok := names[c.Name]; ok {
+			return fmt.Errorf("name %q is used across multiple providers, must be unique", c.Name)
+		}
+		names[c.Name] = true
+	}
+
 	return nil
 }
 
@@ -134,6 +145,7 @@ func (c *Cloudflare) Validate() error { return validateProvider(c) }
 func (c *Openstack) Validate() error  { return validateProvider(c) }
 func (c *Exoscale) Validate() error   { return validateProvider(c) }
 func (c *CloudRift) Validate() error  { return validateProvider(c) }
+func (c *Verda) Validate() error      { return validateProvider(c) }
 
 func validateSemver2(fl validator.FieldLevel) bool {
 	semverString := fl.Field().String()
