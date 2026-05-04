@@ -20,6 +20,9 @@ type: Opaque
 !!! warning "Choose a non-Docker Ubuntu image"
     Verda offers Ubuntu images both with and without Docker pre-installed (e.g., `ubuntu-24.04-cuda-12.8-open-docker` vs `ubuntu-24.04-cuda-12.8-open`). Claudie uses KubeOne for cluster bootstrap, which installs and pins its own version of `containerd.io`. Pre-installed Docker on the image conflicts with this and causes apt-get to refuse the downgrade. **Always pick a Verda image without the `-docker` suffix.** Use `ubuntu-24.04` for non-GPU nodes and `ubuntu-24.04-cuda-12.8-open` (or similar) for GPU nodes.
 
+!!! note "Credential handling"
+    `clientid` is rendered as plaintext into the generated Terraform configuration (same pattern as Azure's `clientID`). `clientsecret` is written to a file in the cluster's working directory and read at apply time via the Terraform `file()` function, which keeps it out of the rendered HCL. Both end up in the Terraform state file (currently a side effect of the `data.http` IP-poll workaround for the upstream provider, removable once the provider is fixed). Claudie stores state in MinIO with encryption at rest. If your threat model requires no plaintext credentials in state, treat the cluster's MinIO bucket as the secret-bearing surface.
+
 ## Create Verda API credentials
 
 Generate OAuth2 client credentials from the [Verda console](https://console.verda.com/) under **Keys > Cloud API Credentials**. You receive a `client_id` and a `client_secret` (the secret is shown only once at creation time).
