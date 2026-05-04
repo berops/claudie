@@ -64,7 +64,7 @@ Common values at the time of writing:
 | `image` | `ubuntu-24.04`, `ubuntu-24.04-cuda-12.8-open`, `ubuntu-22.04-cuda-13.0-open` |
 
 !!! warning "Storage quota and trash"
-    Verda's deleted volumes go to a per-account trash bin and continue to count toward your storage quota until permanently purged. If a Claudie apply fails after creating volumes, those volumes accumulate in the trash. Purge them with `DELETE /v1/volumes/<id>` and JSON body `{"is_permanent": true}` (HTTP 202 returned). See `samuelstolicny/claudie-config` Verda integration notes for a copy-paste purge one-liner.
+    Verda's deleted volumes go to a per-account trash bin and continue to count toward your storage quota until permanently purged. If a Claudie apply fails after creating volumes, those volumes accumulate in the trash. Purge them with `DELETE /v1/volumes/<id>` and JSON body `{"is_permanent": true}` (HTTP 202 returned). Example: `curl -sS -X DELETE https://api.verda.com/v1/volumes/<id> -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"is_permanent": true}'`
 
 ## GPU instances
 Verda specializes in GPU compute (A100, H100, B200, etc.). GPU instances are selected by setting the `serverType` to a GPU instance type (e.g., `1B200.30V` for 1× B200 with 30 vCPU). No additional `machineSpec` configuration is needed — the GPU is included in the instance type. Use the `*-cuda-*-open` (no Docker) image variants for GPU nodes; CUDA drivers are baked in.
