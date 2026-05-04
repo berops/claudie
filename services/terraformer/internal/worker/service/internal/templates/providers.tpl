@@ -54,5 +54,19 @@ terraform {
       version = "~> 0.2.0"
     }
     {{- end }}
+    {{- if .Verda }}
+    verda = {
+      source  = "verda-cloud/verda"
+      version = "~> 1.1"
+    }
+    http = {
+      source  = "hashicorp/http"
+      version = "~> 3.4"
+    }
+    time = {
+      source  = "hashicorp/time"
+      version = "~> 0.11"
+    }
+    {{- end }}
   }
 }
