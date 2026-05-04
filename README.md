@@ -101,6 +101,7 @@ Before you begin, please make sure you have the following prerequisites installe
    | [Exoscale](https://docs.claudie.io/latest/input-manifest/providers/exoscale/)     | :heavy_check_mark: | :heavy_check_mark: | N/A               | :heavy_check_mark: |
    | [Hetzner](https://docs.claudie.io/latest/input-manifest/providers/hetzner/)       | :heavy_check_mark: | :heavy_check_mark: | N/A               | :heavy_check_mark: |
    | [CloudRift](https://docs.claudie.io/latest/input-manifest/providers/cloudrift/)    | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: |
+   | [Verda](https://docs.claudie.io/latest/input-manifest/providers/verda/)            | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: |
    | [Cloudflare](https://docs.claudie.io/latest/input-manifest/providers/cloudflare/) | N/A                | :heavy_check_mark: |:heavy_check_mark: | N/A                |
    | [OVH Cloud](https://docs.claudie.io/latest/input-manifest/providers/openstack/)   | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: |
    | [Openstack](https://docs.claudie.io/latest/input-manifest/providers/openstack/)   | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: |
