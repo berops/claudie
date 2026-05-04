@@ -29,6 +29,7 @@ type Provider struct {
 	Openstack  []Openstack  `yaml:"openstack"`
 	Exoscale   []Exoscale   `yaml:"exoscale"`
 	CloudRift  []CloudRift  `yaml:"cloudrift"`
+	Verda      []Verda      `yaml:"verda"`
 }
 
 type Cloudflare struct {
@@ -106,6 +107,14 @@ type CloudRift struct {
 	Token     string              `validate:"required" yaml:"token"`
 	TeamId    string              `validate:"omitempty" yaml:"teamId"`
 	Templates *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
+}
+
+type Verda struct {
+	Name         string              `validate:"required,max=15" yaml:"name"`
+	ClientId     string              `validate:"required" yaml:"clientId"`
+	ClientSecret string              `validate:"required" yaml:"clientSecret"`
+	BaseUrl      string              `validate:"omitempty,url" yaml:"baseUrl"`
+	Templates    *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
 }
 
 // NodePools describes nodepools used for either kubernetes clusters

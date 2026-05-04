@@ -132,6 +132,8 @@ func validateInputManifest(im *v1beta.InputManifest) error {
 			rawManifest.Providers.Exoscale = append(rawManifest.Providers.Exoscale, manifest.Exoscale{Name: p.ProviderName})
 		case v1beta.CLOUDRIFT:
 			rawManifest.Providers.CloudRift = append(rawManifest.Providers.CloudRift, manifest.CloudRift{Name: p.ProviderName})
+		case v1beta.VERDA:
+			rawManifest.Providers.Verda = append(rawManifest.Providers.Verda, manifest.Verda{Name: p.ProviderName})
 		}
 	}
 
