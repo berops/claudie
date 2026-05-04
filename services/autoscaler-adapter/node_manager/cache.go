@@ -43,7 +43,7 @@ const (
 	cloudRiftRequestTimeout = 30 * time.Second
 
 	verdaAPIBaseURL     = "https://api.verda.com/v1"
-	verdaTokenURL       = "https://api.verda.com/v1/oauth2/token"
+	verdaTokenPath      = "/oauth2/token"
 	verdaScope          = "cloud-api-v1"
 	verdaRequestTimeout = 30 * time.Second
 )
@@ -298,7 +298,7 @@ func (nm *NodeManager) cacheVerda(np *spec.DynamicNodePool) error {
 	cfg := clientcredentials.Config{
 		ClientID:     v.GetClientId(),
 		ClientSecret: v.GetClientSecret(),
-		TokenURL:     verdaTokenURL,
+		TokenURL:     baseURL + verdaTokenPath,
 		Scopes:       []string{verdaScope},
 	}
 
