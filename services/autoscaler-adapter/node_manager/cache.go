@@ -323,7 +323,7 @@ func (nm *NodeManager) cacheVerda(np *spec.DynamicNodePool) error {
 		return fmt.Errorf("verda API returned status %d: %s", resp.StatusCode, string(body))
 	}
 
-	var result verdaInstanceTypesResponse
+	var result []verdaInstanceType
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return fmt.Errorf("verda client error parsing response: %w", err)
 	}

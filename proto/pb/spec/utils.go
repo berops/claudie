@@ -179,6 +179,7 @@ func (pr *Provider) CopyCredentials(other *Provider) {
 
 		p.Verda.ClientId = o.Verda.ClientId
 		p.Verda.ClientSecret = o.Verda.ClientSecret
+		p.Verda.BaseUrl = o.Verda.BaseUrl
 	default:
 		// do nothing.
 	}
@@ -278,8 +279,9 @@ func (pr *Provider) CredentialsEqual(other *Provider) (equal bool) {
 
 		clientID := p.Verda.ClientId == o.Verda.ClientId
 		clientSecret := p.Verda.ClientSecret == o.Verda.ClientSecret
+		baseURL := p.Verda.GetBaseUrl() == o.Verda.GetBaseUrl()
 
-		equal = clientID && clientSecret
+		equal = clientID && clientSecret && baseURL
 	default:
 		// do nothing.
 	}
