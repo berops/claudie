@@ -285,9 +285,6 @@ func (nm *NodeManager) cacheCloudRift(np *spec.DynamicNodePool) error {
 	return nil
 }
 
-// cacheVerda fetches the Verda Cloud instance-type catalog using OAuth2 client_credentials.
-// The OpenTofu provider handles auth itself for terraform-side resource calls; this is the
-// only place in Claudie that talks to Verda's REST API directly.
 func (nm *NodeManager) cacheVerda(np *spec.DynamicNodePool) error {
 	v := np.Provider.GetVerda()
 	baseURL := verdaAPIBaseURL
