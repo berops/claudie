@@ -23,6 +23,9 @@ type: Opaque
 !!! note "Credential handling"
     `clientid` is rendered as plaintext into the generated Terraform configuration (same pattern as Azure's `clientID`). `clientsecret` is written to a file in the cluster's working directory and read at apply time via the Terraform `file()` function, which keeps it out of the rendered HCL. Both end up in the Terraform state file (currently a side effect of the `data.http` IP-poll workaround for the upstream provider, removable once the provider is fixed). Claudie stores state in MinIO with encryption at rest. If your threat model requires no plaintext credentials in state, treat the cluster's MinIO bucket as the secret-bearing surface.
 
+!!! warning "60-character limit on instance description"
+    The Verda API caps `verda_instance.description` at 60 characters. Claudie's nodepool template renders the description as `Claudie <clusterName>-<clusterHash>`, where `<clusterHash>` is a 7-character suffix. This leaves **at most 44 characters for `kubernetes.clusters[].name`** (`60 - len("Claudie ") - len("-") - 7 = 44`). Cluster names beyond that bound will cause `tofu apply` to fail at instance creation with `API error 400`. Keep cluster names short.
+
 ## Create Verda API credentials
 
 Generate OAuth2 client credentials from the [Verda console](https://console.verda.com/) under **Keys > Cloud API Credentials**. You receive a `client_id` and a `client_secret` (the secret is shown only once at creation time).

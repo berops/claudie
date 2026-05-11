@@ -36,6 +36,7 @@ Claudie is a platform for managing multi-cloud and hybrid-cloud Kubernetes clust
 [![Exoscale](https://img.shields.io/badge/Exoscale-DA291C?style=for-the-badge)](./input-manifest/providers/exoscale.md)
 [![OpenStack](https://img.shields.io/badge/OpenStack-ED1944?style=for-the-badge)](./input-manifest/providers/openstack.md)
 [![CloudRift](https://img.shields.io/badge/CloudRift-2e7da8?style=for-the-badge)](./input-manifest/providers/cloudrift.md)
+[![Verda](https://img.shields.io/badge/Verda-0E8C6B?style=for-the-badge)](./input-manifest/providers/verda.md)
 
 </div>
 
