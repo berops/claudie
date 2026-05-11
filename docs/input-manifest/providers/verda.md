@@ -103,7 +103,7 @@ spec:
       providerType: verda
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.11.0
+        tag: v0.11.1
         path: "templates/terraformer/verda"
       secretRef:
         name: verda-secret-1
@@ -159,7 +159,7 @@ spec:
       providerType: verda
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.11.0
+        tag: v0.11.1
         path: "templates/terraformer/verda"
       secretRef:
         name: verda-secret-1
@@ -213,7 +213,7 @@ spec:
       providerType: verda
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.11.0
+        tag: v0.11.1
         path: "templates/terraformer/verda"
       secretRef:
         name: verda-secret-1
