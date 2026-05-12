@@ -15,15 +15,24 @@ jobs:
     if: github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: self-hosted
     steps:
+      - name: Generate app token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: 3688229
+          private-key: ${{ secrets.CLAUDIE_CI_APP_PRIVATE_KEY }}
+          owner: berops
+
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Merge with master branch
         uses: everlytic/branch-merge@1.1.5
         with:
-          github_token: ${{ github.token }}
+          github_token: ${{ steps.app-token.outputs.token }}
           source_ref: master
           target_branch: ${{ github.head_ref }}
   #--------------------------------------------------------------------------------------------------
@@ -136,6 +145,15 @@ jobs:
     runs-on: self-hosted
     needs: [merge-branch, check-changes]
     steps:
+      - name: Generate app token
+        id: app-token
+        if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: 3688229
+          private-key: ${{ secrets.CLAUDIE_CI_APP_PRIVATE_KEY }}
+          owner: berops
+
       - uses: actions/checkout@v4
         if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
         with:
@@ -150,8 +168,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: x-access-token
+          password: ${{ steps.app-token.outputs.token }}
 
       # the newer versions of actions-runner (v2.329.x and later) don't have BuildKit
       - name: Set up Docker Buildx
@@ -206,11 +224,21 @@ jobs:
     runs-on: self-hosted
     needs: [merge-branch, check-changes, build-and-push, golangci, gotest]
     steps:
+      - name: Generate app token
+        id: app-token
+        if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: 3688229
+          private-key: ${{ secrets.CLAUDIE_CI_APP_PRIVATE_KEY }}
+          owner: berops
+
       - uses: actions/checkout@v4
         if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
         with:
           ref: ${{ github.head_ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Set short sha output
         if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
@@ -262,7 +290,7 @@ jobs:
           BRANCH_NAME=${{ github.head_ref }}
           git config --global user.name 'CI/CD pipeline'
           git config --global user.email 'CI/CD-pipeline@users.noreply.github.com'
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git remote set-url origin https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/${{ github.repository }}
           git add claudie/kustomization.yaml
           git add testing-framework/kustomization.yaml
           git commit -m "Auto commit - update kustomization.yaml"
