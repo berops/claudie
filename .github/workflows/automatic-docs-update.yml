@@ -26,12 +26,12 @@ jobs:
     steps:
       - name: Generate app token
         id: app-token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ vars.CLAUDIE_CI_APP_ID }}
           private-key: ${{ secrets.CLAUDIE_CI_APP_PRIVATE_KEY }}
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.head_ref }}
           token: ${{ steps.app-token.outputs.token }}
@@ -48,7 +48,7 @@ jobs:
         run: git fetch origin gh-pages
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: 3.13  
   
