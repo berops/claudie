@@ -147,7 +147,6 @@ jobs:
     steps:
       - name: Generate app token
         id: app-token
-        if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
         uses: actions/create-github-app-token@v1
         with:
           app-id: 3688229
@@ -226,7 +225,6 @@ jobs:
     steps:
       - name: Generate app token
         id: app-token
-        if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
         uses: actions/create-github-app-token@v1
         with:
           app-id: 3688229
