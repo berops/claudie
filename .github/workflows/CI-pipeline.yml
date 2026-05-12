@@ -21,7 +21,6 @@ jobs:
         with:
           app-id: 3688229
           private-key: ${{ secrets.CLAUDIE_CI_APP_PRIVATE_KEY }}
-          owner: berops
 
       - uses: actions/checkout@v4
         with:
@@ -151,7 +150,6 @@ jobs:
         with:
           app-id: 3688229
           private-key: ${{ secrets.CLAUDIE_CI_APP_PRIVATE_KEY }}
-          owner: berops
 
       - uses: actions/checkout@v4
         if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
@@ -229,7 +227,6 @@ jobs:
         with:
           app-id: 3688229
           private-key: ${{ secrets.CLAUDIE_CI_APP_PRIVATE_KEY }}
-          owner: berops
 
       - uses: actions/checkout@v4
         if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}

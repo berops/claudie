@@ -18,7 +18,6 @@ jobs:
         with:
           app-id: 3688229
           private-key: ${{ secrets.CLAUDIE_CI_APP_PRIVATE_KEY }}
-          owner: berops
 
       - uses: actions/checkout@v4
         with:
