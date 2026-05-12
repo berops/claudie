@@ -12,6 +12,13 @@ jobs:
     name: Create a new release
     runs-on: ubuntu-22.04
     steps:
+      - name: Generate app token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.CLAUDIE_CI_APP_ID }}
+          private-key: ${{ secrets.CLAUDIE_CI_APP_PRIVATE_KEY }}
+
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
@@ -43,8 +50,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: x-access-token
+          password: ${{ steps.app-token.outputs.token }}
 
       # Update autoscaler-adapter manifest in this steps as new kuber would need to contain manifest with the correct image tag
       - name: Edit autoscaler-adapter image tag in the manifest
@@ -89,14 +96,14 @@ jobs:
       - name: Add claudie manifest to the release
         uses: svenstaro/upload-release-action@v2
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          repo_token: ${{ steps.app-token.outputs.token }}
           tag: ${{ github.ref }}
           file: claudie.yaml
 
       - name: Add network-policy manifest to the release
         uses: svenstaro/upload-release-action@v2
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          repo_token: ${{ steps.app-token.outputs.token }}
           tag: ${{ github.ref }}
           file: manifests/network-policies/network-policy.yaml
           asset_name: network-policy.yaml
@@ -104,7 +111,7 @@ jobs:
       - name: Add cilium-network-policy manifest to the release
         uses: svenstaro/upload-release-action@v2
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          repo_token: ${{ steps.app-token.outputs.token }}
           tag: ${{ github.ref }}
           file: manifests/network-policies/network-policy-cilium.yaml
           asset_name: network-policy-cilium.yaml
@@ -112,7 +119,7 @@ jobs:
       - name: Add claudie checksums file to the release
         uses: svenstaro/upload-release-action@v2
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          repo_token: ${{ steps.app-token.outputs.token }}
           tag: ${{ github.ref }}
           file: claudie_checksum.txt
 
