@@ -21,33 +21,26 @@ jobs:
     name: Create a new  docs release
     runs-on: ubuntu-22.04
     steps:
-      - name: Generate app token
-        id: app-token
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ vars.CLAUDIE_CI_APP_ID }}
-          private-key: ${{ secrets.CLAUDIE_CI_APP_PRIVATE_KEY }}
-
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
-          token: ${{ steps.app-token.outputs.token }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set release tag
         run: |
           R=${GITHUB_REF#"refs/tags/"}
           echo "RELEASE=$R" >> $GITHUB_ENV
-
+      
       - name: Set up git author
         run: |
           git config --global user.name "${GITHUB_ACTOR}"
           git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
         env:
-          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Handle Changelog file
         env:
-          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           filename="mkdocs.yml"
           start_line=$(sed -n '/- Changelog:/=' "$filename")

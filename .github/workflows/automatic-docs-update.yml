@@ -24,24 +24,17 @@ jobs:
     if: ${{ (github.event.issue.pull_request && contains(github.event.comment.body, '/refresh-docs')) || github.event.label.name == 'refresh-docs' }}
     runs-on: ubuntu-22.04
     steps:
-      - name: Generate app token
-        id: app-token
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ vars.CLAUDIE_CI_APP_ID }}
-          private-key: ${{ secrets.CLAUDIE_CI_APP_PRIVATE_KEY }}
-
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
-          token: ${{ steps.app-token.outputs.token }}
-
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
       - name: Set up git author
         run: |
           git config --global user.name "${GITHUB_ACTOR}"
           git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
         env:
-          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # NOTE: the pipeline will fail, if gh-pages branch isn't created!!!
       - name: Git fetch gh-pages
