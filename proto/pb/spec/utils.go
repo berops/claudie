@@ -87,6 +87,8 @@ func (pr *Provider) Credentials() string {
 		return p.Exoscale.ApiSecret
 	case *Provider_Cloudrift:
 		return p.Cloudrift.Token
+	case *Provider_Verda:
+		return p.Verda.ClientSecret
 	default:
 		panic(fmt.Sprintf("unexpected type %T", pr.ProviderType))
 	}
@@ -169,6 +171,15 @@ func (pr *Provider) CopyCredentials(other *Provider) {
 
 		p.Openstack.ApplicationCredentialID = o.Openstack.ApplicationCredentialID
 		p.Openstack.ApplicationCredentialSecret = o.Openstack.ApplicationCredentialSecret
+	case *Provider_Verda:
+		o, ok := other.ProviderType.(*Provider_Verda)
+		if !ok {
+			return
+		}
+
+		p.Verda.ClientId = o.Verda.ClientId
+		p.Verda.ClientSecret = o.Verda.ClientSecret
+		p.Verda.BaseUrl = o.Verda.BaseUrl
 	default:
 		// do nothing.
 	}
@@ -260,6 +271,17 @@ func (pr *Provider) CredentialsEqual(other *Provider) (equal bool) {
 		secret := p.Openstack.ApplicationCredentialSecret == o.Openstack.ApplicationCredentialSecret
 
 		equal = id && secret
+	case *Provider_Verda:
+		o, ok := other.ProviderType.(*Provider_Verda)
+		if !ok {
+			return
+		}
+
+		clientID := p.Verda.ClientId == o.Verda.ClientId
+		clientSecret := p.Verda.ClientSecret == o.Verda.ClientSecret
+		baseURL := p.Verda.GetBaseUrl() == o.Verda.GetBaseUrl()
+
+		equal = clientID && clientSecret && baseURL
 	default:
 		// do nothing.
 	}

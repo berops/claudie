@@ -258,6 +258,34 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 		}
 	}
 
+	for _, vConf := range ds.Providers.Verda {
+		if vConf.Name == providerSpecName {
+			t := &spec.TemplateRepository{
+				Repository: vConf.Templates.Repository,
+				Tag:        vConf.Templates.Tag,
+				Path:       vConf.Templates.Path,
+			}
+			if err := FetchCommitHash(t); err != nil {
+				return nil, err
+			}
+			v := &spec.VerdaProvider{
+				ClientId:     vConf.ClientId,
+				ClientSecret: vConf.ClientSecret,
+			}
+			if vConf.BaseUrl != "" {
+				v.BaseUrl = &vConf.BaseUrl
+			}
+			return &spec.Provider{
+				SpecName: providerSpecName,
+				ProviderType: &spec.Provider_Verda{
+					Verda: v,
+				},
+				CloudProviderName: "verda",
+				Templates:         t,
+			}, nil
+		}
+	}
+
 	return nil, fmt.Errorf("failed to find provider with name: %s", providerSpecName)
 }
 
@@ -592,6 +620,11 @@ func (ds *Manifest) ForEachProvider(do func(name, typ string, tmpls **TemplateRe
 	}
 	for i, c := range ds.Providers.CloudRift {
 		if !do(c.Name, "cloudrift", &ds.Providers.CloudRift[i].Templates) {
+			return
+		}
+	}
+	for i, c := range ds.Providers.Verda {
+		if !do(c.Name, "verda", &ds.Providers.Verda[i].Templates) {
 			return
 		}
 	}

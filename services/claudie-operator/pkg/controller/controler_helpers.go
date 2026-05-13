@@ -220,6 +220,25 @@ func constructInputManifest(
 				TeamId:    strings.TrimSpace(crTeamId),
 				Templates: p.Templates,
 			})
+		case v1beta1manifest.VERDA:
+			vClientId, err := p.GetSecretField(v1beta1manifest.VERDA_CLIENT_ID)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+			vClientSecret, err := p.GetSecretField(v1beta1manifest.VERDA_CLIENT_SECRET)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+			// base_url is optional, default in OpenTofu provider is https://api.verda.com/v1.
+			vBaseUrl, _ := p.GetSecretField(v1beta1manifest.VERDA_BASE_URL)
+
+			providers.Verda = append(providers.Verda, manifest.Verda{
+				Name:         p.ProviderName,
+				ClientId:     strings.TrimSpace(vClientId),
+				ClientSecret: strings.TrimSpace(vClientSecret),
+				BaseUrl:      strings.TrimSpace(vBaseUrl),
+				Templates:    p.Templates,
+			})
 		}
 	}
 

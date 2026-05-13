@@ -36,6 +36,7 @@ const (
 	OPENSTACK  ProviderType = "openstack"
 	EXOSCALE   ProviderType = "exoscale"
 	CLOUDRIFT  ProviderType = "cloudrift"
+	VERDA      ProviderType = "verda"
 )
 
 type SecretField string
@@ -68,6 +69,9 @@ const (
 	EXOSCALE_API_SECRET              SecretField = "apisecret"
 	CLOUDRIFT_TOKEN                  SecretField = "token"
 	CLOUDRIFT_TEAM_ID                SecretField = "teamid"
+	VERDA_CLIENT_ID                  SecretField = "clientid"
+	VERDA_CLIENT_SECRET              SecretField = "clientsecret"
+	VERDA_BASE_URL                   SecretField = "baseurl"
 )
 
 // ProviderWithData helper type that assist in conversion
@@ -92,7 +96,7 @@ type Provider struct {
 	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:MinLength=1
 	ProviderName string `json:"name"`
-	// +kubebuilder:validation:Enum=gcp;hetzner;aws;oci;azure;cloudflare;openstack;exoscale;cloudrift;
+	// +kubebuilder:validation:Enum=gcp;hetzner;aws;oci;azure;cloudflare;openstack;exoscale;cloudrift;verda;
 	ProviderType ProviderType           `json:"providerType"`
 	SecretRef    corev1.SecretReference `json:"secretRef"`
 	// External templates for building the cluster infrastructure.

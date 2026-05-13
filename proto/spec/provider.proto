@@ -55,6 +55,12 @@ message CloudRiftProvider {
   optional string teamId = 2;
 }
 
+message VerdaProvider {
+  string clientId = 1;
+  string clientSecret = 2;
+  optional string baseUrl = 3;
+}
+
 message Provider {
   string specName = 1;
   string cloudProviderName = 2;
@@ -70,6 +76,7 @@ message Provider {
     OpenstackProvider openstack = 11;
     ExoscaleProvider exoscale = 12;
     CloudRiftProvider cloudrift = 14;
+    VerdaProvider verda = 15;
   }
 
   TemplateRepository templates = 13;
