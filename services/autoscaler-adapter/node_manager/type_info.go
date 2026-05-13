@@ -14,6 +14,10 @@ import (
 	"github.com/oracle/oci-go-sdk/v65/core"
 )
 
+// gib is one binary gigabyte in bytes, used by getTypeInfo* converters that
+// receive sizes in GB or GiB and need bytes.
+const gib = int64(1024 * 1024 * 1024)
+
 // getTypeInfoHetzner converts []*hcloud.ServerType to typeInfo map of instances, where keys are instance types.
 func getTypeInfoHetzner(rawInfo []*hcloud.ServerType) map[string]*InstanceInfo {
 	m := make(map[string]*InstanceInfo, len(rawInfo))
@@ -194,6 +198,32 @@ func getTypeInfoCloudRift(instanceTypes []cloudRiftInstanceType) map[string]*Ins
 				info.nvidiaGpus = int64(*v.GpuCount)
 			}
 			m[v.Name] = info
+		}
+	}
+	return m
+}
+
+// Verda API response types for the GET /v1/instance-types endpoint.
+// Documented at https://api.verda.com/v1/docs.
+// The endpoint returns a bare JSON array of these objects.
+type verdaInstanceType struct {
+	Name           string `json:"name"`
+	CpuCount       int32  `json:"cpu_count"`
+	MemoryGB       int64  `json:"memory_gb"`
+	StorageGB      int64  `json:"storage_gb"`
+	NvidiaGpuCount int32  `json:"nvidia_gpu_count"`
+}
+
+// getTypeInfoVerda converts Verda Cloud API instance types into a map keyed by instance name.
+// CPU is in cores, memory and disk are returned in GB and converted to bytes.
+func getTypeInfoVerda(instanceTypes []verdaInstanceType) map[string]*InstanceInfo {
+	m := make(map[string]*InstanceInfo)
+	for _, t := range instanceTypes {
+		m[t.Name] = &InstanceInfo{
+			cpu:        int64(t.CpuCount),
+			memory:     t.MemoryGB * gib,
+			disk:       t.StorageGB * gib,
+			nvidiaGpus: int64(t.NvidiaGpuCount),
 		}
 	}
 	return m
