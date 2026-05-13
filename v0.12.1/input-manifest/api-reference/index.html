@@ -827,6 +827,8 @@
       
         
       
+        
+      
     
     
     
@@ -1076,6 +1078,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../providers/verda/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Verda
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../providers/on-prem/" class="md-nav__link">
         
   
@@ -1283,6 +1308,15 @@
   <a href="#azure" class="md-nav__link">
     <span class="md-ellipsis">
       Azure
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verda" class="md-nav__link">
+    <span class="md-ellipsis">
+      Verda
     </span>
   </a>
   
@@ -2334,6 +2368,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#verda" class="md-nav__link">
+    <span class="md-ellipsis">
+      Verda
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2563,6 +2606,10 @@ needs to be defined.</p>
 <td><code>oci</code></td>
 <td><a href="#oci">OCI</a> provider type</td>
 </tr>
+<tr>
+<td><code>verda</code></td>
+<td><a href="#verda">Verda</a> provider type</td>
+</tr>
 </tbody>
 </table>
 <ul>
@@ -2731,6 +2778,27 @@ To find out how to configure Azure provider and service account, follow the inst
 <li><code>tag</code>: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.</li>
 <li><code>path</code>: specifies the path for a specific provider within the <code>repository</code> where the source template files are located.</li>
 </ul>
+<h3 id="verda">Verda<a class="headerlink" href="#verda" title="Permanent link">&para;</a></h3>
+<p>The fields that need to be included in a Kubernetes Secret resource to utilize the Verda Cloud provider.
+To find out how to configure Verda provider and API credentials, follow the instructions <a href="../providers/verda/">here</a>.</p>
+<ul>
+<li><code>clientid</code></li>
+</ul>
+<p>OAuth2 Client ID issued by the Verda console under <strong>Keys &gt; Cloud API Credentials</strong>.</p>
+<ul>
+<li><code>clientsecret</code></li>
+</ul>
+<p>OAuth2 Client Secret paired with the <code>clientid</code> above. Shown only once at creation time in the Verda console.</p>
+<ul>
+<li><code>baseurl</code> <em>(optional)</em></li>
+</ul>
+<p>Override the Verda Cloud API base URL. Defaults to <code>https://api.verda.com/v1</code>.</p>
+<ul>
+<li><code>templates</code></li>
+<li><code>repository</code>: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.</li>
+<li><code>tag</code>: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.</li>
+<li><code>path</code>: specifies the path for a specific provider within the <code>repository</code> where the source template files are located.</li>
+</ul>
 <h2 id="nodepools">Nodepools<a class="headerlink" href="#nodepools" title="Permanent link">&para;</a></h2>
 <p>Collection of static and dynamic nodepool specification, to be referenced in the <code>kubernetes</code> or <code>loadBalancer</code> clusters.</p>
 <ul>
@@ -2806,7 +2874,7 @@ In OOP analogy, a dynamic nodepool would be a class that would get instantiated 
 <p>Array of user defined taints, which will be applied on every node in the node pool. This field is optional.</p>
 <p>To see the default taints Claudie applies on each node, refer to <a href="#default-taints">this section</a>.</p>
 <h2 id="provider-spec">Provider Spec<a class="headerlink" href="#provider-spec" title="Permanent link">&para;</a></h2>
-<p>Provider spec is an additional specification built on top of the data from any of the provider instance. Here are provider configuration examples for each individual provider: <a href="../providers/aws/">aws</a>, <a href="../providers/azure/">azure</a>, <a href="../providers/cloudrift/">cloudrift</a>, <a href="../providers/exoscale/">exoscale</a>, <a href="../providers/gcp/">gcp</a>, <a href="../providers/cloudflare/">cloudflare</a>, <a href="../providers/hetzner/">hetzner</a> and <a href="../providers/oci/">oci</a>.</p>
+<p>Provider spec is an additional specification built on top of the data from any of the provider instance. Here are provider configuration examples for each individual provider: <a href="../providers/aws/">aws</a>, <a href="../providers/azure/">azure</a>, <a href="../providers/cloudrift/">cloudrift</a>, <a href="../providers/exoscale/">exoscale</a>, <a href="../providers/gcp/">gcp</a>, <a href="../providers/cloudflare/">cloudflare</a>, <a href="../providers/hetzner/">hetzner</a>, <a href="../providers/oci/">oci</a> and <a href="../providers/verda/">verda</a>.</p>
 <ul>
 <li><code>name</code></li>
 </ul>
