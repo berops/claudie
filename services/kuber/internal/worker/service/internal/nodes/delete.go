@@ -210,7 +210,7 @@ func (d *Deleter) DeleteNodes(logger zerolog.Logger) error {
 		}
 
 		// delete master nodes from etcd
-		if err := d.deleteFromEtcd(logger, kubectl); err != nil {
+		if err := d.deleteFromEtcd(logger, kubectl, master.k8sName); err != nil {
 			return fmt.Errorf("error while deleting nodes from etcd: %w", err)
 		}
 
@@ -340,7 +340,7 @@ func (d *Deleter) deleteNodesByName(logger zerolog.Logger, kc kubectl.Kubectl, n
 
 // deleteFromEtcd function deletes members of the etcd cluster. This needs to be done in order to prevent any data corruption in etcd
 // return nil if successful, error otherwise
-func (d *Deleter) deleteFromEtcd(logger zerolog.Logger, kc kubectl.Kubectl) error {
+func (d *Deleter) deleteFromEtcd(logger zerolog.Logger, kc kubectl.Kubectl, k8snode string) error {
 	etcdPods, err := getEtcdPodNames(kc, d.controlNode)
 	if err != nil {
 		return fmt.Errorf("cannot find etcd pods in cluster: %w", err)
@@ -351,26 +351,24 @@ func (d *Deleter) deleteFromEtcd(logger zerolog.Logger, kc kubectl.Kubectl) erro
 		return fmt.Errorf("cannot find etcd members in cluster: %w", err)
 	}
 
-	for _, node := range d.masterNodes {
-		found := false
+	found := false
 
-		for _, member := range etcd.Members {
-			if node.k8sName == member.Name {
-				found = true
-				logger.Debug().Msgf("Deleting etcd member %s, with hash %s", member.Name, member.Id)
+	for _, member := range etcd.Members {
+		if k8snode == member.Name {
+			found = true
+			logger.Debug().Msgf("Deleting etcd member %s, with hash %s", member.Name, member.Id)
 
-				etcdctlCmd := fmt.Sprintf("member remove %s", member.Id)
-				if _, err := kc.KubectlExecEtcd(etcdPods[0], etcdctlCmd); err != nil {
-					return fmt.Errorf("error while executing \"etcdctl member remove\" on node %s, cluster: %w", member.Name, err)
-				}
-
-				break
+			etcdctlCmd := fmt.Sprintf("member remove %s", member.Id)
+			if _, err := kc.KubectlExecEtcd(etcdPods[0], etcdctlCmd); err != nil {
+				return fmt.Errorf("error while executing \"etcdctl member remove\" on node %s, cluster: %w", member.Name, err)
 			}
-		}
 
-		if !found {
-			logger.Warn().Msgf("%v is not a member of etcd, ignoring", node.k8sName)
+			break
 		}
+	}
+
+	if !found {
+		logger.Warn().Msgf("%v is not a member of etcd, ignoring", k8snode)
 	}
 
 	return nil
