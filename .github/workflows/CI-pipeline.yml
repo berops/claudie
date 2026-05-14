@@ -262,6 +262,7 @@ jobs:
         if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
         working-directory: ./manifests
         run: |
+          git diff
           BRANCH_NAME=${{ github.head_ref }}
           git config --global user.name 'CI/CD pipeline'
           git config --global user.email 'CI/CD-pipeline@users.noreply.github.com'
