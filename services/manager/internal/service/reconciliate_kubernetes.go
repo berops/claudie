@@ -554,13 +554,6 @@ func ScheduleTransferApiEndpoint(current *spec.Clusters, nodepool, node string) 
 								},
 							},
 							{
-								Kind: spec.StageKuber_PATCH_KUBE_PROXY,
-								Description: &spec.StageDescription{
-									About:      "Updating Kube-Proxy cluster map with new endpoint",
-									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-								},
-							},
-							{
 								Kind: spec.StageKuber_PATCH_KUBEADM,
 								Description: &spec.StageDescription{
 									About:      "Updating Kubeadm cluster map with new endpoint",
