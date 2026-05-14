@@ -27,11 +27,6 @@
       ansible.builtin.debug:
         var: file
 
-    # refresh and restart proxy daemon set.
-    - name: Update NO_PROXY and no_proxy in kube-proxy DaemonSet
-      ansible.builtin.shell: |
-        kubeadm init phase addon kube-proxy --config {{file}}
-
     # Update and restart static pods with new proxy envs.
     - name: Update NO_PROXY and no_proxy in static pods /etc/kubernetes/manifests
       ansible.builtin.shell: |
