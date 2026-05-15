@@ -12,7 +12,17 @@ Typical client profile:
 - startups building AI/ML products
 - cost-conscious organizations looking to avoid GPU pricing from hyper-scale providers
 
-## 2. Cloud-bursting
+## 2. On-premise integration and hybrid extension
+
+A company already runs (or plans to run) Kubernetes workloads on its own on-premise hardware, co-located servers, or private datacenter, and wants to keep using that investment while gaining the flexibility of public cloud. Claudie lets them register their existing machines as [static nodepools](../input-manifest/providers/on-prem.md) and combine them in a single cluster with nodepools from AWS, GCP, Azure, Hetzner, and other supported providers. The on-premise nodes are first-class members of the cluster, eligible for workloads, loadbalancing, and node-level autoscaling on the cloud side.
+
+Typical client profile:
+
+- organizations with significant existing on-premise or bare-metal investment
+- regulated industries that must keep certain workloads in their own datacenter
+- teams that want a single Kubernetes control plane spanning on-prem and cloud
+
+## 3. Cloud-bursting
 
 A company uses advanced cloud features in one of the hyper-scale providers (e.g. serverless Lambda and API Gateway functionality in AWS). They run a machine-learning application that they need to train for a pattern on a dataset. The learning phase requires significant compute resources. Claudie allows to extend the cluster in AWS (needed in order to access the AWS functionality) to Hetzner for saving the infrastructure costs of the machine-learning case.
 
@@ -21,7 +31,7 @@ Typical client profiles:
 - startups
 - in need of significant computing power already in their early stages (e.g. AI/ML workloads)
 
-## 3. Cost-saving
+## 4. Cost-saving
 
 A company would like to utilize their on-premise or leased resources that they already invested into, but would like to:
 
@@ -34,7 +44,7 @@ Typical client profile:
 - medium-size business
 - possibly already familiar with containerized workload
 
-## 4. Smart-layer-as-a-Service on top of simple cloud-providers
+## 5. Smart-layer-as-a-Service on top of simple cloud-providers
 
 An existing customer of medium-size provider (e.g. Exoscale) would like to utilize features that are typical for hyper-scale providers. Their current provider does neither offer nor plan to offer such an advanced functionality.
 
@@ -43,7 +53,7 @@ Typical client profile:
 - established business
 - need to access advanced managed features to innovate faster
 
-## 5. Service interconnect
+## 6. Service interconnect
 
 A company would like to access on-premise-hosted services and cloud-managed services from within the same cluster. For on-premise services the on-premise cluster node would egress the traffic. The cloud-hosted cluster nodes would deal with the egress traffic to the cloud-managed services.
 
