@@ -97,6 +97,10 @@ spec:
   providers:
     - name: hetzner-1
       providerType: hetzner
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.11.1
+        path: "templates/terraformer/hetzner"
       secretRef:
         name: hetzner-secret-1
         namespace: <your-namespace>
