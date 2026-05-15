@@ -1,7 +1,7 @@
 <h4 align="center">
   <img src="https://raw.githubusercontent.com/berops/claudie/17480b6cb809fe795d454588af18355c7543f37e/docs/logo%20claudie_blue_no_BG.svg" width="250px"/><br/>
   <br/><br/>
-  Platform for managing multi-cloud and hybrid-cloud Kubernetes clusters with support for nodepools across different cloud-providers and on-premise data centers
+  Platform for managing multi-cloud, hybrid-cloud, and on-premise Kubernetes clusters, with nodepools that mix cloud providers and your own bare-metal or co-located servers
 </h4>
 
 <p align="center">
@@ -29,7 +29,7 @@
 
 ## Vision of Claudie
 
-The purpose of Claudie is to become the final Kubernetes engine you'll ever need. It aims to build clusters that leverage features and costs across multiple cloud vendors and on-prem datacenters. A Kubernetes that you won't ever need to migrate away from.
+The purpose of Claudie is to become the final Kubernetes engine you'll ever need. It builds clusters that leverage features and costs across on-premise datacenters and multiple cloud vendors, all from a single InputManifest. A Kubernetes that you won't ever need to migrate away from.
 
 ## Typical use cases
 
@@ -40,15 +40,16 @@ Claudie has been built as an answer to the following Kubernetes challenges.
 - Managed Kubernetes for providers that do not offer it
 - Cloud bursting
 - Service interconnect
+- On-premise & hybrid integration of existing bare-metal or co-located servers as nodepools
 - Integration of GPU nodes into Kubernetes for AI workloads
 
 Read in more details [here](https://docs.claudie.io/latest/use-cases/use-cases/).
 
 ## Features
 
-### Manage multi-cloud and hybrid-cloud Kubernetes clusters
+### Manage multi-cloud, hybrid-cloud, and on-premise Kubernetes clusters
 
-Create fully-featured Kubernetes clusters composed of multiple different public Cloud providers and on-premise data center in an easy and secure manner.
+Create fully-featured Kubernetes clusters composed of multiple different public Cloud providers and your own on-premise data centers in an easy and secure manner.
 Simply insert credentials to your cloud projects, define your cluster, and watch how the infra spawns right in front of you.
 
 <p align="center">
@@ -105,10 +106,11 @@ Before you begin, please make sure you have the following prerequisites installe
    | [Cloudflare](https://docs.claudie.io/latest/input-manifest/providers/cloudflare/) | N/A                | :heavy_check_mark: |:heavy_check_mark: | N/A                |
    | [OVH Cloud](https://docs.claudie.io/latest/input-manifest/providers/openstack/)   | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: |
    | [Openstack](https://docs.claudie.io/latest/input-manifest/providers/openstack/)   | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: |
+   | [On-Premise / Static nodes](https://docs.claudie.io/latest/input-manifest/providers/on-prem/) | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: |
 
 > **Note:** `N/A` indicates that the given feature is not applicable for the provider.
 
-For adding support for other cloud providers, open an issue or propose a PR.
+For adding support for other cloud providers or on-premise environments, open an issue or propose a PR.
 
 <!-- providers-end -->
 

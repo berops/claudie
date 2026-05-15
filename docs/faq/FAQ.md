@@ -17,6 +17,7 @@ Claudie is a good fit for the following scenarios (described in more detail on t
 - Managed Kubernetes for cloud providers that don't offer it
 - Cloud bursting
 - Service interconnect
+- On-premise and hybrid integration of existing bare-metal or co-located servers as cluster nodepools
 
 Claudie is probably not the right choice if you're running on a single cloud provider that already offers managed Kubernetes and you're happy to accept that lock-in — for example, because you want to take advantage of that provider's unique value proposition.
 
@@ -51,3 +52,7 @@ A GUI isn't on the roadmap right now. Other options are being discussed in [this
 ### How hard is it to add support for a new cloud provider?
 
 Adding a new provider is straightforward. If you need one that isn't supported yet, let us know.
+
+### Does Claudie support on-premise or bare-metal nodes?
+
+Yes. On-premise, co-located, or any SSH-reachable bare-metal machines can be attached to a Claudie-managed cluster as static nodepools. They behave as first-class Kubernetes nodes alongside dynamic cloud nodepools, so a single cluster can span your own datacenter and one or more public clouds. See the [On Premise provider docs](../input-manifest/providers/on-prem.md) for the requirements (SSH access, reachable endpoints, root privileges) and a full example InputManifest.
