@@ -94,7 +94,7 @@ func (pr *Provider) Credentials() string {
 	}
 }
 
-func (pr *Provider) CopyCredentials(other *Provider) {
+func (pr *Provider) CopyCredentials(other *Provider) (updated bool) {
 	if pr == nil {
 		return
 	}
@@ -112,6 +112,7 @@ func (pr *Provider) CopyCredentials(other *Provider) {
 
 		p.Aws.AccessKey = o.Aws.AccessKey
 		p.Aws.SecretKey = o.Aws.SecretKey
+		updated = true
 	case *Provider_Azure:
 		o, ok := other.ProviderType.(*Provider_Azure)
 		if !ok {
@@ -119,6 +120,7 @@ func (pr *Provider) CopyCredentials(other *Provider) {
 		}
 
 		p.Azure.ClientSecret = o.Azure.ClientSecret
+		updated = true
 	case *Provider_Cloudflare:
 		o, ok := other.ProviderType.(*Provider_Cloudflare)
 		if !ok {
@@ -126,6 +128,7 @@ func (pr *Provider) CopyCredentials(other *Provider) {
 		}
 
 		p.Cloudflare.Token = o.Cloudflare.Token
+		updated = true
 	case *Provider_Cloudrift:
 		o, ok := other.ProviderType.(*Provider_Cloudrift)
 		if !ok {
@@ -133,6 +136,7 @@ func (pr *Provider) CopyCredentials(other *Provider) {
 		}
 
 		p.Cloudrift.Token = o.Cloudrift.Token
+		updated = true
 	case *Provider_Exoscale:
 		o, ok := other.ProviderType.(*Provider_Exoscale)
 		if !ok {
@@ -141,6 +145,7 @@ func (pr *Provider) CopyCredentials(other *Provider) {
 
 		p.Exoscale.ApiSecret = o.Exoscale.ApiSecret
 		p.Exoscale.ApiKey = o.Exoscale.ApiKey
+		updated = true
 	case *Provider_Gcp:
 		o, ok := other.ProviderType.(*Provider_Gcp)
 		if !ok {
@@ -148,6 +153,7 @@ func (pr *Provider) CopyCredentials(other *Provider) {
 		}
 
 		p.Gcp.Key = o.Gcp.Key
+		updated = true
 	case *Provider_Hetzner:
 		o, ok := other.ProviderType.(*Provider_Hetzner)
 		if !ok {
@@ -155,6 +161,7 @@ func (pr *Provider) CopyCredentials(other *Provider) {
 		}
 
 		p.Hetzner.Token = o.Hetzner.Token
+		updated = true
 	case *Provider_Oci:
 		o, ok := other.ProviderType.(*Provider_Oci)
 		if !ok {
@@ -163,6 +170,7 @@ func (pr *Provider) CopyCredentials(other *Provider) {
 
 		p.Oci.KeyFingerprint = o.Oci.KeyFingerprint
 		p.Oci.PrivateKey = o.Oci.PrivateKey
+		updated = true
 	case *Provider_Openstack:
 		o, ok := other.ProviderType.(*Provider_Openstack)
 		if !ok {
@@ -171,6 +179,7 @@ func (pr *Provider) CopyCredentials(other *Provider) {
 
 		p.Openstack.ApplicationCredentialID = o.Openstack.ApplicationCredentialID
 		p.Openstack.ApplicationCredentialSecret = o.Openstack.ApplicationCredentialSecret
+		updated = true
 	case *Provider_Verda:
 		o, ok := other.ProviderType.(*Provider_Verda)
 		if !ok {
@@ -180,9 +189,12 @@ func (pr *Provider) CopyCredentials(other *Provider) {
 		p.Verda.ClientId = o.Verda.ClientId
 		p.Verda.ClientSecret = o.Verda.ClientSecret
 		p.Verda.BaseUrl = o.Verda.BaseUrl
+		updated = true
 	default:
 		// do nothing.
 	}
+
+	return
 }
 
 // Checks whether these two providers have the same credentials.
