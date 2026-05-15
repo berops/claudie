@@ -18,7 +18,7 @@ clusterNetwork:
   cni:
     cilium:
       enableHubble: true
-      kubeProxyReplacement: "strict"
+      kubeProxyReplacement: true
 
 cloudProvider:
   none: {}
