@@ -936,8 +936,9 @@ func updateCredentials(current, desired *spec.Clusters) (updated bool) {
 		}
 
 		if !clb.Dns.Provider.CredentialsEqual(dlb.Dns.Provider) {
-			clb.Dns.Provider.CopyCredentials(dlb.Dns.Provider)
-			updated = true
+			if clb.Dns.Provider.CopyCredentials(dlb.Dns.Provider) {
+				updated = true
+			}
 		}
 	}
 
@@ -953,8 +954,9 @@ func updateNodePoolCredentials(current, desired *spec.NodePool) (updated bool) {
 		}
 
 		if !cnp.DynamicNodePool.Provider.CredentialsEqual(dnp.DynamicNodePool.Provider) {
-			cnp.DynamicNodePool.Provider.CopyCredentials(dnp.DynamicNodePool.Provider)
-			updated = true
+			if cnp.DynamicNodePool.Provider.CopyCredentials(dnp.DynamicNodePool.Provider) {
+				updated = true
+			}
 		}
 	case *spec.NodePool_StaticNodePool:
 		dnp, ok := desired.Type.(*spec.NodePool_StaticNodePool)

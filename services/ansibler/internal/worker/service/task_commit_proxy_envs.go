@@ -30,7 +30,7 @@ func CommitProxyEnvs(
 ) {
 	logger.
 		Info().
-		Msg("Updating kube-proxy DaemonSet and static pods with new Proxy envs")
+		Msg("Updating static pods with new Proxy envs")
 
 	update, ok := tracker.Task.Do.(*spec.Task_Update)
 	if !ok {
@@ -93,7 +93,7 @@ func CommitProxyEnvs(
 
 	log.
 		Info().
-		Msg("Successfully updated proxy envs for kube-proxy DaemonSet and static pods ")
+		Msg("Successfully updated proxy envs for static pods ")
 }
 
 // commitProxyEnvs updates NO_PROXY and no_proxy envs across k8s services on nodes and restarts necessary

@@ -91,6 +91,8 @@ func (r *DynamicNodePoolResolver) resolve(np *spec.DynamicNodePool) (Arch, error
 		return resolveExoscale(np)
 	case "cloudrift":
 		return resolveCloudRift(np)
+	case "verda":
+		return resolveVerda(np)
 	default:
 		return "", fmt.Errorf("%q not supported", np.GetProvider().GetCloudProviderName())
 	}
@@ -109,6 +111,11 @@ func resolveExoscale(np *spec.DynamicNodePool) (Arch, error) {
 
 func resolveCloudRift(np *spec.DynamicNodePool) (Arch, error) {
 	// CloudRift primarily offers AMD64/GPU instances.
+	return Amd64, nil
+}
+
+func resolveVerda(np *spec.DynamicNodePool) (Arch, error) {
+	// Verda primarily offers AMD64/GPU instances.
 	return Amd64, nil
 }
 

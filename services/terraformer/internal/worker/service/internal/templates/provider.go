@@ -29,6 +29,7 @@ type usedProvidersTemplateData struct {
 	Openstack  bool
 	Exoscale   bool
 	CloudRift  bool
+	Verda      bool
 }
 
 // CreateUsedProviderDNS creates provider file used for DNS management.
@@ -95,6 +96,9 @@ func getProvidersUsed(nodepools []*spec.DynamicNodePool, data *usedProvidersTemp
 		}
 		if nodepool.Provider.CloudProviderName == "cloudrift" {
 			data.CloudRift = true
+		}
+		if nodepool.Provider.CloudProviderName == "verda" {
+			data.Verda = true
 		}
 	}
 }

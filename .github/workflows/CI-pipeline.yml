@@ -135,6 +135,9 @@ jobs:
     if: ${{ !failure() && !cancelled() }}
     runs-on: self-hosted
     needs: [merge-branch, check-changes]
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v6
         if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
