@@ -35,28 +35,23 @@ func NewWebhook(
 		CertDir: dir,
 	})
 
-	hookServer.Register(path, admission.WithCustomValidator(
+	validator := admission.WithValidator[*v1beta.InputManifest](
 		scheme,
-		&v1beta.InputManifest{},
 		&InputManifestValidator{log, kc},
-	))
+	)
 
+	hookServer.Register(path, validator)
 	return hookServer
 }
 
 // validate takes the context and a kubernetes object as a parameter.
 // It will extract the secret data out of the received obj and run manifest validation against it
-func (v *InputManifestValidator) validate(ctx context.Context, obj runtime.Object) error {
+func (v *InputManifestValidator) validate(ctx context.Context, obj *v1beta.InputManifest) error {
 	log := crlog.FromContext(ctx).WithName("InputManifest Validator")
-
-	inputManifest, ok := obj.(*v1beta.InputManifest)
-	if !ok {
-		return fmt.Errorf("expected an InputManifest but got a %T", obj)
-	}
 
 	log.Info("Validating InputManifest")
 
-	if err := validateInputManifest(inputManifest); err != nil {
+	if err := validateInputManifest(obj); err != nil {
 		log.Error(err, "error validating InputManifest")
 		return err
 	}
@@ -65,24 +60,14 @@ func (v *InputManifestValidator) validate(ctx context.Context, obj runtime.Objec
 }
 
 // ValidateCreate defines the logic when a kubernetes obj resource is created
-func (v *InputManifestValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (v *InputManifestValidator) ValidateCreate(ctx context.Context, obj *v1beta.InputManifest) (admission.Warnings, error) {
 	return nil, v.validate(ctx, obj)
 }
 
 // ValidateUpdate defines the logic when a kubernetes obj resource is updated
-func (v *InputManifestValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
-	o, ok := oldObj.(*v1beta.InputManifest)
-	if !ok {
-		return nil, fmt.Errorf("expected InputManifest for 'oldObj' but got %T", oldObj)
-	}
-
-	n, ok := newObj.(*v1beta.InputManifest)
-	if !ok {
-		return nil, fmt.Errorf("expected InputManifest for 'newOjb' but got %T", newObj)
-	}
-
-	nmap := getDynamicNodepoolsMap(o)
-	for _, desired := range n.Spec.NodePools.Dynamic {
+func (v *InputManifestValidator) ValidateUpdate(ctx context.Context, oldObj, newObj *v1beta.InputManifest) (admission.Warnings, error) {
+	nmap := getDynamicNodepoolsMap(oldObj)
+	for _, desired := range newObj.Spec.NodePools.Dynamic {
 		current, exists := nmap[desired.Name]
 		if !exists {
 			continue
@@ -97,7 +82,7 @@ func (v *InputManifestValidator) ValidateUpdate(ctx context.Context, oldObj, new
 }
 
 // ValidateDelete defines the logic when a kubernetes obj resource is deleted
-func (v *InputManifestValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (v *InputManifestValidator) ValidateDelete(ctx context.Context, obj *v1beta.InputManifest) (admission.Warnings, error) {
 	return nil, v.validate(ctx, obj)
 }
 

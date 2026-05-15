@@ -103,9 +103,10 @@ func (nm *NodeManager) cacheAws(np *spec.DynamicNodePool) error {
 
 // cacheGcp function uses google go module to query supported VMs and their info. If the query is successful, the VM info is saved in cache.
 func (nm *NodeManager) cacheGcp(np *spec.DynamicNodePool) error {
-	creds, err := google.CredentialsFromJSON(
+	creds, err := google.CredentialsFromJSONWithType(
 		context.Background(),
 		[]byte(np.Provider.GetGcp().Key),
+		google.ServiceAccount,
 		compute.DefaultAuthScopes()...,
 	)
 	if err != nil {

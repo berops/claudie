@@ -157,7 +157,7 @@ func run() error {
 		mgr.GetClient(),
 		mgr.GetScheme(),
 		logger,
-		mgr.GetEventRecorderFor("InputManifest"),
+		mgr.GetEventRecorder("InputManifest"),
 		*usecases,
 	).SetupWithManager(mgr); err != nil {
 		return err
