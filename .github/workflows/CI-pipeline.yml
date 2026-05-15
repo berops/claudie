@@ -345,12 +345,20 @@ jobs:
             echo "skip_deploy=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Install terraform
+      - name: Install tofu
         run: |
-          sudo apt-get update && sudo apt-get install -y wget
-          wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-          echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
-          sudo apt update && sudo apt install terraform -y
+          sudo apt-get update && sudo apt-get install -y apt-transport-https ca-certificates curl gnupg
+
+          sudo install -m 0755 -d /etc/apt/keyrings
+          curl -fsSL https://get.opentofu.org/opentofu.gpg | sudo tee /etc/apt/keyrings/opentofu.gpg >/dev/null
+          curl -fsSL https://packages.opentofu.org/opentofu/tofu/gpgkey | sudo gpg --no-tty --batch --dearmor -o /etc/apt/keyrings/opentofu-repo.gpg >/dev/null
+          sudo chmod a+r /etc/apt/keyrings/opentofu.gpg /etc/apt/keyrings/opentofu-repo.gpg
+          echo \
+            "deb [signed-by=/etc/apt/keyrings/opentofu.gpg,/etc/apt/keyrings/opentofu-repo.gpg] https://packages.opentofu.org/opentofu/tofu/any/ any main
+            deb-src [signed-by=/etc/apt/keyrings/opentofu.gpg,/etc/apt/keyrings/opentofu-repo.gpg] https://packages.opentofu.org/opentofu/tofu/any/ any main" | \
+              sudo tee /etc/apt/sources.list.d/opentofu.list > /dev/null
+          sudo chmod a+r /etc/apt/sources.list.d/opentofu.list
+          sudo apt-get update && sudo apt-get install -y tofu
 
       - name: Set short sha output
         if: (steps.determine-test-sets.outputs.skip_deploy == 'false')
@@ -423,16 +431,16 @@ jobs:
         run: |
           sudo apt update && sudo apt install -y jq
 
-          echo "Saving terraform script and key"
+          echo "Saving tofu script and key"
           echo "${{ secrets.CREATE_STATIC_NODES }}" | base64 -d > script.tf
 
-          echo "Running terraform init"
-          terraform init > /dev/null 2>&1
-          echo "Running terraform apply"
-          terraform apply -auto-approve > /dev/null 2>&1
+          echo "Running tofu init"
+          tofu init > /dev/null 2>&1
+          echo "Running tofu apply"
+          tofu apply -auto-approve > /dev/null 2>&1
 
-          echo "Running terraform output"
-          IPS=$(terraform output --json | jq -r '.endpoints.value | values[]')
+          echo "Running tofu output"
+          IPS=$(tofu output --json | jq -r '.endpoints.value | values[]')
           IP_ARR=( $IPS )
 
           # use 3 nodes for the explicit static nodes test-set.
@@ -514,7 +522,7 @@ jobs:
         if: always()
         working-directory: ./manifests/testing-framework/test-sets
         run: |
-          echo "Running terraform init"
-          terraform init > /dev/null 2>&1
-          echo "Running terraform destroy"
-          terraform destroy -auto-approve > /dev/null 2>&1
+          echo "Running tofu init"
+          tofu init > /dev/null 2>&1
+          echo "Running tofu destroy"
+          tofu destroy -auto-approve > /dev/null 2>&1
