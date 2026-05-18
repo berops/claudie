@@ -366,7 +366,7 @@ jobs:
 
       - name: Install kubectl
         if: (steps.determine-test-sets.outputs.skip_deploy == 'false')
-        uses: azure/setup-kubectl@v4
+        uses: azure/setup-kubectl@v5
         with:
           version: latest
 
@@ -378,7 +378,7 @@ jobs:
 
       - name: Set e2e kubeconfig
         if: (steps.determine-test-sets.outputs.skip_deploy == 'false')
-        uses: azure/k8s-set-context@v4
+        uses: azure/k8s-set-context@v5
         with:
           kubeconfig: ${{ secrets.E2E_CLUSTER_KUBECONFIG }}
 
