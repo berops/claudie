@@ -1,6 +1,6 @@
 <h4 align="center">
   <a href="https://claudie.io" target="_blank" rel="noopener noreferrer">
-  <img src="https://raw.githubusercontent.com/berops/claudie/17480b6cb809fe795d454588af18355c7543f37e/docs/logo%20claudie_blue_no_BG.svg" width="250px"/>
+  <img src="https://raw.githubusercontent.com/berops/claudie/17480b6cb809fe795d454588af18355c7543f37e/docs/logo%20claudie_blue_no_BG.svg" width="250px" alt="Claudie logo"/>
   </a><br/>
   <br/><br/>
   Platform for managing multi-cloud and hybrid-cloud Kubernetes clusters with support for nodepools across different cloud-providers and on-premise data centers
