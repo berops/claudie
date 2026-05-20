@@ -98,8 +98,6 @@ passes:
 			PatchClusterInfoCM(logger, tracker)
 		case spec.StageKuber_PATCH_KUBEADM:
 			PatchKubeadmCM(logger, tracker)
-		case spec.StageKuber_PATCH_KUBE_PROXY:
-			PatchKubeProxy(logger, tracker)
 		case spec.StageKuber_PATCH_NODES:
 			PatchNodes(logger, processlimit, work.WorkersLimit, tracker)
 		case spec.StageKuber_REMOVE_LB_SCRAPE_CONFIG:

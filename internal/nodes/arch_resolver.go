@@ -166,9 +166,10 @@ func resolveOci(np *spec.DynamicNodePool) (Arch, error) {
 }
 
 func resolveGcp(np *spec.DynamicNodePool) (Arch, error) {
-	creds, err := google.CredentialsFromJSON(
+	creds, err := google.CredentialsFromJSONWithType(
 		context.Background(),
 		[]byte(np.Provider.GetGcp().Key),
+		google.ServiceAccount,
 		compute.DefaultAuthScopes()...,
 	)
 	if err != nil {

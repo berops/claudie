@@ -13,9 +13,12 @@ features:
     deploy: true
 
 clusterNetwork:
+  kubeProxy:
+    skipInstallation: true
   cni:
     cilium:
       enableHubble: true
+      kubeProxyReplacement: "strict"
 
 cloudProvider:
   none: {}
