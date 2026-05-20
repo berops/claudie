@@ -1,4 +1,4 @@
-FROM docker.io/library/golang:1.25.5 AS build
+FROM docker.io/library/golang:1.26.3 AS build
 
 ARG TARGETARCH
 
@@ -7,6 +7,10 @@ RUN apt-get -qq update && apt-get -qq install unzip
 RUN KUBEONE_V=1.13.4 && \
     wget -q https://github.com/kubermatic/kubeone/releases/download/v${KUBEONE_V}/kubeone_${KUBEONE_V}_linux_$TARGETARCH.zip && \
     unzip -qq kubeone_${KUBEONE_V}_linux_$TARGETARCH.zip -d kubeone_dir
+
+#Install kubectl
+RUN KC_VERSION=v1.34.0 && \
+    wget -q https://dl.k8s.io/release/${KC_VERSION}/bin/linux/$TARGETARCH/kubectl
 
 #Unset the GOPATH
 ENV GOPATH=
@@ -26,7 +30,7 @@ WORKDIR /go/services/kube-eleven/cmd/worker
 #Compile the golang code, CGO_ENABLE=0 removes cross compile dependencies
 RUN CGO_ENABLED=0 go build
 
-FROM docker.io/library/alpine:3.22
+FROM docker.io/library/alpine:3.23
 #Add repository label
 LABEL org.opencontainers.image.source="https://github.com/berops/claudie"
 #Add image name as a label
@@ -38,7 +42,10 @@ RUN apk update
 RUN apk add -q bash
 
 COPY --from=build /go/kubeone_dir/kubeone /usr/local/bin
+COPY --from=build /go/kubectl /usr/local/bin/kubectl
 COPY --from=build /go/services/kube-eleven/cmd/worker/worker /bin/services/kube-eleven/worker
+
+RUN chmod +x /usr/local/bin/kubectl
 
 #Run worker
 WORKDIR /bin

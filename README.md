@@ -104,7 +104,7 @@ Before you begin, please make sure you have the following prerequisites installe
    | [CloudRift](https://docs.claudie.io/latest/input-manifest/providers/cloudrift/)    | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: |
    | [Verda](https://docs.claudie.io/latest/input-manifest/providers/verda/)            | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: |
    | [Cloudflare](https://docs.claudie.io/latest/input-manifest/providers/cloudflare/) | N/A                | :heavy_check_mark: |:heavy_check_mark: | N/A                |
-   | [OVH Cloud](https://docs.claudie.io/latest/input-manifest/providers/openstack/)   | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: |
+   | [OVHcloud](https://docs.claudie.io/latest/input-manifest/providers/openstack/)   | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: |
    | [Openstack](https://docs.claudie.io/latest/input-manifest/providers/openstack/)   | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: |
    | [On-Premises / Static nodes](https://docs.claudie.io/latest/input-manifest/providers/on-prem/) | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: |
 

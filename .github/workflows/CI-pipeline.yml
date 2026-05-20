@@ -15,7 +15,7 @@ jobs:
     if: github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.head_ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
@@ -32,7 +32,7 @@ jobs:
     runs-on: self-hosted
     needs: merge-branch
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.head_ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
@@ -75,15 +75,15 @@ jobs:
     runs-on: self-hosted
     needs: [merge-branch, check-changes]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.head_ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
 
       - name: Install golang
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
-          go-version: "1.25.3"
+          go-version: "1.26.2"
 
       - name: Run Go tests
         run: go test -short ./...
@@ -94,23 +94,23 @@ jobs:
     runs-on: self-hosted
     needs: [merge-branch, check-changes]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.head_ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
 
       - name: Install golang
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
-          go-version: "1.25.3"
+          go-version: "1.26.2"
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v8
+        uses: golangci/golangci-lint-action@v9
         with:
           # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
           # It's highly recommended installing a specific version of golangci-lint from
           # https://github.com/golangci/golangci-lint/releases
-          version: v2.5.0
+          version: v2.11.4
 
           # Optional: working directory, useful for monorepos
           # working-directory: somedir
@@ -139,7 +139,7 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
         with:
           ref: ${{ github.head_ref }}
@@ -150,7 +150,7 @@ jobs:
         run: echo "SHORT_GITHUB_SHA=`echo ${GITHUB_SHA} | cut -c1-7`" >> $GITHUB_ENV
 
       - name: Set up docker
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -158,7 +158,7 @@ jobs:
 
       # the newer versions of actions-runner (v2.329.x and later) don't have BuildKit
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       # Update autoscaler-adapter manifest in this steps as new kuber would need to contain manifest with the correct image tag
       - name: Edit autoscaler-adapter image tag in the manifest
@@ -209,7 +209,7 @@ jobs:
     runs-on: self-hosted
     needs: [merge-branch, check-changes, build-and-push, golangci, gotest]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
         with:
           ref: ${{ github.head_ref }}
@@ -221,7 +221,7 @@ jobs:
 
       - name: install kustomize
         if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
-        uses: imranismail/setup-kustomize@v2
+        uses: imranismail/setup-kustomize@v3
         with:
           kustomize-version: 4.5.6
 
@@ -282,7 +282,7 @@ jobs:
       contents: read
     if: ${{ !failure() && !cancelled() && (needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' || needs.check-changes.outputs.RUN_TESTS == 'true') && github.event.pull_request.draft == false }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.head_ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
@@ -345,12 +345,20 @@ jobs:
             echo "skip_deploy=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Install terraform
+      - name: Install tofu
         run: |
-          sudo apt-get update && sudo apt-get install -y wget
-          wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-          echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
-          sudo apt update && sudo apt install terraform -y
+          sudo apt-get update && sudo apt-get install -y apt-transport-https ca-certificates curl gnupg
+
+          sudo install -m 0755 -d /etc/apt/keyrings
+          curl -fsSL https://get.opentofu.org/opentofu.gpg | sudo tee /etc/apt/keyrings/opentofu.gpg >/dev/null
+          curl -fsSL https://packages.opentofu.org/opentofu/tofu/gpgkey | sudo gpg --no-tty --batch --dearmor -o /etc/apt/keyrings/opentofu-repo.gpg >/dev/null
+          sudo chmod a+r /etc/apt/keyrings/opentofu.gpg /etc/apt/keyrings/opentofu-repo.gpg
+          echo \
+            "deb [signed-by=/etc/apt/keyrings/opentofu.gpg,/etc/apt/keyrings/opentofu-repo.gpg] https://packages.opentofu.org/opentofu/tofu/any/ any main
+            deb-src [signed-by=/etc/apt/keyrings/opentofu.gpg,/etc/apt/keyrings/opentofu-repo.gpg] https://packages.opentofu.org/opentofu/tofu/any/ any main" | \
+              sudo tee /etc/apt/sources.list.d/opentofu.list > /dev/null
+          sudo chmod a+r /etc/apt/sources.list.d/opentofu.list
+          sudo apt-get update && sudo apt-get install -y tofu
 
       - name: Set short sha output
         if: (steps.determine-test-sets.outputs.skip_deploy == 'false')
@@ -358,19 +366,19 @@ jobs:
 
       - name: Install kubectl
         if: (steps.determine-test-sets.outputs.skip_deploy == 'false')
-        uses: azure/setup-kubectl@v4
+        uses: azure/setup-kubectl@v5
         with:
           version: latest
 
       - name: Install kustomize
         if: (steps.determine-test-sets.outputs.skip_deploy == 'false')
-        uses: imranismail/setup-kustomize@v2
+        uses: imranismail/setup-kustomize@v3
         with:
           kustomize-version: 4.5.6
 
       - name: Set e2e kubeconfig
         if: (steps.determine-test-sets.outputs.skip_deploy == 'false')
-        uses: azure/k8s-set-context@v4
+        uses: azure/k8s-set-context@v5
         with:
           kubeconfig: ${{ secrets.E2E_CLUSTER_KUBECONFIG }}
 
@@ -423,16 +431,16 @@ jobs:
         run: |
           sudo apt update && sudo apt install -y jq
 
-          echo "Saving terraform script and key"
+          echo "Saving tofu script and key"
           echo "${{ secrets.CREATE_STATIC_NODES }}" | base64 -d > script.tf
 
-          echo "Running terraform init"
-          terraform init > /dev/null 2>&1
-          echo "Running terraform apply"
-          terraform apply -auto-approve > /dev/null 2>&1
+          echo "Running tofu init"
+          tofu init > /dev/null 2>&1
+          echo "Running tofu apply"
+          tofu apply -auto-approve > /dev/null 2>&1
 
-          echo "Running terraform output"
-          IPS=$(terraform output --json | jq -r '.endpoints.value | values[]')
+          echo "Running tofu output"
+          IPS=$(tofu output --json | jq -r '.endpoints.value | values[]')
           IP_ARR=( $IPS )
 
           # use 3 nodes for the explicit static nodes test-set.
@@ -514,7 +522,7 @@ jobs:
         if: always()
         working-directory: ./manifests/testing-framework/test-sets
         run: |
-          echo "Running terraform init"
-          terraform init > /dev/null 2>&1
-          echo "Running terraform destroy"
-          terraform destroy -auto-approve > /dev/null 2>&1
+          echo "Running tofu init"
+          tofu init > /dev/null 2>&1
+          echo "Running tofu destroy"
+          tofu destroy -auto-approve > /dev/null 2>&1

@@ -910,13 +910,6 @@ func ScheduleReplaceDns(
 							},
 						},
 						{
-							Kind: spec.StageKuber_PATCH_KUBE_PROXY,
-							Description: &spec.StageDescription{
-								About:      "Updating Kube-Proxy cluster map with new endpoint",
-								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-							},
-						},
-						{
 							Kind: spec.StageKuber_PATCH_KUBEADM,
 							Description: &spec.StageDescription{
 								About:      "Updating Kubeadm cluster map with new endpoint",
@@ -1128,13 +1121,6 @@ func ScheduleMoveApiEndpoint(
 								Kind: spec.StageKuber_PATCH_CLUSTER_INFO_CM,
 								Description: &spec.StageDescription{
 									About:      "Updating cluster-info cluster map with new endpoint",
-									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-								},
-							},
-							{
-								Kind: spec.StageKuber_PATCH_KUBE_PROXY,
-								Description: &spec.StageDescription{
-									About:      "Updating Kube-Proxy cluster map with new endpoint",
 									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 								},
 							},

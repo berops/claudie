@@ -90,27 +90,25 @@ func ScheduleDeleteCluster(current *spec.Clusters) *spec.TaskEvent {
 		pipeline = append(pipeline, ans)
 	}
 
-	if dyn := nodepools.Dynamic(current.K8S.ClusterInfo.NodePools); len(dyn) > 0 {
-		pipeline = append(pipeline, &spec.Stage{
-			StageKind: &spec.Stage_Terraformer{
-				Terraformer: &spec.StageTerraformer{
-					Description: &spec.StageDescription{
-						About:      "Destroying infrastructure of the cluster",
-						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-					},
-					SubPasses: []*spec.StageTerraformer_SubPass{
-						{
-							Kind: spec.StageTerraformer_DESTROY_INFRASTRUCTURE,
-							Description: &spec.StageDescription{
-								About:      "Destroying current state",
-								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-							},
+	pipeline = append(pipeline, &spec.Stage{
+		StageKind: &spec.Stage_Terraformer{
+			Terraformer: &spec.StageTerraformer{
+				Description: &spec.StageDescription{
+					About:      "Destroying infrastructure of the cluster",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+				SubPasses: []*spec.StageTerraformer_SubPass{
+					{
+						Kind: spec.StageTerraformer_DESTROY_INFRASTRUCTURE,
+						Description: &spec.StageDescription{
+							About:      "Destroying current state",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 						},
 					},
 				},
 			},
-		})
-	}
+		},
+	})
 
 	var (
 		deleteK8s = proto.Clone(current.GetK8S()).(*spec.K8Scluster)

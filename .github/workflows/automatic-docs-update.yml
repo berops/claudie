@@ -24,11 +24,11 @@ jobs:
     if: ${{ (github.event.issue.pull_request && contains(github.event.comment.body, '/refresh-docs')) || github.event.label.name == 'refresh-docs' }}
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.head_ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Set up git author
         run: |
           git config --global user.name "${GITHUB_ACTOR}"
@@ -41,10 +41,10 @@ jobs:
         run: git fetch origin gh-pages
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
-          python-version: 3.13  
-  
+          python-version: 3.13
+
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
@@ -62,7 +62,7 @@ jobs:
       - name: Deploy new docs version
         run: mike deploy ${LATEST_VERSION} latest --update-aliases --push
 
-      # The llms files need to be located in the root path of a website 
+      # The llms files need to be located in the root path of a website
       - name: Copy llms files to root of gh-pages
         run: |
           set -e

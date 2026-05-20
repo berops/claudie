@@ -33,12 +33,6 @@ const (
 
 	getEtcdPodsCmd = "get pods -n kube-system --no-headers -o custom-columns=\":metadata.name\" | grep etcd"
 
-	etcdCerts = ` \
-		--cacert=/etc/kubernetes/pki/etcd/ca.crt \
-		--cert=/etc/kubernetes/pki/etcd/healthcheck-client.crt \
-		--key=/etc/kubernetes/pki/etcd/healthcheck-client.key
-	`
-
 	// Timeout used on kubectl commands that fail initially and are then retried.
 	kubectlTimeout = 180 * time.Second
 )
@@ -285,11 +279,10 @@ func (k *Kubectl) KubectlExecEtcd(etcdPod, etcdctlCmd string) ([]byte, error) {
 	defer cleanup()
 
 	kcExecEtcdCmd := fmt.Sprintf(
-		"kubectl %s -n kube-system exec -i %s -- etcdctl %s %s",
+		"kubectl %s -n kube-system exec -i %s -- etcdctl %s",
 		arg,
 		etcdPod,
 		etcdctlCmd,
-		etcdCerts,
 	)
 
 	return k.runWithOutput(kcExecEtcdCmd)
