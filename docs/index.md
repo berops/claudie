@@ -2,7 +2,7 @@
 
 # Multi-cloud Kubernetes Redefined
 
-Build multi-cloud, hybrid-cloud, and on-premise Kubernetes clusters that mix and match nodepools across AWS, GCP, Azure, Hetzner, your own bare-metal servers, and more, managed through a single InputManifest.
+Build multi-cloud, hybrid-cloud, and on-premises Kubernetes clusters that mix and match nodepools across AWS, GCP, Azure, Hetzner, across your own bare-metal servers, and more, managed through a single InputManifest.
 
 [Get Started](./getting-started/get-started-using-claudie.md){ .md-button .md-button--primary }
 [GitHub](https://github.com/berops/claudie){ .md-button }
@@ -21,7 +21,7 @@ Build multi-cloud, hybrid-cloud, and on-premise Kubernetes clusters that mix and
 
 ## What is Claudie
 
-Claudie is a platform for managing multi-cloud, hybrid-cloud, and on-premise Kubernetes clusters. A single cluster can mix and match nodepools from various cloud providers and your own on-premise or bare-metal servers, e.g. one nodepool in AWS, another in GCP, and a third running on hardware in your own datacenter. This is our opinionated way to build multi-cloud, hybrid-cloud, and on-premise Kubernetes infrastructure. On top of that, Claudie supports Cluster Autoscaler on the managed clusters. See the [On Premise provider docs](./input-manifest/providers/on-prem.md) for how to attach your own machines.
+Claudie is a platform for managing multi-cloud, hybrid-cloud, and on-premises Kubernetes clusters. In a single cluster you can mix and match nodepools from various cloud providers and your own on-premises or bare-metal servers, e.g. a nodepool in AWS, another one in GCP, and a third one running on hardware in your own datacenter. This is our opinionated way to build multi-cloud, hybrid-cloud, and on-premises Kubernetes infrastructure. On top of that, Claudie supports Cluster Autoscaler on the managed clusters. See the [On Premise provider docs](./input-manifest/providers/on-prem.md) for how to attach your own machines.
 
 ## Supported Providers
 
@@ -37,7 +37,7 @@ Claudie is a platform for managing multi-cloud, hybrid-cloud, and on-premise Kub
 [![OpenStack](https://img.shields.io/badge/OpenStack-ED1944?style=for-the-badge)](./input-manifest/providers/openstack.md)
 [![CloudRift](https://img.shields.io/badge/CloudRift-2e7da8?style=for-the-badge)](./input-manifest/providers/cloudrift.md)
 [![Verda](https://img.shields.io/badge/Verda-0E8C6B?style=for-the-badge)](./input-manifest/providers/verda.md)
-[![On-Premise](https://img.shields.io/badge/On--Premise-555555?style=for-the-badge)](./input-manifest/providers/on-prem.md)
+[![On-Premises](https://img.shields.io/badge/On--Premise-555555?style=for-the-badge)](./input-manifest/providers/on-prem.md)
 
 </div>
 
@@ -73,7 +73,7 @@ See more in How Claudie works sections.
 
 !!! tip "Bring Your Own Hardware"
 
-    Already running on-premise or co-located servers? Claudie treats them as first-class nodepools. Add them to any cluster alongside AWS, GCP, Azure, and other cloud nodepools using the [On Premise provider](./input-manifest/providers/on-prem.md), all from the same InputManifest.
+    Already running on-premises or co-located servers? Claudie treats them as first-class nodepools. Add them to any cluster alongside AWS, GCP, Azure, and other cloud nodepools using the [On Premises provider](./input-manifest/providers/on-prem.md), all from the same InputManifest.
 
 ## What to do next
 

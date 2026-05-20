@@ -12,14 +12,14 @@ Typical client profile:
 - startups building AI/ML products
 - cost-conscious organizations looking to avoid GPU pricing from hyper-scale providers
 
-## 2. On-premise integration and hybrid extension
+## 2. On-premises integration and hybrid extension
 
-A company already runs (or plans to run) Kubernetes workloads on its own on-premise hardware, co-located servers, or private datacenter, and wants to keep using that investment while gaining the flexibility of public cloud. Claudie lets them register their existing machines as [static nodepools](../input-manifest/providers/on-prem.md) and combine them in a single cluster with nodepools from AWS, GCP, Azure, Hetzner, and other supported providers. The on-premise nodes are first-class members of the cluster, eligible for workloads, loadbalancing, and node-level autoscaling on the cloud side.
+A company already runs (or plans to run) Kubernetes workloads on its own on-premises hardware, co-located servers, or private datacenter, and wants to keep using that investment while gaining the flexibility of public cloud. Claudie lets them register their existing machines as [static nodepools](../input-manifest/providers/on-prem.md) and combine them in a single cluster with nodepools from AWS, GCP, Azure, Hetzner, and other supported providers. The on-premises nodes are first-class members of the cluster, eligible for workloads, loadbalancing, and node-level autoscaling on the cloud side.
 
 Typical client profile:
 
-- organizations with significant existing on-premise or bare-metal investment
-- regulated industries that must keep certain workloads in their own datacenter
+- organizations with existing on-premises or bare-metal investment
+- companies in regulated industries that must keep certain workloads in their own datacenter
 - teams that want a single Kubernetes control plane spanning on-prem and cloud
 
 ## 3. Cloud-bursting

@@ -29,7 +29,7 @@
 
 ## Vision of Claudie
 
-The purpose of Claudie is to become the final Kubernetes engine you'll ever need. It builds clusters that leverage features and costs across on-premise datacenters and multiple cloud vendors, all from a single InputManifest. A Kubernetes that you won't ever need to migrate away from.
+The purpose of Claudie is to become the final Kubernetes engine you'll ever need. It builds clusters that leverage features and costs across on-premises datacenters and multiple cloud vendors, all from a single InputManifest. A Kubernetes that you won't ever need to migrate away from.
 
 ## Typical use cases
 
@@ -40,16 +40,16 @@ Claudie has been built as an answer to the following Kubernetes challenges.
 - Managed Kubernetes for providers that do not offer it
 - Cloud bursting
 - Service interconnect
-- On-premise & hybrid integration of existing bare-metal or co-located servers as nodepools
+- On-premises & hybrid integration of existing bare-metal or co-located servers as nodepools
 - Integration of GPU nodes into Kubernetes for AI workloads
 
 Read in more details [here](https://docs.claudie.io/latest/use-cases/use-cases/).
 
 ## Features
 
-### Manage multi-cloud, hybrid-cloud, and on-premise Kubernetes clusters
+### Manage multi-cloud, hybrid-cloud, and on-premises Kubernetes clusters
 
-Create fully-featured Kubernetes clusters composed of multiple different public Cloud providers and your own on-premise data centers in an easy and secure manner.
+Create fully-featured Kubernetes clusters composed of multiple different public Cloud providers and your own on-premises data centers in an easy and secure manner.
 Simply insert credentials to your cloud projects, define your cluster, and watch how the infra spawns right in front of you.
 
 <p align="center">
@@ -106,11 +106,11 @@ Before you begin, please make sure you have the following prerequisites installe
    | [Cloudflare](https://docs.claudie.io/latest/input-manifest/providers/cloudflare/) | N/A                | :heavy_check_mark: |:heavy_check_mark: | N/A                |
    | [OVH Cloud](https://docs.claudie.io/latest/input-manifest/providers/openstack/)   | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: |
    | [Openstack](https://docs.claudie.io/latest/input-manifest/providers/openstack/)   | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: |
-   | [On-Premise / Static nodes](https://docs.claudie.io/latest/input-manifest/providers/on-prem/) | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: |
+   | [On-Premises / Static nodes](https://docs.claudie.io/latest/input-manifest/providers/on-prem/) | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: |
 
 > **Note:** `N/A` indicates that the given feature is not applicable for the provider.
 
-For adding support for other cloud providers or on-premise environments, open an issue or propose a PR.
+For adding support for other cloud providers or on-premises environments, open an issue or propose a PR.
 
 <!-- providers-end -->
 
