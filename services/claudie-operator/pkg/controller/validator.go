@@ -119,6 +119,8 @@ func validateInputManifest(im *v1beta.InputManifest) error {
 			rawManifest.Providers.CloudRift = append(rawManifest.Providers.CloudRift, manifest.CloudRift{Name: p.ProviderName})
 		case v1beta.VERDA:
 			rawManifest.Providers.Verda = append(rawManifest.Providers.Verda, manifest.Verda{Name: p.ProviderName})
+		case v1beta.OVH:
+			rawManifest.Providers.OVH = append(rawManifest.Providers.OVH, manifest.OVH{Name: p.ProviderName})
 		}
 	}
 

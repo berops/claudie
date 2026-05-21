@@ -30,6 +30,7 @@ type Provider struct {
 	Exoscale   []Exoscale   `yaml:"exoscale"`
 	CloudRift  []CloudRift  `yaml:"cloudrift"`
 	Verda      []Verda      `yaml:"verda"`
+	OVH        []OVH        `yaml:"ovh"`
 }
 
 type Cloudflare struct {
@@ -114,6 +115,15 @@ type Verda struct {
 	ClientId     string              `validate:"required" yaml:"clientId"`
 	ClientSecret string              `validate:"required" yaml:"clientSecret"`
 	BaseUrl      string              `validate:"omitempty,url" yaml:"baseUrl"`
+	Templates    *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
+}
+
+type OVH struct {
+	Name         string              `validate:"required,max=15" yaml:"name"`
+	ClientId     string              `validate:"required" yaml:"clientId"`
+	ClientSecret string              `validate:"required" yaml:"clientSecret"`
+	ServiceName  string              `validate:"required" yaml:"serviceName"`
+	Endpoint     string              `validate:"omitempty" yaml:"endpoint"`
 	Templates    *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
 }
 

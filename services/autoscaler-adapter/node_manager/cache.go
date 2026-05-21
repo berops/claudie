@@ -29,6 +29,7 @@ import (
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"github.com/oracle/oci-go-sdk/v65/common"
 	"github.com/oracle/oci-go-sdk/v65/core"
+	"github.com/ovh/go-ovh/ovh"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/oauth2/clientcredentials"
 	"golang.org/x/oauth2/google"
@@ -46,6 +47,8 @@ const (
 	verdaTokenPath      = "/oauth2/token"
 	verdaScope          = "cloud-api-v1"
 	verdaRequestTimeout = 30 * time.Second
+
+	ovhDefaultEndpoint = "ovh-eu"
 )
 
 // cacheHetzner function uses hcloud-go module to query supported servers and their info. If the query is successful, the server info is saved in cache.
@@ -327,5 +330,27 @@ func (nm *NodeManager) cacheVerda(np *spec.DynamicNodePool) error {
 	}
 
 	nm.verdaVMs = getTypeInfoVerda(result)
+	return nil
+}
+
+func (nm *NodeManager) cacheOVH(np *spec.DynamicNodePool) error {
+	o := np.Provider.GetOvh()
+	endpoint := ovhDefaultEndpoint
+	if o.GetEndpoint() != "" {
+		endpoint = o.GetEndpoint()
+	}
+
+	client, err := ovh.NewOAuth2Client(endpoint, o.GetClientId(), o.GetClientSecret())
+	if err != nil {
+		return fmt.Errorf("ovh client error: %w", err)
+	}
+
+	var flavors []ovhFlavor
+	path := fmt.Sprintf("/cloud/project/%s/flavor?region=%s", o.GetServiceName(), np.Region)
+	if err := client.Get(path, &flavors); err != nil {
+		return fmt.Errorf("ovh client error: %w", err)
+	}
+
+	nm.ovhVMs = getTypeInfoOVH(flavors)
 	return nil
 }

@@ -228,3 +228,27 @@ func getTypeInfoVerda(instanceTypes []verdaInstanceType) map[string]*InstanceInf
 	}
 	return m
 }
+
+// OVH flavor API response (GET /cloud/project/{serviceName}/flavor).
+// RAM is in MB, disk is in GB. GPU counts are not exposed by this endpoint;
+// users with GPU flavors set MachineSpec.NvidiaGpuCount in the InputManifest,
+// which GetCapacity() then overrides on top of this cache.
+type ovhFlavor struct {
+	Name   string `json:"name"`
+	Region string `json:"region"`
+	RAM    int64  `json:"ram"`
+	VCPUs  int    `json:"vcpus"`
+	Disk   int64  `json:"disk"`
+}
+
+func getTypeInfoOVH(flavors []ovhFlavor) map[string]*InstanceInfo {
+	m := make(map[string]*InstanceInfo)
+	for _, f := range flavors {
+		m[f.Name] = &InstanceInfo{
+			cpu:    int64(f.VCPUs),
+			memory: f.RAM * 1024 * 1024,
+			disk:   f.Disk * gib,
+		}
+	}
+	return m
+}

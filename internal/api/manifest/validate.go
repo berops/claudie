@@ -20,7 +20,7 @@ func (m *Manifest) Validate() error {
 	providers := len(m.Providers.GCP) + len(m.Providers.Hetzner) + len(m.Providers.AWS) +
 		len(m.Providers.Azure) + len(m.Providers.OCI) + len(m.Providers.Cloudflare) +
 		len(m.Providers.Openstack) + len(m.Providers.Exoscale) + len(m.Providers.CloudRift) +
-		len(m.Providers.Verda)
+		len(m.Providers.Verda) + len(m.Providers.OVH)
 	if providers < 1 {
 		// Return error only if at least one dynamic nodepool defined.
 		if len(m.NodePools.Dynamic) > 0 {

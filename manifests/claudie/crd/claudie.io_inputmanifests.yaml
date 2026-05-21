@@ -389,9 +389,8 @@ spec:
                                   to a node.
                                 type: string
                               timeAdded:
-                                description: |-
-                                  TimeAdded represents the time at which the taint was added.
-                                  It is only written for NoExecute taints.
+                                description: TimeAdded represents the time at which
+                                  the taint was added.
                                 format: date-time
                                 type: string
                               value:
@@ -486,9 +485,8 @@ spec:
                                   to a node.
                                 type: string
                               timeAdded:
-                                description: |-
-                                  TimeAdded represents the time at which the taint was added.
-                                  It is only written for NoExecute taints.
+                                description: TimeAdded represents the time at which
+                                  the taint was added.
                                 format: date-time
                                 type: string
                               value:
@@ -536,6 +534,7 @@ spec:
                       - exoscale
                       - cloudrift
                       - verda
+                      - ovh
                       type: string
                     secretRef:
                       description: |-
