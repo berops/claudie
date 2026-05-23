@@ -23,6 +23,7 @@ type (
 		InputManifest string
 		Cluster       string
 		TaskID        string
+		TaskStage     uint32
 		Stage         store.StageKind
 		Result        *spec.TaskResult
 	}
@@ -70,6 +71,13 @@ func ProcessTask(ctx context.Context, stores Stores, work Work) (acknowledge boo
 
 	if cluster.InFlight == nil || (cluster.InFlight.Id != work.TaskID) {
 		logger.Warn().Msg("Recevied task for cluster does not match, ignoring.")
+		acknowledge = true
+		metrics.NatsMsgsAcknowledged.Inc()
+		return
+	}
+
+	if cluster.InFlight.CurrentStage != work.TaskStage {
+		logger.Warn().Msg("Received stage for task does not match, ignoring.")
 		acknowledge = true
 		metrics.NatsMsgsAcknowledged.Inc()
 		return
