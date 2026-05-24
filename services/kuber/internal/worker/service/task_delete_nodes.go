@@ -191,23 +191,15 @@ func deleteNodesFromCluster(
 		}
 
 		if np.IsControl {
-			for _, n := range typ.Partial.Nodes {
-				master = append(master, n)
-			}
+			master = append(master, typ.Partial.Nodes...)
 		} else {
-			for _, n := range typ.Partial.Nodes {
-				worker = append(worker, n)
-			}
+			worker = append(worker, typ.Partial.Nodes...)
 		}
 	case *spec.Update_DeletedK8SNodes_Whole:
 		if typ.Whole.Nodepool.IsControl {
-			for _, n := range typ.Whole.Nodepool.Nodes {
-				master = append(master, n)
-			}
+			master = append(master, typ.Whole.Nodepool.Nodes...)
 		} else {
-			for _, n := range typ.Whole.Nodepool.Nodes {
-				worker = append(worker, n)
-			}
+			worker = append(worker, typ.Whole.Nodepool.Nodes...)
 		}
 	}
 
@@ -226,5 +218,5 @@ func deleteNodesFromCluster(
 		return
 	}
 
-	logger.Info().Msg("Nodes successfuly deleted")
+	logger.Info().Msg("Nodes successfully deleted")
 }

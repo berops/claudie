@@ -775,7 +775,7 @@ func ScheduleAdditionsInNodePools(
 
 		// This is a separate stage
 		// as it depends on the success on all of the
-		// previous stages to complete successfuly.
+		// previous stages to complete successfully.
 		//
 		// This stage commits the newly added nodes into
 		// the loadbalancers (if any) so that new traffic
@@ -937,7 +937,7 @@ func ScheduleAdditionsInNodePools(
 
 		// This is a separate stage
 		// as it depends on the success on all of the
-		// previous stages to complete successfuly.
+		// previous stages to complete successfully.
 		//
 		// This stage commits the newly added nodes into
 		// the loadbalancers (if any) so that new traffic
@@ -1228,7 +1228,7 @@ func ScheduleDeletionsInNodePools(
 
 		// This is a separate stage
 		// as it depends on the success on all of the
-		// previous stages to complete successfuly.
+		// previous stages to complete successfully.
 		//
 		// This stage commits the deleted nodes and removes
 		// them from the loadbalancers (if any) so that traffic
@@ -1377,7 +1377,7 @@ func ScheduleDeletionsInNodePools(
 
 		// This is a separate stage
 		// as it depends on the success on all of the
-		// previous stages to complete successfuly.
+		// previous stages to complete successfully.
 		//
 		// This stage commits the deleted nodes and removes
 		// them from the loadbalancers (if any) so that traffic

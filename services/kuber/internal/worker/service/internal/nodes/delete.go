@@ -94,10 +94,12 @@ func NewDeleter(
 	// find a control node that will not be deleted.
 	var notDeleted string
 	for cn := range nodepools.Control(cluster.ClusterInfo.NodePools) {
-		// pick the first control node as the ones deleted are no longer
-		// in the cluster's state.
-		notDeleted = cn.Nodes[0].Name
-		break
+		for _, n := range cn.Nodes {
+			// pick the first control node as the ones
+			// deleted are no longer in the cluster's state.
+			notDeleted = n.Name
+			break
+		}
 	}
 
 	if notDeleted == "" {
