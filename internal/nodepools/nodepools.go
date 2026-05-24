@@ -135,7 +135,11 @@ func PartialCopyWithNodeExclusion(np *spec.NodePool, nodes []string) *spec.NodeP
 		}
 	case *spec.NodePool_StaticNodePool:
 		s := proto.Clone(typ.StaticNodePool).(*spec.StaticNodePool)
-		clear(s.NodeKeys)
+		if s.NodeKeys == nil {
+			s.NodeKeys = make(map[string]string)
+		} else {
+			clear(s.NodeKeys)
+		}
 		for _, n := range cp.Nodes {
 			s.NodeKeys[n.Public] = np.GetStaticNodePool().NodeKeys[n.Public]
 		}
@@ -182,7 +186,11 @@ func PartialCopyWithNodeFilter(np *spec.NodePool, nodes []string) *spec.NodePool
 		}
 	case *spec.NodePool_StaticNodePool:
 		s := proto.Clone(typ.StaticNodePool).(*spec.StaticNodePool)
-		clear(s.NodeKeys)
+		if s.NodeKeys == nil {
+			s.NodeKeys = make(map[string]string)
+		} else {
+			clear(s.NodeKeys)
+		}
 		for _, n := range cp.Nodes {
 			s.NodeKeys[n.Public] = np.GetStaticNodePool().NodeKeys[n.Public]
 		}
@@ -223,7 +231,11 @@ func PartialCopyWithReplacedNodes(np *spec.NodePool, nodes []*spec.Node, nodeKey
 		}
 	case *spec.NodePool_StaticNodePool:
 		s := proto.Clone(typ.StaticNodePool).(*spec.StaticNodePool)
-		clear(s.NodeKeys)
+		if s.NodeKeys == nil {
+			s.NodeKeys = make(map[string]string)
+		} else {
+			clear(s.NodeKeys)
+		}
 		maps.Copy(s.NodeKeys, nodeKeys)
 
 		cp.Type = &spec.NodePool_StaticNodePool{
@@ -291,6 +303,10 @@ func CloneTargetNodes(n *spec.NodePool, nodes []string) []*spec.Node {
 // `nodepool` then the nodepool will be modified to contain
 // no nodes at all.
 func DeleteNodes(nodepool *spec.NodePool, nodes []string) {
+	if nodepool == nil {
+		return
+	}
+
 	var deleted []*spec.Node
 	nodepool.Nodes = slices.DeleteFunc(nodepool.Nodes, func(n *spec.Node) bool {
 		if slices.Contains(nodes, n.Name) {

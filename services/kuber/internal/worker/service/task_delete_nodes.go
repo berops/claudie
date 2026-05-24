@@ -85,8 +85,43 @@ func deleteFromState(
 		if np == nil {
 			logger.
 				Warn().
-				Msgf("Nodepool %q not present in current state, assuming it was deleted", a.KDeleteNodes.Nodepool)
+				Msgf("Received valid task for deleting nodes, but the nodepool %q from which nodes are "+
+					"to be deleted is missing from the provided state, interpreting this as a drift and "+
+					"scheduling a deletion of one of the nodes", a.KDeleteNodes.Nodepool)
 
+			if len(a.KDeleteNodes.Nodes) < 1 {
+				return
+			}
+
+			fullname := a.KDeleteNodes.Nodes[0]
+			strippedName := strings.TrimPrefix(fullname, fmt.Sprintf("%s-", k8s.ClusterInfo.Id()))
+
+			isControl, err := isControlNode(strippedName, k8s.Kubeconfig)
+			if err != nil {
+				logger.
+					Warn().
+					Msgf("Failed to determine role for node %q within kubernetes cluster, "+
+						"assuming node is no longer part of the cluster", fullname)
+				return
+			}
+
+			var master, worker []*spec.Node
+
+			if isControl {
+				logger.Info().Msgf("Deleting control node %q", fullname)
+				master = append(master, &spec.Node{Name: fullname})
+			} else {
+				logger.Info().Msgf("Deleting worker node %q", fullname)
+				worker = append(worker, &spec.Node{Name: fullname})
+			}
+
+			if err := deleteNodes(logger, master, worker, k8s); err != nil {
+				logger.Err(err).Msg("Failed to delete nodes")
+				tracker.Diagnostics.Push(err)
+				return
+			}
+			// Do not propagate an update in this case as the nodepool is not tracked
+			// and the manager service wil refuse the update.
 			return
 		}
 		nodepools.DeleteNodes(np, a.KDeleteNodes.Nodes)
@@ -96,7 +131,9 @@ func deleteFromState(
 	update.Kubernetes(k8s)
 	update.Commit()
 
-	logger.Info().Msg("Nodes Removed from tracked state")
+	logger.
+		Info().
+		Msgf("Nodes %v Removed from tracked state", a.KDeleteNodes.Nodes)
 }
 
 func deleteNodesFromCluster(
@@ -128,9 +165,9 @@ func deleteNodesFromCluster(
 			isControl, err := isControlNode(strippedName, k8s.Kubeconfig)
 			if err != nil {
 				logger.
-					Err(err).
-					Msgf("Failed to determine role for node %q within kubernetes cluster", fullname)
-				tracker.Diagnostics.Push(err)
+					Warn().
+					Msgf("Failed to determine role for node %q within kubernetes cluster, "+
+						"assuming node is no longer part of the cluster", fullname)
 				return
 			}
 
@@ -148,6 +185,8 @@ func deleteNodesFromCluster(
 				return
 			}
 
+			// Do not propagate an update in this case as the nodepool is not tracked
+			// and the manager service wil refuse the update
 			return
 		}
 

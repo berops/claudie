@@ -790,7 +790,10 @@ func ScheduleAdditionsInNodePools(
 			for _, r := range lb.Roles {
 				for _, tg := range r.TargetPools {
 					// Need to match against only the nodepool name without the hash.
-					if nodepools.HasNodePoolTypeOf(tg, np) {
+					dynamicNodePoolUpdate := nodepools.HasNodePoolTypeOf(tg, np)
+					// Static nodepools don't have any hashes.
+					staticNodePoolUpdate := opts.IsStatic && tg == np
+					if dynamicNodePoolUpdate || staticNodePoolUpdate {
 						updateLoadBalancersStage = &spec.Stage{
 							StageKind: &spec.Stage_Ansibler{
 								Ansibler: &spec.StageAnsibler{
@@ -949,7 +952,10 @@ func ScheduleAdditionsInNodePools(
 			for _, r := range lb.Roles {
 				for _, tg := range r.TargetPools {
 					// Need to match against only the nodepool name without the hash.
-					if nodepools.HasNodePoolTypeOf(tg, np) {
+					dynamicNodePoolUpdate := nodepools.HasNodePoolTypeOf(tg, np)
+					// Static nodepools don't have any hashes.
+					staticNodePoolUpdate := opts.IsStatic && tg == np
+					if dynamicNodePoolUpdate || staticNodePoolUpdate {
 						updateLoadBalancersStage = &spec.Stage{
 							StageKind: &spec.Stage_Ansibler{
 								Ansibler: &spec.StageAnsibler{
@@ -1241,7 +1247,10 @@ func ScheduleDeletionsInNodePools(
 			for _, r := range lb.Roles {
 				for _, tg := range r.TargetPools {
 					// Need to match against only the nodepool name without the hash.
-					if nodepools.HasNodePoolTypeOf(tg, np) {
+					dynamicNodePoolUpdate := nodepools.HasNodePoolTypeOf(tg, np)
+					// Static nodepools don't have any hashes.
+					staticNodePoolUpdate := opts.IsStatic && tg == np
+					if dynamicNodePoolUpdate || staticNodePoolUpdate {
 						removeFromLBStage = &spec.Stage{
 							StageKind: &spec.Stage_Ansibler{
 								Ansibler: &spec.StageAnsibler{
@@ -1270,12 +1279,18 @@ func ScheduleDeletionsInNodePools(
 		var pipeline []*spec.Stage
 
 		pipeline = append(pipeline, removeFromTrackedStage)
-		pipeline = append(pipeline, removeFromLBStage)
+
+		if removeFromLBStage != nil {
+			pipeline = append(pipeline, removeFromLBStage)
+		}
+
 		pipeline = append(pipeline, removeFromClusterStage)
+
 		if len(ans.Ansibler.SubPasses) > 0 {
 			cleanUpStage = &spec.Stage{StageKind: &ans}
 			pipeline = append(pipeline, cleanUpStage)
 		}
+
 		if infraRemovalStage != nil {
 			pipeline = append(pipeline, infraRemovalStage)
 		}
@@ -1377,7 +1392,10 @@ func ScheduleDeletionsInNodePools(
 			for _, r := range lb.Roles {
 				for _, tg := range r.TargetPools {
 					// Need to match against only the nodepool name without the hash.
-					if nodepools.HasNodePoolTypeOf(tg, np) {
+					dynamicNodePoolUpdate := nodepools.HasNodePoolTypeOf(tg, np)
+					// Static nodepools don't have any hashes.
+					staticNodePoolUpdate := opts.IsStatic && tg == np
+					if dynamicNodePoolUpdate || staticNodePoolUpdate {
 						removeFromLBStage = &spec.Stage{
 							StageKind: &spec.Stage_Ansibler{
 								Ansibler: &spec.StageAnsibler{
@@ -1406,9 +1424,14 @@ func ScheduleDeletionsInNodePools(
 		var pipeline []*spec.Stage
 
 		pipeline = append(pipeline, removeFromTrackedStage)
-		pipeline = append(pipeline, removeFromLBStage)
+
+		if removeFromLBStage != nil {
+			pipeline = append(pipeline, removeFromLBStage)
+		}
+
 		pipeline = append(pipeline, removeFromClusterStage)
 		if len(ans.Ansibler.SubPasses) > 0 {
+			cleanUpStage = &spec.Stage{StageKind: &ans}
 			pipeline = append(pipeline, cleanUpStage)
 		}
 		if infraRemovalStage != nil {
