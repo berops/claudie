@@ -63,9 +63,6 @@ type Deleter struct {
 // functions of the deleter. The passed in deleteMaster and deleteWorker nodes
 // are being worked with to delete them from the kubernetes cluster via the
 // kubeconfig of the [spec.K8Scluster].
-//
-// It is expected that the passed in 'deleteMaster' and 'deleteWorker' nodes
-// are no longer in the state of the passed in [spec.K8Scluster].
 func NewDeleter(
 	deleteMaster, deleteWorker []*spec.Node,
 	cluster *spec.K8Scluster,
@@ -95,10 +92,12 @@ func NewDeleter(
 	var notDeleted string
 	for cn := range nodepools.Control(cluster.ClusterInfo.NodePools) {
 		for _, n := range cn.Nodes {
-			// pick the first control node as the ones
-			// deleted are no longer in the cluster's state.
-			notDeleted = n.Name
-			break
+			if !slices.ContainsFunc(deleteMaster, func(o *spec.Node) bool { return o.Name == n.Name }) {
+				// pick the first control node as the ones
+				// deleted are no longer in the cluster's state.
+				notDeleted = n.Name
+				break
+			}
 		}
 	}
 
