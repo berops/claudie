@@ -234,6 +234,7 @@ func getTypeInfoVerda(instanceTypes []verdaInstanceType) map[string]*InstanceInf
 // users with GPU flavors set MachineSpec.NvidiaGpuCount in the InputManifest,
 // which GetCapacity() then overrides on top of this cache.
 type ovhFlavor struct {
+	ID     string `json:"id"`
 	Name   string `json:"name"`
 	Region string `json:"region"`
 	RAM    int64  `json:"ram"`
@@ -241,10 +242,15 @@ type ovhFlavor struct {
 	Disk   int64  `json:"disk"`
 }
 
+// getTypeInfoOVH builds the InstanceInfo lookup map keyed by flavor UUID,
+// because the OVH terraform provider's `flavor.flavor_id` field accepts
+// only UUIDs and Claudie's InputManifest carries that UUID through as
+// `np.ServerType`. The flavor `name` (e.g. b3-8, t2-45) is informational
+// only and not used as a lookup key.
 func getTypeInfoOVH(flavors []ovhFlavor) map[string]*InstanceInfo {
 	m := make(map[string]*InstanceInfo)
 	for _, f := range flavors {
-		m[f.Name] = &InstanceInfo{
+		m[f.ID] = &InstanceInfo{
 			cpu:    int64(f.VCPUs),
 			memory: f.RAM * 1024 * 1024,
 			disk:   f.Disk * gib,
