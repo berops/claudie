@@ -231,7 +231,7 @@ To find out how to configure Azure provider and service account, follow the inst
 ### OVHcloud
 
 The fields that need to be included in a Kubernetes Secret resource to utilize the OVHcloud provider.
-To find out how to configure OVHcloud provider and API credentials, follow the instructions [here](./providers/ovh.md).
+To configure OVHcloud provider and API credentials, follow the [OVHcloud provider guide](./providers/ovh.md).
 
 - `clientid`
 

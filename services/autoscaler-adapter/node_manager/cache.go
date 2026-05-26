@@ -349,6 +349,6 @@ func (nm *NodeManager) cacheOVH(np *spec.DynamicNodePool) error {
 		return fmt.Errorf("ovh flavor list error: %w", err)
 	}
 
-	nm.ovhVMs = getTypeInfoOVH(flavors)
+	nm.ovhVMs = generics.MergeMaps(getTypeInfoOVH(flavors), nm.ovhVMs)
 	return nil
 }

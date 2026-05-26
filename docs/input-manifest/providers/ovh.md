@@ -24,33 +24,15 @@ type: Opaque
 
 ## Create OVH API credentials
 
-Claudie uses the OAuth2 client-credentials grant supported by both the `ovh/ovh` OpenTofu provider and the official `github.com/ovh/go-ovh` Go client.
+Claudie uses the OAuth2 client-credentials grant. Follow the [OVH provider OAuth2 setup guide](https://search.opentofu.org/provider/ovh/ovh/latest#oauth2) to create a service account and obtain the `client_id` and `client_secret`. Scope the service account for your Public Cloud project, and for your DNS zone if you plan to use OVH as a DNS provider for load balancers.
 
-1. Sign in to the [OVHcloud Control Panel](https://www.ovh.com/manager/).
-2. Go to **Identity and Access Management -> OAuth2 service accounts -> Create**.
-3. Grant the service account the following scopes:
-    - **Cloud**: `GET/POST/PUT/DELETE /cloud/project/<your-project-id>/*` (compute, networking, volumes, flavors).
-    - **Domain** (only if using OVH as a DNS provider for load balancers): `GET/POST/PUT/DELETE /domain/zone/<your-zone>/*`.
-4. Save the generated `client_id` and `client_secret`. The secret is shown only once.
-5. Look up your Public Cloud **project ID** in the OVHcloud Manager under **Public Cloud -> Project Management**. This is the `servicename` field in the Claudie Secret.
+The Public Cloud **project ID** (the `servicename` field in the Claudie Secret) is in the OVHcloud Manager under **Public Cloud -> Project Management**.
 
-The `endpoint` field selects which OVHcloud API region to authenticate against (not the public-cloud region for instances). Valid values: `ovh-eu` (default), `ovh-us`, `ovh-ca`, `kimsufi-eu`, `kimsufi-ca`, `soyoustart-eu`, `soyoustart-ca`. Most users in Europe leave this empty.
+The `endpoint` field selects which OVHcloud API region to authenticate against (not the public-cloud region for instances). Valid values: `ovh-eu` (default), `ovh-us`, `ovh-ca`, `kimsufi-eu`, `kimsufi-ca`, `soyoustart-eu`, `soyoustart-ca`.
 
 ## Available regions and flavors
 
-Public Cloud regions are listed at <https://www.ovhcloud.com/en/about-us/global-infrastructure/regions/>. Common region codes:
-
-| Country | Region codes |
-|---------|--------------|
-| France | `GRA7`, `GRA9`, `GRA11`, `SBG5`, `RBX-A`, `RBX-B`, `PAR` |
-| Germany | `DE1` |
-| UK | `UK1` |
-| Poland | `WAW1` |
-| Italy | `MIL` |
-| Canada | `BHS5`, `YYZ` |
-| Singapore | `SGP1` |
-| Australia | `SYD1`, `SYD2` |
-| US | `US-EAST-VA-1`, `US-WEST-OR-1` |
+Public Cloud regions are listed at <https://www.ovhcloud.com/en/about-us/global-infrastructure/regions/>.
 
 Flavors and images vary per region. List the live catalog for a region with the `ovhcloud` CLI or the API:
 
@@ -78,7 +60,7 @@ Common flavor families:
 
 ## GPU instances
 
-OVH GPU flavors are surfaced through the same flavor list but the API does not expose per-flavor GPU counts. To advertise GPU resources to the Kubernetes cluster autoscaler, set `machineSpec.nvidiaGpuCount` (and optionally `nvidiaGpuType`) in the nodepool spec:
+OVH GPU flavors are listed via the same flavor API as non-GPU flavors. A static GPU nodepool needs only `serverType` set to a GPU flavor UUID (e.g. `t2-45`, `t1-le-2`):
 
 ```yaml
 - name: gpu-ovh
@@ -88,11 +70,13 @@ OVH GPU flavors are surfaced through the same flavor list but the API does not e
   count: 1
   serverType: t1-le-2
   image: "Ubuntu 24.04"
-  machineSpec:
-    nvidiaGpuCount: 1
 ```
 
-The flavor name and image must support GPUs in the chosen region; verify with `ovhcloud cloud project flavor list` before applying.
+For an **autoscaled** GPU nodepool (`autoscaler.min: 0`), also set `machineSpec.nvidiaGpuCount` so the cluster-autoscaler can size the node when scaling from zero. The OVH flavor API does not expose per-flavor GPU counts; without this field the autoscaler assumes zero GPUs and will not scale up to satisfy GPU-requesting pods.
+
+After the cluster is built, install the NVIDIA GPU operator separately (Claudie does not deploy it). The operator brings up drivers, the container toolkit, and the device plugin so `nvidia.com/gpu` becomes allocatable on the node.
+
+Verify GPU availability in the chosen region with `ovhcloud cloud project flavor list` before applying.
 
 ## Custom SSH port
 
@@ -130,7 +114,7 @@ spec:
       providerType: ovh
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.12.0
+        tag: v0.11.2
         path: "templates/terraformer/ovh"
       secretRef:
         name: ovh-secret-1
@@ -181,7 +165,7 @@ spec:
       providerType: ovh
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.12.0
+        tag: v0.11.2
         path: "templates/terraformer/ovh"
       secretRef:
         name: ovh-secret-1
@@ -204,8 +188,6 @@ spec:
         count: 1
         serverType: t1-le-2
         image: "Ubuntu 24.04"
-        machineSpec:
-          nvidiaGpuCount: 1
 
   kubernetes:
     clusters:
@@ -234,7 +216,7 @@ spec:
       providerType: ovh
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.12.0
+        tag: v0.11.2
         path: "templates/terraformer/ovh"
       secretRef:
         name: ovh-secret-1
@@ -312,7 +294,7 @@ spec:
       providerType: ovh
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.12.0
+        tag: v0.11.2
         path: "templates/terraformer/ovh"
       secretRef:
         name: ovh-secret-1

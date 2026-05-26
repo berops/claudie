@@ -200,6 +200,7 @@ func (pr *Provider) CopyCredentials(other *Provider) (updated bool) {
 
 		p.Ovh.ClientId = o.Ovh.ClientId
 		p.Ovh.ClientSecret = o.Ovh.ClientSecret
+		p.Ovh.ServiceName = o.Ovh.ServiceName
 		updated = true
 	default:
 		// do nothing.
