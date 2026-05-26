@@ -229,24 +229,20 @@ func getTypeInfoVerda(instanceTypes []verdaInstanceType) map[string]*InstanceInf
 	return m
 }
 
-// OVH flavor API response (GET /cloud/project/{serviceName}/flavor).
-// RAM is in MB, disk is in GB. GPU counts are not exposed by this endpoint;
-// users with GPU flavors set MachineSpec.NvidiaGpuCount in the InputManifest,
-// which GetCapacity() then overrides on top of this cache.
+// ovhFlavor is the subset of GET /cloud/project/{serviceName}/flavor used
+// for autoscaler capacity estimation. GPU count is not exposed by this
+// endpoint; users with GPU flavors set MachineSpec.NvidiaGpuCount in the
+// InputManifest, which GetCapacity() then overrides on top of this cache.
 type ovhFlavor struct {
-	ID     string `json:"id"`
-	Name   string `json:"name"`
-	Region string `json:"region"`
-	RAM    int64  `json:"ram"`
-	VCPUs  int    `json:"vcpus"`
-	Disk   int64  `json:"disk"`
+	ID    string `json:"id"`
+	RAM   int64  `json:"ram"`
+	VCPUs int    `json:"vcpus"`
+	Disk  int64  `json:"disk"`
 }
 
-// getTypeInfoOVH builds the InstanceInfo lookup map keyed by flavor UUID,
-// because the OVH terraform provider's `flavor.flavor_id` field accepts
-// only UUIDs and Claudie's InputManifest carries that UUID through as
-// `np.ServerType`. The flavor `name` (e.g. b3-8, t2-45) is informational
-// only and not used as a lookup key.
+// getTypeInfoOVH keys the lookup by flavor UUID because the OVH terraform
+// provider's `flavor.flavor_id` field accepts only UUIDs, and Claudie
+// carries that UUID through as np.ServerType.
 func getTypeInfoOVH(flavors []ovhFlavor) map[string]*InstanceInfo {
 	m := make(map[string]*InstanceInfo)
 	for _, f := range flavors {

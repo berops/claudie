@@ -100,7 +100,7 @@ Like all Claudie-managed nodes, OVH VMs listen for SSH on **port 22522**. The cl
 
 ## Block storage
 
-Setting `storageDiskSize` on a compute nodepool provisions an `ovh_cloud_project_volume` (type `classic`) per worker and attaches it via `ovh_cloud_project_volume_attached`. The cloud-init script waits for the volume to appear under `/dev/disk/by-id/virtio-<first-20-chars-of-uuid>`, formats it as XFS, and mounts it at `/opt/claudie/data` for Longhorn.
+`storageDiskSize` is currently a no-op for OVH nodepools: data (including Longhorn's `/opt/claudie/data`) lives on the OS disk. OVH Public Cloud supports block volumes, but the upstream [`ovh/ovh` Terraform provider](https://registry.terraform.io/providers/ovh/ovh) exposes only `ovh_cloud_project_volume` (create) and offers no resource to attach an existing volume to an instance, so Claudie cannot wire it through declaratively. Support will be added once the provider gains a `volume_attach`-style resource. Until then, attach extra volumes manually via the OVHcloud Manager if you need additional capacity.
 
 ## Input manifest examples
 
@@ -153,7 +153,6 @@ spec:
         count: 2
         serverType: b3-8
         image: "Ubuntu 24.04"
-        storageDiskSize: 50
 
   kubernetes:
     clusters:
@@ -207,7 +206,6 @@ spec:
         image: "Ubuntu 24.04"
         machineSpec:
           nvidiaGpuCount: 1
-        storageDiskSize: 100
 
   kubernetes:
     clusters:
@@ -259,7 +257,6 @@ spec:
         count: 2
         serverType: b3-8
         image: "Ubuntu 24.04"
-        storageDiskSize: 50
 
       - name: lb-ovh
         providerSpec:
@@ -340,7 +337,6 @@ spec:
           max: 3
         serverType: b3-8
         image: "Ubuntu 24.04"
-        storageDiskSize: 50
 
   kubernetes:
     clusters:

@@ -1,6 +1,7 @@
 package node_manager
 
 import (
+	"cmp"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -335,10 +336,7 @@ func (nm *NodeManager) cacheVerda(np *spec.DynamicNodePool) error {
 
 func (nm *NodeManager) cacheOVH(np *spec.DynamicNodePool) error {
 	o := np.Provider.GetOvh()
-	endpoint := ovhDefaultEndpoint
-	if o.GetEndpoint() != "" {
-		endpoint = o.GetEndpoint()
-	}
+	endpoint := cmp.Or(o.GetEndpoint(), ovhDefaultEndpoint)
 
 	client, err := ovh.NewOAuth2Client(endpoint, o.GetClientId(), o.GetClientSecret())
 	if err != nil {
@@ -348,7 +346,7 @@ func (nm *NodeManager) cacheOVH(np *spec.DynamicNodePool) error {
 	var flavors []ovhFlavor
 	path := fmt.Sprintf("/cloud/project/%s/flavor?region=%s", o.GetServiceName(), np.Region)
 	if err := client.Get(path, &flavors); err != nil {
-		return fmt.Errorf("ovh client error: %w", err)
+		return fmt.Errorf("ovh flavor list error: %w", err)
 	}
 
 	nm.ovhVMs = getTypeInfoOVH(flavors)

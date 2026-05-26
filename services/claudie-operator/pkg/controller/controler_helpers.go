@@ -252,7 +252,6 @@ func constructInputManifest(
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
-			// endpoint is optional, default in OpenTofu provider is ovh-eu.
 			oEndpoint, _ := p.GetSecretField(v1beta1manifest.OVH_ENDPOINT)
 
 			providers.OVH = append(providers.OVH, manifest.OVH{

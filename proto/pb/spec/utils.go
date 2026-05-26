@@ -200,8 +200,6 @@ func (pr *Provider) CopyCredentials(other *Provider) (updated bool) {
 
 		p.Ovh.ClientId = o.Ovh.ClientId
 		p.Ovh.ClientSecret = o.Ovh.ClientSecret
-		p.Ovh.ServiceName = o.Ovh.ServiceName
-		p.Ovh.Endpoint = o.Ovh.Endpoint
 		updated = true
 	default:
 		// do nothing.
@@ -316,9 +314,8 @@ func (pr *Provider) CredentialsEqual(other *Provider) (equal bool) {
 		clientID := p.Ovh.ClientId == o.Ovh.ClientId
 		clientSecret := p.Ovh.ClientSecret == o.Ovh.ClientSecret
 		serviceName := p.Ovh.ServiceName == o.Ovh.ServiceName
-		endpoint := p.Ovh.GetEndpoint() == o.Ovh.GetEndpoint()
 
-		equal = clientID && clientSecret && serviceName && endpoint
+		equal = clientID && clientSecret && serviceName
 	default:
 		// do nothing.
 	}
