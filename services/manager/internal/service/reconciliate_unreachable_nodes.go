@@ -218,6 +218,7 @@ Fix the unreachable nodes by either:
 - if the connectivity issue cannot be resolved, you can:
  - delete the whole nodepool from the kubernetes cluster in the InputManifest
  - delete the selected unreachable node/s manually from the cluster via 'kubectl delete node ...'
+ - delete the node from the InputManifest, if it is a static node.
 
    NOTE: if the unreachable node is the kube-apiserver, claudie will not be able to recover
          after the deletion.

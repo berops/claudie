@@ -24,6 +24,9 @@ const (
 	// cluster, thus a kuberentes cluster name is used for the identification
 	// of all of the data related to that cluster.
 	ClusterName = "claudie-internal-cluster-name"
+
+	/// The Stage of the task/work that was picked up by the worker.
+	Stage = "claudie-internal-work-stage"
 )
 
 // A list of default claudie related NATS subjects.

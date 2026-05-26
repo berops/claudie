@@ -63,7 +63,7 @@ func (s *Service) WatchForScheduledDocuments(ctx context.Context) error {
 			noWork = noWork || len(event.Pipeline) < 1
 			noWork = noWork || (int(event.CurrentStage) > len(event.Pipeline))
 			if noWork {
-				logger.Debug().Msgf("Nothing to be worked on for cluster %q, considering as done", cluster)
+				logger.Info().Msgf("Nothing to be worked on for cluster %q, considering as done", cluster)
 
 				state.InFlight = nil
 				state.State.Status = spec.Workflow_DONE.String()
@@ -96,7 +96,8 @@ func (s *Service) WatchForScheduledDocuments(ctx context.Context) error {
 					cluster,
 					event.Id,
 					event.Task,
-					pipeline[event.CurrentStage],
+					event.CurrentStage,
+					pipeline,
 				)
 				if err != nil {
 					// unexpected but we don't crash the service just ignore and continue.
@@ -129,7 +130,7 @@ func (s *Service) WatchForScheduledDocuments(ctx context.Context) error {
 					// messages from another stage here and there had to be some network issues.
 					logger.
 						Warn().
-						Msgf("event %q: %q, for cluster %q was submitted more than once but the duplication was caught, will move the task to the next stage, assuming the last try failed", event.Id, event.Description, cluster)
+						Msgf("event %q: %q, for cluster %q was submitted more than once but the duplication was caught, will move the task to IN_PROGRESS, assuming the last try failed", event.Id, event.Description, cluster)
 				}
 
 				state.State.Status = spec.Workflow_IN_PROGRESS.String()
@@ -338,7 +339,8 @@ func (s *Service) WatchForDoneOrErrorDocuments(ctx context.Context) error {
 func messageForStage(
 	inputManifestName, clusterName, eventID string,
 	marshalledTask []byte,
-	stage *spec.Stage,
+	stage uint32,
+	pipeline []*spec.Stage,
 ) (nats.Msg, string, error) {
 	var (
 		task         spec.Task
@@ -354,7 +356,7 @@ func messageForStage(
 
 	work.Task = &task
 
-	switch stage := stage.GetStageKind().(type) {
+	switch stage := pipeline[stage].GetStageKind().(type) {
 	case *spec.Stage_Ansibler:
 		b := new(strings.Builder)
 		b.WriteString(stage.Ansibler.Description.About)
@@ -440,7 +442,7 @@ func messageForStage(
 	// thus each stage needs its own ID for it to not
 	// be considered as a duplicate if send to another
 	// stage.
-	stageID := fmt.Sprintf("%v-%v", eventID, subject)
+	stageID := fmt.Sprintf("%v-%v-%v", eventID, subject, stage)
 
 	headers := nats.Header{}
 	headers.Set(nats.MsgIdHdr, stageID)
