@@ -14,13 +14,13 @@ Typical client profile:
 
 ## 2. On-premises integration and hybrid extension
 
-A company already runs (or plans to run) Kubernetes workloads on its own on-premises hardware, co-located servers, or private datacenter, and wants to keep using that investment while gaining the flexibility of public cloud. Claudie lets them register their existing machines as [static nodepools](../input-manifest/providers/on-prem.md) and combine them in a single cluster with nodepools from AWS, GCP, Azure, Hetzner, and other supported providers. The on-premises nodes are first-class members of the cluster, eligible for workloads, loadbalancing, and node-level autoscaling on the cloud side.
+A company already runs (or plans to run) Kubernetes workloads on its own on-premises hardware, co-located servers, or private datacenter, and wants to keep using that investment while gaining the flexibility of public cloud. Claudie lets them register their existing machines as [static nodepools](../input-manifest/providers/on-premises.md) and combine them in a single cluster with nodepools from AWS, GCP, Azure, Hetzner, and other supported providers. The on-premises nodes are first-class members of the cluster, eligible for workloads, loadbalancing, and node-level autoscaling on the cloud side.
 
 Typical client profile:
 
 - organizations with existing on-premises or bare-metal investment
 - companies in regulated industries that must keep certain workloads in their own datacenter
-- teams that want a single Kubernetes control plane spanning on-prem and cloud
+- teams that want a single Kubernetes control plane spanning on-premises and cloud
 
 ## 3. Cloud-bursting
 
@@ -33,7 +33,7 @@ Typical client profiles:
 
 ## 4. Cost-saving
 
-A company would like to utilize their on-premise or leased resources that they already invested into, but would like to:
+A company would like to utilize their s or leased resources that they already invested into, but would like to:
 
 1. extend the capacity
 2. access managed features of a hyper-scale provider (AWS, GCP, ...)
@@ -55,10 +55,10 @@ Typical client profile:
 
 ## 6. Service interconnect
 
-A company would like to access on-premise-hosted services and cloud-managed services from within the same cluster. For on-premise services the on-premise cluster node would egress the traffic. The cloud-hosted cluster nodes would deal with the egress traffic to the cloud-managed services.
+A company would like to access on-premises-hosted services and cloud-managed services from within the same cluster. For on-premises services the on-premises cluster node would egress the traffic. The cloud-hosted cluster nodes would deal with the egress traffic to the cloud-managed services.
 
 Typical client profile:
 
 - medium-size/established business
-- already contains on-premise workloads
+- already contains on-premises workloads
 - has the need to take the advantage of managed cloud infra (from cost, agility, or capacity reasons)

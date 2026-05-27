@@ -1,7 +1,7 @@
 <h4 align="center">
   <img src="https://raw.githubusercontent.com/berops/claudie/17480b6cb809fe795d454588af18355c7543f37e/docs/logo%20claudie_blue_no_BG.svg" width="250px"/><br/>
   <br/><br/>
-  Platform for managing multi-cloud, hybrid-cloud, and on-premise Kubernetes clusters, with nodepools that mix cloud providers and your own bare-metal or co-located servers
+  Platform for managing multi-cloud, hybrid-cloud, and on-premises Kubernetes clusters, with nodepools that mix cloud providers and your own bare-metal or co-located servers
 </h4>
 
 <p align="center">
@@ -106,7 +106,7 @@ Before you begin, please make sure you have the following prerequisites installe
    | [Cloudflare](https://docs.claudie.io/latest/input-manifest/providers/cloudflare/) | N/A                | :heavy_check_mark: |:heavy_check_mark: | N/A                |
    | [OVHcloud](https://docs.claudie.io/latest/input-manifest/providers/openstack/)   | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: |
    | [Openstack](https://docs.claudie.io/latest/input-manifest/providers/openstack/)   | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: |
-   | [On-Premises / Static nodes](https://docs.claudie.io/latest/input-manifest/providers/on-prem/) | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: |
+   | [On-Premises / Static nodes](https://docs.claudie.io/latest/input-manifest/providers/on-premises/) | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: |
 
 > **Note:** `N/A` indicates that the given feature is not applicable for the provider.
 
