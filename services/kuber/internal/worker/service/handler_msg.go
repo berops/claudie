@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"math/rand/v2"
+	"strconv"
 	"strings"
 	"time"
 
@@ -51,22 +53,27 @@ func handlerInner(
 ) {
 	var (
 		stageID       = msg.Headers().Get(nats.MsgIdHdr)
-		suffix        = fmt.Sprintf("-%v", natsutils.KuberRequests)
-		parsedStageID = strings.Split(stageID, suffix)
+		infix         = fmt.Sprintf("-%v-", natsutils.KuberRequests)
+		parsedStageID = strings.Split(stageID, infix)
 		discard       = false
 	)
 
-	if len(parsedStageID) < 1 || parsedStageID[0] == "" {
+	if len(parsedStageID) < 2 || parsedStageID[0] == "" || parsedStageID[1] == "" {
 		discard = true
-		parsedStageID = []string{"unknown"}
+		parsedStageID = []string{parsedStageID[0], "unknown"}
 	}
 
 	if _, err := uuid.Parse(parsedStageID[0]); err != nil {
 		discard = true
 	}
 
+	if s, err := strconv.ParseInt(parsedStageID[1], 10, 64); err != nil || s < 0 || s > math.MaxUint32 {
+		discard = true
+	}
+
 	var (
 		eventID           = parsedStageID[0]
+		eventStage        = parsedStageID[1]
 		replyChannel      = msg.Headers().Get(natsutils.ReplyToHeader)
 		inputManifestName = msg.Headers().Get(natsutils.InputManifestName)
 		clusterName       = msg.Headers().Get(natsutils.ClusterName)
@@ -74,6 +81,7 @@ func handlerInner(
 		logger = log.With().
 			Str(natsutils.ClusterName, clusterName).
 			Str(natsutils.InputManifestName, inputManifestName).
+			Str(natsutils.Stage, eventStage).
 			Str(nats.MsgIdHdr, eventID).
 			Logger()
 	)
@@ -83,6 +91,7 @@ func handlerInner(
 			InputManifest: inputManifestName,
 			Cluster:       clusterName,
 			TaskID:        eventID,
+			Stage:         eventStage,
 			Subject:       replyChannel,
 		}
 		// Try to send a noop as we failed to unmarshal the received message
@@ -102,6 +111,7 @@ func handlerInner(
 			InputManifest: inputManifestName,
 			Cluster:       clusterName,
 			TaskID:        eventID,
+			Stage:         eventStage,
 			Subject:       replyChannel,
 		}
 		// Try to send a noop as we failed to unmarshal the received message
@@ -125,6 +135,7 @@ func handlerInner(
 					InputManifest: inputManifestName,
 					Cluster:       clusterName,
 					TaskID:        eventID,
+					Stage:         eventStage,
 					Subject:       replyChannel,
 				}
 				// Try to send a noop as we failed to unmarshal the received message
@@ -182,6 +193,7 @@ func handlerInner(
 			InputManifest: inputManifestName,
 			Cluster:       clusterName,
 			TaskID:        eventID,
+			Stage:         eventStage,
 			Subject:       replyChannel,
 			Result:        result,
 		}
