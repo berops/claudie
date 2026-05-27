@@ -352,7 +352,7 @@ type LoadBalancerCluster struct {
 
 // Collection of data Claudie uses to create a DNS record for the loadbalancer.
 type DNS struct {
-	// DNS zone inside of which the records will be created. GCP/AWS/OCI/Azure/Cloudflare/Hetzner DNS zone is accepted
+	// DNS zone inside of which the records will be created. GCP/AWS/OCI/Azure/Cloudflare/Hetzner/OVH DNS zone is accepted
 	DNSZone string `validate:"required" yaml:"dnsZone" json:"dnsZone"`
 	// Name of provider to be used for creating an A record entry in defined DNS zone.
 	Provider string `validate:"required" yaml:"provider" json:"provider"`

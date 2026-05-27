@@ -158,8 +158,8 @@ spec:
                               type: array
                             dnsZone:
                               description: DNS zone inside of which the records will
-                                be created. GCP/AWS/OCI/Azure/Cloudflare/Hetzner DNS
-                                zone is accepted
+                                be created. GCP/AWS/OCI/Azure/Cloudflare/Hetzner/OVH
+                                DNS zone is accepted
                               type: string
                             hostname:
                               description: Custom hostname for your A record. If left
@@ -389,8 +389,9 @@ spec:
                                   to a node.
                                 type: string
                               timeAdded:
-                                description: TimeAdded represents the time at which
-                                  the taint was added.
+                                description: |-
+                                  TimeAdded represents the time at which the taint was added.
+                                  It is only written for NoExecute taints.
                                 format: date-time
                                 type: string
                               value:
@@ -485,8 +486,9 @@ spec:
                                   to a node.
                                 type: string
                               timeAdded:
-                                description: TimeAdded represents the time at which
-                                  the taint was added.
+                                description: |-
+                                  TimeAdded represents the time at which the taint was added.
+                                  It is only written for NoExecute taints.
                                 format: date-time
                                 type: string
                               value:
