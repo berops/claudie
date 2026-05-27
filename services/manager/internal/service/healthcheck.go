@@ -178,6 +178,10 @@ func HealthCheckNodeReachability(
 
 		// nodes that are in the k8s cluster but not in our tracked state.
 		for _, n := range clusterNodes {
+			logger.
+				Warn().
+				Msgf("Node %q present in cluster but not in tracked state, will be removed", n.K8sName)
+
 			result.UnknownKubernetesNodes[n.NodePool] = append(result.UnknownKubernetesNodes[n.NodePool], NodeDescription{
 				K8sName: n.K8sName,
 				Ready:   false, // since we do not track them, consider them as not ready.

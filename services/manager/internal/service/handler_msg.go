@@ -3,7 +3,9 @@ package service
 import (
 	"context"
 	"fmt"
+	"math"
 	"math/rand/v2"
+	"strconv"
 	"strings"
 	"time"
 
@@ -42,22 +44,32 @@ func handlerInner(
 	stores Stores,
 ) {
 	var (
-		// Messages are in the format (ID)-(SUBJECT), this is to avoid duplicate
-		// messageId catching as the task moves trough the pipeline, thus in here
-		// strip the suffix.
-		subject           = msg.Subject()
-		msgID             = strings.TrimSuffix(msg.Headers().Get(nats.MsgIdHdr), fmt.Sprintf("-%s", subject))
+		// Messages are in the format (ID)-(SUBJECT)-(STAGE), this is to avoid duplicate
+		// messageId by NATS as the task moves through the pipeline, thus parse the ID.
+		subject  = msg.Subject()
+		parsedID = strings.Split(msg.Headers().Get(nats.MsgIdHdr), fmt.Sprintf("-%v-", subject))
+	)
+
+	if len(parsedID) < 2 {
+		parsedID = []string{parsedID[0], "unknown"}
+	}
+
+	var (
 		taskID            = msg.Headers().Get(natsutils.WorkID)
 		inputManifestName = msg.Headers().Get(natsutils.InputManifestName)
 		clusterName       = msg.Headers().Get(natsutils.ClusterName)
+		msgStage          = msg.Headers().Get(natsutils.Stage)
 
 		logger = log.With().
 			Str(natsutils.InputManifestName, inputManifestName).
 			Str(natsutils.ClusterName, clusterName).
 			Str(natsutils.WorkID, taskID).
-			Str(nats.MsgIdHdr, msgID).
+			Str(natsutils.Stage, msgStage).
+			Str(nats.MsgIdHdr, parsedID[0]).
 			Str("msg-from-subject", subject).
 			Logger()
+
+		parsedEventStage uint32
 	)
 
 	if inputManifestName == "" {
@@ -82,6 +94,16 @@ func handlerInner(
 			Msg("Message pulled from jetstream has missing ID of the task for which it was scheduled, won't process")
 		discard(logger, msg)
 		return
+	}
+
+	if s, err := strconv.ParseInt(parsedID[1], 10, 64); err != nil || s < 0 || s > math.MaxUint32 {
+		logger.
+			Error().
+			Msg("Message pulled from jetstream has invalid stage, won't process")
+		discard(logger, msg)
+		return
+	} else {
+		parsedEventStage = uint32(s)
 	}
 
 	stage, ok := taskStageFromNatsSubject(subject)
@@ -113,6 +135,7 @@ func handlerInner(
 			InputManifest: inputManifestName,
 			Cluster:       clusterName,
 			TaskID:        taskID,
+			TaskStage:     parsedEventStage,
 			Stage:         stage,
 			Result:        &result,
 		}

@@ -82,7 +82,7 @@ func Reconcile(
 func removeKubeProxy(logger zerolog.Logger, clusterId, kubeconfig string) {
 	k := kubectl.Kubectl{
 		Kubeconfig:        kubeconfig,
-		MaxKubectlRetries: 1,
+		MaxKubectlRetries: -1,
 	}
 
 	k.Stdout = command.GetStdOut(clusterId)
@@ -100,7 +100,7 @@ func removeKubeProxy(logger zerolog.Logger, clusterId, kubeconfig string) {
 
 	if anyerror {
 		logger.
-			Error().
-			Msg("errors encountered while deleting kube-proxy, assuming kube-proxy is not deployed")
+			Warn().
+			Msg("Errors encountered while deleting kube-proxy, assuming kube-proxy is not deployed. You can ignore this error as this is only for backwards compatibility and will be removed in the future")
 	}
 }
