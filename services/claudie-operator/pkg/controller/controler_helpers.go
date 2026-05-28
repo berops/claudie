@@ -239,6 +239,29 @@ func constructInputManifest(
 				BaseUrl:      strings.TrimSpace(vBaseUrl),
 				Templates:    p.Templates,
 			})
+		case v1beta1manifest.OVH:
+			oClientId, err := p.GetSecretField(v1beta1manifest.OVH_CLIENT_ID)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+			oClientSecret, err := p.GetSecretField(v1beta1manifest.OVH_CLIENT_SECRET)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+			oServiceName, err := p.GetSecretField(v1beta1manifest.OVH_SERVICE_NAME)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+			oEndpoint, _ := p.GetSecretField(v1beta1manifest.OVH_ENDPOINT)
+
+			providers.OVH = append(providers.OVH, manifest.OVH{
+				Name:         p.ProviderName,
+				ClientId:     strings.TrimSpace(oClientId),
+				ClientSecret: strings.TrimSpace(oClientSecret),
+				ServiceName:  strings.TrimSpace(oServiceName),
+				Endpoint:     strings.TrimSpace(oEndpoint),
+				Templates:    p.Templates,
+			})
 		}
 	}
 

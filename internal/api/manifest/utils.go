@@ -286,6 +286,35 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 		}
 	}
 
+	for _, oConf := range ds.Providers.OVH {
+		if oConf.Name == providerSpecName {
+			t := &spec.TemplateRepository{
+				Repository: oConf.Templates.Repository,
+				Tag:        oConf.Templates.Tag,
+				Path:       oConf.Templates.Path,
+			}
+			if err := FetchCommitHash(t); err != nil {
+				return nil, err
+			}
+			o := &spec.OVHProvider{
+				ClientId:     oConf.ClientId,
+				ClientSecret: oConf.ClientSecret,
+				ServiceName:  oConf.ServiceName,
+			}
+			if oConf.Endpoint != "" {
+				o.Endpoint = &oConf.Endpoint
+			}
+			return &spec.Provider{
+				SpecName: providerSpecName,
+				ProviderType: &spec.Provider_Ovh{
+					Ovh: o,
+				},
+				CloudProviderName: "ovh",
+				Templates:         t,
+			}, nil
+		}
+	}
+
 	return nil, fmt.Errorf("failed to find provider with name: %s", providerSpecName)
 }
 
@@ -625,6 +654,11 @@ func (ds *Manifest) ForEachProvider(do func(name, typ string, tmpls **TemplateRe
 	}
 	for i, c := range ds.Providers.Verda {
 		if !do(c.Name, "verda", &ds.Providers.Verda[i].Templates) {
+			return
+		}
+	}
+	for i, c := range ds.Providers.OVH {
+		if !do(c.Name, "ovh", &ds.Providers.OVH[i].Templates) {
 			return
 		}
 	}

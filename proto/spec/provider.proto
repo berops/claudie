@@ -61,6 +61,13 @@ message VerdaProvider {
   optional string baseUrl = 3;
 }
 
+message OVHProvider {
+  string clientId = 1;
+  string clientSecret = 2;
+  string serviceName = 3;
+  optional string endpoint = 4;
+}
+
 message Provider {
   string specName = 1;
   string cloudProviderName = 2;
@@ -77,6 +84,7 @@ message Provider {
     ExoscaleProvider exoscale = 12;
     CloudRiftProvider cloudrift = 14;
     VerdaProvider verda = 15;
+    OVHProvider ovh = 16;
   }
 
   TemplateRepository templates = 13;

@@ -42,6 +42,7 @@ type NodeManager struct {
 	exoscaleVMs  map[string]*InstanceInfo
 	cloudriftVMs map[string]*InstanceInfo
 	verdaVMs     map[string]*InstanceInfo
+	ovhVMs       map[string]*InstanceInfo
 
 	// Provider-region-zone cache
 	cacheProviderMap map[string]struct{}
@@ -103,6 +104,10 @@ func (nm *NodeManager) Refresh(autoscaled []*spec.NodePool) error {
 				}
 			case "verda":
 				if err := nm.cacheVerda(dyn); err != nil {
+					return err
+				}
+			case "ovh":
+				if err := nm.cacheOVH(dyn); err != nil {
 					return err
 				}
 			}
@@ -190,6 +195,10 @@ func (nm *NodeManager) InstanceInfo(np *spec.DynamicNodePool) *InstanceInfo {
 		}
 	case "verda":
 		if ti, ok := nm.verdaVMs[np.ServerType]; ok {
+			return ti
+		}
+	case "ovh":
+		if ti, ok := nm.ovhVMs[np.ServerType]; ok {
 			return ti
 		}
 	}

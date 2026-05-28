@@ -49,6 +49,7 @@ needs to be defined.
   | `gcp`          | [GCP](#gcp) provider type                   |
   | `hetzner`      | [Hetzner](#hetzner) provider type           |
   | `oci`          | [OCI](#oci) provider type                   |
+  | `ovh`          | [OVHcloud](#ovhcloud) provider type         |
   | `verda`        | [Verda](#verda) provider type               |
 
 - `secretRef` [SecretRef](#secretref)
@@ -227,6 +228,32 @@ To find out how to configure Azure provider and service account, follow the inst
   - `tag`: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.
   - `path`: specifies the path for a specific provider within the `repository` where the source template files are located.
 
+### OVHcloud
+
+The fields that need to be included in a Kubernetes Secret resource to utilize the OVHcloud provider.
+To configure OVHcloud provider and API credentials, follow the [OVHcloud provider guide](./providers/ovh.md).
+
+- `clientid`
+
+  OAuth2 Client ID issued by the OVHcloud Control Panel under **Identity and Access Management -> OAuth2 service accounts**.
+
+- `clientsecret`
+
+  OAuth2 Client Secret paired with the `clientid` above. Shown only once at creation time.
+
+- `servicename`
+
+  Public Cloud project ID. Found in the OVHcloud Manager under **Public Cloud -> Project Management**.
+
+- `endpoint` *(optional)*
+
+  OVHcloud API endpoint region. One of `ovh-eu` (default), `ovh-us`, `ovh-ca`, `kimsufi-eu`, `kimsufi-ca`, `soyoustart-eu`, `soyoustart-ca`. This selects the API region, not the compute region.
+
+- `templates`
+  - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
+  - `tag`: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.
+  - `path`: specifies the path for a specific provider within the `repository` where the source template files are located.
+
 ### Verda
 
 The fields that need to be included in a Kubernetes Secret resource to utilize the Verda Cloud provider.
@@ -334,7 +361,7 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
 ## Provider Spec
 
-Provider spec is an additional specification built on top of the data from any of the provider instance. Here are provider configuration examples for each individual provider: [aws](providers/aws.md), [azure](providers/azure.md), [cloudrift](providers/cloudrift.md), [exoscale](providers/exoscale.md), [gcp](providers/gcp.md), [cloudflare](providers/cloudflare.md), [hetzner](providers/hetzner.md), [oci](providers/oci.md) and [verda](providers/verda.md).
+Provider spec is an additional specification built on top of the data from any of the provider instance. Here are provider configuration examples for each individual provider: [aws](providers/aws.md), [azure](providers/azure.md), [cloudrift](providers/cloudrift.md), [exoscale](providers/exoscale.md), [gcp](providers/gcp.md), [cloudflare](providers/cloudflare.md), [hetzner](providers/hetzner.md), [oci](providers/oci.md), [ovh](providers/ovh.md) and [verda](providers/verda.md).
 
 - `name`
 
