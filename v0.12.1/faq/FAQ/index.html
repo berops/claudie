@@ -1242,14 +1242,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../input-manifest/providers/on-prem/" class="md-nav__link">
+      <a href="../../input-manifest/providers/on-premises/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    On Premise
+    On-Premises
   
 
     
@@ -1802,6 +1802,17 @@
     <span class="md-ellipsis">
       
         How hard is it to add support for a new cloud provider?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#does-claudie-support-on-premises-or-bare-metal-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Does Claudie support on-premises or bare-metal nodes?
       
     </span>
   </a>
@@ -2510,6 +2521,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#does-claudie-support-on-premises-or-bare-metal-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Does Claudie support on-premises or bare-metal nodes?
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2544,6 +2566,7 @@
 <li>Managed Kubernetes for cloud providers that don't offer it</li>
 <li>Cloud bursting</li>
 <li>Service interconnect</li>
+<li>Integration of existing on-premises bare-metal or co-located servers as cluster nodepools</li>
 </ul>
 <p>Claudie is probably not the right choice if you're running on a single cloud provider that already offers managed Kubernetes and you're happy to accept that lock-in — for example, because you want to take advantage of that provider's unique value proposition.</p>
 <h3 id="does-the-vpn-layer-affect-networking-performance">Does the VPN layer affect networking performance?<a class="headerlink" href="#does-the-vpn-layer-affect-networking-performance" title="Permanent link">¶</a></h3>
@@ -2562,6 +2585,8 @@
 <p>A GUI isn't on the roadmap right now. Other options are being discussed in <a href="https://github.com/berops/claudie/issues/33">this GitHub issue</a>.</p>
 <h3 id="how-hard-is-it-to-add-support-for-a-new-cloud-provider">How hard is it to add support for a new cloud provider?<a class="headerlink" href="#how-hard-is-it-to-add-support-for-a-new-cloud-provider" title="Permanent link">¶</a></h3>
 <p>Adding a new provider is straightforward. If you need one that isn't supported yet, let us know.</p>
+<h3 id="does-claudie-support-on-premises-or-bare-metal-nodes">Does Claudie support on-premises or bare-metal nodes?<a class="headerlink" href="#does-claudie-support-on-premises-or-bare-metal-nodes" title="Permanent link">¶</a></h3>
+<p>Yes. On-premises, co-located, or any SSH-reachable bare-metal machines can be attached to a Claudie-managed cluster as static nodepools. They behave as first-class Kubernetes nodes alongside dynamic cloud nodepools, so a single cluster can span your own datacenter and one or more public clouds. See the <a href="../../input-manifest/providers/on-premises/">On-Premises provider docs</a> for the requirements (SSH access, reachable endpoints, root privileges) and a full example InputManifest.</p>
 
 
 

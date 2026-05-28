@@ -633,10 +633,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-cloud-bursting" class="md-nav__link">
+  <a href="#2-on-premises-integration-and-hybrid-extension" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Cloud-bursting
+        2. On-premises integration and hybrid extension
       
     </span>
   </a>
@@ -644,10 +644,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-cost-saving" class="md-nav__link">
+  <a href="#3-cloud-bursting" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Cost-saving
+        3. Cloud-bursting
       
     </span>
   </a>
@@ -655,10 +655,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-smart-layer-as-a-service-on-top-of-simple-cloud-providers" class="md-nav__link">
+  <a href="#4-cost-saving" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Smart-layer-as-a-Service on top of simple cloud-providers
+        4. Cost-saving
       
     </span>
   </a>
@@ -666,10 +666,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-service-interconnect" class="md-nav__link">
+  <a href="#5-smart-layer-as-a-service-on-top-of-simple-cloud-providers" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. Service interconnect
+        5. Smart-layer-as-a-Service on top of simple cloud-providers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-service-interconnect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Service interconnect
       
     </span>
   </a>
@@ -1344,14 +1355,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../input-manifest/providers/on-prem/" class="md-nav__link">
+      <a href="../../input-manifest/providers/on-premises/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    On Premise
+    On-Premises
   
 
     
@@ -2379,10 +2390,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-cloud-bursting" class="md-nav__link">
+  <a href="#2-on-premises-integration-and-hybrid-extension" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Cloud-bursting
+        2. On-premises integration and hybrid extension
       
     </span>
   </a>
@@ -2390,10 +2401,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-cost-saving" class="md-nav__link">
+  <a href="#3-cloud-bursting" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Cost-saving
+        3. Cloud-bursting
       
     </span>
   </a>
@@ -2401,10 +2412,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-smart-layer-as-a-service-on-top-of-simple-cloud-providers" class="md-nav__link">
+  <a href="#4-cost-saving" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Smart-layer-as-a-Service on top of simple cloud-providers
+        4. Cost-saving
       
     </span>
   </a>
@@ -2412,10 +2423,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-service-interconnect" class="md-nav__link">
+  <a href="#5-smart-layer-as-a-service-on-top-of-simple-cloud-providers" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. Service interconnect
+        5. Smart-layer-as-a-Service on top of simple cloud-providers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-service-interconnect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Service interconnect
       
     </span>
   </a>
@@ -2451,15 +2473,23 @@
 <li>startups building AI/ML products</li>
 <li>cost-conscious organizations looking to avoid GPU pricing from hyper-scale providers</li>
 </ul>
-<h2 id="2-cloud-bursting">2. Cloud-bursting<a class="headerlink" href="#2-cloud-bursting" title="Permanent link">¶</a></h2>
+<h2 id="2-on-premises-integration-and-hybrid-extension">2. On-premises integration and hybrid extension<a class="headerlink" href="#2-on-premises-integration-and-hybrid-extension" title="Permanent link">¶</a></h2>
+<p>A company already runs (or plans to run) Kubernetes workloads on its own on-premises hardware, co-located servers, or private datacenter, and wants to keep using that investment while gaining the flexibility of public cloud. Claudie lets them register their existing machines as <a href="../../input-manifest/providers/on-premises/">static nodepools</a> and combine them in a single cluster with nodepools from AWS, GCP, Azure, Hetzner, and other supported providers. The on-premises nodes are first-class members of the cluster, eligible for workloads, loadbalancing, and node-level autoscaling on the cloud side.</p>
+<p>Typical client profile:</p>
+<ul>
+<li>organizations with existing on-premises or bare-metal investment</li>
+<li>companies in regulated industries that must keep certain workloads in their own datacenter</li>
+<li>teams that want a single Kubernetes control plane spanning on-premises and cloud</li>
+</ul>
+<h2 id="3-cloud-bursting">3. Cloud-bursting<a class="headerlink" href="#3-cloud-bursting" title="Permanent link">¶</a></h2>
 <p>A company uses advanced cloud features in one of the hyper-scale providers (e.g. serverless Lambda and API Gateway functionality in AWS). They run a machine-learning application that they need to train for a pattern on a dataset. The learning phase requires significant compute resources. Claudie allows to extend the cluster in AWS (needed in order to access the AWS functionality) to Hetzner for saving the infrastructure costs of the machine-learning case.</p>
 <p>Typical client profiles:</p>
 <ul>
 <li>startups</li>
 <li>in need of significant computing power already in their early stages (e.g. AI/ML workloads)</li>
 </ul>
-<h2 id="3-cost-saving">3. Cost-saving<a class="headerlink" href="#3-cost-saving" title="Permanent link">¶</a></h2>
-<p>A company would like to utilize their on-premise or leased resources that they already invested into, but would like to:</p>
+<h2 id="4-cost-saving">4. Cost-saving<a class="headerlink" href="#4-cost-saving" title="Permanent link">¶</a></h2>
+<p>A company would like to utilize their on-premises or leased resources that they already invested into, but would like to:</p>
 <ol>
 <li>extend the capacity</li>
 <li>access managed features of a hyper-scale provider (AWS, GCP, ...)</li>
@@ -2470,19 +2500,19 @@
 <li>medium-size business</li>
 <li>possibly already familiar with containerized workload</li>
 </ul>
-<h2 id="4-smart-layer-as-a-service-on-top-of-simple-cloud-providers">4. Smart-layer-as-a-Service on top of simple cloud-providers<a class="headerlink" href="#4-smart-layer-as-a-service-on-top-of-simple-cloud-providers" title="Permanent link">¶</a></h2>
+<h2 id="5-smart-layer-as-a-service-on-top-of-simple-cloud-providers">5. Smart-layer-as-a-Service on top of simple cloud-providers<a class="headerlink" href="#5-smart-layer-as-a-service-on-top-of-simple-cloud-providers" title="Permanent link">¶</a></h2>
 <p>An existing customer of medium-size provider (e.g. Exoscale) would like to utilize features that are typical for hyper-scale providers. Their current provider does neither offer nor plan to offer such an advanced functionality.</p>
 <p>Typical client profile:</p>
 <ul>
 <li>established business</li>
 <li>need to access advanced managed features to innovate faster</li>
 </ul>
-<h2 id="5-service-interconnect">5. Service interconnect<a class="headerlink" href="#5-service-interconnect" title="Permanent link">¶</a></h2>
-<p>A company would like to access on-premise-hosted services and cloud-managed services from within the same cluster. For on-premise services the on-premise cluster node would egress the traffic. The cloud-hosted cluster nodes would deal with the egress traffic to the cloud-managed services.</p>
+<h2 id="6-service-interconnect">6. Service interconnect<a class="headerlink" href="#6-service-interconnect" title="Permanent link">¶</a></h2>
+<p>A company would like to access on-premises-hosted services and cloud-managed services from within the same cluster. For on-premises services the on-premises cluster node would egress the traffic. The cloud-hosted cluster nodes would deal with the egress traffic to the cloud-managed services.</p>
 <p>Typical client profile:</p>
 <ul>
 <li>medium-size/established business</li>
-<li>already contains on-premise workloads</li>
+<li>already contains on-premises workloads</li>
 <li>has the need to take the advantage of managed cloud infra (from cost, agility, or capacity reasons)</li>
 </ul>
 
