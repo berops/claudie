@@ -362,7 +362,7 @@ Autoscaler configuration on per nodepool basis. Defines the number of nodes, aut
 
 ## Static
 
-Static nodepools are defined for static machines which Claudie will not manage. Used for on premises nodes.
+Static nodepools are defined for static machines which Claudie will not manage. Used for on-premises nodes.
 
 !!! note "In case you want to use your static nodes in the Kubernetes cluster, make sure they meet the [requirements](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/#before-you-begin)."
 

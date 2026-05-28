@@ -15,7 +15,7 @@
 - [GCP](https://docs.claudie.io/latest/input-manifest/providers/gcp/) Step-by-step guide to configure GCP credentials and input manifests.
 - [Hetzner](https://docs.claudie.io/latest/input-manifest/providers/hetzner/) Step-by-step guide to configure Hetzner credentials and input manifests.
 - [OCI](https://docs.claudie.io/latest/input-manifest/providers/oci/) Step-by-step guide to configure Oracle credentials and input manifests.
-- [On Premises](https://docs.claudie.io/latest/input-manifest/providers/on-premises/) Step-by-step guide to configure on premises hardware and input manifests.
+- [On-Premises](https://docs.claudie.io/latest/input-manifest/providers/on-premises/) Step-by-step guide to configure on-premises hardware and input manifests.
 - [Example yaml file](https://docs.claudie.io/latest/input-manifest/example/) Full example of input manifest.
 - [GPUs example](https://docs.claudie.io/latest/input-manifest/gpu-example/) Guide from NVIDIA to deploy the GPU operator into a Claudie build kubernetes cluster.
 - [External Templates](https://docs.claudie.io/latest/input-manifest/external-templates/) Examples to plug in your own templates for spawning the infrastructure.

@@ -55,4 +55,4 @@ Adding a new provider is straightforward. If you need one that isn't supported y
 
 ### Does Claudie support on-premises or bare-metal nodes?
 
-Yes. On-premises, co-located, or any SSH-reachable bare-metal machines can be attached to a Claudie-managed cluster as static nodepools. They behave as first-class Kubernetes nodes alongside dynamic cloud nodepools, so a single cluster can span your own datacenter and one or more public clouds. See the [On Premises provider docs](../input-manifest/providers/on-premises.md) for the requirements (SSH access, reachable endpoints, root privileges) and a full example InputManifest.
+Yes. On-premises, co-located, or any SSH-reachable bare-metal machines can be attached to a Claudie-managed cluster as static nodepools. They behave as first-class Kubernetes nodes alongside dynamic cloud nodepools, so a single cluster can span your own datacenter and one or more public clouds. See the [On-Premises provider docs](../input-manifest/providers/on-premises.md) for the requirements (SSH access, reachable endpoints, root privileges) and a full example InputManifest.

@@ -33,7 +33,7 @@ Typical client profiles:
 
 ## 4. Cost-saving
 
-A company would like to utilize their s or leased resources that they already invested into, but would like to:
+A company would like to utilize their on-premises or leased resources that they already invested into, but would like to:
 
 1. extend the capacity
 2. access managed features of a hyper-scale provider (AWS, GCP, ...)

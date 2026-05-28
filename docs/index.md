@@ -21,7 +21,7 @@ Build multi-cloud, hybrid-cloud, and on-premises Kubernetes clusters that mix an
 
 ## What is Claudie
 
-Claudie is a platform for managing multi-cloud, hybrid-cloud, and on-premises Kubernetes clusters. In a single cluster you can mix and match nodepools from various cloud providers and your own on-premises or bare-metal servers, e.g. a nodepool in AWS, another one in GCP, and a third one running on hardware in your own datacenter. This is our opinionated way to build multi-cloud, hybrid-cloud, and on-premises Kubernetes infrastructure. On top of that, Claudie supports Cluster Autoscaler on the managed clusters. See the [On Premises provider docs](./input-manifest/providers/on-premises.md) for how to attach your own machines.
+Claudie is a platform for managing multi-cloud, hybrid-cloud, and on-premises Kubernetes clusters. In a single cluster you can mix and match nodepools from various cloud providers and your own on-premises or bare-metal servers, e.g. a nodepool in AWS, another one in GCP, and a third one running on hardware in your own datacenter. This is our opinionated way to build multi-cloud, hybrid-cloud, and on-premises Kubernetes infrastructure. On top of that, Claudie supports Cluster Autoscaler on the managed clusters. See the [On-Premises provider docs](./input-manifest/providers/on-premises.md) for how to attach your own machines.
 
 ## Supported Providers
 
@@ -73,7 +73,7 @@ See more in How Claudie works sections.
 
 !!! tip "Bring Your Own Hardware"
 
-    Already running on-premises or co-located servers? Claudie treats them as first-class nodepools. Add them to any cluster alongside AWS, GCP, Azure, and other cloud nodepools using the [On Premises provider](./input-manifest/providers/on-premises.md), all from the same InputManifest.
+    Already running on-premises or co-located servers? Claudie treats them as first-class nodepools. Add them to any cluster alongside AWS, GCP, Azure, and other cloud nodepools using the [On-Premises provider](./input-manifest/providers/on-premises.md), all from the same InputManifest.
 
 ## What to do next
 

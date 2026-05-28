@@ -1,4 +1,4 @@
-# On premises nodes
+# On-premises nodes
 
 Claudie supports on-premises, bare-metal, and any SSH-reachable static machines as first-class Kubernetes nodepools. You can use them on their own to build a fully on-premises cluster, or combine them with dynamic nodepools from supported cloud providers (AWS, GCP, Azure, Hetzner, and others) to run a hybrid cluster managed from a single InputManifest.
 
