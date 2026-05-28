@@ -4,7 +4,7 @@ Claudie is a platform for managing multi-cloud and hybrid-cloud Kubernetes clust
 
 ## Vision (https://docs.claudie.io/latest/\#vision)
 
-The purpose of Claudie is to become the final Kubernetes engine you'll ever need. It aims to build clusters that leverage features and costs across multiple cloud vendors and on-premises datacenters. A Kubernetes that you won't ever need to migrate away from.
+The purpose of Claudie is to become the final Kubernetes engine you'll ever need. It aims to build clusters that leverage features and costs across multiple cloud vendors and on-prem datacenters. A Kubernetes that you won't ever need to migrate away from.
 
 ## Use cases (https://docs.claudie.io/latest/\#use-cases)
 
@@ -2573,9 +2573,9 @@ spec:
 
 ```
 
-[Skip to content](https://docs.claudie.io/latest/input-manifest/providers/on-premises/#on-premises-nodes)
+[Skip to content](https://docs.claudie.io/latest/input-manifest/providers/on-prem/#on-premise-nodes)
 
-# On-premises nodes(https://docs.claudie.io/latest/input-manifest/providers/on-premises/\#on-premises-nodes)
+# On premise nodes(https://docs.claudie.io/latest/input-manifest/providers/on-prem/\#on-premise-nodes)
 
 Claudie is designed to leverage your existing infrastructure and utilise it for building Kubernetes clusters together with supported cloud providers. However, Claudie operates under a few assumptions:
 
@@ -2590,7 +2590,7 @@ Claudie is designed to leverage your existing infrastructure and utilise it for 
 
 By ensuring that these assumptions are met, Claudie can effectively utilise your infrastructure and build Kubernetes clusters while collaborating with the supported cloud providers.
 
-## Private key example secret(https://docs.claudie.io/latest/input-manifest/providers/on-premises/\#private-key-example-secret)
+## Private key example secret(https://docs.claudie.io/latest/input-manifest/providers/on-prem/\#private-key-example-secret)
 
 ```
 apiVersion: v1
@@ -2603,9 +2603,9 @@ type: Opaque
 
 ```
 
-## Input manifest example(https://docs.claudie.io/latest/input-manifest/providers/on-premises/\#input-manifest-example)
+## Input manifest example(https://docs.claudie.io/latest/input-manifest/providers/on-prem/\#input-manifest-example)
 
-### Private cluster example(https://docs.claudie.io/latest/input-manifest/providers/on-premises/\#private-cluster-example)
+### Private cluster example(https://docs.claudie.io/latest/input-manifest/providers/on-prem/\#private-cluster-example)
 
 ```
 kubectl create secret generic static-node-key --namespace=mynamespace --from-file=privatekey=private.pem
@@ -2653,9 +2653,9 @@ spec:
 
 ```
 
-### Hybrid cloud example(https://docs.claudie.io/latest/input-manifest/providers/on-premises/\#hybrid-cloud-example)
+### Hybrid cloud example(https://docs.claudie.io/latest/input-manifest/providers/on-prem/\#hybrid-cloud-example)
 
-### Create secret for private key(https://docs.claudie.io/latest/input-manifest/providers/on-premises/\#create-secret-for-private-key)
+### Create secret for private key(https://docs.claudie.io/latest/input-manifest/providers/on-prem/\#create-secret-for-private-key)
 
 ```
 kubectl create secret generic static-node-key --namespace=mynamespace --from-file=privatekey=private.pem
@@ -3830,7 +3830,7 @@ Maximum number of nodes in nodepool.
 
 ## Static(https://docs.claudie.io/latest/input-manifest/api-reference/\#static)
 
-Static nodepools are defined for static machines which Claudie will not manage. Used for on-premises nodes.
+Static nodepools are defined for static machines which Claudie will not manage. Used for on premise nodes.
 
 In case you want to use your static nodes in the Kubernetes cluster, make sure they meet the [requirements](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/#before-you-begin).
 
@@ -4524,7 +4524,7 @@ Typical client profiles:
 
 ## 2. Cost-saving(https://docs.claudie.io/latest/use-cases/use-cases/\#2-cost-saving)
 
-A company would like to utilize their on-premises or leased resources that they already invested into, but would like to:
+A company would like to utilize their on-premise or leased resources that they already invested into, but would like to:
 
 1. extend the capacity
 2. access managed features of a hyper-scale provider (AWS, GCP, ...)
@@ -4546,12 +4546,12 @@ Typical client profile:
 
 ## 4. Service interconnect(https://docs.claudie.io/latest/use-cases/use-cases/\#4-service-interconnect)
 
-A company would like to access on-premises-hosted services and cloud-managed services from within the same cluster. For on-premises services the on-premises cluster node would egress the traffic. The cloud-hosted cluster nodes would deal with the egress traffic to the cloud-managed services.
+A company would like to access on-premise-hosted services and cloud-managed services from within the same cluster. For on-premise services the on-premise cluster node would egress the traffic. The cloud-hosted cluster nodes would deal with the egress traffic to the cloud-managed services.
 
 Typical client profile:
 
 - medium-size/established business
-- already contains on-premises workloads
+- already contains on-premise workloads
 - has the need to take the advantage of managed cloud infra (from cost, agility, or capacity reasons)
 
 [Skip to content](https://docs.claudie.io/latest/faq/FAQ/#frequently-asked-question)

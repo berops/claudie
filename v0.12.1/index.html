@@ -909,6 +909,8 @@
       
         
       
+        
+      
     
     
     
@@ -1212,6 +1214,34 @@
   
   
     <li class="md-nav__item">
+      <a href="input-manifest/providers/ovh/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OVHcloud
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="input-manifest/providers/verda/" class="md-nav__link">
         
   
@@ -1240,14 +1270,14 @@
   
   
     <li class="md-nav__item">
-      <a href="input-manifest/providers/on-premises/" class="md-nav__link">
+      <a href="input-manifest/providers/on-prem/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    On-Premises
+    On Premise
   
 
     
@@ -2340,7 +2370,7 @@
 
 <div class="hero">
 <h1 id="multi-cloud-kubernetes-redefined">Multi-cloud Kubernetes Redefined<a class="headerlink" href="#multi-cloud-kubernetes-redefined" title="Permanent link">¶</a></h1>
-<p>Build multi-cloud, hybrid-cloud, and on-premises Kubernetes clusters that mix and match nodepools across AWS, GCP, Azure, Hetzner, across your own bare-metal servers, and more, managed through a single InputManifest.</p>
+<p>Build multi-cloud and hybrid-cloud Kubernetes clusters that mix and match nodepools across AWS, GCP, Azure, Hetzner, and more, managed through a single InputManifest.</p>
 <p><a class="md-button md-button--primary" href="getting-started/get-started-using-claudie/">Get Started</a>
 <a class="md-button" href="https://github.com/berops/claudie">GitHub</a></p>
 <p><a href="https://github.com/berops/claudie/blob/master/LICENSE"><img alt="license" src="https://img.shields.io/github/license/berops/claudie?style=flat-square&amp;color=2e7da8"></a>
@@ -2353,7 +2383,7 @@
 <p><a class="glightbox" data-type="image" data-width="100%" data-height="auto" href="assets/cluster-diagram-animation-light.webp#only-light" data-desc-position="bottom"><img alt="Claudie cluster diagram" src="assets/cluster-diagram-animation-light.webp#only-light"></a>
 <a class="glightbox" data-type="image" data-width="100%" data-height="auto" href="assets/cluster-diagram-animation-dark.webp#only-dark" data-desc-position="bottom"><img alt="Claudie cluster diagram" src="assets/cluster-diagram-animation-dark.webp#only-dark"></a></p>
 <h2 id="what-is-claudie">What is Claudie<a class="headerlink" href="#what-is-claudie" title="Permanent link">¶</a></h2>
-<p>Claudie is a platform for managing multi-cloud, hybrid-cloud, and on-premises Kubernetes clusters. In a single cluster you can mix and match nodepools from various cloud providers and your own on-premises or bare-metal servers, e.g. a nodepool in AWS, another one in GCP, and a third one running on hardware in your own datacenter. This is our opinionated way to build multi-cloud, hybrid-cloud, and on-premises Kubernetes infrastructure. On top of that, Claudie supports Cluster Autoscaler on the managed clusters. See the <a href="input-manifest/providers/on-premises/">On-Premises provider docs</a> for how to attach your own machines.</p>
+<p>Claudie is a platform for managing multi-cloud and hybrid-cloud Kubernetes clusters. These Kubernetes clusters can mix and match nodepools from various cloud providers, e.g. a single cluster can have a nodepool in AWS, another in GCP and another one on-premises. This is our opinionated way to build multi-cloud and hybrid-cloud Kubernetes infrastructure. On top of that Claudie supports Cluster Autoscaler on the managed clusters.</p>
 <h2 id="supported-providers">Supported Providers<a class="headerlink" href="#supported-providers" title="Permanent link">¶</a></h2>
 <div class="provider-grid">
 <p><a href="input-manifest/providers/aws/"><img alt="AWS" src="https://img.shields.io/badge/AWS-232F3E?style=for-the-badge"></a>
@@ -2365,8 +2395,7 @@
 <a href="input-manifest/providers/exoscale/"><img alt="Exoscale" src="https://img.shields.io/badge/Exoscale-DA291C?style=for-the-badge"></a>
 <a href="input-manifest/providers/openstack/"><img alt="OpenStack" src="https://img.shields.io/badge/OpenStack-ED1944?style=for-the-badge"></a>
 <a href="input-manifest/providers/cloudrift/"><img alt="CloudRift" src="https://img.shields.io/badge/CloudRift-2e7da8?style=for-the-badge"></a>
-<a href="input-manifest/providers/verda/"><img alt="Verda" src="https://img.shields.io/badge/Verda-0E8C6B?style=for-the-badge"></a>
-<a href="input-manifest/providers/on-premises/"><img alt="On-Premises" src="https://img.shields.io/badge/On--Premises-555555?style=for-the-badge"></a></p>
+<a href="input-manifest/providers/verda/"><img alt="Verda" src="https://img.shields.io/badge/Verda-0E8C6B?style=for-the-badge"></a></p>
 </div>
 <h2 id="use-cases">Use cases<a class="headerlink" href="#use-cases" title="Permanent link">¶</a></h2>
 <p>Claudie has been built as an answer to the following Kubernetes challenges:</p>
@@ -2376,28 +2405,22 @@
 <li>Managed Kubernetes for providers that do not offer it</li>
 <li>Cloud bursting</li>
 <li>Service interconnect</li>
-<li>On-premises &amp; hybrid integration - extend existing bare-metal, co-located, or private-datacenter servers into a Kubernetes cluster alongside cloud nodepools</li>
 <li>GPU &amp; AI/ML workloads - Provision GPU nodes across multiple clouds, run NVIDIA GPU Operator, and leverage Cluster Autoscaler for GPU-aware scaling</li>
 </ul>
 <p>You can read more <a href="use-cases/use-cases/">here</a>.</p>
 <h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">¶</a></h2>
 <ul>
-<li>Manage multi-cloud, hybrid-cloud, and on-premises Kubernetes clusters</li>
+<li>Manage multi-cloud and hybrid-cloud Kubernetes clusters</li>
 <li>Management via IaC</li>
 <li>Fast scale-up/scale-down of your infrastructure</li>
 <li>Loadbalancing</li>
 <li>Persistent storage volumes</li>
-<li>On-premises &amp; bare-metal nodepools - integrate your existing servers as first-class cluster nodes via SSH (<a href="input-manifest/providers/on-premises/">details</a>)</li>
 <li>GPU workload support - Deploy GPU-accelerated nodepools with NVIDIA GPU Operator compatibility and autoscaler-aware GPU scheduling</li>
 </ul>
 <p>See more in How Claudie works sections.</p>
 <div class="admonition tip">
 <p class="admonition-title">AI/ML Ready Infrastructure</p>
 <p>Claudie lets you build GPU clusters that span multiple cloud providers, combining cost-effective GPU instances from different vendors into a single Kubernetes cluster. It comes with the NVIDIA GPU Operator and Cluster Autoscaler for scalable production-ready AI/ML workloads.</p>
-</div>
-<div class="admonition tip">
-<p class="admonition-title">Bring Your Own Hardware</p>
-<p>Already running on-premises or co-located servers? Claudie treats them as first-class nodepools. Add them to any cluster alongside AWS, GCP, Azure, and other cloud nodepools using the <a href="input-manifest/providers/on-premises/">On-Premises provider</a>, all from the same InputManifest.</p>
 </div>
 <h2 id="what-to-do-next">What to do next<a class="headerlink" href="#what-to-do-next" title="Permanent link">¶</a></h2>
 <p>In case you are not sure where to go next, you can just simply start with our <a href="getting-started/get-started-using-claudie/">Getting Started Guide</a> or read our documentation <a href="sitemap/sitemap/">sitemap</a>.</p>

@@ -173,11 +173,15 @@
          <lastmod>2026-05-28</lastmod>
     </url>
     <url>
-         <loc>https://docs.claudie.io/v0.12.1/input-manifest/providers/on-premises/</loc>
+         <loc>https://docs.claudie.io/v0.12.1/input-manifest/providers/on-prem/</loc>
          <lastmod>2026-05-28</lastmod>
     </url>
     <url>
          <loc>https://docs.claudie.io/v0.12.1/input-manifest/providers/openstack/</loc>
+         <lastmod>2026-05-28</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.claudie.io/v0.12.1/input-manifest/providers/ovh/</loc>
          <lastmod>2026-05-28</lastmod>
     </url>
     <url>
