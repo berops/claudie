@@ -30,6 +30,7 @@ type usedProvidersTemplateData struct {
 	Exoscale   bool
 	CloudRift  bool
 	Verda      bool
+	OVH        bool
 }
 
 // CreateUsedProviderDNS creates provider file used for DNS management.
@@ -100,6 +101,9 @@ func getProvidersUsed(nodepools []*spec.DynamicNodePool, data *usedProvidersTemp
 		if nodepool.Provider.CloudProviderName == "verda" {
 			data.Verda = true
 		}
+		if nodepool.Provider.CloudProviderName == "ovh" {
+			data.OVH = true
+		}
 	}
 }
 
@@ -124,5 +128,7 @@ func getDNSProvider(dns *spec.DNS, data *usedProvidersTemplateData) {
 		data.Cloudflare = true
 	case "exoscale":
 		data.Exoscale = true
+	case "ovh":
+		data.OVH = true
 	}
 }

@@ -605,6 +605,74 @@ func (x *VerdaProvider) GetBaseUrl() string {
 	return ""
 }
 
+type OVHProvider struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ClientId      string                 `protobuf:"bytes,1,opt,name=clientId,proto3" json:"clientId,omitempty"`
+	ClientSecret  string                 `protobuf:"bytes,2,opt,name=clientSecret,proto3" json:"clientSecret,omitempty"`
+	ServiceName   string                 `protobuf:"bytes,3,opt,name=serviceName,proto3" json:"serviceName,omitempty"`
+	Endpoint      *string                `protobuf:"bytes,4,opt,name=endpoint,proto3,oneof" json:"endpoint,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *OVHProvider) Reset() {
+	*x = OVHProvider{}
+	mi := &file_spec_provider_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OVHProvider) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OVHProvider) ProtoMessage() {}
+
+func (x *OVHProvider) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_provider_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OVHProvider.ProtoReflect.Descriptor instead.
+func (*OVHProvider) Descriptor() ([]byte, []int) {
+	return file_spec_provider_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *OVHProvider) GetClientId() string {
+	if x != nil {
+		return x.ClientId
+	}
+	return ""
+}
+
+func (x *OVHProvider) GetClientSecret() string {
+	if x != nil {
+		return x.ClientSecret
+	}
+	return ""
+}
+
+func (x *OVHProvider) GetServiceName() string {
+	if x != nil {
+		return x.ServiceName
+	}
+	return ""
+}
+
+func (x *OVHProvider) GetEndpoint() string {
+	if x != nil && x.Endpoint != nil {
+		return *x.Endpoint
+	}
+	return ""
+}
+
 type Provider struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	SpecName          string                 `protobuf:"bytes,1,opt,name=specName,proto3" json:"specName,omitempty"`
@@ -623,6 +691,7 @@ type Provider struct {
 	//	*Provider_Exoscale
 	//	*Provider_Cloudrift
 	//	*Provider_Verda
+	//	*Provider_Ovh
 	ProviderType  isProvider_ProviderType `protobuf_oneof:"ProviderType"`
 	Templates     *TemplateRepository     `protobuf:"bytes,13,opt,name=templates,proto3" json:"templates,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -631,7 +700,7 @@ type Provider struct {
 
 func (x *Provider) Reset() {
 	*x = Provider{}
-	mi := &file_spec_provider_proto_msgTypes[10]
+	mi := &file_spec_provider_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -643,7 +712,7 @@ func (x *Provider) String() string {
 func (*Provider) ProtoMessage() {}
 
 func (x *Provider) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_provider_proto_msgTypes[10]
+	mi := &file_spec_provider_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -656,7 +725,7 @@ func (x *Provider) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Provider.ProtoReflect.Descriptor instead.
 func (*Provider) Descriptor() ([]byte, []int) {
-	return file_spec_provider_proto_rawDescGZIP(), []int{10}
+	return file_spec_provider_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *Provider) GetSpecName() string {
@@ -770,6 +839,15 @@ func (x *Provider) GetVerda() *VerdaProvider {
 	return nil
 }
 
+func (x *Provider) GetOvh() *OVHProvider {
+	if x != nil {
+		if x, ok := x.ProviderType.(*Provider_Ovh); ok {
+			return x.Ovh
+		}
+	}
+	return nil
+}
+
 func (x *Provider) GetTemplates() *TemplateRepository {
 	if x != nil {
 		return x.Templates
@@ -821,6 +899,10 @@ type Provider_Verda struct {
 	Verda *VerdaProvider `protobuf:"bytes,15,opt,name=verda,proto3,oneof"`
 }
 
+type Provider_Ovh struct {
+	Ovh *OVHProvider `protobuf:"bytes,16,opt,name=ovh,proto3,oneof"`
+}
+
 func (*Provider_Gcp) isProvider_ProviderType() {}
 
 func (*Provider_Hetzner) isProvider_ProviderType() {}
@@ -841,6 +923,8 @@ func (*Provider_Cloudrift) isProvider_ProviderType() {}
 
 func (*Provider_Verda) isProvider_ProviderType() {}
 
+func (*Provider_Ovh) isProvider_ProviderType() {}
+
 type TemplateRepository struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Repository    string                 `protobuf:"bytes,1,opt,name=repository,proto3" json:"repository,omitempty"`
@@ -853,7 +937,7 @@ type TemplateRepository struct {
 
 func (x *TemplateRepository) Reset() {
 	*x = TemplateRepository{}
-	mi := &file_spec_provider_proto_msgTypes[11]
+	mi := &file_spec_provider_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -865,7 +949,7 @@ func (x *TemplateRepository) String() string {
 func (*TemplateRepository) ProtoMessage() {}
 
 func (x *TemplateRepository) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_provider_proto_msgTypes[11]
+	mi := &file_spec_provider_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -878,7 +962,7 @@ func (x *TemplateRepository) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TemplateRepository.ProtoReflect.Descriptor instead.
 func (*TemplateRepository) Descriptor() ([]byte, []int) {
-	return file_spec_provider_proto_rawDescGZIP(), []int{11}
+	return file_spec_provider_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *TemplateRepository) GetRepository() string {
@@ -956,7 +1040,13 @@ const file_spec_provider_proto_rawDesc = "" +
 	"\fclientSecret\x18\x02 \x01(\tR\fclientSecret\x12\x1d\n" +
 	"\abaseUrl\x18\x03 \x01(\tH\x00R\abaseUrl\x88\x01\x01B\n" +
 	"\n" +
-	"\b_baseUrl\"\x82\x05\n" +
+	"\b_baseUrl\"\x9d\x01\n" +
+	"\vOVHProvider\x12\x1a\n" +
+	"\bclientId\x18\x01 \x01(\tR\bclientId\x12\"\n" +
+	"\fclientSecret\x18\x02 \x01(\tR\fclientSecret\x12 \n" +
+	"\vserviceName\x18\x03 \x01(\tR\vserviceName\x12\x1f\n" +
+	"\bendpoint\x18\x04 \x01(\tH\x00R\bendpoint\x88\x01\x01B\v\n" +
+	"\t_endpoint\"\xa9\x05\n" +
 	"\bProvider\x12\x1a\n" +
 	"\bspecName\x18\x01 \x01(\tR\bspecName\x12,\n" +
 	"\x11cloudProviderName\x18\x02 \x01(\tR\x11cloudProviderName\x12%\n" +
@@ -971,7 +1061,8 @@ const file_spec_provider_proto_rawDesc = "" +
 	"\topenstack\x18\v \x01(\v2\x17.spec.OpenstackProviderH\x00R\topenstack\x124\n" +
 	"\bexoscale\x18\f \x01(\v2\x16.spec.ExoscaleProviderH\x00R\bexoscale\x127\n" +
 	"\tcloudrift\x18\x0e \x01(\v2\x17.spec.CloudRiftProviderH\x00R\tcloudrift\x12+\n" +
-	"\x05verda\x18\x0f \x01(\v2\x13.spec.VerdaProviderH\x00R\x05verda\x126\n" +
+	"\x05verda\x18\x0f \x01(\v2\x13.spec.VerdaProviderH\x00R\x05verda\x12%\n" +
+	"\x03ovh\x18\x10 \x01(\v2\x11.spec.OVHProviderH\x00R\x03ovh\x126\n" +
 	"\ttemplates\x18\r \x01(\v2\x18.spec.TemplateRepositoryR\ttemplatesB\x0e\n" +
 	"\fProviderType\"\x87\x01\n" +
 	"\x12TemplateRepository\x12\x1e\n" +
@@ -997,7 +1088,7 @@ func file_spec_provider_proto_rawDescGZIP() []byte {
 	return file_spec_provider_proto_rawDescData
 }
 
-var file_spec_provider_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_spec_provider_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_spec_provider_proto_goTypes = []any{
 	(*GCPProvider)(nil),        // 0: spec.GCPProvider
 	(*HetznerProvider)(nil),    // 1: spec.HetznerProvider
@@ -1009,8 +1100,9 @@ var file_spec_provider_proto_goTypes = []any{
 	(*ExoscaleProvider)(nil),   // 7: spec.ExoscaleProvider
 	(*CloudRiftProvider)(nil),  // 8: spec.CloudRiftProvider
 	(*VerdaProvider)(nil),      // 9: spec.VerdaProvider
-	(*Provider)(nil),           // 10: spec.Provider
-	(*TemplateRepository)(nil), // 11: spec.TemplateRepository
+	(*OVHProvider)(nil),        // 10: spec.OVHProvider
+	(*Provider)(nil),           // 11: spec.Provider
+	(*TemplateRepository)(nil), // 12: spec.TemplateRepository
 }
 var file_spec_provider_proto_depIdxs = []int32{
 	0,  // 0: spec.Provider.gcp:type_name -> spec.GCPProvider
@@ -1023,12 +1115,13 @@ var file_spec_provider_proto_depIdxs = []int32{
 	7,  // 7: spec.Provider.exoscale:type_name -> spec.ExoscaleProvider
 	8,  // 8: spec.Provider.cloudrift:type_name -> spec.CloudRiftProvider
 	9,  // 9: spec.Provider.verda:type_name -> spec.VerdaProvider
-	11, // 10: spec.Provider.templates:type_name -> spec.TemplateRepository
-	11, // [11:11] is the sub-list for method output_type
-	11, // [11:11] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	10, // 10: spec.Provider.ovh:type_name -> spec.OVHProvider
+	12, // 11: spec.Provider.templates:type_name -> spec.TemplateRepository
+	12, // [12:12] is the sub-list for method output_type
+	12, // [12:12] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_spec_provider_proto_init() }
@@ -1038,7 +1131,8 @@ func file_spec_provider_proto_init() {
 	}
 	file_spec_provider_proto_msgTypes[8].OneofWrappers = []any{}
 	file_spec_provider_proto_msgTypes[9].OneofWrappers = []any{}
-	file_spec_provider_proto_msgTypes[10].OneofWrappers = []any{
+	file_spec_provider_proto_msgTypes[10].OneofWrappers = []any{}
+	file_spec_provider_proto_msgTypes[11].OneofWrappers = []any{
 		(*Provider_Gcp)(nil),
 		(*Provider_Hetzner)(nil),
 		(*Provider_Oci)(nil),
@@ -1049,15 +1143,16 @@ func file_spec_provider_proto_init() {
 		(*Provider_Exoscale)(nil),
 		(*Provider_Cloudrift)(nil),
 		(*Provider_Verda)(nil),
+		(*Provider_Ovh)(nil),
 	}
-	file_spec_provider_proto_msgTypes[11].OneofWrappers = []any{}
+	file_spec_provider_proto_msgTypes[12].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_spec_provider_proto_rawDesc), len(file_spec_provider_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   12,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

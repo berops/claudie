@@ -3,7 +3,7 @@
 > Claudie is a platform for managing multi-cloud and hybrid-cloud Kubernetes clusters. These Kubernetes clusters can mix and match CPU/GPU nodepools from various cloud providers. Claudie simplifies the process of building and operating Kubernetes infrastructure across multiple environments. On top of that Claudie supports Cluster Autoscaler on the managed clusters.
 
 - [What is Claudie](https://docs.claudie.io/latest/) Claudie is a platform for managing multi-cloud and hybrid-cloud Kubernetes clusters.
-- [Vision](https://docs.claudie.io/latest/#vision) It aims to build clusters that leverage features and costs across multiple cloud vendors and on-prem datacenters.
+- [Vision](https://docs.claudie.io/latest/#vision) It aims to build clusters that leverage features and costs across multiple cloud vendors and on-premises datacenters.
 - [Use cases](https://docs.claudie.io/latest/#use-cases)
 - [Features](https://docs.claudie.io/latest/#features)
 - [Getting started](https://docs.claudie.io/latest/getting-started/get-started-using-claudie/) Fast Setup Guide.
@@ -15,7 +15,7 @@
 - [GCP](https://docs.claudie.io/latest/input-manifest/providers/gcp/) Step-by-step guide to configure GCP credentials and input manifests.
 - [Hetzner](https://docs.claudie.io/latest/input-manifest/providers/hetzner/) Step-by-step guide to configure Hetzner credentials and input manifests.
 - [OCI](https://docs.claudie.io/latest/input-manifest/providers/oci/) Step-by-step guide to configure Oracle credentials and input manifests.
-- [On Premise](https://docs.claudie.io/latest/input-manifest/providers/on-prem/) Step-by-step guide to configure on premise hardware and input manifests.
+- [On-Premises](https://docs.claudie.io/latest/input-manifest/providers/on-premises/) Step-by-step guide to configure on-premises hardware and input manifests.
 - [Example yaml file](https://docs.claudie.io/latest/input-manifest/example/) Full example of input manifest.
 - [GPUs example](https://docs.claudie.io/latest/input-manifest/gpu-example/) Guide from NVIDIA to deploy the GPU operator into a Claudie build kubernetes cluster.
 - [External Templates](https://docs.claudie.io/latest/input-manifest/external-templates/) Examples to plug in your own templates for spawning the infrastructure.

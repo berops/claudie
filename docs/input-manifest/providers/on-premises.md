@@ -1,4 +1,6 @@
-# On premise nodes
+# On-premises nodes
+
+Claudie supports on-premises, bare-metal, and any SSH-reachable static machines as first-class Kubernetes nodepools. You can use them on their own to build a fully on-premises cluster, or combine them with dynamic nodepools from supported cloud providers (AWS, GCP, Azure, Hetzner, and others) to run a hybrid cluster managed from a single InputManifest.
 
 Claudie is designed to leverage your existing infrastructure and utilise it for building Kubernetes clusters together with supported cloud providers. However, Claudie operates under a few assumptions:
 
@@ -95,6 +97,10 @@ spec:
   providers:
     - name: hetzner-1
       providerType: hetzner
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.11.1
+        path: "templates/terraformer/hetzner"
       secretRef:
         name: hetzner-secret-1
         namespace: <your-namespace>
@@ -133,7 +139,7 @@ spec:
         network: 192.168.2.0/24
         pools:
           control:
-            - control-hetzner
+            - control-htz
           compute:
             - datacenter-1
 ```

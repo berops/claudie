@@ -10,7 +10,7 @@ Unplanned features (wishlist; talk to us for prioritization):
 - [ ] Override for all manifest defaults
 - [ ] Service type: loadbalancer
 - [ ] Support for Spot & preemptible instances
-- [ ] Roadwarrior/Edge mode (on-prem node behind a NAT)
+- [ ] Roadwarrior/Edge mode (on-premises node behind a NAT)
 
 v0.10.0:
 

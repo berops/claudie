@@ -228,3 +228,29 @@ func getTypeInfoVerda(instanceTypes []verdaInstanceType) map[string]*InstanceInf
 	}
 	return m
 }
+
+// ovhFlavor is the subset of GET /cloud/project/{serviceName}/flavor used
+// for autoscaler capacity estimation. GPU count is not exposed by this
+// endpoint; users with GPU flavors set MachineSpec.NvidiaGpuCount in the
+// InputManifest, which GetCapacity() then overrides on top of this cache.
+type ovhFlavor struct {
+	ID    string `json:"id"`
+	RAM   int64  `json:"ram"`
+	VCPUs int    `json:"vcpus"`
+	Disk  int64  `json:"disk"`
+}
+
+// getTypeInfoOVH keys the lookup by flavor UUID because the OVH terraform
+// provider's `flavor.flavor_id` field accepts only UUIDs, and Claudie
+// carries that UUID through as np.ServerType.
+func getTypeInfoOVH(flavors []ovhFlavor) map[string]*InstanceInfo {
+	m := make(map[string]*InstanceInfo)
+	for _, f := range flavors {
+		m[f.ID] = &InstanceInfo{
+			cpu:    int64(f.VCPUs),
+			memory: f.RAM * gib, // OVH flavor API reports RAM in GB
+			disk:   f.Disk * gib,
+		}
+	}
+	return m
+}

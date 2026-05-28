@@ -89,6 +89,8 @@ func (pr *Provider) Credentials() string {
 		return p.Cloudrift.Token
 	case *Provider_Verda:
 		return p.Verda.ClientSecret
+	case *Provider_Ovh:
+		return p.Ovh.ClientSecret
 	default:
 		panic(fmt.Sprintf("unexpected type %T", pr.ProviderType))
 	}
@@ -189,6 +191,16 @@ func (pr *Provider) CopyCredentials(other *Provider) (updated bool) {
 		p.Verda.ClientId = o.Verda.ClientId
 		p.Verda.ClientSecret = o.Verda.ClientSecret
 		p.Verda.BaseUrl = o.Verda.BaseUrl
+		updated = true
+	case *Provider_Ovh:
+		o, ok := other.ProviderType.(*Provider_Ovh)
+		if !ok {
+			return
+		}
+
+		p.Ovh.ClientId = o.Ovh.ClientId
+		p.Ovh.ClientSecret = o.Ovh.ClientSecret
+		p.Ovh.ServiceName = o.Ovh.ServiceName
 		updated = true
 	default:
 		// do nothing.
@@ -294,6 +306,17 @@ func (pr *Provider) CredentialsEqual(other *Provider) (equal bool) {
 		baseURL := p.Verda.GetBaseUrl() == o.Verda.GetBaseUrl()
 
 		equal = clientID && clientSecret && baseURL
+	case *Provider_Ovh:
+		o, ok := other.ProviderType.(*Provider_Ovh)
+		if !ok {
+			return
+		}
+
+		clientID := p.Ovh.ClientId == o.Ovh.ClientId
+		clientSecret := p.Ovh.ClientSecret == o.Ovh.ClientSecret
+		serviceName := p.Ovh.ServiceName == o.Ovh.ServiceName
+
+		equal = clientID && clientSecret && serviceName
 	default:
 		// do nothing.
 	}
