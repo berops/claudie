@@ -134,20 +134,6 @@ func HealthCheckNodeReachability(
 				// Delete it from the cluster Nodes, to know we have processed it.
 				delete(clusterNodes, strippedName)
 
-				if n.Public == "" {
-					result.UnknownKubernetesNodes[np.Name] = append(result.UnknownKubernetesNodes[np.Name], NodeDescription{
-						K8sName:            strippedName,
-						Ready:              false,
-						IsStatic:           np.GetStaticNodePool() != nil,
-						NodePool:           np.Name,
-						PublicIPv4:         "",
-						IsControl:          np.IsControl,
-						LastTransitionTime: nil,
-					})
-
-					continue
-				}
-
 				if inCluster {
 					// node in the cluster.
 					if !v.Ready {
@@ -161,17 +147,7 @@ func HealthCheckNodeReachability(
 							LastTransitionTime: v.LastTransitionTime.DeepCopy(),
 						})
 					}
-				} else {
-					// in current state but not in cluster.
-					result.UnknownKubernetesNodes[np.Name] = append(result.UnknownKubernetesNodes[np.Name], NodeDescription{
-						K8sName:            strippedName,
-						Ready:              false,
-						IsStatic:           np.GetStaticNodePool() != nil,
-						NodePool:           np.Name,
-						PublicIPv4:         n.Public,
-						IsControl:          np.IsControl,
-						LastTransitionTime: nil,
-					})
+					continue
 				}
 			}
 		}
