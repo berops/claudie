@@ -120,7 +120,7 @@ kubectl exec -it <primary-mongo-pod> -n claudie -- mongosh \
   --eval "db.adminCommand({ getParameter: 1, featureCompatibilityVersion: 1 })"
 ```
 
-- The **support for kubernetes v1.32.0 is dropped**. The currently supported version are: v1.33, v1.34, v1.35. Make sure to update to at least `v1.33.x` before deploying.[#2079](https://github.com/berops/claudie/pull/2079)
+- The **support for kubernetes v1.32.x is dropped**. The currently supported version are: v1.33, v1.34, v1.35. Make sure to update to at least `v1.33.x` before deploying.[`#2079`](https://github.com/berops/claudie/pull/2079)
 
 - Added support for a new cloud provider Verda Cloud [#2088](https://github.com/berops/claudie/pull/2088)
 
