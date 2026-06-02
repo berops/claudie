@@ -128,6 +128,6 @@ kubectl exec -it <primary-mongo-pod> -n claudie -- mongosh \
 
 - Cilium will now be deployed in `eBPF` mode [#2091](https://github.com/berops/claudie/pull/2091) [#2109](https://github.com/berops/claudie/pull/2109)
 
-- General maintanance update of dependnecies. [#2080](https://github.com/berops/claudie/pull/2080), [#2107](https://github.com/berops/claudie/pull/2107)
+- General maintenance update of dependencies. [`#2080`](https://github.com/berops/claudie/pull/2080), [`#2107`](https://github.com/berops/claudie/pull/2107)
 
 - Fixed some of the workflow ordering in scheduled tasks [#2115](https://github.com/berops/claudie/pull/2115)
