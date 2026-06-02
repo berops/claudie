@@ -1,10 +1,10 @@
-certifi==2026.4.22
+certifi==2026.5.20
 charset-normalizer==3.4.7
-click==8.4.0
+click==8.4.1
 colorama==0.4.6
 fontawesome==5.10.1.post1
 ghp-import==2.1.0
-idna==3.15
+idna==3.17
 Jinja2==3.1.6
 Markdown==3.10.2
 MarkupSafe==3.0.3
