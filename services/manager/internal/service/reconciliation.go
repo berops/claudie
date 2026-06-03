@@ -181,9 +181,9 @@ func reconciliate(pending *spec.Config, desiredStates map[string]*spec.Clusters)
 				// Check historical counters for any loopback changes that
 				// needs to be done before looking at scheduling tasks,
 				for np, counter := range state.Counters.K8SNodePoolScaleUpFailed {
-					// If a nodepool fails to scale up 3x reset the `TargetSize`
+					// If a nodepool fails to scale up, reset the `TargetSize`
 					// of the autoscaled nodepool back to the current size.
-					if counter > 2 {
+					if counter > 0 {
 						nodepool := nodepools.FindByName(np, current.K8S.ClusterInfo.NodePools)
 						if nodepool == nil {
 							// Nodepool is missing from current state, remove counter.

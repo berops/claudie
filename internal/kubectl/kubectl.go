@@ -17,6 +17,9 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// NoRetries indicates no retries should be performed when passed to the [Kubectl.MaxKubectlRetries] value.
+const NoRetries = -1
+
 // Kubeconfig - the kubeconfig of the cluster as a string
 // when left empty, kuber uses default kubeconfig,
 // MaxKubectlRetries when unset/set=0 will use defaultMaxKubectlRetries = 10

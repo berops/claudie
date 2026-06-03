@@ -82,7 +82,7 @@ func Reconcile(
 func removeKubeProxy(logger zerolog.Logger, clusterId, kubeconfig string) {
 	k := kubectl.Kubectl{
 		Kubeconfig:        kubeconfig,
-		MaxKubectlRetries: -1,
+		MaxKubectlRetries: kubectl.NoRetries,
 	}
 
 	k.Stdout = command.GetStdOut(clusterId)
