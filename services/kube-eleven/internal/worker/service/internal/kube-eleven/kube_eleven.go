@@ -195,11 +195,10 @@ func (k *KubeEleven) getClusterNodes() []*NodepoolInfo {
 				Zone:              sanitise.String(nodepool.GetDynamicNodePool().Zone),
 				CloudProviderName: sanitise.String(nodepool.GetDynamicNodePool().Provider.CloudProviderName),
 				ProviderName:      sanitise.String(nodepool.GetDynamicNodePool().Provider.SpecName),
-				Nodes: getNodeData(nodepool.Nodes, func(name string) string {
+				Nodes: getNodeData(nodepool, func(name string) string {
 					return strings.TrimPrefix(name, fmt.Sprintf("%s-", k.K8sCluster.ClusterInfo.Id()))
 				}),
 				IsDynamic: true,
-				SshPort:   nodepools.SSHPort(nodepool),
 			}
 		} else if nodepool.GetStaticNodePool() != nil {
 			nodepoolInfo = &NodepoolInfo{
@@ -208,9 +207,8 @@ func (k *KubeEleven) getClusterNodes() []*NodepoolInfo {
 				Zone:              sanitise.String(staticZone),
 				CloudProviderName: sanitise.String(staticProvider),
 				ProviderName:      sanitise.String(staticProviderName),
-				Nodes:             getNodeData(nodepool.Nodes, func(s string) string { return s }),
+				Nodes:             getNodeData(nodepool, func(s string) string { return s }),
 				IsDynamic:         false,
-				SshPort:           nodepools.SSHPort(nodepool),
 			}
 		}
 		nodepoolInfos = append(nodepoolInfos, nodepoolInfo)
@@ -235,11 +233,15 @@ func (k *KubeEleven) apiEndpoint() (string, bool, error) {
 }
 
 // getNodeData return template data for the nodes from the cluster.
-func getNodeData(nodes []*spec.Node, nameFunc func(string) string) []*NodeInfo {
-	n := make([]*NodeInfo, 0, len(nodes))
-	for _, node := range nodes {
+func getNodeData(nodepool *spec.NodePool, nameFunc func(string) string) []*NodeInfo {
+	n := make([]*NodeInfo, 0, len(nodepool.Nodes))
+	for _, node := range nodepool.Nodes {
 		nodeName := nameFunc(node.Name)
-		n = append(n, &NodeInfo{Name: nodeName, Node: node})
+		n = append(n, &NodeInfo{
+			Name:    nodeName,
+			Node:    node,
+			SshPort: nodepools.NodeSSHPort(nodepool, node),
+		})
 	}
 	return n
 }

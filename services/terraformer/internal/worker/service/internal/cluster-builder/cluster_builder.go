@@ -131,7 +131,7 @@ func (c ClusterBuilder) ReconcileNodePools() error {
 				if target != n.Name {
 					continue
 				}
-				ip, port, err := parseNodeOutput(val)
+				ip, sshPort, wgPort, err := parseNodeOutput(val)
 				if err != nil {
 					return fmt.Errorf("node %q from nodepool %q: %w", n.Name, nodepool.Name, err)
 				}
@@ -140,8 +140,11 @@ func (c ClusterBuilder) ReconcileNodePools() error {
 				}
 				found = true
 				n.Public = ip
-				if port > 0 {
-					nodepool.SshPort = port
+				if sshPort > 0 {
+					n.SshPort = sshPort
+				}
+				if wgPort > 0 {
+					n.WireguardPort = wgPort
 				}
 				break
 			}
@@ -296,31 +299,47 @@ func (c *ClusterBuilder) generateFiles(clusterDir string) error {
 	return nil
 }
 
-// parseNodeOutput extracts the IP and optional SSH port from a terraform output value.
-// Old templates output a string (just IP), new templates output [IP, port].
-func parseNodeOutput(val any) (ip string, port int32, err error) {
+// parseNodeOutput extracts the IP and optional per-node SSH and WireGuard ports
+// from a terraform output value. Templates may output any of:
+//   - a string (just the IP)
+//   - [IP, sshPort]
+//   - [IP, sshPort, wireguardPort]
+//
+// The ports are used by shared-IP / NAT nodes (e.g. CloudRift) where each VM is
+// reached on its own mapped host port. A zero/absent port means "use the default".
+func parseNodeOutput(val any) (ip string, sshPort, wgPort int32, err error) {
 	switch v := val.(type) {
 	case string:
-		return v, 0, nil
+		return v, 0, 0, nil
 	case []any:
 		if len(v) == 0 {
-			return "", 0, fmt.Errorf("empty output array")
+			return "", 0, 0, fmt.Errorf("empty output array")
 		}
 		ipStr := fmt.Sprint(v[0])
 		if len(v) >= 2 {
-			portStr := fmt.Sprint(v[1])
-			var p int
-			if _, err := fmt.Sscanf(portStr, "%d", &p); err == nil && p > 0 {
-				return ipStr, int32(p), nil
-			}
+			sshPort = parsePort(v[1])
 		}
-		return ipStr, 0, nil
+		if len(v) >= 3 {
+			wgPort = parsePort(v[2])
+		}
+		return ipStr, sshPort, wgPort, nil
 	default:
 		if val == nil {
-			return "", 0, fmt.Errorf("nil output value")
+			return "", 0, 0, fmt.Errorf("nil output value")
 		}
-		return fmt.Sprint(val), 0, nil
+		return fmt.Sprint(val), 0, 0, nil
 	}
+}
+
+// parsePort parses a terraform output element into a positive port number,
+// returning 0 when it is empty, null, or not a valid port.
+func parsePort(val any) int32 {
+	portStr := fmt.Sprint(val)
+	var p int
+	if _, err := fmt.Sscanf(portStr, "%d", &p); err == nil && p > 0 {
+		return int32(p)
+	}
+	return 0
 }
 
 // readIPs reads json output format from tofu and unmarshal it into map[string]map[string]string readable by Go.
