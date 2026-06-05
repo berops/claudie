@@ -31,6 +31,8 @@ var (
 var (
 	operatorHostname = envs.GetOrDefault("OPERATOR_HOSTNAME", defaultOperatorHostname)
 	operatorPort     = envs.GetOrDefault("OPERATOR_PORT", defaultOperatorPort)
+	managerHostname  = envs.GetOrDefault("MANAGER_HOSTNAME", defaultManagerHostname)
+	managerPort      = envs.GetOrDefault("MANAGER_PORT", defaultManagerPort)
 )
 
 const (
@@ -45,6 +47,12 @@ const (
 
 	// Default port for Claudie operator.
 	defaultOperatorPort = "50058"
+
+	// Default hostname for Claudie manager.
+	defaultManagerHostname = "manager"
+
+	// Default port for Claudie manager.
+	defaultManagerPort = "50055"
 
 	// CA registry address to query for tags
 	clusterAutoscalerRegistry = "https://registry.k8s.io/v2/autoscaling/cluster-autoscaler/tags/list"
@@ -70,6 +78,8 @@ type autoscalerDeploymentData struct {
 	KubernetesVersion string
 	OperatorHostname  string
 	OperatorPort      string
+	ManagerHostname   string
+	ManagerPort       string
 }
 
 // TagResponse will carry the information about cluster-autoscaler tags
@@ -146,6 +156,8 @@ func (a *AutoscalerManager) generateFiles() error {
 			KubernetesVersion: version,
 			OperatorHostname:  operatorHostname,
 			OperatorPort:      operatorPort,
+			ManagerHostname:   managerHostname,
+			ManagerPort:       managerPort,
 		}
 
 		tpl = templateUtils.Templates{Directory: a.directory}
@@ -282,6 +294,8 @@ func Manifests(projectName string, c *spec.K8Scluster) ([]unstructured.Unstructu
 			KubernetesVersion: version,
 			OperatorHostname:  operatorHostname,
 			OperatorPort:      operatorPort,
+			ManagerHostname:   managerHostname,
+			ManagerPort:       managerPort,
 		}
 
 		tpl = templateUtils.Templates{}
