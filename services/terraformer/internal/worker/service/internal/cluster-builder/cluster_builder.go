@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/fileutils"
@@ -315,7 +317,10 @@ func parseNodeOutput(val any) (ip string, sshPort, wgPort int32, err error) {
 		if len(v) == 0 {
 			return "", 0, 0, fmt.Errorf("empty output array")
 		}
-		ipStr := fmt.Sprint(v[0])
+		ipStr, ok := v[0].(string)
+		if !ok || ipStr == "" {
+			return "", 0, 0, fmt.Errorf("invalid IP value type %T", v[0])
+		}
 		if len(v) >= 2 {
 			sshPort = parsePort(v[1])
 		}
@@ -327,19 +332,18 @@ func parseNodeOutput(val any) (ip string, sshPort, wgPort int32, err error) {
 		if val == nil {
 			return "", 0, 0, fmt.Errorf("nil output value")
 		}
-		return fmt.Sprint(val), 0, 0, nil
+		return "", 0, 0, fmt.Errorf("unsupported output value type %T", val)
 	}
 }
 
 // parsePort parses a terraform output element into a positive port number,
 // returning 0 when it is empty, null, or not a valid port.
 func parsePort(val any) int32 {
-	portStr := fmt.Sprint(val)
-	var p int
-	if _, err := fmt.Sscanf(portStr, "%d", &p); err == nil && p > 0 {
-		return int32(p)
+	p, err := strconv.Atoi(strings.TrimSpace(fmt.Sprint(val)))
+	if err != nil || p < 1 || p > 65535 {
+		return 0
 	}
-	return 0
+	return int32(p)
 }
 
 // readIPs reads json output format from tofu and unmarshal it into map[string]map[string]string readable by Go.

@@ -24,6 +24,9 @@ func Test_parseNodeOutput(t *testing.T) {
 		{name: "ip + ssh + wg ports (strings)", val: []any{"1.2.3.4", "22222", "41234"}, wantIP: "1.2.3.4", wantSSHPort: 22222, wantWGPort: 41234},
 		{name: "ip only array", val: []any{"1.2.3.4"}, wantIP: "1.2.3.4"},
 		{name: "zero/invalid ports fall back to 0", val: []any{"1.2.3.4", float64(0), "notaport"}, wantIP: "1.2.3.4"},
+		{name: "port with suffix is rejected", val: []any{"1.2.3.4", "22222x", "41234x"}, wantIP: "1.2.3.4"},
+		{name: "out-of-range ports fall back to 0", val: []any{"1.2.3.4", float64(65536), float64(99999)}, wantIP: "1.2.3.4"},
+		{name: "non-string ip element errors", val: []any{float64(1234), "22222"}, wantErr: true},
 		{name: "empty array errors", val: []any{}, wantErr: true},
 		{name: "nil errors", val: nil, wantErr: true},
 	}
