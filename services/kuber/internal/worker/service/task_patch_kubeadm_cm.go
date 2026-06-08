@@ -115,7 +115,7 @@ func PatchKubeadmCM(logger zerolog.Logger, tracker Tracker) {
 		k := kubectl.Kubectl{
 			Directory:         clusterDir,
 			Kubeconfig:        action.Update.State.K8S.Kubeconfig,
-			MaxKubectlRetries: -1, // No retries.
+			MaxKubectlRetries: kubectl.NoRetries,
 		}
 
 		if err = k.KubectlApply(filepath.Base(file.Name()), "-n kube-system"); err != nil {

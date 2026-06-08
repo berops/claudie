@@ -32,7 +32,7 @@ func CiliumRolloutRestart(logger zerolog.Logger, tracker Tracker) {
 
 	kc := kubectl.Kubectl{
 		Kubeconfig:        kubeconfig,
-		MaxKubectlRetries: 5,
+		MaxKubectlRetries: 3,
 	}
 
 	if err := kc.RolloutRestart("daemonset", "cilium", "-n kube-system"); err != nil {
