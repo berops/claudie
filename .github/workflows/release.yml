@@ -124,9 +124,19 @@ jobs:
     needs: build-and-publish
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Generate installation token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: 3768808
+          private-key: ${{ secrets.GH_ISSUES_CREATION_APP_PEM }}
+          owner: berops
+          repositories: infra
       - uses: dacbd/create-issue-action@v2
         with:
-          token: ${{ secrets.GH_ISSUES_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
           org: berops
           repo: infra
           title: Upgrade Claudie version on mgmt cluster
