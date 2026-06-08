@@ -39,7 +39,7 @@ func DeleteNodes(logger zerolog.Logger, tracker Tracker) {
 func isControlNode(name string, kubeconfig string) (bool, error) {
 	kc := kubectl.Kubectl{
 		Kubeconfig:        kubeconfig,
-		MaxKubectlRetries: -1,
+		MaxKubectlRetries: kubectl.NoRetries,
 	}
 
 	type nodeOutput struct {

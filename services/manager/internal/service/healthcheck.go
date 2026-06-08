@@ -205,7 +205,7 @@ func HealthCheck(logger zerolog.Logger, state *spec.Clusters) HealthCheckStatus 
 
 	kc := kubectl.Kubectl{
 		Kubeconfig:        state.K8S.Kubeconfig,
-		MaxKubectlRetries: -1,
+		MaxKubectlRetries: kubectl.NoRetries,
 	}
 
 	out, err := kc.KubectlGet("nodes", "-ojson")

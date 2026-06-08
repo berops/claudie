@@ -100,7 +100,7 @@ func (a *AutoscalerManager) SetUpClusterAutoscaler(logger zerolog.Logger) error 
 
 	kc := kubectl.Kubectl{
 		Directory:         a.directory,
-		MaxKubectlRetries: -1,
+		MaxKubectlRetries: kubectl.NoRetries,
 	}
 
 	if logger.GetLevel() <= zerolog.DebugLevel {
@@ -123,7 +123,7 @@ func (a *AutoscalerManager) DestroyClusterAutoscaler(logger zerolog.Logger) erro
 
 	kc := kubectl.Kubectl{
 		Directory:         a.directory,
-		MaxKubectlRetries: -1,
+		MaxKubectlRetries: kubectl.NoRetries,
 	}
 
 	if err := kc.KubectlDeleteManifest(clusterAutoscalerDeployment, "-n", envs.Namespace); err != nil {

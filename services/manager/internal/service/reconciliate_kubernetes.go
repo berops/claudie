@@ -744,145 +744,6 @@ func ScheduleAdditionsInNodePools(
 
 	kuberStage = &spec.Stage{StageKind: &kuber}
 
-	for np, nodes := range diff.PartiallyAdded {
-		// If the ApiServer is on the kubernetes cluster on addition of the
-		// control plane nodes the Kubeadm config map needs to be updated which
-		// is used during the join operation of new nodes.
-		if matchedNodePool := nodepools.FindByName(np, current.K8S.ClusterInfo.NodePools); matchedNodePool != nil {
-			if opts.HasApiServer && matchedNodePool.IsControl {
-				kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, []*spec.StageKuber_SubPass{
-					{
-						Kind: spec.StageKuber_PATCH_KUBEADM,
-						Description: &spec.StageDescription{
-							About:      "Updating Kubeadm certSANs",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-					{
-						Kind: spec.StageKuber_CILIUM_RESTART,
-						Description: &spec.StageDescription{
-							About: "Rollout restart of cilium pods",
-							// Rollout restart failing is not a fatal error.
-							ErrorLevel: spec.ErrorLevel_ERROR_WARN,
-						},
-					},
-				}...)
-			}
-		} else {
-			// Not possible to add nodes into a nodepool that is not tracked.
-			continue
-		}
-
-		// This is a separate stage
-		// as it depends on the success on all of the
-		// previous stages to complete successfully.
-		//
-		// This stage commits the newly added nodes into
-		// the loadbalancers (if any) so that new traffic
-		// can be routed through them.
-		var updateLoadBalancersStage *spec.Stage
-
-		// If changes to the nodepool affects any loadbalancer
-		// also schedule a reconciliation of loadbalancers, as
-		// the envoy targets needs to be regenerated.
-	lbrefresh1:
-		for _, lb := range current.LoadBalancers.Clusters {
-			for _, r := range lb.Roles {
-				for _, tg := range r.TargetPools {
-					// Need to match against only the nodepool name without the hash.
-					dynamicNodePoolUpdate := nodepools.HasNodePoolTypeOf(tg, np)
-					// Static nodepools don't have any hashes.
-					staticNodePoolUpdate := opts.IsStatic && tg == np
-					if dynamicNodePoolUpdate || staticNodePoolUpdate {
-						updateLoadBalancersStage = &spec.Stage{
-							StageKind: &spec.Stage_Ansibler{
-								Ansibler: &spec.StageAnsibler{
-									Description: &spec.StageDescription{
-										About:      "Updating Envoy configuration on the LoadBalancers",
-										ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-									},
-									SubPasses: []*spec.StageAnsibler_SubPass{
-										{
-											Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
-											Description: &spec.StageDescription{
-												About:      "Reconciling Envoy settings after changes to nodepool",
-												ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-											},
-										},
-									},
-								},
-							},
-						}
-						break lbrefresh1
-					}
-				}
-			}
-		}
-
-		update := spec.Task_Update{
-			Update: &spec.Update{
-				State: &spec.Update_State{
-					K8S:           inFlight.K8S,
-					LoadBalancers: inFlight.LoadBalancers.Clusters,
-				},
-				Delta: &spec.Update_None_{},
-			},
-		}
-
-		if opts.IsStatic {
-			// For static nodes, merge the nodes already into the inFlight state,
-			// as they do not need to be build, contrary to dynamic nodes.
-			dst := nodepools.FindByName(np, inFlight.K8S.ClusterInfo.NodePools)
-			src := nodepools.FindByName(np, desired.K8S.ClusterInfo.NodePools)
-			nodepools.CopyNodes(dst, src, nodes)
-			update.Update.Delta = &spec.Update_AddedK8SNodes_{
-				AddedK8SNodes: &spec.Update_AddedK8SNodes{
-					Nodepool:    np,
-					Nodes:       nodes,
-					NewNodePool: false,
-				},
-			}
-		} else {
-			src := nodepools.FindByName(np, desired.K8S.ClusterInfo.NodePools)
-			toAdd := nodepools.CloneTargetNodes(src, nodes)
-			update.Update.Delta = &spec.Update_TfAddK8SNodes{
-				TfAddK8SNodes: &spec.Update_TerraformerAddK8SNodes{
-					Kind: &spec.Update_TerraformerAddK8SNodes_Existing_{
-						Existing: &spec.Update_TerraformerAddK8SNodes_Existing{
-							Nodepool: np,
-							Nodes:    toAdd,
-						},
-					},
-				},
-			}
-		}
-
-		var pipeline []*spec.Stage
-
-		if terraformerStage != nil {
-			pipeline = append(pipeline, terraformerStage)
-		}
-
-		pipeline = append(pipeline, ansiblerStage)
-		pipeline = append(pipeline, kubeElevenStage)
-		pipeline = append(pipeline, kuberStage)
-
-		if updateLoadBalancersStage != nil {
-			pipeline = append(pipeline, updateLoadBalancersStage)
-		}
-
-		return &spec.TaskEvent{
-			Id:        uuid.New().String(),
-			Timestamp: timestamppb.New(time.Now().UTC()),
-			Event:     spec.Event_UPDATE,
-			Task: &spec.Task{
-				Do: &update,
-			},
-			Description: fmt.Sprintf("Adding %v nodes into nodepool %s", len(nodes), np),
-			Pipeline:    pipeline,
-		}
-	}
-
 	for np, nodes := range diff.Added {
 		toAdd := nodepools.FindByName(np, desired.K8S.ClusterInfo.NodePools)
 		if toAdd == nil {
@@ -1036,6 +897,145 @@ func ScheduleAdditionsInNodePools(
 				Do: &update,
 			},
 			Description: fmt.Sprintf("Adding nodepool %s", np),
+			Pipeline:    pipeline,
+		}
+	}
+
+	for np, nodes := range diff.PartiallyAdded {
+		// If the ApiServer is on the kubernetes cluster on addition of the
+		// control plane nodes the Kubeadm config map needs to be updated which
+		// is used during the join operation of new nodes.
+		if matchedNodePool := nodepools.FindByName(np, current.K8S.ClusterInfo.NodePools); matchedNodePool != nil {
+			if opts.HasApiServer && matchedNodePool.IsControl {
+				kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, []*spec.StageKuber_SubPass{
+					{
+						Kind: spec.StageKuber_PATCH_KUBEADM,
+						Description: &spec.StageDescription{
+							About:      "Updating Kubeadm certSANs",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
+						Kind: spec.StageKuber_CILIUM_RESTART,
+						Description: &spec.StageDescription{
+							About: "Rollout restart of cilium pods",
+							// Rollout restart failing is not a fatal error.
+							ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+						},
+					},
+				}...)
+			}
+		} else {
+			// Not possible to add nodes into a nodepool that is not tracked.
+			continue
+		}
+
+		// This is a separate stage
+		// as it depends on the success on all of the
+		// previous stages to complete successfully.
+		//
+		// This stage commits the newly added nodes into
+		// the loadbalancers (if any) so that new traffic
+		// can be routed through them.
+		var updateLoadBalancersStage *spec.Stage
+
+		// If changes to the nodepool affects any loadbalancer
+		// also schedule a reconciliation of loadbalancers, as
+		// the envoy targets needs to be regenerated.
+	lbrefresh1:
+		for _, lb := range current.LoadBalancers.Clusters {
+			for _, r := range lb.Roles {
+				for _, tg := range r.TargetPools {
+					// Need to match against only the nodepool name without the hash.
+					dynamicNodePoolUpdate := nodepools.HasNodePoolTypeOf(tg, np)
+					// Static nodepools don't have any hashes.
+					staticNodePoolUpdate := opts.IsStatic && tg == np
+					if dynamicNodePoolUpdate || staticNodePoolUpdate {
+						updateLoadBalancersStage = &spec.Stage{
+							StageKind: &spec.Stage_Ansibler{
+								Ansibler: &spec.StageAnsibler{
+									Description: &spec.StageDescription{
+										About:      "Updating Envoy configuration on the LoadBalancers",
+										ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+									},
+									SubPasses: []*spec.StageAnsibler_SubPass{
+										{
+											Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
+											Description: &spec.StageDescription{
+												About:      "Reconciling Envoy settings after changes to nodepool",
+												ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+											},
+										},
+									},
+								},
+							},
+						}
+						break lbrefresh1
+					}
+				}
+			}
+		}
+
+		update := spec.Task_Update{
+			Update: &spec.Update{
+				State: &spec.Update_State{
+					K8S:           inFlight.K8S,
+					LoadBalancers: inFlight.LoadBalancers.Clusters,
+				},
+				Delta: &spec.Update_None_{},
+			},
+		}
+
+		if opts.IsStatic {
+			// For static nodes, merge the nodes already into the inFlight state,
+			// as they do not need to be build, contrary to dynamic nodes.
+			dst := nodepools.FindByName(np, inFlight.K8S.ClusterInfo.NodePools)
+			src := nodepools.FindByName(np, desired.K8S.ClusterInfo.NodePools)
+			nodepools.CopyNodes(dst, src, nodes)
+			update.Update.Delta = &spec.Update_AddedK8SNodes_{
+				AddedK8SNodes: &spec.Update_AddedK8SNodes{
+					Nodepool:    np,
+					Nodes:       nodes,
+					NewNodePool: false,
+				},
+			}
+		} else {
+			src := nodepools.FindByName(np, desired.K8S.ClusterInfo.NodePools)
+			toAdd := nodepools.CloneTargetNodes(src, nodes)
+			update.Update.Delta = &spec.Update_TfAddK8SNodes{
+				TfAddK8SNodes: &spec.Update_TerraformerAddK8SNodes{
+					Kind: &spec.Update_TerraformerAddK8SNodes_Existing_{
+						Existing: &spec.Update_TerraformerAddK8SNodes_Existing{
+							Nodepool: np,
+							Nodes:    toAdd,
+						},
+					},
+				},
+			}
+		}
+
+		var pipeline []*spec.Stage
+
+		if terraformerStage != nil {
+			pipeline = append(pipeline, terraformerStage)
+		}
+
+		pipeline = append(pipeline, ansiblerStage)
+		pipeline = append(pipeline, kubeElevenStage)
+		pipeline = append(pipeline, kuberStage)
+
+		if updateLoadBalancersStage != nil {
+			pipeline = append(pipeline, updateLoadBalancersStage)
+		}
+
+		return &spec.TaskEvent{
+			Id:        uuid.New().String(),
+			Timestamp: timestamppb.New(time.Now().UTC()),
+			Event:     spec.Event_UPDATE,
+			Task: &spec.Task{
+				Do: &update,
+			},
+			Description: fmt.Sprintf("Adding %v nodes into nodepool %s", len(nodes), np),
 			Pipeline:    pipeline,
 		}
 	}

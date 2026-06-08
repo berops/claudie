@@ -87,7 +87,7 @@ func (s *Secret) Apply(namespace string) error {
 	kubectl := kubectl.Kubectl{
 		// setting empty string for kubeconfig will create secret on same cluster where claudie is running
 		Kubeconfig:        "",
-		MaxKubectlRetries: -1,
+		MaxKubectlRetries: kubectl.NoRetries,
 	}
 
 	if envs.LogLevel != "info" {
