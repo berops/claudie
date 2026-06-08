@@ -2,7 +2,7 @@
 
 # Multi-cloud Kubernetes Redefined
 
-Build multi-cloud and hybrid-cloud Kubernetes clusters that mix and match nodepools across AWS, GCP, Azure, Hetzner, and more, managed through a single InputManifest.
+Build multi-cloud, hybrid-cloud, and on-premises Kubernetes clusters that mix and match nodepools across AWS, GCP, Azure, Hetzner, across your own bare-metal servers, and more, managed through a single InputManifest.
 
 [Get Started](./getting-started/get-started-using-claudie.md){ .md-button .md-button--primary }
 [GitHub](https://github.com/berops/claudie){ .md-button }
@@ -21,7 +21,7 @@ Build multi-cloud and hybrid-cloud Kubernetes clusters that mix and match nodepo
 
 ## What is Claudie
 
-Claudie is a platform for managing multi-cloud and hybrid-cloud Kubernetes clusters. These Kubernetes clusters can mix and match nodepools from various cloud providers, e.g. a single cluster can have a nodepool in AWS, another in GCP and another one on-premises. This is our opinionated way to build multi-cloud and hybrid-cloud Kubernetes infrastructure. On top of that Claudie supports Cluster Autoscaler on the managed clusters.
+Claudie is a platform for managing multi-cloud, hybrid-cloud, and on-premises Kubernetes clusters. In a single cluster you can mix and match nodepools from various cloud providers and your own on-premises or bare-metal servers, e.g. a nodepool in AWS, another one in GCP, and a third one running on hardware in your own datacenter. This is our opinionated way to build multi-cloud, hybrid-cloud, and on-premises Kubernetes infrastructure. On top of that, Claudie supports Cluster Autoscaler on the managed clusters. See the [On-Premises provider docs](./input-manifest/providers/on-premises.md) for how to attach your own machines.
 
 ## Supported Providers
 
@@ -37,6 +37,7 @@ Claudie is a platform for managing multi-cloud and hybrid-cloud Kubernetes clust
 [![OpenStack](https://img.shields.io/badge/OpenStack-ED1944?style=for-the-badge)](./input-manifest/providers/openstack.md)
 [![CloudRift](https://img.shields.io/badge/CloudRift-2e7da8?style=for-the-badge)](./input-manifest/providers/cloudrift.md)
 [![Verda](https://img.shields.io/badge/Verda-0E8C6B?style=for-the-badge)](./input-manifest/providers/verda.md)
+[![On-Premises](https://img.shields.io/badge/On--Premises-555555?style=for-the-badge)](./input-manifest/providers/on-premises.md)
 
 </div>
 
@@ -49,17 +50,19 @@ Claudie has been built as an answer to the following Kubernetes challenges:
 * Managed Kubernetes for providers that do not offer it
 * Cloud bursting
 * Service interconnect
+* On-premises & hybrid integration - extend existing bare-metal, co-located, or private-datacenter servers into a Kubernetes cluster alongside cloud nodepools
 * GPU & AI/ML workloads - Provision GPU nodes across multiple clouds, run NVIDIA GPU Operator, and leverage Cluster Autoscaler for GPU-aware scaling
 
 You can read more [here](./use-cases/use-cases.md).
 
 ## Features
 
-* Manage multi-cloud and hybrid-cloud Kubernetes clusters
+* Manage multi-cloud, hybrid-cloud, and on-premises Kubernetes clusters
 * Management via IaC
 * Fast scale-up/scale-down of your infrastructure
 * Loadbalancing
 * Persistent storage volumes
+* On-premises & bare-metal nodepools - integrate your existing servers as first-class cluster nodes via SSH ([details](./input-manifest/providers/on-premises.md))
 * GPU workload support - Deploy GPU-accelerated nodepools with NVIDIA GPU Operator compatibility and autoscaler-aware GPU scheduling
 
 See more in How Claudie works sections.
@@ -67,6 +70,10 @@ See more in How Claudie works sections.
 !!! tip "AI/ML Ready Infrastructure"
 
     Claudie lets you build GPU clusters that span multiple cloud providers, combining cost-effective GPU instances from different vendors into a single Kubernetes cluster. It comes with the NVIDIA GPU Operator and Cluster Autoscaler for scalable production-ready AI/ML workloads.
+
+!!! tip "Bring Your Own Hardware"
+
+    Already running on-premises or co-located servers? Claudie treats them as first-class nodepools. Add them to any cluster alongside AWS, GCP, Azure, and other cloud nodepools using the [On-Premises provider](./input-manifest/providers/on-premises.md), all from the same InputManifest.
 
 ## What to do next
 

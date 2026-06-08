@@ -158,8 +158,8 @@ spec:
                               type: array
                             dnsZone:
                               description: DNS zone inside of which the records will
-                                be created. GCP/AWS/OCI/Azure/Cloudflare/Hetzner DNS
-                                zone is accepted
+                                be created. GCP/AWS/OCI/Azure/Cloudflare/Hetzner/OVH
+                                DNS zone is accepted
                               type: string
                             hostname:
                               description: Custom hostname for your A record. If left
@@ -536,6 +536,7 @@ spec:
                       - exoscale
                       - cloudrift
                       - verda
+                      - ovh
                       type: string
                     secretRef:
                       description: |-

@@ -19,7 +19,7 @@ func DeleteKubeconfig(clusters *spec.Clusters) error {
 	}
 
 	kc := kubectl.Kubectl{
-		MaxKubectlRetries: -1,
+		MaxKubectlRetries: kubectl.NoRetries,
 	}
 
 	kc.Stdout = comm.GetStdOut(clusterID)

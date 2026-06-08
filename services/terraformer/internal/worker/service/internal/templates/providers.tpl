@@ -73,5 +73,11 @@ terraform {
       version = "~> 0.11"
     }
     {{- end }}
+    {{- if .OVH }}
+    ovh = {
+      source  = "ovh/ovh"
+      version = "~> 2.13"
+    }
+    {{- end }}
   }
 }

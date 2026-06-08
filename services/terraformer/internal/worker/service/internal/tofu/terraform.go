@@ -19,7 +19,7 @@ import (
 // maxTfCommandRetryCount is the maximum amount a Tofu command can be repeated until
 // it succeeds. If after "maxTfCommandRetryCount" retries the commands still fails an error should be
 // returned containing the reason.
-const maxTfCommandRetryCount = 3
+const maxTfCommandRetryCount = 1
 
 // Parallelism is the number of resource to be work on in parallel during the apply/destroy commands.
 var parallelism = envs.GetOrDefaultInt("TERRAFORMER_TOFU_PARALLELISM", 40)

@@ -108,8 +108,9 @@ nav:
           - Hetzner: input-manifest/providers/hetzner.md
           - OCI: input-manifest/providers/oci.md
           - Openstack: input-manifest/providers/openstack.md
+          - OVHcloud: input-manifest/providers/ovh.md
           - Verda: input-manifest/providers/verda.md
-          - On Premise: input-manifest/providers/on-prem.md
+          - On-Premises: input-manifest/providers/on-premises.md
       - External templates: input-manifest/external-templates.md
       - API reference: input-manifest/api-reference.md
       - Custom namespace: input-manifest/claudie-custom-ns.md
@@ -127,6 +128,7 @@ nav:
       - Roadmap: roadmap/roadmap.md
       - Contributing: contributing/contributing.md
       - Changelog:
+          - v0.13: CHANGELOG/changelog-0.13.x.md
           - v0.12: CHANGELOG/changelog-0.12.x.md
           - v0.11: CHANGELOG/changelog-0.11.x.md
           - v0.10: CHANGELOG/changelog-0.10.x.md

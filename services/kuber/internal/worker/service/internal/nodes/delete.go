@@ -58,13 +58,13 @@ type Deleter struct {
 	controlNode   string
 }
 
-// New returns new Deleter struct, used for node deletion from a k8s cluster
+// New returns new [Deleter] struct, used for node deletion from a k8s cluster
 // The passed in [spec.K8Scluster] is not modified in any way by any of the
-// functions of the deleter. Simply the passed in masterNodes and workerNodes
+// functions of the deleter. The passed in deleteMaster and deleteWorker nodes
 // are being worked with to delete them from the kubernetes cluster via the
 // kubeconfig of the [spec.K8Scluster].
 func NewDeleter(
-	deleteMaster, deleteWorker []string,
+	deleteMaster, deleteWorker []*spec.Node,
 	cluster *spec.K8Scluster,
 ) (*Deleter, error) {
 	var (
@@ -74,17 +74,17 @@ func NewDeleter(
 
 	for i := range deleteMaster {
 		mn = append(mn, nodeInfo{
-			fullname:       deleteMaster[i],
-			k8sName:        strings.TrimPrefix(deleteMaster[i], fmt.Sprintf("%s-", clusterID)),
-			publicEndpoint: clusters.NodePublic(deleteMaster[i], cluster),
+			fullname:       deleteMaster[i].Name,
+			k8sName:        strings.TrimPrefix(deleteMaster[i].Name, fmt.Sprintf("%s-", clusterID)),
+			publicEndpoint: deleteMaster[i].Public,
 		})
 	}
 
 	for i := range deleteWorker {
 		wn = append(wn, nodeInfo{
-			fullname:       deleteWorker[i],
-			k8sName:        strings.TrimPrefix(deleteWorker[i], fmt.Sprintf("%s-", clusterID)),
-			publicEndpoint: clusters.NodePublic(deleteWorker[i], cluster),
+			fullname:       deleteWorker[i].Name,
+			k8sName:        strings.TrimPrefix(deleteWorker[i].Name, fmt.Sprintf("%s-", clusterID)),
+			publicEndpoint: deleteWorker[i].Public,
 		})
 	}
 
@@ -92,7 +92,9 @@ func NewDeleter(
 	var notDeleted string
 	for cn := range nodepools.Control(cluster.ClusterInfo.NodePools) {
 		for _, n := range cn.Nodes {
-			if !slices.Contains(deleteMaster, n.Name) {
+			if !slices.ContainsFunc(deleteMaster, func(o *spec.Node) bool { return o.Name == n.Name }) {
+				// pick the first control node as the ones
+				// deleted are no longer in the cluster's state.
 				notDeleted = n.Name
 				break
 			}

@@ -93,6 +93,8 @@ func (r *DynamicNodePoolResolver) resolve(np *spec.DynamicNodePool) (Arch, error
 		return resolveCloudRift(np)
 	case "verda":
 		return resolveVerda(np)
+	case "ovh":
+		return resolveOVH(np)
 	default:
 		return "", fmt.Errorf("%q not supported", np.GetProvider().GetCloudProviderName())
 	}
@@ -116,6 +118,11 @@ func resolveCloudRift(np *spec.DynamicNodePool) (Arch, error) {
 
 func resolveVerda(np *spec.DynamicNodePool) (Arch, error) {
 	// Verda primarily offers AMD64/GPU instances.
+	return Amd64, nil
+}
+
+func resolveOVH(np *spec.DynamicNodePool) (Arch, error) {
+	// OVH Public Cloud offers both AMD64 and (rarely) ARM flavors; default to AMD64.
 	return Amd64, nil
 }
 

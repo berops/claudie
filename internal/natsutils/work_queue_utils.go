@@ -22,13 +22,19 @@ type ReplyMsg struct {
 	Cluster string
 
 	// TaskID is the ID from the picked up [nats.Msg], that was received
-	// via the [nats.MsgIdHdr]. This is the actuall ID of the task that was
+	// via the [nats.MsgIdHdr]. This is the actual ID of the task that was
 	// scheduled by the manager and this information is given back to the reply
 	// channel in the header [WorkID]. This ID is also used to construct the ID
-	// of the reply message, as each deplication tracking of messages is stream-wide
-	// each stage needs to have its own ID, thus a simply concatenation of the
+	// of the reply message. NATS tracks duplication of messages stream-wide
+	// thus each stage needs to have its own ID, thus a simply concatenation of the
 	// fmt.Sprintf("%v-%v", TaskID, Subject) is used.
 	TaskID string
+
+	// Stage is the Stage extracted from the [nats.Msg] that was received
+	// via the [nats.MsgIdHdr]. This is the actual stage of the task that
+	// is being processed and this information is given back to the reply
+	// channel in the header [Stage].
+	Stage string
 
 	// To which subject should the reply be send to.
 	Subject string
@@ -56,13 +62,14 @@ func ReplyTo(
 	// Duplicate messages are tracked jetstream-wide thus each stage
 	// needs its own ID for it to not be considered as a duplicate if
 	// send to another stage.
-	replyMsgID := fmt.Sprintf("%v-%v", result.TaskID, result.Subject)
+	replyMsgID := fmt.Sprintf("%v-%v-%v", result.TaskID, result.Subject, result.Stage)
 
 	headers := nats.Header{}
 	headers.Set(nats.MsgIdHdr, replyMsgID)
 	headers.Set(WorkID, result.TaskID)
 	headers.Set(InputManifestName, result.InputManifest)
 	headers.Set(ClusterName, result.Cluster)
+	headers.Set(Stage, result.Stage)
 
 	msg := nats.Msg{
 		Subject: result.Subject,

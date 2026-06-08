@@ -20,7 +20,7 @@ func DeleteClusterMetadata(clusters *spec.Clusters) error {
 	}
 
 	kc := kubectl.Kubectl{
-		MaxKubectlRetries: -1,
+		MaxKubectlRetries: kubectl.NoRetries,
 		Stdout:            comm.GetStdOut(clusterID),
 		Stderr:            comm.GetStdErr(clusterID),
 	}
