@@ -1,0 +1,1524 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: streams.jetstream.nats.io
+  labels:
+    app.kubernetes.io/part-of: claudie
+spec:
+  group: jetstream.nats.io
+  scope: Namespaced
+  names:
+    kind: Stream
+    singular: stream
+    plural: streams
+  versions:
+    - name: v1beta2
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                name:
+                  description: A unique name for the Stream.
+                  type: string
+                  pattern: "^[^.*>]*$"
+                  minLength: 1
+                description:
+                  description: The description of the stream.
+                  type: string
+                subjects:
+                  description: A list of subjects to consume, supports wildcards.
+                  type: array
+                  minLength: 1
+                  items:
+                    type: string
+                    minLength: 1
+                retention:
+                  description: How messages are retained in the Stream, once this is exceeded old messages are removed.
+                  type: string
+                  enum:
+                    - limits
+                    - interest
+                    - workqueue
+                  default: limits
+                maxConsumers:
+                  description: How many Consumers can be defined for a given Stream. -1 for unlimited.
+                  type: integer
+                  minimum: -1
+                  default: -1
+                maxMsgs:
+                  description: How many messages may be in a Stream, oldest messages will be removed if the Stream exceeds this size. -1 for unlimited.
+                  type: integer
+                  minimum: -1
+                  default: -1
+                maxBytes:
+                  description: How big the Stream may be, when the combined stream size exceeds this old messages are removed. -1 for unlimited.
+                  type: integer
+                  minimum: -1
+                  default: -1
+                discard:
+                  description: When a Stream reach it's limits either old messages are deleted or new ones are denied.
+                  type: string
+                  enum:
+                    - old
+                    - new
+                  default: old
+                discardPerSubject:
+                  description: Applies discard policy on a per-subject basis. Requires discard policy 'new' and 'maxMsgs' to be set.
+                  type: boolean
+                  default: false
+                maxAge:
+                  description: Maximum age of any message in the stream, expressed in Go's time.Duration format. Empty for unlimited.
+                  type: string
+                  default: ""
+                maxMsgsPerSubject:
+                  description: The maximum number of messages per subject.
+                  type: integer
+                  default: 0
+                maxMsgSize:
+                  description: The largest message that will be accepted by the Stream. -1 for unlimited.
+                  type: integer
+                  minimum: -1
+                  default: -1
+                storage:
+                  description: The storage backend to use for the Stream.
+                  type: string
+                  enum:
+                    - file
+                    - memory
+                  default: memory
+                replicas:
+                  description: How many replicas to keep for each message.
+                  type: integer
+                  minimum: 1
+                  default: 1
+                noAck:
+                  description: Disables acknowledging messages that are received by the Stream.
+                  type: boolean
+                  default: false
+                duplicateWindow:
+                  description: The duration window to track duplicate messages for.
+                  type: string
+                placement:
+                  description: A stream's placement.
+                  type: object
+                  properties:
+                    cluster:
+                      type: string
+                    tags:
+                      type: array
+                      items:
+                        type: string
+                mirror:
+                  description: A stream mirror.
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    optStartSeq:
+                      type: integer
+                    optStartTime:
+                      description: Time format must be RFC3339.
+                      type: string
+                    filterSubject:
+                      type: string
+                    externalApiPrefix:
+                      type: string
+                    externalDeliverPrefix:
+                      type: string
+                    subjectTransforms:
+                      description: List of subject transforms for this mirror.
+                      type: array
+                      items:
+                        description: A subject transform pair.
+                        type: object
+                        properties:
+                          source:
+                            description: Source subject.
+                            type: string
+                          dest:
+                            description: Destination subject.
+                            type: string
+                sources:
+                  description: A stream's sources.
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      optStartSeq:
+                        type: integer
+                      optStartTime:
+                        description: Time format must be RFC3339.
+                        type: string
+                      filterSubject:
+                        type: string
+                      externalApiPrefix:
+                        type: string
+                      externalDeliverPrefix:
+                        type: string
+                      subjectTransforms:
+                        description: List of subject transforms for this mirror.
+                        type: array
+                        items:
+                          description: A subject transform pair.
+                          type: object
+                          properties:
+                            source:
+                              description: Source subject.
+                              type: string
+                            dest:
+                              description: Destination subject.
+                              type: string
+                sealed:
+                  description: Seal an existing stream so no new messages may be added.
+                  type: boolean
+                  default: false
+                denyDelete:
+                  description: When true, restricts the ability to delete messages from a stream via the API. Cannot be changed once set to true.
+                  type: boolean
+                  default: false
+                denyPurge:
+                  description: When true, restricts the ability to purge a stream via the API. Cannot be changed once set to true.
+                  type: boolean
+                  default: false
+                allowRollup:
+                  description: When true, allows the use of the Nats-Rollup header to replace all contents of a stream, or subject in a stream, with a single new message.
+                  type: boolean
+                  default: false
+                compression:
+                  description: Stream specific compression.
+                  type: string
+                  enum:
+                    - s2
+                    - none
+                    - ""
+                  default: ""
+                firstSequence:
+                  description: Sequence number from which the Stream will start.
+                  type: number
+                  default: 0
+                subjectTransform:
+                  description: SubjectTransform is for applying a subject transform (to matching messages) when a new message is received.
+                  type: object
+                  properties:
+                    source:
+                      type: string
+                      description: Source subject.
+                    dest:
+                      type: string
+                      description: Destination subject to transform into.
+                republish:
+                  description: Republish configuration of the stream.
+                  type: object
+                  properties:
+                    destination:
+                      type: string
+                      description: Messages will be additionally published to this subject.
+                    source:
+                      type: string
+                      description: Messages will be published from this subject to the destination subject.
+                allowDirect:
+                  description: When true, allow higher performance, direct access to get individual messages.
+                  type: boolean
+                  default: false
+                mirrorDirect:
+                  description: When true, enables direct access to messages from the origin stream.
+                  type: boolean
+                  default: false
+                allowMsgTtl:
+                  description: When true, allows header initiated per-message TTLs. If disabled, then the `NATS-TTL` header will be ignored.
+                  type: boolean
+                  default: false
+                subjectDeleteMarkerTtl:
+                  description: Enables and sets a duration for adding server markers for delete, purge and max age limits.
+                  type: string
+                  default: ""
+                allowMsgCounter:
+                  description: When true, enables message counters for the stream.
+                  type: boolean
+                  default: false
+                allowAtomicPublish:
+                  description: When true, enables atomic batch publishing.
+                  type: boolean
+                  default: false
+                allowMsgSchedules:
+                  description: When true, enables message scheduling.
+                  type: boolean
+                  default: false
+                persistMode:
+                  description: Configures stream persistence settings (async or default).
+                  type: string
+                  default: ""
+                consumerLimits:
+                  type: object
+                  properties:
+                    inactiveThreshold:
+                      description: The duration of inactivity after which a consumer is considered inactive.
+                      type: string
+                    maxAckPending:
+                      description: Maximum number of outstanding unacknowledged messages.
+                      type: integer
+                metadata:
+                  description: Additional Stream metadata.
+                  type: object
+                  additionalProperties:
+                    type: string
+                account:
+                  description: Name of the account to which the Stream belongs.
+                  type: string
+                  pattern: "^[^.*>]*$"
+                creds:
+                  description: NATS user credentials for connecting to servers. Please make sure your controller has mounted the creds on this path.
+                  type: string
+                  default: ""
+                nkey:
+                  description: NATS user NKey for connecting to servers.
+                  type: string
+                  default: ""
+                preventDelete:
+                  description: When true, the managed Stream will not be deleted when the resource is deleted.
+                  type: boolean
+                  default: false
+                preventUpdate:
+                  description: When true, the managed Stream will not be updated when the resource is updated.
+                  type: boolean
+                  default: false
+                servers:
+                  description: A list of servers for creating stream.
+                  type: array
+                  items:
+                    type: string
+                  default: []
+                tls:
+                  description: A client's TLS certs and keys.
+                  type: object
+                  properties:
+                    clientCert:
+                      description: A client's cert filepath. Should be mounted.
+                      type: string
+                    clientKey:
+                      description: A client's key filepath. Should be mounted.
+                      type: string
+                    rootCas:
+                      description: A list of filepaths to CAs. Should be mounted.
+                      type: array
+                      items:
+                        type: string
+                tlsFirst:
+                  description: When true, the KV Store will initiate TLS before server INFO.
+                  type: boolean
+                  default: false
+                jsDomain:
+                  description: The JetStream domain to use for the stream.
+                  type: string
+            status:
+              type: object
+              properties:
+                observedGeneration:
+                  type: integer
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                      reason:
+                        type: string
+                      message:
+                        type: string
+      additionalPrinterColumns:
+        - name: State
+          type: string
+          description: The current state of the stream.
+          jsonPath: .status.conditions[?(@.type == 'Ready')].reason
+        - name: Stream Name
+          type: string
+          description: The name of the JetStream Stream.
+          jsonPath: .spec.name
+        - name: Subjects
+          type: string
+          description: The subjects this Stream produces.
+          jsonPath: .spec.subjects
+    - name: v1beta1
+      served: false
+      storage: false
+      subresources:
+        status: {}
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                name:
+                  description: A unique name for the Stream.
+                  type: string
+                  pattern: "^[^.*>]*$"
+                  minLength: 1
+                subjects:
+                  description: A list of subjects to consume, supports wildcards.
+                  type: array
+                  minLength: 1
+                  items:
+                    type: string
+                    minLength: 1
+                retention:
+                  description: How messages are retained in the Stream, once this is exceeded old messages are removed.
+                  type: string
+                  enum:
+                    - limits
+                    - interest
+                    - workqueue
+                  default: limits
+                maxConsumers:
+                  description: How many Consumers can be defined for a given Stream. -1 for unlimited.
+                  type: integer
+                  minimum: -1
+                  default: -1
+                maxMsgs:
+                  description: How many messages may be in a Stream, oldest messages will be removed if the Stream exceeds this size. -1 for unlimited.
+                  type: integer
+                  minimum: -1
+                  default: -1
+                maxBytes:
+                  description: How big the Stream may be, when the combined stream size exceeds this old messages are removed. -1 for unlimited.
+                  type: integer
+                  minimum: -1
+                  default: -1
+                maxAge:
+                  description: Maximum age of any message in the stream, expressed in Go's time.Duration format. Empty for unlimited.
+                  type: string
+                  default: ""
+                maxMsgSize:
+                  description: The largest message that will be accepted by the Stream. -1 for unlimited.
+                  type: integer
+                  minimum: -1
+                  default: -1
+                storage:
+                  description: The storage backend to use for the Stream.
+                  type: string
+                  enum:
+                    - file
+                    - memory
+                  default: memory
+                replicas:
+                  description: How many replicas to keep for each message.
+                  type: integer
+                  minimum: 1
+                  default: 1
+                noAck:
+                  description: Disables acknowledging messages that are received by the Stream.
+                  type: boolean
+                  default: false
+                discard:
+                  description: When a Stream reach it's limits either old messages are deleted or new ones are denied.
+                  type: string
+                  enum:
+                    - old
+                    - new
+                  default: old
+                duplicateWindow:
+                  description: The duration window to track duplicate messages for.
+                  type: string
+                description:
+                  description: The description of the stream.
+                  type: string
+                maxMsgsPerSubject:
+                  description: The maximum number of messages per subject.
+                  type: integer
+                  default: 0
+                mirror:
+                  description: A stream mirror.
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    optStartSeq:
+                      type: integer
+                    optStartTime:
+                      description: Time format must be RFC3339.
+                      type: string
+                    filterSubject:
+                      type: string
+                    externalApiPrefix:
+                      type: string
+                    externalDeliverPrefix:
+                      type: string
+                placement:
+                  description: A stream's placement.
+                  type: object
+                  properties:
+                    cluster:
+                      type: string
+                    tags:
+                      type: array
+                      items:
+                        type: string
+                sources:
+                  description: A stream's sources.
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      optStartSeq:
+                        type: integer
+                      optStartTime:
+                        description: Time format must be RFC3339.
+                        type: string
+                      filterSubject:
+                        type: string
+                      externalApiPrefix:
+                        type: string
+                      externalDeliverPrefix:
+                        type: string
+            status:
+              type: object
+              properties:
+                observedGeneration:
+                  type: integer
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                      reason:
+                        type: string
+                      message:
+                        type: string
+      additionalPrinterColumns:
+        - name: State
+          type: string
+          description: The current state of the stream.
+          jsonPath: .status.conditions[?(@.type == 'Ready')].reason
+        - name: Stream Name
+          type: string
+          description: The name of the JetStream Stream.
+          jsonPath: .spec.name
+        - name: Subjects
+          type: string
+          description: The subjects this Stream produces.
+          jsonPath: .spec.subjects
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: consumers.jetstream.nats.io
+  labels:
+    app.kubernetes.io/part-of: claudie
+spec:
+  group: jetstream.nats.io
+  scope: Namespaced
+  names:
+    kind: Consumer
+    singular: consumer
+    plural: consumers
+  versions:
+    - name: v1beta2
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                durableName:
+                  description: The name of the Consumer.
+                  type: string
+                  pattern: "^[^.*>]+$"
+                  minLength: 1
+                streamName:
+                  description: The name of the Stream to create the Consumer in.
+                  type: string
+                deliverPolicy:
+                  type: string
+                  enum:
+                    - all
+                    - last
+                    - new
+                    # Requires optStartSeq
+                    - byStartSequence
+                    # Requires optStartTime
+                    - byStartTime
+                    - lastPerSubject
+                  default: all
+                optStartSeq:
+                  type: integer
+                  minimum: 0
+                optStartTime:
+                  description: Time format must be RFC3339.
+                  type: string
+                deliverSubject:
+                  description: The subject to deliver observed messages, when not set, a pull-based Consumer is created.
+                  type: string
+                ackPolicy:
+                  description: How messages should be acknowledged.
+                  type: string
+                  enum:
+                    - none
+                    - all
+                    - explicit
+                  default: none
+                ackWait:
+                  description: How long to allow messages to remain un-acknowledged before attempting redelivery.
+                  type: string
+                  default: 1ns
+                maxDeliver:
+                  type: integer
+                  minimum: -1
+                backoff:
+                  description: List of durations representing a retry time scale for NaK'd or retried messages.
+                  type: array
+                  items:
+                    type: string
+                filterSubject:
+                  description: Select only a specific incoming subjects, supports wildcards.
+                  type: string
+                filterSubjects:
+                  description: List of incoming subjects, supports wildcards. Available since 2.10.
+                  type: array
+                  items:
+                    type: string
+                replayPolicy:
+                  description: How messages are sent.
+                  type: string
+                  enum:
+                    - instant
+                    - original
+                  default: instant
+                sampleFreq:
+                  description: What percentage of acknowledgements should be samples for observability.
+                  type: string
+                maxWaiting:
+                  description: The number of pulls that can be outstanding on a pull consumer, pulls received after this is reached are ignored.
+                  type: integer
+                rateLimitBps:
+                  description: Rate at which messages will be delivered to clients, expressed in bit per second.
+                  type: integer
+                maxAckPending:
+                  description: Maximum pending Acks before consumers are paused.
+                  type: integer
+                deliverGroup:
+                  description: The name of a queue group.
+                  type: string
+                description:
+                  description: The description of the consumer.
+                  type: string
+                flowControl:
+                  description: Enables flow control.
+                  type: boolean
+                  default: false
+                headersOnly:
+                  description: When set, only the headers of messages in the stream are delivered, and not the bodies. Additionally, Nats-Msg-Size header is added to indicate the size of the removed payload.
+                  type: boolean
+                  default: false
+                heartbeatInterval:
+                  description: The interval used to deliver idle heartbeats for push-based consumers, in Go's time.Duration format.
+                  type: string
+                maxRequestBatch:
+                  description: The largest batch property that may be specified when doing a pull on a Pull Consumer.
+                  type: integer
+                maxRequestExpires:
+                  description: The maximum expires duration that may be set when doing a pull on a Pull Consumer.
+                  type: string
+                maxRequestMaxBytes:
+                  description: The maximum max_bytes value that maybe set when dong a pull on a Pull Consumer.
+                  type: integer
+                inactiveThreshold:
+                  description: The idle time an Ephemeral Consumer allows before it is removed.
+                  type: string
+                pauseUntil:
+                  description: RFC3339 timestamp until which the consumer should be paused.
+                  type: string
+                  default: ""
+                priorityPolicy:
+                  description: Priority policy for consumer (pinned_client, overflow, prioritized, or none).
+                  type: string
+                  default: ""
+                pinnedTtl:
+                  description: TTL for pinned client when using pinned_client priority policy.
+                  type: string
+                  default: ""
+                priorityGroups:
+                  description: List of priority groups for the consumer. For now, only one group is supported.
+                  type: array
+                  items:
+                    type: string
+                replicas:
+                  description: When set do not inherit the replica count from the stream but specifically set it to this amount.
+                  type: integer
+                memStorage:
+                  description: Force the consumer state to be kept in memory rather than inherit the setting from the stream.
+                  type: boolean
+                  default: false
+                metadata:
+                  description: Additional Consumer metadata.
+                  type: object
+                  additionalProperties:
+                    type: string
+                account:
+                  description: Name of the account to which the Consumer belongs.
+                  type: string
+                  pattern: "^[^.*>]*$"
+                creds:
+                  description: NATS user credentials for connecting to servers. Please make sure your controller has mounted the creds on its path.
+                  type: string
+                  default: ""
+                nkey:
+                  description: NATS user NKey for connecting to servers.
+                  type: string
+                  default: ""
+                preventDelete:
+                  description: When true, the managed Consumer will not be deleted when the resource is deleted.
+                  type: boolean
+                  default: false
+                preventUpdate:
+                  description: When true, the managed Consumer will not be updated when the resource is updated.
+                  type: boolean
+                  default: false
+                servers:
+                  description: A list of servers for creating consumer.
+                  type: array
+                  items:
+                    type: string
+                  default: []
+                tls:
+                  description: A client's TLS certs and keys.
+                  type: object
+                  properties:
+                    clientCert:
+                      description: A client's cert filepath. Should be mounted.
+                      type: string
+                    clientKey:
+                      description: A client's key filepath. Should be mounted.
+                      type: string
+                    rootCas:
+                      description: A list of filepaths to CAs. Should be mounted.
+                      type: array
+                      items:
+                        type: string
+                tlsFirst:
+                  description: When true, the KV Store will initiate TLS before server INFO.
+                  type: boolean
+                  default: false
+                jsDomain:
+                  description: The JetStream domain to use for the consumer.
+                  type: string
+            status:
+              type: object
+              properties:
+                observedGeneration:
+                  type: integer
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                      reason:
+                        type: string
+                      message:
+                        type: string
+      additionalPrinterColumns:
+        - name: State
+          type: string
+          description: The current state of the consumer.
+          jsonPath: .status.conditions[?(@.type == 'Ready')].reason
+        - name: Stream
+          type: string
+          description: The name of the JetStream Stream.
+          jsonPath: .spec.streamName
+        - name: Consumer
+          type: string
+          description: The name of the JetStream Consumer.
+          jsonPath: .spec.durableName
+        - name: Ack Policy
+          type: string
+          description: The ack policy.
+          jsonPath: .spec.ackPolicy
+    - name: v1beta1
+      served: false
+      storage: false
+      subresources:
+        status: {}
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                streamName:
+                  description: The name of the Stream to create the Consumer in.
+                  type: string
+                deliverPolicy:
+                  type: string
+                  enum:
+                    - all
+                    - last
+                    - new
+                    # Requires optStartSeq
+                    - byStartSequence
+                    # Requires optStartTime
+                    - byStartTime
+                  default: all
+                optStartSeq:
+                  type: integer
+                  minimum: 0
+                optStartTime:
+                  description: Time format must be RFC3339.
+                  type: string
+                durableName:
+                  description: The name of the Consumer.
+                  type: string
+                  pattern: "^[^.*>]+$"
+                  minLength: 1
+                deliverSubject:
+                  description: The subject to deliver observed messages, when not set, a pull-based Consumer is created.
+                  type: string
+                ackPolicy:
+                  description: How messages should be acknowledged.
+                  type: string
+                  enum:
+                    - none
+                    - all
+                    - explicit
+                  default: none
+                ackWait:
+                  description: How long to allow messages to remain un-acknowledged before attempting redelivery.
+                  type: string
+                  default: 1ns
+                maxDeliver:
+                  type: integer
+                  minimum: -1
+                filterSubject:
+                  description: Select only a specific incoming subjects, supports wildcards.
+                  type: string
+                replayPolicy:
+                  description: How messages are sent.
+                  type: string
+                  enum:
+                    - instant
+                    - original
+                  default: instant
+                sampleFreq:
+                  description: What percentage of acknowledgements should be samples for observability.
+                  type: string
+                rateLimitBps:
+                  description: Rate at which messages will be delivered to clients, expressed in bit per second.
+                  type: integer
+                maxAckPending:
+                  description: Maximum pending Acks before consumers are paused.
+                  type: integer
+                deliverGroup:
+                  description: The name of a queue group.
+                  type: string
+                description:
+                  description: The description of the consumer.
+                  type: string
+                flowControl:
+                  description: Enables flow control.
+                  type: boolean
+                  default: false
+                heartbeatInterval:
+                  description: The interval used to deliver idle heartbeats for push-based consumers, in Go's time.Duration format.
+                  type: string
+            status:
+              type: object
+              properties:
+                observedGeneration:
+                  type: integer
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                      reason:
+                        type: string
+                      message:
+                        type: string
+      additionalPrinterColumns:
+        - name: State
+          type: string
+          description: The current state of the consumer.
+          jsonPath: .status.conditions[?(@.type == 'Ready')].reason
+        - name: Stream
+          type: string
+          description: The name of the JetStream Stream.
+          jsonPath: .spec.streamName
+        - name: Consumer
+          type: string
+          description: The name of the JetStream Consumer.
+          jsonPath: .spec.durableName
+        - name: Ack Policy
+          type: string
+          description: The ack policy.
+          jsonPath: .spec.ackPolicy
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: streamtemplates.jetstream.nats.io
+  labels:
+    app.kubernetes.io/part-of: claudie
+spec:
+  group: jetstream.nats.io
+  scope: Namespaced
+  names:
+    kind: StreamTemplate
+    singular: streamtemplate
+    plural: streamtemplates
+  versions:
+    - name: v1beta1
+      served: false
+      storage: true
+      subresources:
+        status: {}
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                name:
+                  description: A unique name for the Stream Template.
+                  type: string
+                  pattern: "^[^.*>]*$"
+                  minLength: 1
+                maxStreams:
+                  description: The maximum number of Streams this Template can create, -1 for unlimited.
+                  type: integer
+                  minimum: -1
+                  default: -1
+                subjects:
+                  description: A list of subjects to consume, supports wildcards.
+                  type: array
+                  minLength: 1
+                  items:
+                    type: string
+                    minLength: 1
+                retention:
+                  description: How messages are retained in the Stream, once this is exceeded old messages are removed.
+                  type: string
+                  enum:
+                    - limits
+                    - interest
+                    - workqueue
+                  default: limits
+                maxConsumers:
+                  description: How many Consumers can be defined for a given Stream. -1 for unlimited.
+                  type: integer
+                  minimum: -1
+                  default: -1
+                maxMsgs:
+                  description: How many messages may be in a Stream, oldest messages will be removed if the Stream exceeds this size. -1 for unlimited.
+                  type: integer
+                  minimum: -1
+                  default: -1
+                maxBytes:
+                  description: How big the Stream may be, when the combined stream size exceeds this old messages are removed. -1 for unlimited.
+                  type: integer
+                  minimum: -1
+                  default: -1
+                maxAge:
+                  description: Maximum age of any message in the stream, expressed in Go's time.Duration format. Empty for unlimited.
+                  type: string
+                  default: ""
+                maxMsgSize:
+                  description: The largest message that will be accepted by the Stream. -1 for unlimited.
+                  type: integer
+                  minimum: -1
+                  default: -1
+                storage:
+                  description: The storage backend to use for the Stream.
+                  type: string
+                  enum:
+                    - file
+                    - memory
+                  default: memory
+                replicas:
+                  description: How many replicas to keep for each message.
+                  type: integer
+                  minimum: 1
+                  default: 1
+                noAck:
+                  description: Disables acknowledging messages that are received by the Stream.
+                  type: boolean
+                  default: false
+                discard:
+                  description: When a Stream reach it's limits either old messages are deleted or new ones are denied.
+                  type: string
+                  enum:
+                    - old
+                    - new
+                  default: old
+                duplicateWindow:
+                  description: The duration window to track duplicate messages for.
+                  type: string
+            status:
+              type: object
+              properties:
+                observedGeneration:
+                  type: integer
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                      reason:
+                        type: string
+                      message:
+                        type: string
+      additionalPrinterColumns:
+        - name: State
+          type: string
+          description: The current state of the stream.
+          jsonPath: .status.conditions[?(@.type == 'Ready')].reason
+        - name: Stream Template Name
+          type: string
+          description: The name of the JetStream Stream Template.
+          jsonPath: .spec.name
+        - name: Subjects
+          type: string
+          description: The subjects this Stream produces.
+          jsonPath: .spec.subjects
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: accounts.jetstream.nats.io
+  labels:
+    app.kubernetes.io/part-of: claudie
+spec:
+  group: jetstream.nats.io
+  scope: Namespaced
+  names:
+    kind: Account
+    singular: account
+    plural: accounts
+  versions:
+    - name: v1beta2
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                name:
+                  description: A unique name for the Account.
+                  type: string
+                  pattern: "^[^.*>]*$"
+                  minLength: 1
+                creds:
+                  description: The creds to be used to connect to the NATS Service.
+                  type: object
+                  properties:
+                    secret:
+                      type: object
+                      properties:
+                        name:
+                          description: Name of the secret with the creds.
+                          type: string
+                    file:
+                      description: Credentials file, generated with github.com/nats-io/nsc tool.
+                      type: string
+                servers:
+                  description: A list of servers to connect.
+                  type: array
+                  minLength: 1
+                  items:
+                    type: string
+                    minLength: 1
+                tls:
+                  description: The TLS certs to be used to connect to the NATS Service.
+                  type: object
+                  properties:
+                    secret:
+                      type: object
+                      properties:
+                        name:
+                          description: Name of the TLS secret with the certs.
+                          type: string
+                    ca:
+                      description: Filename of the Root CA of the TLS cert.
+                      type: string
+                    cert:
+                      description: Filename of the TLS cert.
+                      type: string
+                    key:
+                      description: Filename of the TLS cert key.
+                      type: string
+                token:
+                  description: The token to be used to connect to the NATS Service.
+                  type: object
+                  properties:
+                    secret:
+                      type: object
+                      properties:
+                        name:
+                          description: Name of the secret with the token.
+                          type: string
+                    token:
+                      description: Key in the secret that contains the token.
+                      type: string
+                user:
+                  description: The user and password to be used to connect to the NATS Service.
+                  type: object
+                  properties:
+                    secret:
+                      type: object
+                      properties:
+                        name:
+                          description: Name of the secret with the user and password.
+                          type: string
+                    user:
+                      description: Key in the secret that contains the user.
+                      type: string
+                    password:
+                      description: Key in the secret that contains the password.
+                      type: string
+                tlsFirst:
+                  description: When true, the KV Store will initiate TLS before server INFO.
+                  type: boolean
+                  default: false
+            status:
+              type: object
+              properties:
+                observedGeneration:
+                  type: integer
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                      reason:
+                        type: string
+                      message:
+                        type: string
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: keyvalues.jetstream.nats.io
+  labels:
+    app.kubernetes.io/part-of: claudie
+spec:
+  group: jetstream.nats.io
+  scope: Namespaced
+  names:
+    kind: KeyValue
+    singular: keyvalue
+    plural: keyvalues
+    shortNames:
+      - kv
+  versions:
+    - name: v1beta2
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                bucket:
+                  description: A unique name for the KV Store.
+                  type: string
+                description:
+                  description: The description of the KV Store.
+                  type: string
+                maxValueSize:
+                  description: The maximum size of a value in bytes.
+                  type: integer
+                history:
+                  description: The number of historical values to keep per key.
+                  type: integer
+                ttl:
+                  description: The time expiry for keys.
+                  type: string
+                limitMarkerTtl:
+                  description:
+                    LimitMarkerTTL is how long the bucket keeps markers when
+                    keys are removed by the TTL setting, 0 meaning markers are not supported
+                  type: integer
+                maxBytes:
+                  description: The maximum size of the KV Store in bytes.
+                  type: integer
+                storage:
+                  description: The storage backend to use for the KV Store.
+                  type: string
+                  enum:
+                    - file
+                    - memory
+                replicas:
+                  description: The number of replicas to keep for the KV Store in clustered JetStream.
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  default: 1
+                placement:
+                  description: The KV Store placement via tags or cluster name.
+                  type: object
+                  properties:
+                    cluster:
+                      type: string
+                    tags:
+                      type: array
+                      items:
+                        type: string
+                republish:
+                  description: Republish configuration for the KV Store.
+                  type: object
+                  properties:
+                    destination:
+                      type: string
+                      description: Messages will be additionally published to this subject after Bucket.
+                    source:
+                      type: string
+                      description: Messages will be published from this subject to the destination subject.
+                mirror:
+                  description: A KV Store mirror.
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    optStartSeq:
+                      type: integer
+                    optStartTime:
+                      description: Time format must be RFC3339.
+                      type: string
+                    filterSubject:
+                      type: string
+                    externalApiPrefix:
+                      type: string
+                    externalDeliverPrefix:
+                      type: string
+                    subjectTransforms:
+                      description: List of subject transforms for this mirror.
+                      type: array
+                      items:
+                        description: A subject transform pair.
+                        type: object
+                        properties:
+                          source:
+                            description: Source subject.
+                            type: string
+                          dest:
+                            description: Destination subject.
+                            type: string
+                compression:
+                  description: KV Store compression.
+                  type: boolean
+                sources:
+                  description: A KV Store's sources.
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      optStartSeq:
+                        type: integer
+                      optStartTime:
+                        description: Time format must be RFC3339.
+                        type: string
+                      filterSubject:
+                        type: string
+                      externalApiPrefix:
+                        type: string
+                      externalDeliverPrefix:
+                        type: string
+                      subjectTransforms:
+                        description: List of subject transforms for this mirror.
+                        type: array
+                        items:
+                          description: A subject transform pair.
+                          type: object
+                          properties:
+                            source:
+                              description: Source subject.
+                              type: string
+                            dest:
+                              description: Destination subject.
+                              type: string
+                account:
+                  description: Name of the account to which the Stream belongs.
+                  type: string
+                  pattern: "^[^.*>]*$"
+                creds:
+                  description: NATS user credentials for connecting to servers. Please make sure your controller has mounted the creds on its path.
+                  type: string
+                  default: ""
+                nkey:
+                  description: NATS user NKey for connecting to servers.
+                  type: string
+                  default: ""
+                preventDelete:
+                  description: When true, the managed KV Store will not be deleted when the resource is deleted.
+                  type: boolean
+                  default: false
+                preventUpdate:
+                  description: When true, the managed KV Store will not be updated when the resource is updated.
+                  type: boolean
+                  default: false
+                servers:
+                  description: A list of servers for creating the KV Store.
+                  type: array
+                  items:
+                    type: string
+                  default: []
+                tls:
+                  description: A client's TLS certs and keys.
+                  type: object
+                  properties:
+                    clientCert:
+                      description: A client's cert filepath. Should be mounted.
+                      type: string
+                    clientKey:
+                      description: A client's key filepath. Should be mounted.
+                      type: string
+                    rootCas:
+                      description: A list of filepaths to CAs. Should be mounted.
+                      type: array
+                      items:
+                        type: string
+                tlsFirst:
+                  description: When true, the KV Store will initiate TLS before server INFO.
+                  type: boolean
+                  default: false
+                jsDomain:
+                  description: The JetStream domain to use for the KV store.
+                  type: string
+            status:
+              type: object
+              properties:
+                observedGeneration:
+                  type: integer
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                      reason:
+                        type: string
+                      message:
+                        type: string
+      additionalPrinterColumns:
+        - name: State
+          type: string
+          description: The current state of the KV Store.
+          jsonPath: .status.conditions[?(@.type == 'Ready')].reason
+        - name: KV Store Name
+          type: string
+          description: The name of the KV Store.
+          jsonPath: .spec.bucket
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: objectstores.jetstream.nats.io
+  labels:
+    app.kubernetes.io/part-of: claudie
+spec:
+  group: jetstream.nats.io
+  scope: Namespaced
+  names:
+    kind: ObjectStore
+    singular: objectstore
+    plural: objectstores
+  versions:
+    - name: v1beta2
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                bucket:
+                  description: A unique name for the Object Store.
+                  type: string
+                description:
+                  description: The description of the Object Store.
+                  type: string
+                ttl:
+                  description: The time expiry for keys.
+                  type: string
+                maxBytes:
+                  description: The maximum size of the Store in bytes.
+                  type: integer
+                storage:
+                  description: The storage backend to use for the Object Store.
+                  type: string
+                  enum:
+                    - file
+                    - memory
+                replicas:
+                  description: The number of replicas to keep for the Object Store in clustered JetStream.
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  default: 1
+                placement:
+                  description: The Object Store placement via tags or cluster name.
+                  type: object
+                  properties:
+                    cluster:
+                      type: string
+                    tags:
+                      type: array
+                      items:
+                        type: string
+                compression:
+                  description: Object Store compression.
+                  type: boolean
+                metadata:
+                  description: Additional Object Store metadata.
+                  type: object
+                  additionalProperties:
+                    type: string
+                account:
+                  description: Name of the account to which the Object Store belongs.
+                  type: string
+                  pattern: "^[^.*>]*$"
+                creds:
+                  description: NATS user credentials for connecting to servers. Please make sure your controller has mounted the creds on its path.
+                  type: string
+                  default: ""
+                nkey:
+                  description: NATS user NKey for connecting to servers.
+                  type: string
+                  default: ""
+                preventDelete:
+                  description: When true, the managed Object Store will not be deleted when the resource is deleted.
+                  type: boolean
+                  default: false
+                preventUpdate:
+                  description: When true, the managed Object Store will not be updated when the resource is updated.
+                  type: boolean
+                  default: false
+                servers:
+                  description: A list of servers for creating the Object Store.
+                  type: array
+                  items:
+                    type: string
+                  default: []
+                tls:
+                  description: A client's TLS certs and keys.
+                  type: object
+                  properties:
+                    clientCert:
+                      description: A client's cert filepath. Should be mounted.
+                      type: string
+                    clientKey:
+                      description: A client's key filepath. Should be mounted.
+                      type: string
+                    rootCas:
+                      description: A list of filepaths to CAs. Should be mounted.
+                      type: array
+                      items:
+                        type: string
+                tlsFirst:
+                  description: When true, the Object Store will initiate TLS before server INFO.
+                  type: boolean
+                  default: false
+                jsDomain:
+                  description: The JetStream domain to use for the Object Store.
+                  type: string
+            status:
+              type: object
+              properties:
+                observedGeneration:
+                  type: integer
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                      reason:
+                        type: string
+                      message:
+                        type: string
+      additionalPrinterColumns:
+        - name: State
+          type: string
+          description: The current state of the Object Store.
+          jsonPath: .status.conditions[?(@.type == 'Ready')].reason
+        - name: Object Store Name
+          type: string
+          description: The name of the Object Store.
+          jsonPath: .spec.bucket

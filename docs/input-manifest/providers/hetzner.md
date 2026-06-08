@@ -8,19 +8,7 @@ kind: Secret
 metadata:
   name: hetzner-secret
 data:
-  credentials: a3NsSVNBODc4YTZldFlBZlhZY2c1aVl5ckZHTmxDeGNJQ28wNjBIVkV5Z2pGczIxbnNrZTc2a3NqS2tvMjFscA==
-type: Opaque
-
-```
-
-## DNS example
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: hetznerdns-secret
-data:
-  apitoken: a1V0UmcxcGdqQ1JhYXBQbWQ3cEFJalZnaHVyWG8xY24=
+  credentials: <base64-encoded-api-token>
 type: Opaque
 ```
 
@@ -33,12 +21,6 @@ You can create Hetzner API credentials by following [this guide](https://docs.he
 ```bash
 Read & Write
 ```
-
-## Create Hetzner DNS credentials
-You can create Hetzner DNS credentials by following [this guide](https://docs.hetzner.com/dns-console/dns/general/api-access-token/).
-
-!!! note "DNS provider specification"
-    The provider for DNS is different from the one for the Cloud.
 
 ## DNS setup
 If you wish to use Hetzner as your DNS provider where Claudie creates DNS records pointing to Claudie managed clusters, you will need to create a **public DNS zone** by following [this guide](https://docs.hetzner.com/dns-console/dns/general/getting-started-dns/).
@@ -53,7 +35,7 @@ If you wish to use Hetzner as your DNS provider where Claudie creates DNS record
 The secret for an Hetzner provider must include the following mandatory fields: `credentials`.
 
 ```bash
-kubectl create secret generic hetzner-secret-1 --namespace=mynamespace --from-literal=credentials='kslISA878a6etYAfXYcg5iYyrFGNlCxcICo060HVEygjFs21nske76ksjKko21lp'
+kubectl create secret generic hetzner-secret-1 --namespace=<your-namespace> --from-literal=credentials='<your-api-token>'
 ```
 
 ```yaml
@@ -69,7 +51,7 @@ spec:
       providerType: hetzner
       secretRef:
         name: hetzner-secret-1
-        namespace: mynamespace
+        namespace: <your-namespace>
 
   nodePools:
     dynamic:
@@ -77,13 +59,11 @@ spec:
         providerSpec:
           # Name of the provider instance.
           name: hetzner-1
-          # Region of the nodepool.
+          # Location of the nodepool.
           region: hel1
-          # Datacenter of the nodepool.
-          zone: hel1-dc2
         count: 1
         # Machine type name.
-        serverType: cpx11
+        serverType: cpx22
         # OS image name.
         image: ubuntu-24.04
 
@@ -91,13 +71,11 @@ spec:
         providerSpec:
           # Name of the provider instance.
           name: hetzner-1
-          # Region of the nodepool.
+          # Location of the nodepool.
           region: fsn1
-          # Datacenter of the nodepool.
-          zone: fsn1-dc14
         count: 2
         # Machine type name.
-        serverType: cpx11
+        serverType: cpx22
         # OS image name.
         image: ubuntu-24.04
         storageDiskSize: 50
@@ -106,13 +84,11 @@ spec:
         providerSpec:
           # Name of the provider instance.
           name: hetzner-1
-          # Region of the nodepool.
+          # Location of the nodepool.
           region: nbg1
-          # Datacenter of the nodepool.
-          zone: nbg1-dc3
         count: 2
         # Machine type name.
-        serverType: cpx11
+        serverType: cpx22
         # OS image name.
         image: ubuntu-24.04
         storageDiskSize: 50
@@ -120,7 +96,7 @@ spec:
   kubernetes:
     clusters:
       - name: hetzner-cluster
-        version: v1.31.0
+        version: v1.34.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -135,8 +111,8 @@ spec:
 The secret for an Hetzner provider must include the following mandatory fields: `credentials`.
 
 ```bash
-kubectl create secret generic hetzner-secret-1 --namespace=mynamespace --from-literal=credentials='kslISA878a6etYAfXYcg5iYyrFGNlCxcICo060HVEygjFs21nske76ksjKko21lp'
-kubectl create secret generic hetzner-secret-2 --namespace=mynamespace --from-literal=credentials='kslIIOUYBiuui7iGBYIUiuybpiUB87bgPyuCo060HVEygjFs21nske76ksjKko21l'
+kubectl create secret generic hetzner-secret-1 --namespace=<your-namespace> --from-literal=credentials='<your-api-token>'
+kubectl create secret generic hetzner-secret-2 --namespace=<your-namespace> --from-literal=credentials='<your-api-token>'
 ```
 
 ```yaml
@@ -152,12 +128,12 @@ spec:
       providerType: hetzner
       secretRef:
         name: hetzner-secret-1
-        namespace: mynamespace
+        namespace: <your-namespace>
     - name: hetzner-2
       providerType: hetzner
       secretRef:
         name: hetzner-secret-2
-        namespace: mynamespace        
+        namespace: <your-namespace>        
 
   nodePools:
     dynamic:
@@ -165,13 +141,11 @@ spec:
         providerSpec:
           # Name of the provider instance.
           name: hetzner-1
-          # Region of the nodepool.
+          # Location of the nodepool.
           region: hel1
-          # Datacenter of the nodepool.
-          zone: hel1-dc2
         count: 1
         # Machine type name.
-        serverType: cpx11
+        serverType: cpx22
         # OS image name.
         image: ubuntu-24.04
 
@@ -179,13 +153,11 @@ spec:
         providerSpec:
           # Name of the provider instance.
           name: hetzner-2
-          # Region of the nodepool.
+          # Location of the nodepool.
           region: fsn1
-          # Datacenter of the nodepool.
-          zone: fsn1-dc14
         count: 2
         # Machine type name.
-        serverType: cpx11
+        serverType: cpx22
         # OS image name.
         image: ubuntu-24.04
 
@@ -193,13 +165,11 @@ spec:
         providerSpec:
           # Name of the provider instance.
           name: hetzner-1
-          # Region of the nodepool.
+          # Location of the nodepool.
           region: fsn1
-          # Datacenter of the nodepool.
-          zone: fsn1-dc14
         count: 2
         # Machine type name.
-        serverType: cpx11
+        serverType: cpx22
         # OS image name.
         image: ubuntu-24.04
         storageDiskSize: 50
@@ -208,13 +178,11 @@ spec:
         providerSpec:
           # Name of the provider instance.
           name: hetzner-2
-          # Region of the nodepool.
+          # Location of the nodepool.
           region: nbg1
-          # Datacenter of the nodepool.
-          zone: nbg1-dc3
         count: 2
         # Machine type name.
-        serverType: cpx11
+        serverType: cpx22
         # OS image name.
         image: ubuntu-24.04
         storageDiskSize: 50
@@ -222,7 +190,7 @@ spec:
   kubernetes:
     clusters:
       - name: hetzner-cluster
-        version: v1.31.0
+        version: v1.34.0
         network: 192.168.2.0/24
         pools:
           control:

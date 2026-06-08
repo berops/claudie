@@ -1,10 +1,11 @@
-FROM docker.io/library/golang:1.24.5 AS build
+FROM docker.io/library/golang:1.26.3 AS build
 
 ARG TARGETARCH
 
 #Install kubectl
-RUN KC_VERSION=v1.24.0 && \
-    wget -q https://storage.googleapis.com/kubernetes-release/release/${KC_VERSION}/bin/linux/$TARGETARCH/kubectl
+RUN KC_VERSION=v1.34.0 && \
+    wget -q https://dl.k8s.io/release/${KC_VERSION}/bin/linux/$TARGETARCH/kubectl
+
 
 #Unset the GOPATH
 ENV GOPATH=
@@ -23,13 +24,13 @@ COPY . .
 WORKDIR /go/services/testing-framework
 RUN CGO_ENABLED=0 go test -c -run TestClaudie
 
-FROM docker.io/library/alpine:3.20
+FROM docker.io/library/alpine:3.23
 #Add repository label
-LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
+LABEL org.opencontainers.image.source="https://github.com/berops/claudie"
 #Add image name as a label
-LABEL org.opencontainers.image.base.name "docker.io/library/alpine"
+LABEL org.opencontainers.image.base.name="docker.io/library/alpine"
 #Add description to the image
-LABEL org.opencontainers.image.description "Image for Testing-framework from Claudie"
+LABEL org.opencontainers.image.description="Image for Testing-framework from Claudie"
 
 COPY --from=build /go/kubectl /usr/local/bin/kubectl
 COPY --from=build /go/services/testing-framework/testing-framework.test /go/services/testing-framework/testing-framework.test

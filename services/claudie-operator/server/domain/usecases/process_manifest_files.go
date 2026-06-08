@@ -9,7 +9,7 @@ import (
 	managerclient "github.com/berops/claudie/services/manager/client"
 	"github.com/rs/zerolog/log"
 
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 )
 
 func (u *Usecases) CreateConfig(ctx context.Context, inputManifest *manifest.Manifest, resourceName string, resourceNamespace string) error {
@@ -51,6 +51,6 @@ func (u *Usecases) DeleteConfig(ctx context.Context, name string) error {
 		return err
 	}
 
-	log.Info().Msgf("Config %s was successfully marked for deletion", name)
+	log.Debug().Msgf("Config %s was successfully marked for deletion", name)
 	return nil
 }

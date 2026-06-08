@@ -3,8 +3,10 @@ package manifest
 import (
 	"errors"
 	"fmt"
+	"math"
 	"slices"
 
+	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -178,47 +180,136 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 		}
 	}
 
-	for _, hetznerDNSConfig := range ds.Providers.HetznerDNS {
-		if hetznerDNSConfig.Name == providerSpecName {
+	for _, os := range ds.Providers.Openstack {
+		if os.Name == providerSpecName {
 			t := &spec.TemplateRepository{
-				Repository: hetznerDNSConfig.Templates.Repository,
-				Tag:        hetznerDNSConfig.Templates.Tag,
-				Path:       hetznerDNSConfig.Templates.Path,
+				Repository: os.Templates.Repository,
+				Tag:        os.Templates.Tag,
+				Path:       os.Templates.Path,
 			}
 			if err := FetchCommitHash(t); err != nil {
 				return nil, err
 			}
 			return &spec.Provider{
 				SpecName: providerSpecName,
-				ProviderType: &spec.Provider_Hetznerdns{
-					Hetznerdns: &spec.HetznerDNSProvider{
-						Token: hetznerDNSConfig.ApiToken,
+				ProviderType: &spec.Provider_Openstack{
+					Openstack: &spec.OpenstackProvider{
+						AuthURL:                     os.AuthURL,
+						DomainID:                    os.DomainId,
+						ProjectID:                   os.ProjectId,
+						ApplicationCredentialID:     os.ApplicationCredentialId,
+						ApplicationCredentialSecret: os.ApplicationCredentialSecret,
 					},
 				},
-				CloudProviderName: "hetznerdns",
+				CloudProviderName: "openstack",
 				Templates:         t,
 			}, nil
 		}
 	}
 
-	for _, gc := range ds.Providers.GenesisCloud {
-		if gc.Name == providerSpecName {
+	for _, exoConf := range ds.Providers.Exoscale {
+		if exoConf.Name == providerSpecName {
 			t := &spec.TemplateRepository{
-				Repository: gc.Templates.Repository,
-				Tag:        gc.Templates.Tag,
-				Path:       gc.Templates.Path,
+				Repository: exoConf.Templates.Repository,
+				Tag:        exoConf.Templates.Tag,
+				Path:       exoConf.Templates.Path,
 			}
 			if err := FetchCommitHash(t); err != nil {
 				return nil, err
 			}
 			return &spec.Provider{
 				SpecName: providerSpecName,
-				ProviderType: &spec.Provider_Genesiscloud{
-					Genesiscloud: &spec.GenesisCloudProvider{
-						Token: gc.ApiToken,
+				ProviderType: &spec.Provider_Exoscale{
+					Exoscale: &spec.ExoscaleProvider{
+						ApiKey:    exoConf.ApiKey,
+						ApiSecret: exoConf.ApiSecret,
 					},
 				},
-				CloudProviderName: "genesiscloud",
+				CloudProviderName: "exoscale",
+				Templates:         t,
+			}, nil
+		}
+	}
+
+	for _, crConf := range ds.Providers.CloudRift {
+		if crConf.Name == providerSpecName {
+			t := &spec.TemplateRepository{
+				Repository: crConf.Templates.Repository,
+				Tag:        crConf.Templates.Tag,
+				Path:       crConf.Templates.Path,
+			}
+			if err := FetchCommitHash(t); err != nil {
+				return nil, err
+			}
+			cr := &spec.CloudRiftProvider{
+				Token: crConf.Token,
+			}
+			if crConf.TeamId != "" {
+				cr.TeamId = &crConf.TeamId
+			}
+			return &spec.Provider{
+				SpecName: providerSpecName,
+				ProviderType: &spec.Provider_Cloudrift{
+					Cloudrift: cr,
+				},
+				CloudProviderName: "cloudrift",
+				Templates:         t,
+			}, nil
+		}
+	}
+
+	for _, vConf := range ds.Providers.Verda {
+		if vConf.Name == providerSpecName {
+			t := &spec.TemplateRepository{
+				Repository: vConf.Templates.Repository,
+				Tag:        vConf.Templates.Tag,
+				Path:       vConf.Templates.Path,
+			}
+			if err := FetchCommitHash(t); err != nil {
+				return nil, err
+			}
+			v := &spec.VerdaProvider{
+				ClientId:     vConf.ClientId,
+				ClientSecret: vConf.ClientSecret,
+			}
+			if vConf.BaseUrl != "" {
+				v.BaseUrl = &vConf.BaseUrl
+			}
+			return &spec.Provider{
+				SpecName: providerSpecName,
+				ProviderType: &spec.Provider_Verda{
+					Verda: v,
+				},
+				CloudProviderName: "verda",
+				Templates:         t,
+			}, nil
+		}
+	}
+
+	for _, oConf := range ds.Providers.OVH {
+		if oConf.Name == providerSpecName {
+			t := &spec.TemplateRepository{
+				Repository: oConf.Templates.Repository,
+				Tag:        oConf.Templates.Tag,
+				Path:       oConf.Templates.Path,
+			}
+			if err := FetchCommitHash(t); err != nil {
+				return nil, err
+			}
+			o := &spec.OVHProvider{
+				ClientId:     oConf.ClientId,
+				ClientSecret: oConf.ClientSecret,
+				ServiceName:  oConf.ServiceName,
+			}
+			if oConf.Endpoint != "" {
+				o.Endpoint = &oConf.Endpoint
+			}
+			return &spec.Provider{
+				SpecName: providerSpecName,
+				ProviderType: &spec.Provider_Ovh{
+					Ovh: o,
+				},
+				CloudProviderName: "ovh",
 				Templates:         t,
 			}, nil
 		}
@@ -276,10 +367,29 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.Nod
 			var autoscalerConf *spec.AutoscalerConf
 			count := nodePool.Count
 			if nodePool.AutoscalerConfig.isDefined() {
-				autoscalerConf = &spec.AutoscalerConf{}
-				autoscalerConf.Min = nodePool.AutoscalerConfig.Min
-				autoscalerConf.Max = nodePool.AutoscalerConfig.Max
-				count = nodePool.AutoscalerConfig.Min
+				autoscalerConf = &spec.AutoscalerConf{
+					Min: nodePool.AutoscalerConfig.Min,
+					Max: nodePool.AutoscalerConfig.Max,
+
+					// TargetSize is the desired capacity of
+					// the autoscaled nodepool and the `count`
+					// of the dynamic nodepool should slowly
+					// approach this value as the nodepool is
+					// reconciled with time.
+					TargetSize: nodePool.AutoscalerConfig.Min,
+				}
+
+				// For fresh autoscaled nodepools keep the count
+				// equal to the `TargetSize`. The target Size is
+				// not managed by the InputManifest and is actually
+				// managed by the 'cluster-autoscaler' service that
+				// is external to the Manager, thus the `TargetSize`
+				// is externally managed and the correct `TargetSize`
+				// will be resolved at a later stage when merging with
+				// existing state is done, if it already exists.
+				//
+				// See existing_state.go:[transferDynamicNodePool]
+				count = autoscalerConf.TargetSize
 			}
 
 			// Set default disk size if not defined. (Value only used in compute nodepools)
@@ -289,10 +399,16 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.Nod
 
 			var machineSpec *spec.MachineSpec
 			if nodePool.MachineSpec != nil {
+				// Use NvidiaGpuCount as primary, fall back to deprecated NvidiaGpu for backward compatibility
+				gpuCount := int32(nodePool.MachineSpec.NvidiaGpuCount)
+				if gpuCount == 0 && nodePool.MachineSpec.NvidiaGpu > 0 {
+					gpuCount = int32(nodePool.MachineSpec.NvidiaGpu)
+				}
 				machineSpec = &spec.MachineSpec{
-					CpuCount:  int32(nodePool.MachineSpec.CpuCount),
-					Memory:    int32(nodePool.MachineSpec.Memory),
-					NvidiaGpu: int32(nodePool.MachineSpec.NvidiaGpu),
+					CpuCount:       int32(nodePool.MachineSpec.CpuCount),
+					Memory:         int32(nodePool.MachineSpec.Memory),
+					NvidiaGpuCount: gpuCount,
+					NvidiaGpuType:  nodePool.MachineSpec.NvidiaGpuType,
 				}
 			}
 
@@ -302,33 +418,47 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.Nod
 				Labels:      nodePool.Labels,
 				Annotations: nodePool.Annotations,
 				Taints:      getTaints(nodePool.Taints),
-				//Nodes: We can't create dynamic nodes at this point
-				// as the nodepool hashes are not known yet.
+				// The nodes are left empty, as the desired state
+				// in the manifest does not specify each of the nodes
+				// individually, just the count of the nodes that the
+				// nodepools should have. The nodes themselves will
+				// be resolved at a later step in the build pipeline.
+				Nodes: nil,
 				Type: &spec.NodePool_DynamicNodePool{
 					DynamicNodePool: &spec.DynamicNodePool{
-						Region:           nodePool.ProviderSpec.Region,
-						Zone:             nodePool.ProviderSpec.Zone,
-						ServerType:       nodePool.ServerType,
-						Image:            nodePool.Image,
-						StorageDiskSize:  *nodePool.StorageDiskSize,
-						Count:            count,
-						Provider:         provider,
-						AutoscalerConfig: autoscalerConf,
-						MachineSpec:      machineSpec,
+						Region:              nodePool.ProviderSpec.Region,
+						Zone:                nodePool.ProviderSpec.Zone,
+						ServerType:          nodePool.ServerType,
+						Image:               nodePool.Image,
+						ExternalNetworkName: nodePool.ProviderSpec.ExternalNetworkName,
+						StorageDiskSize:     *nodePool.StorageDiskSize,
+						Count:               count,
+						Provider:            provider,
+						AutoscalerConfig:    autoscalerConf,
+						MachineSpec:         machineSpec,
 					},
 				},
 			})
 		} else if nodePool := ds.FindStaticNodePool(nodePoolName); nodePool != nil {
+			nodes := staticNodes(nodePool, isControl)
+			taints := getTaints(nodePool.Taints)
+			keys := getNodeKeys(nodePool)
+
 			nodePools = append(nodePools, &spec.NodePool{
-				Name:        nodePool.Name,
-				Nodes:       staticNodes(nodePool, isControl),
+				Name: nodePool.Name,
+				// Contrary to the dynamic nodepools, The nodes
+				// for the static nodepools are explicitly defined
+				// in the manifest itself, thus they already are stored
+				// in this step of the build pipeline.
+				Nodes:       nodes,
 				IsControl:   isControl,
 				Labels:      nodePool.Labels,
 				Annotations: nodePool.Annotations,
-				Taints:      getTaints(nodePool.Taints),
+				Taints:      taints,
+				SshPort:     resolveSSHPort(nodePool.SshPort),
 				Type: &spec.NodePool_StaticNodePool{
 					StaticNodePool: &spec.StaticNodePool{
-						NodeKeys: getNodeKeys(nodePool),
+						NodeKeys: keys,
 					},
 				},
 			})
@@ -380,24 +510,43 @@ func FetchCommitHash(tmpl *spec.TemplateRepository) error {
 
 // staticNodes returns slice of static nodes with initialised name.
 func staticNodes(np *StaticNodePool, isControl bool) []*spec.Node {
+	if len(np.Nodes) > math.MaxUint8 {
+		panic(fmt.Sprintf("static nodepool %q defined more than 255 nodes, which is the claudie internal maximum", np.Name))
+	}
+
 	nodes := make([]*spec.Node, 0, len(np.Nodes))
 	nodeType := spec.NodeType_worker
 	if isControl {
 		nodeType = spec.NodeType_master
 	}
+
 	for i, node := range np.Nodes {
 		nodes = append(nodes, &spec.Node{
 			// Name only matters on the first run of the static nodepool,
 			// on subsequent runs, if there are previously build nodes
 			// with the same public IP we will transfer that existing name.
-			// see existing_state.go:transferStaticNodes
+			// see existing_state.go:[transferStaticNodePool]
+			// Further, the name is not used for "determining" if the
+			// node is used in any previous or any other state, for that
+			// the Public endpoint should be used which is an Unique Identifier
+			// of the node. If this changes in the future, relevant code may
+			// need to be adjusted.
 			Name:     fmt.Sprintf("%s-%02x", np.Name, uint8(i+1)),
 			Public:   node.Endpoint,
 			NodeType: nodeType,
+			Status:   spec.NodeStatus_Preparing,
 			Username: node.Username,
 		})
 	}
+
 	return nodes
+}
+
+func resolveSSHPort(port *int32) int32 {
+	if port == nil {
+		return nodepools.DefaultSSHPort
+	}
+	return *port
 }
 
 // getNodeKeys returns map of keys for static nodes in map[endpoint]key.
@@ -407,6 +556,14 @@ func getNodeKeys(nodepool *StaticNodePool) map[string]string {
 		m[n.Endpoint] = n.Key
 	}
 	return m
+}
+
+func getTaints(taints []k8sV1.Taint) []*spec.Taint {
+	arr := make([]*spec.Taint, 0, len(taints))
+	for _, t := range taints {
+		arr = append(arr, &spec.Taint{Key: t.Key, Value: t.Value, Effect: string(t.Effect)})
+	}
+	return arr
 }
 
 // nodePoolDefined returns true if node pool is defined in manifest, false otherwise.
@@ -423,14 +580,6 @@ func (ds *Manifest) nodePoolDefined(pool string) (defined bool, static bool) {
 	}
 
 	return
-}
-
-func getTaints(taints []k8sV1.Taint) []*spec.Taint {
-	arr := make([]*spec.Taint, 0, len(taints))
-	for _, t := range taints {
-		arr = append(arr, &spec.Taint{Key: t.Key, Value: t.Value, Effect: string(t.Effect)})
-	}
-	return arr
 }
 
 func (ds *Manifest) GetProviderType(provider string) (string, error) {
@@ -482,20 +631,34 @@ func (ds *Manifest) ForEachProvider(do func(name, typ string, tmpls **TemplateRe
 		}
 	}
 
-	for i, c := range ds.Providers.GenesisCloud {
-		if !do(c.Name, "genesiscloud", &ds.Providers.GenesisCloud[i].Templates) {
-			return
-		}
-	}
-
 	for i, c := range ds.Providers.Cloudflare {
 		if !do(c.Name, "cloudflare", &ds.Providers.Cloudflare[i].Templates) {
 			return
 		}
 	}
 
-	for i, c := range ds.Providers.HetznerDNS {
-		if !do(c.Name, "hetznerdns", &ds.Providers.HetznerDNS[i].Templates) {
+	for i, c := range ds.Providers.Openstack {
+		if !do(c.Name, "openstack", &ds.Providers.Openstack[i].Templates) {
+			return
+		}
+	}
+	for i, c := range ds.Providers.Exoscale {
+		if !do(c.Name, "exoscale", &ds.Providers.Exoscale[i].Templates) {
+			return
+		}
+	}
+	for i, c := range ds.Providers.CloudRift {
+		if !do(c.Name, "cloudrift", &ds.Providers.CloudRift[i].Templates) {
+			return
+		}
+	}
+	for i, c := range ds.Providers.Verda {
+		if !do(c.Name, "verda", &ds.Providers.Verda[i].Templates) {
+			return
+		}
+	}
+	for i, c := range ds.Providers.OVH {
+		if !do(c.Name, "ovh", &ds.Providers.OVH[i].Templates) {
 			return
 		}
 	}

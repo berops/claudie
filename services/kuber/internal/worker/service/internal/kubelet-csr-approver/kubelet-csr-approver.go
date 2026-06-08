@@ -1,0 +1,100 @@
+package kubeletcsrapprover
+
+import (
+	"fmt"
+	"text/template"
+
+	comm "github.com/berops/claudie/internal/command"
+	"github.com/berops/claudie/internal/kubectl"
+	"github.com/berops/claudie/internal/templateUtils"
+	"github.com/berops/claudie/services/kuber/templates"
+)
+
+const (
+	kubeletCSRApproverDeployment = "kubelet-csr-approver.yaml"
+)
+
+type ClusterView struct {
+	Id             string
+	Name           string
+	Kubeconfig     string
+	PrivateNetwork string
+}
+
+// KubeletCSRApprover either deploys or deletes kubelet-csr-approver resources for given k8s cluster.
+type KubeletCSRApprover struct {
+	// Project name where k8s cluster is defined.
+	projectName string
+
+	cluster ClusterView
+
+	// Output directory.
+	directory string
+}
+
+type kubeletCSRApproverDeploymentData struct {
+	ClusterName        string
+	ProjectName        string
+	ClusterID          string
+	ProviderIPPrefixes string
+}
+
+// NewKubeletCSRApprover returns configured KubeletCSRApprover which can set up deploy or delete kubelet-csr-approver.
+func NewKubeletCSRApprover(
+	projectName string,
+	directory string,
+	view ClusterView,
+) *KubeletCSRApprover {
+	return &KubeletCSRApprover{
+		projectName: projectName,
+		directory:   directory,
+		cluster:     view,
+	}
+}
+
+func (kca *KubeletCSRApprover) DeployKubeletCSRApprover() error {
+	// Create files from templates.
+	if err := kca.generateFiles(); err != nil {
+		return err
+	}
+	// Apply generated files.
+	kc := kubectl.Kubectl{
+		Kubeconfig:        kca.cluster.Kubeconfig,
+		Directory:         kca.directory,
+		MaxKubectlRetries: 3,
+	}
+	kc.Stdout = comm.GetStdOut(kca.cluster.Id)
+	kc.Stderr = comm.GetStdErr(kca.cluster.Id)
+
+	// deploys to namespace defined in the template (should be kube-system by default)
+	if err := kc.KubectlApply(kubeletCSRApproverDeployment, ""); err != nil {
+		return fmt.Errorf("error while applying kubelet-csr-approver for cluster %s : %w", kca.cluster.Name, err)
+	}
+	return nil
+}
+
+// generateFiles generates all manifests required for deploying kubelet-csr-approver.
+func (k *KubeletCSRApprover) generateFiles() error {
+	tpl := templateUtils.Templates{Directory: k.directory}
+	var kcrTemplate *template.Template
+	var err error
+
+	// Load templates
+	// The configuration files for templates were taken from https://github.com/postfinance/kubelet-csr-approver/tree/v1.2.12/deploy/k8s
+	if kcrTemplate, err = templateUtils.LoadTemplate(templates.KubeletCSRApproverTemplate); err != nil {
+		return fmt.Errorf("error loading kubelet-csr-approver template : %w", err)
+	}
+
+	kubeletCSRApproverData := &kubeletCSRApproverDeploymentData{
+		ClusterName:        k.cluster.Name,
+		ProjectName:        k.projectName,
+		ClusterID:          k.cluster.Id,
+		ProviderIPPrefixes: k.cluster.PrivateNetwork,
+	}
+
+	if err := tpl.Generate(kcrTemplate, kubeletCSRApproverDeployment, kubeletCSRApproverData); err != nil {
+		return fmt.Errorf("error generating kubelet-csr-approver deployment : %w", err)
+	}
+
+	return nil
+}

@@ -27,38 +27,56 @@ import (
 type ProviderType string
 
 const (
-	AWS           ProviderType = "aws"
-	AZURE         ProviderType = "azure"
-	CLOUDFLARE    ProviderType = "cloudflare"
-	GCP           ProviderType = "gcp"
-	GENESIS_CLOUD ProviderType = "genesiscloud"
-	HETZNER       ProviderType = "hetzner"
-	HETZNER_DNS   ProviderType = "hetznerdns"
-	OCI           ProviderType = "oci"
+	AWS        ProviderType = "aws"
+	AZURE      ProviderType = "azure"
+	CLOUDFLARE ProviderType = "cloudflare"
+	GCP        ProviderType = "gcp"
+	HETZNER    ProviderType = "hetzner"
+	OCI        ProviderType = "oci"
+	OPENSTACK  ProviderType = "openstack"
+	EXOSCALE   ProviderType = "exoscale"
+	CLOUDRIFT  ProviderType = "cloudrift"
+	VERDA      ProviderType = "verda"
+	OVH        ProviderType = "ovh"
 )
 
 type SecretField string
 
 const (
-	AWS_ACCESS_KEY        SecretField = "accesskey"
-	AWS_SECRET_KEY        SecretField = "secretkey"
-	AZURE_CLIENT_SECRET   SecretField = "clientsecret"
-	AZURE_SUBSCRIPTION_ID SecretField = "subscriptionid"
-	AZURE_TENANT_ID       SecretField = "tenantid"
-	AZURE_CLIENT_ID       SecretField = "clientid"
-	CF_API_TOKEN          SecretField = "apitoken"
-	CF_ACCOUNT_ID         SecretField = "accountid"
-	GCP_CREDENTIALS       SecretField = "credentials"
-	GCP_GCP_PROJECT       SecretField = "gcpproject"
-	HETZNER_CREDENTIALS   SecretField = "credentials"
-	HETZNER_DNS_API_TOKEN SecretField = "apitoken"
-	OCI_PRIVATE_KEY       SecretField = "privatekey"
-	OCI_KEY_FINGERPRINT   SecretField = "keyfingerprint"
-	OCI_TENANCT_OCID      SecretField = "tenancyocid"
-	OCI_USER_OCID         SecretField = "userocid"
-	OCI_COMPARTMENT_OCID  SecretField = "compartmentocid"
-	PRIVATE_KEY           SecretField = "privatekey"
-	GEN_C_API_TOKEN       SecretField = "apitoken"
+	AWS_ACCESS_KEY                   SecretField = "accesskey"
+	AWS_SECRET_KEY                   SecretField = "secretkey"
+	AZURE_CLIENT_SECRET              SecretField = "clientsecret"
+	AZURE_SUBSCRIPTION_ID            SecretField = "subscriptionid"
+	AZURE_TENANT_ID                  SecretField = "tenantid"
+	AZURE_CLIENT_ID                  SecretField = "clientid"
+	CF_API_TOKEN                     SecretField = "apitoken"
+	CF_ACCOUNT_ID                    SecretField = "accountid"
+	GCP_CREDENTIALS                  SecretField = "credentials"
+	GCP_GCP_PROJECT                  SecretField = "gcpproject"
+	HETZNER_CREDENTIALS              SecretField = "credentials"
+	HETZNER_DNS_API_TOKEN            SecretField = "apitoken"
+	OCI_PRIVATE_KEY                  SecretField = "privatekey"
+	OCI_KEY_FINGERPRINT              SecretField = "keyfingerprint"
+	OCI_TENANCT_OCID                 SecretField = "tenancyocid"
+	OCI_USER_OCID                    SecretField = "userocid"
+	OCI_COMPARTMENT_OCID             SecretField = "compartmentocid"
+	PRIVATE_KEY                      SecretField = "privatekey"
+	OS_AUTH_URL                      SecretField = "authurl"
+	OS_DOMAIN_ID                     SecretField = "domainid"
+	OS_PROJECT_ID                    SecretField = "projectid"
+	OS_APPLICATION_CREDENTIAL_ID     SecretField = "applicationcredentialid"
+	OS_APPLICATION_CREDENTIAL_SECRET SecretField = "applicationcredentialsecret"
+	EXOSCALE_API_KEY                 SecretField = "apikey"
+	EXOSCALE_API_SECRET              SecretField = "apisecret"
+	CLOUDRIFT_TOKEN                  SecretField = "token"
+	CLOUDRIFT_TEAM_ID                SecretField = "teamid"
+	VERDA_CLIENT_ID                  SecretField = "clientid"
+	VERDA_CLIENT_SECRET              SecretField = "clientsecret"
+	VERDA_BASE_URL                   SecretField = "baseurl"
+	OVH_CLIENT_ID                    SecretField = "clientid"
+	OVH_CLIENT_SECRET                SecretField = "clientsecret"
+	OVH_SERVICE_NAME                 SecretField = "servicename"
+	OVH_ENDPOINT                     SecretField = "endpoint"
 )
 
 // ProviderWithData helper type that assist in conversion
@@ -83,7 +101,7 @@ type Provider struct {
 	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:MinLength=1
 	ProviderName string `json:"name"`
-	// +kubebuilder:validation:Enum=gcp;hetzner;aws;oci;azure;cloudflare;hetznerdns;genesiscloud;
+	// +kubebuilder:validation:Enum=gcp;hetzner;aws;oci;azure;cloudflare;openstack;exoscale;cloudrift;verda;ovh;
 	ProviderType ProviderType           `json:"providerType"`
 	SecretRef    corev1.SecretReference `json:"secretRef"`
 	// External templates for building the cluster infrastructure.
@@ -114,6 +132,11 @@ type StaticNodePool struct {
 	Annotations map[string]string `json:"annotations"`
 	// +optional
 	Taints []corev1.Taint `json:"taints"`
+	// SSH port used to connect to the static nodes. Defaults to 22 if not set.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	SshPort int32 `json:"sshPort,omitempty"`
 }
 
 // StaticNode defines a single static node for a particular static nodepool.
@@ -184,10 +207,18 @@ type InputManifestStatus struct {
 	Clusters map[string]ClustersStatus `json:"clusters,omitempty"`
 }
 
+type FinishedWorkflow struct {
+	Status          string `json:"status,omitempty"`
+	Stage           string `json:"stage,omitempty"`
+	TaskDescription string `json:"taskDescription,omitempty"`
+	Timestamp       string `json:"timestamp"`
+}
+
 type ClustersStatus struct {
-	State   string `json:"state,omitempty"`
-	Phase   string `json:"phase,omitempty"`
-	Message string `json:"message,omitempty"`
+	State    string             `json:"state,omitempty"`
+	Phase    string             `json:"phase,omitempty"`
+	Message  string             `json:"message,omitempty"`
+	Previous []FinishedWorkflow `json:"previous"`
 }
 
 // +kubebuilder:object:root=true

@@ -1,6 +1,9 @@
 ---
 - hosts: {{ .LoadBalancer }}
-  gather_facts: yes
+  gather_facts: true
+  gather_subset: 
+    - distribution
+    - distribution_release
   become: yes
   vars:
     # for node-limits tasks
@@ -161,12 +164,11 @@
 {{- end }}
 
     - name: run docker compose
-      community.docker.docker_compose_v2:
-        project_src: /var/lib/envoy
-        state: present
-        # removes unused containers, which stay orphaned after the removal of a role in the loadbalancer.
-        remove_orphans: true
+      ansible.builtin.shell: |
+        cd /var/lib/envoy
+        docker compose up --detach --no-color --quiet-pull --remove-orphans
       register: compose_out
+      ignore_errors: false
 
     - name: Show compose results
       ansible.builtin.debug:

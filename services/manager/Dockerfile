@@ -1,10 +1,10 @@
-FROM docker.io/library/golang:1.24.5 AS build
+FROM docker.io/library/golang:1.26.3 AS build
 
 ARG TARGETARCH
 
 #Install kubectl
-RUN KC_VERSION=v1.27.0 && \
-    wget -q https://storage.googleapis.com/kubernetes-release/release/${KC_VERSION}/bin/linux/$TARGETARCH/kubectl
+RUN KC_VERSION=v1.34.0 && \
+    wget -q https://dl.k8s.io/release/${KC_VERSION}/bin/linux/$TARGETARCH/kubectl
 
 #Unset the GOPATH
 ENV GOPATH=
@@ -29,13 +29,13 @@ RUN CGO_ENABLED=0 go build
 FROM alpine:latest as certs
 RUN apk --update add ca-certificates
 
-FROM docker.io/library/alpine:3.20
+FROM docker.io/library/alpine:3.23
 #Add repository label
-LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
+LABEL org.opencontainers.image.source="https://github.com/berops/claudie"
 #Add base image name as a label
-LABEL org.opencontainers.image.base.name "docker.io/library/alpine"
+LABEL org.opencontainers.image.base.name="docker.io/library/alpine"
 #Add description to the image
-LABEL org.opencontainers.image.description "Image for Manager from Claudie"
+LABEL org.opencontainers.image.description="Image for Manager from Claudie"
 
 #Copy the binaries to empty base image
 COPY --from=build /go/kubectl /usr/local/bin/kubectl

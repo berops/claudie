@@ -56,7 +56,7 @@ spec:
             region: hel1
             zone: hel1-dc2
           count: 3
-          serverType: cpx21
+          serverType: cpx22
           image: ubuntu-22.04
 
         - name: datastore
@@ -65,7 +65,7 @@ spec:
             region: hel1
             zone: hel1-dc2
           count: 5
-          serverType: cpx21
+          serverType: cpx22
           image: ubuntu-22.04
           storageDiskSize: 800
           taints:
@@ -79,7 +79,7 @@ spec:
             region: hel1
             zone: hel1-dc2
           count: 10
-          serverType: cpx41
+          serverType: cpx42
           image: ubuntu-22.04
           taints:
             - key: node-type
@@ -92,7 +92,7 @@ spec:
             region: hel1
             zone: hel1-dc2
           count: 1
-          serverType: cpx21
+          serverType: cpx22
           image: ubuntu-22.04
 
   kubernetes:

@@ -5,28 +5,26 @@ import (
 )
 
 type (
-	FakeRoleOption                 func(r *spec.Role)
-	FakeDnsOption                  func(d *spec.DNS)
-	FakeInstalltionProxyOption     func(ip *spec.InstallationProxy)
-	FakeProviderGenesisCloudOption func(gcp *spec.Provider_Genesiscloud)
-	FakeProviderCloudflareOption   func(gcp *spec.Provider_Cloudflare)
-	FakeProviderAzureOption        func(gcp *spec.Provider_Azure)
-	FakeProviderAWSOption          func(gcp *spec.Provider_Aws)
-	FakeProviderOciOption          func(gcp *spec.Provider_Oci)
-	FakeProviderHetznerdnsOption   func(gcp *spec.Provider_Hetznerdns)
-	FakeProviderHetznerOption      func(gcp *spec.Provider_Hetzner)
-	FakeProviderGCPOption          func(gcp *spec.Provider_Gcp)
-	FakeRepositoryOption           func(t *spec.TemplateRepository)
-	FakeProviderOption             func(a *spec.Provider)
-	FakeAutoscalerOption           func(a *spec.AutoscalerConf)
-	FakeMachineSpecOption          func(s *spec.MachineSpec)
-	FakeDynamicNodePoolOption      func(dyn *spec.DynamicNodePool)
-	FakeStaticNodePoolOption       func(st *spec.StaticNodePool)
-	FakeNodeOption                 func(node *spec.Node)
-	FakeNodePoolOption             func(np *spec.NodePool)
-	FakeClusterInfoOption          func(ci *spec.ClusterInfo)
-	FakeK8SOption                  func(k *spec.K8Scluster)
-	FakeLBOption                   func(l *spec.LBcluster)
+	FakeRoleOption               func(r *spec.Role)
+	FakeDnsOption                func(d *spec.DNS)
+	FakeInstalltionProxyOption   func(ip *spec.InstallationProxy)
+	FakeProviderCloudflareOption func(gcp *spec.Provider_Cloudflare)
+	FakeProviderAzureOption      func(gcp *spec.Provider_Azure)
+	FakeProviderAWSOption        func(gcp *spec.Provider_Aws)
+	FakeProviderOciOption        func(gcp *spec.Provider_Oci)
+	FakeProviderHetznerOption    func(gcp *spec.Provider_Hetzner)
+	FakeProviderGCPOption        func(gcp *spec.Provider_Gcp)
+	FakeRepositoryOption         func(t *spec.TemplateRepository)
+	FakeProviderOption           func(a *spec.Provider)
+	FakeAutoscalerOption         func(a *spec.AutoscalerConf)
+	FakeMachineSpecOption        func(s *spec.MachineSpec)
+	FakeDynamicNodePoolOption    func(dyn *spec.DynamicNodePool)
+	FakeStaticNodePoolOption     func(st *spec.StaticNodePool)
+	FakeNodeOption               func(node *spec.Node)
+	FakeNodePoolOption           func(np *spec.NodePool)
+	FakeClusterInfoOption        func(ci *spec.ClusterInfo)
+	FakeK8SOption                func(k *spec.K8Scluster)
+	FakeLBOption                 func(l *spec.LBcluster)
 )
 
 func WithRoleName(n string) FakeRoleOption {
@@ -131,12 +129,6 @@ func WithInstallationProxyEndpoint(m string) FakeInstalltionProxyOption {
 	}
 }
 
-func WithProviderGenesisCloudToken(k string) FakeProviderGenesisCloudOption {
-	return func(a *spec.Provider_Genesiscloud) {
-		a.Genesiscloud.Token = k
-	}
-}
-
 func WithProviderCloudflareToken(k string) FakeProviderCloudflareOption {
 	return func(a *spec.Provider_Cloudflare) {
 		a.Cloudflare.Token = k
@@ -209,12 +201,6 @@ func WithProviderOciPrivateKey(id string) FakeProviderOciOption {
 	}
 }
 
-func WithProviderHetznerdnsToken(k string) FakeProviderHetznerdnsOption {
-	return func(a *spec.Provider_Hetznerdns) {
-		a.Hetznerdns.Token = k
-	}
-}
-
 func WithProviderHetznerToken(k string) FakeProviderHetznerOption {
 	return func(a *spec.Provider_Hetzner) {
 		a.Hetzner.Token = k
@@ -269,12 +255,6 @@ func WithProviderHetzner(typ *spec.Provider_Hetzner) FakeProviderOption {
 	}
 }
 
-func WithProviderHetznerdns(typ *spec.Provider_Hetznerdns) FakeProviderOption {
-	return func(a *spec.Provider) {
-		a.ProviderType = typ
-	}
-}
-
 func WithProviderOci(typ *spec.Provider_Oci) FakeProviderOption {
 	return func(a *spec.Provider) {
 		a.ProviderType = typ
@@ -294,12 +274,6 @@ func WithProviderAzure(typ *spec.Provider_Azure) FakeProviderOption {
 }
 
 func WithProviderCloudflare(typ *spec.Provider_Cloudflare) FakeProviderOption {
-	return func(a *spec.Provider) {
-		a.ProviderType = typ
-	}
-}
-
-func WithProviderGenesiscloud(typ *spec.Provider_Genesiscloud) FakeProviderOption {
 	return func(a *spec.Provider) {
 		a.ProviderType = typ
 	}
@@ -567,16 +541,6 @@ func CreateFakeInstallationProxy(opts ...FakeInstalltionProxyOption) *spec.Insta
 	return ip
 }
 
-func CreateFakeProviderGenesisCloud(opts ...FakeProviderGenesisCloudOption) *spec.Provider_Genesiscloud {
-	gcp := &spec.Provider_Genesiscloud{
-		Genesiscloud: &spec.GenesisCloudProvider{},
-	}
-	for _, o := range opts {
-		o(gcp)
-	}
-	return gcp
-}
-
 func CreateFakeProviderCloudflare(opts ...FakeProviderCloudflareOption) *spec.Provider_Cloudflare {
 	gcp := &spec.Provider_Cloudflare{
 		Cloudflare: &spec.CloudflareProvider{},
@@ -609,16 +573,6 @@ func CreateFakeProviderAWS(opts ...FakeProviderAWSOption) *spec.Provider_Aws {
 func CreateFakeProviderOci(opts ...FakeProviderOciOption) *spec.Provider_Oci {
 	gcp := &spec.Provider_Oci{
 		Oci: &spec.OCIProvider{},
-	}
-	for _, o := range opts {
-		o(gcp)
-	}
-	return gcp
-}
-
-func CreateFakeProviderHetznerdns(opts ...FakeProviderHetznerdnsOption) *spec.Provider_Hetznerdns {
-	gcp := &spec.Provider_Hetznerdns{
-		Hetznerdns: &spec.HetznerDNSProvider{},
 	}
 	for _, o := range opts {
 		o(gcp)

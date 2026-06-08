@@ -21,7 +21,7 @@ import (
 
 const (
 	// How long to wait before considering the ping packet to be lost.
-	pingTimeout = 3 * time.Second
+	PingTimeout = 3 * time.Second
 	// PingRetryCount is the number of times the ping will be retried
 	// to determine if the node is healthy of not.
 	PingRetryCount = 5
@@ -128,8 +128,8 @@ func ping4(logger zerolog.Logger, conn *icmp.PacketConn, id, seq int, dst *net.U
 func Ping(logger zerolog.Logger, count int, dst string) error {
 	dstAddr := &net.UDPAddr{IP: net.ParseIP(dst)}
 	if dstAddr.IP == nil {
-		logger.Warn().Msgf("Received invalid IP address to ping %q, skipping unreachability check", dst)
-		return nil
+		logger.Warn().Msgf("Received invalid IP address to ping %q, considering as unreachable", dst)
+		return fmt.Errorf("unhealthy connection: %w, invalid IP address %q", ErrEchoTimeout, dst)
 	}
 
 	conn, err := icmp.ListenPacket("udp4", "0.0.0.0")
@@ -146,7 +146,7 @@ func Ping(logger zerolog.Logger, count int, dst string) error {
 		time.Sleep(1 * time.Second)
 		seq := i + 1
 		send := time.Now()
-		if err := ping4(logger, conn, id, seq, dstAddr, pingTimeout); err != nil {
+		if err := ping4(logger, conn, id, seq, dstAddr, PingTimeout); err != nil {
 			lost++
 			if errors.Is(err, ErrEchoTimeout) {
 				logger.Warn().Msgf("[%v] node %s icmp seq %v, lost", time.Since(send).String(), dst, seq)
@@ -210,6 +210,40 @@ func PingNodes(logger zerolog.Logger, state *spec.Clusters) (map[string][]string
 	}
 
 	return k8sip, lbsip, err
+}
+
+func PingLoadBalancerNodes(logger zerolog.Logger, state *spec.Clusters) (map[string]map[string][]string, error) {
+	type nodemap = map[string]string
+
+	lbsNodes := make(map[string]nodemap)
+	for _, lb := range state.GetLoadBalancers().GetClusters() {
+		lbsNodes[lb.ClusterInfo.Id()] = make(nodemap)
+		for _, np := range lb.GetClusterInfo().GetNodePools() {
+			for _, n := range np.Nodes {
+				lbsNodes[lb.ClusterInfo.Id()][n.Public] = np.Name
+			}
+		}
+	}
+
+	var ips []string
+	for _, lbs := range lbsNodes {
+		ips = slices.AppendSeq(ips, maps.Keys(lbs))
+	}
+
+	lbsip := make(map[string]map[string][]string)
+	unreachable, err := pingAll(logger, pingConcurrentWorkers, ips, Ping)
+	for _, ip := range unreachable {
+		for lb, nodes := range lbsNodes {
+			if np, ok := nodes[ip]; ok {
+				if lbsip[lb] == nil {
+					lbsip[lb] = make(map[string][]string)
+				}
+				lbsip[lb][np] = append(lbsip[lb][np], ip)
+			}
+		}
+	}
+
+	return lbsip, err
 }
 
 func pingAll(

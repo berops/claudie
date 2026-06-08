@@ -8,7 +8,7 @@ spec:
       providerType: hetzner
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.11"
+        tag: "v0.9.15"
         path: "templates/terraformer/hetzner"
       secretRef:
         name: hetzner-secret
@@ -17,7 +17,7 @@ spec:
       providerType: hetzner
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.11"
+        tag: "v0.9.15"
         path: "templates/terraformer/hetzner"
       secretRef:
         name: hetzner-secret
@@ -26,7 +26,7 @@ spec:
       providerType: oci
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.11"
+        tag: "v0.9.15"
         path: "templates/terraformer/oci"
       secretRef:
         name: oci-secret
@@ -35,7 +35,7 @@ spec:
       providerType: aws
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.11"
+        tag: "v0.9.15"
         path: "templates/terraformer/aws"
       secretRef:
         name: aws-secret
@@ -44,7 +44,7 @@ spec:
       providerType: aws
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.11"
+        tag: "v0.9.15"
         path: "templates/terraformer/aws"
       secretRef:
         name: aws-secret
@@ -53,7 +53,7 @@ spec:
       providerType: azure
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.11"
+        tag: "v0.9.15"
         path: "templates/terraformer/azure"
       secretRef:
         name: azure-secret
@@ -67,7 +67,7 @@ spec:
           region: nbg1
           zone: nbg1-dc3
         count: 1
-        serverType: cpx11
+        serverType: cpx22
         image: ubuntu-24.04
         labels:
           test-set: rolling-update-2-test
@@ -92,7 +92,7 @@ spec:
           region: eu-west-3
           zone: eu-west-3a
         count: 1
-        serverType: t3.small
+        serverType: t3.medium
         #ubuntu
         image: ami-045a8ab02aadf4f88
         storageDiskSize: 50
@@ -103,14 +103,14 @@ spec:
           region: nbg1
           zone: nbg1-dc3
         count: 1
-        serverType: cpx11
+        serverType: cpx22
         image: ubuntu-24.04
         storageDiskSize: 50
 
   kubernetes:
     clusters:
       - name: ts-rolling-update-nodepools1
-        version: 1.30.0
+        version: "1.35.0"
         network: 192.168.2.0/24
         pools:
           control:

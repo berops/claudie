@@ -20,20 +20,17 @@ type Manifest struct {
 }
 
 type Provider struct {
-	GCP          []GCP          `yaml:"gcp"`
-	Hetzner      []Hetzner      `yaml:"hetzner"`
-	AWS          []AWS          `yaml:"aws"`
-	OCI          []OCI          `yaml:"oci"`
-	Azure        []Azure        `yaml:"azure"`
-	Cloudflare   []Cloudflare   `yaml:"cloudflare"`
-	HetznerDNS   []HetznerDNS   `yaml:"hetznerdns"`
-	GenesisCloud []GenesisCloud `yaml:"genesiscloud"`
-}
-
-type HetznerDNS struct {
-	Name      string              `validate:"required,max=15" yaml:"name"`
-	ApiToken  string              `validate:"required" yaml:"apiToken"`
-	Templates *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
+	GCP        []GCP        `yaml:"gcp"`
+	Hetzner    []Hetzner    `yaml:"hetzner"`
+	AWS        []AWS        `yaml:"aws"`
+	OCI        []OCI        `yaml:"oci"`
+	Azure      []Azure      `yaml:"azure"`
+	Cloudflare []Cloudflare `yaml:"cloudflare"`
+	Openstack  []Openstack  `yaml:"openstack"`
+	Exoscale   []Exoscale   `yaml:"exoscale"`
+	CloudRift  []CloudRift  `yaml:"cloudrift"`
+	Verda      []Verda      `yaml:"verda"`
+	OVH        []OVH        `yaml:"ovh"`
 }
 
 type Cloudflare struct {
@@ -64,12 +61,6 @@ type Hetzner struct {
 	Templates   *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
 }
 
-type GenesisCloud struct {
-	Name      string              `validate:"required,max=15" yaml:"name"`
-	ApiToken  string              `validate:"required,alphanum" yaml:"apiToken"`
-	Templates *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
-}
-
 type AWS struct {
 	Name      string              `validate:"required,max=15" yaml:"name" json:"name"`
 	AccessKey string              `validate:"required,alphanum,len=20" yaml:"accessKey" json:"accessKey"`
@@ -93,6 +84,47 @@ type Azure struct {
 	ClientId       string              `validate:"required" yaml:"clientId"`
 	ClientSecret   string              `validate:"required" yaml:"clientSecret"`
 	Templates      *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
+}
+
+type Openstack struct {
+	Name                        string              `validate:"required,max=15" yaml:"name"`
+	AuthURL                     string              `validate:"required,url" yaml:"authURL"`
+	DomainId                    string              `validate:"required" yaml:"domainId" default:"default"`
+	ProjectId                   string              `validate:"required" yaml:"projectId"`
+	ApplicationCredentialId     string              `validate:"required" yaml:"applicationCredentialId"`
+	ApplicationCredentialSecret string              `validate:"required" yaml:"applicationCredentialSecret"`
+	Templates                   *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
+}
+
+type Exoscale struct {
+	Name      string              `validate:"required,max=15" yaml:"name"`
+	ApiKey    string              `validate:"required" yaml:"apiKey"`
+	ApiSecret string              `validate:"required" yaml:"apiSecret"`
+	Templates *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
+}
+
+type CloudRift struct {
+	Name      string              `validate:"required,max=15" yaml:"name"`
+	Token     string              `validate:"required" yaml:"token"`
+	TeamId    string              `validate:"omitempty" yaml:"teamId"`
+	Templates *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
+}
+
+type Verda struct {
+	Name         string              `validate:"required,max=15" yaml:"name"`
+	ClientId     string              `validate:"required" yaml:"clientId"`
+	ClientSecret string              `validate:"required" yaml:"clientSecret"`
+	BaseUrl      string              `validate:"omitempty,url" yaml:"baseUrl"`
+	Templates    *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
+}
+
+type OVH struct {
+	Name         string              `validate:"required,max=15" yaml:"name"`
+	ClientId     string              `validate:"required" yaml:"clientId"`
+	ClientSecret string              `validate:"required" yaml:"clientSecret"`
+	ServiceName  string              `validate:"required" yaml:"serviceName"`
+	Endpoint     string              `validate:"omitempty" yaml:"endpoint"`
+	Templates    *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
 }
 
 // NodePools describes nodepools used for either kubernetes clusters
@@ -119,6 +151,9 @@ type LoadBalancer struct {
 // Kubernetes list of Kubernetes cluster this manifest will manage.
 type Kubernetes struct {
 	// List of Kubernetes clusters Claudie will create.
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=100
 	// +optional
 	Clusters []Cluster `yaml:"clusters" json:"clusters"`
 }
@@ -131,9 +166,17 @@ type MachineSpec struct {
 	// Memory specifies the memory the provided instance type will have.
 	// +optional
 	Memory int `validate:"required_with=CpuCount,gte=0" yaml:"memory" json:"memory"`
-	// Nvidia specifies the number of NVIDIA GPUs the provided instance type will have.
+	// NvidiaGpuCount specifies the number of NVIDIA GPUs the provided instance type will have.
 	// +optional
-	NvidiaGpu int `validate:"gte=0" yaml:"nvidiaGpu" json:"nvidiaGpu"`
+	NvidiaGpuCount int `validate:"gte=0" yaml:"nvidiaGpuCount" json:"nvidiaGpuCount"`
+	// NvidiaGpuType specifies the NVIDIA GPU accelerator type (required for GCP when using GPUs).
+	// Examples: nvidia-tesla-k80, nvidia-tesla-v100, nvidia-tesla-a100, nvidia-l4
+	// +optional
+	NvidiaGpuType string `validate:"omitempty" yaml:"nvidiaGpuType" json:"nvidiaGpuType,omitempty"`
+	// NvidiaGpu is deprecated, use NvidiaGpuCount instead. Kept for backward compatibility.
+	// +optional
+	// Deprecated: Use NvidiaGpuCount instead.
+	NvidiaGpu int `validate:"gte=0" yaml:"nvidiaGpu" json:"nvidiaGpu,omitempty"`
 }
 
 // DynamicNodePool List of dynamically to-be-created nodepools of not yet existing machines, used for Kubernetes or loadbalancer clusters.
@@ -192,6 +235,9 @@ type ProviderSpec struct {
 	// Zone of the nodepool.
 	// +optional
 	Zone string `yaml:"zone" json:"zone"`
+	// Name of the external provider network to which the nodes will be connected to. Currently only required for OpenStack.
+	// +optional
+	ExternalNetworkName string `validate:"external_net" yaml:"externalNetworkName" json:"externalNetworkName"`
 }
 
 // StaticNodePool List of static nodepools of already existing machines, not created by Claudie, used for Kubernetes or loadbalancer clusters.
@@ -209,6 +255,9 @@ type StaticNodePool struct {
 	// User defined taints for this nodepool.
 	// +optional
 	Taints []k8sV1.Taint `validate:"omitempty" yaml:"taints" json:"taints"`
+	// SSH port used to connect to the static nodes. Defaults to 22 if not set.
+	// +optional
+	SshPort *int32 `validate:"omitempty,min=1,max=65535" yaml:"sshPort" json:"sshPort"`
 }
 
 // Node represents a static node assigned to a particular static nodepool.
@@ -227,11 +276,13 @@ type Cluster struct {
 	Name string `validate:"required,max=28" yaml:"name" json:"name"`
 	// Version should be defined in format vX.Y. In terms of supported versions of Kubernetes,
 	// Claudie follows kubeone releases and their supported versions.
-	// The current kubeone version used in Claudie is 1.8.1.
+	// The current kubeone version used in Claudie is 1.12.1.
 	// To see the list of supported versions, please refer to kubeone documentation.
-	// https://docs.kubermatic.com/kubeone/v1.8/architecture/compatibility/supported-versions/
+	// https://docs.kubermatic.com/kubeone/v1.12/architecture/compatibility/supported-versions/
 	Version string `validate:"required,ver" yaml:"version" json:"version"`
 	// Network range for the VPN of the cluster. The value should be defined in format A.B.C.D/mask.
+	// +kubebuilder:validation:MaxLength=50
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Network is immutable"
 	Network string `validate:"required,cidrv4" yaml:"network" json:"network"`
 	// List of nodepool names this cluster will use.
 	Pools Pool `yaml:"pools" json:"pools"`
@@ -301,7 +352,7 @@ type LoadBalancerCluster struct {
 
 // Collection of data Claudie uses to create a DNS record for the loadbalancer.
 type DNS struct {
-	// DNS zone inside of which the records will be created. GCP/AWS/OCI/Azure/Cloudflare/Hetzner DNS zone is accepted
+	// DNS zone inside of which the records will be created. GCP/AWS/OCI/Azure/Cloudflare/Hetzner/OVH DNS zone is accepted
 	DNSZone string `validate:"required" yaml:"dnsZone" json:"dnsZone"`
 	// Name of provider to be used for creating an A record entry in defined DNS zone.
 	Provider string `validate:"required" yaml:"provider" json:"provider"`

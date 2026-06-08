@@ -8,7 +8,7 @@ spec:
       providerType: hetzner
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.12
+        tag: v0.11.0
         path: "templates/terraformer/hetzner"
       secretRef:
         name: hetzner-secret
@@ -21,12 +21,12 @@ spec:
           region: nbg1
           zone: nbg1-dc3
         count: 1
-        serverType: cpx11
+        serverType: cpx22
         image: ubuntu-24.04
   kubernetes:
     clusters:
       - name: succeeds-on-last-4-cluster-0
-        version: 1.30.0
+        version: "1.35.0"
         network: 192.168.2.0/24
         pools:
           control:

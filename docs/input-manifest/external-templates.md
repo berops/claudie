@@ -4,19 +4,19 @@ Claudie allows to plug in your own templates for spawning the infrastructure. Sp
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
-  name: genesis-example
+  name: hetzner-example
   labels:
     app.kubernetes.io/part-of: claudie
 spec:
   providers:
-    - name: genesiscloud
-      providerType: genesiscloud
+    - name: hetzner-1
+      providerType: hetzner
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.8" # optional
-        path: "templates/terraformer/genesiscloud"
+        tag: "v0.9.19" # optional
+        path: "templates/terraformer/hetzner"
       secretRef:
-        name: genesiscloud-secret
+        name: hetzner-secret
         namespace: secrets
 ...
 ```
@@ -107,7 +107,7 @@ spec:
 +       path: "templates/terraformer/hetzner"
       secretRef:
         name: hetzner-secret-1
-        namespace: mynamespace
+        namespace: <your-namespace>
 
   nodePools:
     dynamic:
@@ -115,13 +115,11 @@ spec:
         providerSpec:
           # Name of the provider instance.
           name: hetzner-1
-          # Region of the nodepool.
+          # Location of the nodepool.
           region: hel1
-          # Datacenter of the nodepool.
-          zone: hel1-dc2
         count: 1
         # Machine type name.
-        serverType: cpx11
+        serverType: cpx22
         # OS image name.
         image: ubuntu-22.04
 
@@ -129,13 +127,11 @@ spec:
         providerSpec:
           # Name of the provider instance.
           name: hetzner-1
-          # Region of the nodepool.
+          # Location of the nodepool.
           region: fsn1
-          # Datacenter of the nodepool.
-          zone: fsn1-dc14
         count: 2
         # Machine type name.
-        serverType: cpx11
+        serverType: cpx22
         # OS image name.
         image: ubuntu-22.04
         storageDiskSize: 50
@@ -144,13 +140,11 @@ spec:
         providerSpec:
           # Name of the provider instance.
           name: hetzner-1
-          # Region of the nodepool.
+          # Location of the nodepool.
           region: nbg1
-          # Datacenter of the nodepool.
-          zone: nbg1-dc3
         count: 2
         # Machine type name.
-        serverType: cpx11
+        serverType: cpx22
         # OS image name.
         image: ubuntu-22.04
         storageDiskSize: 50
@@ -158,7 +152,7 @@ spec:
   kubernetes:
     clusters:
       - name: hetzner-cluster
-        version: v1.31.0
+        version: v1.34.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -189,5 +183,5 @@ spec:
 +       path: "templates/terraformer/hetzner"
       secretRef:
         name: hetzner-secret-1
-        namespace: mynamespace
+        namespace: <your-namespace>
 ```

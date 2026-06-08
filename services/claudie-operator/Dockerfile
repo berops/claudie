@@ -1,4 +1,4 @@
-FROM docker.io/library/golang:1.24.5 AS build
+FROM docker.io/library/golang:1.26.3 AS build
 
 ARG TARGETARCH
 
@@ -24,11 +24,11 @@ RUN CGO_ENABLED=0 go build
 #Use empty base image
 FROM scratch
 #Add repository label
-LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
+LABEL org.opencontainers.image.source="https://github.com/berops/claudie"
 #Add image name as a label
-LABEL org.opencontainers.image.base.name "scratch"
+LABEL org.opencontainers.image.base.name="scratch"
 #Add description to the image
-LABEL org.opencontainers.image.description "Image for Claudie-operator from Claudie"
+LABEL org.opencontainers.image.description="Image for Claudie-operator from Claudie"
 
 #Copy the binaries to empty base image
 COPY --from=build  /go/services/claudie-operator/claudie-operator /bin/services/claudie-operator/claudie-operator

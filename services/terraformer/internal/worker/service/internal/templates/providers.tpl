@@ -1,0 +1,83 @@
+terraform {
+  required_providers {
+    {{- if .Hetzner }}
+    hcloud = {
+      source  = "hetznercloud/hcloud"
+      version = "~> 1.60.0"
+    }
+    {{- end }}
+    {{- if .Gcp }}
+    google = {
+      source  = "hashicorp/google"
+      version = "6.44.0"
+    }
+    {{- end }}
+    {{- if .Aws }}
+    aws = {
+      source  = "hashicorp/aws"
+      version = "6.4.0"
+    }
+    {{- end }}
+    {{- if .Oci }}
+    oci = {
+      source  = "oracle/oci"
+      version = "7.10.0"
+    }
+    {{- end }}
+    {{- if .Azure }}
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "3.107.0"
+    }
+    {{- end }}
+    {{- if .Cloudflare }}
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "4.52.1"
+    }
+    {{- end }}
+    {{- if .Openstack }}
+    openstack = {
+        source = "terraform-provider-openstack/openstack"
+        version = "3.3.2"
+    }
+    {{- end }}
+    {{- if .Exoscale }}
+    exoscale = {
+      source  = "exoscale/exoscale"
+      version = "~> 0.68.0"
+    }
+    {{- end }}
+    {{- if .CloudRift }}
+    cloudrift = {
+      source  = "berops/cloudrift"
+      version = "~> 0.2.0"
+    }
+    {{- end }}
+    {{- if .Verda }}
+    verda = {
+      source  = "verda-cloud/verda"
+      version = "~> 1.1"
+    }
+    # http and time are pulled in only because the verda nodepool template polls the
+    # Verda API to work around an upstream null-ip race in verda_instance.Create.
+    # Remove these two blocks once the upstream provider waits for the public IP
+    # before returning, and the corresponding data.http blocks in claudie-config's
+    # verda/nodepool/node.tpl are dropped.
+    http = {
+      source  = "hashicorp/http"
+      version = "~> 3.4"
+    }
+    time = {
+      source  = "hashicorp/time"
+      version = "~> 0.11"
+    }
+    {{- end }}
+    {{- if .OVH }}
+    ovh = {
+      source  = "ovh/ovh"
+      version = "~> 2.13"
+    }
+    {{- end }}
+  }
+}

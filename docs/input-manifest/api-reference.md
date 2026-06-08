@@ -44,11 +44,13 @@ needs to be defined.
   | `aws`          | [AWS](#aws) provider type                   |
   | `azure`        | [Azure](#azure) provider type               |
   | `cloudflare`   | [Cloudflare](#cloudflare) provider type     |
+  | `cloudrift`    | [CloudRift](#cloudrift) provider type       |
+  | `exoscale`     | [Exoscale](#exoscale) provider type         |
   | `gcp`          | [GCP](#gcp) provider type                   |
   | `hetzner`      | [Hetzner](#hetzner) provider type           |
-  | `hetznerdns`   | [Hetzner](#hetznerdns) DNS provider type    |
   | `oci`          | [OCI](#oci) provider type                   |
-  | `genesiscloud` | [GenesisCloud](#genesiscloud) provider type |
+  | `ovh`          | [OVHcloud](#ovhcloud) provider type         |
+  | `verda`        | [Verda](#verda) provider type               |
 
 - `secretRef` [SecretRef](#secretref)
 
@@ -84,14 +86,18 @@ To find out how to configure Cloudflare follow the instructions [here](./provide
   - `tag`: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.
   - `path`: specifies the path for a specific provider within the `repository` where the source template files are located.
 
-### HetznerDNS
+### CloudRift
 
-The fields that need to be included in a Kubernetes Secret resource to utilize the HetznerDNS provider.
-To find out how to configure HetznerDNS follow the instructions [here](./providers/hetzner.md)
+The fields that need to be included in a Kubernetes Secret resource to utilize the CloudRift provider.
+To find out how to configure CloudRift provider and API credentials, follow the instructions [here](./providers/cloudrift.md).
 
-- `apitoken`
+- `token`
 
-  Credentials for the provider (API token).
+  Personal API key for your CloudRift account.
+
+- `teamid` *(optional)*
+
+  Team ID to provision VMs under a team account. If omitted, VMs are provisioned under the personal account associated with the token.
 
 - `templates`
   - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
@@ -110,20 +116,6 @@ To find out how to configure GCP provider and service account, follow the instru
 - `gcpproject`
 
   Project id of an already existing GCP project where the infrastructure is to be created.
-
-- `templates`
-  - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
-  - `tag`: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.
-  - `path`: specifies the path for a specific provider within the `repository` where the source template files are located.
-
-### GenesisCloud
-
-The fields that need to be included in a Kubernetes Secret resource to utilize the Genesis Cloud provider.
-To find out how to configure Genesis Cloud provider, follow the instructions [here](./providers/genesiscloud.md).
-
-- `apitoken`
-
-  API token for the provider.
 
 - `templates`
   - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
@@ -174,6 +166,24 @@ To find out how to configure OCI provider and service account, follow the instru
   - `tag`: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.
   - `path`: specifies the path for a specific provider within the `repository` where the source template files are located.
 
+### Exoscale
+
+The fields that need to be included in a Kubernetes Secret resource to utilize the Exoscale provider.
+To find out how to configure Exoscale provider and API credentials, follow the instructions [here](./providers/exoscale.md).
+
+- `apikey`
+
+  API key for your Exoscale account.
+
+- `apisecret`
+
+  API secret for the API key specified above.
+
+- `templates`
+  - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
+  - `tag`: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.
+  - `path`: specifies the path for a specific provider within the `repository` where the source template files are located.
+
 ### AWS
 
 The fields that need to be included in a Kubernetes Secret resource to utilize the AWS provider.
@@ -212,6 +222,54 @@ To find out how to configure Azure provider and service account, follow the inst
 - `clientsecret`
 
   Client secret generated for your client.
+
+- `templates`
+  - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
+  - `tag`: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.
+  - `path`: specifies the path for a specific provider within the `repository` where the source template files are located.
+
+### OVHcloud
+
+The fields that need to be included in a Kubernetes Secret resource to utilize the OVHcloud provider.
+To configure OVHcloud provider and API credentials, follow the [OVHcloud provider guide](./providers/ovh.md).
+
+- `clientid`
+
+  OAuth2 Client ID issued by the OVHcloud Control Panel under **Identity and Access Management -> OAuth2 service accounts**.
+
+- `clientsecret`
+
+  OAuth2 Client Secret paired with the `clientid` above. Shown only once at creation time.
+
+- `servicename`
+
+  Public Cloud project ID. Found in the OVHcloud Manager under **Public Cloud -> Project Management**.
+
+- `endpoint` *(optional)*
+
+  OVHcloud API endpoint region. One of `ovh-eu` (default), `ovh-us`, `ovh-ca`, `kimsufi-eu`, `kimsufi-ca`, `soyoustart-eu`, `soyoustart-ca`. This selects the API region, not the compute region.
+
+- `templates`
+  - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
+  - `tag`: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.
+  - `path`: specifies the path for a specific provider within the `repository` where the source template files are located.
+
+### Verda
+
+The fields that need to be included in a Kubernetes Secret resource to utilize the Verda Cloud provider.
+To find out how to configure Verda provider and API credentials, follow the instructions [here](./providers/verda.md).
+
+- `clientid`
+
+  OAuth2 Client ID issued by the Verda console under **Keys > Cloud API Credentials**.
+
+- `clientsecret`
+
+  OAuth2 Client Secret paired with the `clientid` above. Shown only once at creation time in the Verda console.
+
+- `baseurl` *(optional)*
+
+  Override the Verda Cloud API base URL. Defaults to `https://api.verda.com/v1`.
 
 - `templates`
   - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
@@ -261,7 +319,9 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
   - `cpuCount`: specifies the number of cpus used by the `serverType`
   - `memory`: specifies the memory in GBs used by the `serverType`
-  - `nvidiaGpu`: specifies the number of nvidia GPUs used by the `serverType`
+  - `nvidiaGpuCount`: specifies the number of NVIDIA GPUs used by the `serverType`
+  - `nvidiaGpuType`: specifies the NVIDIA GPU accelerator type (required for GCP when using GPUs). Examples: `nvidia-tesla-t4`, `nvidia-tesla-v100`, `nvidia-tesla-a100`, `nvidia-l4`
+  - `nvidiaGpu`: (deprecated) use `nvidiaGpuCount` instead
 
 - `image`
 
@@ -301,7 +361,7 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
 ## Provider Spec
 
-Provider spec is an additional specification built on top of the data from any of the provider instance. Here are provider configuration examples for each individual provider: [aws](providers/aws.md), [azure](providers/azure.md), [gcp](providers/gcp.md), [cloudflare](providers/cloudflare.md), [hetzner](providers/hetzner.md) and [oci](providers/oci.md).
+Provider spec is an additional specification built on top of the data from any of the provider instance. Here are provider configuration examples for each individual provider: [aws](providers/aws.md), [azure](providers/azure.md), [cloudrift](providers/cloudrift.md), [exoscale](providers/exoscale.md), [gcp](providers/gcp.md), [cloudflare](providers/cloudflare.md), [hetzner](providers/hetzner.md), [oci](providers/oci.md), [ovh](providers/ovh.md) and [verda](providers/verda.md).
 
 - `name`
 
@@ -311,9 +371,9 @@ Provider spec is an additional specification built on top of the data from any o
 
   Region of the nodepool.
 
-- `zone`
+- `zone` *(optional)*
 
-  Zone of the nodepool.
+  Zone of the nodepool. If not specified, nodes are automatically distributed across all available zones in the region using round-robin assignment. This provides better availability and fault tolerance by spreading nodes across multiple availability zones.
 
 ## Autoscaler Configuration
 
@@ -329,7 +389,7 @@ Autoscaler configuration on per nodepool basis. Defines the number of nodes, aut
 
 ## Static
 
-Static nodepools are defined for static machines which Claudie will not manage. Used for on premise nodes.
+Static nodepools are defined for static machines which Claudie will not manage. Used for on-premises nodes.
 
 !!! note "In case you want to use your static nodes in the Kubernetes cluster, make sure they meet the [requirements](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/#before-you-begin)."
 
@@ -359,6 +419,10 @@ Static nodepools are defined for static machines which Claudie will not manage. 
   Array of user defined taints, which will be applied on every node in the node pool. This field is optional.
 
   To see the default taints Claudie applies on each node, refer to [this section](#default-taints).
+
+- `sshPort`
+
+  SSH port used to connect to the static nodes in this node pool. This field is optional. If not specified, the default value of `22` is used.
 
 ## Static node
 
@@ -408,7 +472,7 @@ Collection of data used to define a Kubernetes cluster.
 
   Kubernetes version of the cluster.
 
-  Version should be defined in format `vX.Y`. In terms of supported versions of Kubernetes, Claudie follows `kubeone` releases and their supported versions. The current `kubeone` version used in Claudie is `1.10.0`. To see the list of supported versions, please refer to `kubeone` [documentation](https://docs.kubermatic.com/kubeone/v1.10/architecture/compatibility/supported-versions/).
+  Version should be defined in format `vX.Y`. In terms of supported versions of Kubernetes, Claudie follows `kubeone` releases and their supported versions. The current `kubeone` version used in Claudie is `1.12.0`. To see the list of supported versions, please refer to `kubeone` [documentation](https://docs.kubermatic.com/kubeone/v1.12/architecture/compatibility/supported-versions/).
 
 - `network`
 

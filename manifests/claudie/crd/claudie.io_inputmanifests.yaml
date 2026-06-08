@@ -90,7 +90,11 @@ spec:
                         network:
                           description: Network range for the VPN of the cluster. The
                             value should be defined in format A.B.C.D/mask.
+                          maxLength: 50
                           type: string
+                          x-kubernetes-validations:
+                          - message: Network is immutable
+                            rule: self == oldSelf
                         pools:
                           description: List of nodepool names this cluster will use.
                           properties:
@@ -114,9 +118,9 @@ spec:
                           description: |-
                             Version should be defined in format vX.Y. In terms of supported versions of Kubernetes,
                             Claudie follows kubeone releases and their supported versions.
-                            The current kubeone version used in Claudie is 1.8.1.
+                            The current kubeone version used in Claudie is 1.12.1.
                             To see the list of supported versions, please refer to kubeone documentation.
-                            https://docs.kubermatic.com/kubeone/v1.8/architecture/compatibility/supported-versions/
+                            https://docs.kubermatic.com/kubeone/v1.12/architecture/compatibility/supported-versions/
                           type: string
                       required:
                       - name
@@ -124,7 +128,11 @@ spec:
                       - pools
                       - version
                       type: object
+                    maxItems: 100
                     type: array
+                    x-kubernetes-list-map-keys:
+                    - name
+                    x-kubernetes-list-type: map
                 type: object
               loadBalancers:
                 properties:
@@ -150,8 +158,8 @@ spec:
                               type: array
                             dnsZone:
                               description: DNS zone inside of which the records will
-                                be created. GCP/AWS/OCI/Azure/Cloudflare/Hetzner DNS
-                                zone is accepted
+                                be created. GCP/AWS/OCI/Azure/Cloudflare/Hetzner/OVH
+                                DNS zone is accepted
                               type: string
                             hostname:
                               description: Custom hostname for your A record. If left
@@ -310,9 +318,19 @@ spec:
                                 instance type will have.
                               type: integer
                             nvidiaGpu:
-                              description: Nvidia specifies the number of NVIDIA GPUs
-                                the provided instance type will have.
+                              description: |-
+                                NvidiaGpu is deprecated, use NvidiaGpuCount instead. Kept for backward compatibility.
+                                Deprecated: Use NvidiaGpuCount instead.
                               type: integer
+                            nvidiaGpuCount:
+                              description: NvidiaGpuCount specifies the number of
+                                NVIDIA GPUs the provided instance type will have.
+                              type: integer
+                            nvidiaGpuType:
+                              description: |-
+                                NvidiaGpuType specifies the NVIDIA GPU accelerator type (required for GCP when using GPUs).
+                                Examples: nvidia-tesla-k80, nvidia-tesla-v100, nvidia-tesla-a100, nvidia-l4
+                              type: string
                           type: object
                         name:
                           description: Name of the nodepool. Each nodepool will have
@@ -323,6 +341,11 @@ spec:
                           description: Collection of provider data to be used while
                             creating the nodepool.
                           properties:
+                            externalNetworkName:
+                              description: Name of the external provider network to
+                                which the nodes will be connected to. Currently only
+                                required for OpenStack.
+                              type: string
                             name:
                               description: Name of the provider instance specified
                                 in providers
@@ -439,6 +462,13 @@ spec:
                             - secretRef
                             type: object
                           type: array
+                        sshPort:
+                          description: SSH port used to connect to the static nodes.
+                            Defaults to 22 if not set.
+                          format: int32
+                          maximum: 65535
+                          minimum: 1
+                          type: integer
                         taints:
                           items:
                             description: |-
@@ -502,8 +532,11 @@ spec:
                       - oci
                       - azure
                       - cloudflare
-                      - hetznerdns
-                      - genesiscloud
+                      - openstack
+                      - exoscale
+                      - cloudrift
+                      - verda
+                      - ovh
                       type: string
                     secretRef:
                       description: |-
@@ -550,8 +583,25 @@ spec:
                       type: string
                     phase:
                       type: string
+                    previous:
+                      items:
+                        properties:
+                          stage:
+                            type: string
+                          status:
+                            type: string
+                          taskDescription:
+                            type: string
+                          timestamp:
+                            type: string
+                        required:
+                        - timestamp
+                        type: object
+                      type: array
                     state:
                       type: string
+                  required:
+                  - previous
                   type: object
                 type: object
               state:

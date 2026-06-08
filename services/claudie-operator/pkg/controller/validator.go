@@ -35,28 +35,23 @@ func NewWebhook(
 		CertDir: dir,
 	})
 
-	hookServer.Register(path, admission.WithCustomValidator(
+	validator := admission.WithValidator[*v1beta.InputManifest](
 		scheme,
-		&v1beta.InputManifest{},
 		&InputManifestValidator{log, kc},
-	))
+	)
 
+	hookServer.Register(path, validator)
 	return hookServer
 }
 
 // validate takes the context and a kubernetes object as a parameter.
 // It will extract the secret data out of the received obj and run manifest validation against it
-func (v *InputManifestValidator) validate(ctx context.Context, obj runtime.Object) error {
+func (v *InputManifestValidator) validate(ctx context.Context, obj *v1beta.InputManifest) error {
 	log := crlog.FromContext(ctx).WithName("InputManifest Validator")
-
-	inputManifest, ok := obj.(*v1beta.InputManifest)
-	if !ok {
-		return fmt.Errorf("expected an InputManifest but got a %T", obj)
-	}
 
 	log.Info("Validating InputManifest")
 
-	if err := validateInputManifest(inputManifest); err != nil {
+	if err := validateInputManifest(obj); err != nil {
 		log.Error(err, "error validating InputManifest")
 		return err
 	}
@@ -65,17 +60,29 @@ func (v *InputManifestValidator) validate(ctx context.Context, obj runtime.Objec
 }
 
 // ValidateCreate defines the logic when a kubernetes obj resource is created
-func (v *InputManifestValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (v *InputManifestValidator) ValidateCreate(ctx context.Context, obj *v1beta.InputManifest) (admission.Warnings, error) {
 	return nil, v.validate(ctx, obj)
 }
 
 // ValidateUpdate defines the logic when a kubernetes obj resource is updated
-func (v *InputManifestValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+func (v *InputManifestValidator) ValidateUpdate(ctx context.Context, oldObj, newObj *v1beta.InputManifest) (admission.Warnings, error) {
+	nmap := getDynamicNodepoolsMap(oldObj)
+	for _, desired := range newObj.Spec.NodePools.Dynamic {
+		current, exists := nmap[desired.Name]
+		if !exists {
+			continue
+		}
+
+		if err := nodepoolImmutabilityCheck(&desired, current); err != nil {
+			return nil, fmt.Errorf("immutability check for dynamic nodepools failed: %w", err)
+		}
+	}
+
 	return nil, v.validate(ctx, newObj)
 }
 
 // ValidateDelete defines the logic when a kubernetes obj resource is deleted
-func (v *InputManifestValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (v *InputManifestValidator) ValidateDelete(ctx context.Context, obj *v1beta.InputManifest) (admission.Warnings, error) {
 	return nil, v.validate(ctx, obj)
 }
 
@@ -98,16 +105,22 @@ func validateInputManifest(im *v1beta.InputManifest) error {
 			rawManifest.Providers.AWS = append(rawManifest.Providers.AWS, manifest.AWS{Name: p.ProviderName})
 		case v1beta.HETZNER:
 			rawManifest.Providers.Hetzner = append(rawManifest.Providers.Hetzner, manifest.Hetzner{Name: p.ProviderName})
-		case v1beta.GENESIS_CLOUD:
-			rawManifest.Providers.GenesisCloud = append(rawManifest.Providers.GenesisCloud, manifest.GenesisCloud{Name: p.ProviderName})
 		case v1beta.OCI:
 			rawManifest.Providers.OCI = append(rawManifest.Providers.OCI, manifest.OCI{Name: p.ProviderName})
 		case v1beta.AZURE:
 			rawManifest.Providers.Azure = append(rawManifest.Providers.Azure, manifest.Azure{Name: p.ProviderName})
 		case v1beta.CLOUDFLARE:
 			rawManifest.Providers.Cloudflare = append(rawManifest.Providers.Cloudflare, manifest.Cloudflare{Name: p.ProviderName})
-		case v1beta.HETZNER_DNS:
-			rawManifest.Providers.HetznerDNS = append(rawManifest.Providers.HetznerDNS, manifest.HetznerDNS{Name: p.ProviderName})
+		case v1beta.OPENSTACK:
+			rawManifest.Providers.Openstack = append(rawManifest.Providers.Openstack, manifest.Openstack{Name: p.ProviderName})
+		case v1beta.EXOSCALE:
+			rawManifest.Providers.Exoscale = append(rawManifest.Providers.Exoscale, manifest.Exoscale{Name: p.ProviderName})
+		case v1beta.CLOUDRIFT:
+			rawManifest.Providers.CloudRift = append(rawManifest.Providers.CloudRift, manifest.CloudRift{Name: p.ProviderName})
+		case v1beta.VERDA:
+			rawManifest.Providers.Verda = append(rawManifest.Providers.Verda, manifest.Verda{Name: p.ProviderName})
+		case v1beta.OVH:
+			rawManifest.Providers.OVH = append(rawManifest.Providers.OVH, manifest.OVH{Name: p.ProviderName})
 		}
 	}
 
@@ -137,4 +150,82 @@ func validateInputManifest(im *v1beta.InputManifest) error {
 		return err
 	}
 	return nil
+}
+
+// getDynamicNodepoolsMap will read manifest from the given config and return map of provider names keyed by dynamic nodepool names
+func getDynamicNodepoolsMap(m *v1beta.InputManifest) map[string]*manifest.DynamicNodePool {
+	nmap := make(map[string]*manifest.DynamicNodePool)
+	for _, np := range m.Spec.NodePools.Dynamic {
+		nmap[np.Name] = &np
+	}
+
+	return nmap
+}
+
+func nodepoolImmutabilityCheck(desired, current *manifest.DynamicNodePool) error {
+	if desired.ProviderSpec != current.ProviderSpec {
+		return fmt.Errorf(
+			"dynamic nodepools are immutable, changing the provider specification from %q to %q for %q is not allowed, only 'count' and 'autoscaling' fields are allowed to be modified, consider removing %q and creating a new one",
+			safePrint(&current.ProviderSpec),
+			safePrint(&desired.ProviderSpec),
+			current.Name,
+			current.Name,
+		)
+	}
+
+	if desired.ServerType != current.ServerType {
+		return fmt.Errorf(
+			"dynamic nodepools are immutable, changing the server type, from %q to %q, for %q is not allowed, only 'count' and 'autoscaling' fields are allowed to be modified, consider removing %q and creating a new one",
+			current.ServerType,
+			desired.ServerType,
+			current.Name,
+			current.Name,
+		)
+	}
+
+	if desired.Image != current.Image {
+		return fmt.Errorf(
+			"dynamic nodepools are immutable, changing the image from %q to %q for %q is not allowed, only 'count' and 'autoscaling' fields are allowed to be modified, consider removing %q and creating a new one",
+			current.Image,
+			desired.Image,
+			current.Name,
+			current.Name,
+		)
+	}
+
+	storageDiskChanged := desired.StorageDiskSize == nil && current.StorageDiskSize != nil
+	storageDiskChanged = storageDiskChanged || (desired.StorageDiskSize != nil && current.StorageDiskSize == nil)
+	storageDiskChanged = storageDiskChanged || ((desired.StorageDiskSize != nil && current.StorageDiskSize != nil) && (*desired.StorageDiskSize != *current.StorageDiskSize))
+	if storageDiskChanged {
+		return fmt.Errorf(
+			"dynamic nodepools are immutable, changing the storage disk size from %q to %q for %q is not allowed, only 'count' and 'autoscaling' fields are allowed to be modified, consider removing %q and creating a new one",
+			safePrint(current.StorageDiskSize),
+			safePrint(desired.StorageDiskSize),
+			current.Name,
+			current.Name,
+		)
+	}
+
+	machineSpecChanged := desired.MachineSpec == nil && current.MachineSpec != nil
+	machineSpecChanged = machineSpecChanged || (desired.MachineSpec != nil && current.MachineSpec == nil)
+	machineSpecChanged = machineSpecChanged || ((desired.MachineSpec != nil && current.MachineSpec != nil) && (*desired.MachineSpec != *current.MachineSpec))
+	if machineSpecChanged {
+		return fmt.Errorf(
+			"dynamic nodepools are immutable, changing the machine spec from %q to %q for %q is not allowed, only 'count' and 'autoscaling' fields are allowed to be modified, consider removing %q and creating a new one",
+			safePrint(current.MachineSpec),
+			safePrint(desired.MachineSpec),
+			current.Name,
+			current.Name,
+		)
+	}
+
+	return nil
+}
+
+func safePrint[T any](p *T) string {
+	if p == nil {
+		return "<nil>"
+	}
+
+	return fmt.Sprintf("%+v", *p)
 }

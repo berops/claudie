@@ -71,10 +71,6 @@ In this section we walk you through the setup of Claudie's Prometheus metrics to
 
 This section describes how to execute updates, such as OS or kubernetes version, in Claudie.
 
-## Deploying Node-Local-DNS
-
-Claudie doesn't deploy Node-Local-DNS in the default mode, thus you have to install it independently. This section provides a step-by-step guide on how to do it.
-
 ## Command Cheat Sheet
 
 The "Command Cheat Sheet" section contains a useful `kubectl` commands to interact with Claudie.
@@ -82,3 +78,7 @@ The "Command Cheat Sheet" section contains a useful `kubectl` commands to intera
 ## Version matrix
 
 In this section, you can find supported Kubernetes and OS versions for the latest Claudie versions.
+
+## HTTP Proxy
+
+This section describes HTTP proxy setup and its customization within claudie.

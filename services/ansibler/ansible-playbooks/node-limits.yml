@@ -1,0 +1,53 @@
+---
+# Update node limits.
+- name: Modify limits.conf
+  blockinfile:
+    path: /etc/security/limits.conf
+    block: |
+      * soft nofile {{ nofile_soft }}
+      * hard nofile {{ nofile_hard }}
+      root soft nofile {{ nofile_soft }}
+      root hard nofile {{ nofile_hard }}
+    state: present
+
+- name: Enable PAM limits
+  ansible.builtin.lineinfile:
+    path: "{{ item }}"
+    line: "session required pam_limits.so"
+    state: present
+  loop:
+    - /etc/pam.d/common-session
+    - /etc/pam.d/common-session-noninteractive
+
+- name: Configure systemd system limits
+  ansible.builtin.lineinfile:
+    path: "{{ item }}"
+    regexp: "^#?DefaultLimitNOFILE="
+    line: "DefaultLimitNOFILE={{ nofile_hard }}"
+  loop:
+    - /etc/systemd/system.conf
+    - /etc/systemd/user.conf
+
+- name: Reload systemd configuration
+  ansible.builtin.systemd:
+    daemon_reload: yes
+
+- name: Configure kernel parameters
+  ansible.builtin.blockinfile:
+    path: /etc/sysctl.d/99-claudie-custom.conf
+    create: yes
+    owner: root
+    group: root
+    mode: '0644'
+    block: |
+      fs.file-max = {{ file_max }}
+      fs.inotify.max_queued_events = {{ max_queued_events }}
+      fs.inotify.max_user_watches = {{ max_user_watches }}
+      fs.inotify.max_user_instances = {{ max_user_instances }}
+      net.ipv4.ip_local_port_range = 2048 65535
+      net.core.somaxconn = 65535
+      net.ipv4.tcp_fin_timeout = 30
+
+  
+- name: Reload sysctl at once with new settings
+  ansible.builtin.command: sysctl --system

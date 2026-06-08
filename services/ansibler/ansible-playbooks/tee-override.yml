@@ -1,0 +1,46 @@
+- hosts: all
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Ensure /opt/claudie/bin exists
+      ansible.builtin.file:
+        path: /opt/claudie/bin
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Create a tee binary override 
+      ansible.builtin.copy:
+        dest: "/opt/claudie/bin/tee"
+        mode: "0755"
+        content: |
+          #!/bin/bash
+
+          # Loop over arguments to check if we're writing to /etc/containerd/config.toml
+          for arg in "$@"; do
+              if [[ "$arg" == "/etc/containerd/config.toml" ]]; then
+                  # Check if conf.d directory exists and contains nvidia config files
+                  if [[ -d "/etc/containerd/conf.d" ]] && compgen -G "/etc/containerd/conf.d/*nvidia*" > /dev/null; then
+                      exit 0
+                  fi
+              fi
+          done
+
+          # Otherwise, pass through to the real tee
+          exec /usr/bin/tee "$@"
+
+    - name: Check if /opt/claudie/bin is already in PATH
+      ansible.builtin.shell: 'echo "$PATH" | grep -q "/opt/claudie/bin"'
+      register: path_check
+      ignore_errors: yes
+
+    - name: Add /opt/claudie/bin to PATH if missing (system-wide)
+      # In order the tee override to work, the /opt/claudie/bin has to be before /usr/bin in PATH
+      ansible.builtin.copy:
+        dest: /etc/profile.d/claudie_path.sh
+        mode: '0755'
+        content: |
+          #!/bin/sh
+          export PATH=/opt/claudie/bin:$PATH
+      when: path_check.rc != 0

@@ -1,10 +1,10 @@
-FROM docker.io/library/golang:1.24.5 AS build
+FROM docker.io/library/golang:1.26.3 AS build
 
 ARG TARGETARCH
 
 #Install kubectl
-RUN KC_VERSION=v1.27.0 && \
-    wget -q https://storage.googleapis.com/kubernetes-release/release/${KC_VERSION}/bin/linux/$TARGETARCH/kubectl
+RUN KC_VERSION=v1.34.0 && \
+    wget -q https://dl.k8s.io/release/${KC_VERSION}/bin/linux/$TARGETARCH/kubectl
 
 #Unset the GOPATH
 ENV GOPATH=
@@ -19,27 +19,30 @@ RUN go mod download
 COPY . .
 
 #Change the directory
-WORKDIR /go/services/kuber/server
+WORKDIR /go/services/kuber/cmd/worker
 
 #Compile the golang code, CGO_ENABLE=0 removes cross compile dependencies
 RUN CGO_ENABLED=0 go build
 
-FROM docker.io/library/alpine:3.20
+FROM docker.io/library/alpine:3.23
 #Add repository label
-LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
+LABEL org.opencontainers.image.source="https://github.com/berops/claudie"
 #Add image name as a label
-LABEL org.opencontainers.image.base.name "docker.io/library/alpine"
+LABEL org.opencontainers.image.base.name="docker.io/library/alpine"
 #Add description to the image
-LABEL org.opencontainers.image.description "Image for Kuber from Claudie"
+LABEL org.opencontainers.image.description="Image for Kuber from Claudie"
 
 #Copy the binaries to empty base image
 COPY --from=build /go/kubectl /usr/local/bin/kubectl
-COPY --from=build /go/services/kuber/server/server /bin/services/kuber/server/server
-COPY --from=build /go/services/kuber/server/manifests /bin/services/kuber/server/manifests
-RUN chmod +x /usr/local/bin/kubectl && apk add -q bash
+COPY --from=build /go/services/kuber/cmd/worker/worker /bin/services/kuber/worker
+COPY --from=build /go/services/kuber/manifests /bin/services/kuber/manifests
+RUN chmod +x /usr/local/bin/kubectl \
+    && apk update \
+    && apk add -q bash \
+    && rm -rf /var/cache/apk/*
 
-#Run server
+#Run worker
 WORKDIR /bin
-ENTRYPOINT [ "./services/kuber/server/server" ]
+ENTRYPOINT [ "./services/kuber/worker" ]
 
 #NOTE: We cannot use scratch image for our dockerfile since we are using shell commands to execute commands inside the code

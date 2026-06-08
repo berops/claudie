@@ -21,6 +21,7 @@ import (
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/hetznercloud/hcloud-go/hcloud"
 	"github.com/rs/zerolog/log"
+	"golang.org/x/oauth2/google"
 	"google.golang.org/api/option"
 )
 
@@ -46,18 +47,10 @@ type DynamicNodePoolResolver struct {
 	cache map[string]Arch
 }
 
-func NewDynamicNodePoolResolver(init []*spec.DynamicNodePool) (*DynamicNodePoolResolver, error) {
-	r := &DynamicNodePoolResolver{cache: make(map[string]Arch)}
-
-	for _, np := range init {
-		arch, err := r.resolve(np)
-		if err != nil {
-			return nil, err
-		}
-		r.cache[fmt.Sprintf("%s-%s", np.GetProvider().GetCloudProviderName(), np.GetServerType())] = arch
+func NewDynamicNodePoolResolver() *DynamicNodePoolResolver {
+	return &DynamicNodePoolResolver{
+		cache: make(map[string]Arch),
 	}
-
-	return r, nil
 }
 
 func (r *DynamicNodePoolResolver) Arch(np *spec.NodePool) (Arch, error) {
@@ -92,15 +85,44 @@ func (r *DynamicNodePoolResolver) resolve(np *spec.DynamicNodePool) (Arch, error
 		return resolveOci(np)
 	case "azure":
 		return resolveAzure(np)
-	case "genesiscloud":
-		return resolveGenesisCloud(np)
+	case "openstack":
+		return resolveOpenstack(np)
+	case "exoscale":
+		return resolveExoscale(np)
+	case "cloudrift":
+		return resolveCloudRift(np)
+	case "verda":
+		return resolveVerda(np)
+	case "ovh":
+		return resolveOVH(np)
 	default:
 		return "", fmt.Errorf("%q not supported", np.GetProvider().GetCloudProviderName())
 	}
 }
 
-func resolveGenesisCloud(np *spec.DynamicNodePool) (Arch, error) {
-	// As of now (15. oct 2024) genesiscloud currently only has x64 cpus.
+func resolveOpenstack(np *spec.DynamicNodePool) (Arch, error) {
+	// As of October 3, 2025, there is no way to determine the OpenStack
+	// architecture resolution based on the image or server type/flavor.
+	return Amd64, nil
+}
+
+func resolveExoscale(np *spec.DynamicNodePool) (Arch, error) {
+	// Exoscale primarily offers AMD64 instances.
+	return Amd64, nil
+}
+
+func resolveCloudRift(np *spec.DynamicNodePool) (Arch, error) {
+	// CloudRift primarily offers AMD64/GPU instances.
+	return Amd64, nil
+}
+
+func resolveVerda(np *spec.DynamicNodePool) (Arch, error) {
+	// Verda primarily offers AMD64/GPU instances.
+	return Amd64, nil
+}
+
+func resolveOVH(np *spec.DynamicNodePool) (Arch, error) {
+	// OVH Public Cloud offers both AMD64 and (rarely) ARM flavors; default to AMD64.
 	return Amd64, nil
 }
 
@@ -151,7 +173,17 @@ func resolveOci(np *spec.DynamicNodePool) (Arch, error) {
 }
 
 func resolveGcp(np *spec.DynamicNodePool) (Arch, error) {
-	imgClient, err := compute.NewImagesRESTClient(context.Background(), option.WithCredentialsJSON([]byte(np.Provider.GetGcp().Key)))
+	creds, err := google.CredentialsFromJSONWithType(
+		context.Background(),
+		[]byte(np.Provider.GetGcp().Key),
+		google.ServiceAccount,
+		compute.DefaultAuthScopes()...,
+	)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse GCP credentials: %w", err)
+	}
+
+	imgClient, err := compute.NewImagesRESTClient(context.Background(), option.WithCredentials(creds))
 	if err != nil {
 		return "", fmt.Errorf("failed to create GCP client error : %w", err)
 	}

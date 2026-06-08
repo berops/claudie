@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
-	"slices"
 	"time"
 )
 
@@ -17,98 +16,12 @@ import (
 // which means that the endpoint cannot be reached with the current account-id/token pair.
 var ErrCloudflareAPIForbidden = errors.New("token/account-id pair with the cloudflare provider does not have acces for the necessary API")
 
-const (
-	// ForceExportPort6443OnControlPlane Forces to export the port 6443 on
-	// all the control plane nodes in the cluster when the workflow reaches
-	// the terraformer stage. This setting applies to the BuildInfrastructure RPC
-	// in terraformer.
-	ForceExportPort6443OnControlPlane = 1 << iota
-
-	// K8sOnlyRefresh gives a hint to the processing of the task that the task
-	// is related only to the k8s cluster infrastructure, thus unrelated infrastructure
-	// should be skipped.
-	K8sOnlyRefresh
-)
-
-func OptionIsSet(options uint64, option uint64) bool { return options&option != 0 }
-
 // Id returns the ID of the cluster.
 func (c *ClusterInfo) Id() string {
 	if c == nil {
 		return ""
 	}
 	return fmt.Sprintf("%s-%s", c.Name, c.Hash)
-}
-
-// DynamicNodePools returns slice of dynamic node pools.
-func (c *ClusterInfo) DynamicNodePools() []*DynamicNodePool {
-	if c == nil {
-		return nil
-	}
-
-	nps := make([]*DynamicNodePool, 0, len(c.NodePools))
-	for _, np := range c.NodePools {
-		if n := np.GetDynamicNodePool(); n != nil {
-			nps = append(nps, n)
-		}
-	}
-
-	return nps
-}
-
-// AnyAutoscaledNodePools returns true, if cluster has at least one nodepool with autoscaler config.
-func (c *K8Scluster) AnyAutoscaledNodePools() bool {
-	if c == nil {
-		return false
-	}
-
-	for _, np := range c.ClusterInfo.NodePools {
-		if n := np.GetDynamicNodePool(); n != nil {
-			if n.AutoscalerConfig != nil {
-				return true
-			}
-		}
-	}
-
-	return false
-}
-
-func (c *K8Scluster) NodeCount() int {
-	var out int
-
-	if c == nil {
-		return out
-	}
-
-	for _, np := range c.ClusterInfo.NodePools {
-		switch i := np.Type.(type) {
-		case *NodePool_DynamicNodePool:
-			out += int(i.DynamicNodePool.Count)
-		case *NodePool_StaticNodePool:
-			out += len(i.StaticNodePool.NodeKeys)
-		}
-	}
-
-	return out
-}
-
-func (c *LBcluster) NodeCount() int {
-	var out int
-
-	if c == nil {
-		return out
-	}
-
-	for _, np := range c.ClusterInfo.NodePools {
-		switch i := np.Type.(type) {
-		case *NodePool_DynamicNodePool:
-			out += int(i.DynamicNodePool.Count)
-		case *NodePool_StaticNodePool:
-			// Lbs are only dynamic.
-		}
-	}
-
-	return out
 }
 
 // HasApiRole checks whether the LB has a role with port 6443.
@@ -160,8 +73,6 @@ func (pr *Provider) Credentials() string {
 		return p.Gcp.Key
 	case *Provider_Hetzner:
 		return p.Hetzner.Token
-	case *Provider_Hetznerdns:
-		return p.Hetznerdns.Token
 	case *Provider_Oci:
 		return p.Oci.PrivateKey
 	case *Provider_Aws:
@@ -170,11 +81,247 @@ func (pr *Provider) Credentials() string {
 		return p.Azure.ClientSecret
 	case *Provider_Cloudflare:
 		return p.Cloudflare.Token
-	case *Provider_Genesiscloud:
-		return p.Genesiscloud.Token
+	case *Provider_Openstack:
+		return p.Openstack.ApplicationCredentialSecret
+	case *Provider_Exoscale:
+		return p.Exoscale.ApiSecret
+	case *Provider_Cloudrift:
+		return p.Cloudrift.Token
+	case *Provider_Verda:
+		return p.Verda.ClientSecret
+	case *Provider_Ovh:
+		return p.Ovh.ClientSecret
 	default:
 		panic(fmt.Sprintf("unexpected type %T", pr.ProviderType))
 	}
+}
+
+func (pr *Provider) CopyCredentials(other *Provider) (updated bool) {
+	if pr == nil {
+		return
+	}
+
+	if other == nil {
+		return
+	}
+
+	switch p := pr.ProviderType.(type) {
+	case *Provider_Aws:
+		o, ok := other.ProviderType.(*Provider_Aws)
+		if !ok {
+			return
+		}
+
+		p.Aws.AccessKey = o.Aws.AccessKey
+		p.Aws.SecretKey = o.Aws.SecretKey
+		updated = true
+	case *Provider_Azure:
+		o, ok := other.ProviderType.(*Provider_Azure)
+		if !ok {
+			return
+		}
+
+		p.Azure.ClientSecret = o.Azure.ClientSecret
+		updated = true
+	case *Provider_Cloudflare:
+		o, ok := other.ProviderType.(*Provider_Cloudflare)
+		if !ok {
+			return
+		}
+
+		p.Cloudflare.Token = o.Cloudflare.Token
+		updated = true
+	case *Provider_Cloudrift:
+		o, ok := other.ProviderType.(*Provider_Cloudrift)
+		if !ok {
+			return
+		}
+
+		p.Cloudrift.Token = o.Cloudrift.Token
+		updated = true
+	case *Provider_Exoscale:
+		o, ok := other.ProviderType.(*Provider_Exoscale)
+		if !ok {
+			return
+		}
+
+		p.Exoscale.ApiSecret = o.Exoscale.ApiSecret
+		p.Exoscale.ApiKey = o.Exoscale.ApiKey
+		updated = true
+	case *Provider_Gcp:
+		o, ok := other.ProviderType.(*Provider_Gcp)
+		if !ok {
+			return
+		}
+
+		p.Gcp.Key = o.Gcp.Key
+		updated = true
+	case *Provider_Hetzner:
+		o, ok := other.ProviderType.(*Provider_Hetzner)
+		if !ok {
+			return
+		}
+
+		p.Hetzner.Token = o.Hetzner.Token
+		updated = true
+	case *Provider_Oci:
+		o, ok := other.ProviderType.(*Provider_Oci)
+		if !ok {
+			return
+		}
+
+		p.Oci.KeyFingerprint = o.Oci.KeyFingerprint
+		p.Oci.PrivateKey = o.Oci.PrivateKey
+		updated = true
+	case *Provider_Openstack:
+		o, ok := other.ProviderType.(*Provider_Openstack)
+		if !ok {
+			return
+		}
+
+		p.Openstack.ApplicationCredentialID = o.Openstack.ApplicationCredentialID
+		p.Openstack.ApplicationCredentialSecret = o.Openstack.ApplicationCredentialSecret
+		updated = true
+	case *Provider_Verda:
+		o, ok := other.ProviderType.(*Provider_Verda)
+		if !ok {
+			return
+		}
+
+		p.Verda.ClientId = o.Verda.ClientId
+		p.Verda.ClientSecret = o.Verda.ClientSecret
+		p.Verda.BaseUrl = o.Verda.BaseUrl
+		updated = true
+	case *Provider_Ovh:
+		o, ok := other.ProviderType.(*Provider_Ovh)
+		if !ok {
+			return
+		}
+
+		p.Ovh.ClientId = o.Ovh.ClientId
+		p.Ovh.ClientSecret = o.Ovh.ClientSecret
+		p.Ovh.ServiceName = o.Ovh.ServiceName
+		updated = true
+	default:
+		// do nothing.
+	}
+
+	return
+}
+
+// Checks whether these two providers have the same credentials.
+func (pr *Provider) CredentialsEqual(other *Provider) (equal bool) {
+	if pr == nil {
+		return
+	}
+
+	if other == nil {
+		return
+	}
+
+	switch p := pr.ProviderType.(type) {
+	case *Provider_Aws:
+		o, ok := other.ProviderType.(*Provider_Aws)
+		if !ok {
+			return
+		}
+
+		accessKey := p.Aws.AccessKey == o.Aws.AccessKey
+		secretKey := p.Aws.SecretKey == o.Aws.SecretKey
+
+		equal = accessKey && secretKey
+	case *Provider_Azure:
+		o, ok := other.ProviderType.(*Provider_Azure)
+		if !ok {
+			return
+		}
+
+		equal = p.Azure.ClientSecret == o.Azure.ClientSecret
+	case *Provider_Cloudflare:
+		o, ok := other.ProviderType.(*Provider_Cloudflare)
+		if !ok {
+			return
+		}
+
+		equal = p.Cloudflare.Token == o.Cloudflare.Token
+	case *Provider_Cloudrift:
+		o, ok := other.ProviderType.(*Provider_Cloudrift)
+		if !ok {
+			return
+		}
+
+		equal = p.Cloudrift.Token == o.Cloudrift.Token
+	case *Provider_Exoscale:
+		o, ok := other.ProviderType.(*Provider_Exoscale)
+		if !ok {
+			return
+		}
+
+		apiSecret := p.Exoscale.ApiSecret == o.Exoscale.ApiSecret
+		apiKey := p.Exoscale.ApiKey == o.Exoscale.ApiKey
+
+		equal = apiSecret && apiKey
+	case *Provider_Gcp:
+		o, ok := other.ProviderType.(*Provider_Gcp)
+		if !ok {
+			return
+		}
+
+		equal = p.Gcp.Key == o.Gcp.Key
+	case *Provider_Hetzner:
+		o, ok := other.ProviderType.(*Provider_Hetzner)
+		if !ok {
+			return
+		}
+
+		equal = p.Hetzner.Token == o.Hetzner.Token
+	case *Provider_Oci:
+		o, ok := other.ProviderType.(*Provider_Oci)
+		if !ok {
+			return
+		}
+
+		fingerprint := p.Oci.KeyFingerprint == o.Oci.KeyFingerprint
+		key := p.Oci.PrivateKey == o.Oci.PrivateKey
+
+		equal = fingerprint && key
+	case *Provider_Openstack:
+		o, ok := other.ProviderType.(*Provider_Openstack)
+		if !ok {
+			return
+		}
+
+		id := p.Openstack.ApplicationCredentialID == o.Openstack.ApplicationCredentialID
+		secret := p.Openstack.ApplicationCredentialSecret == o.Openstack.ApplicationCredentialSecret
+
+		equal = id && secret
+	case *Provider_Verda:
+		o, ok := other.ProviderType.(*Provider_Verda)
+		if !ok {
+			return
+		}
+
+		clientID := p.Verda.ClientId == o.Verda.ClientId
+		clientSecret := p.Verda.ClientSecret == o.Verda.ClientSecret
+		baseURL := p.Verda.GetBaseUrl() == o.Verda.GetBaseUrl()
+
+		equal = clientID && clientSecret && baseURL
+	case *Provider_Ovh:
+		o, ok := other.ProviderType.(*Provider_Ovh)
+		if !ok {
+			return
+		}
+
+		clientID := p.Ovh.ClientId == o.Ovh.ClientId
+		clientSecret := p.Ovh.ClientSecret == o.Ovh.ClientSecret
+		serviceName := p.Ovh.ServiceName == o.Ovh.ServiceName
+
+		equal = clientID && clientSecret && serviceName
+	default:
+		// do nothing.
+	}
+
+	return
 }
 
 // MustExtractTargetPath returns the target path of the external template repository.
@@ -218,18 +365,6 @@ func (n *NodePool) Zone() string {
 	return fmt.Sprintf("%s-zone", sn)
 }
 
-// MergeTargetPools takes the target pools from the other role
-// and adds them to this role, ignoring duplicates.
-func (r *Role) MergeTargetPools(o *Role) {
-	for _, o := range o.TargetPools {
-		found := slices.Contains(r.TargetPools, o)
-		if !found {
-			// append missing target pool.
-			r.TargetPools = append(r.TargetPools, o)
-		}
-	}
-}
-
 // GetSubscription checks if the Cloudflare account has a Load Balancing subscription.
 func (x *CloudflareProvider) GetSubscription() (bool, error) {
 	// the number of retries before returning an error on trying to
@@ -257,7 +392,7 @@ func (x *CloudflareProvider) GetSubscription() (bool, error) {
 		response, err = getCloudflareAPIResponse(urlSubscriptions, x.Token)
 		if err != nil {
 			if errors.Is(err, ErrCloudflareAPIForbidden) {
-				return false, nil
+				return false, ErrCloudflareAPIForbidden
 			}
 			time.Sleep((1 << i) * time.Second)
 			continue
@@ -278,7 +413,7 @@ func (x *CloudflareProvider) GetSubscription() (bool, error) {
 			return true, nil
 		}
 	}
-	return false, fmt.Errorf("subscription for Load Balancing not found")
+	return false, nil
 }
 
 func getCloudflareAPIResponse(url string, apiToken string) ([]byte, error) {

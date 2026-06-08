@@ -1,0 +1,45 @@
+- hosts: all
+  strategy: free
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Ensure apt and systemd drop-in directories exist
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - /etc/systemd/system/docker.service.d
+        - /etc/systemd/system/containerd.service.d
+        - /etc/systemd/system/kubelet.service.d
+
+    - name: Setting HTTP,HTTPS proxy settings in /etc/apt/apt.conf.d/proxy.conf
+      ansible.builtin.copy:
+        content: |
+          Acquire::https::Proxy "{{ http_proxy_url }}";
+          Acquire::http::Proxy "{{ http_proxy_url }}";
+        dest: "/etc/apt/apt.conf.d/proxy.conf"
+
+    - name: Setting HTTP,HTTPS proxy settings in /etc/systemd/system/
+      ansible.builtin.copy:
+        content: |
+          [Service]
+          EnvironmentFile=/etc/environment
+        dest: "/etc/systemd/system/{{ item }}.service.d/http-proxy.conf"
+      loop:
+        - kubelet
+        - containerd
+        - docker
+
+    - name: Ensure proxy variables in /etc/environment
+      ansible.builtin.blockinfile:
+        path: /etc/environment
+        create: yes
+        marker: "# {mark} ANSIBLE MANAGED PROXY SETTINGS"
+        block: |
+          HTTP_PROXY={{ http_proxy_url }}
+          http_proxy={{ http_proxy_url }}
+          HTTPS_PROXY={{ http_proxy_url }}
+          https_proxy={{ http_proxy_url }}
+          NO_PROXY={{ no_proxy_list }}
+          no_proxy={{ no_proxy_list }}

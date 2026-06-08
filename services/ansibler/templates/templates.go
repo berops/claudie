@@ -6,8 +6,8 @@ var (
 	//go:embed all-node-inventory.goini
 	AllNodesInventoryTemplate string
 
-	//go:embed uninstall-nginx.goyml
-	UninstallNginx string
+	//go:embed nat-hairpin-inventory.goini
+	NatHairpinInventoryTemplate string
 
 	//go:embed deploy-envoy.goyml
 	EnvoyTemplate string
@@ -26,6 +26,9 @@ var (
 
 	//go:embed lb-inventory.goini
 	LoadbalancerInventoryTemplate string
+
+	//go:embed k8s-inventory.goini
+	KubernetesInventoryTemplate string
 
 	//go:embed node-exporter.goyml
 	NodeExporterPlaybookTemplate string

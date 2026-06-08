@@ -11,8 +11,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (g *GRPC) ListConfigs(ctx context.Context, _ *pb.ListConfigRequest) (*pb.ListConfigResponse, error) {
-	cfgs, err := g.Store.ListConfigs(ctx, nil)
+func (s *Service) ListConfigs(ctx context.Context, _ *pb.ListConfigsRequest) (*pb.ListConfigsResponse, error) {
+	cfgs, err := s.store.ListConfigs(ctx, nil)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to query all configs: %v", err)
 	}
@@ -26,5 +26,5 @@ func (g *GRPC) ListConfigs(ctx context.Context, _ *pb.ListConfigRequest) (*pb.Li
 		out = append(out, grpc)
 	}
 
-	return &pb.ListConfigResponse{Configs: out}, nil
+	return &pb.ListConfigsResponse{Configs: out}, nil
 }

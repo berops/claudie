@@ -125,25 +125,51 @@ func (d *DynamicNodePool) Validate(m *Manifest) error {
 		return fmt.Errorf("max available count for a nodepool is 255")
 	}
 
+	// Validate GCP-specific GPU configuration
+	if err := d.validateGCPGpuConfig(m); err != nil {
+		return err
+	}
+
 	validate := validator.New()
-	validate.RegisterStructValidation(func(sl validator.StructLevel) {
-		dnp := sl.Current().Interface().(DynamicNodePool)
 
-		found := false
-		for _, p := range m.Providers.GenesisCloud {
-			if p.Name == dnp.ProviderSpec.Name {
-				found = true
-			}
-		}
-
-		if !found && dnp.ProviderSpec.Zone == "" {
-			sl.ReportError(dnp.ProviderSpec.Zone, "Zone", "Zone", "required", "")
-		}
-	}, DynamicNodePool{})
+	if err := validate.RegisterValidation("external_net", validateExternalNet); err != nil {
+		return err
+	}
 
 	if err := validate.Struct(d); err != nil {
 		return prettyPrintValidationError(err)
 	}
+	return nil
+}
+
+// validateGCPGpuConfig validates that GCP nodepools with GPUs have the required type specified.
+// GCP requires the guest_accelerator block with both type and count to attach GPUs to instances.
+func (d *DynamicNodePool) validateGCPGpuConfig(m *Manifest) error {
+	providerType, err := m.GetProviderType(d.ProviderSpec.Name)
+	if err != nil {
+		// Provider existence is validated in [NodePool.Validate] before
+		// calling [DynamicNodePool.Validate].
+		return nil
+	}
+
+	if providerType != "gcp" {
+		return nil
+	}
+
+	if d.MachineSpec == nil {
+		return nil
+	}
+
+	// Check both NvidiaGpuCount (new) and NvidiaGpu (deprecated) for backward compatibility
+	gpuCount := d.MachineSpec.NvidiaGpuCount
+	if gpuCount == 0 {
+		gpuCount = d.MachineSpec.NvidiaGpu
+	}
+
+	if gpuCount > 0 && d.MachineSpec.NvidiaGpuType == "" {
+		return fmt.Errorf("nvidiaGpuType is required for GCP when nvidiaGpuCount > 0")
+	}
+
 	return nil
 }
 
@@ -202,4 +228,12 @@ func checkAnnotations(annotations map[string]string) error {
 		return fmt.Errorf("annotations size %d is larger than limit %d", totalSize, TotalAnnotationSizeLimitB)
 	}
 	return nil
+}
+
+func validateExternalNet(fl validator.FieldLevel) bool {
+	providerSpec := fl.Parent().Interface().(ProviderSpec)
+	if providerSpec.Name == "openstack" {
+		return providerSpec.ExternalNetworkName != ""
+	}
+	return true
 }

@@ -36,10 +36,6 @@ OPERATOR_PORT=50058
 # Endpoint configuration for MinIO deployment.
 BUCKET_URL=http://minio:9000
 BUCKET_NAME=claudie-tf-state-files
-
-# Endpoint configuration for DynamoDB deployment.
-DYNAMO_URL=http://dynamo:8000
-DYNAMO_TABLE_NAME=claudie
 AWS_REGION=local
 
 # Defines from which namespace InputManifests should be watched for by Claudie.

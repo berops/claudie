@@ -12,7 +12,7 @@ import (
 
 var (
 	testManifest                = &Manifest{NodePools: NodePool{Dynamic: []DynamicNodePool{{Name: "np1"}}}}
-	testClusterVersionPass      = &Kubernetes{Clusters: []Cluster{{Name: "cluster1", Network: "10.0.0.0/8", Version: "v1.30.0", Pools: Pool{Control: []string{"np1"}}}}}
+	testClusterVersionPass      = &Kubernetes{Clusters: []Cluster{{Name: "cluster1", Network: "10.0.0.0/8", Version: "v1.33.0", Pools: Pool{Control: []string{"np1"}}}}}
 	testClusterVersionFailMinor = &Kubernetes{Clusters: []Cluster{{Name: "cluster1", Network: "10.0.0.0/8", Version: "v1.21.0", Pools: Pool{Control: []string{"np1"}}}}}
 	testClusterVersionFailMajor = &Kubernetes{Clusters: []Cluster{{Name: "cluster1", Network: "10.0.0.0/8", Version: "v2.22.0", Pools: Pool{Control: []string{"np1"}}}}}
 
@@ -42,7 +42,7 @@ var (
 				Control: []string{"np1"},
 			},
 				Network: "10.0.0.0/8",
-				Version: "v1.30.0",
+				Version: "v1.33.0",
 				InstallationProxy: &InstallationProxy{
 					Mode:     "Off",
 					Endpoint: "http://proxy.claudie.io:8880",
@@ -56,7 +56,7 @@ var (
 				Control: []string{"np1"},
 			},
 				Network: "10.0.0.0/8",
-				Version: "v1.30.0",
+				Version: "v1.33.0",
 				InstallationProxy: &InstallationProxy{
 					Mode:     "On",
 					Endpoint: "http://proxy.claudie.io:8880",
@@ -70,7 +70,7 @@ var (
 				Control: []string{"np1"},
 			},
 				Network: "10.0.0.0/8",
-				Version: "v1.30.0",
+				Version: "v1.33.0",
 				InstallationProxy: &InstallationProxy{
 					Mode:     "",
 					Endpoint: "http://proxy.claudie.io:8880",
@@ -84,7 +84,7 @@ var (
 				Control: []string{"np1"},
 			},
 				Network: "10.0.0.0/8",
-				Version: "v1.30.0",
+				Version: "v1.33.0",
 				InstallationProxy: &InstallationProxy{
 					Mode:     "Default",
 					Endpoint: "http://proxy.claudie.io:8880",
@@ -98,7 +98,7 @@ var (
 				Control: []string{"np1"},
 			},
 				Network: "10.0.0.0/8",
-				Version: "v1.30.0",
+				Version: "v1.33.0",
 				InstallationProxy: &InstallationProxy{
 					Mode:     "on",
 					Endpoint: "http://proxy.claudie.io:8880",
@@ -112,7 +112,7 @@ var (
 				Control: []string{"np1"},
 			},
 				Network: "10.0.0.0/8",
-				Version: "v1.30.0",
+				Version: "v1.33.0",
 				InstallationProxy: &InstallationProxy{
 					Mode:     "off",
 					Endpoint: "http://proxy.claudie.io:8880",
@@ -126,7 +126,7 @@ var (
 				Control: []string{"np1"},
 			},
 				Network: "10.0.0.0/8",
-				Version: "v1.30.0",
+				Version: "v1.33.0",
 				InstallationProxy: &InstallationProxy{
 					Mode:     "default",
 					Endpoint: "http://proxy.claudie.io:8880",
@@ -168,7 +168,7 @@ var (
 			Clusters: []Cluster{
 				{
 					Name:    "foooo",
-					Version: "v1.30.2",
+					Version: "v1.33.2",
 					Network: "192.168.1.0/24",
 					Pools: Pool{
 						Control: []string{"control-1", "control-2"},
@@ -212,6 +212,8 @@ var (
 	testNpDiskSizeSuccessfulFifty   = DynamicNodePool{Name: "control-1", Count: 10, ServerType: "small", Image: "ubuntu", ProviderSpec: ProviderSpec{Name: "foo", Region: "north", Zone: "1"}, StorageDiskSize: newIntP(50)}
 	testNpDiskSizeSuccessfulDefault = DynamicNodePool{Name: "control-1", Count: 10, ServerType: "small", Image: "ubuntu", ProviderSpec: ProviderSpec{Name: "foo", Region: "north", Zone: "1"}}
 	testNpDiskSizeSuccessfulFail    = DynamicNodePool{Name: "control-1", Count: 10, ServerType: "small", Image: "ubuntu", ProviderSpec: ProviderSpec{Name: "foo", Region: "north", Zone: "1"}, StorageDiskSize: newIntP(10)}
+	testNodepoolWithoutZone         = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", StorageDiskSize: newIntP(50), Count: 1, ProviderSpec: ProviderSpec{Name: "p1", Region: "a"}}
+	testNodepoolWithZone            = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", StorageDiskSize: newIntP(50), Count: 1, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
 )
 
 func newIntP(a int32) *int32 {
@@ -317,4 +319,122 @@ func TestStorageDiskSize(t *testing.T) {
 	r.NoError(testNpDiskSizeSuccessfulFifty.Validate(&Manifest{}))
 	r.NoError(testNpDiskSizeSuccessfulDefault.Validate(&Manifest{}))
 	r.Error(testNpDiskSizeSuccessfulFail.Validate(&Manifest{}))
+}
+
+// TestOptionalZone tests that the zone field is optional for uniform zone distribution.
+func TestOptionalZone(t *testing.T) {
+	r := require.New(t)
+	// Zone should be optional - nodepools without zone should pass validation
+	r.NoError(testNodepoolWithoutZone.Validate(&Manifest{}))
+	// Nodepools with zone should still pass validation
+	r.NoError(testNodepoolWithZone.Validate(&Manifest{}))
+}
+
+// TestGCPGpuValidation tests that GCP nodepools with GPUs require nvidiaGpuType to be specified.
+func TestGCPGpuValidation(t *testing.T) {
+	r := require.New(t)
+
+	// Create a manifest with a GCP provider
+	gcpManifest := &Manifest{
+		Providers: Provider{
+			GCP: []GCP{{
+				Name:        "gcp-1",
+				Credentials: "fake-credentials",
+				GCPProject:  "fake-project",
+			}},
+		},
+	}
+
+	// Create a manifest with a Hetzner provider (non-GCP)
+	hetznerManifest := &Manifest{
+		Providers: Provider{
+			Hetzner: []Hetzner{{
+				Name:        "hetzner-1",
+				Credentials: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			}},
+		},
+	}
+
+	// Test case 1: GCP nodepool with GPU count but no type - should fail
+	gcpNodepoolGpuNoType := &DynamicNodePool{
+		Name:       "gpu-np",
+		ServerType: "n1-standard-4",
+		Image:      "ubuntu-2204",
+		Count:      1,
+		ProviderSpec: ProviderSpec{
+			Name:   "gcp-1",
+			Region: "us-central1",
+			Zone:   "us-central1-a",
+		},
+		MachineSpec: &MachineSpec{
+			NvidiaGpuCount: 1,
+		},
+	}
+	r.Error(gcpNodepoolGpuNoType.Validate(gcpManifest), "GCP nodepool with GPU count but no type should fail validation")
+
+	// Test case 2: GCP nodepool with GPU count and type - should pass
+	gcpNodepoolGpuWithType := &DynamicNodePool{
+		Name:       "gpu-np",
+		ServerType: "n1-standard-4",
+		Image:      "ubuntu-2204",
+		Count:      1,
+		ProviderSpec: ProviderSpec{
+			Name:   "gcp-1",
+			Region: "us-central1",
+			Zone:   "us-central1-a",
+		},
+		MachineSpec: &MachineSpec{
+			NvidiaGpuCount: 1,
+			NvidiaGpuType:  "nvidia-tesla-t4",
+		},
+	}
+	r.NoError(gcpNodepoolGpuWithType.Validate(gcpManifest), "GCP nodepool with GPU count and type should pass validation")
+
+	// Test case 3: GCP nodepool without GPU - should pass
+	gcpNodepoolNoGpu := &DynamicNodePool{
+		Name:       "regular-np",
+		ServerType: "e2-medium",
+		Image:      "ubuntu-2204",
+		Count:      1,
+		ProviderSpec: ProviderSpec{
+			Name:   "gcp-1",
+			Region: "us-central1",
+			Zone:   "us-central1-a",
+		},
+	}
+	r.NoError(gcpNodepoolNoGpu.Validate(gcpManifest), "GCP nodepool without GPU should pass validation")
+
+	// Test case 4: Non-GCP nodepool with GPU count but no type - should pass (only GCP requires type)
+	hetznerNodepoolGpuNoType := &DynamicNodePool{
+		Name:       "gpu-np",
+		ServerType: "cx21",
+		Image:      "ubuntu-22.04",
+		Count:      1,
+		ProviderSpec: ProviderSpec{
+			Name:   "hetzner-1",
+			Region: "fsn1",
+			Zone:   "fsn1-dc14",
+		},
+		MachineSpec: &MachineSpec{
+			NvidiaGpuCount: 1,
+		},
+	}
+	r.NoError(hetznerNodepoolGpuNoType.Validate(hetznerManifest), "Non-GCP nodepool with GPU count but no type should pass validation")
+
+	// Test case 5: Non-GCP nodepool with deprecated nvidiaGpu field but no type - should pass (backward compatibility)
+	hetznerNodepoolDeprecatedGpu := &DynamicNodePool{
+		Name:       "gpu-np-dep",
+		ServerType: "cx21",
+		Image:      "ubuntu-22.04",
+		Count:      1,
+		ProviderSpec: ProviderSpec{
+			Name:   "hetzner-1",
+			Region: "fsn1",
+			Zone:   "fsn1-dc14",
+		},
+		MachineSpec: &MachineSpec{
+			NvidiaGpu: 1, // Using deprecated field
+		},
+	}
+	r.NoError(hetznerNodepoolDeprecatedGpu.Validate(hetznerManifest), "Non-GCP nodepool with deprecated nvidiaGpu but no type should pass validation")
 }

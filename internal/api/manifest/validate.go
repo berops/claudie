@@ -19,7 +19,8 @@ func (m *Manifest) Validate() error {
 	// https://github.com/berops/claudie/blob/master/docs/input-manifest/input-manifest.md#providers
 	providers := len(m.Providers.GCP) + len(m.Providers.Hetzner) + len(m.Providers.AWS) +
 		len(m.Providers.Azure) + len(m.Providers.OCI) + len(m.Providers.Cloudflare) +
-		len(m.Providers.GenesisCloud) + len(m.Providers.HetznerDNS)
+		len(m.Providers.Openstack) + len(m.Providers.Exoscale) + len(m.Providers.CloudRift) +
+		len(m.Providers.Verda) + len(m.Providers.OVH)
 	if providers < 1 {
 		// Return error only if at least one dynamic nodepool defined.
 		if len(m.NodePools.Dynamic) > 0 {
@@ -84,13 +85,15 @@ func prettyPrintValidationError(err error) error {
 		case "cidrv4":
 			nerr = fmt.Errorf("field '%s' is required to have a valid CIDRv4 value", err.StructField())
 		case "ver":
-			nerr = fmt.Errorf("field '%s' is required to have a kubernetes version of: 1.30.x, 1.31.x, 1.32.x", err.StructField())
+			nerr = fmt.Errorf("field '%s' is required to have a kubernetes version of: 1.33.x, 1.34.x, 1.35.x", err.StructField())
 		case "proxyMode":
 			nerr = fmt.Errorf("field '%s' is required to have a valid proxy mode value of \"on\", \"off\", \"default\"", err.StructField())
 		case "semver2":
 			nerr = fmt.Errorf("field '%s' is required to follow semantic version 2.0, ref: https://semver.org/", err.StructField())
 		case "required_without":
 			nerr = fmt.Errorf("'%s' needs to be set if '%s' is not specified", err.Field(), err.Param())
+		case "external_net":
+			nerr = fmt.Errorf("field '%s' is required to be defined when using Openstack provider", err.StructField())
 		default:
 			nerr = err
 		}

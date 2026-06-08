@@ -8,7 +8,7 @@ spec:
       templates:
         repository: "https://github.com/berops/claudie-config"
         # performs a rolling update
-        tag: "v0.9.12"
+        tag: "v0.11.0"
         path: "templates/terraformer/aws"
       providerType: aws
       secretRef:
@@ -18,7 +18,7 @@ spec:
       templates:
         repository: "https://github.com/berops/claudie-config"
         # performs a rolling update
-        tag: "v0.9.12"
+        tag: "v0.11.0"
         path: "templates/terraformer/aws"
       providerType: aws
       secretRef:
@@ -32,7 +32,7 @@ spec:
           region: eu-north-1
           zone: eu-north-1a
         count: 1
-        serverType: t3.small
+        serverType: t3.medium
         #ubuntu
         image: ami-08eb150f611ca277f
         taints:
@@ -48,7 +48,7 @@ spec:
         autoscaler:
           min: 1
           max: 5
-        serverType: t3.small
+        serverType: t3.medium
         #ubuntu
         image: ami-045a8ab02aadf4f88
         storageDiskSize: 50
@@ -60,7 +60,7 @@ spec:
   kubernetes:
     clusters:
       - name: autoscaling-cluster-test-002
-        version: 1.31.0
+        version: "1.34.0"
         network: 192.168.2.0/24
         pools:
           control:

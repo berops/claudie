@@ -1,4 +1,4 @@
-FROM docker.io/library/golang:1.24.5 AS go_builder
+FROM docker.io/library/golang:1.26.3 AS go_builder
 
 ARG TARGETARCH
 
@@ -15,13 +15,13 @@ RUN go mod download
 COPY . .
 
 #Change the directory
-WORKDIR /go/services/ansibler/server
+WORKDIR /go/services/ansibler/cmd/worker
 
 #Compile the golang code, CGO_ENABLE=0 removes cross compile dependencies
 RUN CGO_ENABLED=0 go build
 
 # Ansible installation: https://github.com/cytopia/docker-ansible/blob/master/Dockerfiles/Dockerfile-base
-FROM docker.io/library/alpine:3.16 AS ansible_builder
+FROM docker.io/library/alpine:3.23 AS ansible_builder
 
 # Install required packages, including Python3 and Ansible
 RUN apk add --no-cache \
@@ -31,16 +31,17 @@ RUN apk add --no-cache \
     openssh-client \
     libgcc \
     yaml \
-    && ln -s /usr/bin/python3 /usr/bin/python \
-    && pip3 install --no-cache-dir ansible==10.1.0
+    && ln -sf /usr/bin/python3 /usr/bin/python \
+    && pip3 install --no-cache-dir --break-system-packages ansible==12.2.0
 
-FROM alpine:3.16
+FROM alpine:3.23
+
 #Add repository label
-LABEL org.opencontainers.image.source "https://github.com/berops/claudie"
+LABEL org.opencontainers.image.source="https://github.com/berops/claudie"
 #Add image name as a label
-LABEL org.opencontainers.image.base.name "alpine:3.16"
+LABEL org.opencontainers.image.base.name="alpine:3.23"
 #Add description to the image
-LABEL org.opencontainers.image.description "Image for Ansibler from Claudie"
+LABEL org.opencontainers.image.description="Image for Ansibler from Claudie"
 
 RUN set -eux \
 	&& apk add --no-cache \
@@ -56,23 +57,23 @@ RUN set -eux \
 	yaml \
 	&& find /usr/lib/ -name '__pycache__' -print0 | xargs -0 -n1 rm -rf \
 	&& find /usr/lib/ -name '*.pyc' -print0 | xargs -0 -n1 rm -rf \
-	&& ln -s /usr/bin/python3 /usr/bin/python
+	&& ln -sf /usr/bin/python3 /usr/bin/python
 
-COPY --from=ansible_builder /usr/lib/python3.10/site-packages/ /usr/lib/python3.10/site-packages/
+COPY --from=ansible_builder /usr/lib/python3.12/site-packages/ /usr/lib/python3.12/site-packages/
 COPY --from=ansible_builder /usr/bin/ansible* /usr/bin/
 
 # Pre-compile Python for better performance
 RUN set -eux \
-	&& python3 -m compileall -j 0 /usr/lib/python3.10
+	&& python3 -m compileall -j 0 /usr/lib/python3.12
 
 #Copy the binaries to empty base image
-COPY --from=go_builder /go/services/ansibler/server/server /bin/services/ansibler/server/server
-COPY --from=go_builder /go/services/ansibler/server/ansible-playbooks /bin/services/ansibler/server/ansible-playbooks
+COPY --from=go_builder /go/services/ansibler/cmd/worker/worker /bin/services/ansibler/worker
+COPY --from=go_builder /go/services/ansibler/ansible-playbooks /bin/services/ansibler/ansible-playbooks
 
 RUN apk update && apk add -q bash
 
-#Run server
+#Run worker
 WORKDIR /bin
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD [ "./services/ansibler/server/server" ]
+CMD [ "./services/ansibler/worker" ]
 #NOTE: We cannot use scratch image for our dockerfile since we are using shell commands to execute commands inside the code

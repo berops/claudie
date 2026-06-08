@@ -1,0 +1,251 @@
+---
+# Source: nats/templates/pod-disruption-budget.yaml
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  labels:
+    app.kubernetes.io/component: nats
+    app.kubernetes.io/instance: nats
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: nats
+    app.kubernetes.io/version: 2.12.3
+    helm.sh/chart: nats-2.12.3
+    app.kubernetes.io/part-of: claudie
+  name: nats
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: nats
+      app.kubernetes.io/instance: nats
+      app.kubernetes.io/name: nats
+---
+# Source: nats/templates/config-map.yaml
+apiVersion: v1
+data:
+  nats.conf: |
+    {
+      "cluster": {
+        "name": "nats",
+        "no_advertise": true,
+        "port": 6222,
+        "routes": [
+          "nats://nats-0.nats-headless:6222",
+          "nats://nats-1.nats-headless:6222",
+          "nats://nats-2.nats-headless:6222"
+        ]
+      },
+      "http_port": 8222,
+      "jetstream": {
+        "max_file_store": 10Gi,
+        "max_memory_store": 0,
+        "store_dir": "/data"
+      },
+      "lame_duck_duration": "30s",
+      "lame_duck_grace_period": "10s",
+      "pid_file": "/var/run/nats/nats.pid",
+      "port": 4222,
+      "server_name": $SERVER_NAME
+    }
+kind: ConfigMap
+metadata:
+  labels:
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/component: nats
+    app.kubernetes.io/instance: nats
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: nats
+    app.kubernetes.io/version: 2.12.3
+    helm.sh/chart: nats-2.12.3
+  name: nats-config
+---
+# Source: nats/templates/headless-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/component: nats
+    app.kubernetes.io/instance: nats
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: nats
+    app.kubernetes.io/version: 2.12.3
+    helm.sh/chart: nats-2.12.3
+  name: nats-headless
+spec:
+  clusterIP: None
+  ports:
+    - appProtocol: tcp
+      name: nats
+      port: 4222
+      targetPort: nats
+    - appProtocol: tcp
+      name: cluster
+      port: 6222
+      targetPort: cluster
+    - appProtocol: http
+      name: monitor
+      port: 8222
+      targetPort: monitor
+  publishNotReadyAddresses: true
+  selector:
+    app.kubernetes.io/component: nats
+    app.kubernetes.io/instance: nats
+    app.kubernetes.io/name: nats
+---
+# Source: nats/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/component: nats
+    app.kubernetes.io/instance: nats
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: nats
+    app.kubernetes.io/version: 2.12.3
+    helm.sh/chart: nats-2.12.3
+  name: nats
+spec:
+  ports:
+    - appProtocol: tcp
+      name: nats
+      port: 4222
+      targetPort: nats
+  selector:
+    app.kubernetes.io/component: nats
+    app.kubernetes.io/instance: nats
+    app.kubernetes.io/name: nats
+---
+# Source: nats/templates/stateful-set.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app.kubernetes.io/part-of: claudie
+    app.kubernetes.io/component: nats
+    app.kubernetes.io/instance: nats
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: nats
+    app.kubernetes.io/version: 2.12.3
+    helm.sh/chart: nats-2.12.3
+  name: nats
+spec:
+  podManagementPolicy: Parallel
+  replicas: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: nats
+      app.kubernetes.io/instance: nats
+      app.kubernetes.io/name: nats
+  serviceName: nats-headless
+  template:
+    metadata:
+      annotations:
+        checksum/config: 168b6859774522376311e09b500d7c845fa946690b30ba4c3fa522350a792613
+      labels:
+        app.kubernetes.io/part-of: claudie
+        app.kubernetes.io/component: nats
+        app.kubernetes.io/instance: nats
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: nats
+        app.kubernetes.io/version: 2.12.3
+        helm.sh/chart: nats-2.12.3
+    spec:
+      containers:
+        - args:
+            - --config
+            - /etc/nats-config/nats.conf
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: SERVER_NAME
+              value: $(POD_NAME)
+          image: nats:2.12.3-alpine
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - nats-server
+                  - -sl=ldm=/var/run/nats/nats.pid
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /healthz?js-enabled-only=true
+              port: monitor
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            successThreshold: 1
+            timeoutSeconds: 5
+          name: nats
+          ports:
+            - containerPort: 4222
+              name: nats
+            - containerPort: 6222
+              name: cluster
+            - containerPort: 8222
+              name: monitor
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /healthz?js-server-only=true
+              port: monitor
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          resources:
+            limits:
+              cpu: 100m
+              memory: 128Mi
+            requests:
+              cpu: 10m
+              memory: 32Mi
+          startupProbe:
+            failureThreshold: 90
+            httpGet:
+              path: /healthz
+              port: monitor
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          volumeMounts:
+            - mountPath: /etc/nats-config
+              name: config
+            - mountPath: /var/run/nats
+              name: pid
+            - mountPath: /data
+              name: nats-js
+        - args:
+            - -pid
+            - /var/run/nats/nats.pid
+            - -config
+            - /etc/nats-config/nats.conf
+          image: natsio/nats-server-config-reloader:0.21.1
+          name: reloader
+          volumeMounts:
+            - mountPath: /var/run/nats
+              name: pid
+            - mountPath: /etc/nats-config
+              name: config
+      enableServiceLinks: false
+      shareProcessNamespace: true
+      terminationGracePeriodSeconds: 60
+      volumes:
+        - configMap:
+            name: nats-config
+          name: config
+        - emptyDir: {}
+          name: pid
+  volumeClaimTemplates:
+    - metadata:
+        name: nats-js
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi

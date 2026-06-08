@@ -1,0 +1,9 @@
+#Mask unattended-upgrades service
+---
+- name: Mask unattended-upgrades service if it exists
+  ansible.builtin.systemd:
+    name: unattended-upgrades.service
+    state: stopped
+    enabled: false
+    masked: true
+  failed_when: false

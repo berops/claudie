@@ -1,5 +1,6 @@
 syntax = "proto3";
 package spec;
+
 option go_package = "github.com/berops/claudie/proto/pb/spec";
 
 message GCPProvider {
@@ -8,10 +9,6 @@ message GCPProvider {
 }
 
 message HetznerProvider {
-  string token = 1;
-}
-
-message HetznerDNSProvider {
   string token = 1;
 }
 
@@ -40,23 +37,54 @@ message CloudflareProvider {
   string accountID = 2;
 }
 
-message GenesisCloudProvider {
+message OpenstackProvider {
+  string authURL = 1;
+  string domainID = 2;
+  string projectID = 3;
+  string applicationCredentialID = 4;
+  string applicationCredentialSecret = 5;
+}
+
+message ExoscaleProvider {
+  string apiKey = 1;
+  string apiSecret = 2;
+}
+
+message CloudRiftProvider {
   string token = 1;
+  optional string teamId = 2;
+}
+
+message VerdaProvider {
+  string clientId = 1;
+  string clientSecret = 2;
+  optional string baseUrl = 3;
+}
+
+message OVHProvider {
+  string clientId = 1;
+  string clientSecret = 2;
+  string serviceName = 3;
+  optional string endpoint = 4;
 }
 
 message Provider {
   string specName = 1;
   string cloudProviderName = 2;
 
+  // = 5; deprecated hetznerdns.
   oneof ProviderType {
     GCPProvider gcp = 3;
     HetznerProvider hetzner = 4;
-    HetznerDNSProvider hetznerdns = 5;
     OCIProvider oci = 6;
     AWSProvider aws = 7;
     AzureProvider azure = 8;
     CloudflareProvider cloudflare = 9;
-    GenesisCloudProvider genesiscloud = 10;
+    OpenstackProvider openstack = 11;
+    ExoscaleProvider exoscale = 12;
+    CloudRiftProvider cloudrift = 14;
+    VerdaProvider verda = 15;
+    OVHProvider ovh = 16;
   }
 
   TemplateRepository templates = 13;

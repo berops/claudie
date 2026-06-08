@@ -29,6 +29,8 @@ spec:
           emptyDir: {}
         - name: templates
           emptyDir: {}
+        - name: cache
+          emptyDir: {}
       containers:
         - name: terraformer
           imagePullPolicy: Always
@@ -36,8 +38,10 @@ spec:
           volumeMounts:
             - mountPath: /bin/services/terraformer/templates
               name: templates
-            - mountPath: /bin/services/terraformer/server/clusters
+            - mountPath: /bin/services/terraformer/clusters
               name: data
+            - mountPath: /bin/services/terraformer/cache
+              name: cache
             - mountPath: /tmp
               name: temp
           securityContext:
@@ -87,17 +91,6 @@ spec:
                 configMapKeyRef:
                   name: env
                   key: BUCKET_URL
-            # DynamoDB envs
-            - name: DYNAMO_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: env
-                  key: DYNAMO_URL
-            - name: DYNAMO_TABLE_NAME
-              valueFrom:
-                configMapKeyRef:
-                  name: env
-                  key: DYNAMO_TABLE_NAME
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:
@@ -113,6 +106,17 @@ spec:
                 configMapKeyRef:
                   name: env
                   key: AWS_REGION
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: NATS_CLUSTER_URL
+              value: "nats://nats.$(NAMESPACE).svc.cluster.local"
+            - name: NATS_CLUSTER_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: env
+                  key: NATS_CLUSTER_SIZE
           ports:
             - containerPort: 50052
             - name: "metrics"
@@ -121,8 +125,14 @@ spec:
             grpc:
               port: 50052
               service: terraformer-readiness
-            initialDelaySeconds: 5
-            periodSeconds: 30
+            initialDelaySeconds: 30
+            periodSeconds: 35
+          livenessProbe:
+            grpc:
+              port: 50052
+              service: terraformer-liveness
+            initialDelaySeconds: 30
+            periodSeconds: 35
 ---
 kind: Service
 apiVersion: v1

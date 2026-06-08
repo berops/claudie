@@ -8,7 +8,7 @@ spec:
       providerType: gcp
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.12
+        tag: v0.11.0
         path: "templates/terraformer/gcp"
       secretRef:
         name: gcp-secret
@@ -17,7 +17,7 @@ spec:
       providerType: hetzner
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.12
+        tag: v0.11.0
         path: "templates/terraformer/hetzner"
       secretRef:
         name: hetzner-secret
@@ -26,7 +26,7 @@ spec:
       providerType: oci
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.12
+        tag: v0.11.0
         path: "templates/terraformer/oci"
       secretRef:
         name: oci-secret
@@ -35,7 +35,7 @@ spec:
       providerType: aws
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.12
+        tag: v0.11.0
         path: "templates/terraformer/aws"
       secretRef:
         name: aws-secret
@@ -44,7 +44,7 @@ spec:
       providerType: aws
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.12
+        tag: v0.11.0
         path: "templates/terraformer/aws"
       secretRef:
         name: aws-secret
@@ -53,7 +53,7 @@ spec:
       providerType: azure
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.12
+        tag: v0.11.0
         path: "templates/terraformer/azure"
       secretRef:
         name: azure-sponsorship-secret
@@ -62,10 +62,28 @@ spec:
       providerType: azure
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.12
+        tag: v0.11.0
         path: "templates/terraformer/azure"
       secretRef:
         name: azure-sponsorship-secret
+        namespace: e2e-secrets
+    - name: exoscale-1
+      providerType: exoscale
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.11.0
+        path: "templates/terraformer/exoscale"
+      secretRef:
+        name: exoscale-secret
+        namespace: e2e-secrets
+    - name: ovh-1
+      providerType: openstack
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.11.0
+        path: "templates/terraformer/openstack"
+      secretRef:
+        name: ovh-secret
         namespace: e2e-secrets
   nodePools:
     dynamic:
@@ -75,7 +93,7 @@ spec:
           region: nbg1
           zone: nbg1-dc3
         count: 1
-        serverType: cpx11
+        serverType: cpx22
         image: ubuntu-24.04
         labels:
           test-set: test-set1
@@ -88,7 +106,7 @@ spec:
           region: nbg1
           zone: nbg1-dc3
         count: 1
-        serverType: cpx11
+        serverType: cpx22
         image: ubuntu-24.04
         storageDiskSize: 50
         labels:
@@ -104,7 +122,7 @@ spec:
           zone: europe-west2-c
         count: 3
         serverType: e2-medium
-        image: ubuntu-2404-noble-amd64-v20250313
+        image: ubuntu-2404-noble-amd64-v20251001
         labels:
           test-set: test-set1
       - name: gcp-cmpt-nodes
@@ -113,8 +131,8 @@ spec:
           region: europe-west1
           zone: europe-west1-b
         count: 3
-        serverType: e2-small
-        image: ubuntu-2404-noble-amd64-v20250313
+        serverType: e2-standard-4
+        image: ubuntu-2404-noble-amd64-v20251001
         storageDiskSize: 50
         labels:
           test-set: test-set1
@@ -140,7 +158,7 @@ spec:
           region: eu-frankfurt-1
           zone: hsVQ:EU-FRANKFURT-1-AD-1
         count: 3
-        serverType: VM.Standard1.1
+        serverType: VM.Standard1.2
         # https://docs.oracle.com/en-us/iaas/images/ubuntu-2404/canonical-ubuntu-24-04-2024-08-28-0.htm
         image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaa7hxwyz4qiasffo7n7s4ep5lywpzwgkc2am65frqrqinoyitmxxla
         storageDiskSize: 50
@@ -151,7 +169,7 @@ spec:
           region: eu-north-1
           zone: eu-north-1a
         count: 3
-        serverType: t3.small
+        serverType: t3.medium
         #ubuntu
         image: ami-08eb150f611ca277f
         taints:
@@ -164,7 +182,7 @@ spec:
           region: eu-west-3
           zone: eu-west-3a
         count: 3
-        serverType: t3.small
+        serverType: t3.medium
         #ubuntu
         image: ami-045a8ab02aadf4f88
         storageDiskSize: 50
@@ -176,7 +194,7 @@ spec:
           zone: "1"
         count: 2
         serverType: Standard_B2s
-        image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
+        image: Canonical:ubuntu-24_04-lts:server:24.04.202510010
         taints:
           - key: test
             value: test
@@ -193,7 +211,20 @@ spec:
           zone: "1"
         count: 2
         serverType: Standard_B2s
-        image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
+        image: Canonical:ubuntu-24_04-lts:server:24.04.202510010
+        storageDiskSize: 50
+        labels:
+          test-set: test-set1
+        annotations:
+          claudie.io/example-annotation: >
+            ["test-set1"]
+      - name: exo-cmpt-nodes
+        providerSpec:
+          name: exoscale-1
+          region: ch-gva-2
+        count: 1
+        serverType: standard.medium
+        image: "Linux Ubuntu 24.04 LTS 64-bit"
         storageDiskSize: 50
         labels:
           test-set: test-set1
@@ -201,18 +232,52 @@ spec:
           claudie.io/example-annotation: >
             ["test-set1"]
 
+      - name: ovh-ctrl-nodes
+        providerSpec:
+          name: ovh-1
+          region: DE1
+          zone: nova
+          externalNetworkName: Ext-Net
+        count: 1
+        serverType: c3-4-flex
+        image: "Ubuntu 24.04"
+        taints:
+          - key: test
+            value: test
+            effect: NoSchedule
+        labels:
+          test-set: test-set1
+        annotations:
+          claudie.io/example-annotation: >
+            ["test-set1"]
+      - name: ovh-cmpt-nodes
+        providerSpec:
+          name: ovh-1
+          region: RBX-A
+          zone: nova
+          externalNetworkName: Ext-Net
+        count: 1
+        serverType: c3-8-flex
+        image: "Ubuntu 24.04"
+        storageDiskSize: 50
+        labels:
+          test-set: test-set1
+        annotations:
+          claudie.io/example-annotation: >
+            ["test-set1"]
   kubernetes:
     clusters:
       - name: ts1-htz-cluster-test-set-no1
-        version: 1.30.0
+        version: "1.35.0"
         network: 192.168.2.0/24
         pools:
           control:
             - htz-ctrl-nodes
           compute:
             - htz-cmpt-nodes
+            - exo-cmpt-nodes
       - name: ts1-gcp-cluster-test-set-no1
-        version: 1.30.0
+        version: "1.35.0"
         network: 192.168.2.0/24
         pools:
           control:
@@ -220,7 +285,7 @@ spec:
           compute:
             - gcp-cmpt-nodes
       - name: ts1-oci-cluster-test-set-no1
-        version: 1.30.0
+        version: "1.35.0"
         network: 192.168.2.0/24
         installationProxy:
           mode: "on"
@@ -230,7 +295,7 @@ spec:
           compute:
             - oci-cmpt-nodes
       - name: ts1-aws-cluster-test-set-no1
-        version: 1.30.0
+        version: "1.35.0"
         network: 192.168.2.0/24
         pools:
           control:
@@ -238,10 +303,20 @@ spec:
           compute:
             - aws-cmpt-nodes
       - name: ts1-azr-cluster-test-set-no1
-        version: 1.30.0
+        version: "1.35.0"
         network: 192.168.2.0/24
         pools:
           control:
             - azr-ctrl-nodes
           compute:
             - azr-cmpt-nodes
+      - name: ts1-ovh-cluster-test-set-no1
+        version: "1.35.0"
+        network: 192.168.2.0/24
+        installationProxy:
+          mode: "on"
+        pools:
+          control:
+            - ovh-ctrl-nodes
+          compute:
+            - ovh-cmpt-nodes

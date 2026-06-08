@@ -8,13 +8,11 @@ kind: Secret
 metadata:
   name: azure-secret
 data:
-  clientid: QWJjZH5FRmd+SDZJamtsc35BQkMxNXNFRkdLNTRzNzhYfk9sazk=
-  # all resources you define will be charged here
-  clientsecret: NmE0ZGZzZzctc2Q0di1mNGFkLWRzdmEtYWQ0djYxNmZkNTEy
-  subscriptionid: NTRjZGFmYTUtc2R2cy00NWRzLTU0NnMtZGY2NTFzZmR0NjE0
-  tenantid: MDI1NXNjMjMtNzZ3ZS04N2c2LTk2NGYtYWJjMWRlZjJnaDNs
+  clientid: <base64-encoded-client-id>
+  clientsecret: <base64-encoded-client-secret>
+  subscriptionid: <base64-encoded-subscription-id>
+  tenantid: <base64-encoded-tenant-id>
 type: Opaque
-
 ```
 
 ## Create Azure credentials
@@ -44,8 +42,8 @@ type: Opaque
     }
     EOF
     ```
-    
-!!! warning "To create custom roles, your organization needs Microsoft Entra ID Premium P1 or P2." 
+
+!!! warning "To create custom roles, your organization needs Microsoft Entra ID Premium P1 or P2."
     If you do not have Premium P1 or P2 activated, you can use the built-in role **Kubernetes Agent Subscription Level Operator** instead, which includes the required resource group permissions.
 
 3. Create a role based on the policy document. Skip this step if using build in role **Kubernetes Agent Subscription Level Operator**:
@@ -91,7 +89,7 @@ If you wish to use Azure as your DNS provider where Claudie creates DNS records 
 The secret for an Azure provider must include the following mandatory fields: `clientsecret`, `subscriptionid`, `tenantid`, and `clientid`.
 
 ```bash
-kubectl create secret generic azure-secret-1 --namespace=mynamespace --from-literal=clientsecret='Abcd~EFg~H6Ijkls~ABC15sEFGK54s78X~Olk9' --from-literal=subscriptionid='6a4dfsg7-sd4v-f4ad-dsva-ad4v616fd512' --from-literal=tenantid='54cdafa5-sdvs-45ds-546s-df651sfdt614' --from-literal=clientid='0255sc23-76we-87g6-964f-abc1def2gh3l'
+kubectl create secret generic azure-secret-1 --namespace=<your-namespace> --from-literal=clientsecret='<your-client-secret>' --from-literal=subscriptionid='<your-subscription-id>' --from-literal=tenantid='<your-tenant-id>' --from-literal=clientid='<your-client-id>'
 ```
 
 ```yaml
@@ -107,7 +105,7 @@ spec:
       providerType: azure
       secretRef:
         name: azure-secret-1
-        namespace: mynamespace
+        namespace: <your-namespace>
   nodePools:
     dynamic:
       - name: control-az
@@ -116,13 +114,13 @@ spec:
           name: azure-1
           # Location of the nodepool.
           region: North Europe
-          # Zone of the nodepool.
+          # Zone is optional. If omitted, nodes are distributed across zones.
           zone: "1"
         count: 2
         # VM size name.
         serverType: Standard_B2s
         # URN of the image.
-        image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
+        image: Canonical:ubuntu-24_04-lts:server:24.04.202510010
 
       - name: compute-1-az
         providerSpec:
@@ -130,13 +128,13 @@ spec:
           name: azure-1
           # Location of the nodepool.
           region: Germany West Central
-          # Zone of the nodepool.
+          # Zone is optional. If omitted, nodes are distributed across zones.
           zone: "1"
         count: 2
         # VM size name.
         serverType: Standard_B2s
         # URN of the image.
-        image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
+        image: Canonical:ubuntu-24_04-lts:server:24.04.202510010
         storageDiskSize: 50
 
       - name: compute-2-az
@@ -145,19 +143,19 @@ spec:
           name: azure-1
           # Location of the nodepool.
           region: North Europe
-          # Zone of the nodepool.
+          # Zone is optional. If omitted, nodes are distributed across zones.
           zone: "1"
         count: 2
         # VM size name.
         serverType: Standard_B2s
         # URN of the image.
-        image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
+        image: Canonical:ubuntu-24_04-lts:server:24.04.202510010
         storageDiskSize: 50
 
   kubernetes:
     clusters:
       - name: azure-cluster
-        version: v1.31.0
+        version: v1.34.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -170,9 +168,9 @@ spec:
 ### Multi provider, multi region clusters example
 
 ```bash
-kubectl create secret generic azure-secret-1 --namespace=mynamespace --from-literal=clientsecret='Abcd~EFg~H6Ijkls~ABC15sEFGK54s78X~Olk9' --from-literal=subscriptionid='6a4dfsg7-sd4v-f4ad-dsva-ad4v616fd512' --from-literal=tenantid='54cdafa5-sdvs-45ds-546s-df651sfdt614' --from-literal=clientid='0255sc23-76we-87g6-964f-abc1def2gh3l'
+kubectl create secret generic azure-secret-1 --namespace=<your-namespace> --from-literal=clientsecret='<your-client-secret>' --from-literal=subscriptionid='<your-subscription-id>' --from-literal=tenantid='<your-tenant-id>' --from-literal=clientid='<your-client-id>'
 
-kubectl create secret generic azure-secret-2 --namespace=mynamespace --from-literal=clientsecret='Efgh~ijkL~on43noi~NiuscviBUIds78X~UkL7' --from-literal=subscriptionid='0965bd5b-usa3-as3c-ads1-csdaba6fd512' --from-literal=tenantid='55safa5d-dsfg-546s-45ds-d51251sfdaba' --from-literal=clientid='076wsc23-sdv2-09cA-8sd9-oigv23npn1p2'
+kubectl create secret generic azure-secret-2 --namespace=<your-namespace> --from-literal=clientsecret='<your-client-secret>' --from-literal=subscriptionid='<your-subscription-id>' --from-literal=tenantid='<your-tenant-id>' --from-literal=clientid='<your-client-id>'
 ```
 
 ```yaml
@@ -188,13 +186,13 @@ spec:
       providerType: azure
       secretRef:
         name: azure-secret-1
-        namespace: mynamespace
+        namespace: <your-namespace>
 
     - name: azure-2
       providerType: azure
       secretRef:
         name: azure-secret-2
-        namespace: mynamespace
+        namespace: <your-namespace>
 
   nodePools:
     dynamic:
@@ -210,7 +208,7 @@ spec:
         # VM size name.
         serverType: Standard_B2s
         # URN of the image.
-        image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
+        image: Canonical:ubuntu-24_04-lts:server:24.04.202510010
 
       - name: control-az-2
         providerSpec:
@@ -224,7 +222,7 @@ spec:
         # VM size name.
         serverType: Standard_B2s
         # URN of the image.
-        image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
+        image: Canonical:ubuntu-24_04-lts:server:24.04.202510010
 
       - name: compute-az-1
         providerSpec:
@@ -238,7 +236,7 @@ spec:
         # VM size name.
         serverType: Standard_B2s
         # URN of the image.
-        image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
+        image: Canonical:ubuntu-24_04-lts:server:24.04.202510010
         storageDiskSize: 50
 
       - name: compute-az-2
@@ -253,13 +251,13 @@ spec:
         # VM size name.
         serverType: Standard_B2s
         # URN of the image.
-        image: Canonical:ubuntu-24_04-lts:server:24.04.202502210
+        image: Canonical:ubuntu-24_04-lts:server:24.04.202510010
         storageDiskSize: 50
 
   kubernetes:
     clusters:
       - name: azure-cluster
-        version: v1.31.0
+        version: v1.34.0
         network: 192.168.2.0/24
         pools:
           control:

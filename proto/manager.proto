@@ -2,57 +2,121 @@ syntax = "proto3";
 package claudie;
 
 import "spec/manifest.proto";
-import "spec/nodepool.proto";
 
 option go_package = "proto/pb";
 
-message UpsertManifestRequest {string name = 1; spec.KubernetesContext k8sCtx = 2; spec.Manifest manifest = 3;}
-message UpsertManifestResponse {string name = 1; uint64 version = 2;}
-
-message MarkForDeletionRequest {string name = 1; uint64 version = 2;}
-message MarkForDeletionResponse {string name = 1; uint64 version = 2;}
-
-message NextTaskRequest {}
-message NextTaskResponse {
-  spec.Workflow state = 1;
-  spec.Clusters current = 2;
-  spec.TaskEvent event = 3;
-  int32 ttl = 4;
-  string cluster = 5;
-  uint64 version = 6;
-  string name = 7;
-}
-
-message TaskUpdateRequest {
+message UpsertManifestRequest {
   string name = 1;
-  string cluster = 2;
-  string taskId = 3;
-  uint64 version = 4;
-  spec.Workflow state = 5;
+  spec.KubernetesContext k8sCtx = 2;
+  spec.Manifest manifest = 3;
 }
-message TaskUpdateResponse {string name = 1; uint64 version = 2;}
-
-message ListConfigRequest {}
-message ListConfigResponse {repeated spec.Config configs = 1;}
-
-message GetConfigRequest {string name = 1;}
-message GetConfigResponse {spec.Config config = 1;}
-
-message UpdateNodePoolRequest {string name = 1; string cluster = 2; uint64 version = 3; spec.NodePool nodepool = 4;}
-message UpdateNodePoolResponse {string name = 1; uint64 version = 2;}
-
-message TaskCompleteRequest {
+message UpsertManifestResponse {
   string name = 1;
-  string cluster = 2;
-  string taskId = 3;
-  uint64 version = 4;
-  spec.Workflow workflow = 5;
-  spec.Clusters state = 6;
+  uint64 version = 2;
 }
-message TaskCompleteResponse {string name = 1; uint64 version = 2;}
+
+message MarkForDeletionRequest {
+  string name = 1;
+  uint64 version = 2;
+}
+message MarkForDeletionResponse {
+  string name = 1;
+  uint64 version = 2;
+}
+
+message ListConfigsRequest {}
+message ListConfigsResponse {
+  repeated spec.Config configs = 1;
+}
+
+message NodePoolUpdateTargetSizeRequest {
+  string config = 1;
+  string cluster = 2;
+  string nodepool = 3;
+
+  // If set the node will be searched for in this
+  // specified loadbalanacer. The passed in [Cluster]
+  // specifies the kuberentes cluster, but loadbalancers
+  // are attached to the kubernetes cluster thus the search
+  // requires the kubernetes cluster id but makes the loadbalancer
+  // id optional.
+  optional string loadbalancer = 4;
+
+  // Specifies the target size of the nodepool.
+  //
+  // For Dynamic and static nodepools this request or value
+  // will be ignored
+  //
+  // Why ?
+  //
+  // If this request would change the targetSize it would be
+  // overwritten on the next reconciliation loop by the desired
+  // state from the InputManifest which would result in a Noop.
+  //
+  // Only for autoscaled nodepools this will have an effect, which
+  // effectively sets the TargetSize within the [Min, Max] range of
+  // the autoscaled nodepool.
+  int32 targetSize = 5;
+}
+
+message NodePoolUpdateTargetSizeResponse {
+  // The new updated target size.
+  int32 targetSize = 1;
+}
+
+message GetConfigRequest {
+  string name = 1;
+}
+message GetConfigResponse {
+  spec.Config config = 1;
+}
+
+message MarkNodeForDeletionRequest {
+  string config = 1;
+  string cluster = 2;
+  string nodepool = 3;
+  string node = 4;
+
+  // If set the node will be searched for in this
+  // specified loadbalanacer. The passed in [Cluster]
+  // specifies the kuberentes cluster, but loadbalancers
+  // are attached to the kubernetes cluster thus the search
+  // requires the kubernetes cluster id but makes the loadbalancer
+  // id optional.
+  optional string loadbalancer = 5;
+
+  // This flag only has effect with autoscaled dynamic nodepools,
+  // if any other nodepool is detected and this parameter is set
+  // it will be ignored.
+  //
+  // Why only for autoscaled nodepools ?
+  //
+  // Dynamic and Static nodepools have a fixed desired capacity that
+  // does not change until explicitly changed in the InputManifest.
+  // So even if this Api endpoint would allow to decrease the capacity
+  // for these nodepools on the next iteration of the reconciliation
+  // loop it would be overwritten by the desired count and effectively
+  // result in a Noop.
+  //
+  // Autoscaled nodepools work within a range of nodes [Min, Max] and
+  // works with two counters for nodes, 'count' which is the current number
+  // of nodes within the nodepool and 'targetSize' which is the Target Size
+  // within [Min, Max] that the NodePool should have. This parameter is
+  // externally managed, i.e. the desired state does not come from the
+  // InputManifest, for autoscaled nodepools and thus is also made
+  // available via this parameter.
+  //
+  // This parameter adjusts the 'targetSize' which will result of downscaling.
+  optional bool shouldDecrementDesiredCapacity = 6;
+}
+
+message MarkNodeForDeletionResponse {
+  // The new updated target size.
+  int64 targetSize = 1;
+}
 
 service ManagerService {
-  // UpsertManifest will process the request by either created a new configuration for the
+  // UpsertManifest will process the request by either creating a new configuration for the
   // given input manifest or updating an existing one.
   rpc UpsertManifest(UpsertManifestRequest) returns (UpsertManifestResponse);
 
@@ -60,26 +124,17 @@ service ManagerService {
   // manager determines the configuration can be deleted it will be deleted.
   rpc MarkForDeletion(MarkForDeletionRequest) returns (MarkForDeletionResponse);
 
+  // MarkNodeForDeletion will mark the request node for deletion. The node itself
+  // is not immediately deleted and the Manager service itself will decide when
+  // the approriate time for deletion will be.
+  rpc MarkNodeForDeletion(MarkNodeForDeletionRequest) returns (MarkNodeForDeletionResponse);
+
   // ListConfigs will list all stored configuration that the manager manages.
-  rpc ListConfigs(ListConfigRequest) returns (ListConfigResponse);
+  rpc ListConfigs(ListConfigsRequest) returns (ListConfigsResponse);
+
   // GetConfig will retrieve the requested configuration by name.
   rpc GetConfig(GetConfigRequest) returns (GetConfigResponse);
 
-  // NextTask will return the next available task to be worked on or a nil response if no task is available.
-  rpc NextTask(NextTaskRequest) returns (NextTaskResponse);
-  // TaskUpdate will update the state of the requested task. This should be periodically called as the task
-  // that was picked up by the NextTask RPC enters different stages of the build process.
-  rpc TaskUpdate(TaskUpdateRequest) returns (TaskUpdateResponse);
-  // TaskComplete will update the state of the requested task to either Done or Error. Further, it will
-  // update the current state of the clusters from the passed in value, so that subsequent tasks will
-  // work with an up-to-date current state that reflects the actual state of the infrastructure.
-  // This RPC  should be called when a task that has been previously picked up by the NextTask RPC
-  // finished processing, either in error or successfully.
-  rpc TaskComplete(TaskCompleteRequest) returns (TaskCompleteResponse);
-
-  // UpdateNodePool updates a single nodepool within a cluster, and should only be called by
-  // the autoscaler-adapter service. This RPC bypasses the main loop of how changes are applied
-  // to the configuration, and directly changes the nodepool to the state specified in the request
-  // to initiate the build process.
-  rpc UpdateNodePool(UpdateNodePoolRequest) returns (UpdateNodePoolResponse);
+  // NodePoolUpdateTargetSize updates the target size of the nodepool.
+  rpc NodePoolUpdateTargetSize(NodePoolUpdateTargetSizeRequest) returns (NodePoolUpdateTargetSizeResponse);
 }

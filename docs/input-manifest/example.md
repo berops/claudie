@@ -12,7 +12,7 @@ spec:
   # Every supported provider has an example in this input manifest.
   # providers:
   #   - name:
-  #       providerType:   # Type of the provider secret [aws|azure|gcp|oci|hetzner|hetznerdns|cloudflare].
+  #       providerType:   # Type of the provider secret [aws|azure|gcp|oci|hetzner|openstack|exoscale|cloudflare].
   #       templates:      # external templates used to build the infrastructure by that given provider. If omitted default templates will be used.
   #         repository:   # publicly available git repository where the templates can be acquired
   #         tag:          # optional tag. If set is used to checkout to a specific hash commit of the git repository.
@@ -21,16 +21,6 @@ spec:
   #         name:         # Name of the secret resource.
   #         namespace:    # Namespace of the secret resource.
   providers:
-    # Hetzner DNS provider.
-    - name: hetznerdns-1
-      providerType: hetznerdns
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        path: "templates/terraformer/hetznerdns"
-      secretRef:
-        name: hetznerdns-secret-1
-        namespace: example-namespace
-
     # Cloudflare DNS provider.
     - name: cloudflare-1
       providerType: cloudflare
@@ -85,7 +75,7 @@ spec:
     #     providerSpec:     # Provider specification for this nodepool.
     #       name:           # Name of the provider instance, referencing one of the providers define above.
     #       region:         # Region of the nodepool.
-    #       zone:           # Zone of the nodepool.
+    #       zone:           # Zone of the nodepool (optional). If omitted, nodes are distributed across zones automatically.
     #     count:            # Static number of nodes in this nodepool.
     #     serverType:       # Machine type of the nodes in this nodepool.
     #     image:            # OS image of the nodes in the nodepool.
@@ -108,7 +98,7 @@ spec:
           region: hel1
           zone: hel1-dc2
         count: 3
-        serverType: cpx11
+        serverType: cpx22
         image: ubuntu-24.04
         labels:
           country: finland
@@ -126,7 +116,7 @@ spec:
           region: hel1
           zone: hel1-dc2
         count: 2
-        serverType: cpx11
+        serverType: cpx22
         image: ubuntu-24.04
         storageDiskSize: 50
         labels:
@@ -140,7 +130,7 @@ spec:
           name: hetzner-1
           region: hel1
           zone: hel1-dc2
-        serverType: cpx11
+        serverType: cpx22
         image: ubuntu-24.04
         storageDiskSize: 50
         autoscaler:
@@ -258,7 +248,7 @@ spec:
           region: hel1
           zone: hel1-dc2
         count: 2
-        serverType: cpx11
+        serverType: cpx22
         image: ubuntu-24.04
 
     # Static nodepools are created by user beforehand.
@@ -272,6 +262,7 @@ spec:
     #         secretRef:    # Secret reference specification, holding private key which will be used to SSH into the node (as root or as a user specificed in the username attribute).
     #           name:       # Name of the secret resource.
     #           namespace:  # Namespace of the secret resource.
+    #     sshPort:          # SSH port used to connect to the static nodes. Defaults to 22 if not set. (optional)
     #     labels:           # Map of custom user defined labels for this nodepool. This field is optional and is ignored if used in Loadbalancer cluster. (optional)
     #     annotations:      # Map of user defined annotations, which will be applied on every node in the node pool. (optional)
     #     taints:           # Array of custom user defined taints for this nodepool. This field is optional and is ignored if used in Loadbalancer cluster. (optional)
@@ -421,7 +412,7 @@ spec:
           - https
         dns:
           dnsZone: dns-zone
-          provider: hetznerdns-1
+          provider: hetzner-1
         targetedK8s: dev-cluster
         pools:
           - loadbalancer-1

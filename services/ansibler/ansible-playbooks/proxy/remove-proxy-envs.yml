@@ -1,0 +1,22 @@
+- hosts: all
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Deleting proxy.conf from /etc/apt/apt.conf.d/
+      ansible.builtin.file:
+        path: "/etc/apt/apt.conf.d/proxy.conf"
+        state: absent
+    - name: Deleting http-proxy.conf from /etc/systemd/system for containerd,kubelet,docker
+      ansible.builtin.file:
+        path: "/etc/systemd/system/{{ item }}.service.d/http-proxy.conf"
+        state: absent
+      loop:
+        - docker
+        - containerd
+        - kubelet
+
+    - name: Remove proxy variables block from /etc/environment
+      ansible.builtin.blockinfile:
+        path: /etc/environment
+        marker: "# {mark} ANSIBLE MANAGED PROXY SETTINGS"
+        state: absent

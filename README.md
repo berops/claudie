@@ -1,13 +1,23 @@
 <h4 align="center">
-  <img src="https://raw.githubusercontent.com/berops/claudie/17480b6cb809fe795d454588af18355c7543f37e/docs/logo%20claudie_blue_no_BG.svg" width="250px"/><br/>
+  <a href="https://claudie.io" target="_blank" rel="noopener noreferrer">
+  <img src="https://raw.githubusercontent.com/berops/claudie/17480b6cb809fe795d454588af18355c7543f37e/docs/logo%20claudie_blue_no_BG.svg" width="250px" alt="Claudie logo"/>
+  </a><br/>
   <br/><br/>
-  Platform for managing multi-cloud and hybrid-cloud Kubernetes clusters with support for nodepools across different cloud-providers and on-premise data centers
+  Platform for managing multi-cloud, hybrid-cloud, and on-premises Kubernetes clusters, with nodepools that mix cloud providers and your own bare-metal or co-located servers
 </h4>
 
 <p align="center">
   <a href="https://github.com/berops/claudie/releases/"><img alt="Releases" src="https://img.shields.io/github/release-date/berops/claudie?label=latest%20release" /></a>
   <a href="https://goreportcard.com/report/github.com/Berops/claudie"><img src="https://goreportcard.com/badge/github.com/Berops/claudie"></a>
   <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg"></a>
+</p>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/cluster-diagram-animation-dark.webp">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/cluster-diagram-animation-light.webp">
+    <img alt="Claudie cluster diagram animation" src="docs/assets/cluster-diagram-animation-light.webp">
+  </picture>
 </p>
 
 ## Intro video
@@ -21,7 +31,7 @@
 
 ## Vision of Claudie
 
-The purpose of Claudie is to become the final Kubernetes engine you'll ever need. It aims to build clusters that leverage features and costs across multiple cloud vendors and on-prem datacenters. A Kubernetes that you won't ever need to migrate away from.
+The purpose of Claudie is to become the final Kubernetes engine you'll ever need. It builds clusters that leverage features and costs across on-premises datacenters and multiple cloud vendors, all from a single InputManifest. A Kubernetes that you won't ever need to migrate away from.
 
 ## Typical use cases
 
@@ -32,17 +42,25 @@ Claudie has been built as an answer to the following Kubernetes challenges.
 - Managed Kubernetes for providers that do not offer it
 - Cloud bursting
 - Service interconnect
+- On-premises & hybrid integration of existing bare-metal or co-located servers as nodepools
+- Integration of GPU nodes into Kubernetes for AI workloads
 
 Read in more details [here](https://docs.claudie.io/latest/use-cases/use-cases/).
 
 ## Features
 
-### Manage multi-cloud and hybrid-cloud Kubernetes clusters
+### Manage multi-cloud, hybrid-cloud, and on-premises Kubernetes clusters
 
-Create fully-featured Kubernetes clusters composed of multiple different public Cloud providers and on-premise data center in an easy and secure manner.
+Create fully-featured Kubernetes clusters composed of multiple different public Cloud providers and your own on-premises data centers in an easy and secure manner.
 Simply insert credentials to your cloud projects, define your cluster, and watch how the infra spawns right in front of you.
 
-![](./docs/infra-diagram.png)
+<p align="center">
+  <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="docs/assets/cluster-diagram-v2-dark.png">
+      <source media="(prefers-color-scheme: light)" srcset="docs/assets/cluster-diagram-v2-light.png">
+      <img alt="Claudie cluster diagram – click to play" src="docs/assets/cluster-diagram-v2-light.png">
+    </picture>
+</p>
 
 ### Management via IaC
 
@@ -71,23 +89,30 @@ Before you begin, please make sure you have the following prerequisites installe
 
 2. Claudie requires the installation of cert-manager in your Management Cluster. To install cert-manager, use the following command:
     ```bash
-    kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml
+    kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.19.3/cert-manager.yaml
     ```
 
 
 ### Supported providers
 <!-- providers-start -->
-   | Supported Provider                                                                | Node Pools         | DNS                | DNS healthchecks  |
-   | --------------------------------------------------------------------------------- | ------------------ | ------------------ |------------------ |
-   | [AWS](https://docs.claudie.io/latest/input-manifest/providers/aws/)               | :heavy_check_mark: | :heavy_check_mark: |:heavy_check_mark: |
-   | [Azure](https://docs.claudie.io/latest/input-manifest/providers/azure/)           | :heavy_check_mark: | :heavy_check_mark: |:heavy_check_mark: |
-   | [GCP](https://docs.claudie.io/latest/input-manifest/providers/gcp/)               | :heavy_check_mark: | :heavy_check_mark: |:heavy_check_mark: |
-   | [OCI](https://docs.claudie.io/latest/input-manifest/providers/oci/)               | :heavy_check_mark: | :heavy_check_mark: |:heavy_check_mark: |
-   | [Hetzner](https://docs.claudie.io/latest/input-manifest/providers/hetzner/)       | :heavy_check_mark: | :heavy_check_mark: | N/A               |
-   | [Cloudflare](https://docs.claudie.io/latest/input-manifest/providers/cloudflare/) | N/A                | :heavy_check_mark: |:heavy_check_mark: |
-   | [GenesisCloud](https://docs.claudie.io/latest/input-manifest/providers/genesiscloud/) | :heavy_check_mark: | N/A            | N/A               |
+   | Supported Provider                                                                | Node Pools         | DNS                | DNS healthchecks  | GPU                |
+   | --------------------------------------------------------------------------------- | ------------------ | ------------------ |------------------ | ------------------ |
+   | [AWS](https://docs.claudie.io/latest/input-manifest/providers/aws/)               | :heavy_check_mark: | :heavy_check_mark: |:heavy_check_mark: | :heavy_check_mark: |
+   | [Azure](https://docs.claudie.io/latest/input-manifest/providers/azure/)           | :heavy_check_mark: | :heavy_check_mark: |:heavy_check_mark: | :heavy_check_mark: |
+   | [GCP](https://docs.claudie.io/latest/input-manifest/providers/gcp/)               | :heavy_check_mark: | :heavy_check_mark: |:heavy_check_mark: | :heavy_check_mark: |
+   | [OCI](https://docs.claudie.io/latest/input-manifest/providers/oci/)               | :heavy_check_mark: | :heavy_check_mark: |:heavy_check_mark: | :heavy_check_mark: |
+   | [Exoscale](https://docs.claudie.io/latest/input-manifest/providers/exoscale/)     | :heavy_check_mark: | :heavy_check_mark: | N/A               | :heavy_check_mark: |
+   | [Hetzner](https://docs.claudie.io/latest/input-manifest/providers/hetzner/)       | :heavy_check_mark: | :heavy_check_mark: | N/A               | :heavy_check_mark: |
+   | [CloudRift](https://docs.claudie.io/latest/input-manifest/providers/cloudrift/)    | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: |
+   | [Verda](https://docs.claudie.io/latest/input-manifest/providers/verda/)            | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: |
+   | [Cloudflare](https://docs.claudie.io/latest/input-manifest/providers/cloudflare/) | N/A                | :heavy_check_mark: |:heavy_check_mark: | N/A                |
+   | [OVHcloud](https://docs.claudie.io/latest/input-manifest/providers/ovh/)         | :heavy_check_mark: | :heavy_check_mark: | N/A               | :heavy_check_mark: |
+   | [Openstack](https://docs.claudie.io/latest/input-manifest/providers/openstack/)   | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: |
+   | [On-Premises / Static nodes](https://docs.claudie.io/latest/input-manifest/providers/on-premises/) | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: |
 
-For adding support for other cloud providers, open an issue or propose a PR.
+> **Note:** `N/A` indicates that the given feature is not applicable for the provider.
+
+For adding support for other cloud providers or on-premises environments, open an issue or propose a PR.
 
 <!-- providers-end -->
 
@@ -113,9 +138,9 @@ For adding support for other cloud providers, open an issue or propose a PR.
 
     ```bash
     kubectl create secret generic example-aws-secret-1 \
-      --namespace=mynamespace \
-      --from-literal=accesskey='myAwsAccessKey' \
-      --from-literal=secretkey='myAwsSecretKey'
+      --namespace=<your-namespace> \
+      --from-literal=accesskey='<your-access-key>' \
+      --from-literal=secretkey='<your-secret-key>'
     ```
 
     Check the [supported providers](#supported-providers) for input manifest examples. For an input manifest spanning all supported hyperscalers checkout out [this example](https://docs.claudie.io/latest/input-manifest/example/).
@@ -134,8 +159,8 @@ For adding support for other cloud providers, open an issue or propose a PR.
           - name: aws-1
           providerType: aws
           secretRef:
-              name: example-aws-secret-1 # reference the secret name
-              namespace: mynamespace     # reference the secret namespace
+              name: example-aws-secret-1    # reference the secret name
+              namespace: <your-namespace>   # reference the secret namespace
       nodePools:
           dynamic:
           - name: control-aws
@@ -198,8 +223,8 @@ Claudie outputs base64 encoded kubeconfig secret `<cluster-name>-<cluster-hash>-
           - name: aws-1
           providerType: aws
           secretRef:
-              name: example-aws-secret-1 # reference the secret name
-              namespace: mynamespace     # reference the secret namespace
+              name: example-aws-secret-1    # reference the secret name
+              namespace: <your-namespace>   # reference the secret namespace
       nodePools:
           dynamic:
           - name: control-aws
@@ -267,9 +292,10 @@ To see the vision behind Claudie, please refer to the [roadmap](https://docs.cla
 
 ## Reach out to us
 
-Claudie is proudly developed by Berops.
-Feel free to request a demo [here](mailto:claudie-demo&commat;berops&period;com).
-For information on enterprise support, contact us [here](mailto:claudie&commat;berops&period;com).
+Claudie is proudly developed by Berops.  
+Project office hours on Fridays @1300 UTC on [Google Meet](http://meet.google.com/amd-dtkb-ixa).  
+Feel free to request a demo [here](mailto:claudie-demo&commat;berops&period;com).  
+For information on enterprise support, contact us [here](mailto:claudie&commat;berops&period;com).  
 
 ## LICENSE
 

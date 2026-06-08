@@ -71,17 +71,6 @@ func constructInputManifest(
 				SecretKey: strings.TrimSpace(awsSecretkey),
 				Templates: p.Templates,
 			})
-		case v1beta1manifest.GENESIS_CLOUD:
-			gcToken, err := p.GetSecretField(v1beta1manifest.GEN_C_API_TOKEN)
-			if err != nil {
-				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
-			}
-			var genCloud = manifest.GenesisCloud{
-				Name:      p.ProviderName,
-				ApiToken:  strings.TrimSpace(gcToken),
-				Templates: p.Templates,
-			}
-			providers.GenesisCloud = append(providers.GenesisCloud, genCloud)
 		case v1beta1manifest.HETZNER:
 			hetzner_key, err := p.GetSecretField(v1beta1manifest.HETZNER_CREDENTIALS)
 			if err != nil {
@@ -170,15 +159,108 @@ func constructInputManifest(
 				Templates: p.Templates,
 			})
 
-		case v1beta1manifest.HETZNER_DNS:
-			hetznerDNSCredentials, err := p.GetSecretField(v1beta1manifest.HETZNER_DNS_API_TOKEN)
+		case v1beta1manifest.OPENSTACK:
+			osAuthURL, err := p.GetSecretField(v1beta1manifest.OS_AUTH_URL)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
-			providers.HetznerDNS = append(providers.HetznerDNS, manifest.HetznerDNS{
+			osDomainID, err := p.GetSecretField(v1beta1manifest.OS_DOMAIN_ID)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+			osProjectID, err := p.GetSecretField(v1beta1manifest.OS_PROJECT_ID)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+			osAppCredID, err := p.GetSecretField(v1beta1manifest.OS_APPLICATION_CREDENTIAL_ID)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+			osAppCredSecret, err := p.GetSecretField(v1beta1manifest.OS_APPLICATION_CREDENTIAL_SECRET)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+
+			providers.Openstack = append(providers.Openstack, manifest.Openstack{
+				Name:                        p.ProviderName,
+				AuthURL:                     strings.TrimSpace(osAuthURL),
+				DomainId:                    strings.TrimSpace(osDomainID),
+				ProjectId:                   strings.TrimSpace(osProjectID),
+				ApplicationCredentialId:     strings.TrimSpace(osAppCredID),
+				ApplicationCredentialSecret: strings.TrimSpace(osAppCredSecret),
+				Templates:                   p.Templates,
+			})
+		case v1beta1manifest.EXOSCALE:
+			exoApiKey, err := p.GetSecretField(v1beta1manifest.EXOSCALE_API_KEY)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+			exoApiSecret, err := p.GetSecretField(v1beta1manifest.EXOSCALE_API_SECRET)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+
+			providers.Exoscale = append(providers.Exoscale, manifest.Exoscale{
 				Name:      p.ProviderName,
-				ApiToken:  strings.TrimSpace(hetznerDNSCredentials),
+				ApiKey:    strings.TrimSpace(exoApiKey),
+				ApiSecret: strings.TrimSpace(exoApiSecret),
 				Templates: p.Templates,
+			})
+		case v1beta1manifest.CLOUDRIFT:
+			crToken, err := p.GetSecretField(v1beta1manifest.CLOUDRIFT_TOKEN)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+			// team_id is optional — only read if present in the secret.
+			crTeamId, _ := p.GetSecretField(v1beta1manifest.CLOUDRIFT_TEAM_ID)
+
+			providers.CloudRift = append(providers.CloudRift, manifest.CloudRift{
+				Name:      p.ProviderName,
+				Token:     strings.TrimSpace(crToken),
+				TeamId:    strings.TrimSpace(crTeamId),
+				Templates: p.Templates,
+			})
+		case v1beta1manifest.VERDA:
+			vClientId, err := p.GetSecretField(v1beta1manifest.VERDA_CLIENT_ID)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+			vClientSecret, err := p.GetSecretField(v1beta1manifest.VERDA_CLIENT_SECRET)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+			// base_url is optional, default in OpenTofu provider is https://api.verda.com/v1.
+			vBaseUrl, _ := p.GetSecretField(v1beta1manifest.VERDA_BASE_URL)
+
+			providers.Verda = append(providers.Verda, manifest.Verda{
+				Name:         p.ProviderName,
+				ClientId:     strings.TrimSpace(vClientId),
+				ClientSecret: strings.TrimSpace(vClientSecret),
+				BaseUrl:      strings.TrimSpace(vBaseUrl),
+				Templates:    p.Templates,
+			})
+		case v1beta1manifest.OVH:
+			oClientId, err := p.GetSecretField(v1beta1manifest.OVH_CLIENT_ID)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+			oClientSecret, err := p.GetSecretField(v1beta1manifest.OVH_CLIENT_SECRET)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+			oServiceName, err := p.GetSecretField(v1beta1manifest.OVH_SERVICE_NAME)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+			oEndpoint, _ := p.GetSecretField(v1beta1manifest.OVH_ENDPOINT)
+
+			providers.OVH = append(providers.OVH, manifest.OVH{
+				Name:         p.ProviderName,
+				ClientId:     strings.TrimSpace(oClientId),
+				ClientSecret: strings.TrimSpace(oClientSecret),
+				ServiceName:  strings.TrimSpace(oServiceName),
+				Endpoint:     strings.TrimSpace(oEndpoint),
+				Templates:    p.Templates,
 			})
 		}
 	}
@@ -208,6 +290,7 @@ func constructInputManifest(
 			Labels:      np.Labels,
 			Taints:      np.Taints,
 			Annotations: np.Annotations,
+			SshPort:     &np.SshPort,
 		})
 	}
 

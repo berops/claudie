@@ -1,62 +1,189 @@
 We will follow the guide
 from [Nvidia](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html#operator-install-guide)
-to deploy the `gpu-operator` into a claudie build kubernetes cluster. Make sure you fulfill the necessary listed
+to deploy the `gpu-operator` into a Claudie-built Kubernetes cluster. Make sure you fulfill the necessary listed
 requirements in prerequisites before continuing, if you decide to use a different cloud provider.
 
-In this example we will be using [GenesisCloud](providers/genesiscloud.md) as our provider, with the following config:
+## AWS GPU Example
+
+In this example we will be using [AWS](providers/aws.md) as our provider. AWS GPU instances (like `g4dn.xlarge`) come with GPUs attached, so no additional `machineSpec` configuration is needed:
 
 ```yaml
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
-  name: genesis-example
+  name: aws-gpu-example
   labels:
     app.kubernetes.io/part-of: claudie
 spec:
   providers:
-    - name: genesiscloud
-      providerType: genesiscloud
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.8"
-        path: "templates/terraformer/genesiscloud"
+    - name: aws-1
+      providerType: aws
       secretRef:
-        name: genesiscloud-secret
+        name: aws-secret
         namespace: secrets
 
   nodePools:
     dynamic:
-    - name: gencloud-cpu
+    - name: control-aws
       providerSpec:
-        name: genesiscloud
-        region: ARC-IS-HAF-1
+        name: aws-1
+        region: eu-central-1
+        zone: eu-central-1a
       count: 1
-      serverType: vcpu-2_memory-4g_disk-80g
-      image: "Ubuntu 22.04"
-      storageDiskSize: 50
+      serverType: t3.medium
+      # AMI ID of the image Ubuntu 24.04.
+      # Make sure to update it according to the region.
+      image: ami-07eef52105e8a2059
 
-    - name: gencloud-gpu
+    - name: gpu-aws
       providerSpec:
-        name: genesiscloud
-        region: ARC-IS-HAF-1
+        name: aws-1
+        region: eu-central-1
+        zone: eu-central-1a
       count: 2
-      serverType: vcpu-4_memory-12g_disk-80g_nvidia3080-1
-      image: "Ubuntu 22.04"
+      serverType: g4dn.xlarge
+      # AMI ID of the image Ubuntu 24.04.
+      # Make sure to update it according to the region.
+      image: ami-07eef52105e8a2059
       storageDiskSize: 50
 
   kubernetes:
     clusters:
       - name: gpu-example
-        version: v1.31.0
+        version: v1.34.0
         network: 172.16.2.0/24
         pools:
           control:
-            - gencloud-cpu
+            - control-aws
           compute:
-            - gencloud-gpu
+            - gpu-aws
 ```
 
-After the `InputManifest` was successfully build by claudie, we deploy the `gpu-operator` to the `gpu-examepl`kubernetes cluster.
+## GCP GPU Example
+
+For [GCP](providers/gcp.md), you must explicitly specify the GPU type and count using the `machineSpec` block. GCP requires both `nvidiaGpuCount` and `nvidiaGpuType` to attach GPUs to instances:
+
+```yaml
+apiVersion: claudie.io/v1beta1
+kind: InputManifest
+metadata:
+  name: gcp-gpu-example
+  labels:
+    app.kubernetes.io/part-of: claudie
+spec:
+  providers:
+    - name: gcp-1
+      providerType: gcp
+      secretRef:
+        name: gcp-secret
+        namespace: secrets
+
+  nodePools:
+    dynamic:
+    - name: control-gcp
+      providerSpec:
+        name: gcp-1
+        region: us-central1
+        zone: us-central1-a
+      count: 1
+      serverType: e2-medium
+      image: ubuntu-2404-noble-amd64-v20251001
+
+    - name: gpu-gcp
+      providerSpec:
+        name: gcp-1
+        region: us-central1
+        zone: us-central1-a
+      count: 2
+      # Use n1-standard machine types for GPU attachment
+      serverType: n1-standard-4
+      image: ubuntu-2404-noble-amd64-v20251001
+      storageDiskSize: 50
+      # GPU configuration required for GCP
+      machineSpec:
+        nvidiaGpuCount: 1
+        nvidiaGpuType: nvidia-tesla-t4
+
+  kubernetes:
+    clusters:
+      - name: gpu-example
+        version: v1.34.0
+        network: 172.16.2.0/24
+        pools:
+          control:
+            - control-gcp
+          compute:
+            - gpu-gcp
+```
+
+!!! note "GCP GPU Requirements"
+    - The `nvidiaGpuType` field is required when `nvidiaGpuCount > 0` for GCP providers
+    - Available GPU types vary by zone. Check [GCP GPU regions and zones](https://cloud.google.com/compute/docs/gpus/gpu-regions-zones) for availability
+    - Common GPU types: `nvidia-tesla-t4`, `nvidia-tesla-v100`, `nvidia-tesla-a100`, `nvidia-l4`
+    - GPU instances cannot be live migrated, so they will be terminated during maintenance events
+
+## Exoscale GPU Example
+
+For [Exoscale](providers/exoscale.md), GPU instances have the GPU built into the instance type (like AWS), so no additional `machineSpec` configuration is needed. Simply use a GPU instance type such as `gpu2.small` as the `serverType`:
+
+```yaml
+apiVersion: claudie.io/v1beta1
+kind: InputManifest
+metadata:
+  name: exoscale-gpu-example
+  labels:
+    app.kubernetes.io/part-of: claudie
+spec:
+  providers:
+    - name: exoscale-1
+      providerType: exoscale
+      # Exoscale templates are supported from claudie-config v0.9.18+
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.9.18
+        path: "templates/terraformer/exoscale"
+      secretRef:
+        name: exoscale-secret
+        namespace: secrets
+
+  nodePools:
+    dynamic:
+    - name: control-exo
+      providerSpec:
+        name: exoscale-1
+        region: ch-gva-2
+      count: 1
+      serverType: standard.medium
+      image: "Linux Ubuntu 24.04 LTS 64-bit"
+
+    - name: gpu-exo
+      providerSpec:
+        name: exoscale-1
+        region: at-vie-1
+      count: 1
+      serverType: gpu2.small
+      image: "Linux Ubuntu 24.04 LTS 64-bit"
+      storageDiskSize: 50
+
+  kubernetes:
+    clusters:
+      - name: gpu-example
+        version: v1.34.0
+        network: 172.16.2.0/24
+        pools:
+          control:
+            - control-exo
+          compute:
+            - gpu-exo
+```
+
+!!! note "Exoscale GPU Requirements"
+    - GPU instance types require account authorization from Exoscale. Contact [Exoscale support](https://portal.exoscale.com/support) to enable GPU quota.
+    - Available GPU types and zones may change. List current offerings with `exo compute instance-type list --verbose | grep -i gpu` or check the [Exoscale pricing page](https://www.exoscale.com/pricing/#/compute).
+
+## Deploying the GPU Operator
+
+After the `InputManifest` has been successfully built by Claudie, deploy the `gpu-operator` to the `gpu-example` Kubernetes cluster.
 
 1. Create a namespace for the gpu-operator.
 
@@ -109,7 +236,7 @@ nvidia-operator-validator-jbc7r                                   1/1     Runnin
 nvidia-operator-validator-q59mc                                   1/1     Running     0              10m
 ```
 
-When all pods are ready you should be able to verify if the GPUs can be used
+When all pods are ready, you should be able to verify if the GPUs can be used.
 
 ```bash
 kubectl get nodes -o json | jq -r '.items[] | {name:.metadata.name, gpus:.status.capacity."nvidia.com/gpu"}'

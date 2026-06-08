@@ -1,0 +1,23 @@
+---
+- hosts: all
+  gather_facts: true
+  become: true
+  tasks:
+    - name: Add iptables DNAT for same-provider peer nodes
+      ansible.builtin.iptables:
+        table: nat
+        chain: OUTPUT
+        destination: "{{ hostvars[item].ansible_host }}"
+        jump: DNAT
+        to_destination: "{{ hostvars[item].ansible_default_ipv4.address }}"
+      loop: "{{ groups['all'] | difference([inventory_hostname]) }}"
+      when: hostvars[inventory_hostname].hairpin_group == hostvars[item].hairpin_group
+
+    - name: Ensure /etc/iptables directory exists
+      ansible.builtin.file:
+        path: /etc/iptables
+        state: directory
+        mode: "0755"
+
+    - name: Save iptables rules
+      ansible.builtin.shell: iptables-save > /etc/iptables/rules.v4

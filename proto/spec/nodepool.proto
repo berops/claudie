@@ -1,8 +1,9 @@
 syntax = "proto3";
 package spec;
-option go_package = "github.com/berops/claudie/proto/pb/spec";
 
 import "spec/provider.proto";
+
+option go_package = "github.com/berops/claudie/proto/pb/spec";
 
 // NodePool represents a single node pool used in cluster.
 message NodePool {
@@ -23,6 +24,8 @@ message NodePool {
   repeated Taint taints = 7;
   // User definded annotations.
   map<string, string> annotations = 8;
+  // SSH port for the nodes in this node pool. Default 0 means port 22.
+  int32 sshPort = 9;
 }
 
 // Taint defines a custom defined taint for the node pools.
@@ -47,6 +50,9 @@ message Node {
   NodeType nodeType = 4;
   // Username of a user with root privileges. Also used in SSH connection
   string username = 5;
+
+  // Status of the node.
+  NodeStatus status = 6;
 }
 
 // NodeType specifies the type of the node.
@@ -57,6 +63,23 @@ enum NodeType {
   master = 1;
   // Master node, which is also an API endpoint.
   apiEndpoint = 2;
+}
+
+enum NodeStatus {
+  // Preparing states that the node is not joined into the cluster yet
+  // but is in the creation process whether spawning the infrastructure
+  // or configuring it or simply pending to be scheduled for creation.
+  Preparing = 0;
+
+  // Joined states that the node's infrastructure is spawned and configured
+  // and was successfully joined into the cluster.
+  Joined = 1;
+
+  // MarkedForDeletion states that the nodes will at some point in the future
+  // be deleted from the current state of the cluster, Depending on the target
+  // size of the nodepool the node may be replaced by claudie or may simply
+  // be deleted.
+  MarkedForDeletion = 2;
 }
 
 // DynamicNodePool represents dynamic node pool used in cluster.
@@ -85,13 +108,20 @@ message DynamicNodePool {
   // Cidr initially empty, will be set once the exising state
   // is transferred.
   string cidr = 14;
+  // Network Name with public IPs (required for Openstack)
+  string externalNetworkName = 15;
 }
 
 // MachineSpec further specifies the requested server type.
 message MachineSpec {
+  // Number of CPU cores.
   int32 cpuCount = 1;
+  // Memory in MB.
   int32 memory = 2;
-  int32 nvidiaGpu = 3;
+  // Number of NVIDIA GPUs.
+  int32 nvidiaGpuCount = 3;
+  // NVIDIA GPU accelerator type (required for GCP when using GPUs).
+  string nvidiaGpuType = 4;
 }
 
 // Autoscaler configuration on per node pool basis.
@@ -100,6 +130,11 @@ message AutoscalerConf {
   int32 min = 1;
   // Maximum number of nodes in node pool.
   int32 max = 2;
+
+  // Target size within the [Min, Max] range to which
+  // the number of nodes in the cluster should be matched
+  // againts to meet the compute demands.
+  int32 targetSize = 3;
 }
 
 // StaticNodePool represents static node pool used in cluster.

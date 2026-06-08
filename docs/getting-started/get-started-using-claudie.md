@@ -1,5 +1,7 @@
+# Get started using Claudie
+
 {%
    include-markdown "../../README.md"
-   start="<!-- steps-start -->"
+   start="## Get started using Claudie"
    end="<!-- steps-end -->"
 %}

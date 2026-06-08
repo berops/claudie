@@ -1,6 +1,6 @@
 ---
 # Enable CA functionality
-apiVersion: longhorn.io/v1beta1
+apiVersion: longhorn.io/v1beta2
 kind: Setting
 metadata:
   name: kubernetes-cluster-autoscaler-enabled

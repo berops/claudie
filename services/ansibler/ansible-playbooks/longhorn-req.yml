@@ -1,0 +1,56 @@
+---
+- hosts: all
+  gather_facts: false
+  become: yes
+  vars:
+    # for node-limits tasks
+    nofile_soft: 65535
+    nofile_hard: 65535
+    file_max: 2097152
+    max_user_watches: 2097152
+    max_user_instances: 65535
+    max_queued_events: 65535
+  # Install longhorn  dependencies
+  tasks:
+    - name: install open-iscsi and nfs-common
+      ansible.builtin.apt:
+        name: 
+          - open-iscsi
+          - nfs-common
+        state: present
+        update_cache: true
+      retries: 2
+      delay: 10
+      register: async_job
+      async: 480
+      poll: 0
+
+    - name: Update /etc/multipath.conf with blacklist configuration
+      blockinfile:
+        path: /etc/multipath.conf
+        block: |
+          blacklist {
+              devnode "^sd[a-z0-9]+"
+              devnode "^vd[a-z0-9]+"
+              devnode "^nvme[a-z0-9]+"
+          }
+        create: yes
+
+    - name: Restart multipathd.service
+      ansible.builtin.systemd:
+        name: multipathd.service
+        state: restarted
+      # some cloud providers may not use the multipathd service
+      # thus make the error not fatal.
+      ignore_errors: yes
+
+    - name: update node limits
+      include_tasks: ./node-limits.yml
+
+    - name: Check async task result
+      async_status:
+        jid: "{{ async_job.ansible_job_id }}"
+      register: result
+      until: result.finished
+      retries: 60
+      delay: 5

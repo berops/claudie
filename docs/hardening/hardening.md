@@ -5,15 +5,13 @@ deployment for claudie.
 
 ## Passwords
 
-When deploying the default manifests claudie uses simple passwords for MongoDB, DynamoDB
-and MinIO.
+When deploying the default manifests claudie uses simple passwords for MongoDB and MinIO.
 
 You can find the passwords at these paths:
 
 ```
 manifests/claudie/mongo/secrets
 manifests/claudie/minio/secrets
-manifests/claudie/dynamo/secrets
 ```
 
 It is highly recommended that you change these passwords to more secure ones.
