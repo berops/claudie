@@ -297,7 +297,7 @@ func validateWireguardSetup(nps []*spec.NodePool, expectedPeerList []Peer) error
 			var isHairpinProvider bool
 
 			var sshKey string
-			port := nodepools.SSHPort(np)
+			port := nodepools.NodeSSHPort(np, n)
 			username := n.Username
 			if username == "" {
 				username = "root"

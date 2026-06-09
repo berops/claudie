@@ -53,6 +53,15 @@ message Node {
 
   // Status of the node.
   NodeStatus status = 6;
+
+  // Per-node SSH port. Overrides NodePool.sshPort when > 0. Used by shared-IP /
+  // NAT nodes (e.g. CloudRift) where each VM gets its own mapped SSH port.
+  // 0 means inherit the node pool's sshPort (which itself defaults to 22).
+  int32 sshPort = 7;
+  // Per-node WireGuard endpoint port advertised to peers. Used when the
+  // host-mapped UDP port differs from the in-VM ListenPort (shared-IP / NAT
+  // nodes). 0 means use the default WireGuard listen port (51820).
+  int32 wireguardPort = 8;
 }
 
 // NodeType specifies the type of the node.

@@ -9,6 +9,10 @@ type (
 	NodeInfo struct {
 		Node *spec.Node
 		Name string
+		// SshPort is the effective SSH port for this specific node. It honors a
+		// per-node override (shared-IP / NAT nodes) and otherwise falls back to
+		// the node pool's port.
+		SshPort int32
 	}
 
 	// NodepoolInfo struct holds data necessary to define nodes in kubeone
@@ -21,7 +25,6 @@ type (
 		Zone              string
 		CloudProviderName string
 		ProviderName      string
-		SshPort           int32
 	}
 
 	// templateData struct holds the data which will be used in creating

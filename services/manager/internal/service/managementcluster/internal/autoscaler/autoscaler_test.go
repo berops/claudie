@@ -85,6 +85,10 @@ spec:
               value: ""
             - name: OPERATOR_PORT
               value: ""
+            - name: MANAGER_HOSTNAME
+              value: ""
+            - name: MANAGER_PORT
+              value: ""
           resources:
             requests:
               cpu: 80m
