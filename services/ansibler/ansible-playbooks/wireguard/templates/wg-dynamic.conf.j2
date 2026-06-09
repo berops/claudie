@@ -7,7 +7,7 @@ ListenPort = {{ wg_listen_port }}
 {% if publickey.content | b64decode != hostvars[host].publickey.content | b64decode %}
 [Peer]
 PublicKey = {{ hostvars[host].publickey.content | b64decode }}
-Endpoint = {{ hostvars[host].ansible_host }}:{{ wg_listen_port }}
+Endpoint = {{ hostvars[host].ansible_host }}:{{ hostvars[host].wireguard_port | default(wg_listen_port, true) }}
 AllowedIps = {{ hostvars[host].private_ip }}/32
 PersistentKeepalive = 30
 {% endif %}

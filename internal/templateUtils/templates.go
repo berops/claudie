@@ -67,6 +67,7 @@ func LoadTemplate(tplFile string) (*template.Template, error) {
 	funcMap["extractNetmaskFromCIDR"] = ExtractNetmaskFromCIDR
 	funcMap["hasExtension"] = HasExtension
 	funcMap["sshPort"] = nodepools.SSHPort
+	funcMap["nodeSshPort"] = nodepools.NodeSSHPort
 
 	tpl, err := template.New("").Funcs(funcMap).Parse(tplFile)
 	if err != nil {

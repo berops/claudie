@@ -408,7 +408,15 @@ type Node struct {
 	// Username of a user with root privileges. Also used in SSH connection
 	Username string `protobuf:"bytes,5,opt,name=username,proto3" json:"username,omitempty"`
 	// Status of the node.
-	Status        NodeStatus `protobuf:"varint,6,opt,name=status,proto3,enum=spec.NodeStatus" json:"status,omitempty"`
+	Status NodeStatus `protobuf:"varint,6,opt,name=status,proto3,enum=spec.NodeStatus" json:"status,omitempty"`
+	// Per-node SSH port. Overrides NodePool.sshPort when > 0. Used by shared-IP /
+	// NAT nodes (e.g. CloudRift) where each VM gets its own mapped SSH port.
+	// 0 means inherit the node pool's sshPort (which itself defaults to 22).
+	SshPort int32 `protobuf:"varint,7,opt,name=sshPort,proto3" json:"sshPort,omitempty"`
+	// Per-node WireGuard endpoint port advertised to peers. Used when the
+	// host-mapped UDP port differs from the in-VM ListenPort (shared-IP / NAT
+	// nodes). 0 means use the default WireGuard listen port (51820).
+	WireguardPort int32 `protobuf:"varint,8,opt,name=wireguardPort,proto3" json:"wireguardPort,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -483,6 +491,20 @@ func (x *Node) GetStatus() NodeStatus {
 		return x.Status
 	}
 	return NodeStatus_Preparing
+}
+
+func (x *Node) GetSshPort() int32 {
+	if x != nil {
+		return x.SshPort
+	}
+	return 0
+}
+
+func (x *Node) GetWireguardPort() int32 {
+	if x != nil {
+		return x.WireguardPort
+	}
+	return 0
 }
 
 // DynamicNodePool represents dynamic node pool used in cluster.
@@ -849,14 +871,16 @@ const file_spec_nodepool_proto_rawDesc = "" +
 	"\x05Taint\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value\x12\x16\n" +
-	"\x06effect\x18\x03 \x01(\tR\x06effect\"\xbe\x01\n" +
+	"\x06effect\x18\x03 \x01(\tR\x06effect\"\xfe\x01\n" +
 	"\x04Node\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
 	"\aprivate\x18\x02 \x01(\tR\aprivate\x12\x16\n" +
 	"\x06public\x18\x03 \x01(\tR\x06public\x12*\n" +
 	"\bnodeType\x18\x04 \x01(\x0e2\x0e.spec.NodeTypeR\bnodeType\x12\x1a\n" +
 	"\busername\x18\x05 \x01(\tR\busername\x12(\n" +
-	"\x06status\x18\x06 \x01(\x0e2\x10.spec.NodeStatusR\x06status\"\xda\x03\n" +
+	"\x06status\x18\x06 \x01(\x0e2\x10.spec.NodeStatusR\x06status\x12\x18\n" +
+	"\asshPort\x18\a \x01(\x05R\asshPort\x12$\n" +
+	"\rwireguardPort\x18\b \x01(\x05R\rwireguardPort\"\xda\x03\n" +
 	"\x0fDynamicNodePool\x12\x1e\n" +
 	"\n" +
 	"serverType\x18\x01 \x01(\tR\n" +

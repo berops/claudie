@@ -30,6 +30,16 @@ func SSHPort(np *spec.NodePool) int32 {
 	return np.SshPort
 }
 
+// NodeSSHPort returns the effective SSH port for a single node. A non-zero
+// Node.SshPort (set for shared-IP / NAT nodes where each VM gets its own mapped
+// port) overrides the node pool's port; otherwise the node pool's SSHPort is used.
+func NodeSSHPort(np *spec.NodePool, n *spec.Node) int32 {
+	if n.SshPort > 0 {
+		return n.SshPort
+	}
+	return SSHPort(np)
+}
+
 type RegionNetwork struct {
 	Region          string
 	ExternalNetwork string
@@ -555,7 +565,7 @@ func RandomNodePublicEndpoint(nps []*spec.NodePool) (username, endpoint, key, ss
 		username = node.Username
 	}
 
-	port := fmt.Sprint(SSHPort(np))
+	port := fmt.Sprint(NodeSSHPort(np, node))
 
 	switch t := np.Type.(type) {
 	case *spec.NodePool_DynamicNodePool:

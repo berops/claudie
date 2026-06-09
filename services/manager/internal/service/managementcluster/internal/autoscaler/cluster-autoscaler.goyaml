@@ -66,6 +66,10 @@ spec:
               value: "{{ .OperatorHostname }}"
             - name: OPERATOR_PORT
               value: "{{ .OperatorPort }}"
+            - name: MANAGER_HOSTNAME
+              value: "{{ .ManagerHostname }}"
+            - name: MANAGER_PORT
+              value: "{{ .ManagerPort }}"
           resources:
             requests:
               cpu: 80m
