@@ -2629,9 +2629,9 @@
 </span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span>https://api.cloudrift.ai/api/v1/recipes/list<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">'.data.groups[].recipes[] | select(.details.VirtualMachine != null) | {name}'</span>
 </span></code></pre></div>
-<div class="admonition warning">
-<p class="admonition-title">Shared public IP instances not supported</p>
-<p>CloudRift offers both dedicated and shared public IP instances. Claudie requires dedicated public IP instances. Shared-IP instances use non-standard port mappings and are <strong>not supported</strong>. Make sure to choose an instance type that provides a dedicated public IP.</p>
+<div class="admonition note">
+<p class="admonition-title">Shared public IP instances</p>
+<p>CloudRift offers both dedicated and shared public IP instances. Shared-IP instances place each node behind a shared/NAT public IP and expose SSH and WireGuard on CloudRift-assigned mapped ports instead of the standard <code>22</code> / <code>51820</code>. These are supported since <strong>Claudie v0.14.0</strong> together with <strong>claudie-config v0.11.3</strong> (Claudie reads each node's mapped ports back from the provider). On earlier versions only dedicated public IP instances work, so there you must choose an instance type that provides a dedicated public IP.</p>
 </div>
 <h2 id="gpu-instances">GPU instances<a class="headerlink" href="#gpu-instances" title="Permanent link">¶</a></h2>
 <p>CloudRift specializes in GPU compute, offering NVIDIA GPU instances (e.g., RTX 4090, RTX 5090). GPU instances are selected by setting the <code>serverType</code> to a GPU instance type (e.g., <code>rtx49-7-50-500-nr.1</code>). No additional <code>machineSpec</code> configuration is needed — the GPU is included in the instance type.</p>
