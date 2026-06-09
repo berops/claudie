@@ -58,8 +58,8 @@ curl -s -X POST \
   | jq '.data.groups[].recipes[] | select(.details.VirtualMachine != null) | {name}'
 ```
 
-!!! warning "Shared public IP instances not supported"
-    CloudRift offers both dedicated and shared public IP instances. Claudie requires dedicated public IP instances. Shared-IP instances use non-standard port mappings and are **not supported**. Make sure to choose an instance type that provides a dedicated public IP.
+!!! note "Shared public IP instances"
+    CloudRift offers both dedicated and shared public IP instances. Shared-IP instances place each node behind a shared/NAT public IP and expose SSH and WireGuard on CloudRift-assigned mapped ports instead of the standard `22` / `51820`. These are supported since **Claudie v0.14.0** together with **claudie-config v0.11.3** (Claudie reads each node's mapped ports back from the provider). On earlier versions only dedicated public IP instances work, so there you must choose an instance type that provides a dedicated public IP.
 
 ## GPU instances
 CloudRift specializes in GPU compute, offering NVIDIA GPU instances (e.g., RTX 4090, RTX 5090). GPU instances are selected by setting the `serverType` to a GPU instance type (e.g., `rtx49-7-50-500-nr.1`). No additional `machineSpec` configuration is needed — the GPU is included in the instance type.
