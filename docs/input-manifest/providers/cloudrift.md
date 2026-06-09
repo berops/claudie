@@ -93,7 +93,7 @@ spec:
       providerType: cloudrift
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.10.0
+        tag: v0.11.3
         path: "templates/terraformer/cloudrift"
       secretRef:
         name: cloudrift-secret-1
@@ -152,11 +152,11 @@ spec:
       providerType: cloudrift
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.10.0
+        tag: v0.11.3
         path: "templates/terraformer/cloudrift"
       secretRef:
         name: cloudrift-secret-1
-        namespace: <your-namespace>
+
 
   nodePools:
     dynamic:
