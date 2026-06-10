@@ -303,9 +303,8 @@ func ConvertToGRPCWorkflow(w Workflow) *spec.Workflow {
 		if err != nil {
 			wftimestamp = nil
 		} else {
-			wftimestamp = timestamppb.New(t)
+			wftimestamp = timestamppb.New(t.UTC())
 		}
-		t = t.UTC()
 		fw := &spec.FinishedWorkflow{
 			Status:          spec.Workflow_Status(spec.Workflow_Status_value[p.Status]),
 			TaskDescription: p.TaskDescription,
