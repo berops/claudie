@@ -104,7 +104,7 @@ kubectl exec -it <primary-mongo-pod> -n claudie -- mongosh \
   --eval "db.adminCommand({ getParameter: 1, featureCompatibilityVersion: 1 })"
 ```
 
-- General dependencies maintanance [#2126](https://github.com/berops/claudie/pull/2126), [#2132](https://github.com/berops/claudie/pull/2132), [#2136](https://github.com/berops/claudie/pull/2136)
+- General dependencies maintenance [`#2126`](https://github.com/berops/claudie/pull/2126), [`#2132`](https://github.com/berops/claudie/pull/2132), [`#2136`](https://github.com/berops/claudie/pull/2136)
 
 - Adjusted Claudie internal retries for autoscaled nodepools to fail faster [#2129](https://github.com/berops/claudie/pull/2129)
 
