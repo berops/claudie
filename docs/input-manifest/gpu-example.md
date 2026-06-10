@@ -210,7 +210,7 @@ helm install --wait --generate-name \
     nvidia/gpu-operator --set cdi.enabled=true --set cdi.nriPluginEnabled=true
 ```
 
-!!! note "Claudie overrides `/etc/containerd/config.toml` on every reconciliation, thus to avoid conflicts with the overrides the [`cdi` with `nri`](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/cdi.html) plugin are enabled that bypass the need for a consistent `/etc/containerd/config.toml` for the operator"
+!!! note "Claudie overrides `/etc/containerd/config.toml` on every reconciliation loop. To avoid conflicts with these overrides the [`cdi` and `nri`](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/cdi.html) plugins are enabled. This bypasses the conflict with Claudie-reconciled `/etc/containerd/config.toml` for the operator."
 
 4. Wait for the pods in the `gpu-operator` namespace to be ready.
 
