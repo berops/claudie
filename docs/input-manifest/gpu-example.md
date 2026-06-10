@@ -207,8 +207,10 @@ helm repo add nvidia https://helm.ngc.nvidia.com/nvidia \
 ```bash
 helm install --wait --generate-name \
     -n gpu-operator --create-namespace \
-    nvidia/gpu-operator
+    nvidia/gpu-operator --set cdi.enabled=true --set cdi.nriPluginEnabled=true
 ```
+
+!!! note "Claudie overrides `/etc/containerd/config.toml` on every reconciliation loop. To avoid conflicts with these overrides the [`cdi` and `nri`](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/cdi.html) plugins are enabled. This bypasses the conflict with Claudie-reconciled `/etc/containerd/config.toml` for the operator."
 
 4. Wait for the pods in the `gpu-operator` namespace to be ready.
 

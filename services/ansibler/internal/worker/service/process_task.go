@@ -127,8 +127,6 @@ passes:
 			ClearProxyEnvs(logger, work.InputManifestName, processlimit, tracker)
 		case spec.StageAnsibler_COMMIT_PROXY_ENVS:
 			CommitProxyEnvs(logger, work.InputManifestName, processlimit, tracker)
-		case spec.StageAnsibler_INSTALL_TEE_OVERRIDE:
-			InstallTeeOverride(logger, work.InputManifestName, processlimit, tracker)
 		default:
 			logger.Warn().Msg("Stage not recognized, skipping")
 			continue
