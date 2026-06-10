@@ -35,6 +35,7 @@ message Manifest {
   bytes checksum = 2;
   bytes lastAppliedChecksum = 3;
   State state = 4;
+  google.protobuf.Timestamp stateTimestamp = 5;
 }
 
 message Counters {

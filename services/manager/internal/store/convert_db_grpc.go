@@ -300,7 +300,7 @@ func ConvertToGRPCWorkflow(w Workflow) *spec.Workflow {
 	for _, p := range w.Previous {
 		t, err := time.Parse(time.RFC3339, p.Timestamp)
 		if err != nil {
-			t = time.Now()
+			t = time.Now().UTC()
 		}
 		t = t.UTC()
 		fw := &spec.FinishedWorkflow{
@@ -334,6 +334,7 @@ func ConvertFromGRPC(cfg *spec.Config) (*Config, error) {
 			Checksum:            cfg.GetManifest().GetChecksum(),
 			LastAppliedChecksum: cfg.GetManifest().GetLastAppliedChecksum(),
 			State:               cfg.GetManifest().GetState().String(),
+			StateTimestamp:      cfg.GetManifest().GetStateTimestamp().AsTime().UTC().Format(time.RFC3339),
 		},
 		Clusters: nil,
 	}
@@ -359,6 +360,11 @@ func ConvertFromGRPC(cfg *spec.Config) (*Config, error) {
 // For clusters, it mimics the GRPC unmarshalling style where if a field was
 // not set within a message it will be nil instead of a zero value for that type.
 func ConvertToGRPC(cfg *Config) (*spec.Config, error) {
+	t, err := time.Parse(time.RFC3339, cfg.Manifest.StateTimestamp)
+	if err != nil {
+		t = time.Now().UTC()
+	}
+
 	grpc := spec.Config{
 		Version: cfg.Version,
 		Name:    cfg.Name,
@@ -371,6 +377,7 @@ func ConvertToGRPC(cfg *Config) (*spec.Config, error) {
 			Checksum:            cfg.Manifest.Checksum,
 			LastAppliedChecksum: cfg.Manifest.LastAppliedChecksum,
 			State:               spec.Manifest_State(spec.Manifest_State_value[cfg.Manifest.State]),
+			StateTimestamp:      timestamppb.New(t),
 		},
 		Clusters: nil,
 	}

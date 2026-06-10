@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"go.yaml.in/yaml/v3"
 
@@ -47,9 +48,10 @@ func (s *Service) UpsertManifest(ctx context.Context, request *pb.UpsertManifest
 				Namespace: request.GetK8SCtx().GetNamespace(),
 			},
 			Manifest: store.Manifest{
-				Raw:      request.Manifest.Raw,
-				Checksum: request.Manifest.Checksum,
-				State:    request.Manifest.State.String(),
+				Raw:            request.Manifest.Raw,
+				Checksum:       request.Manifest.Checksum,
+				State:          request.Manifest.State.String(),
+				StateTimestamp: time.Now().UTC().Format(time.RFC3339),
 			},
 		}
 
