@@ -4,6 +4,22 @@
 
 ## Readme Before Deploying 
 
+### Make sure no tasks are scheduled
+
+Before deploying this Claudie release, make sure no tasks are actively being worked on. You can verify this via
+
+```bash
+kubectl get inputmanifests
+```
+
+All of the input manifests should be in state `WATCHING_FOR_CHANGES`.
+
+You can also scale down the numbe of replicas for the manager service to 0 to be sure no tasks are scheduled.
+
+```bash
+kubectl scale deploy/manager -n claudie --replicas=0
+```
+
 ### MongoDB
 
 This version of Claudie updates MongoDB. 
