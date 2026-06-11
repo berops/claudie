@@ -14,7 +14,7 @@ kubectl get inputmanifests
 
 All of the input manifests should be in state `WATCHING_FOR_CHANGES`.
 
-You can also scale down the numbe of replicas for the manager service to 0 to be sure no tasks are scheduled.
+You can also scale down the number of replicas for the manager service to 0 to be sure no tasks are scheduled.
 
 ```bash
 kubectl scale deploy/manager -n claudie --replicas=0
