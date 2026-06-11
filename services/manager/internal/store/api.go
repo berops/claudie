@@ -76,6 +76,7 @@ type Manifest struct {
 	Checksum            []byte `bson:"checksum"`
 	LastAppliedChecksum []byte `bson:"lastAppliedChecksum"`
 	State               string `bson:"state"`
+	StateTimestamp      string `bson:"stateTimestamp"`
 }
 
 type ClusterState struct {

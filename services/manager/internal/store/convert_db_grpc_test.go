@@ -252,9 +252,7 @@ func TestConvertToGRPCWorkflow(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			before := time.Now().UTC()
 			got := store.ConvertToGRPCWorkflow(tt.input)
-			after := time.Now().UTC()
 
 			// Special handling for the invalid timestamp case:
 			// the function falls back to time.Now(), so we verify
@@ -264,9 +262,7 @@ func TestConvertToGRPCWorkflow(t *testing.T) {
 				assert.Equal(t, "done", got.Description)
 				assert.Len(t, got.Previous, 1)
 
-				fallbackTs := got.Previous[0].Timestamp.AsTime().UTC()
-				assert.False(t, fallbackTs.Before(before.Truncate(time.Second)))
-				assert.False(t, fallbackTs.After(after.Add(time.Second)))
+				assert.Nil(t, got.Previous[0].Timestamp)
 
 				assert.Equal(t, spec.Workflow_DONE, got.Previous[0].Status)
 				assert.Equal(t, "previous", got.Previous[0].TaskDescription)
@@ -1153,9 +1149,10 @@ func TestConvertToDBAndBack(t *testing.T) {
 			Namespace: "test-04",
 		},
 		Manifest: &spec.Manifest{
-			Raw:      "random-manifest",
-			Checksum: hash.Digest("random-manifest"),
-			State:    spec.Manifest_Pending,
+			Raw:            "random-manifest",
+			Checksum:       hash.Digest("random-manifest"),
+			State:          spec.Manifest_Pending,
+			StateTimestamp: timestamppb.Now(),
 		},
 		Clusters: map[string]*spec.ClusterState{
 			"test-03": {

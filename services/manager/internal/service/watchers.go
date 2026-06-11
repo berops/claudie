@@ -18,6 +18,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -179,6 +180,7 @@ func (s *Service) WatchForScheduledDocuments(ctx context.Context) error {
 				continue
 			}
 
+			scheduled.Manifest.StateTimestamp = time.Now().UTC().Format(time.RFC3339)
 			scheduled.Manifest.State = newManifestState.String()
 			if err := s.store.UpdateConfig(ctx, scheduled); err != nil {
 				if errors.Is(err, store.ErrNotFoundOrDirty) {
@@ -232,10 +234,12 @@ func (s *Service) WatchForPendingDocuments(ctx context.Context) error {
 			logger.Debug().Msgf("manifest is not ready to be scheduled, retrying again later")
 		case Reschedule:
 			pending.Manifest.State = spec.Manifest_Scheduled
+			pending.Manifest.StateTimestamp = timestamppb.New(time.Now().UTC())
 			logger.Debug().Msgf("Scheduling for intermediate tasks after which the config will be rescheduled again")
 		case NoReschedule:
 			logger.Debug().Msgf("Scheduling for tasks after which the config will not be rescheduled again")
 			pending.Manifest.State = spec.Manifest_Scheduled
+			pending.Manifest.StateTimestamp = timestamppb.New(time.Now().UTC())
 			pending.Manifest.LastAppliedChecksum = pending.Manifest.Checksum
 		}
 
@@ -294,6 +298,7 @@ func (s *Service) WatchForDoneOrErrorDocuments(ctx context.Context) error {
 			}
 
 			idle.Manifest.State = manifest.Pending.String()
+			idle.Manifest.StateTimestamp = time.Now().UTC().Format(time.RFC3339)
 
 			for cluster, state := range idle.Clusters {
 				currentEmpty := len(state.Current.K8s) == 0 && len(state.Current.LoadBalancers) == 0
