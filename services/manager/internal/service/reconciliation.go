@@ -177,7 +177,12 @@ func reconciliate(pending *spec.Config, desiredStates map[string]*spec.Clusters)
 
 			clusterResult[cluster] = Noop
 
-			{
+			// There might be an inFlight task stored that has a copy of the previous
+			// state that failed and the diff will reconciliate it so that it is rolledback.
+			//
+			// The rollback would invalidate the changes made in this block thus only
+			// update the TargetSize if there is no failed InFlight task.
+			if state.InFlight == nil {
 				// Check historical counters for any loopback changes that
 				// needs to be done before looking at scheduling tasks,
 				for np, counter := range state.Counters.K8SNodePoolScaleUpFailed {
