@@ -125,3 +125,9 @@ kubectl exec -it <primary-mongo-pod> -n claudie -- mongosh \
 - Adjusted Claudie internal retries for autoscaled nodepools to fail faster [#2129](https://github.com/berops/claudie/pull/2129)
 
 - Support for shared public IP nodes has been added [#2130](https://github.com/berops/claudie/pull/2130)
+
+
+## v0.14.1
+
+## What's Changed
+- Fixed a bug that would result in an endless reconciliation of the same task [#2142](https://github.com/berops/claudie/pull/2142)
