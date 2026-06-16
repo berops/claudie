@@ -10,7 +10,6 @@ import (
 
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
-	"github.com/berops/claudie/internal/nodes"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/rs/zerolog"
 	"golang.org/x/sync/errgroup"
@@ -135,7 +134,7 @@ func patchProviderID(
 ) {
 	for _, node := range np.Nodes {
 		nodeName := strings.TrimPrefix(node.Name, fmt.Sprintf("%s-", p.clusterID))
-		patchPath := fmt.Sprintf(patchProviderIDPathFormat, fmt.Sprintf(nodes.ProviderIdFormat, nodeName))
+		patchPath := fmt.Sprintf(patchProviderIDPathFormat, fmt.Sprintf(spec.ProviderIdFormat, nodeName))
 
 		kc := p.kBase
 		kc.Stdout = comm.GetStdOut(p.clusterID)
@@ -206,7 +205,7 @@ func labelNodePool(
 	additionalLabels map[string]string,
 ) {
 	name := np.Name
-	nodeLabels, err := nodes.GetAllLabels(np, nil, additionalLabels)
+	nodeLabels, err := np.AllLabels(additionalLabels)
 	if err != nil {
 		p.errChan <- fmt.Errorf("failed to create labels for %s : %w", name, err)
 		return
@@ -430,7 +429,7 @@ func taintNodePool(
 	additionalTaints []*spec.Taint,
 ) {
 	name := np.Name
-	taints := nodes.GetAllTaints(np, additionalTaints)
+	taints := np.AllTaints(additionalTaints)
 
 	patchPath, err := buildJSONPatchString("replace", "/spec/taints", taints)
 	if err != nil {

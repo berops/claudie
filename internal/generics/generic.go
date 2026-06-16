@@ -5,12 +5,10 @@ import (
 	"iter"
 	"maps"
 	"slices"
-
-	"golang.org/x/exp/constraints"
 )
 
 type inorder interface {
-	constraints.Ordered
+	cmp.Ordered
 	comparable
 }
 
@@ -24,17 +22,6 @@ func IterateMapInOrder[M ~map[K]V, K inorder, V any](m M) iter.Seq2[K, V] {
 			}
 		}
 	}
-}
-
-// MergeMaps merges two or more maps together, into single map.
-func MergeMaps[M ~map[K]V, K comparable, V any](maps ...M) M {
-	merged := make(M)
-	for _, m := range maps {
-		for k, v := range m {
-			merged[k] = v
-		}
-	}
-	return merged
 }
 
 func RemoveDuplicates[K comparable](slice []K) []K {

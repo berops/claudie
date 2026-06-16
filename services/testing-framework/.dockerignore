@@ -9,7 +9,6 @@ services/kube-eleven
 services/ansibler
 services/claudie-operator
 services/kuber
-services/autoscaler-adapter
 .github
 .golangci.yml
 .gitattributes

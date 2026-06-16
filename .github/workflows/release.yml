@@ -5,7 +5,7 @@ on:
     types: [published]
 
 env:
-  SERVICES: manager terraformer ansibler kube-eleven kuber claudie-operator autoscaler-adapter
+  SERVICES: manager terraformer ansibler kube-eleven kuber claudie-operator
 
 jobs:
   build-and-publish:
@@ -45,14 +45,6 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      # Update autoscaler-adapter manifest in this steps as new kuber would need to contain manifest with the correct image tag
-      - name: Edit autoscaler-adapter image tag in the manifest
-        run: |
-          TAG=${RELEASE}
-          sed -i "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" services/manager/internal/service/managementcluster/internal/autoscaler/cluster-autoscaler.goyaml
-          # Remove autoscaler-adapter tag from claudie kustomization.yaml
-          awk '/autoscaler-adapter/{getline; next} 1' manifests/claudie/kustomization.yaml > temp.yaml && mv temp.yaml manifests/claudie/kustomization.yaml
 
       - name: Build and push new images
         run: |

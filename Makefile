@@ -88,14 +88,11 @@ TARGETARCH = $$(go env GOHOSTARCH)
 REV = $$(git rev-parse --short HEAD)
 SERVICES = $$(command ls services/)
 # macOS (BSD) sed requires -i '' while GNU sed uses -i
-SED_INPLACE := $(shell if [ "$$(uname)" = "Darwin" ]; then echo "sed -i ''"; else echo "sed -i"; fi)
 containerimgs:
-	$(SED_INPLACE) "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$(REV)/" services/manager/internal/service/managementcluster/internal/autoscaler/cluster-autoscaler.goyaml
 	for service in $(SERVICES) ; do \
 		echo " --- building $$service --- "; \
 		DOCKER_BUILDKIT=1 docker build --build-arg=TARGETARCH="$(TARGETARCH)" -t "ghcr.io/berops/claudie/$$service:$(REV)" -f ./services/$$service/Dockerfile . ; \
 	done
-	$(SED_INPLACE) "s/adapter:.*$$/adapter/" services/manager/internal/service/managementcluster/internal/autoscaler/cluster-autoscaler.goyaml
 
 KIND_CLUSTER ?= kind
 KIND_NAMESPACE ?= claudie

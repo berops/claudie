@@ -29,6 +29,8 @@ As stated earlier, Claudie deploys Cluster Autoscaler and Autoscaler Adapter for
 
 ## Considerations
 
+Autoscaling in Claudie is an opt-in feature behind a paywall.
+
 As Claudie just extends Cluster Autoscaler, it is important that you follow their [best practices](https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/FAQ.md#what-are-the-key-best-practices-for-running-cluster-autoscaler). Furthermore, as number of nodes in autoscaled node pools can be volatile, you should carefully plan out how you will use the storage on such node pools. Longhorn support of Cluster Autoscaler is still in experimental phase ([longhorn documentation](https://longhorn.io/docs/1.4.0/high-availability/k8s-cluster-autoscaler/)).
 
 ## GPUs

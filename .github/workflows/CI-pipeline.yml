@@ -7,7 +7,7 @@ on:
 
 env:
   ENV_FILE: .env
-  SERVICES: manager terraformer ansibler kube-eleven kuber claudie-operator autoscaler-adapter testing-framework
+  SERVICES: manager terraformer ansibler kube-eleven kuber claudie-operator testing-framework
 
 jobs:
   merge-branch:
@@ -159,35 +159,6 @@ jobs:
       # the newer versions of actions-runner (v2.329.x and later) don't have BuildKit
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
-
-      # Update autoscaler-adapter manifest in this steps as new kuber would need to contain manifest with the correct image tag
-      - name: Edit autoscaler-adapter image tag in the manifest
-        if: ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
-        id: autoscaler-tag
-        run: |
-          NEW_SERVICES=( ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES }} )
-
-          # Check if autoscaler-adapter is going to be built, if so, insert latest tag and add kuber to array if needed.
-          if [[ "${NEW_SERVICES[*]}" =~ "autoscaler-adapter" ]]; then
-            TAG=${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
-            echo "Setting new tag for autoscaler adapter to $TAG"
-            sed -i "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" services/manager/internal/service/managementcluster/internal/autoscaler/cluster-autoscaler.goyaml
-
-            if [[ ! "${NEW_SERVICES[*]}" =~ "kuber" ]]; then
-              NEW_SERVICES+=(kuber)
-            fi
-          else
-            # Check if kuber is going to be built, if so, insert latest tag and add to build.
-
-            if [[ "${NEW_SERVICES[*]}" =~ "kuber" ]]; then
-              TAG=${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
-              echo "Setting new tag for autoscaler adapter to $TAG"
-              sed -i "s/image: ghcr.io\/berops\/claudie\/autoscaler-adapter/&:$TAG/" services/manager/internal/service/managementcluster/internal/autoscaler/cluster-autoscaler.goyaml
-              NEW_SERVICES+=(autoscaler-adapter)
-            fi
-          fi
-
-          echo "ARRAY_OF_CHANGES=$(echo ${NEW_SERVICES[@]})" >> $GITHUB_OUTPUT
 
       # Build the new images that were changed by a recent commit - tag image latest as well for testing
       - name: Build and push new images
@@ -415,7 +386,7 @@ jobs:
           echo "${arr[@]}"
           for SERVICE in "${arr[@]}"
             do
-              if [ "${SERVICE}" != "testing-framework" ] && [ "${SERVICE}" != "autoscaler-adapter" ]; then
+              if [ "${SERVICE}" != "testing-framework" ]; then
                 kubectl wait deployment -l app.kubernetes.io/name=$SERVICE --for=condition=available --timeout=900s --namespace=claudie-${SHORT_GITHUB_SHA}-${GITHUB_RUN_NUMBER}
               fi
             done
