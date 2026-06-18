@@ -43,7 +43,7 @@ func TestGetAllLabels_SpotDynamicNodePool(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if got, ok := labels[string(Spot)]; !ok || got != "true" {
+	if got, ok := labels[string(Spot)]; !ok || got != SpotValue {
 		t.Errorf("expected label %q=true, got %q (present=%v)", Spot, got, ok)
 	}
 }
@@ -81,7 +81,7 @@ func TestGetAllTaints_SpotDynamicNodePool(t *testing.T) {
 
 	var found bool
 	for _, taint := range taints {
-		if taint.Key == "claudie.io/spot" && taint.Value == "true" && taint.Effect == k8sV1.TaintEffectNoSchedule {
+		if taint.Key == SpotTaintKey && taint.Value == SpotValue && taint.Effect == k8sV1.TaintEffectNoSchedule {
 			found = true
 			break
 		}
@@ -97,7 +97,7 @@ func TestGetAllTaints_NonSpotDynamicNodePool(t *testing.T) {
 	taints := GetAllTaints(np, nil)
 
 	for _, taint := range taints {
-		if taint.Key == "claudie.io/spot" {
+		if taint.Key == SpotTaintKey {
 			t.Errorf("expected no spot taint, but got %v", taint)
 		}
 	}
@@ -109,7 +109,7 @@ func TestGetAllTaints_StaticNodePool_NoSpotTaint(t *testing.T) {
 	taints := GetAllTaints(np, nil)
 
 	for _, taint := range taints {
-		if taint.Key == "claudie.io/spot" {
+		if taint.Key == SpotTaintKey {
 			t.Errorf("expected no spot taint on static nodepool, but got %v", taint)
 		}
 	}

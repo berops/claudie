@@ -35,6 +35,10 @@ const (
 
 const (
 	ControlPlane = "node-role.kubernetes.io/control-plane"
+	// SpotTaintKey is the taint key marking GCP Spot nodes (effect NoSchedule).
+	SpotTaintKey = "claudie.io/spot"
+	// SpotValue is the value of the spot label and taint.
+	SpotValue = "true"
 )
 
 // GetAllLabels returns default labels with their theoretical values for the specified nodepool,
@@ -79,7 +83,7 @@ func GetAllLabels(
 		m[string(KubernetesRegion)] = sanitise.String(n.Region)
 
 		if n.Spot {
-			m[string(Spot)] = "true"
+			m[string(Spot)] = SpotValue
 		}
 
 		if resolver != nil {
@@ -125,8 +129,8 @@ func GetAllTaints(np *spec.NodePool, additionalTaints []*spec.Taint) []k8sV1.Tai
 
 	if n := np.GetDynamicNodePool(); n != nil && n.Spot {
 		uniq[k8sV1.Taint{
-			Key:    "claudie.io/spot",
-			Value:  "true",
+			Key:    SpotTaintKey,
+			Value:  SpotValue,
 			Effect: k8sV1.TaintEffectNoSchedule,
 		}] = struct{}{}
 	}
