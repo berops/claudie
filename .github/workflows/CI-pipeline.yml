@@ -164,7 +164,7 @@ jobs:
       - name: Build and push new images
         if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
         run: |
-          ARR=(${{ steps.autoscaler-tag.outputs.ARRAY_OF_CHANGES }})
+          ARR=(${{ needs.check-changes.outputs.ARRAY_OF_CHANGES }})
           for SERVICE in "${ARR[@]}"
           do
             echo "-----Building $SERVICE-----"
@@ -173,7 +173,7 @@ jobs:
             docker push $IMGTAG
           done
     outputs:
-      ARRAY_OF_CHANGES: ${{ steps.autoscaler-tag.outputs.ARRAY_OF_CHANGES }}
+      ARRAY_OF_CHANGES: ${{ needs.check-changes.outputs.ARRAY_OF_CHANGES }}
   #--------------------------------------------------------------------------------------------------
   edit-kustomization:
     if: ${{ !failure() && !cancelled() }}
