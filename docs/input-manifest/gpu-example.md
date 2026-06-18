@@ -74,6 +74,11 @@ spec:
   providers:
     - name: gcp-1
       providerType: gcp
+      # GCP Spot VM support is available from claudie-config v0.11.4+
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.11.4
+        path: "templates/terraformer/gcp"
       secretRef:
         name: gcp-secret
         namespace: secrets
@@ -139,6 +144,11 @@ spec:
   providers:
     - name: gcp-1
       providerType: gcp
+      # GCP Spot VM support is available from claudie-config v0.11.4+
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.11.4
+        path: "templates/terraformer/gcp"
       secretRef:
         name: gcp-secret
         namespace: secrets
@@ -203,6 +213,11 @@ spec:
   providers:
     - name: gcp-1
       providerType: gcp
+      # GCP Spot VM support is available from claudie-config v0.11.4+
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.11.4
+        path: "templates/terraformer/gcp"
       secretRef:
         name: gcp-secret
         namespace: secrets
