@@ -35,82 +35,51 @@ func staticNodePool() *spec.NodePool {
 	}
 }
 
-func TestGetAllLabels_SpotDynamicNodePool(t *testing.T) {
-	np := dynamicNodePool(true)
+// The spot label and taint are applied together when (and only when) a dynamic
+// nodepool has Spot set, so both are exercised by the same set of cases.
+var spotMetadataCases = []struct {
+	name     string
+	np       *spec.NodePool
+	wantSpot bool
+}{
+	{"spot dynamic nodepool", dynamicNodePool(true), true},
+	{"non-spot dynamic nodepool", dynamicNodePool(false), false},
+	{"static nodepool", staticNodePool(), false},
+}
 
-	labels, err := GetAllLabels(np, nil, nil)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if got, ok := labels[string(Spot)]; !ok || got != SpotValue {
-		t.Errorf("expected label %q=true, got %q (present=%v)", Spot, got, ok)
+func TestGetAllLabels_Spot(t *testing.T) {
+	for _, tc := range spotMetadataCases {
+		t.Run(tc.name, func(t *testing.T) {
+			labels, err := GetAllLabels(tc.np, nil, nil)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			got, ok := labels[string(Spot)]
+			if tc.wantSpot && (!ok || got != SpotValue) {
+				t.Errorf("expected label %q=%q, got %q (present=%v)", Spot, SpotValue, got, ok)
+			}
+			if !tc.wantSpot && ok {
+				t.Errorf("expected no spot label, but got %q=%q", Spot, got)
+			}
+		})
 	}
 }
 
-func TestGetAllLabels_NonSpotDynamicNodePool(t *testing.T) {
-	np := dynamicNodePool(false)
-
-	labels, err := GetAllLabels(np, nil, nil)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if got, ok := labels[string(Spot)]; ok {
-		t.Errorf("expected no spot label, but got %q=%q", Spot, got)
-	}
-}
-
-func TestGetAllLabels_StaticNodePool_NoSpotLabel(t *testing.T) {
-	np := staticNodePool()
-
-	labels, err := GetAllLabels(np, nil, nil)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if got, ok := labels[string(Spot)]; ok {
-		t.Errorf("expected no spot label on static nodepool, but got %q=%q", Spot, got)
-	}
-}
-
-func TestGetAllTaints_SpotDynamicNodePool(t *testing.T) {
-	np := dynamicNodePool(true)
-
-	taints := GetAllTaints(np, nil)
-
-	var found bool
-	for _, taint := range taints {
-		if taint.Key == SpotTaintKey && taint.Value == SpotValue && taint.Effect == k8sV1.TaintEffectNoSchedule {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Errorf("expected NoSchedule taint claudie.io/spot=true, got %v", taints)
-	}
-}
-
-func TestGetAllTaints_NonSpotDynamicNodePool(t *testing.T) {
-	np := dynamicNodePool(false)
-
-	taints := GetAllTaints(np, nil)
-
-	for _, taint := range taints {
-		if taint.Key == SpotTaintKey {
-			t.Errorf("expected no spot taint, but got %v", taint)
-		}
-	}
-}
-
-func TestGetAllTaints_StaticNodePool_NoSpotTaint(t *testing.T) {
-	np := staticNodePool()
-
-	taints := GetAllTaints(np, nil)
-
-	for _, taint := range taints {
-		if taint.Key == SpotTaintKey {
-			t.Errorf("expected no spot taint on static nodepool, but got %v", taint)
-		}
+func TestGetAllTaints_Spot(t *testing.T) {
+	for _, tc := range spotMetadataCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var found bool
+			for _, taint := range GetAllTaints(tc.np, nil) {
+				if taint.Key == SpotTaintKey {
+					if taint.Value != SpotValue || taint.Effect != k8sV1.TaintEffectNoSchedule {
+						t.Errorf("unexpected spot taint shape: %v", taint)
+					}
+					found = true
+				}
+			}
+			if found != tc.wantSpot {
+				t.Errorf("spot taint present=%v, want %v", found, tc.wantSpot)
+			}
+		})
 	}
 }
