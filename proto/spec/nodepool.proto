@@ -119,6 +119,8 @@ message DynamicNodePool {
   string cidr = 14;
   // Network Name with public IPs (required for Openstack)
   string externalNetworkName = 15;
+  // Spot requests a discounted, pre-emptible (Spot) instance. Worker pools only. Currently supported on GCP.
+  bool spot = 16;
 }
 
 // MachineSpec further specifies the requested server type.

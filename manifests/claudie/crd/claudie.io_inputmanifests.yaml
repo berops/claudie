@@ -364,6 +364,13 @@ spec:
                           description: "\tType of the machines in the nodepool. Currently,
                             only AMD64 machines are supported."
                           type: string
+                        spot:
+                          description: |-
+                            Spot requests a discounted, pre-emptible instance from the cloud provider.
+                            The instance can be reclaimed at any time with short notice (~30s on GCP).
+                            Suitable for fault-tolerant, stateless, or autoscaled-from-0 workloads.
+                            Worker pools only. Currently supported on: GCP.
+                          type: boolean
                         storageDiskSize:
                           description: |-
                             Size of the storage disk on the nodes in the nodepool in GB. The OS disk is created automatically
@@ -389,9 +396,8 @@ spec:
                                   to a node.
                                 type: string
                               timeAdded:
-                                description: |-
-                                  TimeAdded represents the time at which the taint was added.
-                                  It is only written for NoExecute taints.
+                                description: TimeAdded represents the time at which
+                                  the taint was added.
                                 format: date-time
                                 type: string
                               value:
@@ -486,9 +492,8 @@ spec:
                                   to a node.
                                 type: string
                               timeAdded:
-                                description: |-
-                                  TimeAdded represents the time at which the taint was added.
-                                  It is only written for NoExecute taints.
+                                description: TimeAdded represents the time at which
+                                  the taint was added.
                                 format: date-time
                                 type: string
                               value:

@@ -216,6 +216,12 @@ type DynamicNodePool struct {
 	Taints []k8sV1.Taint `validate:"omitempty" yaml:"taints" json:"taints"`
 	// MachineSpec further describe the properties of the selected server type.
 	MachineSpec *MachineSpec `validate:"omitempty" yaml:"machineSpec,omitempty" json:"machineSpec,omitempty"`
+	// Spot requests a discounted, pre-emptible instance from the cloud provider.
+	// The instance can be reclaimed at any time with short notice (~30s on GCP).
+	// Suitable for fault-tolerant, stateless, or autoscaled-from-0 workloads.
+	// Worker pools only. Currently supported on: GCP.
+	// +optional
+	Spot bool `validate:"omitempty" yaml:"spot,omitempty" json:"spot,omitempty"`
 }
 
 // Autoscaler configuration on per nodepool basis. Defines the number of nodes, autoscaler will scale up or down specific nodepool.
