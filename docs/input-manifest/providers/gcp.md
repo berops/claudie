@@ -116,6 +116,12 @@ Common NVIDIA GPU accelerator types available on GCP:
 
 For a complete GPU deployment example including the NVIDIA GPU Operator installation, see the [GPU Example](../gpu-example.md).
 
+## Spot VM Support
+
+GCP Spot VMs are supported for worker nodepools. Set `spot: true` on any dynamic GCP nodepool to provision instances as [Spot VMs](https://cloud.google.com/compute/docs/instances/spot), which offer 60–91% cost savings over on-demand pricing at the cost of potential reclamation with ~30 seconds of notice.
+
+Spot is not supported on control-plane nodepools. See the [GCP Spot VM example](../gpu-example.md#gcp-spot-vm-example) for full usage details and the required pod toleration.
+
 ## Input manifest examples
 ### Single provider, multi region cluster example
 

@@ -359,6 +359,22 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
   To see the default taints Claudie applies on each node, refer to [this section](#default-taints).
 
+- `spot` *(optional, bool, GCP only)*
+
+  When set to `true`, Claudie provisions the nodes in this nodepool as [GCP Spot VMs](https://cloud.google.com/compute/docs/instances/spot). Spot VMs are spare capacity instances offered at a 60–91% discount compared to on-demand pricing. In exchange, GCP may reclaim them with approximately 30 seconds of notice when capacity is needed elsewhere.
+
+  Constraints:
+
+  - Only supported for `gcp` provider nodepools. Setting `spot: true` on any other provider is rejected by the webhook.
+  - Only supported on worker (compute) nodepools. Setting `spot: true` on a control-plane nodepool is rejected by the webhook.
+
+  When `spot: true` is set, Claudie automatically applies the following to every node in the pool:
+
+  - Label: `claudie.io/spot=true`
+  - Taint: `claudie.io/spot=true:NoSchedule`
+
+  The taint prevents regular workloads from scheduling onto spot nodes. Only pods that explicitly declare a matching toleration will be scheduled there. See the [GCP Spot VM example](../gpu-example.md#gcp-spot-vm-example) for a complete usage example including the required pod toleration.
+
 ## Provider Spec
 
 Provider spec is an additional specification built on top of the data from any of the provider instance. Here are provider configuration examples for each individual provider: [aws](providers/aws.md), [azure](providers/azure.md), [cloudrift](providers/cloudrift.md), [exoscale](providers/exoscale.md), [gcp](providers/gcp.md), [cloudflare](providers/cloudflare.md), [hetzner](providers/hetzner.md), [oci](providers/oci.md), [ovh](providers/ovh.md) and [verda](providers/verda.md).
@@ -598,7 +614,10 @@ Collection of data Claudie uses to create a DNS record for the loadbalancer.
   | `kubernetes.io/os`               | Os family of the node.                           |
   | `kubernetes.io/arch`             | Architecture type of the CPU.                    |
   | `v1.kubeone.io/operating-system` | Os type of the node.                             |
+  | `claudie.io/spot`                | `true` — present only on GCP Spot VM nodepools.  |
 
 ### Default taints
 
   By default, Claudie applies only `node-role.kubernetes.io/control-plane` taint for control plane nodes, with effect `NoSchedule`, together with those defined by the user.
+
+  For GCP Spot VM nodepools (`spot: true`), Claudie additionally applies `claudie.io/spot=true:NoSchedule` on every node in the pool.
