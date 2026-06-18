@@ -373,7 +373,7 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
   - Label: `claudie.io/spot=true`
   - Taint: `claudie.io/spot=true:NoSchedule`
 
-  The taint prevents regular workloads from scheduling onto spot nodes. Only pods that explicitly declare a matching toleration will be scheduled there. See the [GCP Spot VM example](../gpu-example.md#gcp-spot-vm-example) for a complete usage example including the required pod toleration.
+  The taint prevents regular workloads from scheduling onto spot nodes. Only pods that explicitly declare a matching toleration will be scheduled there. See [GCP Spot VM support](providers/gcp.md#spot-vm-support) for a complete usage example including the required pod toleration.
 
 ## Provider Spec
 

@@ -118,9 +118,76 @@ For a complete GPU deployment example including the NVIDIA GPU Operator installa
 
 ## Spot VM Support
 
-GCP Spot VMs are supported for worker nodepools. Set `spot: true` on any dynamic GCP nodepool to provision instances as [Spot VMs](https://cloud.google.com/compute/docs/instances/spot), which offer 60–91% cost savings over on-demand pricing at the cost of potential reclamation with ~30 seconds of notice.
+GCP Spot VMs are supported for worker nodepools. Set `spot: true` on any dynamic GCP nodepool to provision instances as [Spot VMs](https://cloud.google.com/compute/docs/instances/spot), which offer 60–91% cost savings over on-demand pricing at the cost of potential reclamation with ~30 seconds of notice. Spot is only supported on worker (compute) nodepools and is rejected by the webhook on control-plane nodepools or non-GCP providers.
 
-Spot is not supported on control-plane nodepools. See the [GCP Spot VM example](../gpu-example.md#gcp-spot-vm-example) for full usage details and the required pod toleration.
+Claudie automatically applies the label `claudie.io/spot=true` and the taint `claudie.io/spot=true:NoSchedule` to every node in the pool, so only pods with a matching toleration are scheduled there.
+
+```yaml
+apiVersion: claudie.io/v1beta1
+kind: InputManifest
+metadata:
+  name: gcp-spot-example
+  labels:
+    app.kubernetes.io/part-of: claudie
+spec:
+  providers:
+    - name: gcp-1
+      providerType: gcp
+      # GCP Spot VM support is available from claudie-config v0.11.4+
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.11.4
+        path: "templates/terraformer/gcp"
+      secretRef:
+        name: gcp-secret
+        namespace: secrets
+
+  nodePools:
+    dynamic:
+    - name: control-gcp
+      providerSpec:
+        name: gcp-1
+        region: us-central1
+        zone: us-central1-a
+      count: 1
+      serverType: e2-medium
+      image: ubuntu-2404-noble-amd64-v20251001
+
+    - name: spot-workers
+      providerSpec:
+        name: gcp-1
+        region: us-central1
+        zone: us-central1-a
+      count: 2
+      serverType: n1-standard-4
+      image: ubuntu-2404-noble-amd64-v20251001
+      storageDiskSize: 50
+      # Request GCP Spot VMs for this nodepool (worker pools only).
+      spot: true
+
+  kubernetes:
+    clusters:
+      - name: spot-example
+        version: v1.34.0
+        network: 172.16.3.0/24
+        pools:
+          control:
+            - control-gcp
+          compute:
+            - spot-workers
+```
+
+To schedule a workload onto spot nodes, add a matching toleration to the pod spec:
+
+```yaml
+tolerations:
+  - key: claudie.io/spot
+    operator: Equal
+    value: "true"
+    effect: NoSchedule
+```
+
+For a GPU inference pool that combines spot with scale-from-zero autoscaling, see the [GCP Spot GPU inference example](../gpu-example.md#gcp-spot-gpu-inference-example-autoscaled).
 
 ## Input manifest examples
 ### Single provider, multi region cluster example
