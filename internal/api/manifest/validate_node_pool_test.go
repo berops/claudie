@@ -53,10 +53,11 @@ func TestValidateSpot(t *testing.T) {
 	}
 
 	cases := []struct {
-		name      string
-		nodepool  *DynamicNodePool
-		manifest  *Manifest
-		wantError bool
+		name            string
+		nodepool        *DynamicNodePool
+		manifest        *Manifest
+		wantError       bool
+		wantErrContains string
 	}{
 		{
 			name: "spot on GCP worker pool passes",
@@ -89,8 +90,9 @@ func TestValidateSpot(t *testing.T) {
 					Zone:   "fsn1-dc14",
 				},
 			},
-			manifest:  hetznerManifest,
-			wantError: true,
+			manifest:        hetznerManifest,
+			wantError:       true,
+			wantErrContains: "only supported on GCP",
 		},
 		{
 			name: "spot on GCP control-plane pool fails",
@@ -106,8 +108,9 @@ func TestValidateSpot(t *testing.T) {
 					Zone:   "us-central1-a",
 				},
 			},
-			manifest:  gcpManifest,
-			wantError: true,
+			manifest:        gcpManifest,
+			wantError:       true,
+			wantErrContains: "not allowed on control-plane",
 		},
 		{
 			name: "spot=false on any provider passes",
@@ -130,9 +133,14 @@ func TestValidateSpot(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.nodepool.validateSpot(tc.manifest)
+			// Call Validate (not validateSpot directly) so the test also
+			// catches regressions if Validate stops invoking validateSpot.
+			err := tc.nodepool.Validate(tc.manifest)
 			if tc.wantError {
 				require.Error(t, err, "expected error but got nil")
+				if tc.wantErrContains != "" {
+					require.ErrorContains(t, err, tc.wantErrContains)
+				}
 			} else {
 				require.NoError(t, err, "expected no error but got: %v", err)
 			}

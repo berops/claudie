@@ -197,18 +197,36 @@ spec:
 !!! warning "Spot reclamation"
     GCP may reclaim spot instances with approximately 30 seconds of notice. Design workloads on spot nodepools to handle abrupt termination gracefully (e.g. checkpoint frequently, use job restart policies).
 
-Pods that need to run on this nodepool must include both a spot toleration and a GPU resource request:
+Pods that need to run on this nodepool must include both a spot toleration (at the pod `spec` level) and a GPU resource request (under `spec.containers[]`):
 
 ```yaml
-tolerations:
-  - key: claudie.io/spot
-    operator: Equal
-    value: "true"
-    effect: NoSchedule
-resources:
-  limits:
-    nvidia.com/gpu: 1
+apiVersion: v1
+kind: Pod
+metadata:
+  name: inference
+spec:
+  # Tolerate the spot taint so the pod is allowed onto spot nodes.
+  tolerations:
+    - key: claudie.io/spot
+      operator: Equal
+      value: "true"
+      effect: NoSchedule
+  containers:
+    - name: inference
+      image: my-inference:latest
+      # Request a GPU so the scheduler (and the autoscaler) place this on the GPU pool.
+      resources:
+        limits:
+          nvidia.com/gpu: 1
 ```
+
+!!! note "GPU Operator on spot nodepools"
+    The spot taint `claudie.io/spot=true:NoSchedule` also keeps the [NVIDIA GPU Operator](#deploying-the-gpu-operator) components off spot nodes unless they tolerate it. When installing the operator, add a toleration for `claudie.io/spot` so its driver, device-plugin and toolkit daemonsets schedule on spot GPU nodes (otherwise `nvidia.com/gpu` is never advertised). For example, with Helm:
+
+    ```bash
+    helm install gpu-operator nvidia/gpu-operator -n gpu-operator --create-namespace \
+      --set-json 'daemonsets.tolerations=[{"key":"nvidia.com/gpu","operator":"Exists","effect":"NoSchedule"},{"key":"claudie.io/spot","operator":"Exists","effect":"NoSchedule"}]'
+    ```
 
 ## Exoscale GPU Example
 
