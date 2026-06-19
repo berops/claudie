@@ -535,8 +535,10 @@ type DynamicNodePool struct {
 	Cidr string `protobuf:"bytes,14,opt,name=cidr,proto3" json:"cidr,omitempty"`
 	// Network Name with public IPs (required for Openstack)
 	ExternalNetworkName string `protobuf:"bytes,15,opt,name=externalNetworkName,proto3" json:"externalNetworkName,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	// Spot requests a discounted, pre-emptible (Spot) instance. Worker pools only. Currently supported on GCP.
+	Spot          bool `protobuf:"varint,16,opt,name=spot,proto3" json:"spot,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *DynamicNodePool) Reset() {
@@ -658,6 +660,13 @@ func (x *DynamicNodePool) GetExternalNetworkName() string {
 		return x.ExternalNetworkName
 	}
 	return ""
+}
+
+func (x *DynamicNodePool) GetSpot() bool {
+	if x != nil {
+		return x.Spot
+	}
+	return false
 }
 
 // MachineSpec further specifies the requested server type.
@@ -880,7 +889,7 @@ const file_spec_nodepool_proto_rawDesc = "" +
 	"\busername\x18\x05 \x01(\tR\busername\x12(\n" +
 	"\x06status\x18\x06 \x01(\x0e2\x10.spec.NodeStatusR\x06status\x12\x18\n" +
 	"\asshPort\x18\a \x01(\x05R\asshPort\x12$\n" +
-	"\rwireguardPort\x18\b \x01(\x05R\rwireguardPort\"\xda\x03\n" +
+	"\rwireguardPort\x18\b \x01(\x05R\rwireguardPort\"\xee\x03\n" +
 	"\x0fDynamicNodePool\x12\x1e\n" +
 	"\n" +
 	"serverType\x18\x01 \x01(\tR\n" +
@@ -899,7 +908,8 @@ const file_spec_nodepool_proto_rawDesc = "" +
 	"privateKey\x18\f \x01(\tR\n" +
 	"privateKey\x12\x12\n" +
 	"\x04cidr\x18\x0e \x01(\tR\x04cidr\x120\n" +
-	"\x13externalNetworkName\x18\x0f \x01(\tR\x13externalNetworkName\"\x8f\x01\n" +
+	"\x13externalNetworkName\x18\x0f \x01(\tR\x13externalNetworkName\x12\x12\n" +
+	"\x04spot\x18\x10 \x01(\bR\x04spot\"\x8f\x01\n" +
 	"\vMachineSpec\x12\x1a\n" +
 	"\bcpuCount\x18\x01 \x01(\x05R\bcpuCount\x12\x16\n" +
 	"\x06memory\x18\x02 \x01(\x05R\x06memory\x12&\n" +

@@ -74,6 +74,11 @@ spec:
   providers:
     - name: gcp-1
       providerType: gcp
+      # GCP Spot VM support is available from claudie-config v0.11.4+
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.11.4
+        path: "templates/terraformer/gcp"
       secretRef:
         name: gcp-secret
         namespace: secrets
@@ -121,6 +126,107 @@ spec:
     - Available GPU types vary by zone. Check [GCP GPU regions and zones](https://cloud.google.com/compute/docs/gpus/gpu-regions-zones) for availability
     - Common GPU types: `nvidia-tesla-t4`, `nvidia-tesla-v100`, `nvidia-tesla-a100`, `nvidia-l4`
     - GPU instances cannot be live migrated, so they will be terminated during maintenance events
+
+## GCP Spot GPU Inference Example (Autoscaled)
+
+[GCP Spot VMs](https://cloud.google.com/compute/docs/instances/spot) offer 60–91% cost savings over on-demand pricing, in exchange for possible reclamation with about 30 seconds of notice. Combined with GPU attachment and scale-from-zero autoscaling, this is a common pattern for cost-effective GPU inference: the nodepool scales up when work arrives and back down to zero when idle.
+
+To request spot nodes, set `spot: true` on a GCP dynamic nodepool. Spot is only supported on worker (compute) nodepools and is rejected by the webhook on control-plane nodepools or non-GCP providers. Claudie automatically applies the label `claudie.io/spot=true` and the taint `claudie.io/spot=true:NoSchedule` to every node in the pool, so only pods with a matching toleration are scheduled there.
+
+```yaml
+apiVersion: claudie.io/v1beta1
+kind: InputManifest
+metadata:
+  name: gcp-spot-gpu-autoscaled
+  labels:
+    app.kubernetes.io/part-of: claudie
+spec:
+  providers:
+    - name: gcp-1
+      providerType: gcp
+      # GCP Spot VM support is available from claudie-config v0.11.4+
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.11.4
+        path: "templates/terraformer/gcp"
+      secretRef:
+        name: gcp-secret
+        namespace: secrets
+
+  nodePools:
+    dynamic:
+    - name: control-gcp
+      providerSpec:
+        name: gcp-1
+        region: us-central1
+        zone: us-central1-a
+      count: 1
+      serverType: e2-medium
+      image: ubuntu-2404-noble-amd64-v20251001
+
+    - name: spot-gpu-workers
+      providerSpec:
+        name: gcp-1
+        region: us-central1
+        zone: us-central1-a
+      # Use autoscaler instead of a fixed count; scales to zero when idle.
+      autoscaler:
+        min: 0
+        max: 4
+      serverType: n1-standard-4
+      image: ubuntu-2404-noble-amd64-v20251001
+      storageDiskSize: 50
+      machineSpec:
+        nvidiaGpuCount: 1
+        nvidiaGpuType: nvidia-tesla-t4
+      # GCP Spot VMs — significant cost savings for interruptible inference workloads.
+      spot: true
+
+  kubernetes:
+    clusters:
+      - name: spot-gpu-cluster
+        version: v1.34.0
+        network: 172.16.4.0/24
+        pools:
+          control:
+            - control-gcp
+          compute:
+            - spot-gpu-workers
+```
+
+!!! warning "Spot reclamation"
+    GCP may reclaim spot instances with approximately 30 seconds of notice. Design workloads on spot nodepools to handle abrupt termination gracefully (e.g. checkpoint frequently, use job restart policies).
+
+Pods that need to run on this nodepool must include both a spot toleration (at the pod `spec` level) and a GPU resource request (under `spec.containers[]`):
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: inference
+spec:
+  # Tolerate the spot taint so the pod is allowed onto spot nodes.
+  tolerations:
+    - key: claudie.io/spot
+      operator: Equal
+      value: "true"
+      effect: NoSchedule
+  containers:
+    - name: inference
+      image: my-inference:latest
+      # Request a GPU so the scheduler (and the autoscaler) place this on the GPU pool.
+      resources:
+        limits:
+          nvidia.com/gpu: 1
+```
+
+!!! note "GPU Operator on spot nodepools"
+    The spot taint `claudie.io/spot=true:NoSchedule` also keeps the [NVIDIA GPU Operator](#deploying-the-gpu-operator) components off spot nodes unless they tolerate it. When installing the operator, add a toleration for `claudie.io/spot` so its driver, device-plugin and toolkit daemonsets schedule on spot GPU nodes (otherwise `nvidia.com/gpu` is never advertised). For example, with Helm:
+
+    ```bash
+    helm install gpu-operator nvidia/gpu-operator -n gpu-operator --create-namespace \
+      --set-json 'daemonsets.tolerations=[{"key":"nvidia.com/gpu","operator":"Exists","effect":"NoSchedule"},{"key":"claudie.io/spot","operator":"Exists","effect":"NoSchedule"}]'
+    ```
 
 ## Exoscale GPU Example
 

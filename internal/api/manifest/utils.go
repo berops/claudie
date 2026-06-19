@@ -436,6 +436,7 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.Nod
 						Provider:            provider,
 						AutoscalerConfig:    autoscalerConf,
 						MachineSpec:         machineSpec,
+						Spot:                nodePool.Spot,
 					},
 				},
 			})

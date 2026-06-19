@@ -130,6 +130,11 @@ func (d *DynamicNodePool) Validate(m *Manifest) error {
 		return err
 	}
 
+	// Validate Spot instance constraints
+	if err := d.validateSpot(m); err != nil {
+		return err
+	}
+
 	validate := validator.New()
 
 	if err := validate.RegisterValidation("external_net", validateExternalNet); err != nil {
@@ -168,6 +173,42 @@ func (d *DynamicNodePool) validateGCPGpuConfig(m *Manifest) error {
 
 	if gpuCount > 0 && d.MachineSpec.NvidiaGpuType == "" {
 		return fmt.Errorf("nvidiaGpuType is required for GCP when nvidiaGpuCount > 0")
+	}
+
+	return nil
+}
+
+// isControlPlane reports whether a nodepool name appears in any cluster's control-plane pool list.
+func isControlPlane(name string, m *Manifest) bool {
+	for _, k8s := range m.Kubernetes.Clusters {
+		for _, control := range k8s.Pools.Control {
+			if control == name {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// validateSpot checks that spot instances are only requested on GCP worker pools.
+func (d *DynamicNodePool) validateSpot(m *Manifest) error {
+	if !d.Spot {
+		return nil
+	}
+
+	providerType, err := m.GetProviderType(d.ProviderSpec.Name)
+	if err != nil {
+		// Provider existence is validated in [NodePool.Validate] before
+		// calling [DynamicNodePool.Validate].
+		return nil
+	}
+
+	if providerType != "gcp" {
+		return fmt.Errorf("spot instances are only supported on GCP, provider %q has type %q", d.ProviderSpec.Name, providerType)
+	}
+
+	if isControlPlane(d.Name, m) {
+		return fmt.Errorf("spot instances are not allowed on control-plane nodepools (etcd data-corruption hazard)")
 	}
 
 	return nil
