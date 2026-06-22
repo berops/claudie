@@ -80,7 +80,6 @@ func (np *NodePool) AllLabels(additionalLabels map[string]string) (map[string]st
 		if n.Spot {
 			m[string(SpotKey)] = SpotValue
 		}
-
 		return m, nil
 	}
 	return m, nil
