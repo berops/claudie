@@ -35,7 +35,10 @@ As Claudie just extends Cluster Autoscaler, it is important that you follow thei
 
 ## GPUs
 
-The custom Claudie-Provider for the [Cluster-Autoscaler](https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler) does not automatically determine whether the provided instance types have GPU capabilities. If you want autoscaling for a nodepool with GPUs, you must explicitly specify how many GPUs each node in the nodepool has.
+For most providers the custom Claudie-Provider for the [Cluster-Autoscaler](https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler) does not automatically determine whether the provided instance types have GPU capabilities. If you want autoscaling for a nodepool with GPUs, you must explicitly specify how many GPUs each node in the nodepool has.
+
+!!! note "Verda"
+    Verda is an exception: its instance-type catalog reports the GPU count per type, so Claudie derives it from the `serverType` automatically. For Verda GPU nodepools you do **not** need to set `machineSpec.nvidiaGpuCount` — picking a GPU `serverType` (e.g. `1A100.22V`) is enough for scale-from-zero to work.
 
 ```
 - name: autoscaled

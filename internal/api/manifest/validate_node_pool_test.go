@@ -52,6 +52,28 @@ func TestValidateSpot(t *testing.T) {
 		},
 	}
 
+	verdaManifest := &Manifest{
+		Providers: Provider{
+			Verda: []Verda{{
+				Name:         "verda-1",
+				ClientId:     "fake-client-id",
+				ClientSecret: "fake-client-secret",
+			}},
+		},
+		Kubernetes: Kubernetes{
+			Clusters: []Cluster{
+				{
+					Name:    "cluster-1",
+					Network: "10.0.0.0/8",
+					Version: "v1.33.0",
+					Pools: Pool{
+						Compute: []string{"worker-np"},
+					},
+				},
+			},
+		},
+	}
+
 	cases := []struct {
 		name            string
 		nodepool        *DynamicNodePool
@@ -59,6 +81,22 @@ func TestValidateSpot(t *testing.T) {
 		wantError       bool
 		wantErrContains string
 	}{
+		{
+			name: "spot on Verda worker pool passes",
+			nodepool: &DynamicNodePool{
+				Name:       "worker-np",
+				ServerType: "Standard-1",
+				Image:      "ubuntu-22.04",
+				Count:      1,
+				Spot:       true,
+				ProviderSpec: ProviderSpec{
+					Name:   "verda-1",
+					Region: "eu-north-1",
+				},
+			},
+			manifest:  verdaManifest,
+			wantError: false,
+		},
 		{
 			name: "spot on GCP worker pool passes",
 			nodepool: &DynamicNodePool{

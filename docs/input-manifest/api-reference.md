@@ -359,13 +359,13 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
   To see the default taints Claudie applies on each node, refer to [this section](#default-taints).
 
-- `spot` *(optional, bool, GCP only)*
+- `spot` *(optional, bool, GCP and Verda only)*
 
-  When set to `true`, Claudie provisions the nodes in this nodepool as [GCP Spot VMs](https://cloud.google.com/compute/docs/instances/spot). Spot VMs are spare capacity instances offered at a 60–91% discount compared to on-demand pricing. In exchange, GCP may reclaim them with approximately 30 seconds of notice when capacity is needed elsewhere.
+  When set to `true`, Claudie provisions the nodes in this nodepool as spot instances. Spot instances are spare capacity offered at a steep discount compared to on-demand pricing. In exchange, the provider may reclaim them with little notice when capacity is needed elsewhere (approximately 30 seconds on [GCP Spot VMs](https://cloud.google.com/compute/docs/instances/spot); Verda may evict at any time).
 
   Constraints:
 
-  - Only supported for `gcp` provider nodepools. Setting `spot: true` on any other provider is rejected by the webhook.
+  - Only supported for `gcp` and `verda` provider nodepools. Setting `spot: true` on any other provider is rejected by the webhook.
   - Only supported on worker (compute) nodepools. Setting `spot: true` on a control-plane nodepool is rejected by the webhook.
 
   When `spot: true` is set, Claudie automatically applies the following to every node in the pool:
@@ -373,7 +373,7 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
   - Label: `claudie.io/spot=true`
   - Taint: `claudie.io/spot=true:NoSchedule`
 
-  The taint prevents regular workloads from scheduling onto spot nodes. Only pods that explicitly declare a matching toleration will be scheduled there. See [GCP Spot VM support](providers/gcp.md#spot-vm-support) for a complete usage example including the required pod toleration.
+  The taint prevents regular workloads from scheduling onto spot nodes. Only pods that explicitly declare a matching toleration will be scheduled there. See [GCP Spot VM support](providers/gcp.md#spot-vm-support) or [Verda spot instance support](providers/verda.md#spot-instance-support) for a complete usage example including the required pod toleration.
 
 ## Provider Spec
 
@@ -614,10 +614,10 @@ Collection of data Claudie uses to create a DNS record for the loadbalancer.
   | `kubernetes.io/os`               | Os family of the node.                           |
   | `kubernetes.io/arch`             | Architecture type of the CPU.                    |
   | `v1.kubeone.io/operating-system` | Os type of the node.                             |
-  | `claudie.io/spot`                | `true` — present only on GCP Spot VM nodepools.  |
+  | `claudie.io/spot`                | `true` — present only on spot nodepools (GCP, Verda). |
 
 ### Default taints
 
   By default, Claudie applies only `node-role.kubernetes.io/control-plane` taint for control plane nodes, with effect `NoSchedule`, together with those defined by the user.
 
-  For GCP Spot VM nodepools (`spot: true`), Claudie additionally applies `claudie.io/spot=true:NoSchedule` on every node in the pool.
+  For spot nodepools (`spot: true`, supported on GCP and Verda), Claudie additionally applies `claudie.io/spot=true:NoSchedule` on every node in the pool.
