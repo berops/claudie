@@ -1,4 +1,4 @@
-package nodes
+package spec
 
 import (
 	"maps"
@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/berops/claudie/internal/sanitise"
-	"github.com/berops/claudie/proto/pb/spec"
 	k8sV1 "k8s.io/api/core/v1"
 )
 
@@ -21,16 +20,16 @@ const (
 // it has to be replaced with ~1
 // https://jsonpatch.com/#json-pointer
 const (
-	Nodepool         LabelKey = "claudie.io~1nodepool"
-	Provider         LabelKey = "claudie.io~1provider"
-	ProviderInstance LabelKey = "claudie.io~1provider-instance"
-	NodeType         LabelKey = "claudie.io~1node-type"
-	KubernetesZone   LabelKey = "topology.kubernetes.io~1zone"
-	KubernetesRegion LabelKey = "topology.kubernetes.io~1region"
-	KubernetesOs     LabelKey = "kubernetes.io~1os"
-	KubernetesArch   LabelKey = "kubernetes.io~1arch"
-	KubeoneOs        LabelKey = "v1.kubeone.io~1operating-system"
-	Spot             LabelKey = "claudie.io~1spot"
+	NodepoolKey         LabelKey = "claudie.io~1nodepool"
+	ProviderKey         LabelKey = "claudie.io~1provider"
+	ProviderInstanceKey LabelKey = "claudie.io~1provider-instance"
+	NodeTypeKey         LabelKey = "claudie.io~1node-type"
+	KubernetesZoneKey   LabelKey = "topology.kubernetes.io~1zone"
+	KubernetesRegionKey LabelKey = "topology.kubernetes.io~1region"
+	KubernetesOsKey     LabelKey = "kubernetes.io~1os"
+	KubernetesArchKey   LabelKey = "kubernetes.io~1arch"
+	KubeoneOsKey        LabelKey = "v1.kubeone.io~1operating-system"
+	SpotKey             LabelKey = "claudie.io~1spot"
 )
 
 const (
@@ -43,19 +42,15 @@ const (
 
 // GetAllLabels returns default labels with their theoretical values for the specified nodepool,
 // While also allowing to pass in additional labels to be set together with the [spec.NodePool.Labels].
-func GetAllLabels(
-	np *spec.NodePool,
-	resolver ArchResolver,
-	additionalLabels map[string]string,
-) (map[string]string, error) {
+func (np *NodePool) AllLabels(additionalLabels map[string]string) (map[string]string, error) {
 	m := make(map[string]string, len(np.Labels)+9)
 
 	// Apply default static nodepool labels.
 	if n := np.GetStaticNodePool(); n != nil {
-		m[string(Provider)] = sanitise.String(spec.StaticNodepoolInfo_STATIC_PROVIDER.String())
-		m[string(ProviderInstance)] = sanitise.String(spec.StaticNodepoolInfo_STATIC_PROVIDER.String())
-		m[string(KubernetesZone)] = sanitise.String(spec.StaticNodepoolInfo_STATIC_ZONE.String())
-		m[string(KubernetesRegion)] = sanitise.String(spec.StaticNodepoolInfo_STATIC_REGION.String())
+		m[string(ProviderKey)] = sanitise.String(StaticNodepoolInfo_STATIC_PROVIDER.String())
+		m[string(ProviderInstanceKey)] = sanitise.String(StaticNodepoolInfo_STATIC_PROVIDER.String())
+		m[string(KubernetesZoneKey)] = sanitise.String(StaticNodepoolInfo_STATIC_ZONE.String())
+		m[string(KubernetesRegionKey)] = sanitise.String(StaticNodepoolInfo_STATIC_REGION.String())
 	}
 
 	// In case the user wants to overwrite the static nodepool labels allow.
@@ -69,43 +64,29 @@ func GetAllLabels(
 	}
 
 	// Claudie assigned labels.
-	m[string(Nodepool)] = np.Name
-	m[string(NodeType)] = getNodeType(np)
+	m[string(NodepoolKey)] = np.Name
+	m[string(NodeTypeKey)] = getNodeType(np)
 	// Other labels.
-	m[string(KubernetesOs)] = "linux" // Only Linux is supported.
-	m[string(KubeoneOs)] = "ubuntu"   // Only supported Os
+	m[string(KubernetesOsKey)] = "linux" // Only Linux is supported.
+	m[string(KubeoneOsKey)] = "ubuntu"   // Only supported Os
 
 	// Dynamic nodepool data.
 	if n := np.GetDynamicNodePool(); n != nil {
-		m[string(Provider)] = n.Provider.CloudProviderName
-		m[string(ProviderInstance)] = n.Provider.SpecName
-		m[string(KubernetesZone)] = sanitise.String(n.Zone)
-		m[string(KubernetesRegion)] = sanitise.String(n.Region)
+		m[string(ProviderKey)] = n.Provider.CloudProviderName
+		m[string(ProviderInstanceKey)] = n.Provider.SpecName
+		m[string(KubernetesZoneKey)] = sanitise.String(n.Zone)
+		m[string(KubernetesRegionKey)] = sanitise.String(n.Region)
 
 		if n.Spot {
-			m[string(Spot)] = SpotValue
+			m[string(SpotKey)] = SpotValue
 		}
-
-		if resolver != nil {
-			arch, err := resolver.Arch(np)
-			if err != nil {
-				return nil, err
-			}
-
-			// we only need to set this in case of the autoscaler.
-			// The kubernetes.io/arch is otherwise set by kubelet.
-			// https://github.com/berops/claudie/issues/665
-			// https://github.com/berops/claudie/pull/934#issuecomment-1618318914
-			m[string(KubernetesArch)] = string(arch)
-		}
-
 		return m, nil
 	}
 	return m, nil
 }
 
 // GetAllTaints returns default taints with their theoretical values for the specified nodepool.
-func GetAllTaints(np *spec.NodePool, additionalTaints []*spec.Taint) []k8sV1.Taint {
+func (np *NodePool) AllTaints(additionalTaints []*Taint) []k8sV1.Taint {
 	uniq := make(map[k8sV1.Taint]struct{}, len(np.Taints)+1)
 
 	// Add custom user defined taints.
@@ -150,7 +131,7 @@ func GetAllTaints(np *spec.NodePool, additionalTaints []*spec.Taint) []k8sV1.Tai
 }
 
 // getNodeType returns node type as a string value.
-func getNodeType(np *spec.NodePool) string {
+func getNodeType(np *NodePool) string {
 	if np.IsControl {
 		return "control"
 	}

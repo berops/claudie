@@ -9,7 +9,6 @@ import (
 
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/connectivity"
@@ -19,13 +18,6 @@ import (
 )
 
 var ErrConnectionNotReady = errors.New("unhealthy gRPC connection")
-
-// CloseClientConnection is a wrapper around grpc.ClientConn Close function
-func CloseClientConnection(connection *grpc.ClientConn) {
-	if err := connection.Close(); err != nil {
-		log.Err(err).Msgf("Error while closing the client connection %s", connection.Target())
-	}
-}
 
 func PeerInfoInterceptor(logger *zerolog.Logger) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {

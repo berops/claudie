@@ -141,12 +141,6 @@ func reconciliate(pending *spec.Config, desiredStates map[string]*spec.Clusters)
 				logger.Err(err).Msg("Failed to delete metadata secret in the management cluster")
 			}
 
-			if len(nodepools.Autoscaled(del.K8S.ClusterInfo.NodePools)) > 0 {
-				if err := managementcluster.DestroyClusterAutoscaler(logger, pending.Name, del); err != nil {
-					logger.Err(err).Msg("Failed to destroy autoscaler pods")
-				}
-			}
-
 			state.InFlight = ScheduleDeleteCluster(del)
 		default:
 			if err := managementcluster.StoreKubeconfig(pending.Name, current); err != nil {
@@ -157,22 +151,6 @@ func reconciliate(pending *spec.Config, desiredStates map[string]*spec.Clusters)
 				logger.
 					Err(err).
 					Msg("Failed to store cluster metadata secret in the management cluster")
-			}
-
-			currentAutoscaled := len(nodepools.Autoscaled(state.Current.K8S.ClusterInfo.NodePools)) > 0
-			if currentAutoscaled {
-				if err := managementcluster.SetUpClusterAutoscaler(logger, pending.Name, current); err != nil {
-					logger.
-						Err(err).
-						Msg("Failed to refresh autoscaler pods in the management cluster")
-				}
-			} else {
-				if err := managementcluster.DestroyClusterAutoscaler(logger, pending.Name, state.Current); err != nil {
-					// ignore error.
-					log.
-						Debug().
-						Msgf("Failed to destroy cluster autoscaler pod, could be because current state does not have any autoscaled nodepools: %v", err)
-				}
 			}
 
 			clusterResult[cluster] = Noop
