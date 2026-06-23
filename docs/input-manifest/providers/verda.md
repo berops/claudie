@@ -79,6 +79,74 @@ Verda specializes in GPU compute (A100, H100, B200, etc.). GPU instances are sel
 
 Like all Claudie-managed nodes, Verda VMs listen for SSH on **port 22522**. The cloud-init script reconfigures `sshd_config` and the `ssh.socket` listener accordingly during node provisioning.
 
+## Spot instance support
+
+Verda spot instances are supported for worker nodepools. Set `spot: true` on any dynamic Verda nodepool to provision the instances as spot (`is_spot = true` on the underlying `verda_instance`), which offers a discount over on-demand pricing. In exchange, Verda may evict spot instances at any time when capacity is needed. Spot is only supported on worker (compute) nodepools and is rejected by the webhook on control-plane nodepools or on non-supported providers.
+
+Claudie automatically applies the label `claudie.io/spot=true` and the taint `claudie.io/spot=true:NoSchedule` to every node in the pool, so only pods with a matching toleration are scheduled there.
+
+```yaml
+apiVersion: claudie.io/v1beta1
+kind: InputManifest
+metadata:
+  name: verda-spot-example
+  labels:
+    app.kubernetes.io/part-of: claudie
+spec:
+  providers:
+    - name: verda-1
+      providerType: verda
+      templates:
+        repository: "https://github.com/berops/claudie-config"
+        tag: v0.11.5
+        path: "templates/terraformer/verda"
+      secretRef:
+        name: verda-secret-1
+        namespace: <your-namespace>
+
+  nodePools:
+    dynamic:
+      - name: control-verda
+        providerSpec:
+          name: verda-1
+          region: FIN-01
+        count: 1
+        serverType: CPU.4V.16G
+        image: "ubuntu-24.04"
+
+      - name: spot-workers
+        providerSpec:
+          name: verda-1
+          region: FIN-01
+        count: 2
+        serverType: CPU.4V.16G
+        image: "ubuntu-24.04"
+        storageDiskSize: 100
+        # Request Verda spot instances for this nodepool (worker pools only).
+        spot: true
+
+  kubernetes:
+    clusters:
+      - name: verda-spot
+        version: "1.34.0"
+        network: 192.168.2.0/24
+        pools:
+          control:
+            - control-verda
+          compute:
+            - spot-workers
+```
+
+To schedule a workload onto spot nodes, add a matching toleration to the pod spec:
+
+```yaml
+tolerations:
+  - key: claudie.io/spot
+    operator: Equal
+    value: "true"
+    effect: NoSchedule
+```
+
 ## Input manifest examples
 
 ### Create a secret for Verda provider
@@ -106,7 +174,7 @@ spec:
       providerType: verda
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.11.1
+        tag: v0.11.5
         path: "templates/terraformer/verda"
       secretRef:
         name: verda-secret-1
@@ -162,7 +230,7 @@ spec:
       providerType: verda
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.11.1
+        tag: v0.11.5
         path: "templates/terraformer/verda"
       secretRef:
         name: verda-secret-1
@@ -216,7 +284,7 @@ spec:
       providerType: verda
       templates:
         repository: "https://github.com/berops/claudie-config"
-        tag: v0.11.1
+        tag: v0.11.5
         path: "templates/terraformer/verda"
       secretRef:
         name: verda-secret-1
