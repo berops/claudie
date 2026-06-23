@@ -219,7 +219,7 @@ type DynamicNodePool struct {
 	// Spot requests a discounted, pre-emptible instance from the cloud provider.
 	// The instance can be reclaimed at any time with short notice (~30s on GCP).
 	// Suitable for fault-tolerant, stateless, or autoscaled-from-0 workloads.
-	// Worker pools only. Currently supported on: GCP, Verda.
+	// Worker pools only. Currently supported on: GCP, Verda, AWS, Azure, OCI.
 	// +optional
 	Spot bool `validate:"omitempty" yaml:"spot,omitempty" json:"spot,omitempty"`
 }
