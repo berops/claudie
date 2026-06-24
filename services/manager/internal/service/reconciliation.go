@@ -284,6 +284,19 @@ Failed to extract state from failed 'InFlight' state: %v
 
 			hc := HealthCheck(logger, current)
 			diff := Diff(current, localDesired)
+			nodesStatus, err := CheckNodesStatus(logger, current, hc)
+			if err != nil {
+				clusterResult[cluster] = NotReady
+
+				state.State.Status = spec.Workflow_ERROR
+				state.State.Description = fmt.Sprintf(
+					"Can't schedule task, failed to determine reachability of nodes of the clusters: %v",
+					err,
+				)
+
+				logger.Error().Msg(state.State.Description)
+				break event_switch
+			}
 
 			if shouldRescheduleInFlight(lastTask) {
 				clusterResult[cluster] = Reschedule
@@ -296,28 +309,15 @@ Failed to extract state from failed 'InFlight' state: %v
 				// built infrastructure to avoid any issues with unreachable nodes during
 				// the building of the task, in which case this takes a higher priority
 				// then the scheduled task.
-				rhc, err := HealthCheckNodeReachability(logger, current, hc)
-				if err != nil {
-					clusterResult[cluster] = NotReady
-
-					state.State.Status = spec.Workflow_ERROR
-					state.State.Description = fmt.Sprintf(
-						"Can't schedule task, failed to determine reachability of nodes of the clusters: %v",
-						err,
-					)
-
-					logger.Error().Msg(state.State.Description)
-					break event_switch
-				}
-
+				//
 				// For handling unreachable nodes use the actual `desiredState` as is in the
 				// InputManifest needs to be used as nodes could have been manually deleted by the user.
 				// Otherwise these changes will never be tracked and form a endless loop.
-				next, err := handleClusterReachability(logger, current, desiredState, diff, rhc, hc)
+				next, err := handleClusterUnknownNodes(logger, current, desiredState, diff, nodesStatus, hc)
 				if err != nil {
 					logger.
 						Debug().
-						Msg("Propagating error for unreachable nodes without working on any task")
+						Msg("Propagating error for nodes with unknown status without working on any task")
 
 					// Higher priority task can't be scheduled due to wait on user
 					// input on the unreachable nodes.
@@ -342,7 +342,7 @@ Failed to extract state from failed 'InFlight' state: %v
 				if next != nil && !areScheduledTasksEqual(lastTask, next) {
 					logger.
 						Info().
-						Msg("Scheduled Task with higher priority for unreachable nodes on the kubernetes level")
+						Msg("Scheduled Task with higher priority for nodes with unknown status on the kubernetes level")
 
 					next.LowerPriority = lastTask
 					state.InFlight = next
@@ -378,30 +378,17 @@ Failed to extract state from failed 'InFlight' state: %v
 				// build infrastructure to avoid any issues with unreachable nodes during
 				// the building of the task, in which case this takes a higher priority
 				// then the scheduled task.
-				rhc, err := HealthCheckNodeReachability(logger, current, hc)
-				if err != nil {
-					clusterResult[cluster] = NotReady
-
-					state.State.Status = spec.Workflow_ERROR
-					state.State.Description = fmt.Sprintf(
-						"Can't schedule task, failed to determine reachability of nodes of the clusters: %v",
-						err,
-					)
-
-					logger.Error().Msg(state.State.Description)
-					break event_switch
-				}
-
+				//
 				// For handling unreachable nodes use the actual `desiredState` as is in the
 				// InputManifest needs to be used as nodes could have been manually deleted by the user.
 				// Otherwise these changes will never be tracked and form a endless loop.
-				next, err := handleClusterReachability(logger, current, desiredState, diff, rhc, hc)
+				next, err := handleClusterUnknownNodes(logger, current, desiredState, diff, nodesStatus, hc)
 				if err != nil {
 					clusterResult[cluster] = NotReady
 
 					logger.
 						Debug().
-						Msg("Propagating error for unreachable nodes without working on any task")
+						Msg("Propagating error for nodes with unknown status without working on any task")
 
 					state.State.Status = spec.Workflow_ERROR
 					state.State.Description = err.Error()
@@ -417,7 +404,7 @@ Failed to extract state from failed 'InFlight' state: %v
 
 					logger.
 						Info().
-						Msg("Scheduled Task with higher priority for unreachable nodes on the kubernetes level")
+						Msg("Scheduled Task with higher priority for nodes with unknown status on the kubernetes level")
 
 					next.LowerPriority = lastTask
 					state.InFlight = next
@@ -456,30 +443,17 @@ Failed to extract state from failed 'InFlight' state: %v
 						// build infrastructure to avoid any issues with unreachable nodes during
 						// the building of the task, in which case this takes a higher priority
 						// then the scheduled task.
-						rhc, err := HealthCheckNodeReachability(logger, current, hc)
-						if err != nil {
-							clusterResult[cluster] = NotReady
-
-							state.State.Status = spec.Workflow_ERROR
-							state.State.Description = fmt.Sprintf(
-								"Can't schedule task, failed to determine reachability of nodes of the clusters: %v",
-								err,
-							)
-
-							logger.Error().Msg(state.State.Description)
-							break event_switch
-						}
-
+						//
 						// For handling unreachable nodes use the actual `desiredState` as is in the
 						// InputManifest needs to be used as nodes could have been manually deleted by the user.
 						// Otherwise these changes will never be tracked and form a endless loop.
-						next, err := handleClusterReachability(logger, current, desiredState, diff, rhc, hc)
+						next, err := handleClusterUnknownNodes(logger, current, desiredState, diff, nodesStatus, hc)
 						if err != nil {
 							clusterResult[cluster] = NotReady
 
 							logger.
 								Debug().
-								Msg("Propagating error for unreachable nodes without working on any task")
+								Msg("Propagating error for nodes with unknown status without working on any task")
 
 							state.State.Status = spec.Workflow_ERROR
 							state.State.Description = err.Error()
@@ -495,7 +469,7 @@ Failed to extract state from failed 'InFlight' state: %v
 
 							logger.
 								Info().
-								Msg("Scheduled Task with higher priority for unreachable nodes on the kubernetes level")
+								Msg("Scheduled Task with higher priority for nodes with unknown status on the kubernetes level")
 
 							next.LowerPriority = lastTask
 							state.InFlight = next
@@ -813,7 +787,7 @@ func shouldRescheduleInFlight(inFlight *spec.TaskEvent) bool {
 	}
 }
 
-func handleClusterReachability(
+func handleClusterUnknownNodes(
 	logger zerolog.Logger,
 	current *spec.Clusters,
 	desired *spec.Clusters,
@@ -821,6 +795,22 @@ func handleClusterReachability(
 	ns UnknownNodeStatus,
 	hc HealthCheckStatus,
 ) (*spec.TaskEvent, error) {
+	lbr := LoadBalancerUnreachableNodes{
+		NodeStatus: ns,
+		Diff:       &diff.Kubernetes,
+		Current:    current,
+		Desired:    desired,
+	}
+
+	// Handle loadbalancers first.
+	next, err := HandleLoadBalancerUnknownNodes(lbr)
+	if err != nil {
+		return nil, err
+	}
+	if next != nil {
+		return next, nil
+	}
+
 	kr := KubernetesUnreachableNodes{
 		Hc:         hc,
 		NodeStatus: ns,
@@ -829,23 +819,7 @@ func handleClusterReachability(
 		Desired:    desired,
 	}
 
-	next, err := HandleKubernetesUnreachableNodes(logger, kr)
-	if err != nil {
-		return nil, err
-	}
-	if next != nil {
-		return next, nil
-	}
-
-	// Same as with the kubernetes unreachable nodes.
-	lbr := LoadBalancerUnreachableNodes{
-		NodeStatus: ns,
-		Diff:       &diff.Kubernetes,
-		Current:    current,
-		Desired:    desired,
-	}
-
-	return HandleLoadBalancerUnreachableNodes(lbr)
+	return HandleKubernetesUnknownNodes(logger, kr)
 }
 
 // Compares if two [spec.TaskEvent] tasks are equal, while ignoring

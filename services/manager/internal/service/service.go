@@ -45,7 +45,7 @@ var (
 
 	// Time after which if the Node's Ready status is still false will be
 	// replaced by claudie.
-	TimeForNodeDeletion = time.Duration(envs.GetOrDefaultInt("MANAGER_TIME_FOR_NODE_DELETION", 12)) * time.Minute
+	TimeForNodeDeletion = time.Duration(envs.GetOrDefaultInt("MANAGER_TIME_FOR_NODE_DELETION", 10)) * time.Minute
 )
 
 var _ pb.ManagerServiceServer = (*Service)(nil)

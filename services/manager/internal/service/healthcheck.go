@@ -59,12 +59,15 @@ type UnknownNodeStatus struct {
 	//
 	// This structure contains nodes that are:
 	//  - nodes with no reachable endpoint.
-	//  - present in the current state but not in the kubernetes cluster.
 	//  - present in the kubernetes cluster but not in the current state
 	//  - present in both but with Unknown status.
 	//
 	// If the Api server of the cluster is unreachable, this will be empty.
 	UnknownKubernetesNodes map[string][]NodeDescription
+
+	// Nodepools and their nodes that were not joined into the kubernetes
+	// cluster but are present in the tracked currenct state.
+	NotJoinedKubernetesNodes map[string][]NodeDescription
 
 	// Loadbalancers attached to the kubernetes cluster and for each
 	// of them Nodepools with the nodes for which the pings have failed.
@@ -101,20 +104,18 @@ type HealthCheckStatus struct {
 	}
 }
 
-// HealthCheckNodeReachability performs healthchecks across the nodes of the passed in [spec.Clusters] state.
-// If there are any issues with the pinging of the nodes a non-nil error is returned which can be interpreted
-// as failing to fully determine if a node is reachable or not.
-func HealthCheckNodeReachability(
-	logger zerolog.Logger,
-	state *spec.Clusters,
-	hc HealthCheckStatus,
-) (UnknownNodeStatus, error) {
+// CheckNodeStatus reads the status across the nodes of the passed in [spec.Clusters] state.
+// For loadbalancers the machines are SSH pinged, if there are any issues with the pinging a
+// non-nil error is returned which can be interpreted as failing to fully determine if a node
+// is reachable or not.
+func CheckNodesStatus(logger zerolog.Logger, state *spec.Clusters, hc HealthCheckStatus) (UnknownNodeStatus, error) {
 	var (
 		err error
 
 		result = UnknownNodeStatus{
 			UnknownKubernetesNodes:    make(map[string][]NodeDescription),
 			UnknownLoadBalancersNodes: make(map[string]UnreachableIPv4Map),
+			NotJoinedKubernetesNodes:  map[string][]NodeDescription{},
 		}
 	)
 
@@ -147,7 +148,16 @@ func HealthCheckNodeReachability(
 							LastTransitionTime: v.LastTransitionTime.DeepCopy(),
 						})
 					}
-					continue
+				} else {
+					result.NotJoinedKubernetesNodes[np.Name] = append(result.NotJoinedKubernetesNodes[np.Name], NodeDescription{
+						K8sName:            strippedName,
+						Ready:              false,
+						IsStatic:           np.GetStaticNodePool() != nil,
+						NodePool:           np.Name,
+						PublicIPv4:         n.Public,
+						IsControl:          np.IsControl,
+						LastTransitionTime: nil,
+					})
 				}
 			}
 		}

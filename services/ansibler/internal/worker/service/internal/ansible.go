@@ -19,7 +19,7 @@ const (
 	InventoryFileName = "inventory.ini"
 
 	// maxAnsibleRetries defines how many times should be playbook retried before returning error.
-	maxAnsibleRetries = 4
+	maxAnsibleRetries = 3
 )
 
 // defaultAnsibleForks defines how many forks ansible uses (on how many nodes can ansible perform a task at the same time).

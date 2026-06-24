@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 	"time"
@@ -25,8 +26,8 @@ type KubernetesUnreachableNodes struct {
 	Desired    *spec.Clusters
 }
 
-// Based on the provided data via the [HealthCheckStatus] and [UnreachableNodes] determines what should be
-// done to unblock the unreachable nodes, the decision is returned via the (*[spec.TaskEvent], [error]) pair
+// Based on the provided data via the [HealthCheckStatus] and [UnknownNodeStatus] determines what should be
+// done to unblock the nodes with unknown status, the decision is returned via the (*[spec.TaskEvent], [error]) pair
 //
 // If an error is returned it means that the task cannot be scheduled due to needing input from the user as to
 // what should be done next with the unreachable state.
@@ -36,7 +37,17 @@ type KubernetesUnreachableNodes struct {
 //   - Nothing is returned (nil, nil), meaning that there is no task and also no error, the infrastructure is ok and reachable.
 //
 // If an [*spec.TaskEvent] is scheduled it does not point to or share any memory with the two passed in states.
-func HandleKubernetesUnreachableNodes(logger zerolog.Logger, r KubernetesUnreachableNodes) (*spec.TaskEvent, error) {
+func HandleKubernetesUnknownNodes(logger zerolog.Logger, r KubernetesUnreachableNodes) (*spec.TaskEvent, error) {
+	unknownK8sNodes := make(map[string][]NodeDescription)
+
+	// Merge both cases, unknown status, and nodes that were not
+	// able to be joined into the cluster and consider them
+	// as unreachable forcing to be reconciled in the future.
+	maps.Copy(unknownK8sNodes, r.NodeStatus.UnknownKubernetesNodes)
+	for k, v := range r.NodeStatus.NotJoinedKubernetesNodes {
+		unknownK8sNodes[k] = append(unknownK8sNodes[k], v...)
+	}
+
 	var (
 		// error that is gradually populated with the unreachable nodes info.
 		errUnreachable error
@@ -50,7 +61,7 @@ func HandleKubernetesUnreachableNodes(logger zerolog.Logger, r KubernetesUnreach
 		}
 	)
 
-	for np, nodes := range r.NodeStatus.UnknownKubernetesNodes {
+	for np, nodes := range unknownK8sNodes {
 		var endpoints []string
 
 		for _, n := range nodes {
@@ -74,7 +85,7 @@ func HandleKubernetesUnreachableNodes(logger zerolog.Logger, r KubernetesUnreach
 		}
 	}
 
-	for np, nodes := range r.NodeStatus.UnknownKubernetesNodes {
+	for np, nodes := range unknownK8sNodes {
 		// cnp could be nil if a node is in the k8s cluster that
 		// is not tracked by claudie.
 		cnp := nodepools.FindByName(np, r.Current.K8S.ClusterInfo.NodePools)
@@ -87,7 +98,7 @@ func HandleKubernetesUnreachableNodes(logger zerolog.Logger, r KubernetesUnreach
 					// Deleting nodes from the last control plane nodepool will result in an invalid cluster.
 					errUnreachable = errors.Join(
 						errUnreachable,
-						fmt.Errorf("can't delete unreachable nodes from nodepool %q, the "+
+						fmt.Errorf("can't delete nodes with unknown status from nodepool %q, the "+
 							"nodepool is the last control nodepool, the deletion would result in a broken cluster",
 							np,
 						),
@@ -106,7 +117,7 @@ func HandleKubernetesUnreachableNodes(logger zerolog.Logger, r KubernetesUnreach
 					// risky, but a way out of the deadlock.
 					errUnreachable = errors.Join(
 						errUnreachable,
-						fmt.Errorf("can't delete nodepool %q with unreachable nodes, the "+
+						fmt.Errorf("can't delete nodepool %q with unknown node status, the "+
 							"nodepool has the kubeapi server endpoint which would result in a broken cluster",
 							np,
 						),
@@ -124,35 +135,39 @@ func HandleKubernetesUnreachableNodes(logger zerolog.Logger, r KubernetesUnreach
 			}
 
 			diff := NodePoolsDiffResult{
-				PartiallyDeleted: make(NodePoolsViewType, len(nodes)),
+				Deleted: make(NodePoolsViewType, len(nodes)),
 			}
 
 			for _, n := range nodes {
 				if n.IsStatic {
-					diff.PartiallyDeleted[cnp.Name] = append(diff.PartiallyDeleted[cnp.Name], n.K8sName)
+					diff.Deleted[cnp.Name] = append(diff.Deleted[cnp.Name], n.K8sName)
 				} else {
 					// k8s names have the cluster ID stripped.
 					fullname := fmt.Sprintf("%s-%s", r.Current.K8S.ClusterInfo.Id(), n.K8sName)
-					diff.PartiallyDeleted[cnp.Name] = append(diff.PartiallyDeleted[cnp.Name], fullname)
+					diff.Deleted[cnp.Name] = append(diff.Deleted[cnp.Name], fullname)
 				}
 			}
+
+			logger.
+				Info().
+				Msgf(
+					"Nodepool %q is scheduled for deletion as it has no desired state and nodes with unhealthy status", cnp.Name,
+				)
 
 			next := ScheduleDeletionsInNodePools(r.Current, &diff, opts)
 			return next, nil
 		}
 
-		for _, n := range nodes {
-			fullname := fmt.Sprintf("%s-%s", r.Current.K8S.ClusterInfo.Id(), n.K8sName)
+		var canDelete []NodeDescription
 
+		// Keep only nodes we can delete.
+		for _, n := range nodes {
 			if n.LastTransitionTime != nil && time.Since(n.LastTransitionTime.Time) <= TimeForNodeDeletion {
 				continue
 			}
 
 			if n.IsStatic {
-				// static nodes do not have the cluster prefix.
-				fullname = n.K8sName
-
-				nn, node := nodepools.FindNode(r.Desired.K8S.ClusterInfo.NodePools, fullname)
+				nn, node := nodepools.FindNode(r.Desired.K8S.ClusterInfo.NodePools, n.K8sName)
 				if node != nil && nn.GetStaticNodePool() != nil {
 					if _, ok := r.Hc.Cluster.Nodes[n.K8sName]; ok {
 						errUnreachable = errors.Join(
@@ -177,33 +192,48 @@ func HandleKubernetesUnreachableNodes(logger zerolog.Logger, r KubernetesUnreach
 					}
 					continue
 				}
+
 				// fallthrough
 			}
 
-			if n.IsStatic {
-				logger.Info().Msgf("Removing node %q from the cluster", fullname)
-			} else {
-				logger.
-					Info().
-					Msgf("Replacing node %q in the cluster, as it was unhealthy for more than %s", fullname, TimeForNodeDeletion)
-			}
+			canDelete = append(canDelete, n)
+		}
 
-			opts := K8sNodeDeletionOptions{
+		if len(canDelete) < 1 {
+			continue
+		}
+
+		var (
+			diff = NodePoolsDiffResult{PartiallyDeleted: NodePoolsViewType{}}
+			opts = K8sNodeDeletionOptions{
 				UseProxy:     r.Diff.Proxy.CurrentUsed,
 				HasApiServer: r.Diff.ApiEndpoint.Current != "",
-				IsStatic:     n.IsStatic,
+				IsStatic:     canDelete[0].IsStatic,
 				Unreachable:  &unreachableInfra,
 			}
+		)
 
-			diff := NodePoolsDiffResult{
-				PartiallyDeleted: NodePoolsViewType{
-					np: []string{fullname},
-				},
+		for _, n := range canDelete {
+			var fullname string
+			if n.IsStatic {
+				fullname = n.K8sName
+			} else {
+				fullname = fmt.Sprintf("%s-%s", r.Current.K8S.ClusterInfo.Id(), n.K8sName)
 			}
-
-			next := ScheduleDeletionsInNodePools(r.Current, &diff, opts)
-			return next, nil
+			diff.PartiallyDeleted[np] = append(diff.PartiallyDeleted[np], fullname)
 		}
+
+		logger.
+			Info().
+			Msgf(
+				"Reconciling %d nodes from nodepool %q due to being unhealthy: %v",
+				len(canDelete),
+				np,
+				slices.Collect(maps.Values(diff.PartiallyDeleted)),
+			)
+
+		next := ScheduleDeletionsInNodePools(r.Current, &diff, opts)
+		return next, nil
 	}
 
 	if errUnreachable != nil {
@@ -237,7 +267,7 @@ type LoadBalancerUnreachableNodes struct {
 }
 
 // Similar as [HandleKubernetesUnreachableNodes] but works with the loadbalancer nodes.
-func HandleLoadBalancerUnreachableNodes(r LoadBalancerUnreachableNodes) (*spec.TaskEvent, error) {
+func HandleLoadBalancerUnknownNodes(r LoadBalancerUnreachableNodes) (*spec.TaskEvent, error) {
 	// for each loadbalancer check if the nodepool with the unreachable nodes is present in the desired
 	// state. If not issue a delete, if yes wait for either the connectivity issue to be resolved or the
 	// removal of the nodepool from the desired state.
@@ -257,7 +287,16 @@ func HandleLoadBalancerUnreachableNodes(r LoadBalancerUnreachableNodes) (*spec.T
 		}
 	)
 
-	for np, d := range r.NodeStatus.UnknownKubernetesNodes {
+	// Merge both cases, unknown status, and nodes that were not
+	// able to be joined into the cluster and consider them
+	// as unreachable forcing to be reconciled in the future.
+	unknownK8sNodes := make(map[string][]NodeDescription)
+	maps.Copy(unknownK8sNodes, r.NodeStatus.UnknownKubernetesNodes)
+	for k, v := range r.NodeStatus.NotJoinedKubernetesNodes {
+		unknownK8sNodes[k] = append(unknownK8sNodes[k], v...)
+	}
+
+	for np, d := range unknownK8sNodes {
 		var endpoints []string
 		for _, n := range d {
 			endpoints = append(endpoints, n.PublicIPv4)
@@ -285,7 +324,7 @@ func HandleLoadBalancerUnreachableNodes(r LoadBalancerUnreachableNodes) (*spec.T
 
 		clb := r.Current.LoadBalancers.Clusters[cid]
 		if did < 0 {
-			// cluster with the unrechable ips has been deleted from the desired state.
+			// cluster with the unreachable ips has been deleted from the desired state.
 			if clb.IsApiEndpoint() {
 				// deleted api endpoint in desired
 				//
@@ -296,10 +335,9 @@ func HandleLoadBalancerUnreachableNodes(r LoadBalancerUnreachableNodes) (*spec.T
 				// but a way out of the deadlock.
 				errUnreachable = errors.Join(
 					errUnreachable,
-					fmt.Errorf("can't delete loadbalancer %q with unreachable nodes, the loadbalancer is targeting"+
+					fmt.Errorf("can't delete loadbalancer %q containing nodes with unknown status, the loadbalancer is targeting"+
 						" the kube-api server and deleting it from the desired state would result in a broken kubernetes cluster", lb),
 				)
-
 				continue
 			}
 
@@ -345,6 +383,19 @@ func HandleLoadBalancerUnreachableNodes(r LoadBalancerUnreachableNodes) (*spec.T
 				return next, nil
 			}
 
+			// Note:
+			//
+			// in future this could delete the unreachable nodes
+			// as the loadbalancers has a manadatory DNS
+			// record which points to the VMs. the DNS
+			// wouldn't be deleted just updated with 0 nodes
+			// and then again updated with newly reconciled
+			// nodes.
+			//
+			// However for this to work we need to track for how
+			// long a loadbalancer is unresponsive for, which currently
+			// is not.
+
 			errMsg := strings.Builder{}
 			errMsg.WriteString("[")
 			for _, ip := range ips {
@@ -358,7 +409,7 @@ func HandleLoadBalancerUnreachableNodes(r LoadBalancerUnreachableNodes) (*spec.T
 			errMsg.WriteByte(']')
 			errUnreachable = errors.Join(
 				errUnreachable,
-				fmt.Errorf("nodepool %q from loadbalancer %q has %v unreachable loadbalancer node/s:\n %s", np, lb, len(ips), errMsg.String()),
+				fmt.Errorf("nodepool %q from loadbalancer %q has %v loadbalancer node/s with unknown status:\n %s", np, lb, len(ips), errMsg.String()),
 			)
 		}
 	}
@@ -366,7 +417,7 @@ func HandleLoadBalancerUnreachableNodes(r LoadBalancerUnreachableNodes) (*spec.T
 	if errUnreachable != nil {
 		// nolint
 		errUnreachable = fmt.Errorf(`
-Nodes within loadbalancers attached to the kubernetes cluster
+Node/s within loadbalancers attached to the kubernetes cluster
 have reachability problems.
 
 Fix the unreachable nodes by either:
