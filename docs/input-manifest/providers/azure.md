@@ -82,6 +82,22 @@ If you wish to use Azure as your DNS provider where Claudie creates DNS records 
 !!! warning "Azure is not my domain registrar"
     If you haven't acquired a domain via Azure and wish to utilize Azure for hosting your zone, you can refer to [this guide](https://learn.microsoft.com/en-us/azure/dns/dns-delegate-domain-azure-dns#retrieve-name-servers) on Azure nameservers. However, if you prefer not to use the entire domain, an alternative option is to delegate a subdomain to Azure.
 
+## Spot instance support
+
+Azure spot instances are supported for worker nodepools. Set `spot: true` on any dynamic Azure nodepool to request the VMs as [Azure Spot](https://learn.microsoft.com/azure/virtual-machines/spot-vms) (`priority = "Spot"`, `eviction_policy = "Delete"`, `max_bid_price = -1` on the underlying `azurerm_linux_virtual_machine`), at a discount over on-demand pricing. Azure may evict spot VMs when it needs the capacity back. Spot is only supported on worker (compute) nodepools and is rejected by the webhook on control-plane nodepools or unsupported providers.
+
+`max_bid_price = -1` means Claudie never sets a price cap, so eviction happens on capacity rather than price. Spot capacity varies by VM size and region; if a size reports `SkuNotAvailable`, try another size or region.
+
+Claudie automatically applies the label `claudie.io/spot=true` and the taint `claudie.io/spot=true:NoSchedule` to every node in the pool, so only pods with a matching toleration are scheduled there.
+
+```yaml
+tolerations:
+  - key: claudie.io/spot
+    operator: Equal
+    value: "true"
+    effect: NoSchedule
+```
+
 ## Input manifest examples
 ### Single provider, multi region cluster example
 

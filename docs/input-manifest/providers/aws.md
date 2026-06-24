@@ -82,6 +82,22 @@ If you wish to use AWS as your DNS provider where Claudie creates DNS records po
 !!! warning "AWS is not my domain registrar"
     If you haven't acquired a domain via AWS and wish to utilize AWS for hosting your zone, you can refer to [this guide](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/migrate-dns-domain-in-use.html#migrate-dns-change-name-servers-with-provider) on AWS nameservers. However, if you prefer not to use the entire domain, an alternative option is to delegate a subdomain to AWS.
 
+## Spot instance support
+
+AWS spot instances are supported for worker nodepools. Set `spot: true` on any dynamic AWS nodepool to request the EC2 instances as spot (`instance_market_options { market_type = "spot" }` on the underlying `aws_instance`), at a discount over on-demand pricing. AWS may reclaim spot capacity with a short interruption notice. Spot is only supported on worker (compute) nodepools and is rejected by the webhook on control-plane nodepools or unsupported providers.
+
+The account needs the `AWSServiceRoleForEC2Spot` service-linked role. AWS creates it automatically on the first spot request when the credentials are permitted to; otherwise create it once with `aws iam create-service-linked-role --aws-service-name spot.amazonaws.com`. Note that the X instance family has a separate spot quota that defaults to 0 vCPUs, so prefer Standard-family sizes unless that quota is raised.
+
+Claudie automatically applies the label `claudie.io/spot=true` and the taint `claudie.io/spot=true:NoSchedule` to every node in the pool, so only pods with a matching toleration are scheduled there.
+
+```yaml
+tolerations:
+  - key: claudie.io/spot
+    operator: Equal
+    value: "true"
+    effect: NoSchedule
+```
+
 ## Input manifest examples
 
 ### Create a secret for AWS provider

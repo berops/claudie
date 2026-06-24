@@ -118,7 +118,7 @@ For a complete GPU deployment example including the NVIDIA GPU Operator installa
 
 ## Spot VM Support
 
-GCP Spot VMs are supported for worker nodepools. Set `spot: true` on any dynamic GCP nodepool to provision instances as [Spot VMs](https://cloud.google.com/compute/docs/instances/spot), which offer 60–91% cost savings over on-demand pricing at the cost of potential reclamation with ~30 seconds of notice. Spot is only supported on worker (compute) nodepools and is rejected by the webhook on control-plane nodepools or non-GCP providers.
+GCP Spot VMs are supported for worker nodepools. Set `spot: true` on any dynamic GCP nodepool to provision instances as [Spot VMs](https://cloud.google.com/compute/docs/instances/spot), which offer 60–91% cost savings over on-demand pricing at the cost of potential reclamation with ~30 seconds of notice. Spot is only supported on worker (compute) nodepools and is rejected by the webhook on control-plane nodepools or unsupported providers.
 
 Claudie automatically applies the label `claudie.io/spot=true` and the taint `claudie.io/spot=true:NoSchedule` to every node in the pool, so only pods with a matching toleration are scheduled there.
 

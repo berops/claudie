@@ -131,7 +131,7 @@ spec:
 
 [GCP Spot VMs](https://cloud.google.com/compute/docs/instances/spot) offer 60–91% cost savings over on-demand pricing, in exchange for possible reclamation with about 30 seconds of notice. Combined with GPU attachment and scale-from-zero autoscaling, this is a common pattern for cost-effective GPU inference: the nodepool scales up when work arrives and back down to zero when idle.
 
-To request spot nodes, set `spot: true` on a GCP dynamic nodepool. Spot is only supported on worker (compute) nodepools and is rejected by the webhook on control-plane nodepools or non-GCP providers. Claudie automatically applies the label `claudie.io/spot=true` and the taint `claudie.io/spot=true:NoSchedule` to every node in the pool, so only pods with a matching toleration are scheduled there.
+To request spot nodes, set `spot: true` on a GCP dynamic nodepool. Spot is only supported on worker (compute) nodepools and is rejected by the webhook on control-plane nodepools or unsupported providers. Claudie automatically applies the label `claudie.io/spot=true` and the taint `claudie.io/spot=true:NoSchedule` to every node in the pool, so only pods with a matching toleration are scheduled there.
 
 ```yaml
 apiVersion: claudie.io/v1beta1
