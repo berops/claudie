@@ -86,7 +86,7 @@ If you wish to use Azure as your DNS provider where Claudie creates DNS records 
 
 Azure spot instances are supported for worker nodepools. Set `spot: true` on any dynamic Azure nodepool to request the VMs as [Azure Spot](https://learn.microsoft.com/azure/virtual-machines/spot-vms) (`priority = "Spot"`, `eviction_policy = "Delete"`, `max_bid_price = -1` on the underlying `azurerm_linux_virtual_machine`), at a discount over on-demand pricing. Azure may evict spot VMs when it needs the capacity back. Spot is only supported on worker (compute) nodepools and is rejected by the webhook on control-plane nodepools or unsupported providers.
 
-`max_bid_price = -1` means Claudie never sets a price cap, so eviction happens on capacity rather than price. Spot capacity varies by VM size and region; if a size reports `SkuNotAvailable`, try another size or region.
+`max_bid_price = -1` is Azure's default: Claudie pays up to the on-demand price and the VM is never evicted for price reasons, but Azure can still evict it when it reclaims capacity. Spot capacity varies by VM size and region; if a size reports `SkuNotAvailable`, try another size or region.
 
 Claudie automatically applies the label `claudie.io/spot=true` and the taint `claudie.io/spot=true:NoSchedule` to every node in the pool, so only pods with a matching toleration are scheduled there.
 
