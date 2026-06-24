@@ -425,24 +425,9 @@ Failed to extract state from failed 'InFlight' state: %v
 					// should be issued.
 					clusterResult[cluster] = NotReady
 
-					state.State.TicksUntilRefresh = max(state.State.TicksUntilRefresh, 0)
-					state.State.TicksUntilRefresh -= 1
-
-					if state.State.TicksUntilRefresh <= 0 {
-						clusterResult[cluster] = Reschedule
-
-						logger.
-							Info().
-							Msg("No task was scheduled for a while, issuing a refresh of the infrastructure")
-
-						logger.
-							Info().
-							Msg("Verifying reachability of the cluster before scheduling task to work on")
-
-						// Before scheduling any new task, healthcheck the reachability of the
-						// build infrastructure to avoid any issues with unreachable nodes during
-						// the building of the task, in which case this takes a higher priority
-						// then the scheduled task.
+					if len(nodesStatus.NotJoinedKubernetesNodes)+len(nodesStatus.UnknownKubernetesNodes) > 0 {
+						// Check the reachability of the build infrastructure to avoid any
+						// ssues with unreachable nodes.
 						//
 						// For handling unreachable nodes use the actual `desiredState` as is in the
 						// InputManifest needs to be used as nodes could have been manually deleted by the user.
@@ -475,6 +460,17 @@ Failed to extract state from failed 'InFlight' state: %v
 							state.InFlight = next
 							break event_switch
 						}
+					}
+
+					state.State.TicksUntilRefresh = max(state.State.TicksUntilRefresh, 0)
+					state.State.TicksUntilRefresh -= 1
+
+					if state.State.TicksUntilRefresh <= 0 {
+						clusterResult[cluster] = Reschedule
+
+						logger.
+							Info().
+							Msg("No task was scheduled for a while, issuing a refresh of the infrastructure")
 
 						state.InFlight = ScheduleRefreshInfrastructure(current)
 					}

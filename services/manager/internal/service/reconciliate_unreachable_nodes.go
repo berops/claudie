@@ -200,6 +200,7 @@ func HandleKubernetesUnknownNodes(logger zerolog.Logger, r KubernetesUnreachable
 		}
 
 		if len(canDelete) < 1 {
+			// Nothing to reconciliate, go to next nodepool.
 			continue
 		}
 
@@ -395,6 +396,10 @@ func HandleLoadBalancerUnknownNodes(r LoadBalancerUnreachableNodes) (*spec.TaskE
 			// However for this to work we need to track for how
 			// long a loadbalancer is unresponsive for, which currently
 			// is not.
+			//
+			// Need to also consider the fact where claudie will not
+			// have internet access and no schedule a unwanted removal
+			// as a result of that.
 
 			errMsg := strings.Builder{}
 			errMsg.WriteString("[")
