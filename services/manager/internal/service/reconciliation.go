@@ -425,7 +425,11 @@ Failed to extract state from failed 'InFlight' state: %v
 					// should be issued.
 					clusterResult[cluster] = NotReady
 
-					if len(nodesStatus.NotJoinedKubernetesNodes)+len(nodesStatus.UnknownKubernetesNodes) > 0 {
+					pendingUnhealthy := len(nodesStatus.NotJoinedKubernetesNodes) +
+						len(nodesStatus.UnknownKubernetesNodes) +
+						len(nodesStatus.UnknownLoadBalancersNodes)
+
+					if pendingUnhealthy > 0 {
 						// Check the reachability of the build infrastructure to avoid any
 						// ssues with unreachable nodes.
 						//

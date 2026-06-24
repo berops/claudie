@@ -135,16 +135,16 @@ func HandleKubernetesUnknownNodes(logger zerolog.Logger, r KubernetesUnreachable
 			}
 
 			diff := NodePoolsDiffResult{
-				Deleted: make(NodePoolsViewType, len(nodes)),
+				PartiallyDeleted: make(NodePoolsViewType, len(nodes)),
 			}
 
 			for _, n := range nodes {
 				if n.IsStatic {
-					diff.Deleted[cnp.Name] = append(diff.Deleted[cnp.Name], n.K8sName)
+					diff.PartiallyDeleted[cnp.Name] = append(diff.PartiallyDeleted[cnp.Name], n.K8sName)
 				} else {
 					// k8s names have the cluster ID stripped.
 					fullname := fmt.Sprintf("%s-%s", r.Current.K8S.ClusterInfo.Id(), n.K8sName)
-					diff.Deleted[cnp.Name] = append(diff.Deleted[cnp.Name], fullname)
+					diff.PartiallyDeleted[cnp.Name] = append(diff.PartiallyDeleted[cnp.Name], fullname)
 				}
 			}
 

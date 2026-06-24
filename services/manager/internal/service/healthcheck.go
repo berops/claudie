@@ -258,6 +258,12 @@ func HealthCheck(logger zerolog.Logger, state *spec.Clusters) HealthCheckStatus 
 			for _, cond := range n.Status.Conditions {
 				if cond.Type == corev1.NodeReady {
 					transitionTime = cond.LastTransitionTime.DeepCopy()
+
+					t := time.Time{}
+					if transitionTime != nil {
+						t = transitionTime.Time
+					}
+
 					if cond.Status != corev1.ConditionTrue {
 						logger.
 							Warn().
@@ -266,7 +272,7 @@ func HealthCheck(logger zerolog.Logger, state *spec.Clusters) HealthCheckStatus 
 									"if the node does not become healthy, scheduling a reconciliation in %q",
 								n.Metadata.Name,
 								cond.Status,
-								max(TimeForNodeDeletion-time.Since(transitionTime.Time), 0*time.Second),
+								max(TimeForNodeDeletion-time.Since(t), 0*time.Second),
 							)
 
 						isReady = false
