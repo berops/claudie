@@ -9,7 +9,7 @@ Unplanned features (wishlist; talk to us for prioritization):
 - [ ] CLI read-only interface
 - [ ] Override for all manifest defaults
 - [ ] Service type: loadbalancer
-- [ ] Support for Spot & preemptible instances (GCP Spot VMs: done; other providers: planned)
+- [ ] Support for Spot & preemptible instances (GCP Spot VMs and Verda spot: done; other providers: planned)
 - [ ] Roadwarrior/Edge mode (on-premises node behind a NAT)
 
 v0.10.0:

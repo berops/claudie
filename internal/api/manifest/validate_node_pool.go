@@ -190,7 +190,7 @@ func isControlPlane(name string, m *Manifest) bool {
 	return false
 }
 
-// validateSpot checks that spot instances are only requested on GCP worker pools.
+// validateSpot checks that spot instances are only requested on GCP or Verda worker pools.
 func (d *DynamicNodePool) validateSpot(m *Manifest) error {
 	if !d.Spot {
 		return nil
@@ -203,8 +203,8 @@ func (d *DynamicNodePool) validateSpot(m *Manifest) error {
 		return nil
 	}
 
-	if providerType != "gcp" {
-		return fmt.Errorf("spot instances are only supported on GCP, provider %q has type %q", d.ProviderSpec.Name, providerType)
+	if providerType != "gcp" && providerType != "verda" {
+		return fmt.Errorf("spot instances are only supported on GCP and Verda, provider %q has type %q", d.ProviderSpec.Name, providerType)
 	}
 
 	if isControlPlane(d.Name, m) {
