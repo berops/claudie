@@ -95,20 +95,20 @@ Before you begin, please make sure you have the following prerequisites installe
 
 ### Supported providers
 <!-- providers-start -->
-   | Supported Provider                                                                | Node Pools         | DNS                | DNS healthchecks  | GPU                |
-   | --------------------------------------------------------------------------------- | ------------------ | ------------------ |------------------ | ------------------ |
-   | [AWS](https://docs.claudie.io/latest/input-manifest/providers/aws/)               | :heavy_check_mark: | :heavy_check_mark: |:heavy_check_mark: | :heavy_check_mark: |
-   | [Azure](https://docs.claudie.io/latest/input-manifest/providers/azure/)           | :heavy_check_mark: | :heavy_check_mark: |:heavy_check_mark: | :heavy_check_mark: |
-   | [GCP](https://docs.claudie.io/latest/input-manifest/providers/gcp/)               | :heavy_check_mark: | :heavy_check_mark: |:heavy_check_mark: | :heavy_check_mark: |
-   | [OCI](https://docs.claudie.io/latest/input-manifest/providers/oci/)               | :heavy_check_mark: | :heavy_check_mark: |:heavy_check_mark: | :heavy_check_mark: |
-   | [Exoscale](https://docs.claudie.io/latest/input-manifest/providers/exoscale/)     | :heavy_check_mark: | :heavy_check_mark: | N/A               | :heavy_check_mark: |
-   | [Hetzner](https://docs.claudie.io/latest/input-manifest/providers/hetzner/)       | :heavy_check_mark: | :heavy_check_mark: | N/A               | :heavy_check_mark: |
-   | [CloudRift](https://docs.claudie.io/latest/input-manifest/providers/cloudrift/)    | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: |
-   | [Verda](https://docs.claudie.io/latest/input-manifest/providers/verda/)            | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: |
-   | [Cloudflare](https://docs.claudie.io/latest/input-manifest/providers/cloudflare/) | N/A                | :heavy_check_mark: |:heavy_check_mark: | N/A                |
-   | [OVHcloud](https://docs.claudie.io/latest/input-manifest/providers/ovh/)         | :heavy_check_mark: | :heavy_check_mark: | N/A               | :heavy_check_mark: |
-   | [Openstack](https://docs.claudie.io/latest/input-manifest/providers/openstack/)   | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: |
-   | [On-Premises / Static nodes](https://docs.claudie.io/latest/input-manifest/providers/on-premises/) | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: |
+   | Supported Provider                                                                | Node Pools         | DNS                | DNS healthchecks  | GPU                | Spot               |
+   | --------------------------------------------------------------------------------- | ------------------ | ------------------ |------------------ | ------------------ | ------------------ |
+   | [AWS](https://docs.claudie.io/latest/input-manifest/providers/aws/)               | :heavy_check_mark: | :heavy_check_mark: |:heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+   | [Azure](https://docs.claudie.io/latest/input-manifest/providers/azure/)           | :heavy_check_mark: | :heavy_check_mark: |:heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+   | [GCP](https://docs.claudie.io/latest/input-manifest/providers/gcp/)               | :heavy_check_mark: | :heavy_check_mark: |:heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+   | [OCI](https://docs.claudie.io/latest/input-manifest/providers/oci/)               | :heavy_check_mark: | :heavy_check_mark: |:heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+   | [Exoscale](https://docs.claudie.io/latest/input-manifest/providers/exoscale/)     | :heavy_check_mark: | :heavy_check_mark: | N/A               | :heavy_check_mark: | N/A                |
+   | [Hetzner](https://docs.claudie.io/latest/input-manifest/providers/hetzner/)       | :heavy_check_mark: | :heavy_check_mark: | N/A               | :heavy_check_mark: | N/A                |
+   | [CloudRift](https://docs.claudie.io/latest/input-manifest/providers/cloudrift/)    | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: | N/A                |
+   | [Verda](https://docs.claudie.io/latest/input-manifest/providers/verda/)            | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: | :heavy_check_mark: |
+   | [Cloudflare](https://docs.claudie.io/latest/input-manifest/providers/cloudflare/) | N/A                | :heavy_check_mark: |:heavy_check_mark: | N/A                | N/A                |
+   | [OVHcloud](https://docs.claudie.io/latest/input-manifest/providers/ovh/)         | :heavy_check_mark: | :heavy_check_mark: | N/A               | :heavy_check_mark: | N/A                |
+   | [Openstack](https://docs.claudie.io/latest/input-manifest/providers/openstack/)   | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: | N/A                |
+   | [On-Premises / Static nodes](https://docs.claudie.io/latest/input-manifest/providers/on-premises/) | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: | N/A                |
 
 > **Note:** `N/A` indicates that the given feature is not applicable for the provider.
 
