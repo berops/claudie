@@ -74,6 +74,71 @@ func TestValidateSpot(t *testing.T) {
 		},
 	}
 
+	awsManifest := &Manifest{
+		Providers: Provider{
+			AWS: []AWS{{
+				Name:      "aws-1",
+				AccessKey: "fake-access-key-1234",
+				SecretKey: "fake-secret-key-fake-secret-key-fake-secr",
+			}},
+		},
+		Kubernetes: Kubernetes{
+			Clusters: []Cluster{
+				{
+					Name:    "cluster-1",
+					Network: "10.0.0.0/8",
+					Version: "v1.33.0",
+					Pools:   Pool{Compute: []string{"worker-np"}},
+				},
+			},
+		},
+	}
+
+	azureManifest := &Manifest{
+		Providers: Provider{
+			Azure: []Azure{{
+				Name:           "azure-1",
+				SubscriptionId: "fake-subscription-id",
+				TenantId:       "fake-tenant-id",
+				ClientId:       "fake-client-id",
+				ClientSecret:   "fake-client-secret",
+			}},
+		},
+		Kubernetes: Kubernetes{
+			Clusters: []Cluster{
+				{
+					Name:    "cluster-1",
+					Network: "10.0.0.0/8",
+					Version: "v1.33.0",
+					Pools:   Pool{Compute: []string{"worker-np"}},
+				},
+			},
+		},
+	}
+
+	ociManifest := &Manifest{
+		Providers: Provider{
+			OCI: []OCI{{
+				Name:           "oci-1",
+				PrivateKey:     "fake-private-key",
+				KeyFingerprint: "fake-fingerprint",
+				TenancyOCID:    "fake-tenancy-ocid",
+				UserOCID:       "fake-user-ocid",
+				CompartmentID:  "fake-compartment-ocid",
+			}},
+		},
+		Kubernetes: Kubernetes{
+			Clusters: []Cluster{
+				{
+					Name:    "cluster-1",
+					Network: "10.0.0.0/8",
+					Version: "v1.33.0",
+					Pools:   Pool{Compute: []string{"worker-np"}},
+				},
+			},
+		},
+	}
+
 	cases := []struct {
 		name            string
 		nodepool        *DynamicNodePool
@@ -115,7 +180,56 @@ func TestValidateSpot(t *testing.T) {
 			wantError: false,
 		},
 		{
-			name: "spot on non-GCP provider fails",
+			name: "spot on AWS worker pool passes",
+			nodepool: &DynamicNodePool{
+				Name:       "worker-np",
+				ServerType: "t3.medium",
+				Image:      "ami-fake",
+				Count:      1,
+				Spot:       true,
+				ProviderSpec: ProviderSpec{
+					Name:   "aws-1",
+					Region: "eu-central-1",
+					Zone:   "eu-central-1a",
+				},
+			},
+			manifest:  awsManifest,
+			wantError: false,
+		},
+		{
+			name: "spot on Azure worker pool passes",
+			nodepool: &DynamicNodePool{
+				Name:       "worker-np",
+				ServerType: "Standard_B2s",
+				Image:      "Canonical:0001-com-ubuntu-server-jammy:22_04-lts:latest",
+				Count:      1,
+				Spot:       true,
+				ProviderSpec: ProviderSpec{
+					Name:   "azure-1",
+					Region: "germanywestcentral",
+				},
+			},
+			manifest:  azureManifest,
+			wantError: false,
+		},
+		{
+			name: "spot on OCI worker pool passes",
+			nodepool: &DynamicNodePool{
+				Name:       "worker-np",
+				ServerType: "VM.Standard.E4.Flex",
+				Image:      "ocid1.image.fake",
+				Count:      1,
+				Spot:       true,
+				ProviderSpec: ProviderSpec{
+					Name:   "oci-1",
+					Region: "eu-frankfurt-1",
+				},
+			},
+			manifest:  ociManifest,
+			wantError: false,
+		},
+		{
+			name: "spot on unsupported provider fails",
 			nodepool: &DynamicNodePool{
 				Name:       "worker-np",
 				ServerType: "cx21",

@@ -535,7 +535,7 @@ type DynamicNodePool struct {
 	Cidr string `protobuf:"bytes,14,opt,name=cidr,proto3" json:"cidr,omitempty"`
 	// Network Name with public IPs (required for Openstack)
 	ExternalNetworkName string `protobuf:"bytes,15,opt,name=externalNetworkName,proto3" json:"externalNetworkName,omitempty"`
-	// Spot requests a discounted, pre-emptible (Spot) instance. Worker pools only. Currently supported on GCP, Verda.
+	// Spot requests a discounted, pre-emptible (Spot) instance. Worker pools only. Currently supported on GCP, Verda, AWS, Azure, OCI.
 	Spot          bool `protobuf:"varint,16,opt,name=spot,proto3" json:"spot,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

@@ -117,6 +117,22 @@ If you wish to use OCI as your DNS provider where Claudie creates DNS records po
 "Allow group <GROUP_NAME> to manage health-check-monitor in compartment <COMPARTMENT_NAME>"
 ```
 
+## Spot instance support
+
+OCI preemptible instances are supported for worker nodepools. Set `spot: true` on any dynamic OCI nodepool to request the instances as [preemptible](https://docs.oracle.com/en-us/iaas/Content/Compute/Concepts/preemptible.htm) (`preemptible_instance_config` with a `TERMINATE` preemption action on the underlying `oci_core_instance`), at a discount over on-demand pricing. OCI may reclaim preemptible capacity at any time. Spot is only supported on worker (compute) nodepools and is rejected by the webhook on control-plane nodepools or unsupported providers.
+
+Preemptible capacity is offered on a subset of shapes; confirm the chosen shape supports it.
+
+Claudie automatically applies the label `claudie.io/spot=true` and the taint `claudie.io/spot=true:NoSchedule` to every node in the pool, so only pods with a matching toleration are scheduled there.
+
+```yaml
+tolerations:
+  - key: claudie.io/spot
+    operator: Equal
+    value: "true"
+    effect: NoSchedule
+```
+
 ## Input manifest examples
 ### Single provider, multi region cluster example
 
