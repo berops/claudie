@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/berops/claudie/internal/nodepools"
-	"github.com/berops/claudie/internal/templateUtils"
+	"github.com/berops/claudie/internal/templateutils"
 	"github.com/berops/claudie/proto/pb/spec"
 )
 
@@ -35,9 +35,9 @@ type usedProvidersTemplateData struct {
 
 // CreateUsedProviderDNS creates provider file used for DNS management.
 func (p UsedProviders) CreateUsedProviderDNS(dns *spec.DNS) error {
-	template := templateUtils.Templates{Directory: p.Directory}
+	template := templateutils.Templates{Directory: p.Directory}
 
-	tpl, err := templateUtils.LoadTemplate(providersTemplate)
+	tpl, err := templateutils.LoadTemplate(providersTemplate)
 	if err != nil {
 		return fmt.Errorf("error while parsing template file providers.tpl for cluster %s: %w", p.ClusterName, err)
 	}
@@ -50,12 +50,12 @@ func (p UsedProviders) CreateUsedProviderDNS(dns *spec.DNS) error {
 
 // CreateUsedProvider creates provider file used for infrastructure management.
 func (p UsedProviders) CreateUsedProvider(nps []*spec.NodePool) error {
-	template := templateUtils.Templates{Directory: p.Directory}
+	template := templateutils.Templates{Directory: p.Directory}
 
 	var data usedProvidersTemplateData
 	getProvidersUsed(nodepools.ExtractDynamic(nps), &data)
 
-	tpl, err := templateUtils.LoadTemplate(providersTemplate)
+	tpl, err := templateutils.LoadTemplate(providersTemplate)
 	if err != nil {
 		return fmt.Errorf("error while parsing template file providers.tpl for cluster %s : %w", p.ClusterName, err)
 	}

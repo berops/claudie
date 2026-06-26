@@ -9,7 +9,7 @@ import (
 
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/internal/sanitise"
-	"github.com/berops/claudie/internal/templateUtils"
+	"github.com/berops/claudie/internal/templateutils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/kube-eleven/internal/worker/service/internal/kubeone"
 	"github.com/berops/claudie/services/kube-eleven/templates"
@@ -122,7 +122,7 @@ func (k *KubeEleven) DestroyCluster() error {
 // generateFiles will generate those files (kubeone.yaml and key.pem) needed by Kubeone.
 // Returns nil if successful, error otherwise.
 func (k *KubeEleven) generateFiles() error {
-	template, err := templateUtils.LoadTemplate(templates.KubeOneTemplate)
+	template, err := templateutils.LoadTemplate(templates.KubeOneTemplate)
 	if err != nil {
 		return fmt.Errorf("error while loading a kubeone template : %w", err)
 	}
@@ -133,7 +133,7 @@ func (k *KubeEleven) generateFiles() error {
 	}
 
 	// Generate kubeone.yaml file from the template
-	err = templateUtils.Templates{Directory: k.outputDirectory}.Generate(template, generatedKubeoneManifestName, templateParameters)
+	err = templateutils.Templates{Directory: k.outputDirectory}.Generate(template, generatedKubeoneManifestName, templateParameters)
 	if err != nil {
 		return fmt.Errorf("error while generating %s from kubeone template : %w", generatedKubeoneManifestName, err)
 	}

@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/berops/claudie/internal/fileutils"
-	"github.com/berops/claudie/internal/templateUtils"
+	"github.com/berops/claudie/internal/templateutils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/go-git/go-git/v5"
 )
@@ -236,7 +236,7 @@ func (g *Generator) generateTemplates(dir, specName string, data any) error {
 	}
 
 	var (
-		targetDirectory = templateUtils.Templates{Directory: g.TargetDirectory}
+		targetDirectory = templateutils.Templates{Directory: g.TargetDirectory}
 	)
 
 	files, err := os.ReadDir(dir)
@@ -258,7 +258,7 @@ func (g *Generator) generateTemplates(dir, specName string, data any) error {
 			return fmt.Errorf("error while reading template file %s in %s: %w", gotpl, dir, err)
 		}
 
-		tpl, err := templateUtils.LoadTemplate(string(file))
+		tpl, err := templateutils.LoadTemplate(string(file))
 		if err != nil {
 			return fmt.Errorf("error while parsing template file %s from %s : %w", gotpl.Name(), dir, err)
 		}

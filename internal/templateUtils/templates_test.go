@@ -1,4 +1,4 @@
-package templateUtils
+package templateutils
 
 import (
 	"testing"

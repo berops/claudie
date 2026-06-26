@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/berops/claudie/internal/envs"
-	"github.com/berops/claudie/internal/templateUtils"
+	"github.com/berops/claudie/internal/templateutils"
 )
 
 //go:embed backend.tpl
@@ -27,9 +27,9 @@ type Backend struct {
 
 // CreateTFFile creates backend.tf file into specified Directory.
 func (b Backend) CreateTFFile() error {
-	template := templateUtils.Templates{Directory: b.Directory}
+	template := templateutils.Templates{Directory: b.Directory}
 
-	tpl, err := templateUtils.LoadTemplate(backendTemplate)
+	tpl, err := templateutils.LoadTemplate(backendTemplate)
 	if err != nil {
 		return fmt.Errorf("failed to load template file external_backend.tpl for %s : %w", b.ClusterName, err)
 	}

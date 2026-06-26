@@ -12,7 +12,7 @@ import (
 	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/nodepools"
-	"github.com/berops/claudie/internal/templateUtils"
+	"github.com/berops/claudie/internal/templateutils"
 	"github.com/berops/claudie/proto/pb/spec"
 	utils "github.com/berops/claudie/services/ansibler/internal/worker/service/internal"
 	"github.com/berops/claudie/services/ansibler/templates"
@@ -277,12 +277,12 @@ func setUpNodeExporter(lbCluster *spec.LBcluster, clusterDirectory string, proce
 		NodeExporterPort: manifest.NodeExporterPort,
 	}
 
-	template, err := templateUtils.LoadTemplate(templates.NodeExporterPlaybookTemplate)
+	template, err := templateutils.LoadTemplate(templates.NodeExporterPlaybookTemplate)
 	if err != nil {
 		return fmt.Errorf("error while loading %s template for node_exporter playbook : %w", lbCluster.ClusterInfo.Name, err)
 	}
 
-	tpl := templateUtils.Templates{Directory: clusterDirectory}
+	tpl := templateutils.Templates{Directory: clusterDirectory}
 	if err := tpl.Generate(template, nodeExporterPlaybookName, playbookParameters); err != nil {
 		return fmt.Errorf("error while generating %s for %s : %w", nodeExporterPlaybookName, lbCluster.ClusterInfo.Name, err)
 	}
@@ -329,17 +329,17 @@ func setupEnvoyProxyViaDocker(
 		cds := templates.EnvoyDynamicClusters
 		lds := templates.EnvoyDynamicListeners
 
-		dynClusters, err := templateUtils.LoadTemplate(cds)
+		dynClusters, err := templateutils.LoadTemplate(cds)
 		if err != nil {
 			return fmt.Errorf("error while loading dynamic clusters config template for %s: %w", clusterId, err)
 		}
 
-		dynListeners, err := templateUtils.LoadTemplate(lds)
+		dynListeners, err := templateutils.LoadTemplate(lds)
 		if err != nil {
 			return fmt.Errorf("error while loading dynamic listeners config template for %s: %w", clusterId, err)
 		}
 
-		envoy, err := templateUtils.LoadTemplate(templates.EnvoyConfig)
+		envoy, err := templateutils.LoadTemplate(templates.EnvoyConfig)
 		if err != nil {
 			return fmt.Errorf("error while loading envoy config template for %s: %w", clusterId, err)
 		}
@@ -355,7 +355,7 @@ func setupEnvoyProxyViaDocker(
 			EnvoyAdminPort: tg.Role.Settings.EnvoyAdminPort,
 		}
 
-		tpl := templateUtils.Templates{Directory: dir}
+		tpl := templateutils.Templates{Directory: dir}
 
 		if err := tpl.Generate(dynClusters, envoyCDS, rolesData); err != nil {
 			return fmt.Errorf(
@@ -378,16 +378,16 @@ func setupEnvoyProxyViaDocker(
 		}
 	}
 
-	tpl := templateUtils.Templates{Directory: clusterDirectory}
+	tpl := templateutils.Templates{Directory: clusterDirectory}
 
 	// generate compose file.
-	compose, err := templateUtils.LoadTemplate(templates.EnvoyDockerCompose)
+	compose, err := templateutils.LoadTemplate(templates.EnvoyDockerCompose)
 	if err != nil {
 		return fmt.Errorf("error while loading envoy compose file for %s: %w", clusterId, err)
 	}
 
 	// install docker/docker-compose on the nodes, upload the config and deploy envoy.
-	envoyPlayBook, err := templateUtils.LoadTemplate(templates.EnvoyTemplate)
+	envoyPlayBook, err := templateutils.LoadTemplate(templates.EnvoyTemplate)
 	if err != nil {
 		return fmt.Errorf("error while loading docker template: %w", err)
 	}
