@@ -116,7 +116,7 @@ func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 		}
 
 		if out, err = readDomain(output); err != nil {
-			return fmt.Errorf("error while reading alternative %s name from tofu output for %q: %w, skipping", n.Hostname, dnsID, err)
+			return fmt.Errorf("error while reading alternative %s name from tofu output for %q: %w", n.Hostname, dnsID, err)
 		}
 
 		outputID = fmt.Sprintf("%s-%s-endpoint", clusterID, n.Hostname)
