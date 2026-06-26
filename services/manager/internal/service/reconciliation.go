@@ -892,6 +892,13 @@ func updateCredentials(current, desired *spec.Clusters) (updated bool) {
 			}
 		}
 
+		// DNS can be nil if they fail to be built.
+		// A DNS is either created as a whole or not at all
+		// thats, why a DNS can be nil on failure.
+		if clb.Dns == nil || dlb.Dns == nil {
+			continue
+		}
+
 		if !clb.Dns.Provider.CredentialsEqual(dlb.Dns.Provider) {
 			if clb.Dns.Provider.CopyCredentials(dlb.Dns.Provider) {
 				updated = true
