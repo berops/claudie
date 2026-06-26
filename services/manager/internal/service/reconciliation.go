@@ -893,7 +893,7 @@ func updateCredentials(current, desired *spec.Clusters) (updated bool) {
 		}
 
 		// DNS can be nil if they fail to be built.
-		if clb.Dns == nil || dlb.Dns == nil { return }
+		if clb.Dns != nil && dlb.Dns != nil {
 			if !clb.Dns.Provider.CredentialsEqual(dlb.Dns.Provider) {
 				if clb.Dns.Provider.CopyCredentials(dlb.Dns.Provider) {
 					updated = true
