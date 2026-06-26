@@ -8,7 +8,7 @@ import (
 
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/envs"
-	"github.com/berops/claudie/internal/templateutils"
+	"github.com/berops/claudie/internal/tmplutils"
 	"github.com/rs/zerolog/log"
 
 	"golang.org/x/sync/semaphore"
@@ -28,12 +28,12 @@ var defaultAnsibleForks = envs.GetOrDefaultInt("ANSIBLER_FORKS", 32)
 // GenerateInventoryFile generates an Ansible inventory file that defines
 // the hosts and groups of hosts that Ansible can manage.
 func GenerateInventoryFile(inventoryTemplate, outputDirectory string, data interface{}) error {
-	template, err := templateutils.LoadTemplate(inventoryTemplate)
+	template, err := tmplutils.LoadTemplate(inventoryTemplate)
 	if err != nil {
 		return fmt.Errorf("error while loading Ansible inventory template for %s : %w", outputDirectory, err)
 	}
 
-	err = templateutils.Templates{Directory: outputDirectory}.
+	err = tmplutils.Templates{Directory: outputDirectory}.
 		Generate(template, InventoryFileName, data)
 	if err != nil {
 		return fmt.Errorf("error while generating from template for %s : %w", outputDirectory, err)

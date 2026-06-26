@@ -1,4 +1,4 @@
-package templateutils
+package tmplutils
 
 import (
 	"bytes"
@@ -14,9 +14,10 @@ import (
 	"github.com/berops/claudie/internal/nodepools"
 )
 
-// directory - output directory
-// MUST be relative to base directory, i.e. services/terraformer/etc
 type Templates struct {
+	// output directory
+	//
+	// MUST be relative to base directory, i.e. services/terraformer/etc
 	Directory string
 }
 

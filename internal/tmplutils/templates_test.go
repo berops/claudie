@@ -1,4 +1,4 @@
-package templateutils
+package tmplutils
 
 import (
 	"testing"

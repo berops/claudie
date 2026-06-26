@@ -11,7 +11,7 @@ import (
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/hash"
-	"github.com/berops/claudie/internal/templateutils"
+	"github.com/berops/claudie/internal/tmplutils"
 	"github.com/berops/claudie/proto/pb/spec"
 	cluster_builder "github.com/berops/claudie/services/terraformer/internal/worker/service/internal/cluster-builder"
 	"github.com/berops/claudie/services/terraformer/internal/worker/service/internal/templates"
@@ -294,7 +294,7 @@ func endpoint(dns *spec.DNS, clusterID string, alternativeName string) string {
 	resourceSuffix := fmt.Sprintf("%s_%s", dns.GetProvider().GetSpecName(), hex.EncodeToString(f))
 	resource := clusterID
 	if alternativeName != "" {
-		resource += "_" + templateutils.SanitizeStringForResourceName(alternativeName)
+		resource += "_" + tmplutils.SanitizeStringForResourceName(alternativeName)
 	}
 	return fmt.Sprintf("%s_%s", resource, resourceSuffix)
 }
