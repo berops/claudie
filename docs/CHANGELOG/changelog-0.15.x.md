@@ -6,7 +6,7 @@
 
 ### Autoscaler changes
 
-The autoscaler will no longer by deployed by Claudie, and will now be an opt-in feature behind a paywall.
+The autoscaler will no longer be deployed by Claudie, and will now be an opt-in feature behind a paywall.
 
 ### Make sure no tasks are scheduled
 
@@ -99,7 +99,7 @@ To further harden Claudie, you may want to deploy our pre-defined network polici
 
 - Cluster-autoscaler has been removed and is now opt-in behind a paywall [#2146](https://github.com/berops/claudie/pull/2146)
 
-- Added support spot instances on AWS, Azure, OCI, Verda, GCp [#2151](https://github.com/berops/claudie/pull/2151), [#2149](https://github.com/berops/claudie/pull/2149), [#2145](https://github.com/berops/claudie/pull/2145)
+- Added support spot instances on AWS, Azure, OCI, Verda, GCP [#2151](https://github.com/berops/claudie/pull/2151), [#2149](https://github.com/berops/claudie/pull/2149), [#2145](https://github.com/berops/claudie/pull/2145)
 
 - Faster handling of nodes with unknown status [#2150](https://github.com/berops/claudie/pull/2150)
 
