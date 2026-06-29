@@ -6,7 +6,7 @@
 
 ### Autoscaler changes
 
-The autoscaler will no longer be deployed by Claudie, and will now be an opt-in feature behind a paywall.
+The autoscaler will no longer be deployed by Claudie. From now it becomes an opt-in paid feature.
 
 ### Make sure no tasks are scheduled
 
