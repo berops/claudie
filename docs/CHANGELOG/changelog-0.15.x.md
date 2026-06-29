@@ -4,6 +4,10 @@
 
 ## Readme Before Deploying 
 
+### Autoscaler changes
+
+The autoscaler will no longer by deployed by Claudie, and will now be an opt-in feature behind a paywall.
+
 ### Make sure no tasks are scheduled
 
 Before deploying this Claudie release, make sure no tasks are actively being worked on. You can verify this via
