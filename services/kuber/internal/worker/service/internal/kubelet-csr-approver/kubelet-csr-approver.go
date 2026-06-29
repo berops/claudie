@@ -6,7 +6,7 @@ import (
 
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
-	"github.com/berops/claudie/internal/templateUtils"
+	"github.com/berops/claudie/internal/tmplutils"
 	"github.com/berops/claudie/services/kuber/templates"
 )
 
@@ -75,13 +75,13 @@ func (kca *KubeletCSRApprover) DeployKubeletCSRApprover() error {
 
 // generateFiles generates all manifests required for deploying kubelet-csr-approver.
 func (k *KubeletCSRApprover) generateFiles() error {
-	tpl := templateUtils.Templates{Directory: k.directory}
+	tpl := tmplutils.Templates{Directory: k.directory}
 	var kcrTemplate *template.Template
 	var err error
 
 	// Load templates
 	// The configuration files for templates were taken from https://github.com/postfinance/kubelet-csr-approver/tree/v1.2.12/deploy/k8s
-	if kcrTemplate, err = templateUtils.LoadTemplate(templates.KubeletCSRApproverTemplate); err != nil {
+	if kcrTemplate, err = tmplutils.LoadTemplate(templates.KubeletCSRApproverTemplate); err != nil {
 		return fmt.Errorf("error loading kubelet-csr-approver template : %w", err)
 	}
 

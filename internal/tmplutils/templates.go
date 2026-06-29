@@ -1,4 +1,4 @@
-package templateUtils
+package tmplutils
 
 import (
 	"bytes"
@@ -14,9 +14,10 @@ import (
 	"github.com/berops/claudie/internal/nodepools"
 )
 
-// directory - output directory
-// MUST be relative to base directory, i.e. services/terraformer/etc
 type Templates struct {
+	// output directory
+	//
+	// MUST be relative to base directory, i.e. services/terraformer/etc
 	Directory string
 }
 
@@ -68,12 +69,32 @@ func LoadTemplate(tplFile string) (*template.Template, error) {
 	funcMap["hasExtension"] = HasExtension
 	funcMap["sshPort"] = nodepools.SSHPort
 	funcMap["nodeSshPort"] = nodepools.NodeSSHPort
+	funcMap["sanitizeStringForResourceName"] = SanitizeStringForResourceName
 
 	tpl, err := template.New("").Funcs(funcMap).Parse(tplFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse the template file : %w", err)
 	}
 	return tpl, nil
+}
+
+func SanitizeStringForResourceName(s string) string {
+	b := new(strings.Builder)
+	b.Grow(len(s))
+
+	for _, c := range s {
+		switch {
+		case c >= 'a' && c <= 'z',
+			c >= 'A' && c <= 'Z',
+			c >= '0' && c <= '9',
+			c == '-':
+			b.WriteRune(c)
+		default:
+			fmt.Fprintf(b, "_x%02x", c)
+		}
+	}
+
+	return b.String()
 }
 
 // ExtractNetmaskFromCIDR extracts the netmask from the CIDR notation.
