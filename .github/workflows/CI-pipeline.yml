@@ -15,7 +15,7 @@ jobs:
     if: github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.head_ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
@@ -32,7 +32,7 @@ jobs:
     runs-on: self-hosted
     needs: merge-branch
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.head_ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
@@ -75,7 +75,7 @@ jobs:
     runs-on: self-hosted
     needs: [merge-branch, check-changes]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.head_ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
@@ -94,7 +94,7 @@ jobs:
     runs-on: self-hosted
     needs: [merge-branch, check-changes]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.head_ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
@@ -139,7 +139,7 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         if: (needs.check-changes.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false)
         with:
           ref: ${{ github.head_ref }}
@@ -180,7 +180,7 @@ jobs:
     runs-on: self-hosted
     needs: [merge-branch, check-changes, build-and-push, golangci, gotest]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         if: ${{ needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' && github.event.pull_request.draft == false }}
         with:
           ref: ${{ github.head_ref }}
@@ -257,7 +257,7 @@ jobs:
       contents: read
     if: ${{ !failure() && !cancelled() && (needs.build-and-push.outputs.ARRAY_OF_CHANGES != '' || needs.check-changes.outputs.RUN_TESTS == 'true') && github.event.pull_request.draft == false }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.head_ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
