@@ -94,22 +94,35 @@ func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 	d.Dns.Endpoint = validateDomain(out.Domain[outputID])
 
 	for _, n := range d.Dns.AlternativeNames {
-		sublogger.Info().Msgf("Detected alternative names extension, reading output for alternative name %s", n.Hostname)
+		sublogger.
+			Info().
+			Msgf("Detected alternative names extension, reading output for alternative name %q", n.Hostname)
 
 		if output, err = tofu.Output(extofu.DnsEndpointTerraformKey(d.Dns, clusterID, n.Hostname)); err != nil {
 			// Since this is an extension to the original data
 			// we consider errors as not fatal.
-			sublogger.Warn().Msgf("error while retrieving output from tofu for %s alternative name %s: %v, templates may not support alternative names extension, skipping", clusterID, n.Hostname, err)
+			sublogger.
+				Warn().
+				Msgf(
+					"error while retrieving output from tofu for %s alternative name %q: %v, templates may not support alternative names extension, skipping",
+					clusterID,
+					n.Hostname,
+					err,
+				)
+
 			continue
 		}
 
 		if out, err = readDomain(output); err != nil {
-			return fmt.Errorf("error while reading alternative %s name from tofu output for %s: %w, skipping", n.Hostname, dnsID, err)
+			return fmt.Errorf("error while reading alternative %s name from tofu output for %q: %w", n.Hostname, dnsID, err)
 		}
 
 		outputID = fmt.Sprintf("%s-%s-endpoint", clusterID, n.Hostname)
 		n.Endpoint = validateDomain(out.Domain[outputID])
-		sublogger.Info().Msg("DNS alternative name successfully set up")
+
+		sublogger.
+			Info().
+			Msgf("DNS alternative name %q successfully set up", n.Hostname)
 	}
 
 	return nil

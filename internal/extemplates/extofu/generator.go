@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/berops/claudie/internal/templateUtils"
+	"github.com/berops/claudie/internal/tmplutils"
 )
 
 type Generator struct {
@@ -72,7 +72,7 @@ func (g *Generator) generateTemplates(dir, specName string, data any) error {
 		Fingerprint string
 	}
 
-	targetDirectory := templateUtils.Templates{
+	targetDirectory := tmplutils.Templates{
 		Directory: g.TargetDirectory,
 	}
 
@@ -95,7 +95,7 @@ func (g *Generator) generateTemplates(dir, specName string, data any) error {
 			return fmt.Errorf("error while reading template file %s in %s: %w", gotpl, dir, err)
 		}
 
-		tpl, err := templateUtils.LoadTemplate(string(file))
+		tpl, err := tmplutils.LoadTemplate(string(file))
 		if err != nil {
 			return fmt.Errorf("error while parsing template file %s from %s : %w", gotpl.Name(), dir, err)
 		}

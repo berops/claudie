@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/berops/claudie/internal/hash"
+	"github.com/berops/claudie/internal/tmplutils"
 	"github.com/berops/claudie/proto/pb/spec"
 )
 
@@ -23,7 +24,7 @@ func DnsEndpointTerraformKey(dns *spec.DNS, clusterID, alternativeName string) s
 	resourceSuffix := fmt.Sprintf("%s_%s", dns.GetProvider().GetSpecName(), hex.EncodeToString(f))
 	resource := clusterID
 	if alternativeName != "" {
-		resource += "_" + alternativeName
+		resource += "_" + tmplutils.SanitizeStringForResourceName(alternativeName)
 	}
 	return fmt.Sprintf("%s_%s", resource, resourceSuffix)
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/kubectl"
-	"github.com/berops/claudie/internal/templateUtils"
+	"github.com/berops/claudie/internal/tmplutils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/kuber/templates"
 	"github.com/rs/zerolog"
@@ -39,7 +39,7 @@ func EnableLonghornCA(logger zerolog.Logger, tracker Tracker) {
 	var (
 		tempClusterId = fmt.Sprintf("%s-%s", k8s.ClusterInfo.Id(), hash.Create(7))
 		clusterDir    = filepath.Join(OutputDir, tempClusterId)
-		template      = templateUtils.Templates{
+		template      = tmplutils.Templates{
 			Directory: clusterDir,
 		}
 	)
@@ -57,7 +57,7 @@ func EnableLonghornCA(logger zerolog.Logger, tracker Tracker) {
 		}
 	}()
 
-	tmpl, err := templateUtils.LoadTemplate(templates.EnableClusterAutoscalerTemplate)
+	tmpl, err := tmplutils.LoadTemplate(templates.EnableClusterAutoscalerTemplate)
 	if err != nil {
 		logger.Err(err).Msg("Failed to build Cluster Autoscaler settings template")
 		tracker.Diagnostics.Push(err)
@@ -111,7 +111,7 @@ func DisableLonghornCA(logger zerolog.Logger, tracker Tracker) {
 	var (
 		tempClusterId = fmt.Sprintf("%s-%s", k8s.ClusterInfo.Id(), hash.Create(7))
 		clusterDir    = filepath.Join(OutputDir, tempClusterId)
-		template      = templateUtils.Templates{
+		template      = tmplutils.Templates{
 			Directory: clusterDir,
 		}
 	)
@@ -129,7 +129,7 @@ func DisableLonghornCA(logger zerolog.Logger, tracker Tracker) {
 		}
 	}()
 
-	tmpl, err := templateUtils.LoadTemplate(templates.EnableClusterAutoscalerTemplate)
+	tmpl, err := tmplutils.LoadTemplate(templates.EnableClusterAutoscalerTemplate)
 	if err != nil {
 		logger.Err(err).Msg("Failed to build Cluster Autoscaler settings template")
 		tracker.Diagnostics.Push(err)

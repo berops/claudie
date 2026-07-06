@@ -14,7 +14,7 @@ import (
 	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/internal/sanitise"
-	"github.com/berops/claudie/internal/templateUtils"
+	"github.com/berops/claudie/internal/tmplutils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/kuber/templates"
 	"github.com/rs/zerolog"
@@ -51,7 +51,7 @@ func ReconcileLonghornStorageClasses(logger zerolog.Logger, tracker Tracker) {
 	var (
 		tempClusterId = fmt.Sprintf("%s-%s", k8s.ClusterInfo.Id(), hash.Create(7))
 		clusterDir    = filepath.Join(OutputDir, tempClusterId)
-		template      = templateUtils.Templates{
+		template      = tmplutils.Templates{
 			Directory: clusterDir,
 		}
 		k = kubectl.Kubectl{
@@ -76,7 +76,7 @@ func ReconcileLonghornStorageClasses(logger zerolog.Logger, tracker Tracker) {
 		}
 	}()
 
-	storageTpl, err := templateUtils.LoadTemplate(templates.StorageClassTemplate)
+	storageTpl, err := tmplutils.LoadTemplate(templates.StorageClassTemplate)
 	if err != nil {
 		logger.Err(err).Msg("Failed to load claudie storage class template")
 		tracker.Diagnostics.Push(err)
