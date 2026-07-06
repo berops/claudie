@@ -6,6 +6,7 @@ import (
 
 	"github.com/berops/claudie/internal/generics"
 	"github.com/berops/claudie/internal/spectesting"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	k8sV1 "k8s.io/api/core/v1"
 )
@@ -16,9 +17,9 @@ var (
 	testClusterVersionFailMinor = &Kubernetes{Clusters: []Cluster{{Name: "cluster1", Network: "10.0.0.0/8", Version: "v1.21.0", Pools: Pool{Control: []string{"np1"}}}}}
 	testClusterVersionFailMajor = &Kubernetes{Clusters: []Cluster{{Name: "cluster1", Network: "10.0.0.0/8", Version: "v2.22.0", Pools: Pool{Control: []string{"np1"}}}}}
 
-	testNodepoolAutoScalerSuccAC = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", StorageDiskSize: newIntP(50), AutoscalerConfig: AutoscalerConfig{Min: 1, Max: 3}, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
-	testNodepoolAutoScalerSucc   = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", StorageDiskSize: newIntP(50), Count: 1, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
-	testNodepoolAutoScalerFail   = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", StorageDiskSize: newIntP(50), Count: 1, AutoscalerConfig: AutoscalerConfig{Min: 1, Max: 3}, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
+	testNodepoolAutoScalerSuccAC = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", StorageDiskSize: new(int32(50)), AutoscalerConfig: AutoscalerConfig{Min: 1, Max: 3}, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
+	testNodepoolAutoScalerSucc   = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", StorageDiskSize: new(int32(50)), Count: 1, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
+	testNodepoolAutoScalerFail   = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", StorageDiskSize: new(int32(50)), Count: 1, AutoscalerConfig: AutoscalerConfig{Min: 1, Max: 3}, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
 	testDomainFail               = &Manifest{
 		Kubernetes: Kubernetes{
 			Clusters: []Cluster{
@@ -158,8 +159,18 @@ var (
 				Name:        "foo",
 				Credentials: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 				Templates: &TemplateRepository{
-					Repository: "test.com",
-					Path:       "/subset/dir",
+					Endpoint: TemplatesEndpoint{
+						URL:      "test.com",
+						Protocol: "https",
+					},
+					Commit: "v0.0.1",
+					Paths: TemplatesPaths{
+						Terraformer:  "/subset/dir",
+						Playbooks:    "/subset/dir",
+						ConfigLb:     "/subset/dir",
+						ConfigK8s:    "/subset/dir",
+						ManifestsK8s: "/subset/dir",
+					},
 				},
 			},
 			},
@@ -208,17 +219,13 @@ var (
 		},
 	}
 
-	testNpDiskSizeSuccessfulNoDisk  = DynamicNodePool{Name: "control-1", Count: 10, ServerType: "small", Image: "ubuntu", ProviderSpec: ProviderSpec{Name: "foo", Region: "north", Zone: "1"}, StorageDiskSize: newIntP(0)}
-	testNpDiskSizeSuccessfulFifty   = DynamicNodePool{Name: "control-1", Count: 10, ServerType: "small", Image: "ubuntu", ProviderSpec: ProviderSpec{Name: "foo", Region: "north", Zone: "1"}, StorageDiskSize: newIntP(50)}
+	testNpDiskSizeSuccessfulNoDisk  = DynamicNodePool{Name: "control-1", Count: 10, ServerType: "small", Image: "ubuntu", ProviderSpec: ProviderSpec{Name: "foo", Region: "north", Zone: "1"}, StorageDiskSize: new(int32(0))}
+	testNpDiskSizeSuccessfulFifty   = DynamicNodePool{Name: "control-1", Count: 10, ServerType: "small", Image: "ubuntu", ProviderSpec: ProviderSpec{Name: "foo", Region: "north", Zone: "1"}, StorageDiskSize: new(int32(50))}
 	testNpDiskSizeSuccessfulDefault = DynamicNodePool{Name: "control-1", Count: 10, ServerType: "small", Image: "ubuntu", ProviderSpec: ProviderSpec{Name: "foo", Region: "north", Zone: "1"}}
-	testNpDiskSizeSuccessfulFail    = DynamicNodePool{Name: "control-1", Count: 10, ServerType: "small", Image: "ubuntu", ProviderSpec: ProviderSpec{Name: "foo", Region: "north", Zone: "1"}, StorageDiskSize: newIntP(10)}
-	testNodepoolWithoutZone         = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", StorageDiskSize: newIntP(50), Count: 1, ProviderSpec: ProviderSpec{Name: "p1", Region: "a"}}
-	testNodepoolWithZone            = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", StorageDiskSize: newIntP(50), Count: 1, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
+	testNpDiskSizeSuccessfulFail    = DynamicNodePool{Name: "control-1", Count: 10, ServerType: "small", Image: "ubuntu", ProviderSpec: ProviderSpec{Name: "foo", Region: "north", Zone: "1"}, StorageDiskSize: new(int32(10))}
+	testNodepoolWithoutZone         = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", StorageDiskSize: new(int32(50)), Count: 1, ProviderSpec: ProviderSpec{Name: "p1", Region: "a"}}
+	testNodepoolWithZone            = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", StorageDiskSize: new(int32(50)), Count: 1, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
 )
-
-func newIntP(a int32) *int32 {
-	return &a
-}
 
 func TestLoadBalancerRoles(t *testing.T) {
 	ci := spectesting.GenerateFakeK8SClusterInfo(true, "192.168.0.0/16", "10.1.0.0/16")
@@ -328,6 +335,56 @@ func TestOptionalZone(t *testing.T) {
 	r.NoError(testNodepoolWithoutZone.Validate(&Manifest{}))
 	// Nodepools with zone should still pass validation
 	r.NoError(testNodepoolWithZone.Validate(&Manifest{}))
+}
+
+func TestNoSchemeValidation(t *testing.T) {
+	provider := Provider{
+		GCP: []GCP{{
+			Name:        "gcp-1",
+			Credentials: "{\"t\": \"fake-credentials\"}",
+			GCPProject:  "fake-project",
+			Templates: &TemplateRepository{
+				Endpoint: TemplatesEndpoint{
+					URL:      "https://github.com",
+					Protocol: "https",
+				},
+				Commit: "v1.0.0",
+				Paths: TemplatesPaths{
+					Terraformer:  "/tmp",
+					Playbooks:    "/tmp",
+					ConfigLb:     "/tmp",
+					ConfigK8s:    "/tmp",
+					ManifestsK8s: "/tmp",
+				},
+			},
+		}},
+	}
+
+	assert.Error(t, provider.Validate(), "should fail as test has url with scheme")
+
+	provider.GCP[0].Templates.Endpoint.URL = "/github.com"
+
+	assert.NoError(t, provider.Validate(), "should not fail as test has url without scheme")
+
+	provider.GCP[0].Templates.Endpoint.URL = "/github.com?hello=world"
+
+	assert.NoError(t, provider.Validate(), "should not fail as test has url without scheme")
+
+	provider.GCP[0].Templates.Endpoint.URL = ""
+
+	assert.Error(t, provider.Validate(), "should fail as test url is empty")
+
+	provider.GCP[0].Templates.Endpoint.URL = "/"
+
+	assert.NoError(t, provider.Validate(), "should not fail as test url is not empty and without a scheme")
+
+	provider.GCP[0].Templates.Auth = &GitAuth{}
+
+	assert.Error(t, provider.Validate(), "should fail as git auth token is empty")
+
+	provider.GCP[0].Templates.Auth = &GitAuth{Token: "hello"}
+
+	assert.NoError(t, provider.Validate(), "should not fail as git auth token is not empty")
 }
 
 // TestGCPGpuValidation tests that GCP nodepools with GPUs require nvidiaGpuType to be specified.

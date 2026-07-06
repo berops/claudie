@@ -30,20 +30,55 @@ import (
 // It will combine the manifest.Manifest name as object "Namespace/Name".
 func constructInputManifest(
 	crd v1beta1manifest.InputManifest,
-	providersWithSecret []v1beta1manifest.ProviderWithData,
+	providerData []v1beta1manifest.ProviderWithData,
 	staticNodesWithSecret map[string][]v1beta1manifest.StaticNodeWithData,
 ) (manifest.Manifest, error) {
 	var providers manifest.Provider
 
-	for _, p := range providersWithSecret {
-		secretNamespaceName := p.Secret.Namespace + "/" + p.Secret.Name
+	for _, p := range providerData {
+		tmpl := manifest.TemplateRepository{
+			Endpoint: manifest.TemplatesEndpoint{
+				URL:      p.Templates.Spec.Endpoint.URL,
+				Protocol: p.Templates.Spec.Endpoint.Protocol,
+			},
+			Auth:   nil,
+			Commit: p.Templates.Spec.Commit,
+			Paths: manifest.TemplatesPaths{
+				Terraformer:  p.Templates.Spec.Paths.Terraformer,
+				Playbooks:    p.Templates.Spec.Paths.Playbooks,
+				ConfigLb:     p.Templates.Spec.Paths.ConfigLB,
+				ConfigK8s:    p.Templates.Spec.Paths.ConfigK8s,
+				ManifestsK8s: p.Templates.Spec.Paths.ManifestsK8s,
+			},
+		}
+
+		if p.TemplatesAuth != nil {
+			s := p.TemplatesAuth.Namespace + "/" + p.TemplatesAuth.Name
+
+			token, err := p.TemplatesAuthSecretField("token")
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(s, err)
+			}
+
+			tmpl.Auth = &manifest.GitAuth{Token: token}
+
+			if u, ok := p.TemplatesAuth.Data["username"]; ok {
+				if !utf8.Valid(u) {
+					err := fmt.Errorf("field 'username' contains invalid UTF-8 characters")
+					return manifest.Manifest{}, buildSecretError(s, err)
+				}
+				tmpl.Auth.Username = string(u)
+			}
+		}
+
+		secretNamespaceName := p.ProviderSecret.Namespace + "/" + p.ProviderSecret.Name
 		switch p.ProviderType {
 		case v1beta1manifest.GCP:
-			gcpCredentials, err := p.GetSecretField(v1beta1manifest.GCP_CREDENTIALS)
+			gcpCredentials, err := p.ProviderSecretField(v1beta1manifest.GCP_CREDENTIALS)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
-			gcpProject, err := p.GetSecretField(v1beta1manifest.GCP_GCP_PROJECT)
+			gcpProject, err := p.ProviderSecretField(v1beta1manifest.GCP_GCP_PROJECT)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
@@ -52,15 +87,15 @@ func constructInputManifest(
 				Name:        p.ProviderName,
 				Credentials: strings.TrimSpace(gcpCredentials),
 				GCPProject:  strings.TrimSpace(gcpProject),
-				Templates:   p.Templates,
+				Templates:   &tmpl,
 			})
 
 		case v1beta1manifest.AWS:
-			awsAccesskey, err := p.GetSecretField(v1beta1manifest.AWS_ACCESS_KEY)
+			awsAccesskey, err := p.ProviderSecretField(v1beta1manifest.AWS_ACCESS_KEY)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
-			awsSecretkey, err := p.GetSecretField(v1beta1manifest.AWS_SECRET_KEY)
+			awsSecretkey, err := p.ProviderSecretField(v1beta1manifest.AWS_SECRET_KEY)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
@@ -69,37 +104,37 @@ func constructInputManifest(
 				Name:      p.ProviderName,
 				AccessKey: strings.TrimSpace(awsAccesskey),
 				SecretKey: strings.TrimSpace(awsSecretkey),
-				Templates: p.Templates,
+				Templates: &tmpl,
 			})
 		case v1beta1manifest.HETZNER:
-			hetzner_key, err := p.GetSecretField(v1beta1manifest.HETZNER_CREDENTIALS)
+			hetzner_key, err := p.ProviderSecretField(v1beta1manifest.HETZNER_CREDENTIALS)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
 			var hetzner = manifest.Hetzner{
 				Name:        p.ProviderName,
 				Credentials: strings.TrimSpace(hetzner_key),
-				Templates:   p.Templates,
+				Templates:   &tmpl,
 			}
 			providers.Hetzner = append(providers.Hetzner, hetzner)
 		case v1beta1manifest.OCI:
-			ociTenant, err := p.GetSecretField(v1beta1manifest.OCI_TENANCT_OCID)
+			ociTenant, err := p.ProviderSecretField(v1beta1manifest.OCI_TENANCT_OCID)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
-			ociCompartmentOcid, err := p.GetSecretField(v1beta1manifest.OCI_COMPARTMENT_OCID)
+			ociCompartmentOcid, err := p.ProviderSecretField(v1beta1manifest.OCI_COMPARTMENT_OCID)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
-			ociFingerPrint, err := p.GetSecretField(v1beta1manifest.OCI_KEY_FINGERPRINT)
+			ociFingerPrint, err := p.ProviderSecretField(v1beta1manifest.OCI_KEY_FINGERPRINT)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
-			ociPrivateKey, err := p.GetSecretField(v1beta1manifest.OCI_PRIVATE_KEY)
+			ociPrivateKey, err := p.ProviderSecretField(v1beta1manifest.OCI_PRIVATE_KEY)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
-			ociUserOcid, err := p.GetSecretField(v1beta1manifest.OCI_USER_OCID)
+			ociUserOcid, err := p.ProviderSecretField(v1beta1manifest.OCI_USER_OCID)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
@@ -111,25 +146,25 @@ func constructInputManifest(
 				TenancyOCID:    strings.TrimSpace(ociTenant),
 				CompartmentID:  strings.TrimSpace(ociCompartmentOcid),
 				UserOCID:       strings.TrimSpace(ociUserOcid),
-				Templates:      p.Templates,
+				Templates:      &tmpl,
 			})
 		case v1beta1manifest.AZURE:
-			azureClientId, err := p.GetSecretField(v1beta1manifest.AZURE_CLIENT_ID)
+			azureClientId, err := p.ProviderSecretField(v1beta1manifest.AZURE_CLIENT_ID)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
 
-			azureClientSecret, err := p.GetSecretField(v1beta1manifest.AZURE_CLIENT_SECRET)
+			azureClientSecret, err := p.ProviderSecretField(v1beta1manifest.AZURE_CLIENT_SECRET)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
 
-			azureSubscriptionId, err := p.GetSecretField(v1beta1manifest.AZURE_SUBSCRIPTION_ID)
+			azureSubscriptionId, err := p.ProviderSecretField(v1beta1manifest.AZURE_SUBSCRIPTION_ID)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
 
-			azureTenantId, err := p.GetSecretField(v1beta1manifest.AZURE_TENANT_ID)
+			azureTenantId, err := p.ProviderSecretField(v1beta1manifest.AZURE_TENANT_ID)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
@@ -140,14 +175,14 @@ func constructInputManifest(
 				TenantId:       strings.TrimSpace(azureTenantId),
 				ClientId:       strings.TrimSpace(azureClientId),
 				ClientSecret:   strings.TrimSpace(azureClientSecret),
-				Templates:      p.Templates,
+				Templates:      &tmpl,
 			})
 		case v1beta1manifest.CLOUDFLARE:
-			cfApiToken, err := p.GetSecretField(v1beta1manifest.CF_API_TOKEN)
+			cfApiToken, err := p.ProviderSecretField(v1beta1manifest.CF_API_TOKEN)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
-			accountId, err := p.GetSecretField(v1beta1manifest.CF_ACCOUNT_ID)
+			accountId, err := p.ProviderSecretField(v1beta1manifest.CF_ACCOUNT_ID)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
@@ -156,27 +191,27 @@ func constructInputManifest(
 				Name:      p.ProviderName,
 				ApiToken:  strings.TrimSpace(cfApiToken),
 				AccountID: accountId,
-				Templates: p.Templates,
+				Templates: &tmpl,
 			})
 
 		case v1beta1manifest.OPENSTACK:
-			osAuthURL, err := p.GetSecretField(v1beta1manifest.OS_AUTH_URL)
+			osAuthURL, err := p.ProviderSecretField(v1beta1manifest.OS_AUTH_URL)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
-			osDomainID, err := p.GetSecretField(v1beta1manifest.OS_DOMAIN_ID)
+			osDomainID, err := p.ProviderSecretField(v1beta1manifest.OS_DOMAIN_ID)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
-			osProjectID, err := p.GetSecretField(v1beta1manifest.OS_PROJECT_ID)
+			osProjectID, err := p.ProviderSecretField(v1beta1manifest.OS_PROJECT_ID)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
-			osAppCredID, err := p.GetSecretField(v1beta1manifest.OS_APPLICATION_CREDENTIAL_ID)
+			osAppCredID, err := p.ProviderSecretField(v1beta1manifest.OS_APPLICATION_CREDENTIAL_ID)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
-			osAppCredSecret, err := p.GetSecretField(v1beta1manifest.OS_APPLICATION_CREDENTIAL_SECRET)
+			osAppCredSecret, err := p.ProviderSecretField(v1beta1manifest.OS_APPLICATION_CREDENTIAL_SECRET)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
@@ -188,14 +223,14 @@ func constructInputManifest(
 				ProjectId:                   strings.TrimSpace(osProjectID),
 				ApplicationCredentialId:     strings.TrimSpace(osAppCredID),
 				ApplicationCredentialSecret: strings.TrimSpace(osAppCredSecret),
-				Templates:                   p.Templates,
+				Templates:                   &tmpl,
 			})
 		case v1beta1manifest.EXOSCALE:
-			exoApiKey, err := p.GetSecretField(v1beta1manifest.EXOSCALE_API_KEY)
+			exoApiKey, err := p.ProviderSecretField(v1beta1manifest.EXOSCALE_API_KEY)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
-			exoApiSecret, err := p.GetSecretField(v1beta1manifest.EXOSCALE_API_SECRET)
+			exoApiSecret, err := p.ProviderSecretField(v1beta1manifest.EXOSCALE_API_SECRET)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
@@ -204,55 +239,55 @@ func constructInputManifest(
 				Name:      p.ProviderName,
 				ApiKey:    strings.TrimSpace(exoApiKey),
 				ApiSecret: strings.TrimSpace(exoApiSecret),
-				Templates: p.Templates,
+				Templates: &tmpl,
 			})
 		case v1beta1manifest.CLOUDRIFT:
-			crToken, err := p.GetSecretField(v1beta1manifest.CLOUDRIFT_TOKEN)
+			crToken, err := p.ProviderSecretField(v1beta1manifest.CLOUDRIFT_TOKEN)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
 			// team_id is optional — only read if present in the secret.
-			crTeamId, _ := p.GetSecretField(v1beta1manifest.CLOUDRIFT_TEAM_ID)
+			crTeamId, _ := p.ProviderSecretField(v1beta1manifest.CLOUDRIFT_TEAM_ID)
 
 			providers.CloudRift = append(providers.CloudRift, manifest.CloudRift{
 				Name:      p.ProviderName,
 				Token:     strings.TrimSpace(crToken),
 				TeamId:    strings.TrimSpace(crTeamId),
-				Templates: p.Templates,
+				Templates: &tmpl,
 			})
 		case v1beta1manifest.VERDA:
-			vClientId, err := p.GetSecretField(v1beta1manifest.VERDA_CLIENT_ID)
+			vClientId, err := p.ProviderSecretField(v1beta1manifest.VERDA_CLIENT_ID)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
-			vClientSecret, err := p.GetSecretField(v1beta1manifest.VERDA_CLIENT_SECRET)
+			vClientSecret, err := p.ProviderSecretField(v1beta1manifest.VERDA_CLIENT_SECRET)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
 			// base_url is optional, default in OpenTofu provider is https://api.verda.com/v1.
-			vBaseUrl, _ := p.GetSecretField(v1beta1manifest.VERDA_BASE_URL)
+			vBaseUrl, _ := p.ProviderSecretField(v1beta1manifest.VERDA_BASE_URL)
 
 			providers.Verda = append(providers.Verda, manifest.Verda{
 				Name:         p.ProviderName,
 				ClientId:     strings.TrimSpace(vClientId),
 				ClientSecret: strings.TrimSpace(vClientSecret),
 				BaseUrl:      strings.TrimSpace(vBaseUrl),
-				Templates:    p.Templates,
+				Templates:    &tmpl,
 			})
 		case v1beta1manifest.OVH:
-			oClientId, err := p.GetSecretField(v1beta1manifest.OVH_CLIENT_ID)
+			oClientId, err := p.ProviderSecretField(v1beta1manifest.OVH_CLIENT_ID)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
-			oClientSecret, err := p.GetSecretField(v1beta1manifest.OVH_CLIENT_SECRET)
+			oClientSecret, err := p.ProviderSecretField(v1beta1manifest.OVH_CLIENT_SECRET)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
-			oServiceName, err := p.GetSecretField(v1beta1manifest.OVH_SERVICE_NAME)
+			oServiceName, err := p.ProviderSecretField(v1beta1manifest.OVH_SERVICE_NAME)
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
-			oEndpoint, _ := p.GetSecretField(v1beta1manifest.OVH_ENDPOINT)
+			oEndpoint, _ := p.ProviderSecretField(v1beta1manifest.OVH_ENDPOINT)
 
 			providers.OVH = append(providers.OVH, manifest.OVH{
 				Name:         p.ProviderName,
@@ -260,7 +295,7 @@ func constructInputManifest(
 				ClientSecret: strings.TrimSpace(oClientSecret),
 				ServiceName:  strings.TrimSpace(oServiceName),
 				Endpoint:     strings.TrimSpace(oEndpoint),
-				Templates:    p.Templates,
+				Templates:    &tmpl,
 			})
 		}
 	}

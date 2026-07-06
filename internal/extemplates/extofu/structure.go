@@ -1,7 +1,6 @@
-package templates
+package extofu
 
 import (
-	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 )
 
@@ -15,6 +14,12 @@ type (
 	// for DNS records to be created.
 	RecordData struct {
 		IP []IPData
+	}
+
+	// A grouping of regions and their networks.
+	RegionNetwork struct {
+		Region          string
+		ExternalNetwork string
 	}
 
 	// ClusterData wraps the assigned identifiers of a cluster specified in the InputManifest.
@@ -164,7 +169,7 @@ type (
 		//   {Region: "regionOne", externalNetworkName: "ext-net-2"},
 		//   {Region: "regionTwo", externalNetworkName: "ext-net-1"},
 		// ].
-		RegionNetwork []nodepools.RegionNetwork
+		RegionNetwork []RegionNetwork
 		// K8sData contains some additional information that may be needed during the generation of the
 		// terraform templates. Such as if A load balancer is attached to the K8s cluster with the ApiServer port.
 		// This data will be set if the ClusterType within ClusterData of this object is of type "K8s".

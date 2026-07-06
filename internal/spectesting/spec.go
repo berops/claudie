@@ -219,21 +219,24 @@ func WithProviderGCPProject(k string) FakeProviderGCPOption {
 	}
 }
 
-func WithRepository(rep string) FakeRepositoryOption {
+func WithRepositoryHttpsEndpoint(rep string) FakeRepositoryOption {
 	return func(t *spec.TemplateRepository) {
-		t.Repository = rep
+		t.Endpoint = &spec.TemplateRepository_Endpoint{
+			Url:      rep,
+			Protocol: spec.TemplateRepository_Endpoint_PROTOCOL_HTTPS,
+		}
 	}
 }
 
-func WithRepositoryTag(tag string) FakeRepositoryOption {
+func WithRepositoryCommit(tag string) FakeRepositoryOption {
 	return func(t *spec.TemplateRepository) {
-		t.Tag = &tag
+		t.Commit = tag
 	}
 }
 
-func WithRepositoryPath(path string) FakeRepositoryOption {
+func WithRepositoryPath(paths *spec.TemplateRepository_TemplatePaths) FakeRepositoryOption {
 	return func(t *spec.TemplateRepository) {
-		t.Path = path
+		t.Paths = paths
 	}
 }
 

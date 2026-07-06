@@ -273,7 +273,7 @@ func getDNS(dns manifest.DNS, from *manifest.Manifest) (*spec.DNS, error) {
 
 	provider, err := from.GetProvider(dns.Provider)
 	if err != nil {
-		return nil, fmt.Errorf("provider %s was not found in manifest %s: %w", dns.Provider, from.Name, err)
+		return nil, fmt.Errorf("failed constructing provider %s from manifest %s: %w", dns.Provider, from.Name, err)
 	}
 
 	var alternativeNames []*spec.AlternativeName

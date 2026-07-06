@@ -2,6 +2,7 @@ package manifest
 
 import (
 	"fmt"
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -166,10 +167,30 @@ func validateSemver2(fl validator.FieldLevel) bool {
 	return semverRegex.MatchString(semverString)
 }
 
+func validateNoSchemeUrl(fl validator.FieldLevel) bool {
+	v := strings.ToLower(fl.Field().String())
+	if len(v) == 0 {
+		return false
+	}
+
+	u, err := url.Parse(v)
+	if err != nil {
+		return false
+	}
+	if u.Scheme != "" {
+		return false
+	}
+	return true
+}
+
 func validateProvider(provider any) error {
 	validate := validator.New()
 
 	if err := validate.RegisterValidation("semver2", validateSemver2, false); err != nil {
+		return err
+	}
+
+	if err := validate.RegisterValidation("noschemeurl", validateNoSchemeUrl, false); err != nil {
 		return err
 	}
 

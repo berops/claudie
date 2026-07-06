@@ -91,9 +91,32 @@ message Provider {
 }
 
 message TemplateRepository {
-  string repository = 1;
-  optional string tag = 2;
-  string path = 3;
+  message Endpoint {
+    enum Protocol {
+      PROTOCOL_UNSPECIFIED = 0;
+      PROTOCOL_HTTPS = 1;
+    }
+    string url = 1;
+    Protocol protocol = 2;
+  }
 
+  message Auth {
+    optional string username = 1;
+    string token = 2;
+  }
+
+  message TemplatePaths {
+    string terraformer = 1;
+    string playbooks = 2;
+    string configLb = 3;
+    string configK8s = 4;
+    string manifestsK8s = 5;
+  }
+
+  Endpoint endpoint = 1;
+  optional Auth auth = 2;
+  string commit = 3;
+  // commitHash is the fecthed hash of the referenced commit.
   string commitHash = 4;
+  TemplatePaths paths = 5;
 }

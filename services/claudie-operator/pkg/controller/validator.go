@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	v1beta "github.com/berops/claudie/internal/api/crd/inputmanifest/v1beta1"
+	v1betatemplates "github.com/berops/claudie/internal/api/crd/template-git-reference/v1beta1"
 	"github.com/berops/claudie/internal/api/manifest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
@@ -12,6 +13,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/go-logr/logr"
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -53,6 +56,11 @@ func (v *InputManifestValidator) validate(ctx context.Context, obj *v1beta.Input
 
 	if err := validateInputManifest(obj); err != nil {
 		log.Error(err, "error validating InputManifest")
+		return err
+	}
+
+	if err := validateReferences(ctx, v.kc, obj); err != nil {
+		log.Error(err, "error validating InputManifest references")
 		return err
 	}
 
@@ -149,6 +157,85 @@ func validateInputManifest(im *v1beta.InputManifest) error {
 	if err := rawManifest.Validate(); err != nil {
 		return err
 	}
+	return nil
+}
+
+// Validates references inside the InputManifest.
+func validateReferences(ctx context.Context, kc client.Client, im *v1beta.InputManifest) error {
+	for _, p := range im.Spec.Providers {
+		key := client.ObjectKey{
+			Name:      p.SecretRef.Name,
+			Namespace: p.SecretRef.Namespace,
+		}
+
+		if err := kc.Get(ctx, key, new(corev1.Secret)); err != nil {
+			if !apierrors.IsNotFound(err) {
+				return fmt.Errorf(
+					"failed to check if secret %q within namespace %q exists",
+					key.Name,
+					key.Namespace,
+				)
+			}
+
+			return fmt.Errorf(
+				"secret %q within namespace %q referenced in provider %q type %q does not exists",
+				key.Name,
+				key.Namespace,
+				p.ProviderName,
+				p.ProviderType,
+			)
+		}
+
+		var discard v1betatemplates.TemplateGitReference
+		key = client.ObjectKey{
+			Name:      p.TemplatesRef.Name,
+			Namespace: p.TemplatesRef.Namespace,
+		}
+
+		if err := kc.Get(ctx, key, &discard); err != nil {
+			if !apierrors.IsNotFound(err) {
+				return fmt.Errorf(
+					"failed to check if template reference %q within namespace %q exists",
+					key.Name,
+					key.Namespace,
+				)
+			}
+
+			return fmt.Errorf(
+				"template reference %q within namespace %q referenced in provider %q type %q does not exists",
+				key.Name,
+				key.Namespace,
+				p.ProviderName,
+				p.ProviderType,
+			)
+		}
+
+		key = client.ObjectKey{
+			Name:      discard.Spec.Auth.SecretRef.Name,
+			Namespace: discard.Spec.Auth.SecretRef.Namespace,
+		}
+
+		if err := kc.Get(ctx, key, new(corev1.Secret)); err != nil {
+			if !apierrors.IsNotFound(err) {
+				return fmt.Errorf(
+					"failed to check if git auth secret %q within namespace %q exists for template reference %q namespace %q",
+					key.Name,
+					key.Namespace,
+					p.TemplatesRef.Name,
+					p.TemplatesRef.Namespace,
+				)
+			}
+
+			return fmt.Errorf(
+				"git auth secret %q within namespace %q exists for template reference %q namespace %q does not exist",
+				key.Name,
+				key.Namespace,
+				p.TemplatesRef.Name,
+				p.TemplatesRef.Namespace,
+			)
+		}
+	}
+
 	return nil
 }
 

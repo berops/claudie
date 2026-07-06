@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	v1betamanifest "github.com/berops/claudie/internal/api/crd/inputmanifest/v1beta1"
+	templategitreference "github.com/berops/claudie/internal/api/crd/template-git-reference/v1beta1"
 	"github.com/berops/claudie/services/claudie-operator/server/domain/usecases"
 	"github.com/go-logr/logr"
 )
@@ -63,6 +64,7 @@ func New(kclient client.Client,
 ) *InputManifestReconciler {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(v1betamanifest.AddToScheme(scheme))
+	utilruntime.Must(templategitreference.AddToScheme(scheme))
 
 	return &InputManifestReconciler{
 		kc:       kclient,

@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	v1beta1templates "github.com/berops/claudie/internal/api/crd/template-git-reference/v1beta1"
 	"github.com/berops/claudie/internal/api/manifest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -79,19 +80,26 @@ const (
 	OVH_ENDPOINT                     SecretField = "endpoint"
 )
 
-// ProviderWithData helper type that assist in conversion
-// from SecretReference to Secret
+// ProviderWithData helper type that assist in
+// conversion from References to the pointed to type.
 type ProviderWithData struct {
-	ProviderName string
-	ProviderType ProviderType
-	Secret       corev1.Secret
-	Templates    *manifest.TemplateRepository
+	ProviderName   string
+	ProviderType   ProviderType
+	ProviderSecret corev1.Secret
+
+	Templates     v1beta1templates.TemplateGitReference
+	TemplatesAuth *corev1.Secret
 }
 
 type StaticNodeWithData struct {
 	Endpoint string
 	Username string
 	Secret   corev1.Secret
+}
+
+type TemplatesReference struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace,omitempty"`
 }
 
 // Providers list of defined cloud provider configuration
@@ -104,9 +112,8 @@ type Provider struct {
 	// +kubebuilder:validation:Enum=gcp;hetzner;aws;oci;azure;cloudflare;openstack;exoscale;cloudrift;verda;ovh;
 	ProviderType ProviderType           `json:"providerType"`
 	SecretRef    corev1.SecretReference `json:"secretRef"`
-	// External templates for building the cluster infrastructure.
-	// +optional
-	Templates *manifest.TemplateRepository `json:"templates"`
+	// External template for building the cluster infrastrucutre.
+	TemplatesRef TemplatesReference `json:"templatesRef"`
 }
 
 // NodePool is a map of dynamic nodepools and static nodepools which will be used to
@@ -224,6 +231,7 @@ type ClustersStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.state",description="Status of the input manifest"
 // +kubebuilder:subresource:status
+// +kubebuilder:storageversion
 // +kubebuilder:metadata:labels=app.kubernetes.io/part-of=claudie
 // InputManifest is a definition of the user's infrastructure.
 // It contains cloud provider specification,

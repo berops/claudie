@@ -14,8 +14,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func strPtr(s string) *string { return &s }
-
 func Test_getRolesAttachedToLBCluster(t *testing.T) {
 	type args struct {
 		roles     []manifest.Role
@@ -106,11 +104,24 @@ func Test_getDNS(t *testing.T) {
 					Name: "test",
 					Providers: manifest.Provider{
 						Hetzner: []manifest.Hetzner{
-							{Name: "test-provider", Credentials: "test-token", Templates: &manifest.TemplateRepository{
-								Repository: "https://github.com/berops/claudie-config",
-								Tag:        strPtr("v0.1.2"),
-								Path:       "/templates/terraformer/gcp",
-							}},
+							{
+								Name:        "test-provider",
+								Credentials: "test-token",
+								Templates: &manifest.TemplateRepository{
+									Endpoint: manifest.TemplatesEndpoint{
+										URL:      "github.com/berops/claudie-config",
+										Protocol: "https",
+									},
+									Commit: "v0.1.2",
+									Paths: manifest.TemplatesPaths{
+										Terraformer:  "/templates/terraformer",
+										Playbooks:    "/templates/playbooks",
+										ConfigLb:     "/templates/config-lb",
+										ConfigK8s:    "/templates/config-k8s",
+										ManifestsK8s: "/templates/manfiests-k8s",
+									},
+								},
+							},
 						},
 					},
 				},
@@ -123,10 +134,19 @@ func Test_getDNS(t *testing.T) {
 					CloudProviderName: "hetzner",
 					ProviderType:      &spec.Provider_Hetzner{Hetzner: &spec.HetznerProvider{Token: "test-token"}},
 					Templates: &spec.TemplateRepository{
-						Repository: "https://github.com/berops/claudie-config",
-						Tag:        strPtr("v0.1.2"),
-						Path:       "/templates/terraformer/gcp",
+						Endpoint: &spec.TemplateRepository_Endpoint{
+							Url:      "github.com/berops/claudie-config",
+							Protocol: spec.TemplateRepository_Endpoint_PROTOCOL_HTTPS,
+						},
+						Commit:     "v0.1.2",
 						CommitHash: "42e963e4bcaa5cbf7ce3330c1b7a21ebaa30f79b",
+						Paths: &spec.TemplateRepository_TemplatePaths{
+							Terraformer:  "/templates/terraformer",
+							Playbooks:    "/templates/playbooks",
+							ConfigLb:     "/templates/config-lb",
+							ConfigK8S:    "/templates/config-k8s",
+							ManifestsK8S: "/templates/manfiests-k8s",
+						},
 					},
 				},
 			},
@@ -174,10 +194,24 @@ func Test_createLBClustersFromManifest(t *testing.T) {
 					Name: "ok-overwrite-existing-lbs",
 					Providers: manifest.Provider{
 						Hetzner: []manifest.Hetzner{
-							{Name: "test-provider", Credentials: "test-token", Templates: &manifest.TemplateRepository{
-								Repository: "https://github.com/berops/claudie-config",
-								Path:       "/templates/terraformer/gcp",
-							}},
+							{
+								Name:        "test-provider",
+								Credentials: "test-token",
+								Templates: &manifest.TemplateRepository{
+									Endpoint: manifest.TemplatesEndpoint{
+										URL:      "github.com/berops/claudie-config",
+										Protocol: "https",
+									},
+									Commit: "master",
+									Paths: manifest.TemplatesPaths{
+										Terraformer:  "/templates/terraformer",
+										Playbooks:    "/templates/playbooks",
+										ConfigLb:     "/templates/config-lb",
+										ConfigK8s:    "/templates/config-k8s",
+										ManifestsK8s: "/templates/manifests-k8s",
+									},
+								},
+							},
 						},
 					},
 					LoadBalancer: manifest.LoadBalancer{
@@ -294,10 +328,24 @@ func Test_createLBClustersFromManifest(t *testing.T) {
 					Name: "ok-overwrite-existing-lbs",
 					Providers: manifest.Provider{
 						Hetzner: []manifest.Hetzner{
-							{Name: "test-provider", Credentials: "test-token", Templates: &manifest.TemplateRepository{
-								Repository: "https://github.com/berops/claudie-config",
-								Path:       "/templates/terraformer/gcp",
-							}},
+							{
+								Name:        "test-provider",
+								Credentials: "test-token",
+								Templates: &manifest.TemplateRepository{
+									Endpoint: manifest.TemplatesEndpoint{
+										URL:      "github.com/berops/claudie-config",
+										Protocol: "https",
+									},
+									Commit: "master",
+									Paths: manifest.TemplatesPaths{
+										Terraformer:  "/templates/terraformer",
+										Playbooks:    "/templates/playbooks",
+										ConfigLb:     "/templates/config-lb",
+										ConfigK8s:    "/tempaltes/config-k8s",
+										ManifestsK8s: "/templates/manifests-k8s",
+									},
+								},
+							},
 						},
 					},
 					LoadBalancer: manifest.LoadBalancer{
@@ -410,10 +458,24 @@ func Test_createLBClustersFromManifest(t *testing.T) {
 					Name: "ok-overwrite-existing-lbs",
 					Providers: manifest.Provider{
 						Hetzner: []manifest.Hetzner{
-							{Name: "test-provider", Credentials: "test-token", Templates: &manifest.TemplateRepository{
-								Repository: "https://github.com/berops/claudie-config",
-								Path:       "/templates/terraformer/gcp",
-							}},
+							{
+								Name:        "test-provider",
+								Credentials: "test-token",
+								Templates: &manifest.TemplateRepository{
+									Endpoint: manifest.TemplatesEndpoint{
+										URL:      "github.com/berops/claudie-config",
+										Protocol: "https",
+									},
+									Commit: "master",
+									Paths: manifest.TemplatesPaths{
+										Terraformer:  "/templates/terraformer",
+										Playbooks:    "/templates/playbooks",
+										ConfigLb:     "/templates/config-lb",
+										ConfigK8s:    "/templates/config-k8s",
+										ManifestsK8s: "/templates/manifests-k8s",
+									},
+								},
+							},
 						},
 					},
 					LoadBalancer: manifest.LoadBalancer{
@@ -554,10 +616,23 @@ func Test_createK8sClustersFromManifest(t *testing.T) {
 					},
 					Providers: manifest.Provider{
 						Hetzner: []manifest.Hetzner{
-							{Name: "test-provider", Credentials: "test-token", Templates: &manifest.TemplateRepository{
-								Repository: "https://github.com/berops/claudie-config",
-								Path:       "/templates/terraformer/gcp",
-							}},
+							{
+								Name:        "test-provider",
+								Credentials: "test-token",
+								Templates: &manifest.TemplateRepository{
+									Endpoint: manifest.TemplatesEndpoint{
+										URL:      "github.com/berops/claudie-config",
+										Protocol: "https",
+									},
+									Commit: "master",
+									Paths: manifest.TemplatesPaths{
+										Terraformer:  "/templates/terraformer",
+										Playbooks:    "/templates/playbooks",
+										ConfigLb:     "/templates/config-lb",
+										ConfigK8s:    "/templates/config-k8s",
+										ManifestsK8s: "/templates/manifests-k8s",
+									},
+								}},
 						},
 					},
 					Kubernetes: manifest.Kubernetes{
@@ -604,10 +679,23 @@ func Test_createK8sClustersFromManifest(t *testing.T) {
 					},
 					Providers: manifest.Provider{
 						Hetzner: []manifest.Hetzner{
-							{Name: "test-provider", Credentials: "test-token", Templates: &manifest.TemplateRepository{
-								Repository: "https://github.com/berops/claudie-config",
-								Path:       "/templates/terraformer/gcp",
-							}},
+							{
+								Name:        "test-provider",
+								Credentials: "test-token",
+								Templates: &manifest.TemplateRepository{
+									Endpoint: manifest.TemplatesEndpoint{
+										URL:      "github.com/berops/claudie-config",
+										Protocol: "https",
+									},
+									Commit: "master",
+									Paths: manifest.TemplatesPaths{
+										Terraformer:  "/templates/terraformer",
+										Playbooks:    "/templates/playbooks",
+										ConfigLb:     "/templates/config-lb",
+										ConfigK8s:    "/templates/config-k8s",
+										ManifestsK8s: "/templates/manifests-k8s",
+									},
+								}},
 						},
 					},
 					Kubernetes: manifest.Kubernetes{

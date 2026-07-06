@@ -21,6 +21,52 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type TemplateRepository_Endpoint_Protocol int32
+
+const (
+	TemplateRepository_Endpoint_PROTOCOL_UNSPECIFIED TemplateRepository_Endpoint_Protocol = 0
+	TemplateRepository_Endpoint_PROTOCOL_HTTPS       TemplateRepository_Endpoint_Protocol = 1
+)
+
+// Enum value maps for TemplateRepository_Endpoint_Protocol.
+var (
+	TemplateRepository_Endpoint_Protocol_name = map[int32]string{
+		0: "PROTOCOL_UNSPECIFIED",
+		1: "PROTOCOL_HTTPS",
+	}
+	TemplateRepository_Endpoint_Protocol_value = map[string]int32{
+		"PROTOCOL_UNSPECIFIED": 0,
+		"PROTOCOL_HTTPS":       1,
+	}
+)
+
+func (x TemplateRepository_Endpoint_Protocol) Enum() *TemplateRepository_Endpoint_Protocol {
+	p := new(TemplateRepository_Endpoint_Protocol)
+	*p = x
+	return p
+}
+
+func (x TemplateRepository_Endpoint_Protocol) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (TemplateRepository_Endpoint_Protocol) Descriptor() protoreflect.EnumDescriptor {
+	return file_spec_provider_proto_enumTypes[0].Descriptor()
+}
+
+func (TemplateRepository_Endpoint_Protocol) Type() protoreflect.EnumType {
+	return &file_spec_provider_proto_enumTypes[0]
+}
+
+func (x TemplateRepository_Endpoint_Protocol) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use TemplateRepository_Endpoint_Protocol.Descriptor instead.
+func (TemplateRepository_Endpoint_Protocol) EnumDescriptor() ([]byte, []int) {
+	return file_spec_provider_proto_rawDescGZIP(), []int{12, 0, 0}
+}
+
 type GCPProvider struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
@@ -926,11 +972,13 @@ func (*Provider_Verda) isProvider_ProviderType() {}
 func (*Provider_Ovh) isProvider_ProviderType() {}
 
 type TemplateRepository struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Repository    string                 `protobuf:"bytes,1,opt,name=repository,proto3" json:"repository,omitempty"`
-	Tag           *string                `protobuf:"bytes,2,opt,name=tag,proto3,oneof" json:"tag,omitempty"`
-	Path          string                 `protobuf:"bytes,3,opt,name=path,proto3" json:"path,omitempty"`
-	CommitHash    string                 `protobuf:"bytes,4,opt,name=commitHash,proto3" json:"commitHash,omitempty"`
+	state    protoimpl.MessageState       `protogen:"open.v1"`
+	Endpoint *TemplateRepository_Endpoint `protobuf:"bytes,1,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
+	Auth     *TemplateRepository_Auth     `protobuf:"bytes,2,opt,name=auth,proto3,oneof" json:"auth,omitempty"`
+	Commit   string                       `protobuf:"bytes,3,opt,name=commit,proto3" json:"commit,omitempty"`
+	// commitHash is the fecthed hash of the referenced commit.
+	CommitHash    string                            `protobuf:"bytes,4,opt,name=commitHash,proto3" json:"commitHash,omitempty"`
+	Paths         *TemplateRepository_TemplatePaths `protobuf:"bytes,5,opt,name=paths,proto3" json:"paths,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -965,23 +1013,23 @@ func (*TemplateRepository) Descriptor() ([]byte, []int) {
 	return file_spec_provider_proto_rawDescGZIP(), []int{12}
 }
 
-func (x *TemplateRepository) GetRepository() string {
+func (x *TemplateRepository) GetEndpoint() *TemplateRepository_Endpoint {
 	if x != nil {
-		return x.Repository
+		return x.Endpoint
 	}
-	return ""
+	return nil
 }
 
-func (x *TemplateRepository) GetTag() string {
-	if x != nil && x.Tag != nil {
-		return *x.Tag
+func (x *TemplateRepository) GetAuth() *TemplateRepository_Auth {
+	if x != nil {
+		return x.Auth
 	}
-	return ""
+	return nil
 }
 
-func (x *TemplateRepository) GetPath() string {
+func (x *TemplateRepository) GetCommit() string {
 	if x != nil {
-		return x.Path
+		return x.Commit
 	}
 	return ""
 }
@@ -989,6 +1037,193 @@ func (x *TemplateRepository) GetPath() string {
 func (x *TemplateRepository) GetCommitHash() string {
 	if x != nil {
 		return x.CommitHash
+	}
+	return ""
+}
+
+func (x *TemplateRepository) GetPaths() *TemplateRepository_TemplatePaths {
+	if x != nil {
+		return x.Paths
+	}
+	return nil
+}
+
+type TemplateRepository_Endpoint struct {
+	state         protoimpl.MessageState               `protogen:"open.v1"`
+	Url           string                               `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
+	Protocol      TemplateRepository_Endpoint_Protocol `protobuf:"varint,2,opt,name=protocol,proto3,enum=spec.TemplateRepository_Endpoint_Protocol" json:"protocol,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TemplateRepository_Endpoint) Reset() {
+	*x = TemplateRepository_Endpoint{}
+	mi := &file_spec_provider_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TemplateRepository_Endpoint) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TemplateRepository_Endpoint) ProtoMessage() {}
+
+func (x *TemplateRepository_Endpoint) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_provider_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TemplateRepository_Endpoint.ProtoReflect.Descriptor instead.
+func (*TemplateRepository_Endpoint) Descriptor() ([]byte, []int) {
+	return file_spec_provider_proto_rawDescGZIP(), []int{12, 0}
+}
+
+func (x *TemplateRepository_Endpoint) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *TemplateRepository_Endpoint) GetProtocol() TemplateRepository_Endpoint_Protocol {
+	if x != nil {
+		return x.Protocol
+	}
+	return TemplateRepository_Endpoint_PROTOCOL_UNSPECIFIED
+}
+
+type TemplateRepository_Auth struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Username      *string                `protobuf:"bytes,1,opt,name=username,proto3,oneof" json:"username,omitempty"`
+	Token         string                 `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TemplateRepository_Auth) Reset() {
+	*x = TemplateRepository_Auth{}
+	mi := &file_spec_provider_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TemplateRepository_Auth) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TemplateRepository_Auth) ProtoMessage() {}
+
+func (x *TemplateRepository_Auth) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_provider_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TemplateRepository_Auth.ProtoReflect.Descriptor instead.
+func (*TemplateRepository_Auth) Descriptor() ([]byte, []int) {
+	return file_spec_provider_proto_rawDescGZIP(), []int{12, 1}
+}
+
+func (x *TemplateRepository_Auth) GetUsername() string {
+	if x != nil && x.Username != nil {
+		return *x.Username
+	}
+	return ""
+}
+
+func (x *TemplateRepository_Auth) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+type TemplateRepository_TemplatePaths struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Terraformer   string                 `protobuf:"bytes,1,opt,name=terraformer,proto3" json:"terraformer,omitempty"`
+	Playbooks     string                 `protobuf:"bytes,2,opt,name=playbooks,proto3" json:"playbooks,omitempty"`
+	ConfigLb      string                 `protobuf:"bytes,3,opt,name=configLb,proto3" json:"configLb,omitempty"`
+	ConfigK8S     string                 `protobuf:"bytes,4,opt,name=configK8s,proto3" json:"configK8s,omitempty"`
+	ManifestsK8S  string                 `protobuf:"bytes,5,opt,name=manifestsK8s,proto3" json:"manifestsK8s,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TemplateRepository_TemplatePaths) Reset() {
+	*x = TemplateRepository_TemplatePaths{}
+	mi := &file_spec_provider_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TemplateRepository_TemplatePaths) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TemplateRepository_TemplatePaths) ProtoMessage() {}
+
+func (x *TemplateRepository_TemplatePaths) ProtoReflect() protoreflect.Message {
+	mi := &file_spec_provider_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TemplateRepository_TemplatePaths.ProtoReflect.Descriptor instead.
+func (*TemplateRepository_TemplatePaths) Descriptor() ([]byte, []int) {
+	return file_spec_provider_proto_rawDescGZIP(), []int{12, 2}
+}
+
+func (x *TemplateRepository_TemplatePaths) GetTerraformer() string {
+	if x != nil {
+		return x.Terraformer
+	}
+	return ""
+}
+
+func (x *TemplateRepository_TemplatePaths) GetPlaybooks() string {
+	if x != nil {
+		return x.Playbooks
+	}
+	return ""
+}
+
+func (x *TemplateRepository_TemplatePaths) GetConfigLb() string {
+	if x != nil {
+		return x.ConfigLb
+	}
+	return ""
+}
+
+func (x *TemplateRepository_TemplatePaths) GetConfigK8S() string {
+	if x != nil {
+		return x.ConfigK8S
+	}
+	return ""
+}
+
+func (x *TemplateRepository_TemplatePaths) GetManifestsK8S() string {
+	if x != nil {
+		return x.ManifestsK8S
 	}
 	return ""
 }
@@ -1064,17 +1299,32 @@ const file_spec_provider_proto_rawDesc = "" +
 	"\x05verda\x18\x0f \x01(\v2\x13.spec.VerdaProviderH\x00R\x05verda\x12%\n" +
 	"\x03ovh\x18\x10 \x01(\v2\x11.spec.OVHProviderH\x00R\x03ovh\x126\n" +
 	"\ttemplates\x18\r \x01(\v2\x18.spec.TemplateRepositoryR\ttemplatesB\x0e\n" +
-	"\fProviderType\"\x87\x01\n" +
-	"\x12TemplateRepository\x12\x1e\n" +
-	"\n" +
-	"repository\x18\x01 \x01(\tR\n" +
-	"repository\x12\x15\n" +
-	"\x03tag\x18\x02 \x01(\tH\x00R\x03tag\x88\x01\x01\x12\x12\n" +
-	"\x04path\x18\x03 \x01(\tR\x04path\x12\x1e\n" +
+	"\fProviderType\"\xa7\x05\n" +
+	"\x12TemplateRepository\x12=\n" +
+	"\bendpoint\x18\x01 \x01(\v2!.spec.TemplateRepository.EndpointR\bendpoint\x126\n" +
+	"\x04auth\x18\x02 \x01(\v2\x1d.spec.TemplateRepository.AuthH\x00R\x04auth\x88\x01\x01\x12\x16\n" +
+	"\x06commit\x18\x03 \x01(\tR\x06commit\x12\x1e\n" +
 	"\n" +
 	"commitHash\x18\x04 \x01(\tR\n" +
-	"commitHashB\x06\n" +
-	"\x04_tagB)Z'github.com/berops/claudie/proto/pb/specb\x06proto3"
+	"commitHash\x12<\n" +
+	"\x05paths\x18\x05 \x01(\v2&.spec.TemplateRepository.TemplatePathsR\x05paths\x1a\x9e\x01\n" +
+	"\bEndpoint\x12\x10\n" +
+	"\x03url\x18\x01 \x01(\tR\x03url\x12F\n" +
+	"\bprotocol\x18\x02 \x01(\x0e2*.spec.TemplateRepository.Endpoint.ProtocolR\bprotocol\"8\n" +
+	"\bProtocol\x12\x18\n" +
+	"\x14PROTOCOL_UNSPECIFIED\x10\x00\x12\x12\n" +
+	"\x0ePROTOCOL_HTTPS\x10\x01\x1aJ\n" +
+	"\x04Auth\x12\x1f\n" +
+	"\busername\x18\x01 \x01(\tH\x00R\busername\x88\x01\x01\x12\x14\n" +
+	"\x05token\x18\x02 \x01(\tR\x05tokenB\v\n" +
+	"\t_username\x1a\xad\x01\n" +
+	"\rTemplatePaths\x12 \n" +
+	"\vterraformer\x18\x01 \x01(\tR\vterraformer\x12\x1c\n" +
+	"\tplaybooks\x18\x02 \x01(\tR\tplaybooks\x12\x1a\n" +
+	"\bconfigLb\x18\x03 \x01(\tR\bconfigLb\x12\x1c\n" +
+	"\tconfigK8s\x18\x04 \x01(\tR\tconfigK8s\x12\"\n" +
+	"\fmanifestsK8s\x18\x05 \x01(\tR\fmanifestsK8sB\a\n" +
+	"\x05_authB)Z'github.com/berops/claudie/proto/pb/specb\x06proto3"
 
 var (
 	file_spec_provider_proto_rawDescOnce sync.Once
@@ -1088,40 +1338,49 @@ func file_spec_provider_proto_rawDescGZIP() []byte {
 	return file_spec_provider_proto_rawDescData
 }
 
-var file_spec_provider_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_spec_provider_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_spec_provider_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_spec_provider_proto_goTypes = []any{
-	(*GCPProvider)(nil),        // 0: spec.GCPProvider
-	(*HetznerProvider)(nil),    // 1: spec.HetznerProvider
-	(*OCIProvider)(nil),        // 2: spec.OCIProvider
-	(*AWSProvider)(nil),        // 3: spec.AWSProvider
-	(*AzureProvider)(nil),      // 4: spec.AzureProvider
-	(*CloudflareProvider)(nil), // 5: spec.CloudflareProvider
-	(*OpenstackProvider)(nil),  // 6: spec.OpenstackProvider
-	(*ExoscaleProvider)(nil),   // 7: spec.ExoscaleProvider
-	(*CloudRiftProvider)(nil),  // 8: spec.CloudRiftProvider
-	(*VerdaProvider)(nil),      // 9: spec.VerdaProvider
-	(*OVHProvider)(nil),        // 10: spec.OVHProvider
-	(*Provider)(nil),           // 11: spec.Provider
-	(*TemplateRepository)(nil), // 12: spec.TemplateRepository
+	(TemplateRepository_Endpoint_Protocol)(0), // 0: spec.TemplateRepository.Endpoint.Protocol
+	(*GCPProvider)(nil),                       // 1: spec.GCPProvider
+	(*HetznerProvider)(nil),                   // 2: spec.HetznerProvider
+	(*OCIProvider)(nil),                       // 3: spec.OCIProvider
+	(*AWSProvider)(nil),                       // 4: spec.AWSProvider
+	(*AzureProvider)(nil),                     // 5: spec.AzureProvider
+	(*CloudflareProvider)(nil),                // 6: spec.CloudflareProvider
+	(*OpenstackProvider)(nil),                 // 7: spec.OpenstackProvider
+	(*ExoscaleProvider)(nil),                  // 8: spec.ExoscaleProvider
+	(*CloudRiftProvider)(nil),                 // 9: spec.CloudRiftProvider
+	(*VerdaProvider)(nil),                     // 10: spec.VerdaProvider
+	(*OVHProvider)(nil),                       // 11: spec.OVHProvider
+	(*Provider)(nil),                          // 12: spec.Provider
+	(*TemplateRepository)(nil),                // 13: spec.TemplateRepository
+	(*TemplateRepository_Endpoint)(nil),       // 14: spec.TemplateRepository.Endpoint
+	(*TemplateRepository_Auth)(nil),           // 15: spec.TemplateRepository.Auth
+	(*TemplateRepository_TemplatePaths)(nil),  // 16: spec.TemplateRepository.TemplatePaths
 }
 var file_spec_provider_proto_depIdxs = []int32{
-	0,  // 0: spec.Provider.gcp:type_name -> spec.GCPProvider
-	1,  // 1: spec.Provider.hetzner:type_name -> spec.HetznerProvider
-	2,  // 2: spec.Provider.oci:type_name -> spec.OCIProvider
-	3,  // 3: spec.Provider.aws:type_name -> spec.AWSProvider
-	4,  // 4: spec.Provider.azure:type_name -> spec.AzureProvider
-	5,  // 5: spec.Provider.cloudflare:type_name -> spec.CloudflareProvider
-	6,  // 6: spec.Provider.openstack:type_name -> spec.OpenstackProvider
-	7,  // 7: spec.Provider.exoscale:type_name -> spec.ExoscaleProvider
-	8,  // 8: spec.Provider.cloudrift:type_name -> spec.CloudRiftProvider
-	9,  // 9: spec.Provider.verda:type_name -> spec.VerdaProvider
-	10, // 10: spec.Provider.ovh:type_name -> spec.OVHProvider
-	12, // 11: spec.Provider.templates:type_name -> spec.TemplateRepository
-	12, // [12:12] is the sub-list for method output_type
-	12, // [12:12] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	1,  // 0: spec.Provider.gcp:type_name -> spec.GCPProvider
+	2,  // 1: spec.Provider.hetzner:type_name -> spec.HetznerProvider
+	3,  // 2: spec.Provider.oci:type_name -> spec.OCIProvider
+	4,  // 3: spec.Provider.aws:type_name -> spec.AWSProvider
+	5,  // 4: spec.Provider.azure:type_name -> spec.AzureProvider
+	6,  // 5: spec.Provider.cloudflare:type_name -> spec.CloudflareProvider
+	7,  // 6: spec.Provider.openstack:type_name -> spec.OpenstackProvider
+	8,  // 7: spec.Provider.exoscale:type_name -> spec.ExoscaleProvider
+	9,  // 8: spec.Provider.cloudrift:type_name -> spec.CloudRiftProvider
+	10, // 9: spec.Provider.verda:type_name -> spec.VerdaProvider
+	11, // 10: spec.Provider.ovh:type_name -> spec.OVHProvider
+	13, // 11: spec.Provider.templates:type_name -> spec.TemplateRepository
+	14, // 12: spec.TemplateRepository.endpoint:type_name -> spec.TemplateRepository.Endpoint
+	15, // 13: spec.TemplateRepository.auth:type_name -> spec.TemplateRepository.Auth
+	16, // 14: spec.TemplateRepository.paths:type_name -> spec.TemplateRepository.TemplatePaths
+	0,  // 15: spec.TemplateRepository.Endpoint.protocol:type_name -> spec.TemplateRepository.Endpoint.Protocol
+	16, // [16:16] is the sub-list for method output_type
+	16, // [16:16] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_spec_provider_proto_init() }
@@ -1146,18 +1405,20 @@ func file_spec_provider_proto_init() {
 		(*Provider_Ovh)(nil),
 	}
 	file_spec_provider_proto_msgTypes[12].OneofWrappers = []any{}
+	file_spec_provider_proto_msgTypes[14].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_spec_provider_proto_rawDesc), len(file_spec_provider_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   13,
+			NumEnums:      1,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_spec_provider_proto_goTypes,
 		DependencyIndexes: file_spec_provider_proto_depIdxs,
+		EnumInfos:         file_spec_provider_proto_enumTypes,
 		MessageInfos:      file_spec_provider_proto_msgTypes,
 	}.Build()
 	File_spec_provider_proto = out.File

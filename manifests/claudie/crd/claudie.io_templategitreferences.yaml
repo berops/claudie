@@ -1,0 +1,125 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.18.0
+  labels:
+    app.kubernetes.io/part-of: claudie
+  name: templategitreferences.claudie.io
+spec:
+  group: claudie.io
+  names:
+    kind: TemplateGitReference
+    listKind: TemplateGitReferenceList
+    plural: templategitreferences
+    singular: templategitreference
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - description: URL of the git repository
+      jsonPath: .spec.endpoint.url
+      name: URL
+      type: string
+    - description: Commit/tag/branch reference
+      jsonPath: .spec.commit
+      name: Commit
+      type: string
+    name: v1beta1
+    schema:
+      openAPIV3Schema:
+        description: |-
+          TemplateGitReference is a definition of a git repository reference containing templates.
+          It specifies the endpoint, authentication, commit, and paths to various template directories.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: TemplateGitReferenceSpec defines the desired state of TemplateGitReference.
+            properties:
+              auth:
+                description: Auth defines optional authentication for the repository.
+                properties:
+                  secretRef:
+                    description: SecretRef is a reference to a Kubernetes secret containing
+                      the git token.
+                    properties:
+                      name:
+                        description: name is unique within a namespace to reference
+                          a secret resource.
+                        type: string
+                      namespace:
+                        description: namespace defines the space within which the
+                          secret name must be unique.
+                        type: string
+                    type: object
+                    x-kubernetes-map-type: atomic
+                type: object
+              commit:
+                description: Commit defines the commit, tag, or branch to checkout.
+                type: string
+              endpoint:
+                description: Endpoint of the git repository.
+                properties:
+                  protocol:
+                    description: Protocol used to access the repository.
+                    enum:
+                    - https
+                    type: string
+                  url:
+                    description: URL of the git repository.
+                    type: string
+                required:
+                - protocol
+                - url
+                type: object
+              paths:
+                description: Paths defines the paths to template directories within
+                  the repository.
+                properties:
+                  configK8s:
+                    description: ConfigK8s path to kubernetes configuration templates.
+                    type: string
+                  configLb:
+                    description: ConfigLB path to loadbalancer configuration templates.
+                    type: string
+                  manifestsK8s:
+                    description: ManifestsK8s path to kubernetes manifest templates.
+                    type: string
+                  playbooks:
+                    description: Playbooks path to ansible playbooks.
+                    type: string
+                  terraformer:
+                    description: Terraformer path to terraformer templates.
+                    type: string
+                required:
+                - configK8s
+                - configLb
+                - manifestsK8s
+                - playbooks
+                - terraformer
+                type: object
+            required:
+            - commit
+            - endpoint
+            - paths
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources: {}

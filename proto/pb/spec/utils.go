@@ -10,6 +10,8 @@ import (
 	"net/url"
 	"path/filepath"
 	"time"
+
+	"github.com/rs/zerolog/log"
 )
 
 // ErrCloudflareAPIForbidden is returned when the response to the endpoint of cloudflare returns code 403,
@@ -324,27 +326,25 @@ func (pr *Provider) CredentialsEqual(other *Provider) (equal bool) {
 	return
 }
 
-// MustExtractTargetPath returns the target path of the external template repository.
-// If the URL of the repository is invalid this functions panics.
-// The target path is the path where the templates should be downloaded on the local
-// filesystem.
-func (r *TemplateRepository) MustExtractTargetPath() string {
-	if r == nil {
-		return ""
+// MustTemplatePaths returns the target path of the external templates repository.
+// The returned string is in the form of:
+//
+// [TemplateRepository.Endpoint.Url]/[TemplateRepository.CommitHash]/...[additionalSegments]
+func (r *TemplateRepository) TemplatesPath(additionalSegments ...string) string {
+	var p string
+	if r != nil {
+		u, err := url.Parse(r.Endpoint.Url)
+		if err != nil {
+			log.Error().Msg("unexpected URL error with templates path, using default")
+			u = &url.URL{}
+		}
+		p = filepath.Join(u.Hostname(), u.Path, r.CommitHash)
 	}
-
-	u, err := url.Parse(r.Repository)
-	if err != nil {
-		panic(err)
-	}
-
-	return filepath.Join(
-		u.Hostname(),
-		u.Path,
-		r.CommitHash,
-		r.Path,
-	)
+	return filepath.Join(append([]string{p}, additionalSegments...)...)
 }
+
+// Returns the URL with the HTTPS protocol.
+func (r *TemplateRepository) HttpsUrl() string { return "https://" + r.Endpoint.Url }
 
 func (n *NodePool) Zone() string {
 	var sn string

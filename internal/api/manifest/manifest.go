@@ -4,11 +4,38 @@ import (
 	k8sV1 "k8s.io/api/core/v1"
 )
 
+type GitAuth struct {
+	Username string `validate:"omitempty" yaml:"username" json:"username"`
+	Token    string `validate:"required,min=1" yaml:"token" json:"token"`
+}
+
+type TemplatesEndpoint struct {
+	URL      string `validate:"required,noschemeurl" yaml:"url" json:"url"`
+	Protocol string `validate:"required,oneof=https" yaml:"protocol" json:"protocol"`
+}
+
+type TemplatesPaths struct {
+	// Terraformer path to terraformer templates.
+	Terraformer string `validate:"required,min=1" yaml:"terraformer" json:"terraformer"`
+
+	// Playbooks path to ansible playbooks.
+	Playbooks string `validate:"required,min=1" yaml:"playbooks" json:"playbooks"`
+
+	// ConfigLB path to loadbalancer configuration templates.
+	ConfigLb string `validate:"required,min=1" yaml:"configLb" json:"configLb"`
+
+	// ConfigK8s path to kubernetes configuration templates.
+	ConfigK8s string `validate:"required,min=1" yaml:"configK8s" json:"configK8s"`
+
+	// ManifestsK8s path to kubernetes manifest templates.
+	ManifestsK8s string `validate:"required,min=1" yaml:"manifestsK8s" json:"manifestsK8s"`
+}
+
 type TemplateRepository struct {
-	Repository string `validate:"required,url" yaml:"repository" json:"repository"`
-	Path       string `validate:"required,filepath" yaml:"path" json:"path"`
-	// +optional
-	Tag *string `validate:"omitempty,semver2" yaml:"tag" json:"tag"`
+	Endpoint TemplatesEndpoint `validate:"required" yaml:"endpoint" json:"endpoint"`
+	Auth     *GitAuth          `validate:"omitempty" yaml:"auth" json:"auth"`
+	Commit   string            `validate:"required,min=1" yaml:"commit" json:"commit"`
+	Paths    TemplatesPaths    `validate:"required" yaml:"paths" json:"paths"`
 }
 
 type Manifest struct {

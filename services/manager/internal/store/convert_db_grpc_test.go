@@ -1180,8 +1180,17 @@ func TestConvertToDBAndBack(t *testing.T) {
 													},
 												},
 												Templates: &spec.TemplateRepository{
-													Repository: "/root/",
-													Path:       "hetzner",
+													Endpoint: &spec.TemplateRepository_Endpoint{
+														Url:      "/root/",
+														Protocol: spec.TemplateRepository_Endpoint_PROTOCOL_HTTPS,
+													},
+													Paths: &spec.TemplateRepository_TemplatePaths{
+														Terraformer:  "hetzner",
+														Playbooks:    "/tmp",
+														ConfigLb:     "/tmp",
+														ConfigK8S:    "/tmp",
+														ManifestsK8S: "/tmp",
+													},
 												},
 											},
 											PublicKey:  "default",
@@ -1232,8 +1241,17 @@ func TestConvertToDBAndBack(t *testing.T) {
 															},
 														},
 														Templates: &spec.TemplateRepository{
-															Repository: "/root/",
-															Path:       "hetzner",
+															Endpoint: &spec.TemplateRepository_Endpoint{
+																Url:      "/root/",
+																Protocol: spec.TemplateRepository_Endpoint_PROTOCOL_HTTPS,
+															},
+															Paths: &spec.TemplateRepository_TemplatePaths{
+																Terraformer:  "hetzner",
+																Playbooks:    "/tmp",
+																ConfigLb:     "/tmp",
+																ConfigK8S:    "/tmp",
+																ManifestsK8S: "/tmp",
+															},
 														},
 													},
 													PublicKey:  "default",

@@ -1,7 +1,6 @@
 package cluster_builder
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -10,9 +9,9 @@ import (
 	"strings"
 
 	comm "github.com/berops/claudie/internal/command"
+	"github.com/berops/claudie/internal/extemplates/extofu"
 	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/generics"
-	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/terraformer/internal/worker/service/internal/templates"
@@ -115,11 +114,7 @@ func (c ClusterBuilder) ReconcileNodePools() error {
 	}
 
 	for _, nodepool := range nodepools.Dynamic(c.NodePools) {
-		d := nodepool.GetDynamicNodePool()
-		f := hash.Digest128(filepath.Join(d.Provider.SpecName, d.Provider.Templates.MustExtractTargetPath()))
-		k := fmt.Sprintf("%s_%s_%s", nodepool.Name, d.Provider.SpecName, hex.EncodeToString(f))
-
-		output, err := tofu.Output(k)
+		output, err := tofu.Output(extofu.NodePoolTerraformKey(nodepool))
 		if err != nil {
 			return fmt.Errorf("error while getting output from tofu for %s : %w", nodepool.Name, err)
 		}
@@ -224,7 +219,7 @@ func (c *ClusterBuilder) generateFiles(clusterDir string) error {
 		return err
 	}
 
-	clusterData := templates.ClusterData{
+	clusterData := extofu.ClusterData{
 		ClusterName: c.ClusterName,
 		ClusterHash: c.ClusterHash,
 		ClusterType: string(c.ClusterType),
@@ -237,20 +232,20 @@ func (c *ClusterBuilder) generateFiles(clusterDir string) error {
 	for info, pools := range nodepools.ByProviderDynamic(c.NodePools) {
 		templatesDownloadDir := filepath.Join(TemplatesRootDir, c.ClusterId, info.SpecName)
 
-		for path, pools := range nodepools.ByTemplatesPath(pools) {
+		for _, pools := range extofu.NodePoolsByTemplatesPath(pools) {
 			p := pools[0].GetDynamicNodePool().GetProvider()
 
-			if err := templates.DownloadProvider(templatesDownloadDir, p); err != nil {
+			if err := extofu.Download(templatesDownloadDir, p); err != nil {
 				msg := fmt.Sprintf("cluster %q failed to download template repository", c.ClusterId)
 				log.Error().Msgf("%v", msg)
 				return fmt.Errorf("%s: %w", msg, err)
 			}
 
-			nps := make([]templates.NodePoolInfo, 0, len(pools))
+			nps := make([]extofu.NodePoolInfo, 0, len(pools))
 
 			for _, np := range pools {
 				if dnp := np.GetDynamicNodePool(); dnp != nil {
-					nps = append(nps, templates.NodePoolInfo{
+					nps = append(nps, extofu.NodePoolInfo{
 						Name:      np.Name,
 						Nodes:     np.Nodes,
 						Details:   dnp,
@@ -263,32 +258,41 @@ func (c *ClusterBuilder) generateFiles(clusterDir string) error {
 				}
 			}
 
-			// based on the cluster type fill out the nodepools data to be used
-			nodepoolData := templates.Nodepools{
+			dyn := nodepools.ExtractDynamic(pools)
+			reg := nodepools.ExtractRegions(dyn)
+			var rgn []extofu.RegionNetwork
+
+			for _, v := range nodepools.ExtractRegionNetwork(dyn) {
+				rgn = append(rgn, extofu.RegionNetwork(v))
+			}
+
+			g := extofu.Generator{
+				ID:                c.ClusterId,
+				TargetDirectory:   clusterDir,
+				ReadFromDirectory: templatesDownloadDir,
+				TemplatePath:      extofu.TemplatesPath(p),
+				Fingerprint:       extofu.Fingerprint(p),
+			}
+
+			n := extofu.Networking{
+				ClusterData:   clusterData,
+				Provider:      p,
+				Regions:       reg,
+				RegionNetwork: rgn,
+				K8sData: extofu.K8sData{
+					HasAPIServer: c.K8sInfo.ExportPort6443,
+				},
+				LBData: extofu.LBData{
+					Roles: c.LBInfo.Roles,
+				},
+			}
+
+			nodepoolData := extofu.Nodepools{
 				ClusterData: clusterData,
 				NodePools:   nps,
 			}
 
-			g := templates.Generator{
-				ID:                c.ClusterId,
-				TargetDirectory:   clusterDir,
-				ReadFromDirectory: templatesDownloadDir,
-				TemplatePath:      path,
-				Fingerprint:       hex.EncodeToString(hash.Digest128(filepath.Join(info.SpecName, path))),
-			}
-
-			if err := g.GenerateNetworking(&templates.Networking{
-				ClusterData:   clusterData,
-				Provider:      p,
-				Regions:       nodepools.ExtractRegions(nodepools.ExtractDynamic(pools)),
-				RegionNetwork: nodepools.ExtractRegionNetwork(nodepools.ExtractDynamic(pools)),
-				K8sData: templates.K8sData{
-					HasAPIServer: c.K8sInfo.ExportPort6443,
-				},
-				LBData: templates.LBData{
-					Roles: c.LBInfo.Roles,
-				},
-			}); err != nil {
+			if err := g.GenerateNetworking(&n); err != nil {
 				return fmt.Errorf("failed to generate networking_common template files: %w", err)
 			}
 
@@ -347,15 +351,15 @@ func parsePort(val any) int32 {
 }
 
 // readIPs reads json output format from tofu and unmarshal it into map[string]map[string]string readable by Go.
-func readIPs(data string) (templates.NodepoolIPs, error) {
-	var result templates.NodepoolIPs
+func readIPs(data string) (extofu.NodepoolIPs, error) {
+	var result extofu.NodepoolIPs
 	// Unmarshal or Decode the JSON to the interface.
 	err := json.Unmarshal([]byte(data), &result.IPs)
 	return result, err
 }
 
 // generateProviderTemplates generates only the `provider.tpl` templates so tofu can destroy the infra if needed.
-func (c *ClusterBuilder) generateProviderTemplates(directory string, clusterData templates.ClusterData) error {
+func (c *ClusterBuilder) generateProviderTemplates(directory string, clusterData extofu.ClusterData) error {
 	// Need to append also the nodepools that are no longer present in the infrastructure
 	// so that their statefile records will get cleaned up.
 	nps := append(c.NodePools, c.GhostNodePools...)
@@ -366,24 +370,23 @@ func (c *ClusterBuilder) generateProviderTemplates(directory string, clusterData
 		}
 
 		templatesDownloadDir := filepath.Join(TemplatesRootDir, c.ClusterId, info.SpecName)
-
-		for path, pools := range nodepools.ByTemplatesPath(pools) {
+		for _, pools := range extofu.NodePoolsByTemplatesPath(pools) {
 			p := pools[0].GetDynamicNodePool().GetProvider()
-			if err := templates.DownloadProvider(templatesDownloadDir, p); err != nil {
+			if err := extofu.Download(templatesDownloadDir, p); err != nil {
 				msg := fmt.Sprintf("cluster %q failed to download template repository", c.ClusterId)
 				log.Error().Msgf("%v", msg)
 				return fmt.Errorf("%s: %w", msg, err)
 			}
 
-			g := templates.Generator{
+			g := extofu.Generator{
 				ID:                c.ClusterId,
 				TargetDirectory:   directory,
 				ReadFromDirectory: templatesDownloadDir,
-				TemplatePath:      path,
-				Fingerprint:       hex.EncodeToString(hash.Digest128(filepath.Join(info.SpecName, path))),
+				TemplatePath:      extofu.TemplatesPath(p),
+				Fingerprint:       extofu.Fingerprint(p),
 			}
 
-			err := g.GenerateProvider(&templates.Provider{
+			err := g.GenerateProvider(&extofu.Provider{
 				ClusterData: clusterData,
 				Provider:    pools[0].GetDynamicNodePool().GetProvider(),
 				Regions:     nodepools.ExtractRegions(nodepools.ExtractDynamic(pools)),

@@ -369,7 +369,7 @@ spec:
                             Spot requests a discounted, pre-emptible instance from the cloud provider.
                             The instance can be reclaimed at any time with short notice (~30s on GCP).
                             Suitable for fault-tolerant, stateless, or autoscaled-from-0 workloads.
-                            Worker pools only. Currently supported on: GCP, Verda.
+                            Worker pools only. Currently supported on: GCP, Verda, AWS, Azure, OCI.
                           type: boolean
                         storageDiskSize:
                           description: |-
@@ -558,23 +558,21 @@ spec:
                           type: string
                       type: object
                       x-kubernetes-map-type: atomic
-                    templates:
-                      description: External templates for building the cluster infrastructure.
+                    templatesRef:
+                      description: External template for building the cluster infrastrucutre.
                       properties:
-                        path:
+                        name:
                           type: string
-                        repository:
-                          type: string
-                        tag:
+                        namespace:
                           type: string
                       required:
-                      - path
-                      - repository
+                      - name
                       type: object
                   required:
                   - name
                   - providerType
                   - secretRef
+                  - templatesRef
                   type: object
                 type: array
             type: object

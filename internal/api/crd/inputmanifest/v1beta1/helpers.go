@@ -43,24 +43,38 @@ func (im *InputManifest) GetNamespacedNameDashed() string {
 	return im.Namespace + "-" + im.Name
 }
 
-// GetSecretField takes an ENUM string type of SecretField, and returns the value
+// ProviderSecretField takes an ENUM string type of SecretField, and returns the value
 // of the that field from the ProviderWithData struct
 // it is also validating if the string is a proper UTF-8 string
-func (pwd *ProviderWithData) GetSecretField(name SecretField) (string, error) {
-	if value, ok := pwd.Secret.Data[string(name)]; ok {
-		// Ref: https://github.com/berops/claudie/issues/1101#issuecomment-1820793262
-		if !utf8.ValidString(string(value)) {
-			return "", fmt.Errorf("field %s is not a valid UTF-8 string", name)
-		}
-		return string(value), nil
-	} else {
+func (pwd *ProviderWithData) ProviderSecretField(name SecretField) (string, error) {
+	v, ok := pwd.ProviderSecret.Data[string(name)]
+	if !ok {
 		return "", fmt.Errorf("field %s not found", name)
 	}
+
+	// Ref: https://github.com/berops/claudie/issues/1101#issuecomment-1820793262
+	if !utf8.Valid(v) {
+		return "", fmt.Errorf("field %s is not a valid UTF-8 string", name)
+	}
+
+	return string(v), nil
 }
 
-// GetStatuses returns the inputmanifest.Status field
-func (im *InputManifest) GetStatuses() InputManifestStatus {
-	return im.Status
+func (pwd *ProviderWithData) TemplatesAuthSecretField(name SecretField) (string, error) {
+	if pwd.TemplatesAuth == nil {
+		return "", nil
+	}
+
+	v, ok := pwd.TemplatesAuth.Data[string(name)]
+	if !ok {
+		return "", fmt.Errorf("field %s not found", name)
+	}
+
+	if !utf8.Valid(v) {
+		return "", fmt.Errorf("field %s is not a valid UTF-8 string", name)
+	}
+
+	return string(v), nil
 }
 
 func (im *InputManifest) SetWatchResourceStatus() {

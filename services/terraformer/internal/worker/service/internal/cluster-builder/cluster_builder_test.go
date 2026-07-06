@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/berops/claudie/services/terraformer/internal/worker/service/internal/templates"
+	"github.com/berops/claudie/internal/extemplates/extofu"
 )
 
 func Test_parseNodeOutput(t *testing.T) {
@@ -54,7 +54,7 @@ func Test_readIPs(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    templates.NodepoolIPs
+		want    extofu.NodepoolIPs
 		wantErr bool
 	}{
 		{
@@ -62,7 +62,7 @@ func Test_readIPs(t *testing.T) {
 			args: args{
 				data: "{\"test-cluster-compute1\":\"0.0.0.65\",\n\"test-cluster-compute2\":\"0.0.0.512\", \"test-cluster-control1\":\"0.0.0.72\",\n\"test-cluster-control2\":\"0.0.0.65\"}",
 			},
-			want: templates.NodepoolIPs{
+			want: extofu.NodepoolIPs{
 				IPs: map[string]any{
 					"test-cluster-compute1": "0.0.0.65",
 					"test-cluster-compute2": "0.0.0.512",

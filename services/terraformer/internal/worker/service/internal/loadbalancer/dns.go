@@ -1,7 +1,6 @@
 package loadbalancer
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,8 +8,8 @@ import (
 	"path/filepath"
 
 	comm "github.com/berops/claudie/internal/command"
+	"github.com/berops/claudie/internal/extemplates/extofu"
 	"github.com/berops/claudie/internal/fileutils"
-	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/proto/pb/spec"
 	cluster_builder "github.com/berops/claudie/services/terraformer/internal/worker/service/internal/cluster-builder"
 	"github.com/berops/claudie/services/terraformer/internal/worker/service/internal/templates"
@@ -79,7 +78,7 @@ func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 		return err
 	}
 
-	output, err := tofu.Output(endpoint(d.Dns, clusterID, ""))
+	output, err := tofu.Output(extofu.DnsEndpointTerraformKey(d.Dns, clusterID, ""))
 	if err != nil {
 		return fmt.Errorf("error while getting output from tofu for %s : %w", dnsID, err)
 	}
@@ -97,7 +96,7 @@ func (d *DNS) CreateDNSRecords(logger zerolog.Logger) error {
 	for _, n := range d.Dns.AlternativeNames {
 		sublogger.Info().Msgf("Detected alternative names extension, reading output for alternative name %s", n.Hostname)
 
-		if output, err = tofu.Output(endpoint(d.Dns, clusterID, n.Hostname)); err != nil {
+		if output, err = tofu.Output(extofu.DnsEndpointTerraformKey(d.Dns, clusterID, n.Hostname)); err != nil {
 			// Since this is an extension to the original data
 			// we consider errors as not fatal.
 			sublogger.Warn().Msgf("error while retrieving output from tofu for %s alternative name %s: %v, templates may not support alternative names extension, skipping", clusterID, n.Hostname, err)
@@ -189,30 +188,28 @@ func (d *DNS) generateProvider(dnsID, dnsDir string, dns *spec.DNS) error {
 // generateFiles creates all the necessary terraform files used to create/destroy DNS.
 func (d *DNS) generateFiles(logger zerolog.Logger, dnsID, dnsDir string, dns *spec.DNS, nodeIPs []string) error {
 	templateDir := filepath.Join(TemplatesRootDir, dnsID, dns.GetProvider().GetSpecName())
-	if err := templates.DownloadProvider(templateDir, dns.GetProvider()); err != nil {
+	if err := extofu.Download(templateDir, dns.GetProvider()); err != nil {
 		return fmt.Errorf("failed to download templates for DNS %q: %w", dnsID, err)
 	}
 
-	path := dns.Provider.Templates.MustExtractTargetPath()
-
-	g := templates.Generator{
+	g := extofu.Generator{
 		ID:                dnsID,
 		TargetDirectory:   dnsDir,
 		ReadFromDirectory: templateDir,
-		TemplatePath:      path,
-		Fingerprint:       hex.EncodeToString(hash.Digest128(filepath.Join(dns.Provider.SpecName, path))),
+		TemplatePath:      extofu.TemplatesPath(dns.Provider),
+		Fingerprint:       extofu.Fingerprint(dns.Provider),
 	}
 
-	data := templates.DNS{
+	data := extofu.DNS{
 		DNSZone:     dns.DnsZone,
 		Hostname:    dns.Hostname,
 		ClusterName: d.ClusterName,
 		ClusterHash: d.ClusterHash,
-		RecordData:  templates.RecordData{IP: templateIPData(nodeIPs)},
+		RecordData:  extofu.RecordData{IP: templateIPData(nodeIPs)},
 		Provider:    dns.Provider,
 
-		AlternativeNamesExtension: new(templates.AlternativeNamesExtension),
-		ProviderExtrasExtension:   new(templates.ProviderExtrasExtension),
+		AlternativeNamesExtension: new(extofu.AlternativeNamesExtension),
+		ProviderExtrasExtension:   new(extofu.ProviderExtrasExtension),
 	}
 
 	for _, n := range dns.AlternativeNames {
@@ -256,31 +253,18 @@ func validateDomain(s string) string {
 }
 
 // readDomain reads full domain from tofu output.
-func readDomain(data string) (templates.DNSDomain, error) {
-	var result templates.DNSDomain
+func readDomain(data string) (extofu.DNSDomain, error) {
+	var result extofu.DNSDomain
 	err := json.Unmarshal([]byte(data), &result.Domain)
 	return result, err
 }
 
-func templateIPData(ips []string) []templates.IPData {
-	out := make([]templates.IPData, 0, len(ips))
+func templateIPData(ips []string) []extofu.IPData {
+	out := make([]extofu.IPData, 0, len(ips))
 
 	for _, ip := range ips {
-		out = append(out, templates.IPData{V4: ip})
+		out = append(out, extofu.IPData{V4: ip})
 	}
 
 	return out
-}
-
-func endpoint(dns *spec.DNS, clusterID string, alternativeName string) string {
-	f := hash.Digest128(filepath.Join(
-		dns.GetProvider().GetSpecName(),
-		dns.GetProvider().GetTemplates().MustExtractTargetPath(),
-	))
-	resourceSuffix := fmt.Sprintf("%s_%s", dns.GetProvider().GetSpecName(), hex.EncodeToString(f))
-	resource := clusterID
-	if alternativeName != "" {
-		resource += "_" + alternativeName
-	}
-	return fmt.Sprintf("%s_%s", resource, resourceSuffix)
 }

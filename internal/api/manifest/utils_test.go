@@ -1,8 +1,9 @@
 package manifest
 
 import (
-	"github.com/berops/claudie/proto/pb/spec"
 	"testing"
+
+	"github.com/berops/claudie/proto/pb/spec"
 )
 
 func Test_commitHash(t *testing.T) {
@@ -19,8 +20,13 @@ func Test_commitHash(t *testing.T) {
 			name: "ok-tag-0.8.1",
 			args: args{
 				tmpl: &spec.TemplateRepository{
-					Repository: "https://github.com/berops/claudie",
-					Tag:        func() *string { s := "v0.8.1"; return &s }(),
+					Endpoint: &spec.TemplateRepository_Endpoint{
+						Url:      "github.com/berops/claudie",
+						Protocol: spec.TemplateRepository_Endpoint_PROTOCOL_HTTPS,
+					},
+					Auth:   nil,
+					Commit: "v0.8.1",
+					Paths:  &spec.TemplateRepository_TemplatePaths{},
 				},
 			},
 			want:    "dc323eb49b5023306a5a70789d5a192f68e0a3a1",

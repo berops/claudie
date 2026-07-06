@@ -1,16 +1,15 @@
 package manifest
 
 import (
-	"errors"
 	"fmt"
 	"math"
-	"slices"
+	"strings"
 
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage/memory"
 
 	k8sV1 "k8s.io/api/core/v1"
@@ -29,10 +28,9 @@ var (
 func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error) {
 	for _, gcpConf := range ds.Providers.GCP {
 		if gcpConf.Name == providerSpecName {
-			t := &spec.TemplateRepository{
-				Repository: gcpConf.Templates.Repository,
-				Tag:        gcpConf.Templates.Tag,
-				Path:       gcpConf.Templates.Path,
+			t, err := convertToGrpcTemplates(gcpConf.Templates)
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert template for provider %q: %w", gcpConf.Name, err)
 			}
 			if err := FetchCommitHash(t); err != nil {
 				return nil, err
@@ -55,10 +53,9 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 
 	for _, hetznerConf := range ds.Providers.Hetzner {
 		if hetznerConf.Name == providerSpecName {
-			t := &spec.TemplateRepository{
-				Repository: hetznerConf.Templates.Repository,
-				Tag:        hetznerConf.Templates.Tag,
-				Path:       hetznerConf.Templates.Path,
+			t, err := convertToGrpcTemplates(hetznerConf.Templates)
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert template for provider %q: %w", hetznerConf.Name, err)
 			}
 			if err := FetchCommitHash(t); err != nil {
 				return nil, err
@@ -79,10 +76,9 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 
 	for _, ociConf := range ds.Providers.OCI {
 		if ociConf.Name == providerSpecName {
-			t := &spec.TemplateRepository{
-				Repository: ociConf.Templates.Repository,
-				Tag:        ociConf.Templates.Tag,
-				Path:       ociConf.Templates.Path,
+			t, err := convertToGrpcTemplates(ociConf.Templates)
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert template for provider %q: %w", ociConf.Name, err)
 			}
 			if err := FetchCommitHash(t); err != nil {
 				return nil, err
@@ -107,10 +103,9 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 
 	for _, azureConf := range ds.Providers.Azure {
 		if azureConf.Name == providerSpecName {
-			t := &spec.TemplateRepository{
-				Repository: azureConf.Templates.Repository,
-				Tag:        azureConf.Templates.Tag,
-				Path:       azureConf.Templates.Path,
+			t, err := convertToGrpcTemplates(azureConf.Templates)
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert template for provider %q: %w", azureConf.Name, err)
 			}
 			if err := FetchCommitHash(t); err != nil {
 				return nil, err
@@ -134,10 +129,9 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 
 	for _, awsConf := range ds.Providers.AWS {
 		if awsConf.Name == providerSpecName {
-			t := &spec.TemplateRepository{
-				Repository: awsConf.Templates.Repository,
-				Tag:        awsConf.Templates.Tag,
-				Path:       awsConf.Templates.Path,
+			t, err := convertToGrpcTemplates(awsConf.Templates)
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert template for provider %q: %w", awsConf.Name, err)
 			}
 			if err := FetchCommitHash(t); err != nil {
 				return nil, err
@@ -158,10 +152,9 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 
 	for _, cloudflareConf := range ds.Providers.Cloudflare {
 		if cloudflareConf.Name == providerSpecName {
-			t := &spec.TemplateRepository{
-				Repository: cloudflareConf.Templates.Repository,
-				Tag:        cloudflareConf.Templates.Tag,
-				Path:       cloudflareConf.Templates.Path,
+			t, err := convertToGrpcTemplates(cloudflareConf.Templates)
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert template for provider %q: %w", cloudflareConf.Name, err)
 			}
 			if err := FetchCommitHash(t); err != nil {
 				return nil, err
@@ -182,10 +175,9 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 
 	for _, os := range ds.Providers.Openstack {
 		if os.Name == providerSpecName {
-			t := &spec.TemplateRepository{
-				Repository: os.Templates.Repository,
-				Tag:        os.Templates.Tag,
-				Path:       os.Templates.Path,
+			t, err := convertToGrpcTemplates(os.Templates)
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert template for provider %q: %w", os.Name, err)
 			}
 			if err := FetchCommitHash(t); err != nil {
 				return nil, err
@@ -209,10 +201,9 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 
 	for _, exoConf := range ds.Providers.Exoscale {
 		if exoConf.Name == providerSpecName {
-			t := &spec.TemplateRepository{
-				Repository: exoConf.Templates.Repository,
-				Tag:        exoConf.Templates.Tag,
-				Path:       exoConf.Templates.Path,
+			t, err := convertToGrpcTemplates(exoConf.Templates)
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert template for provider %q: %w", exoConf.Name, err)
 			}
 			if err := FetchCommitHash(t); err != nil {
 				return nil, err
@@ -233,10 +224,9 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 
 	for _, crConf := range ds.Providers.CloudRift {
 		if crConf.Name == providerSpecName {
-			t := &spec.TemplateRepository{
-				Repository: crConf.Templates.Repository,
-				Tag:        crConf.Templates.Tag,
-				Path:       crConf.Templates.Path,
+			t, err := convertToGrpcTemplates(crConf.Templates)
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert template for provider %q: %w", crConf.Name, err)
 			}
 			if err := FetchCommitHash(t); err != nil {
 				return nil, err
@@ -260,10 +250,9 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 
 	for _, vConf := range ds.Providers.Verda {
 		if vConf.Name == providerSpecName {
-			t := &spec.TemplateRepository{
-				Repository: vConf.Templates.Repository,
-				Tag:        vConf.Templates.Tag,
-				Path:       vConf.Templates.Path,
+			t, err := convertToGrpcTemplates(vConf.Templates)
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert template for provider %q: %w", vConf.Name, err)
 			}
 			if err := FetchCommitHash(t); err != nil {
 				return nil, err
@@ -288,10 +277,9 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 
 	for _, oConf := range ds.Providers.OVH {
 		if oConf.Name == providerSpecName {
-			t := &spec.TemplateRepository{
-				Repository: oConf.Templates.Repository,
-				Tag:        oConf.Templates.Tag,
-				Path:       oConf.Templates.Path,
+			t, err := convertToGrpcTemplates(oConf.Templates)
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert template for provider %q: %w", oConf.Name, err)
 			}
 			if err := FetchCommitHash(t); err != nil {
 				return nil, err
@@ -471,41 +459,79 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.Nod
 }
 
 func FetchCommitHash(tmpl *spec.TemplateRepository) error {
-	r := git.NewRemote(memory.NewStorage(), &config.RemoteConfig{
+	isGitHash := func(s string) bool {
+		// Git uses either sha1 or sha256 hashes thus either 40 byte or 64 byte lenghts.
+		if len(s) != 40 && len(s) != 64 { // SHA-1 or SHA-256 object id
+			return false
+		}
+		for _, c := range s {
+			switch {
+			case c >= '0' && c <= '9', c >= 'a' && c <= 'f', c >= 'A' && c <= 'F':
+			default:
+				return false
+			}
+		}
+		return true
+	}
+
+	if isGitHash(tmpl.Commit) {
+		tmpl.CommitHash = tmpl.Commit
+		return nil
+	}
+
+	var repository string
+	switch tmpl.Endpoint.Protocol {
+	case spec.TemplateRepository_Endpoint_PROTOCOL_HTTPS:
+		repository = tmpl.HttpsUrl()
+	default:
+		return fmt.Errorf("protocol %q is unsupported for retrieving commit hashes", tmpl.Endpoint.Protocol)
+	}
+
+	cfg := config.RemoteConfig{
 		Name: "origin",
-		URLs: []string{tmpl.Repository},
-	})
+		URLs: []string{repository},
+	}
+	opts := git.ListOptions{
+		Timeout:       40,
+		PeelingOption: git.AppendPeeled,
+	}
 
-	rfs, err := r.List(&git.ListOptions{
-		Timeout: 60,
-	})
+	if tmpl.Auth != nil {
+		opts.Auth = &http.BasicAuth{
+			Username: tmpl.Auth.GetUsername(),
+			Password: tmpl.Auth.Token,
+		}
+	}
+
+	r := git.NewRemote(memory.NewStorage(), &cfg)
+	rfs, err := r.List(&opts)
 	if err != nil {
-		return fmt.Errorf("failed to list remote repository %q: %w", tmpl.Repository, err)
+		return fmt.Errorf("failed to list remote repository %q: %w", repository, err)
 	}
 
-	if tmpl.Tag != nil {
-		rfs = slices.DeleteFunc(rfs, func(reference *plumbing.Reference) bool {
-			//nolint
-			return !(reference.Name().IsTag() && reference.Name().Short() == *tmpl.Tag)
-		})
-	} else {
-		i := slices.IndexFunc(rfs, func(r *plumbing.Reference) bool { return r.Name().Short() == "HEAD" })
-		if i < 0 {
-			return errors.New("couldn't find commit hash for HEAD of the template repository")
+	var branchCommit, tagCommit, tagPeeledCommit string
+	for _, r := range rfs {
+		switch {
+		case r.Name().IsBranch() && r.Name().Short() == tmpl.Commit:
+			branchCommit = r.Hash().String()
+		case r.Name().IsTag() && r.Name().Short() == tmpl.Commit:
+			tagCommit = r.Hash().String()
+		case r.Name().IsTag() && r.Name().Short() == tmpl.Commit+"^{}": // annotated tag
+			tagPeeledCommit = r.Hash().String()
 		}
-		t := rfs[i].Target()
-		rfs = slices.DeleteFunc(rfs, func(r *plumbing.Reference) bool { return r.Name() != t })
 	}
 
-	if len(rfs) != 1 {
-		target := "HEAD"
-		if tmpl.Tag != nil {
-			target = *tmpl.Tag
-		}
-		return fmt.Errorf("couldn't find the requested target %q, for the template repository %q", target, tmpl.Repository)
+	switch {
+	case tagPeeledCommit != "":
+		tmpl.CommitHash = tagPeeledCommit
+	case tagCommit != "":
+		tmpl.CommitHash = tagCommit
+	case branchCommit != "":
+		tmpl.CommitHash = branchCommit
+	default:
+		return fmt.Errorf("couldn't find the requested commit %q for the template repository %q", tmpl.Commit, repository)
 	}
 
-	tmpl.CommitHash = rfs[0].Hash().String()
 	return nil
 }
 
@@ -586,7 +612,7 @@ func (ds *Manifest) nodePoolDefined(pool string) (defined bool, static bool) {
 func (ds *Manifest) GetProviderType(provider string) (string, error) {
 	var t string
 
-	ds.ForEachProvider(func(name, typ string, _ **TemplateRepository) bool {
+	ds.ForEachProvider(func(name, typ string) bool {
 		if name == provider {
 			t = typ
 			return false
@@ -601,66 +627,95 @@ func (ds *Manifest) GetProviderType(provider string) (string, error) {
 	return t, nil
 }
 
-func (ds *Manifest) ForEachProvider(do func(name, typ string, tmpls **TemplateRepository) bool) {
-	for i, c := range ds.Providers.GCP {
-		if !do(c.Name, "gcp", &ds.Providers.GCP[i].Templates) {
+func (ds *Manifest) ForEachProvider(do func(name, typ string) bool) {
+	for _, c := range ds.Providers.GCP {
+		if !do(c.Name, "gcp") {
 			return
+		}
+	}
+	for _, c := range ds.Providers.Hetzner {
+		if !do(c.Name, "hetzner") {
+			return
+		}
+	}
+	for _, c := range ds.Providers.OCI {
+		if !do(c.Name, "oci") {
+			return
+		}
+	}
+	for _, c := range ds.Providers.AWS {
+		if !do(c.Name, "aws") {
+			return
+		}
+	}
+	for _, c := range ds.Providers.Azure {
+		if !do(c.Name, "azure") {
+			return
+		}
+	}
+	for _, c := range ds.Providers.Cloudflare {
+		if !do(c.Name, "cloudflare") {
+			return
+		}
+	}
+	for _, c := range ds.Providers.Openstack {
+		if !do(c.Name, "openstack") {
+			return
+		}
+	}
+	for _, c := range ds.Providers.Exoscale {
+		if !do(c.Name, "exoscale") {
+			return
+		}
+	}
+	for _, c := range ds.Providers.CloudRift {
+		if !do(c.Name, "cloudrift") {
+			return
+		}
+	}
+	for _, c := range ds.Providers.Verda {
+		if !do(c.Name, "verda") {
+			return
+		}
+	}
+	for _, c := range ds.Providers.OVH {
+		if !do(c.Name, "ovh") {
+			return
+		}
+	}
+}
+
+func convertToGrpcTemplates(t *TemplateRepository) (*spec.TemplateRepository, error) {
+	var protocol spec.TemplateRepository_Endpoint_Protocol
+	switch strings.ToLower(t.Endpoint.Protocol) {
+	case "https":
+		protocol = spec.TemplateRepository_Endpoint_PROTOCOL_HTTPS
+	default:
+		return nil, fmt.Errorf("unsupported protocol %v", t.Endpoint.Protocol)
+	}
+
+	out := &spec.TemplateRepository{
+		Endpoint: &spec.TemplateRepository_Endpoint{
+			Url:      t.Endpoint.URL,
+			Protocol: protocol,
+		},
+		Auth:   nil,
+		Commit: t.Commit,
+		Paths: &spec.TemplateRepository_TemplatePaths{
+			Terraformer:  t.Paths.Terraformer,
+			Playbooks:    t.Paths.Playbooks,
+			ConfigLb:     t.Paths.ConfigLb,
+			ConfigK8S:    t.Paths.ConfigK8s,
+			ManifestsK8S: t.Paths.ManifestsK8s,
+		},
+	}
+
+	if t.Auth != nil {
+		out.Auth = &spec.TemplateRepository_Auth{Token: t.Auth.Token}
+		if t.Auth.Username != "" {
+			out.Auth.Username = new(t.Auth.Username)
 		}
 	}
 
-	for i, c := range ds.Providers.Hetzner {
-		if !do(c.Name, "hetzner", &ds.Providers.Hetzner[i].Templates) {
-			return
-		}
-	}
-
-	for i, c := range ds.Providers.OCI {
-		if !do(c.Name, "oci", &ds.Providers.OCI[i].Templates) {
-			return
-		}
-	}
-
-	for i, c := range ds.Providers.AWS {
-		if !do(c.Name, "aws", &ds.Providers.AWS[i].Templates) {
-			return
-		}
-	}
-
-	for i, c := range ds.Providers.Azure {
-		if !do(c.Name, "azure", &ds.Providers.Azure[i].Templates) {
-			return
-		}
-	}
-
-	for i, c := range ds.Providers.Cloudflare {
-		if !do(c.Name, "cloudflare", &ds.Providers.Cloudflare[i].Templates) {
-			return
-		}
-	}
-
-	for i, c := range ds.Providers.Openstack {
-		if !do(c.Name, "openstack", &ds.Providers.Openstack[i].Templates) {
-			return
-		}
-	}
-	for i, c := range ds.Providers.Exoscale {
-		if !do(c.Name, "exoscale", &ds.Providers.Exoscale[i].Templates) {
-			return
-		}
-	}
-	for i, c := range ds.Providers.CloudRift {
-		if !do(c.Name, "cloudrift", &ds.Providers.CloudRift[i].Templates) {
-			return
-		}
-	}
-	for i, c := range ds.Providers.Verda {
-		if !do(c.Name, "verda", &ds.Providers.Verda[i].Templates) {
-			return
-		}
-	}
-	for i, c := range ds.Providers.OVH {
-		if !do(c.Name, "ovh", &ds.Providers.OVH[i].Templates) {
-			return
-		}
-	}
+	return out, nil
 }

@@ -122,9 +122,15 @@ func GenerateFakeProvider() *spec.Provider {
 		ProviderTypeOption[chosen](KnownProviderTypes[chosen]),
 		WithProviderTemplates(
 			CreateFakeRepository(
-				WithRepository("127.0.0.1"),
-				WithRepositoryTag("v0.0.1"),
-				WithRepositoryPath("/tmp"),
+				WithRepositoryHttpsEndpoint("127.0.0.1"),
+				WithRepositoryCommit("v0.0.1"),
+				WithRepositoryPath(&spec.TemplateRepository_TemplatePaths{
+					Terraformer:  "/tmp",
+					Playbooks:    "/tmp",
+					ConfigLb:     "/tmp",
+					ConfigK8S:    "/tmp",
+					ManifestsK8S: "/tmp",
+				}),
 				WithRepositoryCommitHash("0"),
 			),
 		),
