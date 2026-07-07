@@ -329,13 +329,15 @@ jobs:
             https://api.github.com/repos/berops/claudie-config/releases/latest \
             | jq -r '.tag_name')
 
-          if [ -z "$LATEST_TAG" ] || [ "$LATEST_TAG" == "null" ] || [ "$LATEST_TAG" == "" ]; then
+          if [ -z "$LATEST_TAG" ] || [ "$LATEST_TAG" == "null" ]; then
             echo "Failed to resolve latest release tag" >&2
             exit 1
           fi
           echo "Using claudie-config release: $LATEST_TAG"
 
-          TAG="$LATEST_TAG" ./yq e -i '(select(.kind == "TemplateGitReference") | .spec.commit) = strenv(TAG)' ./claudie/default-template-reference.yaml
+          TAG="$LATEST_TAG" ./yq e -i \
+                '(select(documentIndex == 0) | .spec.template.spec.containers[] | select(.name == "claudie-operator").env) += [{"name": "CLAUDIE_TEMPLATES_REFERENCE_COMMIT", "value": strenv(TAG)}]' \
+                ./claudie/operator.yaml
 
       - name: Install tofu
         run: |

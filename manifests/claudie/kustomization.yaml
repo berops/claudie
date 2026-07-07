@@ -12,7 +12,6 @@ resources:
   - mongo
   - minio
   - nats
-  - default-template-reference.yaml
 
 # Alter ValidatingWebhookConfiguration and Certificate fields, so they will match the generated namespace
 replacements:

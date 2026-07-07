@@ -168,6 +168,15 @@ func validateReferences(ctx context.Context, kc client.Client, im *v1beta.InputM
 			Namespace: p.SecretRef.Namespace,
 		}
 
+		if key.Name == "" || key.Namespace == "" {
+			return fmt.Errorf(
+				"provider %q has invalid credentials secret, atleast one field is empty, name %q namespace %q,",
+				p.ProviderName,
+				key.Name,
+				key.Namespace,
+			)
+		}
+
 		if err := kc.Get(ctx, key, new(corev1.Secret)); err != nil {
 			if !apierrors.IsNotFound(err) {
 				return fmt.Errorf(
@@ -190,6 +199,11 @@ func validateReferences(ctx context.Context, kc client.Client, im *v1beta.InputM
 		key = client.ObjectKey{
 			Name:      p.TemplatesRef.Name,
 			Namespace: p.TemplatesRef.Namespace,
+		}
+
+		if key.Name == "" || key.Namespace == "" {
+			// TemplateGitReference is optional.
+			continue
 		}
 
 		if err := kc.Get(ctx, key, &discard); err != nil {
@@ -215,24 +229,27 @@ func validateReferences(ctx context.Context, kc client.Client, im *v1beta.InputM
 			Namespace: discard.Spec.Auth.SecretRef.Namespace,
 		}
 
-		if err := kc.Get(ctx, key, new(corev1.Secret)); err != nil {
-			if !apierrors.IsNotFound(err) {
+		// Auth tokens are optional.
+		if key.Name != "" {
+			if err := kc.Get(ctx, key, new(corev1.Secret)); err != nil {
+				if !apierrors.IsNotFound(err) {
+					return fmt.Errorf(
+						"failed to check if git auth secret %q within namespace %q exists for template reference %q namespace %q",
+						key.Name,
+						key.Namespace,
+						p.TemplatesRef.Name,
+						p.TemplatesRef.Namespace,
+					)
+				}
+
 				return fmt.Errorf(
-					"failed to check if git auth secret %q within namespace %q exists for template reference %q namespace %q",
+					"git auth secret %q within namespace %q for template reference %q namespace %q does not exist",
 					key.Name,
 					key.Namespace,
 					p.TemplatesRef.Name,
 					p.TemplatesRef.Namespace,
 				)
 			}
-
-			return fmt.Errorf(
-				"git auth secret %q within namespace %q exists for template reference %q namespace %q does not exist",
-				key.Name,
-				key.Namespace,
-				p.TemplatesRef.Name,
-				p.TemplatesRef.Namespace,
-			)
 		}
 	}
 

@@ -34,7 +34,7 @@ func VerifyCommitExists(directory, commit string) error {
 		return nil
 	}
 	if _, ok := errors.AsType[*exec.ExitError](err); ok {
-		return fmt.Errorf("%w: %w", ErrUnknownCommit, err)
+		return fmt.Errorf("%w %q: %w", ErrUnknownCommit, commit, err)
 	}
 	return fmt.Errorf("failed to check the existance of commit %q for %q: %w", commit, directory, err)
 }

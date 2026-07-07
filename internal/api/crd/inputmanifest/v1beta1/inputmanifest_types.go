@@ -113,6 +113,7 @@ type Provider struct {
 	ProviderType ProviderType           `json:"providerType"`
 	SecretRef    corev1.SecretReference `json:"secretRef"`
 	// External template for building the cluster infrastrucutre.
+	// +optional
 	TemplatesRef TemplatesReference `json:"templatesRef"`
 }
 

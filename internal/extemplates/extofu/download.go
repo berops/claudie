@@ -1,11 +1,9 @@
 package extofu
 
 import (
-	"bytes"
 	"fmt"
 	"net/url"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -13,6 +11,7 @@ import (
 	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 )
 
 // Downloads the templates needed for the terraformer service into the specified directory.
@@ -38,8 +37,7 @@ func Download(downloadInto string, provider *spec.Provider) error {
 	}
 
 	var (
-		cloneDirectory    = filepath.Join(downloadInto, u.Hostname(), u.Path)
-		gitDirectory      = filepath.Join(cloneDirectory, provider.Templates.CommitHash)
+		gitDirectory      = filepath.Join(downloadInto, u.Hostname(), u.Path, provider.Templates.CommitHash)
 		providerTemplates = strings.Trim(filepath.Join(provider.Templates.Paths.Terraformer, provider.CloudProviderName), string(filepath.Separator))
 	)
 
@@ -67,33 +65,44 @@ func Download(downloadInto string, provider *spec.Provider) error {
 
 		// on mismatch re-download the repo.
 		if err := os.RemoveAll(gitDirectory); err != nil {
-			return fmt.Errorf("failed to delete local clone %q: %w", cloneDirectory, err)
+			return fmt.Errorf("failed to delete local clone %q: %w", gitDirectory, err)
 		}
 		// fallthrough, continue with the cloning below
 	}
 
-	if err := fileutils.CreateDirectory(cloneDirectory); err != nil {
-		return fmt.Errorf("failed to create directory %q: %w", cloneDirectory, err)
+	if err := fileutils.CreateDirectory(gitDirectory); err != nil {
+		return fmt.Errorf("failed to create directory %q: %w", gitDirectory, err)
 	}
 
-	logs := new(bytes.Buffer)
-	//nolint
-	clone := exec.Command("git", "clone", "--no-checkout", endpoint, provider.Templates.CommitHash)
-	clone.Dir = cloneDirectory
-	clone.Stdout = logs
-	clone.Stderr = logs
-
-	if err := clone.Run(); err != nil {
-		return fmt.Errorf("failed to clone %q: %w: %s", endpoint, err, logs.String())
+	opts := git.CloneOptions{
+		URL:        endpoint,
+		Auth:       nil,
+		NoCheckout: true,
 	}
 
-	if err := extemplates.VerifyCommitExists(gitDirectory, provider.Templates.Commit); err != nil {
+	if provider.Templates.Auth != nil {
+		auth := http.BasicAuth{
+			Username: "x-access-token",
+			Password: provider.Templates.Auth.Token,
+		}
+		if provider.Templates.Auth.Username != nil {
+			auth.Username = *provider.Templates.Auth.Username
+		}
+		opts.Auth = &auth
+	}
+
+	if _, err := git.PlainClone(gitDirectory, false, &opts); err != nil {
+		return fmt.Errorf("failed to clone %q: %w", endpoint, err)
+	}
+
+	if err := extemplates.VerifyCommitExists(gitDirectory, provider.Templates.CommitHash); err != nil {
 		return fmt.Errorf("commit verification failed: %w", err)
 	}
 
 	if err := extemplates.SparseCheckout(gitDirectory, providerTemplates, provider.Templates.CommitHash); err != nil {
 		return err
 	}
+
 	// Worktree is not supported by go-git, thus check if worktree is set.
 	return extemplates.UnsetWorktree(gitDirectory)
 }

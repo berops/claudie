@@ -16,15 +16,34 @@ import (
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	v1beta1manifest "github.com/berops/claudie/internal/api/crd/inputmanifest/v1beta1"
+	"github.com/berops/claudie/internal/api/crd/template-git-reference/v1beta1"
+	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/proto/pb/spec"
 	managerclient "github.com/berops/claudie/services/manager/client"
+)
+
+const (
+	// Claudie always comes with a default templates reference created with this name.
+	DefaultTemplatesReferenceName = "claudie-default-templates"
+
+	// Claudie always comes with a default templates reference created with in this namespace.
+	DefaultTemplatesReferenceNamespace = "claudie"
+)
+
+var (
+	TemplateReferenceHttpsUrl = envs.GetOrDefault("CLAUDIE_TEMPLATES_REFERENCE_HTTPS_URL", "github.com/berops/claudie-config")
+	TemplateReferenceCommit   = envs.GetOrDefault("CLAUDIE_TEMPLATES_REFERENCE_COMMIT", "release")
 )
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := crlog.FromContext(ctx)
+
+	if err := r.ensureDefaultTemplateReference(ctx); err != nil {
+		log.Error(err, "failed to ensure default templates reference exists")
+	}
 
 	inputManifest := &v1beta1manifest.InputManifest{}
 	if err := r.kc.Get(ctx, req.NamespacedName, inputManifest); err != nil {
@@ -73,7 +92,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			Namespace: p.TemplatesRef.Namespace,
 		}
 
-		if templatesKey.Name == "" {
+		if templatesKey.Name == "" || templatesKey.Namespace == "" {
 			msg := fmt.Sprintf(
 				"No templates specified for provider %q type %q, defaulting to 'claudie-default-templates'",
 				p.ProviderName,
@@ -81,8 +100,8 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			)
 			log.Info(msg)
 
-			templatesKey.Name = "claudie-default-templates"
-			templatesKey.Namespace = "claudie"
+			templatesKey.Name = DefaultTemplatesReferenceName
+			templatesKey.Namespace = DefaultTemplatesReferenceNamespace
 		}
 
 		if err := r.kc.Get(ctx, templatesKey, &pwd.Templates); err != nil {
@@ -109,8 +128,8 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			Namespace: pwd.Templates.Spec.Auth.SecretRef.Namespace,
 		}
 
+		// Auth is optional.
 		if secretKey.Name != "" {
-			// Repository requires auth.
 			var auth corev1.Secret
 			if err := r.kc.Get(ctx, secretKey, &auth); err != nil {
 				if !apierrors.IsNotFound(err) {
@@ -161,6 +180,10 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			action: "FetchingSecrets",
 		},
 	} {
+		if len(c.items) < 1 {
+			continue
+		}
+
 		msg := fmt.Sprintf(c.msgFmt, strings.Join(c.items, ", "))
 		r.Recorder.Eventf(inputManifest, nil, corev1.EventTypeWarning, c.reason, c.action, "%s", msg)
 		log.Error(nil, msg, "requeueAfter", REQUEUE_AFTER_ERROR)
@@ -172,9 +195,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
 	}
 
-	// Approximate size of the map to 5 nodes per nodepool
 	staticNodeSecrets := make(map[string][]v1beta1manifest.StaticNodeWithData, len(inputManifest.Spec.NodePools.Static))
-	// Range over static nodepools an get secret for each static node
 	for _, s := range inputManifest.Spec.NodePools.Static {
 		nodes := make([]v1beta1manifest.StaticNodeWithData, 0, len(s.Nodes))
 		for _, n := range s.Nodes {
@@ -493,4 +514,40 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	return ctrl.Result{RequeueAfter: REQUEUE_UPDATE}, nil
+}
+
+func (r *InputManifestReconciler) ensureDefaultTemplateReference(ctx context.Context) error {
+	desired := &v1beta1.TemplateGitReference{
+		Spec: v1beta1.TemplateGitReferenceSpec{
+			Endpoint: v1beta1.EndpointSpec{
+				URL:      TemplateReferenceHttpsUrl,
+				Protocol: "https",
+			},
+			Commit: TemplateReferenceCommit,
+			Paths: v1beta1.GitPaths{
+				Terraformer:  "templates/terraformer",
+				Playbooks:    "templates/playbooks",
+				ConfigLB:     "templates/config-lb",
+				ConfigK8s:    "templates/config-k8s",
+				ManifestsK8s: "templates/manifests-k8s",
+			},
+		},
+	}
+	desired.Name = DefaultTemplatesReferenceName
+	desired.Namespace = DefaultTemplatesReferenceNamespace
+
+	key := client.ObjectKey{
+		Name:      DefaultTemplatesReferenceName,
+		Namespace: DefaultTemplatesReferenceNamespace,
+	}
+	existing := v1beta1.TemplateGitReference{}
+	if err := r.kc.Get(ctx, key, &existing); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return err
+		}
+		return r.kc.Create(ctx, desired)
+	}
+
+	existing.Spec = desired.Spec
+	return r.kc.Update(ctx, &existing)
 }

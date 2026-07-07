@@ -20,7 +20,7 @@ rules:
       - watch
       - patch
   - apiGroups: ["claudie.io"]
-    resources: ["inputmanifests", "settings"]
+    resources: ["inputmanifests", "templategitreferences"]
     verbs:
       - create
       - delete

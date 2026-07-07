@@ -497,10 +497,14 @@ func FetchCommitHash(tmpl *spec.TemplateRepository) error {
 	}
 
 	if tmpl.Auth != nil {
-		opts.Auth = &http.BasicAuth{
-			Username: tmpl.Auth.GetUsername(),
+		auth := http.BasicAuth{
+			Username: "x-access-token",
 			Password: tmpl.Auth.Token,
 		}
+		if tmpl.Auth.Username != nil {
+			auth.Username = *tmpl.Auth.Username
+		}
+		opts.Auth = &auth
 	}
 
 	r := git.NewRemote(memory.NewStorage(), &cfg)

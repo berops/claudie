@@ -572,7 +572,6 @@ spec:
                   - name
                   - providerType
                   - secretRef
-                  - templatesRef
                   type: object
                 type: array
             type: object
