@@ -82,6 +82,23 @@ kubectl create secret generic cloudrift-secret-1 --namespace=<your-namespace> --
 
 ```yaml
 apiVersion: claudie.io/v1beta1
+kind: TemplateGitReference
+metadata:
+  name: cloudrift-templates
+  namespace: claudie
+spec:
+  endpoint:
+    url: github.com/berops/claudie-config
+    protocol: https
+  commit: v0.12.0
+  paths:
+    terraformer: templates/terraformer
+    playbooks: templates/playbooks
+    configLb: templates/config-lb
+    configK8s: templates/config-k8s
+    manifestsK8s: templates/manifests-k8s
+---
+apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
   name: cloudrift-example-manifest
@@ -91,10 +108,9 @@ spec:
   providers:
     - name: cloudrift-1
       providerType: cloudrift
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.11.3
-        path: "templates/terraformer/cloudrift"
+      templatesRef:
+        name: cloudrift-templates
+        namespace: claudie
       secretRef:
         name: cloudrift-secret-1
         namespace: <your-namespace>
@@ -141,6 +157,23 @@ spec:
 
 ```yaml
 apiVersion: claudie.io/v1beta1
+kind: TemplateGitReference
+metadata:
+  name: cloudrift-templates
+  namespace: claudie
+spec:
+  endpoint:
+    url: github.com/berops/claudie-config
+    protocol: https
+  commit: v0.12.0
+  paths:
+    terraformer: templates/terraformer
+    playbooks: templates/playbooks
+    configLb: templates/config-lb
+    configK8s: templates/config-k8s
+    manifestsK8s: templates/manifests-k8s
+---
+apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
   name: cloudrift-autoscale-manifest
@@ -150,10 +183,9 @@ spec:
   providers:
     - name: cloudrift-1
       providerType: cloudrift
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.11.3
-        path: "templates/terraformer/cloudrift"
+      templatesRef:
+        name: cloudrift-templates
+        namespace: claudie
       secretRef:
         name: cloudrift-secret-1
         namespace: <your-namespace>

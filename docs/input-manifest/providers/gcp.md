@@ -124,6 +124,24 @@ Claudie automatically applies the label `claudie.io/spot=true` and the taint `cl
 
 ```yaml
 apiVersion: claudie.io/v1beta1
+kind: TemplateGitReference
+metadata:
+  name: gcp-spot-templates
+  namespace: claudie
+spec:
+  endpoint:
+    url: github.com/berops/claudie-config
+    protocol: https
+  # GCP Spot VM support is available from claudie-config v0.11.4+
+  commit: v0.12.0
+  paths:
+    terraformer: templates/terraformer
+    playbooks: templates/playbooks
+    configLb: templates/config-lb
+    configK8s: templates/config-k8s
+    manifestsK8s: templates/manifests-k8s
+---
+apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
   name: gcp-spot-example
@@ -133,11 +151,9 @@ spec:
   providers:
     - name: gcp-1
       providerType: gcp
-      # GCP Spot VM support is available from claudie-config v0.11.4+
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.11.4
-        path: "templates/terraformer/gcp"
+      templatesRef:
+        name: gcp-spot-templates
+        namespace: claudie
       secretRef:
         name: gcp-secret
         namespace: secrets

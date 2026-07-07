@@ -88,6 +88,23 @@ kubectl create secret generic static-node-key --namespace=<your-namespace> --fro
 
 ```yaml
 apiVersion: claudie.io/v1beta1
+kind: TemplateGitReference
+metadata:
+  name: hetzner-templates
+  namespace: claudie
+spec:
+  endpoint:
+    url: github.com/berops/claudie-config
+    protocol: https
+  commit: v0.12.0
+  paths:
+    terraformer: templates/terraformer
+    playbooks: templates/playbooks
+    configLb: templates/config-lb
+    configK8s: templates/config-k8s
+    manifestsK8s: templates/manifests-k8s
+---
+apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
   name: hybrid-cloud-example
@@ -97,10 +114,9 @@ spec:
   providers:
     - name: hetzner-1
       providerType: hetzner
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.11.1
-        path: "templates/terraformer/hetzner"
+      templatesRef:
+        name: hetzner-templates
+        namespace: claudie
       secretRef:
         name: hetzner-secret-1
         namespace: <your-namespace>

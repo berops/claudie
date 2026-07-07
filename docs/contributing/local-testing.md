@@ -185,14 +185,22 @@ When using this technique, you most likely will omit the initial step of the Inp
 If this is the case, you will need to add templates to the providers listed in the InputManifest otherwise the workflow will panic at an early stage due to unset templates.
 
 
-To specify templates you add them to the provider definition as shown in the snippet below:
+To specify templates you add a `templates` block to the provider definition referencing a `TemplateGitReference` custom resource, as shown in the snippet below:
 ```yaml
-  hetzner:
+  providers:
     - name: hetzner-1
       credentials: "api token"
       templates:
-        repository: "https://github.com/berops/claudie-config"
-        path: "templates/terraformer/hetzner"
+        endpoint:
+          url: github.com/berops/claudie-config
+          protocol: "https"
+        commit: v0.12.0
+        paths:
+          terraformer: "templates/terraformer"
+          playbooks: "templates/playbooks"
+          configLb: "templates/config-lb"
+          configK8s: "templates/config-k8s"
+          manifestsK8s: "templates/manifests-k8s"
 ```
 
 We provide ready-to-use terraform templates, which can be used by claudie at https://github.com/berops/claudie-config, If you would like to use your own, you can fork the repo, or write your own templates and modify the provider definition in the InputManifest to point to your templates

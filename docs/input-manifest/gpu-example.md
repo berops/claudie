@@ -74,11 +74,6 @@ spec:
   providers:
     - name: gcp-1
       providerType: gcp
-      # GCP Spot VM support is available from claudie-config v0.11.4+
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.11.4
-        path: "templates/terraformer/gcp"
       secretRef:
         name: gcp-secret
         namespace: secrets
@@ -135,6 +130,24 @@ To request spot nodes, set `spot: true` on a GCP dynamic nodepool. Spot is only 
 
 ```yaml
 apiVersion: claudie.io/v1beta1
+kind: TemplateGitReference
+metadata:
+  name: gcp-templates-spot
+  namespace: claudie
+spec:
+  endpoint:
+    url: github.com/berops/claudie-config
+    protocol: https
+  # GCP Spot VM support is available from claudie-config v0.11.4+
+  commit: v0.12.0
+  paths:
+    terraformer: templates/terraformer
+    playbooks: templates/playbooks
+    configLb: templates/config-lb
+    configK8s: templates/config-k8s
+    manifestsK8s: templates/manifests-k8s
+---
+apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
   name: gcp-spot-gpu-autoscaled
@@ -144,11 +157,9 @@ spec:
   providers:
     - name: gcp-1
       providerType: gcp
-      # GCP Spot VM support is available from claudie-config v0.11.4+
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.11.4
-        path: "templates/terraformer/gcp"
+      templatesRef:
+        name: gcp-templates-spot
+        namespace: claudie
       secretRef:
         name: gcp-secret
         namespace: secrets
@@ -234,6 +245,24 @@ For [Exoscale](providers/exoscale.md), GPU instances have the GPU built into the
 
 ```yaml
 apiVersion: claudie.io/v1beta1
+kind: TemplateGitReference
+metadata:
+  name: exoscale-templates
+  namespace: claudie
+spec:
+  endpoint:
+    url: github.com/berops/claudie-config
+    protocol: https
+  # Exoscale templates are supported from claudie-config v0.9.18+
+  commit: v0.12.0
+  paths:
+    terraformer: templates/terraformer
+    playbooks: templates/playbooks
+    configLb: templates/config-lb
+    configK8s: templates/config-k8s
+    manifestsK8s: templates/manifests-k8s
+---
+apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
   name: exoscale-gpu-example
@@ -243,11 +272,9 @@ spec:
   providers:
     - name: exoscale-1
       providerType: exoscale
-      # Exoscale templates are supported from claudie-config v0.9.18+
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.18
-        path: "templates/terraformer/exoscale"
+      templatesRef:
+        name: exoscale-templates
+        namespace: claudie
       secretRef:
         name: exoscale-secret
         namespace: secrets

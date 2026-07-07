@@ -62,6 +62,24 @@ kubectl create secret generic exoscale-secret-1 --namespace=<your-namespace> --f
 
 ```yaml
 apiVersion: claudie.io/v1beta1
+kind: TemplateGitReference
+metadata:
+  name: exoscale-templates
+  namespace: claudie
+spec:
+  endpoint:
+    url: github.com/berops/claudie-config
+    protocol: https
+  # Exoscale templates are supported from claudie-config v0.9.18+
+  commit: v0.12.0
+  paths:
+    terraformer: templates/terraformer
+    playbooks: templates/playbooks
+    configLb: templates/config-lb
+    configK8s: templates/config-k8s
+    manifestsK8s: templates/manifests-k8s
+---
+apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
   name: exoscale-example-manifest
@@ -71,11 +89,9 @@ spec:
   providers:
     - name: exoscale-1
       providerType: exoscale
-      # Exoscale templates are supported from claudie-config v0.9.18+
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.18
-        path: "templates/terraformer/exoscale"
+      templatesRef:
+        name: exoscale-templates
+        namespace: claudie
       secretRef:
         name: exoscale-secret-1
         namespace: <your-namespace>
@@ -142,6 +158,24 @@ kubectl create secret generic exoscale-secret-2 --namespace=<your-namespace> --f
 
 ```yaml
 apiVersion: claudie.io/v1beta1
+kind: TemplateGitReference
+metadata:
+  name: exoscale-templates
+  namespace: claudie
+spec:
+  endpoint:
+    url: github.com/berops/claudie-config
+    protocol: https
+  # Exoscale templates are supported from claudie-config v0.9.18+
+  commit: v0.12.0
+  paths:
+    terraformer: templates/terraformer
+    playbooks: templates/playbooks
+    configLb: templates/config-lb
+    configK8s: templates/config-k8s
+    manifestsK8s: templates/manifests-k8s
+---
+apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
   name: exoscale-example-manifest
@@ -151,21 +185,17 @@ spec:
   providers:
     - name: exoscale-1
       providerType: exoscale
-      # Exoscale templates are supported from claudie-config v0.9.18+
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.18
-        path: "templates/terraformer/exoscale"
+      templatesRef:
+        name: exoscale-templates
+        namespace: claudie
       secretRef:
         name: exoscale-secret-1
         namespace: <your-namespace>
     - name: exoscale-2
       providerType: exoscale
-      # Exoscale templates are supported from claudie-config v0.9.18+
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.9.18
-        path: "templates/terraformer/exoscale"
+      templatesRef:
+        name: exoscale-templates
+        namespace: claudie
       secretRef:
         name: exoscale-secret-2
         namespace: <your-namespace>

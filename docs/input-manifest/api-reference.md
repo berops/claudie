@@ -56,6 +56,10 @@ needs to be defined.
 
   Represents a Secret Reference. It has enough information to retrieve secret in any namespace.
 
+- `templatesRef` [TemplatesRef](#templatesref)
+
+  Optional reference to a `TemplateGitReference` custom resource that defines the git repository, commit reference, and template paths. If omitted, the default `claudie-default-templates` is used.
+
 Support for more cloud providers is in the [roadmap](https://github.com/berops/claudie/blob/master/docs/roadmap/roadmap.md).
 
 !!! note "For static nodepools a provider is not needed, refer to the [static section](#static) for more detailed information."
@@ -72,6 +76,79 @@ Support for more cloud providers is in the [roadmap](https://github.com/berops/c
 
   Namespace of the secret which holds data for the particular cloud provider instance.
 
+## TemplatesRef
+
+- `name`
+
+  Name of the `TemplateGitReference` resource.
+
+- `namespace`
+
+  Namespace of the `TemplateGitReference` resource. If omitted, the namespace of the InputManifest is used.
+
+## TemplateGitReference
+
+`TemplateGitReference` is a custom resource that defines the source of external templates for Claudie. It specifies a git repository, an optional authentication reference, a commit reference, and the paths to template directories within that repository.
+
+Claudie ships with a default `TemplateGitReference` named `claudie-default-templates` in the `claudie` namespace, pointing to https://github.com/berops/claudie-config.
+
+```yaml
+apiVersion: claudie.io/v1beta1
+kind: TemplateGitReference
+metadata:
+  name: my-templates
+  namespace: claudie
+spec:
+  endpoint:
+    url: github.com/berops/claudie-config
+    protocol: https
+  auth:
+    secretRef:
+      name: git-token
+      namespace: claudie
+  commit: latest
+  paths:
+    terraformer: templates/terraformer
+    playbooks: templates/playbooks
+    configLb: templates/config-lb
+    configK8s: templates/config-k8s
+    manifestsK8s: templates/manifests-k8s
+```
+
+
+### `TemplateGitReference` spec
+
+- `endpoint`
+
+  Git repository endpoint to fetch templates from.
+
+  - `url`: URL of the git repository (e.g. `github.com/berops/claudie-config`).
+  - `protocol`: Protocol used to access the repository. Currently only `https` is supported.
+
+- `auth` *(optional)*
+
+  Optional authentication for private git repositories.
+
+  - `secretRef`: Reference to a Kubernetes Secret containing the git token.
+    - `name`: Name of the secret.
+    - `namespace`: Namespace of the secret.
+    The secret must contain a `token` field and optionally a `username` field.
+
+- `commit`
+
+  Git commit, tag, or branch to checkout. This is resolved to a commit hash during reconciliation.
+
+- `paths`
+
+  Paths to template directories within the repository. Each path points to a subdirectory containing templates for a specific service.
+
+  - `terraformer`: Path to OpenTofu infrastructure templates.
+  - `playbooks`: Path to Ansible playbooks.
+  - `configLb`: Path to loadbalancer configuration templates.
+  - `configK8s`: Path to Kubernetes configuration templates.
+  - `manifestsK8s`: Path to Kubernetes manifest templates.
+
+
 ### Cloudflare
 
 The fields that need to be included in a Kubernetes Secret resource to utilize the Cloudflare provider.
@@ -81,10 +158,9 @@ To find out how to configure Cloudflare follow the instructions [here](./provide
 
   Credentials for the provider (API token).
 
-- `templates`
-  - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
-  - `tag`: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.
-  - `path`: specifies the path for a specific provider within the `repository` where the source template files are located.
+- `templatesRef`
+  - `name`: Name of a `TemplateGitReference` custom resource that defines the git repository, commit reference, and template paths.
+  - `namespace`: Namespace of the `TemplateGitReference` custom resource.
 
 ### CloudRift
 
@@ -99,10 +175,9 @@ To find out how to configure CloudRift provider and API credentials, follow the 
 
   Team ID to provision VMs under a team account. If omitted, VMs are provisioned under the personal account associated with the token.
 
-- `templates`
-  - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
-  - `tag`: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.
-  - `path`: specifies the path for a specific provider within the `repository` where the source template files are located.
+- `templatesRef`
+  - `name`: Name of a `TemplateGitReference` custom resource that defines the git repository, commit reference, and template paths.
+  - `namespace`: Namespace of the `TemplateGitReference` custom resource.
 
 ### GCP
 
@@ -117,10 +192,9 @@ To find out how to configure GCP provider and service account, follow the instru
 
   Project id of an already existing GCP project where the infrastructure is to be created.
 
-- `templates`
-  - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
-  - `tag`: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.
-  - `path`: specifies the path for a specific provider within the `repository` where the source template files are located.
+- `templatesRef`
+  - `name`: Name of a `TemplateGitReference` custom resource that defines the git repository, commit reference, and template paths.
+  - `namespace`: Namespace of the `TemplateGitReference` custom resource.
 
 ### Hetzner
 
@@ -131,10 +205,9 @@ To find out how to configure Hetzner provider and service account, follow the in
 
   Credentials for the provider (API token).
 
-- `templates`
-  - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
-  - `tag`: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.
-  - `path`: specifies the path for a specific provider within the `repository` where the source template files are located.
+- `templatesRef`
+  - `name`: Name of a `TemplateGitReference` custom resource that defines the git repository, commit reference, and template paths.
+  - `namespace`: Namespace of the `TemplateGitReference` custom resource.
 
 ### OCI
 
@@ -161,10 +234,9 @@ To find out how to configure OCI provider and service account, follow the instru
 
   OCID of the [compartment](https://docs.oracle.com/en/cloud/paas/integration-cloud/oracle-integration-oci/creating-oci-compartment.html) where VMs/VCNs/... will be created
 
-- `templates`
-  - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
-  - `tag`: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.
-  - `path`: specifies the path for a specific provider within the `repository` where the source template files are located.
+- `templatesRef`
+  - `name`: Name of a `TemplateGitReference` custom resource that defines the git repository, commit reference, and template paths.
+  - `namespace`: Namespace of the `TemplateGitReference` custom resource.
 
 ### Exoscale
 
@@ -179,10 +251,9 @@ To find out how to configure Exoscale provider and API credentials, follow the i
 
   API secret for the API key specified above.
 
-- `templates`
-  - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
-  - `tag`: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.
-  - `path`: specifies the path for a specific provider within the `repository` where the source template files are located.
+- `templatesRef`
+  - `name`: Name of a `TemplateGitReference` custom resource that defines the git repository, commit reference, and template paths.
+  - `namespace`: Namespace of the `TemplateGitReference` custom resource.
 
 ### AWS
 
@@ -197,10 +268,9 @@ To find out how to configure AWS provider and service account, follow the instru
 
   Secret key for the Access key specified above.
 
-- `templates`
-  - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
-  - `tag`: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.
-  - `path`: specifies the path for a specific provider within the `repository` where the source template files are located.
+- `templatesRef`
+  - `name`: Name of a `TemplateGitReference` custom resource that defines the git repository, commit reference, and template paths.
+  - `namespace`: Namespace of the `TemplateGitReference` custom resource.
 
 ### Azure
 
@@ -223,10 +293,9 @@ To find out how to configure Azure provider and service account, follow the inst
 
   Client secret generated for your client.
 
-- `templates`
-  - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
-  - `tag`: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.
-  - `path`: specifies the path for a specific provider within the `repository` where the source template files are located.
+- `templatesRef`
+  - `name`: Name of a `TemplateGitReference` custom resource that defines the git repository, commit reference, and template paths.
+  - `namespace`: Namespace of the `TemplateGitReference` custom resource.
 
 ### OVHcloud
 
@@ -249,10 +318,9 @@ To configure OVHcloud provider and API credentials, follow the [OVHcloud provide
 
   OVHcloud API endpoint region. One of `ovh-eu` (default), `ovh-us`, `ovh-ca`, `kimsufi-eu`, `kimsufi-ca`, `soyoustart-eu`, `soyoustart-ca`. This selects the API region, not the compute region.
 
-- `templates`
-  - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
-  - `tag`: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.
-  - `path`: specifies the path for a specific provider within the `repository` where the source template files are located.
+- `templatesRef`
+  - `name`: Name of a `TemplateGitReference` custom resource that defines the git repository, commit reference, and template paths.
+  - `namespace`: Namespace of the `TemplateGitReference` custom resource.
 
 ### Verda
 
@@ -271,10 +339,9 @@ To find out how to configure Verda provider and API credentials, follow the inst
 
   Override the Verda Cloud API base URL. Defaults to `https://api.verda.com/v1`.
 
-- `templates`
-  - `repository`: specifies the location from where the external template are to be acquired. Must be a publicly available git repository.
-  - `tag`: Optional. If set when the git repository is downloaded, the commit hash from the tag version is used.
-  - `path`: specifies the path for a specific provider within the `repository` where the source template files are located.
+- `templatesRef`
+  - `name`: Name of a `TemplateGitReference` custom resource that defines the git repository, commit reference, and template paths.
+  - `namespace`: Namespace of the `TemplateGitReference` custom resource.
 
 ## Nodepools
 

@@ -103,6 +103,23 @@ kubectl create secret generic ovh-secret-1 \
 
 ```yaml
 apiVersion: claudie.io/v1beta1
+kind: TemplateGitReference
+metadata:
+  name: ovh-templates
+  namespace: claudie
+spec:
+  endpoint:
+    url: github.com/berops/claudie-config
+    protocol: https
+  commit: v0.12.0
+  paths:
+    terraformer: templates/terraformer
+    playbooks: templates/playbooks
+    configLb: templates/config-lb
+    configK8s: templates/config-k8s
+    manifestsK8s: templates/manifests-k8s
+---
+apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
   name: ovh-example-manifest
@@ -112,10 +129,9 @@ spec:
   providers:
     - name: ovh-1
       providerType: ovh
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.11.2
-        path: "templates/terraformer/ovh"
+      templatesRef:
+        name: ovh-templates
+        namespace: claudie
       secretRef:
         name: ovh-secret-1
         namespace: <your-namespace>
@@ -154,6 +170,23 @@ spec:
 
 ```yaml
 apiVersion: claudie.io/v1beta1
+kind: TemplateGitReference
+metadata:
+  name: ovh-templates
+  namespace: claudie
+spec:
+  endpoint:
+    url: github.com/berops/claudie-config
+    protocol: https
+  commit: v0.12.0
+  paths:
+    terraformer: templates/terraformer
+    playbooks: templates/playbooks
+    configLb: templates/config-lb
+    configK8s: templates/config-k8s
+    manifestsK8s: templates/manifests-k8s
+---
+apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
   name: ovh-gpu-manifest
@@ -163,10 +196,9 @@ spec:
   providers:
     - name: ovh-1
       providerType: ovh
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.11.2
-        path: "templates/terraformer/ovh"
+      templatesRef:
+        name: ovh-templates
+        namespace: claudie
       secretRef:
         name: ovh-secret-1
         namespace: <your-namespace>
@@ -205,6 +237,23 @@ spec:
 
 ```yaml
 apiVersion: claudie.io/v1beta1
+kind: TemplateGitReference
+metadata:
+  name: ovh-templates
+  namespace: claudie
+spec:
+  endpoint:
+    url: github.com/berops/claudie-config
+    protocol: https
+  commit: v0.12.0
+  paths:
+    terraformer: templates/terraformer
+    playbooks: templates/playbooks
+    configLb: templates/config-lb
+    configK8s: templates/config-k8s
+    manifestsK8s: templates/manifests-k8s
+---
+apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
   name: ovh-lb-manifest
@@ -214,10 +263,9 @@ spec:
   providers:
     - name: ovh-1
       providerType: ovh
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.11.2
-        path: "templates/terraformer/ovh"
+      templatesRef:
+        name: ovh-templates
+        namespace: claudie
       secretRef:
         name: ovh-secret-1
         namespace: <your-namespace>
@@ -283,6 +331,23 @@ spec:
 
 ```yaml
 apiVersion: claudie.io/v1beta1
+kind: TemplateGitReference
+metadata:
+  name: ovh-templates
+  namespace: claudie
+spec:
+  endpoint:
+    url: github.com/berops/claudie-config
+    protocol: https
+  commit: v0.12.0
+  paths:
+    terraformer: templates/terraformer
+    playbooks: templates/playbooks
+    configLb: templates/config-lb
+    configK8s: templates/config-k8s
+    manifestsK8s: templates/manifests-k8s
+---
+apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
   name: ovh-autoscale-manifest
@@ -292,10 +357,9 @@ spec:
   providers:
     - name: ovh-1
       providerType: ovh
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.11.2
-        path: "templates/terraformer/ovh"
+      templatesRef:
+        name: ovh-templates
+        namespace: claudie
       secretRef:
         name: ovh-secret-1
         namespace: <your-namespace>

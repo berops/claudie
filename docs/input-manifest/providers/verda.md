@@ -87,6 +87,23 @@ Claudie automatically applies the label `claudie.io/spot=true` and the taint `cl
 
 ```yaml
 apiVersion: claudie.io/v1beta1
+kind: TemplateGitReference
+metadata:
+  name: verda-templates
+  namespace: claudie
+spec:
+  endpoint:
+    url: github.com/berops/claudie-config
+    protocol: https
+  commit: v0.12.0
+  paths:
+    terraformer: templates/terraformer
+    playbooks: templates/playbooks
+    configLb: templates/config-lb
+    configK8s: templates/config-k8s
+    manifestsK8s: templates/manifests-k8s
+---
+apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
   name: verda-spot-example
@@ -96,10 +113,9 @@ spec:
   providers:
     - name: verda-1
       providerType: verda
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.11.5
-        path: "templates/terraformer/verda"
+      templatesRef:
+        name: verda-templates
+        namespace: claudie
       secretRef:
         name: verda-secret-1
         namespace: <your-namespace>
@@ -163,6 +179,23 @@ kubectl create secret generic verda-secret-1 \
 
 ```yaml
 apiVersion: claudie.io/v1beta1
+kind: TemplateGitReference
+metadata:
+  name: verda-templates
+  namespace: claudie
+spec:
+  endpoint:
+    url: github.com/berops/claudie-config
+    protocol: https
+  commit: v0.12.0
+  paths:
+    terraformer: templates/terraformer
+    playbooks: templates/playbooks
+    configLb: templates/config-lb
+    configK8s: templates/config-k8s
+    manifestsK8s: templates/manifests-k8s
+---
+apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
   name: verda-example-manifest
@@ -172,10 +205,9 @@ spec:
   providers:
     - name: verda-1
       providerType: verda
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.11.5
-        path: "templates/terraformer/verda"
+      templatesRef:
+        name: verda-templates
+        namespace: claudie
       secretRef:
         name: verda-secret-1
         namespace: <your-namespace>
@@ -219,6 +251,23 @@ spec:
 
 ```yaml
 apiVersion: claudie.io/v1beta1
+kind: TemplateGitReference
+metadata:
+  name: verda-templates
+  namespace: claudie
+spec:
+  endpoint:
+    url: github.com/berops/claudie-config
+    protocol: https
+  commit: v0.12.0
+  paths:
+    terraformer: templates/terraformer
+    playbooks: templates/playbooks
+    configLb: templates/config-lb
+    configK8s: templates/config-k8s
+    manifestsK8s: templates/manifests-k8s
+---
+apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
   name: verda-gpu-manifest
@@ -228,10 +277,9 @@ spec:
   providers:
     - name: verda-1
       providerType: verda
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.11.5
-        path: "templates/terraformer/verda"
+      templatesRef:
+        name: verda-templates
+        namespace: claudie
       secretRef:
         name: verda-secret-1
         namespace: <your-namespace>
@@ -273,6 +321,23 @@ spec:
 
 ```yaml
 apiVersion: claudie.io/v1beta1
+kind: TemplateGitReference
+metadata:
+  name: verda-templates
+  namespace: claudie
+spec:
+  endpoint:
+    url: github.com/berops/claudie-config
+    protocol: https
+  commit: v0.12.0
+  paths:
+    terraformer: templates/terraformer
+    playbooks: templates/playbooks
+    configLb: templates/config-lb
+    configK8s: templates/config-k8s
+    manifestsK8s: templates/manifests-k8s
+---
+apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
   name: verda-autoscale-manifest
@@ -282,10 +347,9 @@ spec:
   providers:
     - name: verda-1
       providerType: verda
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.11.5
-        path: "templates/terraformer/verda"
+      templatesRef:
+        name: verda-templates
+        namespace: claudie
       secretRef:
         name: verda-secret-1
         namespace: <your-namespace>

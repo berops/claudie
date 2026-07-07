@@ -1,6 +1,23 @@
-Claudie allows to plug in your own templates for spawning the infrastructure. Specifying which templates are to be used is done at the provider level in the Input Manifest, for example:
+Claudie allows you to plug in your own templates for spawning the infrastructure. Specifying which templates are to be used is done by creating a `TemplateGitReference` custom resource and referencing it at the provider level in the Input Manifest, for example:
 
 ```yaml
+apiVersion: claudie.io/v1beta1
+kind: TemplateGitReference
+metadata:
+  name: my-templates
+  namespace: claudie
+spec:
+  endpoint:
+    url: github.com/berops/claudie-config
+    protocol: https
+  commit: v0.9.19
+  paths:
+    terraformer: templates/terraformer
+    playbooks: templates/playbooks
+    configLb: templates/config-lb
+    configK8s: templates/config-k8s
+    manifestsK8s: templates/manifests-k8s
+---
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
@@ -11,19 +28,24 @@ spec:
   providers:
     - name: hetzner-1
       providerType: hetzner
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.19" # optional
-        path: "templates/terraformer/hetzner"
+      templatesRef:
+        name: my-templates
+        namespace: claudie
       secretRef:
         name: hetzner-secret
         namespace: secrets
 ...
 ```
 
-- if no templates are specified it will always default to the latest commit on the Master/Main branch of the respective cloudprovider on the berops repository (i.e. ` https://github.com/berops/claudie-config`).
+Claudie ships with a default `TemplateGitReference` named `claudie-default-templates` in the `claudie` namespace. If no `templatesRef` is specified on a provider, the default is used.
 
-- if templates are specified, but no tag is present it will default to the latest commit of the Master/Main branch of the respective repository.
+A `TemplateGitReference` references a git repository, a commit (tag, branch, or hash), and paths to template directories within that repository. Each path points to a subdirectory containing templates for a specific service (you can also read more about this CRD inside the [api-reference](./api-reference.md)):
+
+- `terraformer` — OpenTofu infrastructure templates
+- `playbooks` — Ansible playbooks
+- `configLb` — Loadbalancer configuration templates
+- `configK8s` — Kubernetes configuration templates
+- `manifestsK8s` — Kubernetes manifest templates
 
 The template **repository** need to follow a certain convention to work properly.
 For example:
@@ -87,7 +109,7 @@ To handle more specific scenarios where the default templates provided by claudi
 
 By providing this ability to specify the templates to be used when building the InputManifest infrastructure, there is one common scenario that should be handled by claudie, which is rolling updates.
 
-Rolling updates of nodepools are performed when a change to a provider's external templates is registered. Claudie checks that the external repository of the new templates exists and uses them to perform a rolling update of the infrastructure already built. In the below example, when the templates of provider Hetzner-1 are changed the rolling update of all the nodepools which reference that provider will start by doing an update on a single nodepool at a time.
+Rolling updates of nodepools are performed when a change to a provider's external templates is registered. Claudie checks that the referenced `TemplateGitReference` CRD exists and uses it to perform a rolling update of the infrastructure already built. In the below example, when the `templatesRef` of provider Hetzner-1 is changed the rolling update of all the nodepools which reference that provider will start by doing an update on a single nodepool at a time.
 
 ```diff
 apiVersion: claudie.io/v1beta1
@@ -100,11 +122,12 @@ spec:
   providers:
     - name: hetzner-1
       providerType: hetzner
-      templates:
--       repository: "https://github.com/berops/claudie-config"
--       path: "templates/terraformer/hetzner"
-+       repository: "https://github.com/YouRepository/claudie-config"
-+       path: "templates/terraformer/hetzner"
+-     templatesRef:
+-       name: claudie-default-templates
+-       namespace: claudie
++     templatesRef:
++       name: my-templates
++       namespace: claudie
       secretRef:
         name: hetzner-secret-1
         namespace: <your-namespace>
@@ -162,26 +185,24 @@ spec:
             - compute-2-htz
 ```
 
-The rolling update is also triggered if only the tag of the template is changed.
+The rolling update is also triggered if only the commit reference of the `TemplateGitReference` is changed.
 
 ```diff
 apiVersion: claudie.io/v1beta1
-kind: InputManifest
+kind: TemplateGitReference
 metadata:
-  name: hetzner-example-manifest
-  labels:
-    app.kubernetes.io/part-of: claudie
+  name: my-templates
+  namespace: claudie
 spec:
-  providers:
-    - name: hetzner-1
-      providerType: hetzner
-      templates:
--       repository: "https://github.com/berops/claudie-config"
--       path: "templates/terraformer/hetzner"
-+       repository: "https://github.com/berops/claudie-config"
-+       tag: v0.9.8
-+       path: "templates/terraformer/hetzner"
-      secretRef:
-        name: hetzner-secret-1
-        namespace: <your-namespace>
+  endpoint:
+    url: github.com/berops/claudie-config
+    protocol: https
+- commit: v0.9.19
++ commit: v0.9.9
+  paths:
+    terraformer: templates/terraformer
+    playbooks: templates/playbooks
+    configLb: templates/config-lb
+    configK8s: templates/config-k8s
+    manifestsK8s: templates/manifests-k8s
 ```
