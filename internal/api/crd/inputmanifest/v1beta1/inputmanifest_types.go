@@ -112,7 +112,7 @@ type Provider struct {
 	// +kubebuilder:validation:Enum=gcp;hetzner;aws;oci;azure;cloudflare;openstack;exoscale;cloudrift;verda;ovh;
 	ProviderType ProviderType           `json:"providerType"`
 	SecretRef    corev1.SecretReference `json:"secretRef"`
-	// External template for building the cluster infrastrucutre.
+	// External template for building the cluster infrastructure.
 	// +optional
 	TemplatesRef TemplatesReference `json:"templatesRef"`
 }

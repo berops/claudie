@@ -36,7 +36,7 @@ func VerifyCommitExists(directory, commit string) error {
 	if _, ok := errors.AsType[*exec.ExitError](err); ok {
 		return fmt.Errorf("%w %q: %w", ErrUnknownCommit, commit, err)
 	}
-	return fmt.Errorf("failed to check the existance of commit %q for %q: %w", commit, directory, err)
+	return fmt.Errorf("failed to check the existence of commit %q for %q: %w", commit, directory, err)
 }
 
 // Unsets worktree extension for git.

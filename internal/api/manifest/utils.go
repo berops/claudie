@@ -460,7 +460,7 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.Nod
 
 func FetchCommitHash(tmpl *spec.TemplateRepository) error {
 	isGitHash := func(s string) bool {
-		// Git uses either sha1 or sha256 hashes thus either 40 byte or 64 byte lenghts.
+		// Git uses either sha1 or sha256 hashes thus either 40 byte or 64 byte lengths.
 		if len(s) != 40 && len(s) != 64 { // SHA-1 or SHA-256 object id
 			return false
 		}
