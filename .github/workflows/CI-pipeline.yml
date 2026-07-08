@@ -324,6 +324,8 @@ jobs:
         if: (steps.determine-test-sets.outputs.skip_deploy == 'false')
         working-directory: ./manifests
         run: |
+          sudo apt update && sudo apt install -y jq
+
           LATEST_TAG=$(curl -fsSL \
             -H "Accept: application/vnd.github+json" \
             https://api.github.com/repos/berops/claudie-config/releases/latest \

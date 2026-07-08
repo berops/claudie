@@ -58,9 +58,7 @@ func Download(downloadInto string, provider *spec.Provider) error {
 		}
 
 		if ref.Hash().String() == provider.Templates.CommitHash {
-			if err := extemplates.SparseCheckout(gitDirectory, providerTemplates, provider.Templates.CommitHash); err != nil {
-				return err
-			}
+			return extemplates.SparseCheckout(gitDirectory, providerTemplates, provider.Templates.CommitHash)
 		}
 
 		// on mismatch re-download the repo.

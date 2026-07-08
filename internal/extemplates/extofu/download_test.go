@@ -122,7 +122,7 @@ func TestDownloadProvider(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "test-01",
+			name: "test-02",
 			args: args{
 				downloadInto: downloadDir,
 				provider: &spec.Provider{
@@ -142,7 +142,7 @@ func TestDownloadProvider(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "test-02",
+			name: "test-03",
 			args: args{
 				downloadInto: downloadDir,
 				provider: &spec.Provider{
@@ -161,7 +161,7 @@ func TestDownloadProvider(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "test-03",
+			name: "test-04",
 			args: args{
 				downloadInto: downloadDir,
 				provider: &spec.Provider{

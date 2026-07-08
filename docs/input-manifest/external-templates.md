@@ -109,7 +109,7 @@ To handle more specific scenarios where the default templates provided by claudi
 
 By providing this ability to specify the templates to be used when building the InputManifest infrastructure, there is one common scenario that should be handled by claudie, which is rolling updates.
 
-Rolling updates of nodepools are performed when a change to a provider's external templates is registered. Claudie checks that the referenced `TemplateGitReference` CRD exists and uses it to perform a rolling update of the infrastructure already built. In the below example, when the `templatesRef` of provider Hetzner-1 is changed the rolling update of all the nodepools which reference that provider will start by doing an update on a single nodepool at a time.
+Rolling updates of nodepools are performed when a change to a provider's external templates is registered. Claudie checks that the referenced `TemplateGitReference` custom resource exists and uses it to perform a rolling update of the infrastructure already built. In the below example, when the `templatesRef` of provider Hetzner-1 is changed the rolling update of all the nodepools which reference that provider will start by doing an update on a single nodepool at a time.
 
 ```diff
 apiVersion: claudie.io/v1beta1
