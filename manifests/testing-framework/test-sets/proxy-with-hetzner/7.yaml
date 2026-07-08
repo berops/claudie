@@ -13,9 +13,8 @@ spec:
         namespace: e2e-secrets
     - name: gcp-1
       providerType: gcp
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        path: "templates/terraformer/gcp"
+      templatesRef:
+        name: claudie-default-templates
       secretRef:
         name: gcp-secret
         namespace: e2e-secrets

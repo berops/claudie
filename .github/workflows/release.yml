@@ -65,6 +65,40 @@ jobs:
             kustomize edit set image ghcr.io/berops/claudie/$SERVICE:${RELEASE}
           done
 
+      - name: Set latest claudie-config release in TemplateGitReference
+        working-directory: manifests/claudie
+        run: |
+          sudo apt update && sudo apt install -y jq
+
+          LATEST_TAG=$(curl -fsSL \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/berops/claudie-config/releases/latest \
+            | jq -r '.tag_name')
+
+          if [ -z "$LATEST_TAG" ] || [ "$LATEST_TAG" == "null" ]; then
+            echo "Failed to resolve latest release tag" >&2
+            exit 1
+          fi
+
+          echo "Using claudie-config release: $LATEST_TAG"
+
+          YQ_EXPR='
+            (select(.kind == "Deployment" and .metadata.name == "claudie-operator") |
+              .spec.template.spec.containers[] |
+              select(.name == "claudie-operator").env
+            ) |=
+            if any(.name == "CLAUDIE_TEMPLATES_REFERENCE_COMMIT") then
+              map(
+                if .name == "CLAUDIE_TEMPLATES_REFERENCE_COMMIT"
+                then .value = strenv(TAG)
+                else . end
+              )
+            else
+              . + [{"name": "CLAUDIE_TEMPLATES_REFERENCE_COMMIT", "value": strenv(TAG)}]
+            end
+          '
+          TAG="$LATEST_TAG" ./yq e -i "$YQ_EXPR" ./operator.yaml
+
       - name: Create claudie.yaml file from manifests
         run: |
           kustomize build manifests/claudie > claudie.yaml

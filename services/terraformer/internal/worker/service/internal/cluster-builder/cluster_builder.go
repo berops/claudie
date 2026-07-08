@@ -2,6 +2,7 @@ package cluster_builder
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,6 +10,7 @@ import (
 	"strings"
 
 	comm "github.com/berops/claudie/internal/command"
+	"github.com/berops/claudie/internal/extemplates"
 	"github.com/berops/claudie/internal/extemplates/extofu"
 	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/generics"
@@ -175,6 +177,13 @@ func (c ClusterBuilder) DestroyNodepools() error {
 	}()
 
 	if err := c.generateFiles(clusterDir); err != nil {
+		if errors.Is(err, extemplates.ErrUnknownCommit) {
+			log.
+				Warn().
+				Msgf("Failed to generate files for nodepool destruction: %v,"+
+					" since the commit of one of the templates does no exist, leaking infrastructure", err)
+			return nil
+		}
 		return fmt.Errorf("failed to generate files: %w", err)
 	}
 
@@ -236,7 +245,7 @@ func (c *ClusterBuilder) generateFiles(clusterDir string) error {
 			p := pools[0].GetDynamicNodePool().GetProvider()
 
 			if err := extofu.Download(templatesDownloadDir, p); err != nil {
-				msg := fmt.Sprintf("cluster %q failed to download template repository", c.ClusterId)
+				msg := fmt.Sprintf("failed to setup template repository for cluster %q, provider %q", c.ClusterId, p.SpecName)
 				log.Error().Msgf("%v", msg)
 				return fmt.Errorf("%s: %w", msg, err)
 			}
@@ -373,7 +382,7 @@ func (c *ClusterBuilder) generateProviderTemplates(directory string, clusterData
 		for _, pools := range extofu.NodePoolsByTemplatesPath(pools) {
 			p := pools[0].GetDynamicNodePool().GetProvider()
 			if err := extofu.Download(templatesDownloadDir, p); err != nil {
-				msg := fmt.Sprintf("cluster %q failed to download template repository", c.ClusterId)
+				msg := fmt.Sprintf("failed to download template repository for cluster %q provider %q", c.ClusterId, p.SpecName)
 				log.Error().Msgf("%v", msg)
 				return fmt.Errorf("%s: %w", msg, err)
 			}

@@ -18,6 +18,10 @@ import (
 //
 // The templates will be stored under the path as returned by [TemplatesPath] inside the `donwloadInto`
 // directory.
+//
+// On empty template repository the [extemplates.ErrEmptyRepository] error is returned.
+// On unsupported endpoint protocol the [extemplates.ErrUnsupportedProtocol] error is returned.
+// On unknown commit the [extemplates.ErrUnknownCommit] error is returned.
 func Download(downloadInto string, provider *spec.Provider) error {
 	if provider.GetTemplates() == nil {
 		return extemplates.ErrEmptyRepository
