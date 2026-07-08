@@ -8,7 +8,6 @@ spec:
       # performs a rolling update
       templatesRef:
         name: autoscaling-2-0.12
-        namespace: claudie
       providerType: aws
       secretRef:
         name: aws-secret
@@ -17,7 +16,6 @@ spec:
       # performs a rolling update
       templatesRef:
         name: autoscaling-2-0.12
-        namespace: claudie
       providerType: aws
       secretRef:
         name: aws-secret

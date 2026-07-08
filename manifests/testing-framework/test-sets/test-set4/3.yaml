@@ -8,7 +8,6 @@ spec:
       providerType: oci
       templatesRef:
         name: claudie-default-templates
-        namespace: claudie
       secretRef:
         name: oci-secret
         namespace: e2e-secrets
@@ -16,7 +15,6 @@ spec:
       providerType: cloudflare
       templatesRef:
         name: claudie-default-templates
-        namespace: claudie
       secretRef:
         name: cloudflare-secret
         namespace: e2e-secrets
@@ -24,7 +22,6 @@ spec:
       providerType: gcp
       templatesRef:
         name: claudie-default-templates
-        namespace: claudie
       secretRef:
         name: gcp-secret
         namespace: e2e-secrets

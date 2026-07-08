@@ -201,9 +201,13 @@ func validateReferences(ctx context.Context, kc client.Client, im *v1beta.InputM
 			Namespace: p.TemplatesRef.Namespace,
 		}
 
-		if key.Name == "" || key.Namespace == "" {
+		if key.Name == "" {
 			// TemplateGitReference is optional.
 			continue
+		}
+
+		if key.Namespace == "" {
+			key.Namespace = TemplatesDefaultNamespace
 		}
 
 		if err := kc.Get(ctx, key, &discard); err != nil {

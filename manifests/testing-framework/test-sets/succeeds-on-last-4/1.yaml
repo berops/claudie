@@ -8,7 +8,6 @@ spec:
       providerType: hetzner
       templatesRef:
         name: claudie-default-templates
-        namespace: claudie
       secretRef:
         name: hetzner-secret
         namespace: e2e-secrets

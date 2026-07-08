@@ -8,7 +8,6 @@ spec:
       providerType: hetzner
       templatesRef:
         name: rolling-update-2-0.12
-        namespace: claudie
       secretRef:
         name: hetzner-secret
         namespace: e2e-secrets
@@ -16,7 +15,6 @@ spec:
       providerType: aws
       templatesRef:
         name: rolling-update-2-0.12
-        namespace: claudie
       secretRef:
         name: aws-secret
         namespace: e2e-secrets

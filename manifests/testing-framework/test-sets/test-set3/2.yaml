@@ -7,16 +7,14 @@ spec:
     - name: gcp-1
       providerType: gcp
       templatesRef:
-        name: common-templates-test-set3
-        namespace: claudie
+        name: claudie-default-templates
       secretRef:
         name: gcp-secret
         namespace: e2e-secrets
     - name: hetzner-1
       providerType: hetzner
       templatesRef:
-        name: common-templates-test-set3
-        namespace: claudie
+        name: claudie-default-templates
       secretRef:
         name: hetzner-secret
         namespace: e2e-secrets

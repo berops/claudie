@@ -8,7 +8,6 @@ spec:
       providerType: gcp
       templatesRef:
         name: claudie-default-templates
-        namespace: claudie
       secretRef:
         name: gcp-secret
         namespace: e2e-secrets
@@ -16,7 +15,6 @@ spec:
       providerType: hetzner
       templatesRef:
         name: claudie-default-templates
-        namespace: claudie
       secretRef:
         name: hetzner-secret
         namespace: e2e-secrets
@@ -24,7 +22,6 @@ spec:
       providerType: oci
       templatesRef:
         name: claudie-default-templates
-        namespace: claudie
       secretRef:
         name: oci-secret
         namespace: e2e-secrets
@@ -32,7 +29,6 @@ spec:
       providerType: oci
       templatesRef:
         name: claudie-default-templates
-        namespace: claudie
       secretRef:
         name: oci-secret
         namespace: e2e-secrets
@@ -40,7 +36,6 @@ spec:
       providerType: aws
       templatesRef:
         name: claudie-default-templates
-        namespace: claudie
       secretRef:
         name: aws-secret
         namespace: e2e-secrets
@@ -48,7 +43,6 @@ spec:
       providerType: azure
       templatesRef:
         name: claudie-default-templates
-        namespace: claudie
       secretRef:
         name: azure-sponsorship-secret
         namespace: e2e-secrets
@@ -56,7 +50,6 @@ spec:
       providerType: azure
       templatesRef:
         name: claudie-default-templates
-        namespace: claudie
       secretRef:
         name: azure-secret
         namespace: e2e-secrets
@@ -64,7 +57,6 @@ spec:
       providerType: openstack
       templatesRef:
         name: claudie-default-templates
-        namespace: claudie
       secretRef:
         name: ovh-secret
         namespace: e2e-secrets

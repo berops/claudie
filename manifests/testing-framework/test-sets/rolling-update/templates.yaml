@@ -2,7 +2,6 @@ apiVersion: claudie.io/v1beta1
 kind: TemplateGitReference
 metadata:
   name: rolling-update-0.11
-  namespace: claudie
 spec:
   endpoint:
     url: github.com/berops/claudie-config
@@ -19,7 +18,6 @@ apiVersion: claudie.io/v1beta1
 kind: TemplateGitReference
 metadata:
   name: rolling-update-0.12
-  namespace: claudie
 spec:
   endpoint:
     url: github.com/berops/claudie-config

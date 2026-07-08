@@ -8,7 +8,6 @@ spec:
       providerType: oci
       templatesRef:
         name: claudie-default-templates
-        namespace: claudie
       secretRef:
         name: oci-secret
         namespace: e2e-secrets

@@ -8,7 +8,6 @@ spec:
       providerType: gcp
       templatesRef:
         name: claudie-default-templates
-        namespace: claudie
       secretRef:
         name: gcp-secret
         namespace: e2e-secrets

@@ -7,7 +7,6 @@ spec:
     - name: gcp-1
       templatesRef:
         name: claudie-default-templates
-        namespace: claudie
       providerType: gcp
       secretRef:
         name: gcp-secret
@@ -15,7 +14,6 @@ spec:
     - name: gcp-2
       templatesRef:
         name: claudie-default-templates
-        namespace: claudie
       providerType: gcp
       secretRef:
         name: gcp-secret

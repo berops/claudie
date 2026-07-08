@@ -8,7 +8,6 @@ spec:
       providerType: aws
       templatesRef:
         name: claudie-default-templates
-        namespace: claudie
       secretRef:
         name: aws-secret
         namespace: e2e-secrets
@@ -16,7 +15,6 @@ spec:
       providerType: cloudflare
       templatesRef:
         name: claudie-default-templates
-        namespace: claudie
       secretRef:
         name: cloudflare-secret
         namespace: e2e-secrets

@@ -8,7 +8,6 @@ spec:
       providerType: hetzner
       templatesRef:
         name: rolling-update-0.11
-        namespace: claudie
       secretRef:
         name: hetzner-secret
         namespace: e2e-secrets
@@ -16,7 +15,6 @@ spec:
       providerType: oci
       templatesRef:
         name: rolling-update-0.11
-        namespace: claudie
       secretRef:
         name: oci-secret
         namespace: e2e-secrets
@@ -24,7 +22,6 @@ spec:
       providerType: aws
       templatesRef:
         name: rolling-update-0.12
-        namespace: claudie
       secretRef:
         name: aws-secret
         namespace: e2e-secrets
@@ -32,7 +29,6 @@ spec:
       providerType: azure
       templatesRef:
         name: rolling-update-0.11
-        namespace: claudie
       secretRef:
         name: azure-secret
         namespace: e2e-secrets
@@ -40,7 +36,6 @@ spec:
       providerType: azure
       templatesRef:
         name: rolling-update-0.11
-        namespace: claudie
       secretRef:
         name: azure-sponsorship-secret
         namespace: e2e-secrets

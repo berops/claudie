@@ -2,6 +2,7 @@ package controller
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"fmt"
 	"strings"
@@ -26,14 +27,12 @@ import (
 const (
 	// Claudie always comes with a default templates reference created with this name.
 	DefaultTemplatesReferenceName = "claudie-default-templates"
-
-	// Claudie always comes with a default templates reference created with in this namespace.
-	DefaultTemplatesReferenceNamespace = "claudie"
 )
 
 var (
 	TemplateReferenceHttpsUrl = envs.GetOrDefault("CLAUDIE_TEMPLATES_REFERENCE_HTTPS_URL", "github.com/berops/claudie-config")
 	TemplateReferenceCommit   = envs.GetOrDefault("CLAUDIE_TEMPLATES_REFERENCE_COMMIT", "release")
+	TemplatesDefaultNamespace = cmp.Or(envs.Namespace, "claudie")
 )
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
@@ -92,16 +91,24 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			Namespace: p.TemplatesRef.Namespace,
 		}
 
-		if templatesKey.Name == "" || templatesKey.Namespace == "" {
+		if templatesKey.Name == "" {
 			msg := fmt.Sprintf(
 				"No templates specified for provider %q type %q, defaulting to 'claudie-default-templates'",
 				p.ProviderName,
 				p.ProviderType,
 			)
 			log.Info(msg)
-
 			templatesKey.Name = DefaultTemplatesReferenceName
-			templatesKey.Namespace = DefaultTemplatesReferenceNamespace
+		}
+		if templatesKey.Namespace == "" {
+			msg := fmt.Sprintf(
+				"No namespace specified for templates reference in provider %q type %q, defaulting to %q",
+				p.ProviderName,
+				p.ProviderType,
+				TemplatesDefaultNamespace,
+			)
+			log.Info(msg)
+			templatesKey.Namespace = TemplatesDefaultNamespace
 		}
 
 		if err := r.kc.Get(ctx, templatesKey, &pwd.Templates); err != nil {
@@ -534,11 +541,11 @@ func (r *InputManifestReconciler) ensureDefaultTemplateReference(ctx context.Con
 		},
 	}
 	desired.Name = DefaultTemplatesReferenceName
-	desired.Namespace = DefaultTemplatesReferenceNamespace
+	desired.Namespace = TemplatesDefaultNamespace
 
 	key := client.ObjectKey{
 		Name:      DefaultTemplatesReferenceName,
-		Namespace: DefaultTemplatesReferenceNamespace,
+		Namespace: TemplatesDefaultNamespace,
 	}
 	existing := v1beta1.TemplateGitReference{}
 	if err := r.kc.Get(ctx, key, &existing); err != nil {

@@ -8,7 +8,6 @@ spec:
       providerType: azure
       templatesRef:
         name: claudie-default-templates
-        namespace: claudie
       secretRef:
         name: azure-sponsorship-secret
         namespace: e2e-secrets
@@ -16,7 +15,6 @@ spec:
       providerType: hetzner
       templatesRef:
         name: claudie-default-templates
-        namespace: claudie
       secretRef:
         name: hetzner-secret
         namespace: e2e-secrets
