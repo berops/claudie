@@ -6,73 +6,65 @@ spec:
   providers:
     - name: gcp-1
       providerType: gcp
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.11.0
-        path: "templates/terraformer/gcp"
+      templatesRef:
+        name: claudie-default-templates
+        namespace: claudie
       secretRef:
         name: gcp-secret
         namespace: e2e-secrets
     - name: hetzner-1
       providerType: hetzner
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.11.0
-        path: "templates/terraformer/hetzner"
+      templatesRef:
+        name: claudie-default-templates
+        namespace: claudie
       secretRef:
         name: hetzner-secret
         namespace: e2e-secrets
     - name: oci-1
       providerType: oci
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.11.0
-        path: "templates/terraformer/oci"
+      templatesRef:
+        name: claudie-default-templates
+        namespace: claudie
       secretRef:
         name: oci-secret
         namespace: e2e-secrets
     - name: aws-1
       providerType: aws
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.11.0
-        path: "templates/terraformer/aws"
+      templatesRef:
+        name: claudie-default-templates
+        namespace: claudie
       secretRef:
         name: aws-secret
         namespace: e2e-secrets
     - name: aws-2
       providerType: aws
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.11.0
-        path: "templates/terraformer/aws"
+      templatesRef:
+        name: claudie-default-templates
+        namespace: claudie
       secretRef:
         name: aws-secret
         namespace: e2e-secrets
     - name: azure-sponsor-1
       providerType: azure
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.11.0
-        path: "templates/terraformer/azure"
+      templatesRef:
+        name: claudie-default-templates
+        namespace: claudie
       secretRef:
         name: azure-sponsorship-secret
         namespace: e2e-secrets
     - name: azure-sponsor-2
       providerType: azure
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.11.0
-        path: "templates/terraformer/azure"
+      templatesRef:
+        name: claudie-default-templates
+        namespace: claudie
       secretRef:
         name: azure-sponsorship-secret
         namespace: e2e-secrets
     - name: ovh-1
       providerType: openstack
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.11.0
-        path: "templates/terraformer/openstack"
+      templatesRef:
+        name: claudie-default-templates
+        namespace: claudie
       secretRef:
         name: ovh-secret
         namespace: e2e-secrets

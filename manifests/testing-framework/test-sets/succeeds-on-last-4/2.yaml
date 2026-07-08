@@ -6,19 +6,17 @@ spec:
   providers:
     - name: hetzner-1
       providerType: hetzner
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.11.0
-        path: "templates/terraformer/hetzner"
+      templatesRef:
+        name: claudie-default-templates
+        namespace: claudie
       secretRef:
         name: hetzner-secret
         namespace: e2e-secrets
     - name: azure-sponsor-1
       providerType: azure
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: v0.11.0
-        path: "templates/terraformer/azure"
+      templatesRef:
+        name: claudie-default-templates
+        namespace: claudie
       secretRef:
         name: azure-sponsorship-secret
         namespace: e2e-secrets

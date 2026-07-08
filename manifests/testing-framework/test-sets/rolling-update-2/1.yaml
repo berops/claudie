@@ -6,55 +6,49 @@ spec:
   providers:
     - name: hetzner-1
       providerType: hetzner
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.15"
-        path: "templates/terraformer/hetzner"
+      templatesRef:
+        name: rolling-update-2-0.11
+        namespace: claudie
       secretRef:
         name: hetzner-secret
         namespace: e2e-secrets
     - name: hetzner-2
       providerType: hetzner
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.15"
-        path: "templates/terraformer/hetzner"
+      templatesRef:
+        name: rolling-update-2-0.11
+        namespace: claudie
       secretRef:
         name: hetzner-secret
         namespace: e2e-secrets
     - name: oci-1
       providerType: oci
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.15"
-        path: "templates/terraformer/oci"
+      templatesRef:
+        name: rolling-update-2-0.11
+        namespace: claudie
       secretRef:
         name: oci-secret
         namespace: e2e-secrets
     - name: aws-1
       providerType: aws
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.15"
-        path: "templates/terraformer/aws"
+      templatesRef:
+        name: rolling-update-2-0.11
+        namespace: claudie
       secretRef:
         name: aws-secret
         namespace: e2e-secrets
     - name: aws-2
       providerType: aws
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.15"
-        path: "templates/terraformer/aws"
+      templatesRef:
+        name: rolling-update-2-0.11
+        namespace: claudie
       secretRef:
         name: aws-secret
         namespace: e2e-secrets
     - name: azure-payed-1
       providerType: azure
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.15"
-        path: "templates/terraformer/azure"
+      templatesRef:
+        name: rolling-update-2-0.11
+        namespace: claudie
       secretRef:
         name: azure-secret
         namespace: e2e-secrets

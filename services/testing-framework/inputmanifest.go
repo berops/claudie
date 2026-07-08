@@ -57,3 +57,17 @@ func getInputManifestName(yamlFile []byte) (string, error) {
 	}
 	return "", fmt.Errorf("manifest does not have a name defined, which could be used as DB id")
 }
+
+func applyTemplateGitReference(yamlFile []byte, path string) error {
+	kc := kubectl.Kubectl{MaxKubectlRetries: 3}
+	kc.Stdout = comm.GetStdOut(path)
+	kc.Stderr = comm.GetStdErr(path)
+	return kc.KubectlApplyString(string(yamlFile), "-n", envs.Namespace)
+}
+
+func deleteTemplateGitReference(yamlFile []byte, path string) error {
+	kc := kubectl.Kubectl{MaxKubectlRetries: 3}
+	kc.Stdout = comm.GetStdOut(path)
+	kc.Stderr = comm.GetStdErr(path)
+	return kc.KubectlDeleteString(string(yamlFile), "-n", envs.Namespace)
+}

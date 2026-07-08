@@ -201,14 +201,21 @@ func processTestSet(
 	log.Info().Msgf("Working on the test set %s", pathToTestSet)
 
 	var (
-		manifestName string
-		nocleanup    = func() error { return nil }
-		cleanup      = func() error {
+		manifestName  string
+		templatesRefs []byte
+		nocleanup     = func() error { return nil }
+		cleanup       = func() error {
 			if autoCleanUpFlag == "TRUE" {
 				log.Info().Msgf("[%s] Deleting infra even after error due to flag \"-auto-clean-up\" set to %v", manifestName, autoCleanUpFlag)
 
 				if err := cleanUp(setName, manifestName, m); err != nil {
 					log.Err(err).Msgf("error while cleaning up the infra for test set %s", setName)
+				}
+
+				if len(templatesRefs) > 0 {
+					if err := deleteTemplateGitReference(templatesRefs, setName); err != nil {
+						log.Err(err).Msgf("error while deleting template references for test-set %q", setName)
+					}
 				}
 			}
 			return nil
@@ -220,13 +227,33 @@ func processTestSet(
 		return nocleanup, fmt.Errorf("error while trying to read test manifests in %s : %w", pathToTestSet, err)
 	}
 
+	var templates os.DirEntry
 	var configs []os.DirEntry
 	for _, entry := range dir {
 		// https://github.com/berops/claudie/pull/243#issuecomment-1218237412
 		if entry.IsDir() || entry.Name()[0] == '.' {
 			continue
 		}
+		if entry.Name() == "templates.yaml" {
+			templates = entry
+			continue
+		}
 		configs = append(configs, entry)
+	}
+
+	if templates != nil {
+		manifestpath := filepath.Join(pathToTestSet, templates.Name())
+
+		var err error
+
+		templatesRefs, err = os.ReadFile(manifestpath)
+		if err != nil {
+			return nocleanup, fmt.Errorf("error while reading template reference %s: %w", manifestpath, err)
+		}
+
+		if err := applyTemplateGitReference(templatesRefs, manifestpath); err != nil {
+			return nocleanup, fmt.Errorf("error applying template reference from %s: %w", manifestpath, err)
+		}
 	}
 
 	for i, entry := range configs {
@@ -280,6 +307,12 @@ func processTestSet(
 	// Delete manifest from DB to clean up the infra as errCleanUp is nil and deferred function will not clean up.
 	if err := cleanUp(setName, manifestName, m); err != nil {
 		return cleanup, fmt.Errorf("error while cleaning up the infra for test set %s : %w", setName, err)
+	}
+
+	if len(templatesRefs) > 0 {
+		if err := deleteTemplateGitReference(templatesRefs, setName); err != nil {
+			return cleanup, fmt.Errorf("error while deleting template reference for test set %q: %w", setName, err)
+		}
 	}
 	return nocleanup, nil
 }

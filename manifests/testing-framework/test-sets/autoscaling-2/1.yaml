@@ -5,19 +5,17 @@ metadata:
 spec:
   providers:
     - name: aws-1
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.15"
-        path: "templates/terraformer/aws"
+      templatesRef:
+        name: autoscaling-2-0.11
+        namespace: claudie
       providerType: aws
       secretRef:
         name: aws-secret
         namespace: e2e-secrets
     - name: aws-2
-      templates:
-        repository: "https://github.com/berops/claudie-config"
-        tag: "v0.9.15"
-        path: "templates/terraformer/aws"
+      templatesRef:
+        name: autoscaling-2-0.11
+        namespace: claudie
       providerType: aws
       secretRef:
         name: aws-secret

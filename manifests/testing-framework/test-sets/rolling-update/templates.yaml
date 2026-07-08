@@ -1,0 +1,33 @@
+apiVersion: claudie.io/v1beta1
+kind: TemplateGitReference
+metadata:
+  name: rolling-update-0.11
+  namespace: claudie
+spec:
+  endpoint:
+    url: github.com/berops/claudie-config
+    protocol: https
+  commit: v0.11.0
+  paths:
+    terraformer: templates/terraformer
+    playbooks: templates/playbooks
+    configLb: templates/config-lb
+    configK8s: templates/config-k8s
+    manifestsK8s: templates/manifests-k8s
+---
+apiVersion: claudie.io/v1beta1
+kind: TemplateGitReference
+metadata:
+  name: rolling-update-0.12
+  namespace: claudie
+spec:
+  endpoint:
+    url: github.com/berops/claudie-config
+    protocol: https
+  commit: v0.12.0
+  paths:
+    terraformer: templates/terraformer
+    playbooks: templates/playbooks
+    configLb: templates/config-lb
+    configK8s: templates/config-k8s
+    manifestsK8s: templates/manifests-k8s
