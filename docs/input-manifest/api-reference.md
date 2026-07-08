@@ -84,7 +84,7 @@ Support for more cloud providers is in the [roadmap](https://github.com/berops/c
 
 - `namespace`
 
-  Namespace of the `TemplateGitReference` resource. If omitted, the namespace of the InputManifest is used.
+  Namespace of the `TemplateGitReference` resource. If omitted, the namespace of the deployment of claudie is used.
 
 ## TemplateGitReference
 

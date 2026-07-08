@@ -241,8 +241,10 @@ func processTestSet(
 		configs = append(configs, entry)
 	}
 
-	if templates != nil {
+	if templates != nil && envs.Namespace != "" {
 		manifestpath := filepath.Join(pathToTestSet, templates.Name())
+
+		log.Info().Msgf("Applying templates reference %q", manifestpath)
 
 		var err error
 
