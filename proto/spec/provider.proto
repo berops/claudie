@@ -113,10 +113,11 @@ message TemplateRepository {
     string manifestsK8s = 5;
   }
 
-  Endpoint endpoint = 1;
-  optional Auth auth = 2;
   string commit = 3;
   // commitHash is the fecthed hash of the referenced commit.
   string commitHash = 4;
-  TemplatePaths paths = 5;
+
+  Endpoint endpoint = 5;
+  optional Auth auth = 6;
+  TemplatePaths paths = 7;
 }

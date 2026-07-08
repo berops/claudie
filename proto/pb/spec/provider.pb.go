@@ -972,13 +972,13 @@ func (*Provider_Verda) isProvider_ProviderType() {}
 func (*Provider_Ovh) isProvider_ProviderType() {}
 
 type TemplateRepository struct {
-	state    protoimpl.MessageState       `protogen:"open.v1"`
-	Endpoint *TemplateRepository_Endpoint `protobuf:"bytes,1,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
-	Auth     *TemplateRepository_Auth     `protobuf:"bytes,2,opt,name=auth,proto3,oneof" json:"auth,omitempty"`
-	Commit   string                       `protobuf:"bytes,3,opt,name=commit,proto3" json:"commit,omitempty"`
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	Commit string                 `protobuf:"bytes,3,opt,name=commit,proto3" json:"commit,omitempty"`
 	// commitHash is the fecthed hash of the referenced commit.
 	CommitHash    string                            `protobuf:"bytes,4,opt,name=commitHash,proto3" json:"commitHash,omitempty"`
-	Paths         *TemplateRepository_TemplatePaths `protobuf:"bytes,5,opt,name=paths,proto3" json:"paths,omitempty"`
+	Endpoint      *TemplateRepository_Endpoint      `protobuf:"bytes,5,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
+	Auth          *TemplateRepository_Auth          `protobuf:"bytes,6,opt,name=auth,proto3,oneof" json:"auth,omitempty"`
+	Paths         *TemplateRepository_TemplatePaths `protobuf:"bytes,7,opt,name=paths,proto3" json:"paths,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1013,20 +1013,6 @@ func (*TemplateRepository) Descriptor() ([]byte, []int) {
 	return file_spec_provider_proto_rawDescGZIP(), []int{12}
 }
 
-func (x *TemplateRepository) GetEndpoint() *TemplateRepository_Endpoint {
-	if x != nil {
-		return x.Endpoint
-	}
-	return nil
-}
-
-func (x *TemplateRepository) GetAuth() *TemplateRepository_Auth {
-	if x != nil {
-		return x.Auth
-	}
-	return nil
-}
-
 func (x *TemplateRepository) GetCommit() string {
 	if x != nil {
 		return x.Commit
@@ -1039,6 +1025,20 @@ func (x *TemplateRepository) GetCommitHash() string {
 		return x.CommitHash
 	}
 	return ""
+}
+
+func (x *TemplateRepository) GetEndpoint() *TemplateRepository_Endpoint {
+	if x != nil {
+		return x.Endpoint
+	}
+	return nil
+}
+
+func (x *TemplateRepository) GetAuth() *TemplateRepository_Auth {
+	if x != nil {
+		return x.Auth
+	}
+	return nil
 }
 
 func (x *TemplateRepository) GetPaths() *TemplateRepository_TemplatePaths {
@@ -1300,14 +1300,14 @@ const file_spec_provider_proto_rawDesc = "" +
 	"\x03ovh\x18\x10 \x01(\v2\x11.spec.OVHProviderH\x00R\x03ovh\x126\n" +
 	"\ttemplates\x18\r \x01(\v2\x18.spec.TemplateRepositoryR\ttemplatesB\x0e\n" +
 	"\fProviderType\"\xa7\x05\n" +
-	"\x12TemplateRepository\x12=\n" +
-	"\bendpoint\x18\x01 \x01(\v2!.spec.TemplateRepository.EndpointR\bendpoint\x126\n" +
-	"\x04auth\x18\x02 \x01(\v2\x1d.spec.TemplateRepository.AuthH\x00R\x04auth\x88\x01\x01\x12\x16\n" +
+	"\x12TemplateRepository\x12\x16\n" +
 	"\x06commit\x18\x03 \x01(\tR\x06commit\x12\x1e\n" +
 	"\n" +
 	"commitHash\x18\x04 \x01(\tR\n" +
-	"commitHash\x12<\n" +
-	"\x05paths\x18\x05 \x01(\v2&.spec.TemplateRepository.TemplatePathsR\x05paths\x1a\x9e\x01\n" +
+	"commitHash\x12=\n" +
+	"\bendpoint\x18\x05 \x01(\v2!.spec.TemplateRepository.EndpointR\bendpoint\x126\n" +
+	"\x04auth\x18\x06 \x01(\v2\x1d.spec.TemplateRepository.AuthH\x00R\x04auth\x88\x01\x01\x12<\n" +
+	"\x05paths\x18\a \x01(\v2&.spec.TemplateRepository.TemplatePathsR\x05paths\x1a\x9e\x01\n" +
 	"\bEndpoint\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12F\n" +
 	"\bprotocol\x18\x02 \x01(\x0e2*.spec.TemplateRepository.Endpoint.ProtocolR\bprotocol\"8\n" +

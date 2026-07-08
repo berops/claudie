@@ -51,7 +51,7 @@ metadata:
   name: testing-framework
 rules:
   - apiGroups: ["claudie.io"]
-    resources: ["inputmanifests"]
+    resources: ["inputmanifests", "templategitreferences"]
     verbs: ["create", "patch", "update", "get", "list", "delete", "watch"]
 ---
 kind: ClusterRoleBinding
