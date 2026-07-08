@@ -230,6 +230,7 @@ func processTestSet(
 	var templates os.DirEntry
 	var configs []os.DirEntry
 	for _, entry := range dir {
+		log.Info().Msgf("Entry: %q", entry.Name())
 		// https://github.com/berops/claudie/pull/243#issuecomment-1218237412
 		if entry.IsDir() || entry.Name()[0] == '.' {
 			continue
