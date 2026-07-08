@@ -337,22 +337,12 @@ jobs:
           fi
           echo "Using claudie-config release: $LATEST_TAG"
 
-          YQ_EXPR='
-            (select(.kind == "Deployment" and .metadata.name == "claudie-operator") |
+          TAG="$LATEST_TAG" ./yq e -i \
+            '(select(.kind == "Deployment" and .metadata.name == "claudie-operator") |
               .spec.template.spec.containers[] |
-              select(.name == "claudie-operator").env
-            ) |=
-            if any(.name == "CLAUDIE_TEMPLATES_REFERENCE_COMMIT") then
-              map(
-                if .name == "CLAUDIE_TEMPLATES_REFERENCE_COMMIT"
-                then .value = strenv(TAG)
-                else . end
-              )
-            else
-              . + [{"name": "CLAUDIE_TEMPLATES_REFERENCE_COMMIT", "value": strenv(TAG)}]
-            end
-          '
-          TAG="$LATEST_TAG" ./yq e -i "$YQ_EXPR" ./claudie/operator.yaml
+              select(.name == "claudie-operator") |
+              .env) += [{"name": "CLAUDIE_TEMPLATES_REFERENCE_COMMIT", "value": strenv(TAG)}]' \
+            ./claudie/operator.yaml
 
       - name: Install tofu
         run: |
