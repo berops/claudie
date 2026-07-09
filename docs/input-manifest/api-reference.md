@@ -132,7 +132,11 @@ spec:
   - `secretRef`: Reference to a Kubernetes Secret containing the git token.
     - `name`: Name of the secret.
     - `namespace`: Namespace of the secret.
-    The secret must contain a `token` field and optionally a `username` field.
+    The secret **must** contain a `token` field and optionally a `username` field.
+
+    ```
+    kubectl create secret generic <secret-name> --namespace=<namespace> --from-literal=token=<token>
+    ```
 
 - `commit`
 
