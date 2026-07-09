@@ -75,7 +75,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 			missingSecrets = append(
 				missingSecrets,
-				fmt.Sprintf("Provider: %q Type %q Secret Name: %q Secret Namespace: %q",
+				fmt.Sprintf("Provider: %q Type: %q Secret Name: %q Secret Namespace: %q",
 					p.ProviderName,
 					p.ProviderType,
 					secretKey.Name,
@@ -92,22 +92,9 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 
 		if templatesKey.Name == "" {
-			msg := fmt.Sprintf(
-				"No templates specified for provider %q type %q, defaulting to 'claudie-default-templates'",
-				p.ProviderName,
-				p.ProviderType,
-			)
-			log.Info(msg)
 			templatesKey.Name = DefaultTemplatesReferenceName
 		}
 		if templatesKey.Namespace == "" {
-			msg := fmt.Sprintf(
-				"No namespace specified for templates reference in provider %q type %q, defaulting to %q",
-				p.ProviderName,
-				p.ProviderType,
-				TemplatesDefaultNamespace,
-			)
-			log.Info(msg)
 			templatesKey.Namespace = TemplatesDefaultNamespace
 		}
 
@@ -118,11 +105,11 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 			missingTemplates = append(
 				missingTemplates,
-				fmt.Sprintf("Provider: %q Type %q Templates Name: %q Templates Namespace: %q",
+				fmt.Sprintf("Provider: %q Type: %q Templates Name: %q Templates Namespace: %q",
 					p.ProviderName,
 					p.ProviderType,
-					p.TemplatesRef.Name,
-					p.TemplatesRef.Namespace,
+					templatesKey.Name,
+					templatesKey.Namespace,
 				),
 			)
 
@@ -130,13 +117,12 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			continue
 		}
 
-		secretKey = client.ObjectKey{
-			Name:      pwd.Templates.Spec.Auth.SecretRef.Name,
-			Namespace: pwd.Templates.Spec.Auth.SecretRef.Namespace,
-		}
+		if pwd.Templates.Spec.Auth.SecretRef != nil {
+			secretKey = client.ObjectKey{
+				Name:      pwd.Templates.Spec.Auth.SecretRef.Name,
+				Namespace: pwd.Templates.Spec.Auth.SecretRef.Namespace,
+			}
 
-		// Auth is optional.
-		if secretKey.Name != "" {
 			var auth corev1.Secret
 			if err := r.kc.Get(ctx, secretKey, &auth); err != nil {
 				if !apierrors.IsNotFound(err) {
@@ -146,7 +132,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				missingTemplatesAuth = append(
 					missingTemplatesAuth,
 					fmt.Sprintf(
-						"Provider %q Type %q Templates Name: %q Templates Namespace: %q, Auth Secret Name: %q  Auth Secret Namespace: %q",
+						"Provider: %q Type: %q Templates Name: %q Templates Namespace: %q, Auth Secret Name: %q  Auth Secret Namespace: %q",
 						p.ProviderName,
 						p.ProviderType,
 						p.TemplatesRef.Name,
@@ -170,19 +156,19 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}{
 		{
 			items:  missingSecrets,
-			msgFmt: "The following referenced providers credentials secrets were not found: %v",
+			msgFmt: "The following referenced providers credentials secrets were not found:\n%v",
 			reason: "SecretNotFound",
 			action: "FetchingSecrets",
 		},
 		{
 			items:  missingTemplates,
-			msgFmt: "The following referenced provider templates were not found: %v",
+			msgFmt: "The following referenced provider templates were not found:\n%v",
 			reason: "TemplatesNotFound",
 			action: "FetchingTemplates",
 		},
 		{
 			items:  missingTemplatesAuth,
-			msgFmt: "The following auth secrets within referenced templates were not found: %v",
+			msgFmt: "The following auth secrets within referenced templates were not found:\n%v",
 			reason: "AuthSecretNotFound",
 			action: "FetchingSecrets",
 		},
@@ -191,7 +177,7 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			continue
 		}
 
-		msg := fmt.Sprintf(c.msgFmt, strings.Join(c.items, ", "))
+		msg := fmt.Sprintf(c.msgFmt, strings.Join(c.items, "\n"))
 		r.Recorder.Eventf(inputManifest, nil, corev1.EventTypeWarning, c.reason, c.action, "%s", msg)
 		log.Error(nil, msg, "requeueAfter", REQUEUE_AFTER_ERROR)
 

@@ -180,9 +180,10 @@ func validateReferences(ctx context.Context, kc client.Client, im *v1beta.InputM
 		if err := kc.Get(ctx, key, new(corev1.Secret)); err != nil {
 			if !apierrors.IsNotFound(err) {
 				return fmt.Errorf(
-					"failed to check if secret %q within namespace %q exists",
+					"failed to check if secret %q within namespace %q exists: %w",
 					key.Name,
 					key.Namespace,
+					err,
 				)
 			}
 
@@ -213,9 +214,10 @@ func validateReferences(ctx context.Context, kc client.Client, im *v1beta.InputM
 		if err := kc.Get(ctx, key, &discard); err != nil {
 			if !apierrors.IsNotFound(err) {
 				return fmt.Errorf(
-					"failed to check if template reference %q within namespace %q exists",
+					"failed to check if template reference %q within namespace %q exists: %w",
 					key.Name,
 					key.Namespace,
+					err,
 				)
 			}
 
@@ -228,26 +230,42 @@ func validateReferences(ctx context.Context, kc client.Client, im *v1beta.InputM
 			)
 		}
 
-		key = client.ObjectKey{
-			Name:      discard.Spec.Auth.SecretRef.Name,
-			Namespace: discard.Spec.Auth.SecretRef.Namespace,
-		}
+		if discard.Spec.Auth.SecretRef != nil {
+			key = client.ObjectKey{
+				Name:      discard.Spec.Auth.SecretRef.Name,
+				Namespace: discard.Spec.Auth.SecretRef.Namespace,
+			}
 
-		// Auth tokens are optional.
-		if key.Name != "" {
+			if key.Name == "" {
+				return fmt.Errorf(
+					"missing name for auth secret within template reference %q in namespace %q",
+					discard.Name,
+					discard.Namespace,
+				)
+			}
+
+			if key.Namespace == "" {
+				return fmt.Errorf(
+					"missing namespace for auth secret within template reference %q in namespace %q",
+					discard.Name,
+					discard.Namespace,
+				)
+			}
+
 			if err := kc.Get(ctx, key, new(corev1.Secret)); err != nil {
 				if !apierrors.IsNotFound(err) {
 					return fmt.Errorf(
-						"failed to check if git auth secret %q within namespace %q exists for template reference %q namespace %q",
+						"failed to check if git auth secret %q within namespace %q exists for template reference %q in namespace %q: %w",
 						key.Name,
 						key.Namespace,
 						p.TemplatesRef.Name,
 						p.TemplatesRef.Namespace,
+						err,
 					)
 				}
 
 				return fmt.Errorf(
-					"git auth secret %q within namespace %q for template reference %q namespace %q does not exist",
+					"git auth secret %q within namespace %q for template reference %q in namespace %q does not exist",
 					key.Name,
 					key.Namespace,
 					p.TemplatesRef.Name,
@@ -255,6 +273,7 @@ func validateReferences(ctx context.Context, kc client.Client, im *v1beta.InputM
 				)
 			}
 		}
+
 	}
 
 	return nil

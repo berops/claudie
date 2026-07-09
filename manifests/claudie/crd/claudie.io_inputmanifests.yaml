@@ -559,7 +559,7 @@ spec:
                       type: object
                       x-kubernetes-map-type: atomic
                     templatesRef:
-                      description: External template for building the cluster infrastrucutre.
+                      description: External template for building the cluster infrastructure.
                       properties:
                         name:
                           type: string

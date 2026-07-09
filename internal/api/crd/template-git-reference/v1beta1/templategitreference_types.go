@@ -35,7 +35,7 @@ type EndpointSpec struct {
 type GitAuth struct {
 	// SecretRef is a reference to a Kubernetes secret containing the git token.
 	// +optional
-	SecretRef corev1.SecretReference `json:"secretRef,omitempty"`
+	SecretRef *corev1.SecretReference `json:"secretRef,omitempty"`
 }
 
 // GitPaths defines paths to various template directories within the repository.
