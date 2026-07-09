@@ -273,7 +273,6 @@ func validateReferences(ctx context.Context, kc client.Client, im *v1beta.InputM
 				)
 			}
 		}
-
 	}
 
 	return nil
