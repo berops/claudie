@@ -201,7 +201,7 @@ func validateReferences(ctx context.Context, kc client.Client, im *v1beta.InputM
 			Namespace: p.TemplatesRef.Namespace,
 		}
 
-		if key.Name == "" {
+		if key.Name == "" || key.Name == DefaultTemplatesReferenceName {
 			// TemplateGitReference is optional.
 			continue
 		}
