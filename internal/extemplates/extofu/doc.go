@@ -2,7 +2,7 @@
 // helper methods to work with external terraform files which can be downloaded from
 // any public or private git repository.
 //
-// The template repository need to follow a certain convention to work properly.
+// The template repository needs to follow a certain convention to work properly.
 //
 // For example:
 // If we consider an external template repository accessible via a public git repository at:
@@ -30,9 +30,10 @@
 //     for generation, the struct [Provider] will be passed for each file individually.
 //
 //   - if a subdirectory with name "networking" is present all files within this directory will be considered as related
-//     spawning a common networking infrastructure for all nodepools from a single provider. The files in this subdirectory
+//     to spawning a common networking infrastructure for all nodepools from a single provider. The files in this subdirectory
 //     will use the providers generated in the previous step. When using the templates the struct [Networking]
-//     will be passed for each file individually.
+//     will be passed for each file individually. Any output from the files read via `tofu ouput` in this step fill be passed
+//     to the next step which may decide to consume this output or ignore it.
 //
 //   - if a subdirectory with name "nodepool" is present all files within this directory will be considered as related
 //     to spawning the VM instances along with attached disk and related resources for a single node coming from a specific

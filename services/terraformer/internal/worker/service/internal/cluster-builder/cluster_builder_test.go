@@ -1,10 +1,7 @@
 package cluster_builder
 
 import (
-	"reflect"
 	"testing"
-
-	"github.com/berops/claudie/internal/extemplates/extofu"
 )
 
 func Test_parseNodeOutput(t *testing.T) {
@@ -42,46 +39,6 @@ func Test_parseNodeOutput(t *testing.T) {
 			if ip != tt.wantIP || sshPort != tt.wantSSHPort || wgPort != tt.wantWGPort {
 				t.Errorf("parseNodeOutput() = (%q, %d, %d), want (%q, %d, %d)",
 					ip, sshPort, wgPort, tt.wantIP, tt.wantSSHPort, tt.wantWGPort)
-			}
-		})
-	}
-}
-
-func Test_readIPs(t *testing.T) {
-	type args struct {
-		data string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    extofu.NodepoolIPs
-		wantErr bool
-	}{
-		{
-			name: "test-01",
-			args: args{
-				data: "{\"test-cluster-compute1\":\"0.0.0.65\",\n\"test-cluster-compute2\":\"0.0.0.512\", \"test-cluster-control1\":\"0.0.0.72\",\n\"test-cluster-control2\":\"0.0.0.65\"}",
-			},
-			want: extofu.NodepoolIPs{
-				IPs: map[string]any{
-					"test-cluster-compute1": "0.0.0.65",
-					"test-cluster-compute2": "0.0.0.512",
-					"test-cluster-control1": "0.0.0.72",
-					"test-cluster-control2": "0.0.0.65",
-				},
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := readIPs(tt.args.data)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("readIPs() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("readIPs() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

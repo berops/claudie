@@ -1,10 +1,7 @@
 package service
 
 import (
-	"github.com/berops/claudie/internal/clusters"
-	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/berops/claudie/services/terraformer/internal/worker/service/internal/loadbalancer"
 	"github.com/rs/zerolog"
 
 	"golang.org/x/sync/semaphore"
@@ -22,66 +19,66 @@ func replaceDns(
 	action ReplaceDns,
 	tracker Tracker,
 ) {
-	logger.Info().Msg("Replacing DNS")
-	idx := clusters.IndexLoadbalancerById(action.Replace.Handle, action.State.LoadBalancers)
-	if idx < 0 {
-		logger.
-			Warn().
-			Msgf("Can't replace DNS for loadbalancer %q that is missing from the received state", action.Replace.Handle)
-		return
-	}
+	// logger.Info().Msg("Replacing DNS")
+	// idx := clusters.IndexLoadbalancerById(action.Replace.Handle, action.State.LoadBalancers)
+	// if idx < 0 {
+	// 	logger.
+	// 		Warn().
+	// 		Msgf("Can't replace DNS for loadbalancer %q that is missing from the received state", action.Replace.Handle)
+	// 	return
+	// }
 
-	lb := action.State.LoadBalancers[idx]
-	if lb.Dns != nil {
-		current := lb.Dns
+	// lb := action.State.LoadBalancers[idx]
+	// if lb.Dns != nil {
+	// 	current := lb.Dns
 
-		// If there is a current state update it to nil
-		// on either a success or a failure. When reporting
-		// back to the manager service it should recognize
-		// that the DNS reported nil, and make a proper diff
-		// to either revert back or move to the new DNS again.
-		lb.Dns = nil
-		update := tracker.Result.Update()
-		update.Loadbalancers(lb)
-		update.Commit()
+	// 	// If there is a current state update it to nil
+	// 	// on either a success or a failure. When reporting
+	// 	// back to the manager service it should recognize
+	// 	// that the DNS reported nil, and make a proper diff
+	// 	// to either revert back or move to the new DNS again.
+	// 	lb.Dns = nil
+	// 	update := tracker.Result.Update()
+	// 	update.Loadbalancers(lb)
+	// 	update.Commit()
 
-		dns := loadbalancer.DNS{
-			ProjectName:       projectName,
-			ClusterName:       lb.ClusterInfo.Name,
-			ClusterHash:       lb.ClusterInfo.Hash,
-			NodeIPs:           nodepools.PublicEndpoints(lb.ClusterInfo.NodePools),
-			Dns:               current,
-			SpawnProcessLimit: processLimit,
-		}
+	// 	dns := loadbalancer.DNS{
+	// 		ProjectName:       projectName,
+	// 		ClusterName:       lb.ClusterInfo.Name,
+	// 		ClusterHash:       lb.ClusterInfo.Hash,
+	// 		NodeIPs:           nodepools.PublicEndpoints(lb.ClusterInfo.NodePools),
+	// 		Dns:               current,
+	// 		SpawnProcessLimit: processLimit,
+	// 	}
 
-		if err := dns.DestroyDNSRecords(logger); err != nil {
-			logger.Err(err).Msg("Failed to destroy DNS records")
-			tracker.Diagnostics.Push(err)
-			return
-		}
-	}
+	// 	if err := dns.DestroyDNSRecords(logger); err != nil {
+	// 		logger.Err(err).Msg("Failed to destroy DNS records")
+	// 		tracker.Diagnostics.Push(err)
+	// 		return
+	// 	}
+	// }
 
-	if action.Replace.Dns == nil {
-		return
-	}
+	// if action.Replace.Dns == nil {
+	// 	return
+	// }
 
-	lb.Dns = action.Replace.Dns
-	dns := loadbalancer.DNS{
-		ProjectName:       projectName,
-		ClusterName:       lb.ClusterInfo.Name,
-		ClusterHash:       lb.ClusterInfo.Hash,
-		NodeIPs:           nodepools.PublicEndpoints(lb.ClusterInfo.NodePools),
-		Dns:               lb.Dns,
-		SpawnProcessLimit: processLimit,
-	}
+	// lb.Dns = action.Replace.Dns
+	// dns := loadbalancer.DNS{
+	// 	ProjectName:       projectName,
+	// 	ClusterName:       lb.ClusterInfo.Name,
+	// 	ClusterHash:       lb.ClusterInfo.Hash,
+	// 	NodeIPs:           nodepools.PublicEndpoints(lb.ClusterInfo.NodePools),
+	// 	Dns:               lb.Dns,
+	// 	SpawnProcessLimit: processLimit,
+	// }
 
-	if err := dns.CreateDNSRecords(logger); err != nil {
-		logger.Err(err).Msg("Failed to create new DNS records")
-		tracker.Diagnostics.Push(err)
-		return
-	}
+	// if err := dns.CreateDNSRecords(logger); err != nil {
+	// 	logger.Err(err).Msg("Failed to create new DNS records")
+	// 	tracker.Diagnostics.Push(err)
+	// 	return
+	// }
 
-	update := tracker.Result.Update()
-	update.Loadbalancers(lb)
-	update.Commit()
+	// update := tracker.Result.Update()
+	// update.Loadbalancers(lb)
+	// update.Commit()
 }

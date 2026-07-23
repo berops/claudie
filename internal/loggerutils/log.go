@@ -31,13 +31,16 @@ func WithTaskContext(project, cluster, id string) zerolog.Logger {
 	return logger.With().Str("project", project).Str("cluster", cluster).Str("task", id).Logger()
 }
 
-const defaultLogLevel = zerolog.InfoLevel
+const (
+	// Available time formats https://pkg.go.dev/time#pkg-constants
+	LogTimeFormat = time.RFC3339 // c"2006-01-02T15:04:05Z07:00"
+
+	defaultLogLevel = zerolog.InfoLevel
+)
 
 var (
 	isLogInit = false
-	// Available time formats https://pkg.go.dev/time#pkg-constants
-	logTimeFormat = time.RFC3339 // c"2006-01-02T15:04:05Z07:00"
-	logger        zerolog.Logger
+	logger    zerolog.Logger
 )
 
 // Initialize the logging framework.
@@ -54,7 +57,7 @@ func Init(moduleName string) {
 		logger = logger.Level(logLevel).
 			Output(zerolog.ConsoleWriter{
 				Out:        os.Stderr,
-				TimeFormat: logTimeFormat,
+				TimeFormat: LogTimeFormat,
 			}) // Prettify the output
 		logger = logger.With().Timestamp().Logger() // Add time stamp
 		if logLevel == zerolog.DebugLevel {

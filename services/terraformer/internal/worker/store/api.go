@@ -26,9 +26,10 @@ var (
 // API for communicating with S3 style state storage for managing terraform state files.
 type S3StateStorage interface {
 	// DeleteStateFile removes tofu state file from MinIO.
-	DeleteStateFile(ctx context.Context, projectName, clusterId string, keyFormat string) error
+	DeleteStateFile(ctx context.Context, key string) error
+
 	// Stat checks whether the object exists.
-	Stat(ctx context.Context, projectName, clusterId, keyFormat string) error
+	Stat(ctx context.Context, key string) error
 
 	healthcheck.HealthChecker
 }

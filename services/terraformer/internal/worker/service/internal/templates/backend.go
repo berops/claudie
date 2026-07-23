@@ -8,6 +8,11 @@ import (
 	"github.com/berops/claudie/internal/tmplutils"
 )
 
+// Format used to store statefiles.
+//
+// State files are always stored under <Parent>/<Child> pattern.
+const KeyFormatStateFile = "%s/%s"
+
 //go:embed backend.tpl
 var backendTemplate string
 
@@ -21,22 +26,24 @@ var (
 
 type Backend struct {
 	ProjectName string
-	ClusterName string
+	Target      string
 	Directory   string
 }
 
 // CreateTFFile creates backend.tf file into specified Directory.
 func (b Backend) CreateTFFile() error {
-	template := tmplutils.Templates{Directory: b.Directory}
+	template := tmplutils.Templates{
+		Directory: b.Directory,
+	}
 
 	tpl, err := tmplutils.LoadTemplate(backendTemplate)
 	if err != nil {
-		return fmt.Errorf("failed to load template file external_backend.tpl for %s : %w", b.ClusterName, err)
+		return fmt.Errorf("failed to load template file external_backend.tpl for %s : %w", b.Target, err)
 	}
 
 	data := struct {
 		ProjectName string
-		ClusterName string
+		Target      string
 		BucketURL   string
 		BucketName  string
 		Region      string
@@ -44,7 +51,7 @@ func (b Backend) CreateTFFile() error {
 		SecretKey   string
 	}{
 		ProjectName: b.ProjectName,
-		ClusterName: b.ClusterName,
+		Target:      b.Target,
 		BucketURL:   bucketURL,
 		BucketName:  bucketName,
 		AccessKey:   awsAccessKey,
@@ -53,8 +60,12 @@ func (b Backend) CreateTFFile() error {
 	}
 
 	if err := template.Generate(tpl, "backend.tf", data); err != nil {
-		return fmt.Errorf("failed to generate backend files for %s : %w", b.ClusterName, err)
+		return fmt.Errorf("failed to generate backend files for %s : %w", b.Target, err)
 	}
 
 	return nil
+}
+
+func StateFile(projectName string, subResource string) string {
+	return fmt.Sprintf(KeyFormatStateFile, projectName, subResource)
 }

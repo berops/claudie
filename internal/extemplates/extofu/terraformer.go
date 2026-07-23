@@ -3,7 +3,6 @@ package extofu
 import (
 	"encoding/hex"
 	"fmt"
-	"iter"
 	"path/filepath"
 
 	"github.com/berops/claudie/internal/hash"
@@ -44,27 +43,4 @@ func TemplatesPath(p *spec.Provider) string {
 	}
 
 	return p.Templates.TemplatesPath(p.Templates.Paths.Terraformer, p.CloudProviderName)
-}
-
-// ByTemplates returns an iterator that groups nodepools by provider terraform templates path.
-func NodePoolsByTemplatesPath(nps []*spec.NodePool) iter.Seq2[string, []*spec.NodePool] {
-	m := make(map[string][]*spec.NodePool)
-
-	for _, nodepool := range nps {
-		np, ok := nodepool.Type.(*spec.NodePool_DynamicNodePool)
-		if !ok {
-			continue
-		}
-
-		p := TemplatesPath(np.DynamicNodePool.Provider)
-		m[p] = append(m[p], nodepool)
-	}
-
-	return func(yield func(string, []*spec.NodePool) bool) {
-		for k, v := range m {
-			if !yield(k, v) {
-				return
-			}
-		}
-	}
 }

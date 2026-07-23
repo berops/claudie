@@ -7,12 +7,6 @@ import (
 	"github.com/berops/claudie/proto/pb/spec"
 )
 
-type ProviderTemplateGroup struct {
-	CloudProvider string
-	SpecName      string
-	Creds         string
-}
-
 func All(nodepools []*spec.NodePool) iter.Seq[*spec.NodePool] {
 	return func(yield func(*spec.NodePool) bool) {
 		for _, np := range nodepools {
@@ -23,46 +17,20 @@ func All(nodepools []*spec.NodePool) iter.Seq[*spec.NodePool] {
 	}
 }
 
-// ByProviderDynamic returns an iterator that groups dynamic nodepools only by provider.
-func ByProviderDynamic(nps []*spec.NodePool) iter.Seq2[ProviderTemplateGroup, []*spec.NodePool] {
-	m := make(map[ProviderTemplateGroup][]*spec.NodePool)
-
-	for _, nodepool := range nps {
-		np, ok := nodepool.Type.(*spec.NodePool_DynamicNodePool)
-		if !ok {
-			continue
-		}
-		k := ProviderTemplateGroup{
-			CloudProvider: np.DynamicNodePool.Provider.CloudProviderName,
-			SpecName:      np.DynamicNodePool.Provider.SpecName,
-			Creds:         np.DynamicNodePool.Provider.Credentials(),
-		}
-		m[k] = append(m[k], nodepool)
-	}
-
-	return func(yield func(ProviderTemplateGroup, []*spec.NodePool) bool) {
-		for k, v := range m {
-			if !yield(k, v) {
-				return
-			}
-		}
-	}
-}
-
 // ByProviderSpecName returns an iterator that groups nodepools by provider SpecName.
 func ByProviderSpecName(nodepools []*spec.NodePool) iter.Seq2[string, []*spec.NodePool] {
-	sortedNodePools := map[string][]*spec.NodePool{}
+	m := make(map[string][]*spec.NodePool, len(nodepools))
 
 	for _, nodepool := range nodepools {
 		if np := nodepool.GetDynamicNodePool(); np != nil {
-			sortedNodePools[np.Provider.SpecName] = append(sortedNodePools[np.Provider.SpecName], nodepool)
+			m[np.Provider.SpecName] = append(m[np.Provider.SpecName], nodepool)
 		} else if np := nodepool.GetStaticNodePool(); np != nil {
-			sortedNodePools[spec.StaticNodepoolInfo_STATIC_PROVIDER.String()] = append(sortedNodePools[spec.StaticNodepoolInfo_STATIC_PROVIDER.String()], nodepool)
+			m[spec.StaticNodepoolInfo_STATIC_PROVIDER.String()] = append(m[spec.StaticNodepoolInfo_STATIC_PROVIDER.String()], nodepool)
 		}
 	}
 
 	return func(yield func(string, []*spec.NodePool) bool) {
-		for k, v := range sortedNodePools {
+		for k, v := range m {
 			if !yield(k, v) {
 				return
 			}

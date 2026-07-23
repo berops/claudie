@@ -56,42 +56,6 @@ type (
 
 // All the following types grouped are passed in as "Inputs" when generating terraform templates.
 type (
-	// Provider wraps all data related to generating terraform files for a Cloud provider scoped
-	// only for the provider block. This structure is used when generating templates files inside the
-	// provider directory of a Template repository.
-	Provider struct {
-		// ClusterData wraps the identifiers of the current build cluster
-		// which can be either K8s or Loadbalancer.
-		ClusterData ClusterData
-		// Provider hold the information (credentials, external templates etc.)
-		// that were passed by the user in the InputManifest.
-		Provider *spec.Provider
-		// Regions hold all the regions from the used provider within a single cluster.
-		// Example:
-		// If you specify multiple nodepools from the same provider but in different regions
-		// and use those nodepool in the same cluster (either K8s or LB) this field will contain
-		// those used regions.
-		//       - name: gcp-1
-		//        providerSpec:
-		//          name: gcp-1
-		//          region: europe-west1
-		//          zone: europe-west1-c
-		//        count: 1
-		//        serverType: e2-medium
-		//        image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
-		//
-		//      - name: gcp-2
-		//        providerSpec:
-		//          name: gcp-1
-		//          region: europe-west2
-		//          zone: europe-west2-a
-		//        count: 1
-		//        serverType: e2-small
-		//        image: ubuntu-os-cloud/ubuntu-2204-jammy-v20221206
-		//        storageDiskSize: 50
-		// Regions: ["europe-west2", "europe-west1"].
-		Regions []string
-	}
 	// Networking wraps all data related to generating terraform files for a Provider
 	// to set up a common networking infrastructure to be used by all Nodepools from the same Provider.
 	// This structure is used when generating template files inside the networking directory
@@ -181,10 +145,10 @@ type (
 		LBData LBData
 	}
 
-	// Nodepools wraps all data related to generating terraform files to spawn VM instances as described
-	// in nodepools from a Provider in the InputManifest. This structure is used when generating template
-	// files inside the nodepool directory of a Template repository.
-	Nodepools struct {
+	// Nodepool wraps all data related to generating terraform files to spawn VM instances as described
+	// in a given nodepool from a Provider in the InputManifest. This structure is used when generating
+	// template files inside the nodepool directory of a Template repository.
+	Nodepool struct {
 		// ClusterData wraps the identifiers of the current build cluster
 		// which can be either K8s or Loadbalancer.
 		ClusterData ClusterData
@@ -192,7 +156,9 @@ type (
 		// The nodes are partially initialized by Claudie at first, with only the Name of each respective node
 		// being valid. The other details such as PublicIP, PrivateIP will be initialized at a later stage
 		// of the pipeline.
-		NodePools []NodePoolInfo
+		NodePool NodePoolInfo
+		// Output read via `tofu output` from files of the Networking stage.
+		Networking NetworkingOutput
 	}
 
 	// DNS wraps all data related to generating terraform files to spawn create the specified DNS
@@ -244,12 +210,18 @@ type (
 	}
 )
 
-// All the following types grouped are passed in as "Outputs" from
-// using the generated template files.
+// All the following grouped types are acquired by reading the outputs from the generated template files.
 type (
-	// NodepoolIPs wrap the output data that is acquired from using the
-	// generated template files.
-	NodepoolIPs struct {
+	// NetworkingOutput wraps the output data that is acquired from using the generated tempalate files from the [Networking] stage.
+	NetworkingOutput struct {
+		// All holds all of the outputs read from the template files of the [Networking] stage.
+		//
+		// It is up to the author of the template files to guarantee no collisions occur.
+		All map[string]any `json:"-"`
+	}
+
+	// NodepoolOutput wraps the output data that is acquired from using the generated template files from the [Nodepool] stage.
+	NodepoolOutput struct {
 		// IPs holds the IPv4 addresses of the spawned VM instances from the
 		// generated templates files. It is expected that the template files
 		// in the nodepool directory that spawn the VM instances also
@@ -267,9 +239,8 @@ type (
 		IPs map[string]any `json:"-"`
 	}
 
-	// DNSDomain wrap the output data that is acquired from using the
-	// generated DNS template files.
-	DNSDomain struct {
+	// DNSOutput wraps the output data that is acquired from using the generated DNS template files from the [DNS] stage.
+	DNSOutput struct {
 		// Domain holds the fully qualified domain name with which the
 		// DNS records were created with. It is expected that the template
 		// files in the DNS directory that create the DNS records also expose

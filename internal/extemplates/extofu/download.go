@@ -1,6 +1,7 @@
 package extofu
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 )
 
@@ -46,14 +48,14 @@ func Download(downloadInto string, provider *spec.Provider) error {
 	)
 
 	if fileutils.DirectoryExists(gitDirectory) {
-		// Worktree is not supported by go-git, thus check if worktree is set.
-		if err := extemplates.UnsetWorktree(gitDirectory); err != nil {
-			return err
-		}
-
 		existingMirror, err := git.PlainOpen(gitDirectory)
 		if err != nil {
 			return fmt.Errorf("%q is not a valid local git repository: %w", gitDirectory, err)
+		}
+
+		w, err := existingMirror.Worktree()
+		if err != nil {
+			return fmt.Errorf("failed to read worktree %q: %w", gitDirectory, err)
 		}
 
 		ref, err := existingMirror.Head()
@@ -61,8 +63,11 @@ func Download(downloadInto string, provider *spec.Provider) error {
 			return fmt.Errorf("failed to read HEAD of local repository %q: %w", gitDirectory, err)
 		}
 
-		if ref.Hash().String() == provider.Templates.CommitHash {
-			return extemplates.SparseCheckout(gitDirectory, providerTemplates, provider.Templates.CommitHash)
+		if h := plumbing.NewHash(provider.Templates.CommitHash); ref.Hash() == h {
+			return w.Checkout(&git.CheckoutOptions{
+				SparseCheckoutDirectories: []string{providerTemplates},
+				Hash:                      h,
+			})
 		}
 
 		// on mismatch re-download the repo.
@@ -93,18 +98,26 @@ func Download(downloadInto string, provider *spec.Provider) error {
 		opts.Auth = &auth
 	}
 
-	if _, err := git.PlainClone(gitDirectory, false, &opts); err != nil {
+	r, err := git.PlainClone(gitDirectory, false, &opts)
+	if err != nil {
 		return fmt.Errorf("failed to clone %q: %w", endpoint, err)
 	}
 
-	if err := extemplates.VerifyCommitExists(gitDirectory, provider.Templates.CommitHash); err != nil {
-		return fmt.Errorf("commit verification failed: %w", err)
+	h := plumbing.NewHash(provider.Templates.CommitHash)
+	if _, err := r.CommitObject(h); err != nil {
+		if !errors.Is(err, plumbing.ErrObjectNotFound) {
+			return fmt.Errorf("failed to check existance of commit %q for %q: %w", provider.Templates.CommitHash, endpoint, err)
+		}
+		return fmt.Errorf("commit %q for %q does not exist: %w: %w", provider.Templates.CommitHash, endpoint, err, extemplates.ErrUnknownCommit)
 	}
 
-	if err := extemplates.SparseCheckout(gitDirectory, providerTemplates, provider.Templates.CommitHash); err != nil {
-		return err
+	w, err := r.Worktree()
+	if err != nil {
+		return fmt.Errorf("failed to read worktree %q: %w", gitDirectory, err)
 	}
 
-	// Worktree is not supported by go-git, thus check if worktree is set.
-	return extemplates.UnsetWorktree(gitDirectory)
+	return w.Checkout(&git.CheckoutOptions{
+		SparseCheckoutDirectories: []string{providerTemplates},
+		Hash:                      h,
+	})
 }

@@ -9,6 +9,8 @@ import (
 	"github.com/berops/claudie/proto/pb/spec"
 )
 
+// TODO: remove me.
+//
 //go:embed providers.tpl
 var providersTemplate string
 
@@ -18,6 +20,7 @@ type UsedProviders struct {
 	Directory   string
 }
 
+// TODO: remove me.
 // providerTemplateData is data structure passed to providers.tpl
 type usedProvidersTemplateData struct {
 	Gcp        bool
@@ -33,6 +36,7 @@ type usedProvidersTemplateData struct {
 	OVH        bool
 }
 
+// TODO: remove me.
 // CreateUsedProviderDNS creates provider file used for DNS management.
 func (p UsedProviders) CreateUsedProviderDNS(dns *spec.DNS) error {
 	template := tmplutils.Templates{Directory: p.Directory}
@@ -48,6 +52,7 @@ func (p UsedProviders) CreateUsedProviderDNS(dns *spec.DNS) error {
 	return template.Generate(tpl, "providers.tf", data)
 }
 
+// TODO: remove me.
 // CreateUsedProvider creates provider file used for infrastructure management.
 func (p UsedProviders) CreateUsedProvider(nps []*spec.NodePool) error {
 	template := tmplutils.Templates{Directory: p.Directory}
@@ -67,6 +72,7 @@ func (p UsedProviders) CreateUsedProvider(nps []*spec.NodePool) error {
 	return nil
 }
 
+// TODO: remove me.
 // getProvidersUsed modifies providerTemplateData to reflect current providers used.
 func getProvidersUsed(nodepools []*spec.DynamicNodePool, data *usedProvidersTemplateData) {
 	if len(nodepools) == 0 {

@@ -32,14 +32,6 @@ type Generator struct {
 	Fingerprint string
 }
 
-func (g *Generator) GenerateProvider(data *Provider) error {
-	return g.generateTemplates(
-		filepath.Join(g.ReadFromDirectory, g.TemplatePath, "provider"),
-		data.Provider.SpecName,
-		data,
-	)
-}
-
 func (g *Generator) GenerateNetworking(data *Networking) error {
 	return g.generateTemplates(
 		filepath.Join(g.ReadFromDirectory, g.TemplatePath, "networking"),
@@ -48,10 +40,10 @@ func (g *Generator) GenerateNetworking(data *Networking) error {
 	)
 }
 
-func (g *Generator) GenerateNodes(data *Nodepools) error {
+func (g *Generator) GenerateNodes(data *Nodepool) error {
 	return g.generateTemplates(
 		filepath.Join(g.ReadFromDirectory, g.TemplatePath, "nodepool"),
-		data.NodePools[0].Details.GetProvider().GetSpecName(),
+		data.NodePool.Details.GetProvider().GetSpecName(),
 		data,
 	)
 }
