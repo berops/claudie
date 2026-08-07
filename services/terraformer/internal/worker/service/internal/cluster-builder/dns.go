@@ -28,7 +28,7 @@ var (
 //
 // Before using any of the functions, [DnsBuilder.Init] must be called
 // with the context of the DNS. After calling all operations the
-// [DnsBuilder.Done] function must be called.
+// [DnsBuilder.Cleanup] function must be called.
 type DnsBuilder struct {
 	// ClusterName is the name of the loadbalancer cluster in the [DnsBuilder.InputManifest]
 	ClusterName string
@@ -62,16 +62,62 @@ type DnsBuilder struct {
 // This function also downloads external templates, if already not present and
 // prepares them for the passed in [spec.DNS].
 func (b *DnsBuilder) Init(logger zerolog.Logger, ips []string, dns *spec.DNS) error {
+	if dns == nil {
+		return errors.New("no dns supplied")
+	}
 	b.inner.log = logger.With().Str("endpoint", dns.Endpoint).Logger()
 	b.inner.dns = dns
 	b.inner.ips = ips
 	b.inner.dnsDir = filepath.Join(Output, fmt.Sprintf("%s-dns", b.ClusterId))
 	b.inner.dnsId = fmt.Sprintf("%s-dns", b.ClusterId)
 
-	if err := b.ensureTemplates(); err != nil {
+	// Cleanup any previous attemps.
+	if err := os.RemoveAll(b.inner.dnsDir); err != nil {
+		return fmt.Errorf("failed to cleanup previous work at %q: %w", b.inner.dnsDir, err)
+	}
+
+	var err error
+	defer func() {
+		if err != nil {
+			b.Cleanup()
+		}
+	}()
+
+	if err = b.ensureTemplates(); err != nil {
 		return err
 	}
-	return b.generateDns()
+
+	pv, err := b.readProviderVersion()
+	if err != nil {
+		return err
+	}
+
+	if err = b.generateDns(); err != nil {
+		return err
+	}
+
+	if err = generateProviderVersions(filepath.Join(b.inner.dnsDir, providerVersionFileName), pv); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (b *DnsBuilder) Cleanup() {
+	if err := os.RemoveAll(b.inner.dnsDir); err != nil {
+		b.inner.log.Err(err).Msgf("error while removing files in dir %q: %v", b.inner.dnsDir, err)
+	}
+}
+
+func (b *DnsBuilder) readProviderVersion() (map[string]ProviderBlock, error) {
+	p := b.inner.dns.Provider
+	r := filepath.Join(TemplatesRootDir, b.ClusterId, p.SpecName)
+	f := filepath.Join(r, extofu.TemplatesProviderVersionPath(p))
+
+	pv, err := parseProviderVersions(f)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read versions for dns provider %q inside cluster %q: %w", p.SpecName, b.ClusterId, err)
+	}
+	return pv, nil
 }
 
 func (b *DnsBuilder) ReconcileRecords() error {
@@ -93,11 +139,11 @@ func (b *DnsBuilder) ReconcileRecords() error {
 		SpawnProcessLimit: b.SpawnProcessLimit,
 	}
 
-	if err := apply(b.inner.log, tofu, b.InputManifest, StateFileDnsSubKey(b.ClusterId)); err != nil {
+	if err := apply(b.inner.log, tofu, b.InputManifest, DnsStateKey(b.ClusterId)); err != nil {
 		return fmt.Errorf("%w:%w", ErrTofuDns, err)
 	}
 
-	output, err := tofu.Output(extofu.DnsEndpointTerraformKey(b.inner.dns, b.ClusterId, ""))
+	output, err := tofu.OutputString(extofu.DnsEndpointTerraformKey(b.inner.dns, b.ClusterId, ""))
 	if err != nil {
 		return fmt.Errorf("error while retrieving output after reconciling dns records for %q: %w", b.inner.dnsId, err)
 	}
@@ -114,7 +160,7 @@ func (b *DnsBuilder) ReconcileRecords() error {
 			Info().
 			Msgf("Detected alternative names extension, reading output for alternative name %q", n.Hostname)
 
-		if output, err = tofu.Output(extofu.DnsEndpointTerraformKey(b.inner.dns, b.ClusterId, n.Hostname)); err != nil {
+		if output, err = tofu.OutputString(extofu.DnsEndpointTerraformKey(b.inner.dns, b.ClusterId, n.Hostname)); err != nil {
 			// Since this is an extension to the original data we consider errors as not fatal.
 			b.inner.log.
 				Warn().
@@ -161,16 +207,10 @@ func (b *DnsBuilder) DestroyRecords() error {
 		SpawnProcessLimit: b.SpawnProcessLimit,
 	}
 
-	if err := destroy(b.inner.log, tofu, b.InputManifest, StateFileDnsSubKey(b.ClusterId)); err != nil {
+	if err := destroy(b.inner.log, tofu, b.InputManifest, DnsStateKey(b.ClusterId)); err != nil {
 		return fmt.Errorf("%w:%w", ErrTofuDns, err)
 	}
 	return nil
-}
-
-func (b *DnsBuilder) Done() {
-	if err := os.RemoveAll(b.inner.dnsDir); err != nil {
-		b.inner.log.Err(err).Msgf("error while removing files in dir %q: %v", b.inner.dnsDir, err)
-	}
 }
 
 func (b *DnsBuilder) ensureTemplates() error {
@@ -256,6 +296,9 @@ func templateIPData(ips []string) []extofu.IPData {
 
 // validateDomain validates the domain does not start with ".".
 func validateDomain(s string) string {
+	if len(s) == 0 {
+		return s
+	}
 	if s[len(s)-1] == '.' {
 		return s[:len(s)-1]
 	}

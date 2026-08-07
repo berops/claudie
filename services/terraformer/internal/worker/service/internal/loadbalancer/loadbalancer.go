@@ -10,7 +10,6 @@ import (
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	cluster_builder "github.com/berops/claudie/services/terraformer/internal/worker/service/internal/cluster-builder"
-	"github.com/berops/claudie/services/terraformer/internal/worker/service/internal/templates"
 	"github.com/berops/claudie/services/terraformer/internal/worker/store"
 	"github.com/rs/zerolog"
 
@@ -19,7 +18,27 @@ import (
 )
 
 // The default value on how many nodepools can be built concurrently.
-const DefaultNodePoolConcurrencyLimit = 10
+const DefaultNodePoolConcurrencyLimit = 20
+
+// ReconcileNodePoolMode sets the mode for how to deal with the common infrastructure
+// when reconciling a single nodepool.
+type ReconcileNodePoolMode uint8
+
+const (
+	// ReconcileModeRead reads only the output of the common infrastructure.
+	ReconcileModeRead ReconcileNodePoolMode = iota
+
+	// ReconcileModeReadWrite reconciles the common infrastructure
+	// with the nodes of the cluster and reads the output.
+	ReconcileModeReadWrite
+)
+
+var (
+	// ErrReconcileAll error is returned when reconcilation of the common nodepool infrastructure
+	// was executed and therefore nodepools may need to be reconciled aswell by calling the [LBcluster.ReconcileAll]
+	// function.
+	ErrReconcileAll = errors.New("reconciliation of the whole cluster may be needed")
+)
 
 type LBcluster struct {
 	ProjectName string
@@ -44,30 +63,32 @@ func (l *LBcluster) ReconcileAll(ctx context.Context, logger zerolog.Logger) err
 		l.NodePoolConcurrencyLimit = DefaultNodePoolConcurrencyLimit
 	}
 
-	dynamic := nodepools.Dynamic(l.Cluster.ClusterInfo.NodePools)
-	builder := cluster_builder.ClusterBuilder{
-		ClusterName:   l.Cluster.ClusterInfo.Name,
-		ClusterHash:   l.Cluster.ClusterInfo.Hash,
-		ClusterId:     l.Cluster.ClusterInfo.Id(),
-		InputManifest: l.ProjectName,
-		Type:          cluster_builder.LoadbalancerCluster,
-		LBInfo: cluster_builder.LoadbalancerClusterInfo{
-			Roles: l.Cluster.Roles,
-		},
-		SpawnProcessLimit: l.SpawnProcessLimit,
-	}
-	dnsBuilder := cluster_builder.DnsBuilder{
-		ClusterName:       l.Cluster.ClusterInfo.Name,
-		ClusterHash:       l.Cluster.ClusterInfo.Hash,
-		ClusterId:         l.Cluster.ClusterInfo.Id(),
-		InputManifest:     l.ProjectName,
-		SpawnProcessLimit: l.SpawnProcessLimit,
-	}
+	var (
+		dynamic = nodepools.Dynamic(l.Cluster.ClusterInfo.NodePools)
+		builder = cluster_builder.ClusterBuilder{
+			ClusterName:   l.Cluster.ClusterInfo.Name,
+			ClusterHash:   l.Cluster.ClusterInfo.Hash,
+			ClusterId:     l.Cluster.ClusterInfo.Id(),
+			InputManifest: l.ProjectName,
+			Type:          cluster_builder.LoadbalancerCluster,
+			LBInfo: cluster_builder.LoadbalancerClusterInfo{
+				Roles: l.Cluster.Roles,
+			},
+			SpawnProcessLimit: l.SpawnProcessLimit,
+		}
+		dnsBuilder = cluster_builder.DnsBuilder{
+			ClusterName:       l.Cluster.ClusterInfo.Name,
+			ClusterHash:       l.Cluster.ClusterInfo.Hash,
+			ClusterId:         l.Cluster.ClusterInfo.Id(),
+			InputManifest:     l.ProjectName,
+			SpawnProcessLimit: l.SpawnProcessLimit,
+		}
+	)
 
 	if err := builder.Init(logger, dynamic); err != nil {
 		return err
 	}
-	defer builder.Done()
+	defer builder.Cleanup()
 
 	out, err := builder.ReconcileCommon()
 	if err != nil {
@@ -89,7 +110,7 @@ func (l *LBcluster) ReconcileAll(ctx context.Context, logger zerolog.Logger) err
 	if err := dnsBuilder.Init(logger, nodeIPs, l.Cluster.Dns); err != nil {
 		return err
 	}
-	defer dnsBuilder.Done()
+	defer dnsBuilder.Cleanup()
 
 	if err := dnsBuilder.ReconcileRecords(); err != nil {
 		return fmt.Errorf("error while reconciling dns records for cluster %q: %w", builder.ClusterId, err)
@@ -97,8 +118,91 @@ func (l *LBcluster) ReconcileAll(ctx context.Context, logger zerolog.Logger) err
 	return nil
 }
 
+// Reconciles the nodepool and its state. It is expected that the nodepool with the passed in 'handle' is part of the [LBcluster.Cluster].
+func (l *LBcluster) ReconcileNodePool(_ context.Context, logger zerolog.Logger, handle string, mode ReconcileNodePoolMode) error {
+	dynamic := nodepools.Dynamic(l.Cluster.ClusterInfo.NodePools)
+	switch idx := nodepools.IndexByName(handle, dynamic); {
+	case idx >= 0:
+		lbuilder := cluster_builder.ClusterBuilder{
+			ClusterName:   l.Cluster.ClusterInfo.Name,
+			ClusterHash:   l.Cluster.ClusterInfo.Hash,
+			ClusterId:     l.Cluster.ClusterInfo.Id(),
+			InputManifest: l.ProjectName,
+			Type:          cluster_builder.LoadbalancerCluster,
+			LBInfo: cluster_builder.LoadbalancerClusterInfo{
+				Roles: l.Cluster.Roles,
+			},
+			SpawnProcessLimit: l.SpawnProcessLimit,
+		}
+
+		err := lbuilder.Init(logger, dynamic)
+		if err != nil {
+			return err
+		}
+		defer lbuilder.Cleanup()
+
+		switch mode {
+		case ReconcileModeRead:
+			latest, err := lbuilder.OutputOnlyCommon()
+			if err != nil {
+				return fmt.Errorf("failed to read latest common nodepool infrastructure output: %w", err)
+			}
+			return lbuilder.ReconcileNodePool(latest, idx)
+		case ReconcileModeReadWrite:
+			updated, err := lbuilder.ReconcileCommon()
+			if err != nil {
+				return fmt.Errorf("failed to reconcile common nodepool infrastructure: %w: %w", err, ErrReconcileAll)
+			}
+			if err := lbuilder.ReconcileNodePool(updated, idx); err != nil {
+				return fmt.Errorf("failed to reconcile nodepool: %w: %w", err, ErrReconcileAll)
+			}
+
+			dbuilder := cluster_builder.DnsBuilder{
+				ClusterName:       l.Cluster.ClusterInfo.Name,
+				ClusterHash:       l.Cluster.ClusterInfo.Hash,
+				ClusterId:         l.Cluster.ClusterInfo.Id(),
+				InputManifest:     l.ProjectName,
+				SpawnProcessLimit: l.SpawnProcessLimit,
+			}
+
+			nodeIPs := nodepools.PublicEndpoints(l.Cluster.ClusterInfo.NodePools) // include all of the nodes.
+			if err := dbuilder.Init(logger, nodeIPs, l.Cluster.Dns); err != nil {
+				return fmt.Errorf("%w: %w", err, ErrReconcileAll)
+			}
+			defer dbuilder.Cleanup()
+
+			if err := dbuilder.ReconcileRecords(); err != nil {
+				return fmt.Errorf("error while reconciling dns records for cluster %q: %w: %w", dbuilder.ClusterId, err, ErrReconcileAll)
+			}
+			return ErrReconcileAll
+		default:
+			return fmt.Errorf("unknown reconcile mode %v", mode)
+		}
+	default:
+		builder := cluster_builder.DnsBuilder{
+			ClusterName:       l.Cluster.ClusterInfo.Name,
+			ClusterHash:       l.Cluster.ClusterInfo.Hash,
+			ClusterId:         l.Cluster.ClusterInfo.Id(),
+			InputManifest:     l.ProjectName,
+			SpawnProcessLimit: l.SpawnProcessLimit,
+		}
+
+		nodeIPs := nodepools.PublicEndpoints(l.Cluster.ClusterInfo.NodePools) // include all of the nodes.
+		if err := builder.Init(logger, nodeIPs, l.Cluster.Dns); err != nil {
+			return err
+		}
+		defer builder.Cleanup()
+
+		if err := builder.ReconcileRecords(); err != nil {
+			return fmt.Errorf("error while reconciling dns records for cluster %q: %w", builder.ClusterId, err)
+		}
+		return nil
+	}
+}
+
+// DestroyAll destroys all of the infrastructure of the loadbalancer cluster.
 func (l *LBcluster) DestroyAll(ctx context.Context, logger zerolog.Logger, s3 store.S3StateStorage) error {
-	logger.Info().Msgf("Destroying LB Cluster %s and DNS", l.Cluster.ClusterInfo.Name)
+	logger.Info().Msg("Destroying LB Cluster and its DNS records")
 
 	if l.NodePoolConcurrencyLimit == 0 {
 		l.NodePoolConcurrencyLimit = DefaultNodePoolConcurrencyLimit
@@ -124,52 +228,48 @@ func (l *LBcluster) DestroyAll(ctx context.Context, logger zerolog.Logger, s3 st
 		if err := builder.Init(logger, dynamic); err != nil {
 			return err
 		}
-		defer builder.Done()
+		defer builder.Cleanup()
 
-		out, err := builder.OutputOnlyCommon()
+		latest, err := builder.OutputOnlyCommon()
 		if err != nil {
-			return fmt.Errorf("failed to read output of common nodepool infrastrucutre: %w", err)
+			return fmt.Errorf("failed to read output of common nodepool infrastructure: %w", err)
 		}
 
 		group, _ /* ctx Currently not used */ := errgroup.WithContext(ctx)
 		group.SetLimit(l.NodePoolConcurrencyLimit)
 
 		for i, np := range dynamic {
-			key := templates.StateFile(
-				builder.InputManifest,
-				cluster_builder.StateFileNodePoolSubKey(builder.ClusterId, np.Name),
-			)
+			nodepoolStateFileKey := store.ObjectKey(builder.InputManifest, cluster_builder.NodePoolStateKey(builder.ClusterId, np.Name))
 			group.Go(func() error {
-				if err := s3.Stat(ctx, key); err != nil {
+				if err := s3.Stat(ctx, nodepoolStateFileKey); err != nil {
 					if !errors.Is(err, store.ErrS3KeyNotExists) {
 						return fmt.Errorf("failed to check presence of state file for cluster: %w", err)
 					}
 
-					logger.Warn().Msgf("No state file found for cluster, assuming infrastructure was deleted")
+					logger.
+						Warn().
+						Msgf("No state file found for nodepool %q, assuming infrastructure was deleted", np.Name)
+
 					return nil
 				}
 
-				if err := builder.DestroyNodePool(out, i); err != nil {
+				if err := builder.DestroyNodePool(latest, i); err != nil {
 					return fmt.Errorf("failed to destroy nodepool %q: %w", np.Name, err)
 				}
 
-				if err := s3.DeleteStateFile(ctx, key); err != nil {
+				if err := s3.DeleteStateFile(ctx, nodepoolStateFileKey); err != nil {
 					return fmt.Errorf("failed to delete state file for nodepool %q: %w", np.Name, err)
 				}
 				return nil
 			})
-
 		}
 
 		if err := group.Wait(); err != nil {
 			return fmt.Errorf("failed to delete all nodepools: %w", err)
 		}
 
-		key := templates.StateFile(
-			builder.InputManifest,
-			cluster_builder.StateFileCommonInfrastructureSubKey(builder.ClusterId),
-		)
-		if err := s3.Stat(ctx, key); err != nil {
+		commonInfraStateFileKey := store.ObjectKey(builder.InputManifest, cluster_builder.CommonInfraStateKey(builder.ClusterId))
+		if err := s3.Stat(ctx, commonInfraStateFileKey); err != nil {
 			if !errors.Is(err, store.ErrS3KeyNotExists) {
 				return fmt.Errorf("failed to check presence of state file for common nodepool infrastructure: %w", err)
 			}
@@ -181,7 +281,7 @@ func (l *LBcluster) DestroyAll(ctx context.Context, logger zerolog.Logger, s3 st
 			return fmt.Errorf("failed to destroy common nodepool infrastructure: %w", err)
 		}
 
-		if err := s3.DeleteStateFile(ctx, key); err != nil {
+		if err := s3.DeleteStateFile(ctx, commonInfraStateFileKey); err != nil {
 			return fmt.Errorf("failed to delete state file for common nodepool infrastructure: %w", err)
 		}
 		return nil
@@ -223,9 +323,9 @@ func (l *LBcluster) DestroyAll(ctx context.Context, logger zerolog.Logger, s3 st
 		if err := builder.Init(logger, nodeIPs, l.Cluster.Dns); err != nil {
 			return err
 		}
-		defer builder.Done()
+		defer builder.Cleanup()
 
-		key := templates.StateFile(builder.InputManifest, cluster_builder.StateFileDnsSubKey(builder.ClusterId))
+		key := store.ObjectKey(builder.InputManifest, cluster_builder.DnsStateKey(builder.ClusterId))
 		if err := s3.Stat(ctx, key); err != nil {
 			if !errors.Is(err, store.ErrS3KeyNotExists) {
 				return fmt.Errorf("failed to check presence of state file for dns: %w", err)
@@ -253,20 +353,140 @@ func (l *LBcluster) DestroyAll(ctx context.Context, logger zerolog.Logger, s3 st
 	return nil
 }
 
-// ReoncileNodePools reconciles the state of a single nodepool.
-func (c *LBcluster) ReconcileNodePool(ctx context.Context, logger zerolog.Logger, handle int) error {
-	panic("todo")
-}
+// DestroyNodePool destroys the passed in nodepool and its state. It is expected that the nodepool is no longer part of the [LBcluster.Cluster].
+//
+// The [ErrReconcileAll] error is returned when the reconciliation of the common nodepool infrastructure is executed to indicate
+// that other nodepools may have had their state invalidated.
+func (l *LBcluster) DestroyNodePool(ctx context.Context, logger zerolog.Logger, deleted *spec.NodePool, s3 store.S3StateStorage) error {
+	switch {
+	case deleted.GetStaticNodePool() != nil:
+		builder := cluster_builder.DnsBuilder{
+			ClusterName:       l.Cluster.ClusterInfo.Name,
+			ClusterHash:       l.Cluster.ClusterInfo.Hash,
+			ClusterId:         l.Cluster.ClusterInfo.Id(),
+			InputManifest:     l.ProjectName,
+			SpawnProcessLimit: l.SpawnProcessLimit,
+		}
+		nodeIPs := nodepools.PublicEndpoints(l.Cluster.ClusterInfo.NodePools) // include all of the nodes.
+		if err := builder.Init(logger, nodeIPs, l.Cluster.Dns); err != nil {
+			return err
+		}
+		defer builder.Cleanup()
 
-// DestroyNodePool destroys the state of a single nodepool.
-func (c *LBcluster) DestroyNodePool(ctx context.Context, logger zerolog.Logger, handle int, s3 store.S3StateStorage) error {
-	panic("todo")
+		if err := builder.ReconcileRecords(); err != nil {
+			return fmt.Errorf("error while reconciling dns records for cluster %q: %w", builder.ClusterId, err)
+		}
+		return nil
+	case deleted.GetDynamicNodePool() != nil:
+		var (
+			statefileExists = true
+			lbuilder        = cluster_builder.ClusterBuilder{
+				ClusterName:   l.Cluster.ClusterInfo.Name,
+				ClusterHash:   l.Cluster.ClusterInfo.Hash,
+				ClusterId:     l.Cluster.ClusterInfo.Id(),
+				InputManifest: l.ProjectName,
+				Type:          cluster_builder.LoadbalancerCluster,
+				LBInfo: cluster_builder.LoadbalancerClusterInfo{
+					Roles: l.Cluster.Roles,
+				},
+				SpawnProcessLimit: l.SpawnProcessLimit,
+			}
+			nodepoolStateFileKey = store.ObjectKey(lbuilder.InputManifest, cluster_builder.NodePoolStateKey(lbuilder.ClusterId, deleted.Name))
+		)
+
+		if err := s3.Stat(ctx, nodepoolStateFileKey); err != nil {
+			if !errors.Is(err, store.ErrS3KeyNotExists) {
+				return fmt.Errorf("failed to check presence of state file for cluster: %w", err)
+			}
+			statefileExists = false
+		}
+
+		if !statefileExists {
+			logger.Warn().Msgf("No state file found, assuming nodepool %q was deleted", deleted.Name)
+		}
+
+		dynamic := nodepools.Dynamic(l.Cluster.ClusterInfo.NodePools)
+		dynamic = append(dynamic, deleted)
+
+		if err := lbuilder.Init(logger, dynamic); err != nil {
+			return err
+		}
+
+		if statefileExists {
+			out, err := lbuilder.OutputOnlyCommon()
+			if err != nil {
+				lbuilder.Cleanup()
+				return fmt.Errorf("failed to read output of common nodepool infrastructure: %w", err)
+			}
+
+			if err := lbuilder.DestroyNodePool(out, len(dynamic)-1); err != nil {
+				lbuilder.Cleanup()
+				return fmt.Errorf("failed to destroy nodepool %q: %w", deleted.Name, err)
+			}
+		}
+
+		lbuilder.Cleanup()
+
+		dynamic = dynamic[:len(dynamic)-1]
+		if err := lbuilder.Init(logger, dynamic, deleted /* Include the deleted nodepool for its Provider */); err != nil {
+			return err
+		}
+		defer lbuilder.Cleanup()
+
+		if err := s3.DeleteStateFile(ctx, nodepoolStateFileKey); err != nil {
+			return fmt.Errorf("failed to delete state file for nodepool %q: %w", deleted.Name, err)
+		}
+
+		// Needs to follow DeleteStateFile for having idempotent deletes.
+		if _, err := lbuilder.ReconcileCommon(); err != nil {
+			return fmt.Errorf("failed to reconcile common nodepool infrastructure after nodepool deletion: %w: %w", err, ErrReconcileAll)
+		}
+
+		dbuilder := cluster_builder.DnsBuilder{
+			ClusterName:       l.Cluster.ClusterInfo.Name,
+			ClusterHash:       l.Cluster.ClusterInfo.Hash,
+			ClusterId:         l.Cluster.ClusterInfo.Id(),
+			InputManifest:     l.ProjectName,
+			SpawnProcessLimit: l.SpawnProcessLimit,
+		}
+		nodeIPs := nodepools.PublicEndpoints(l.Cluster.ClusterInfo.NodePools) // include all of the nodes.
+		if err := dbuilder.Init(logger, nodeIPs, l.Cluster.Dns); err != nil {
+			return fmt.Errorf("%w: %w", err, ErrReconcileAll)
+		}
+		defer dbuilder.Cleanup()
+
+		if err := dbuilder.ReconcileRecords(); err != nil {
+			return fmt.Errorf("error while reconciling dns records for cluster %q: %w: %w", dbuilder.ClusterId, err, ErrReconcileAll)
+		}
+		return ErrReconcileAll
+	default:
+		// Reconcile nothing.
+		return nil
+	}
 }
 
 // ReconcileCommon reconciles common infrastructure for all of the nodepools of the cluster.
-func (c *LBcluster) ReconcileCommon(ctx context.Context, logger zerolog.Logger) error { panic("todo") }
+func (l *LBcluster) ReconcileCommon(_ context.Context, logger zerolog.Logger) error {
+	builder := cluster_builder.ClusterBuilder{
+		ClusterName:   l.Cluster.ClusterInfo.Name,
+		ClusterHash:   l.Cluster.ClusterInfo.Hash,
+		ClusterId:     l.Cluster.ClusterInfo.Id(),
+		InputManifest: l.ProjectName,
+		Type:          cluster_builder.LoadbalancerCluster,
+		LBInfo: cluster_builder.LoadbalancerClusterInfo{
+			Roles: l.Cluster.Roles,
+		},
+		SpawnProcessLimit: l.SpawnProcessLimit,
+	}
 
-// DestroyCommon destroys common infrastructure for all of the nodepools of the cluster.
-func (c *LBcluster) DestroyCommon(ctx context.Context, logger zerolog.Logger, s3 store.S3StateStorage) error {
-	panic("todo")
+	dynamic := nodepools.Dynamic(l.Cluster.ClusterInfo.NodePools)
+	if err := builder.Init(logger, dynamic); err != nil {
+		return err
+	}
+	defer builder.Cleanup()
+
+	if _, err := builder.ReconcileCommon(); err != nil {
+		return fmt.Errorf("failed to reconcile common nodepool infrastructure: %w", err)
+	}
+	return nil
 }

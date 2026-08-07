@@ -7,10 +7,22 @@ import (
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/terraformer/internal/worker/service/internal/kubernetes"
 	"github.com/berops/claudie/services/terraformer/internal/worker/service/internal/loadbalancer"
+	"github.com/berops/claudie/services/terraformer/internal/worker/store"
 	"github.com/rs/zerolog"
 
 	"golang.org/x/sync/semaphore"
 )
+
+type Cluster interface {
+	// Destroys all of the infrastructure of the cluster.
+	DestroyAll(ctx context.Context, logger zerolog.Logger, s3 store.S3StateStorage) error
+
+	// Id returns a cluster ID for the cluster.
+	Id() string
+
+	// whether the cluster is a kubernetes cluster, if not it is a loadbalancer.
+	IsKubernetes() bool
+}
 
 func destroy(
 	logger zerolog.Logger,
@@ -71,10 +83,12 @@ func destroy(
 	})
 	if err != nil {
 		logger.Err(err).Msg("Failed to destroy clusters")
+		tracker.Diagnostics.Push(err)
 		// Some of the provided clusters didn't destroy successfully.
 		// Since we still want to report the partially destroyed infrastructure
 		// back to the caller we fallthrough here.
-		tracker.Diagnostics.Push(err)
+		//
+		// fallthrough
 	}
 
 	var (

@@ -6,7 +6,14 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/tmplutils"
+)
+
+const (
+	// ProviderFile is the pattern of a template name that is expected
+	// to only contain provider information for the external templates.
+	ProviderFile = "provider.tpl"
 )
 
 type Generator struct {
@@ -33,30 +40,53 @@ type Generator struct {
 }
 
 func (g *Generator) GenerateNetworking(data *Networking) error {
-	return g.generateTemplates(
+	_, err := g.generateTemplates(
 		filepath.Join(g.ReadFromDirectory, g.TemplatePath, "networking"),
 		data.Provider.SpecName,
 		data,
+		func(s string) bool { return s != ProviderFile },
 	)
+	return err
+}
+
+func (g *Generator) GenerateNetworkingProvider(data *Networking) error {
+	rendered, err := g.generateTemplates(
+		filepath.Join(g.ReadFromDirectory, g.TemplatePath, "networking"),
+		data.Provider.SpecName,
+		data,
+		func(s string) bool { return s == ProviderFile },
+	)
+	if err != nil {
+		return err
+	}
+	if rendered == 0 {
+		return fmt.Errorf("no %q inside 'networking' directory", ProviderFile)
+	}
+	return nil
 }
 
 func (g *Generator) GenerateNodes(data *Nodepool) error {
-	return g.generateTemplates(
+	_, err := g.generateTemplates(
 		filepath.Join(g.ReadFromDirectory, g.TemplatePath, "nodepool"),
 		data.NodePool.Details.GetProvider().GetSpecName(),
 		data,
 	)
+	return err
 }
 
 func (g *Generator) GenerateDNS(data *DNS) error {
-	return g.generateTemplates(
+	_, err := g.generateTemplates(
 		filepath.Join(g.ReadFromDirectory, g.TemplatePath, "dns"),
 		data.Provider.SpecName,
 		data,
 	)
+	return err
 }
 
-func (g *Generator) generateTemplates(dir, specName string, data any) error {
+// generateTemplates generates all of the files with the '.tpl' suffix in the specified directory.
+//
+// To filter out only specific files, the optional filters slice can be specified for file names.
+func (g *Generator) generateTemplates(dir, specName string, data any, filters ...func(string) bool) (int, error) {
 	type fingerPrintedData struct {
 		// Data is data passed to the template generator (one of the above).
 		Data any
@@ -70,12 +100,25 @@ func (g *Generator) generateTemplates(dir, specName string, data any) error {
 
 	files, err := os.ReadDir(dir)
 	if err != nil {
-		return fmt.Errorf("failed to read directory %q: %w", dir, err)
+		return 0, fmt.Errorf("failed to read directory %q: %w", dir, err)
 	}
 
+	if err := fileutils.CreateDirectory(targetDirectory.Directory); err != nil {
+		return 0, err
+	}
+
+	rendered := 0
+
+outer:
 	for _, gotpl := range files {
 		if gotpl.IsDir() {
 			continue
+		}
+
+		for _, f := range filters {
+			if !f(strings.ToLower(gotpl.Name())) {
+				continue outer
+			}
 		}
 
 		if !strings.HasSuffix(gotpl.Name(), ".tpl") {
@@ -84,12 +127,12 @@ func (g *Generator) generateTemplates(dir, specName string, data any) error {
 
 		file, err := os.ReadFile(filepath.Join(dir, gotpl.Name()))
 		if err != nil {
-			return fmt.Errorf("error while reading template file %s in %s: %w", gotpl, dir, err)
+			return rendered, fmt.Errorf("error while reading template file %s in %s: %w", gotpl, dir, err)
 		}
 
 		tpl, err := tmplutils.LoadTemplate(string(file))
 		if err != nil {
-			return fmt.Errorf("error while parsing template file %s from %s : %w", gotpl.Name(), dir, err)
+			return rendered, fmt.Errorf("error while parsing template file %s from %s : %w", gotpl.Name(), dir, err)
 		}
 
 		gotpl := strings.TrimSuffix(gotpl.Name(), ".tpl")
@@ -101,9 +144,11 @@ func (g *Generator) generateTemplates(dir, specName string, data any) error {
 		}
 
 		if err := targetDirectory.Generate(tpl, outputFile, data); err != nil {
-			return fmt.Errorf("error while generating %s file : %w", outputFile, err)
+			return rendered, fmt.Errorf("error while generating %s file : %w", outputFile, err)
 		}
+
+		rendered += 1
 	}
 
-	return nil
+	return rendered, nil
 }

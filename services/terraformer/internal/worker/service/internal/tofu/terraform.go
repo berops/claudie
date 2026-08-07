@@ -24,7 +24,7 @@ import (
 const maxTfCommandRetryCount = 1
 
 // Parallelism is the number of resource to be work on in parallel during the apply/destroy commands.
-var parallelism = envs.GetOrDefaultInt("TERRAFORMER_TOFU_PARALLELISM", 40)
+var parallelism = envs.GetOrDefaultInt("TERRAFORMER_TOFU_PARALLELISM", 30)
 
 type Terraform struct {
 	// Directory represents the directory of .tf files
@@ -82,7 +82,7 @@ func (t *Terraform) Init() error {
 	}
 
 	//nolint
-	cmd := exec.Command("tofu", "init")
+	cmd := exec.Command("tofu", "init", "-upgrade")
 	cmd.Dir = t.Directory
 	cmd.Stdout = t.Stdout
 	cmd.Stderr = t.Stderr
@@ -191,7 +191,7 @@ func (t *Terraform) Destroy() error {
 	return nil
 }
 
-func (t *Terraform) Output(resourceName string) (string, error) {
+func (t *Terraform) OutputString(resourceName string) (string, error) {
 	//nolint
 	cmd := exec.Command("tofu", "output", "-json", resourceName)
 	cmd.Dir = t.Directory

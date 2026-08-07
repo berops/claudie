@@ -63,11 +63,11 @@ spec:
                 configMapKeyRef:
                   name: env
                   key: TERRAFORMER_TOFU_PARALLELISM
-            - name: TERRAFORMER_CONCURRENT_CLUSTERS
+            - name: TERRAFORMER_CONCURRENT_PROCESSES
               valueFrom:
                 configMapKeyRef:
                   name: env
-                  key: TERRAFORMER_CONCURRENT_CLUSTERS
+                  key: TERRAFORMER_CONCURRENT_PROCESSES
             - name: TERRAFORMER_PORT
               valueFrom:
                 configMapKeyRef:

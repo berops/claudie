@@ -47,16 +47,19 @@ func build(
 		return
 	}
 
-	cluster := kubernetes.K8Scluster{
-		ProjectName:       projectName,
-		Cluster:           k8s,
-		ExportPort6443:    clusters.FindAssignedLbApiEndpoint(lbs) == nil,
-		SpawnProcessLimit: processLimit,
-	}
+	var (
+		ctx     = context.Background()
+		cluster = kubernetes.K8Scluster{
+			ProjectName:       projectName,
+			Cluster:           k8s,
+			ExportPort6443:    clusters.FindAssignedLbApiEndpoint(lbs) == nil,
+			SpawnProcessLimit: processLimit,
+		}
+	)
 
 	buildLogger := logger.With().Str("cluster", cluster.Id()).Logger()
 
-	if err := cluster.ReconcileAll(context.Background(), buildLogger); err != nil {
+	if err := cluster.ReconcileAll(ctx, buildLogger); err != nil {
 		// Some of the infrastructure might have failed to build,
 		// nevertheless, we still send back the updated state for
 		// the manager to resolve the diff.

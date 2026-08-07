@@ -44,3 +44,8 @@ func TemplatesPath(p *spec.Provider) string {
 
 	return p.Templates.TemplatesPath(p.Templates.Paths.Terraformer, p.CloudProviderName)
 }
+
+// Returns the path under which the version of the provider is stored inside the [TemplatePath].
+func TemplatesProviderVersionPath(p *spec.Provider) string {
+	return filepath.Join(TemplatesPath(p), "provider_version.tpl")
+}

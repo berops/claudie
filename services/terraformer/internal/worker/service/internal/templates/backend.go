@@ -8,11 +8,6 @@ import (
 	"github.com/berops/claudie/internal/tmplutils"
 )
 
-// Format used to store statefiles.
-//
-// State files are always stored under <Parent>/<Child> pattern.
-const KeyFormatStateFile = "%s/%s"
-
 //go:embed backend.tpl
 var backendTemplate string
 
@@ -64,8 +59,4 @@ func (b Backend) CreateTFFile() error {
 	}
 
 	return nil
-}
-
-func StateFile(projectName string, subResource string) string {
-	return fmt.Sprintf(KeyFormatStateFile, projectName, subResource)
 }

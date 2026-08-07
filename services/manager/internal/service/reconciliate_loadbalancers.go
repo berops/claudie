@@ -548,29 +548,27 @@ func ScheduleAdditionLoadBalancerNodePools(
 	diff *NodePoolsDiffResult,
 	opts LoadBalancerNodePoolsOptions,
 ) *spec.TaskEvent {
-	pipeline := []*spec.Stage{}
+	var pipeline []*spec.Stage
 
-	if !opts.IsStatic {
-		pipeline = append(pipeline, &spec.Stage{
-			StageKind: &spec.Stage_Terraformer{
-				Terraformer: &spec.StageTerraformer{
-					Description: &spec.StageDescription{
-						About:      "Reconciling infrastructure for the load balancer",
-						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-					},
-					SubPasses: []*spec.StageTerraformer_SubPass{
-						{
-							Kind: spec.StageTerraformer_UPDATE_INFRASTRUCTURE,
-							Description: &spec.StageDescription{
-								About:      "Reconciling firewalls and VMs for new nodes/nodepools",
-								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-							},
+	pipeline = append(pipeline, &spec.Stage{
+		StageKind: &spec.Stage_Terraformer{
+			Terraformer: &spec.StageTerraformer{
+				Description: &spec.StageDescription{
+					About:      "Reconciling infrastructure for the load balancer",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+				SubPasses: []*spec.StageTerraformer_SubPass{
+					{
+						Kind: spec.StageTerraformer_UPDATE_INFRASTRUCTURE,
+						Description: &spec.StageDescription{
+							About:      "Reconciling firewalls and VMs for new nodes/nodepools",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 						},
 					},
 				},
 			},
-		})
-	}
+		},
+	})
 
 	ans := spec.Stage_Ansibler{
 		Ansibler: &spec.StageAnsibler{

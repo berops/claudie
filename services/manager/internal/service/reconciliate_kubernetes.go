@@ -599,8 +599,6 @@ func ScheduleAdditionsInNodePools(
 		kuberStage       *spec.Stage
 	)
 
-	// TODO: check if we really don't need to do this
-	// to refresh the DNS endpoints for the static nodepool.
 	if !opts.IsStatic {
 		terraformerStage = &spec.Stage{
 			StageKind: &spec.Stage_Terraformer{

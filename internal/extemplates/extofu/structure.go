@@ -217,7 +217,7 @@ type (
 		// All holds all of the outputs read from the template files of the [Networking] stage.
 		//
 		// It is up to the author of the template files to guarantee no collisions occur.
-		All map[string]any `json:"-"`
+		All map[string]any
 	}
 
 	// NodepoolOutput wraps the output data that is acquired from using the generated template files from the [Nodepool] stage.
@@ -236,7 +236,7 @@ type (
 		//    {{- end }}
 		//  }
 		//}
-		IPs map[string]any `json:"-"`
+		IPs map[string]any
 	}
 
 	// DNSOutput wraps the output data that is acquired from using the generated DNS template files from the [DNS] stage.
@@ -250,6 +250,6 @@ type (
 		// output "{{ .Data.ClusterName }}-{{ .Data.ClusterHash }}_{{ $specName }}_{{ $uniqueFingerPrint }}" {
 		// 	value = { "{{ .Data.ClusterName }}-{{ .Data.ClusterHash }}-endpoint" = format("%s.%s", "{{ .Data.HostnameHash }}", "{{ .Data.DNSZone }}")}
 		//}
-		Domain map[string]string `json:"-"`
+		Domain map[string]string
 	}
 )

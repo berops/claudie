@@ -2,64 +2,182 @@
 // helper methods to work with external terraform files which can be downloaded from
 // any public or private git repository.
 //
-// The template repository needs to follow a certain convention to work properly.
+// # What you are writing
 //
-// For example:
-// If we consider an external template repository accessible via a public git repository at:
+// Templates are Go-templated terraform files (.tpl) stored in a git repository,
+// grouped per provider under a path you reference from the InputManifest, e.g.:
 //
-//	`https://github.com/berops/claudie-config`
+//	claudie-config/templates/terraformer/gcp
 //
-// The repository may either only contain the necessary templates files or they can be stored at a
-// subtree. To handle this a relative path is required to be passed along the public git repository,
-// such as:
+// Claudie downloads that subtree (sparse checkout, pinned to a commit), renders
+// the .tpl files with the data described below, and runs `tofu apply` on the
+// result. You are not writing one terraform project — you are writing up to
+// three independent ones. Each is applied separately, with its own state file:
 //
-//	`templates/terraformer/gcp`
+//	networking/  ONE project per cluster. The rendered networking templates of
+//	             EVERY provider used by the cluster land together in one folder.
+//	             Holds everything nodepools share: VPCs, subnets, firewalls.
+//	nodepool/    ONE project PER NODEPOOL. Holds everything owned by a single
+//	             nodepool: VMs, disks, IPs.
+//	dns/         ONE project per loadbalancer cluster. Holds the DNS records.
 //
-// This denotes that the necessary templates for Google Cloud Platform can be found in the subtree at:
+// Because these are separate projects with separate state, a nodepool template
+// can never reference a networking resource by its terraform address
+// (google_compute_subnetwork.my_subnet.id will not resolve — the resource lives
+// in a different state). The ONLY way to pass data from networking to nodepools
+// is: networking exports an output, claudie reads it with `tofu output` after
+// applying, and hands the values to your nodepool templates.
 //
-//	`claudie-config/templates/terraformer/gcp`
+// # What claudie generates for you — and what that forbids
 //
-// To only deal with the necessary template files a sparse-checkout is used when downloading the external
-// repository to have a local mirror present which will then be used to generate the terraform files.
+// Into every rendered project folder claudie places:
 //
-// When using the template files for generation the subtree present at "claudie-config/templates/terraformer/gcp"
-// the directory is traversed and the following rules apply:
+//   - backend.tf — where the state lives. Never declare your own backend.
+//   - provider_version.tf — the required_providers block, generated from your
+//     provider_version.tpl (see below). Never declare required_providers yourself.
+//   - a credentials file named after the provider's SpecName, containing the raw
+//     credentials from the InputManifest. Reference it from your provider block,
+//     e.g. credentials = file("./{{ .Data.Provider.SpecName }}").
+//   - (nodepool projects only) the nodepool's public SSH key, in a file named
+//     after the nodepool: file("./{{ .Data.NodePool.Name }}").
 //
-//   - if a subdirectory with name "provider" is present, all files within this directory will be considered as related to
-//     Providers for interacting with the API of respective Cloud Providers, SaaS providers etc. When using the templates
-//     for generation, the struct [Provider] will be passed for each file individually.
+// // What claudie does NOT generate are the provider configuration blocks
+// themselves. Each of the networking, nodepool and dns subdirectories MUST
+// contain a file named "provider.tpl" declaring exactly the provider
+// configuration blocks the other files of that directory use — and nothing
+// else: no resources, no outputs, no terraform blocks. No other file may
+// declare provider blocks. Claudie renders provider.tpl separately from the
+// rest of its directory, so provider blocks hidden in other files either go
+// missing or render twice as duplicate configurations.
 //
-//   - if a subdirectory with name "networking" is present all files within this directory will be considered as related
-//     to spawning a common networking infrastructure for all nodepools from a single provider. The files in this subdirectory
-//     will use the providers generated in the previous step. When using the templates the struct [Networking]
-//     will be passed for each file individually. Any output from the files read via `tofu ouput` in this step fill be passed
-//     to the next step which may decide to consume this output or ignore it.
+// # provider_version.tpl (required)
 //
-//   - if a subdirectory with name "nodepool" is present all files within this directory will be considered as related
-//     to spawning the VM instances along with attached disk and related resources for a single node coming from a specific
-//     nodepool. When using the templates the struct [Nodepools] will be passed for each file individually.
+// Next to the networking/nodepool/dns subdirectories, the subtree root must
+// contain a file named "provider_version.tpl". Despite the extension it is NOT
+// a template — it is plain HCL, and must pin source and version for every
+// provider your templates use:
 //
-//   - if a subdirectory with name "dns" is present, all files within this directory will be considered as related to DNS.
-//     Thus, the [DNS] struct will be passed for each file when generating the templates.
-//     Note: This subdirectory should contain its own file that will generate the Provider needed for interacting with
-//     the necessary API of the respective cloud providers (the ones that will be generated from the "provider" subdirectory
-//     will not be used in this case).
+//	terraform {
+//	  required_providers {
+//	    google = {
+//	      source  = "hashicorp/google"
+//	      version = "~> 6.0"
+//	    }
+//	  }
+//	}
 //
-// The complete structure of a subtree for a single provider for external templates located at claudie-config/templates/terraformer/gcp
-// can look as follows:
+// Every version constraint must have a lower bound ("~> 6.0", ">= 6.1", "6.1.2"
+// are fine, "< 7.0" alone is rejected). When a cluster mixes nodepools from
+// several template repositories, all their pins are merged into the shared
+// networking project: the same provider name must use the same source
+// everywhere, and the highest lower bound wins.
 //
-//	└── terraformer
-//	    |── gcp
-//	    │	├── dns
-//	    │   	└── dns.tpl
-//	    │	├── networking
-//	    │		└── networking.tpl
-//	    │	├── nodepool
-//	    │		├── node.tpl
-//	    │		└── node_networking.tpl
-//	    │	└── provider
-//	    │		└── provider.tpl
-//		...
+// # Writing networking templates
 //
-// Examples of external templates can be found on:  https://github.com/berops/claudie-config
+// Each file receives the [Networking] struct as .Data: the provider
+// (.Data.Provider), the regions the cluster's nodepools of this provider use
+// (.Data.Regions, .Data.RegionNetwork), cluster identity (.Data.ClusterData),
+// and, depending on the cluster type, .Data.K8sData.HasAPIServer or
+// .Data.LBData.Roles for firewall rules.
+//
+// Remember that your rendered files share one folder and one state with the
+// networking templates of every other provider in the cluster. Make every
+// resource and output name unique by embedding .Fingerprint — a string claudie
+// passes to each template that is unique per (provider, template repository):
+//
+//	resource "google_compute_network" "net_{{ .Fingerprint }}" { ... }
+//
+//	output "subnet_{{ $region }}_{{ .Fingerprint }}" {
+//	  value = google_compute_subnetwork.subnet_{{ $region }}_{{ .Fingerprint }}.self_link
+//	}
+//
+// Export through outputs everything your nodepool templates will need — subnet
+// ids, security group ids. Nothing else crosses the boundary.
+//
+// # Writing nodepool templates
+//
+// Each file receives the [Nodepool] struct as .Data, describing exactly ONE
+// nodepool: .Data.NodePool (Name, Details, Nodes, IsControl — node names are
+// known at render time, their IPs are not, the CIDR in Details is already
+// assigned) and .Data.Networking.All — a map holding every output your
+// networking templates exported, keyed by output name:
+//
+//	subnetwork = {{ index .Data.Networking.All (printf "subnet_%s_%s" $region .Fingerprint) }}
+//
+// Every nodepool project MUST export one output that tells claudie the public
+// address of each node, named exactly "<nodepoolName>_<specName>_<fingerprint>"
+// (see [NodePoolTerraformKey]):
+//
+//	output "{{ .Data.NodePool.Name }}_{{ .Data.NodePool.Details.Provider.SpecName }}_{{ .Fingerprint }}" {
+//	  value = {
+//	    {{- range $node := .Data.NodePool.Nodes }}
+//	    "{{ $node.Name }}" = google_compute_instance.{{ $node.Name }}_{{ $.Fingerprint }}.network_interface.0.access_config.0.nat_ip
+//	    {{- end }}
+//	  }
+//	}
+//
+// The value per node is either the IP, or [IP, sshPort], or
+// [IP, sshPort, wireguardPort] for shared-IP/NAT setups where nodes are reached
+// on mapped host ports. A node missing from this output is treated as a failed
+// build.
+//
+// # Writing dns templates
+//
+// Each file receives the [DNS] struct as .Data (hostname, zone, record IPs,
+// provider). The project must export the created endpoint under the output
+// "<clusterId>_<specName>_<fingerprint>" (see [DnsEndpointTerraformKey]) whose
+// value maps "<clusterId>-endpoint" to the fully qualified domain name.
+// Optional extensions (alternative names, provider extras) are documented on
+// [AlternativeNamesExtension] and [ProviderExtrasExtension]; probe for them
+// with the hasExtension template function.
+//
+// # Rules your templates must follow
+//
+// Claudie re-renders and re-applies these projects independently, repeatedly,
+// and with a changing set of nodepools. Applies must converge, so:
+//
+//   - Be deterministic. The same input data must always render the same
+//     resources, names and outputs. No randomness, no timestamps.
+//
+//   - Derive networking resources only from the input data. When a nodepool is
+//     added or removed, your networking templates are re-rendered with the
+//     grown or shrunk region list — that render must create or remove exactly
+//     the resources of the affected regions and leave the resources and output
+//     values of every remaining region untouched.
+//
+//   - Treat outputs as a stable API. Nodepool projects bake the output VALUES
+//     in at render time. When claudie re-applies the networking project it
+//     re-renders and re-applies every nodepool against the fresh outputs — an
+//     output value that changes gratuitously therefore churns every nodepool.
+//
+//   - Keep role/API-port differences inside firewall rules. When only
+//     .Data.LBData.Roles or .Data.K8sData.HasAPIServer change, claudie applies
+//     the networking project WITHOUT re-applying the nodepools. Rendering
+//     differences driven by these fields must be confined to firewall/security
+//     rules and must not change any output value.
+//
+//   - Derive provider aliases purely from .Data.Regions and
+//     .Data.RegionNetwork. Claudie may render networking/provider.tpl with a
+//     WIDER region set than the resource files: when a nodepool is deleted,
+//     its regions stay in the provider.tpl render until the shared
+//     infrastructure they anchor is destroyed — the destroy still needs those
+//     provider aliases, even though no resource file references them anymore.
+//     provider.tpl must therefore produce valid configuration for any region
+//     set it is given.
+//
+// # Example Layout of a subtree
+//
+//	templates/terraformer/gcp
+//	├── provider_version.tpl
+//	├── networking
+//	│   └── networking.tpl
+//	│   └── provider.tpl
+//	├── nodepool
+//	│   ├── node.tpl
+//	│   └── node_networking.tpl
+//	│   └── provider.tpl
+//	└── dns
+//	    └── dns.tpl
+//
+// Working examples for every supported provider: https://github.com/berops/claudie-config
 package extofu

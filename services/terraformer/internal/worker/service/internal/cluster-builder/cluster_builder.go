@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
+	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -17,6 +20,7 @@ import (
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/terraformer/internal/worker/service/internal/templates"
 	"github.com/berops/claudie/services/terraformer/internal/worker/service/internal/tofu"
+	"github.com/hashicorp/go-version"
 	"github.com/rs/zerolog"
 
 	"golang.org/x/sync/semaphore"
@@ -30,6 +34,17 @@ var (
 	// common to all nodepools on the tofu level fail.
 	ErrTofuCommonInfrastructure = errors.New("common infrastructure operation failed")
 )
+
+// constraintClauseRegexp splits a single version constraint clause into its
+// operator and version. It mimics the unexported constraint regexp used by
+// the parseSingle function of [github.com/hashicorp/go-version], built from
+// the same exported [version.VersionRegexpRaw] grammar, as the parsed version
+// is not accessible through the public API of the [version.Constraint] type.
+var constraintClauseRegexp = regexp.MustCompile(fmt.Sprintf(
+	`^\s*(%s)\s*(%s)\s*$`,
+	`<=|>=|!=|~>|<|>|=|`,
+	version.VersionRegexpRaw,
+))
 
 // KubernetesClusterInfo provides additional information that is
 // specific to a kuberentes cluster when using [ClusterBuilder]
@@ -49,7 +64,7 @@ type LoadbalancerClusterInfo struct {
 //
 // Before using any of the functions, [ClusterBuilder.Init] must be called
 // with the context of the nodepools for the cluster. After calling all
-// operations the [ClusterBuilder.Done] function must be called.
+// operations the [ClusterBuilder.Cleanup] function must be called.
 type ClusterBuilder struct {
 	// ClusterName of the cluster, as stated in the [ClusterBuilder.InputManifest].
 	ClusterName string
@@ -81,6 +96,8 @@ type ClusterBuilder struct {
 		clusterDir    string
 		networkingDir string
 		nodepoolsDir  string
+
+		optionalProviders []*spec.Provider
 	}
 }
 
@@ -94,26 +111,83 @@ type ClusterBuilder struct {
 //
 // It is important that the passed in nodepools reflect the actual to be reconciled
 // state of the cluster.
-func (c *ClusterBuilder) Init(log zerolog.Logger, dynamic []*spec.NodePool) error {
+//
+// The 'optionalProviders' slice of dynamic nodepools is only used to generate providers
+// which may be usefull to remove stale infra from the common infrastructure.
+func (c *ClusterBuilder) Init(log zerolog.Logger, dynamic []*spec.NodePool, optionalProviders ...*spec.NodePool) error {
 	c.inner.log = log
 	c.inner.dynamic = dynamic
 	c.inner.clusterDir = filepath.Join(Output, c.ClusterId)
 	c.inner.networkingDir = filepath.Join(c.inner.clusterDir, NetworkingGenTarget)
 	c.inner.nodepoolsDir = filepath.Join(c.inner.clusterDir, NodepoolsGenTarget)
 
-	for _, group := range nodepools.ByProviderSpecName(c.inner.dynamic) {
-		if err := c.ensureTemplates(group); err != nil {
+	// Cleanup any previous attemps.
+	if err := os.RemoveAll(c.inner.clusterDir); err != nil {
+		return fmt.Errorf("failed to cleanup previous work at %q: %w", c.inner.clusterDir, err)
+	}
+
+	var err error
+	defer func() {
+		if err != nil {
+			c.Cleanup()
+		}
+	}()
+
+	optional := maps.Collect(nodepools.ByProviderSpecName(optionalProviders))
+	usedProviders := make(map[string]ProviderBlock, len(dynamic))
+
+	for k, group := range nodepools.ByProviderSpecName(c.inner.dynamic) {
+		var providers map[string]ProviderBlock
+		if err = ensureTemplates(c.ClusterId, group); err != nil {
 			return err
 		}
-		if err := c.generateCommonNetworking(group); err != nil {
+		providers, err = readProviderVersion(c.ClusterId, group)
+		if err != nil {
+			return err
+		}
+		if err = mergeProviderVersions(usedProviders, providers, c.inner.log); err != nil {
+			return err
+		}
+		if err = c.generateCommonNetworking(group); err != nil {
+			return err
+		}
+		// For generating the providers include also any
+		// deleted optional nodepools to have their
+		// providers generate, so that common infrastructure
+		// can be cleaned up.
+		if o, ok := optional[k]; ok {
+			group = append(slices.Clone(group), o...)
+			delete(optional, k)
+		}
+		if err = c.generateCommonNetworkingProviders(group); err != nil {
 			return err
 		}
 	}
 
+	for _, group := range optional {
+		var providers map[string]ProviderBlock
+		if err = ensureTemplates(c.ClusterId, group); err != nil {
+			return err
+		}
+		providers, err = readProviderVersion(c.ClusterId, group)
+		if err != nil {
+			return err
+		}
+		if err = mergeProviderVersions(usedProviders, providers, c.inner.log); err != nil {
+			return err
+		}
+		if err = c.generateCommonNetworkingProviders(group); err != nil {
+			return err
+		}
+	}
+
+	if err = generateProviderVersions(filepath.Join(c.inner.networkingDir, providerVersionFileName), usedProviders); err != nil {
+		return err
+	}
 	return nil
 }
 
-func (c *ClusterBuilder) Done() {
+func (c *ClusterBuilder) Cleanup() {
 	if err := os.RemoveAll(c.inner.clusterDir); err != nil {
 		c.inner.log.Err(err).Msgf("error when deleting generated files in %s: %v", c.inner.clusterDir, err)
 	}
@@ -143,11 +217,11 @@ func (c *ClusterBuilder) ReconcileNodePool(nto extofu.NetworkingOutput, handle i
 		SpawnProcessLimit: c.SpawnProcessLimit,
 	}
 
-	if err := apply(c.inner.log, tofu, c.InputManifest, StateFileNodePoolSubKey(c.ClusterId, np.Name)); err != nil {
+	if err := apply(c.inner.log, tofu, c.InputManifest, NodePoolStateKey(c.ClusterId, np.Name)); err != nil {
 		return fmt.Errorf("%w: %w", ErrTofuNodePool, err)
 	}
 
-	output, err := tofu.Output(extofu.NodePoolTerraformKey(np))
+	output, err := tofu.OutputString(extofu.NodePoolTerraformKey(np))
 	if err != nil {
 		return err
 	}
@@ -212,7 +286,7 @@ func (c *ClusterBuilder) DestroyNodePool(nto extofu.NetworkingOutput, handle int
 		SpawnProcessLimit: c.SpawnProcessLimit,
 	}
 
-	if err := destroy(c.inner.log, tofu, c.InputManifest, StateFileNodePoolSubKey(c.ClusterId, np.Name)); err != nil {
+	if err := destroy(c.inner.log, tofu, c.InputManifest, NodePoolStateKey(c.ClusterId, np.Name)); err != nil {
 		return fmt.Errorf("%w: %w", ErrTofuNodePool, err)
 	}
 	return nil
@@ -237,7 +311,7 @@ func (c *ClusterBuilder) OutputOnlyCommon() (extofu.NetworkingOutput, error) {
 		SpawnProcessLimit: c.SpawnProcessLimit,
 	}
 
-	if err := tinit(c.inner.log, tofu, c.InputManifest, StateFileCommonInfrastructureSubKey(c.ClusterId)); err != nil {
+	if err := tinit(c.inner.log, tofu, c.InputManifest, CommonInfraStateKey(c.ClusterId)); err != nil {
 		return extofu.NetworkingOutput{}, fmt.Errorf("%w: %w", ErrTofuCommonInfrastructure, err)
 	}
 
@@ -267,7 +341,7 @@ func (c *ClusterBuilder) ReconcileCommon() (extofu.NetworkingOutput, error) {
 		SpawnProcessLimit: c.SpawnProcessLimit,
 	}
 
-	if err := apply(c.inner.log, tofu, c.InputManifest, StateFileCommonInfrastructureSubKey(c.ClusterId)); err != nil {
+	if err := apply(c.inner.log, tofu, c.InputManifest, CommonInfraStateKey(c.ClusterId)); err != nil {
 		return extofu.NetworkingOutput{}, fmt.Errorf("%w: %w", ErrTofuCommonInfrastructure, err)
 	}
 
@@ -297,7 +371,7 @@ func (c *ClusterBuilder) DestroyCommon() error {
 		SpawnProcessLimit: c.SpawnProcessLimit,
 	}
 
-	if err := destroy(c.inner.log, tofu, c.InputManifest, StateFileCommonInfrastructureSubKey(c.ClusterId)); err != nil {
+	if err := destroy(c.inner.log, tofu, c.InputManifest, CommonInfraStateKey(c.ClusterId)); err != nil {
 		return fmt.Errorf("%w: %w", ErrTofuCommonInfrastructure, err)
 	}
 	return nil
@@ -347,97 +421,36 @@ func parseNodeOutput(val any) (ip string, sshPort, wgPort int32, err error) {
 	}
 }
 
-func (c *ClusterBuilder) ensureTemplates(sameProviderGroup []*spec.NodePool) error {
+func ensureTemplates(clusterId string, sameProviderGroup []*spec.NodePool) error {
 	p := sameProviderGroup[0].GetDynamicNodePool().Provider
-	d := filepath.Join(TemplatesRootDir, c.ClusterId, p.SpecName)
+	d := filepath.Join(TemplatesRootDir, clusterId, p.SpecName)
 
 	// Validation guarantees that the specName is unique within a single InputManifest,
 	// thus when we group nodepools by specName they all point to the same provider
 	// and we can download the templates for the whole group with just a single call.
 	if err := extofu.Download(d, p); err != nil {
-		return fmt.Errorf("failed to setup template repository for provider %q inside cluster %q: %w", p.SpecName, c.ClusterId, err)
+		return fmt.Errorf("failed to setup template repository for provider %q inside cluster %q: %w", p.SpecName, clusterId, err)
 	}
 	return nil
 }
 
-func (c *ClusterBuilder) generateProviderVersioning(todo) {
-	/*
-				 TODO:
-				 Check the todo in the manager service adding k8s nodepool terraform scheduling if its needed.
+// readProviderVersion reads the provider requirements pinned by the external templates of the provider.
+func readProviderVersion(clusterId string, sameProviderGroup []*spec.NodePool) (map[string]ProviderBlock, error) {
+	p := sameProviderGroup[0].GetDynamicNodePool().Provider
+	r := filepath.Join(TemplatesRootDir, clusterId, p.SpecName)
+	f := filepath.Join(r, extofu.TemplatesProviderVersionPath(p))
 
-				 For The versioning to work we need to check for the `provider_version.tpl` file in the external
-				 templates, If present we need to parse it via the HCL into a go struct. see hetzner example in your git repo.
-
-
-				Do this for every nodepool. Since a cluster can have many providers of the same type
-				if there are any version mismatches always take the highest version out of the available
-				verions.
-
-				Since each nodepool has its own terraform file this shouldn't be an issue for that.
-				The only issue might be caused by the common networking infrastructure if the newer
-				version introduces backwards incompatible changes but that shouldn't be an issue
-				as tofu will fail and claudie will revert back the changes and loop until the
-				errornous template is removed.
-
-				On empty/missing provider_version.tpl error out.
-
-
-				Might also need to add tofu init -upgrade instead of having plain tofu init.
-
-				Idea something along this way, but for each provider of the same type choose
-				the highest version
-
-				Final plan summary:
-				File to create:
-				templates/terraformer/hetzner/provider.tpl
-				Content:
-				terraform {
-		          required_providers {
-		            hcloud = {
-		              source  = "hetznercloud/hcloud"
-		              version = "~> 1.45"
-		            }
-		          }
-				}
-				Claudie aggregation logic (conceptual Go):
-
-				type ProviderReq struct {
-		          Source  string `hcl:"source"`
-		          Version string `hcl:"version"`
-				}
-
-				type TerraformBlock struct {
-		          RequiredProviders map[string]ProviderReq `hcl:"required_providers,block"`
-				}
-
-				type RootConfig struct {
-		          Terraform *TerraformBlock `hcl:"terraform,block"`
-				}
-
-				func aggregate(templateDirs []string) (string, error) {
-		        all := map[string][]ProviderReq{}                 // name -> versions
-		        for _, dir := range templateDirs {
-		         path := filepath.Join(dir, "provider.tpl")
-		         var cfg RootConfig
-		         hclsimple.DecodeFile(path, nil, &cfg)
-		         for name, p := range cfg.Terraform.RequiredProviders {
-		            all[name] = append(all[name], p)
-		         }
-		        }
-
-		    // For each provider, check conflicts, pick highest
-		    // Use hashicorp/go-version to compare
-		    // Emit warning if different. Generate final HCL.
-			}
-			Strategy: Take highest version per provider, warn on disagreement.
-	*/
+	pv, err := parseProviderVersions(f)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read versions for provider %q inside cluster %q: %w", p.SpecName, clusterId, err)
+	}
+	return pv, nil
 }
 
-// GenerateCommonNetworking generates the 'networking' folder of the external templates for
-// spawning common networking infrastructure for all the nodepools.
-func (c *ClusterBuilder) generateCommonNetworking(sameProviderGroup []*spec.NodePool) error {
+// generateCommonNetworkingProviders generates the providers used within the `networking` folder
+// of the external templates for spawning common networking infrastructure for all of the nodepools.
+func (c *ClusterBuilder) generateCommonNetworkingProviders(sameProviderGroup []*spec.NodePool) error {
 	p := sameProviderGroup[0].GetDynamicNodePool().Provider
-	t := filepath.Join(TemplatesRootDir, c.ClusterId, p.SpecName)
 	d := nodepools.ExtractDynamic(sameProviderGroup)
 	r := nodepools.ExtractRegions(d)
 	var rgn []extofu.RegionNetwork
@@ -449,7 +462,52 @@ func (c *ClusterBuilder) generateCommonNetworking(sameProviderGroup []*spec.Node
 	g := extofu.Generator{
 		ID:                c.ClusterId,
 		TargetDirectory:   c.inner.networkingDir,
-		ReadFromDirectory: t,
+		ReadFromDirectory: filepath.Join(TemplatesRootDir, c.ClusterId, p.SpecName),
+		TemplatePath:      extofu.TemplatesPath(p),
+		Fingerprint:       extofu.Fingerprint(p),
+	}
+	n := extofu.Networking{
+		ClusterData: extofu.ClusterData{
+			ClusterName: c.ClusterName,
+			ClusterHash: c.ClusterHash,
+			ClusterType: string(c.Type),
+		},
+		Provider:      p,
+		Regions:       r,
+		RegionNetwork: rgn,
+		K8sData: extofu.K8sData{
+			HasAPIServer: c.K8sInfo.ExportPort6443,
+		},
+		LBData: extofu.LBData{
+			Roles: c.LBInfo.Roles,
+		},
+	}
+
+	if err := g.GenerateNetworkingProvider(&n); err != nil {
+		return fmt.Errorf("failed to generate networking module for provider %q in cluster %q: %w", p.SpecName, c.ClusterId, err)
+	}
+	if err := fileutils.CreateKey(p.Credentials(), c.inner.networkingDir, p.SpecName); err != nil {
+		return fmt.Errorf("error generating credentials file used for networking for cluster %q: %w", c.ClusterId, err)
+	}
+	return nil
+}
+
+// generateCommonNetworking generates the 'networking' folder of the external templates for
+// spawning common networking infrastructure for all the nodepools.
+func (c *ClusterBuilder) generateCommonNetworking(sameProviderGroup []*spec.NodePool) error {
+	p := sameProviderGroup[0].GetDynamicNodePool().Provider
+	d := nodepools.ExtractDynamic(sameProviderGroup)
+	r := nodepools.ExtractRegions(d)
+	var rgn []extofu.RegionNetwork
+
+	for _, v := range nodepools.ExtractRegionNetwork(d) {
+		rgn = append(rgn, extofu.RegionNetwork(v))
+	}
+
+	g := extofu.Generator{
+		ID:                c.ClusterId,
+		TargetDirectory:   c.inner.networkingDir,
+		ReadFromDirectory: filepath.Join(TemplatesRootDir, c.ClusterId, p.SpecName),
 		TemplatePath:      extofu.TemplatesPath(p),
 		Fingerprint:       extofu.Fingerprint(p),
 	}
@@ -473,9 +531,6 @@ func (c *ClusterBuilder) generateCommonNetworking(sameProviderGroup []*spec.Node
 	if err := g.GenerateNetworking(&n); err != nil {
 		return fmt.Errorf("failed to generate networking module for provider %q in cluster %q: %w", p.SpecName, c.ClusterId, err)
 	}
-	if err := fileutils.CreateKey(p.Credentials(), c.inner.networkingDir, p.SpecName); err != nil {
-		return fmt.Errorf("error generating credentials file used for networking for cluster %q: %w", c.ClusterId, err)
-	}
 	return nil
 }
 
@@ -483,11 +538,10 @@ func (c *ClusterBuilder) generateCommonNetworking(sameProviderGroup []*spec.Node
 func (c *ClusterBuilder) generateNodePool(np *spec.NodePool, out extofu.NetworkingOutput) error {
 	d := filepath.Join(c.inner.nodepoolsDir, np.Name)
 	p := np.GetDynamicNodePool().Provider
-	t := filepath.Join(TemplatesRootDir, c.ClusterId, p.SpecName)
 	g := extofu.Generator{
 		ID:                c.ClusterId,
 		TargetDirectory:   d,
-		ReadFromDirectory: t,
+		ReadFromDirectory: filepath.Join(TemplatesRootDir, c.ClusterId, p.SpecName),
 		TemplatePath:      extofu.TemplatesPath(p),
 		Fingerprint:       extofu.Fingerprint(p),
 	}
@@ -509,12 +563,18 @@ func (c *ClusterBuilder) generateNodePool(np *spec.NodePool, out extofu.Networki
 		return err
 	}
 	if err := fileutils.CreateKey(np.GetDynamicNodePool().GetPublicKey(), d, np.GetName()); err != nil {
-		return fmt.Errorf("error generating public key for %s in cluster %q: %w", np.Name, c.ClusterId, err)
+		return fmt.Errorf("error generating public key for %s: %w", np.Name, err)
 	}
 	if err := fileutils.CreateKey(p.Credentials(), d, p.SpecName); err != nil {
-		return fmt.Errorf("error generating credentials file for %q in cluster %q: %w", np.Name, c.ClusterId, err)
+		return fmt.Errorf("error generating credentials file for %q: %w", np.Name, err)
 	}
-	return nil
+
+	v, err := readProviderVersion(c.ClusterId, []*spec.NodePool{np})
+	if err != nil {
+		return err
+	}
+
+	return generateProviderVersions(filepath.Join(g.TargetDirectory, providerVersionFileName), v)
 }
 
 func apply(log zerolog.Logger, tofu tofu.Terraform, inputManifest, stateFileKey string) error {
