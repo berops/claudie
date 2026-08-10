@@ -71,7 +71,7 @@ func (b *DnsBuilder) Init(logger zerolog.Logger, ips []string, dns *spec.DNS) er
 	b.inner.dnsDir = filepath.Join(Output, fmt.Sprintf("%s-dns", b.ClusterId))
 	b.inner.dnsId = fmt.Sprintf("%s-dns", b.ClusterId)
 
-	// Cleanup any previous attemps.
+	// Cleanup any previous attempts.
 	if err := os.RemoveAll(b.inner.dnsDir); err != nil {
 		return fmt.Errorf("failed to cleanup previous work at %q: %w", b.inner.dnsDir, err)
 	}

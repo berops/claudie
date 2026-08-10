@@ -79,7 +79,6 @@ func deleteKubernetesNodes(
 				logger.Err(err).Msgf("Failed to destroy nodepool %q", kind.Whole.Nodepool.Name)
 				tracker.Diagnostics.Push(err)
 				return
-
 			}
 
 			logger.

@@ -106,7 +106,7 @@ func Download(downloadInto string, provider *spec.Provider) error {
 	h := plumbing.NewHash(provider.Templates.CommitHash)
 	if _, err := r.CommitObject(h); err != nil {
 		if !errors.Is(err, plumbing.ErrObjectNotFound) {
-			return fmt.Errorf("failed to check existance of commit %q for %q: %w", provider.Templates.CommitHash, endpoint, err)
+			return fmt.Errorf("failed to check existence of commit %q for %q: %w", provider.Templates.CommitHash, endpoint, err)
 		}
 		return fmt.Errorf("commit %q for %q does not exist: %w: %w", provider.Templates.CommitHash, endpoint, err, extemplates.ErrUnknownCommit)
 	}

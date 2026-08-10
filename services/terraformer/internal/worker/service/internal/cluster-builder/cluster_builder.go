@@ -112,7 +112,7 @@ type ClusterBuilder struct {
 // state of the cluster.
 //
 // The 'optionalProviders' slice of dynamic nodepools is only used to generate providers
-// which may be usefull to remove stale infra from the common infrastructure.
+// which may be useful to remove stale infra from the common infrastructure.
 func (c *ClusterBuilder) Init(log zerolog.Logger, dynamic []*spec.NodePool, optionalProviders ...*spec.NodePool) error {
 	c.inner.log = log
 	c.inner.dynamic = dynamic
@@ -120,7 +120,7 @@ func (c *ClusterBuilder) Init(log zerolog.Logger, dynamic []*spec.NodePool, opti
 	c.inner.networkingDir = filepath.Join(c.inner.clusterDir, NetworkingGenTarget)
 	c.inner.nodepoolsDir = filepath.Join(c.inner.clusterDir, NodepoolsGenTarget)
 
-	// Cleanup any previous attemps.
+	// Cleanup any previous attempts.
 	if err := os.RemoveAll(c.inner.clusterDir); err != nil {
 		return fmt.Errorf("failed to cleanup previous work at %q: %w", c.inner.clusterDir, err)
 	}
@@ -205,9 +205,9 @@ func (c *ClusterBuilder) Cleanup() {
 	}
 }
 
-func (c *ClusterBuilder) ReconcileNodePool(nto extofu.NetworkingOutput, handle int) error {
+func (c *ClusterBuilder) ReconcileNodePool(no extofu.NetworkingOutput, handle int) error {
 	np := c.inner.dynamic[handle]
-	if err := c.generateNodePool(np, nto); err != nil {
+	if err := c.generateNodePool(np, no); err != nil {
 		return err
 	}
 
@@ -274,9 +274,10 @@ func (c *ClusterBuilder) ReconcileNodePool(nto extofu.NetworkingOutput, handle i
 }
 
 // Destroys the nodepool stored at position 'handle' from the nodepools that were passed in via the [ClusterBuilder.Init] function.
-func (c *ClusterBuilder) DestroyNodePool(nto extofu.NetworkingOutput, handle int) error {
+func (c *ClusterBuilder) DestroyNodePool(no extofu.NetworkingOutput, handle int) error {
 	np := c.inner.dynamic[handle]
-	if err := c.generateNodePool(np, nto); err != nil {
+
+	if err := c.generateNodePool(np, no); err != nil {
 		return err
 	}
 

@@ -34,7 +34,7 @@ const (
 )
 
 var (
-	// ErrReconcileAll error is returned when reconcilation of the common nodepool infrastructure
+	// ErrReconcileAll error is returned when reconciliation of the common nodepool infrastructure
 	// was executed and therefore nodepools may need to be reconciled aswell by calling the [K8Scluster.ReconcileAll]
 	// function.
 	ErrReconcileAll = errors.New("reconciliation of the whole cluster may be needed")
