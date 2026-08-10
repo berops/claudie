@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -135,8 +136,7 @@ func (l *LBcluster) ReconcileNodePool(_ context.Context, logger zerolog.Logger, 
 			SpawnProcessLimit: l.SpawnProcessLimit,
 		}
 
-		err := lbuilder.Init(logger, dynamic)
-		if err != nil {
+		if err := lbuilder.Init(logger, dynamic); err != nil {
 			return err
 		}
 		defer lbuilder.Cleanup()
@@ -147,7 +147,31 @@ func (l *LBcluster) ReconcileNodePool(_ context.Context, logger zerolog.Logger, 
 			if err != nil {
 				return fmt.Errorf("failed to read latest common nodepool infrastructure output: %w", err)
 			}
-			return lbuilder.ReconcileNodePool(latest, idx)
+			if err := lbuilder.ReconcileNodePool(latest, idx); err != nil {
+				return fmt.Errorf("failed to reconcile nodepool: %w", err)
+			}
+
+			dbuilder := cluster_builder.DnsBuilder{
+				ClusterName:       l.Cluster.ClusterInfo.Name,
+				ClusterHash:       l.Cluster.ClusterInfo.Hash,
+				ClusterId:         l.Cluster.ClusterInfo.Id(),
+				InputManifest:     l.ProjectName,
+				SpawnProcessLimit: l.SpawnProcessLimit,
+			}
+
+			// include the current nodes of the cluster, which now will also
+			// either contain the new nodes or no longer contain the removed
+			// nodes.
+			nodeIPs := nodepools.PublicEndpoints(l.Cluster.ClusterInfo.NodePools)
+			if err := dbuilder.Init(logger, nodeIPs, l.Cluster.Dns); err != nil {
+				return err
+			}
+			defer dbuilder.Cleanup()
+
+			if err := dbuilder.ReconcileRecords(); err != nil {
+				return fmt.Errorf("error while reconciling dns records for cluster %q: %w", dbuilder.ClusterId, err)
+			}
+			return nil
 		case ReconcileModeReadWrite:
 			updated, err := lbuilder.ReconcileCommon()
 			if err != nil {
@@ -211,6 +235,9 @@ func (l *LBcluster) DestroyAll(ctx context.Context, logger zerolog.Logger, s3 st
 	nodeIPs := nodepools.PublicEndpoints(l.Cluster.ClusterInfo.NodePools)
 	dynamic := nodepools.Dynamic(l.Cluster.ClusterInfo.NodePools)
 	group, ctx := errgroup.WithContext(ctx)
+
+	// Exclude nodes with no IP's, as those are nodes that were not successfully built.
+	nodeIPs = slices.DeleteFunc(nodeIPs, func(s string) bool { return s == "" })
 
 	group.Go(func() error {
 		builder := cluster_builder.ClusterBuilder{
@@ -292,26 +319,6 @@ func (l *LBcluster) DestroyAll(ctx context.Context, logger zerolog.Logger, s3 st
 			return nil
 		}
 
-		var emptycount int
-		for _, ip := range nodeIPs {
-			if ip == "" {
-				emptycount += 1
-			}
-		}
-
-		// This check needs to be done as the resources in the terraform
-		// templates are based on IPs and if there are more than two nodes
-		// that do not have an IP it will continuously fail. But given that
-		// the DNS isn't even build if atleast 1 node fails means that this
-		// will only be hit if the building of the infrastructure failed altogether
-		// and to avoid error simply do not destroy what was not build.
-		//
-		// This really depends on how the templates are structured but this catches
-		// the case where the IP is used in the resource name.
-		if emptycount > 1 {
-			return nil
-		}
-
 		builder := cluster_builder.DnsBuilder{
 			ClusterName:       l.Cluster.ClusterInfo.Name,
 			ClusterHash:       l.Cluster.ClusterInfo.Hash,
@@ -378,6 +385,23 @@ func (l *LBcluster) DestroyNodePool(ctx context.Context, logger zerolog.Logger, 
 		}
 		return nil
 	case deleted.GetDynamicNodePool() != nil:
+		dbuilder := cluster_builder.DnsBuilder{
+			ClusterName:       l.Cluster.ClusterInfo.Name,
+			ClusterHash:       l.Cluster.ClusterInfo.Hash,
+			ClusterId:         l.Cluster.ClusterInfo.Id(),
+			InputManifest:     l.ProjectName,
+			SpawnProcessLimit: l.SpawnProcessLimit,
+		}
+		nodeIPs := nodepools.PublicEndpoints(l.Cluster.ClusterInfo.NodePools) // include the current nodes of the cluster.
+		if err := dbuilder.Init(logger, nodeIPs, l.Cluster.Dns); err != nil {
+			return err
+		}
+		defer dbuilder.Cleanup()
+
+		if err := dbuilder.ReconcileRecords(); err != nil {
+			return fmt.Errorf("error while reconciling dns records for cluster %q: %w", dbuilder.ClusterId, err)
+		}
+
 		var (
 			statefileExists = true
 			lbuilder        = cluster_builder.ClusterBuilder{
@@ -440,23 +464,6 @@ func (l *LBcluster) DestroyNodePool(ctx context.Context, logger zerolog.Logger, 
 		// Needs to follow DeleteStateFile for having idempotent deletes.
 		if _, err := lbuilder.ReconcileCommon(); err != nil {
 			return fmt.Errorf("failed to reconcile common nodepool infrastructure after nodepool deletion: %w: %w", err, ErrReconcileAll)
-		}
-
-		dbuilder := cluster_builder.DnsBuilder{
-			ClusterName:       l.Cluster.ClusterInfo.Name,
-			ClusterHash:       l.Cluster.ClusterInfo.Hash,
-			ClusterId:         l.Cluster.ClusterInfo.Id(),
-			InputManifest:     l.ProjectName,
-			SpawnProcessLimit: l.SpawnProcessLimit,
-		}
-		nodeIPs := nodepools.PublicEndpoints(l.Cluster.ClusterInfo.NodePools) // include all of the nodes.
-		if err := dbuilder.Init(logger, nodeIPs, l.Cluster.Dns); err != nil {
-			return fmt.Errorf("%w: %w", err, ErrReconcileAll)
-		}
-		defer dbuilder.Cleanup()
-
-		if err := dbuilder.ReconcileRecords(); err != nil {
-			return fmt.Errorf("error while reconciling dns records for cluster %q: %w: %w", dbuilder.ClusterId, err, ErrReconcileAll)
 		}
 		return ErrReconcileAll
 	default:

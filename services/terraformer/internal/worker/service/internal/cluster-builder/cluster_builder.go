@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -133,51 +132,64 @@ func (c *ClusterBuilder) Init(log zerolog.Logger, dynamic []*spec.NodePool, opti
 		}
 	}()
 
-	optional := maps.Collect(nodepools.ByProviderSpecName(optionalProviders))
-	usedProviders := make(map[string]ProviderBlock, len(dynamic))
-
-	for k, group := range nodepools.ByProviderSpecName(c.inner.dynamic) {
-		var providers map[string]ProviderBlock
-		if err = ensureTemplates(c.ClusterId, group); err != nil {
-			return err
-		}
-		providers, err = readProviderVersion(c.ClusterId, group)
-		if err != nil {
-			return err
-		}
-		if err = mergeProviderVersions(usedProviders, providers, c.inner.log); err != nil {
-			return err
-		}
-		if err = c.generateCommonNetworking(group); err != nil {
-			return err
-		}
-		// For generating the providers include also any
-		// deleted optional nodepools to have their
-		// providers generate, so that common infrastructure
-		// can be cleaned up.
-		if o, ok := optional[k]; ok {
-			group = append(slices.Clone(group), o...)
-			delete(optional, k)
-		}
-		if err = c.generateCommonNetworkingProviders(group); err != nil {
-			return err
+	optional := make(map[string]map[string][]*spec.NodePool)
+	for specName, nps := range nodepools.ByProviderSpecName(optionalProviders) {
+		optional[specName] = make(map[string][]*spec.NodePool)
+		for path, group := range extofu.NodePoolsByTemplatesVersion(nps) {
+			optional[specName][path] = append(optional[specName][path], group...)
 		}
 	}
 
-	for _, group := range optional {
-		var providers map[string]ProviderBlock
-		if err = ensureTemplates(c.ClusterId, group); err != nil {
-			return err
+	usedProviders := make(map[string]ProviderBlock, len(dynamic))
+	for specName, nps := range nodepools.ByProviderSpecName(c.inner.dynamic) {
+		for path, group := range extofu.NodePoolsByTemplatesVersion(nps) {
+			var providers map[string]ProviderBlock
+			if err = ensureTemplates(c.ClusterId, group); err != nil {
+				return err
+			}
+			providers, err = readProviderVersion(c.ClusterId, group)
+			if err != nil {
+				return err
+			}
+			if err = mergeProviderVersions(usedProviders, providers, c.inner.log); err != nil {
+				return err
+			}
+			if err = c.generateCommonNetworking(group); err != nil {
+				return err
+			}
+			// For generating the providers include also any
+			// deleted optional nodepools to have their
+			// providers generate, so that common infrastructure
+			// can be cleaned up. Only nodepools of the same
+			// templates version are merged in; a different
+			// version renders as its own group with its own
+			// fingerprint below.
+			if o, ok := optional[specName][path]; ok {
+				group = append(slices.Clone(group), o...)
+				delete(optional[specName], path)
+			}
+			if err = c.generateCommonNetworkingProviders(group); err != nil {
+				return err
+			}
 		}
-		providers, err = readProviderVersion(c.ClusterId, group)
-		if err != nil {
-			return err
-		}
-		if err = mergeProviderVersions(usedProviders, providers, c.inner.log); err != nil {
-			return err
-		}
-		if err = c.generateCommonNetworkingProviders(group); err != nil {
-			return err
+	}
+
+	for _, nps := range optional {
+		for _, group := range nps {
+			var providers map[string]ProviderBlock
+			if err = ensureTemplates(c.ClusterId, group); err != nil {
+				return err
+			}
+			providers, err = readProviderVersion(c.ClusterId, group)
+			if err != nil {
+				return err
+			}
+			if err = mergeProviderVersions(usedProviders, providers, c.inner.log); err != nil {
+				return err
+			}
+			if err = c.generateCommonNetworkingProviders(group); err != nil {
+				return err
+			}
 		}
 	}
 

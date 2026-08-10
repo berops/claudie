@@ -10,12 +10,6 @@ import (
 	"github.com/berops/claudie/internal/tmplutils"
 )
 
-const (
-	// ProviderFile is the pattern of a template name that is expected
-	// to only contain provider information for the external templates.
-	ProviderFile = "provider.tpl"
-)
-
 type Generator struct {
 	// ID is the ClusterID or DnsID.
 	ID string

@@ -3,11 +3,18 @@ package extofu
 import (
 	"encoding/hex"
 	"fmt"
+	"iter"
 	"path/filepath"
 
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/tmplutils"
 	"github.com/berops/claudie/proto/pb/spec"
+)
+
+const (
+	// ProviderFile is the pattern of a template name that is expected
+	// to only contain provider information for the external templates.
+	ProviderFile = "provider.tpl"
 )
 
 // Returns the key to be used for reading the output of the templates used within the terraformer service.
@@ -41,11 +48,33 @@ func TemplatesPath(p *spec.Provider) string {
 	if p == nil || p.Templates == nil {
 		return ""
 	}
-
 	return p.Templates.TemplatesPath(p.Templates.Paths.Terraformer, p.CloudProviderName)
 }
 
 // Returns the path under which the version of the provider is stored inside the [TemplatePath].
 func TemplatesProviderVersionPath(p *spec.Provider) string {
 	return filepath.Join(TemplatesPath(p), "provider_version.tpl")
+}
+
+// NodePoolsByTemplatesVersion returns an iterator that groups nodepools by provider external templates.
+func NodePoolsByTemplatesVersion(nps []*spec.NodePool) iter.Seq2[string, []*spec.NodePool] {
+	m := make(map[string][]*spec.NodePool)
+
+	for _, nodepool := range nps {
+		np, ok := nodepool.Type.(*spec.NodePool_DynamicNodePool)
+		if !ok {
+			continue
+		}
+
+		p := TemplatesPath(np.DynamicNodePool.Provider)
+		m[p] = append(m[p], nodepool)
+	}
+
+	return func(yield func(string, []*spec.NodePool) bool) {
+		for k, v := range m {
+			if !yield(k, v) {
+				return
+			}
+		}
+	}
 }
