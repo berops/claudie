@@ -35,12 +35,13 @@ func (t Templates) Generate(tpl *template.Template, outputFile string, d interfa
 	if err != nil {
 		return fmt.Errorf("failed to create the %s file in %s directory : %w", generatedFile, t.Directory, err)
 	}
-	defer f.Close()
-
 	if err := tpl.Execute(f, d); err != nil {
+		if errClose := f.Close(); errClose != nil {
+			err = fmt.Errorf("%w:%w", err, errClose)
+		}
 		return fmt.Errorf("failed to execute the template file for %s : %w", generatedFile, err)
 	}
-	return nil
+	return f.Close()
 }
 
 // creates a  file from template and returns it as a string variable
