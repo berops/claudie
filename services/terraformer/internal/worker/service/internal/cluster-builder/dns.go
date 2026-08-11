@@ -154,7 +154,11 @@ func (b *DnsBuilder) ReconcileRecords() error {
 	}
 
 	outputID := fmt.Sprintf("%s-endpoint", b.ClusterId)
-	b.inner.dns.Endpoint = validateDomain(result.Domain[outputID])
+	domain, ok := result.Domain[outputID]
+	if !ok || domain == "" {
+		return fmt.Errorf("%w: tofu output for %q does not contain the expected endpoint key %q", ErrTofuDns, b.inner.dnsId, outputID)
+	}
+	b.inner.dns.Endpoint = validateDomain(domain)
 	for _, n := range b.inner.dns.AlternativeNames {
 		b.inner.log.
 			Info().
@@ -179,7 +183,11 @@ func (b *DnsBuilder) ReconcileRecords() error {
 		}
 
 		outputID = fmt.Sprintf("%s-%s-endpoint", b.ClusterId, n.Hostname)
-		n.Endpoint = validateDomain(result.Domain[outputID])
+		domain, ok = result.Domain[outputID]
+		if !ok || domain == "" {
+			return fmt.Errorf("%w: tofu output for %q does not contain the expected endpoint key %q", ErrTofuDns, b.inner.dnsId, outputID)
+		}
+		n.Endpoint = validateDomain(domain)
 
 		b.inner.log.
 			Info().

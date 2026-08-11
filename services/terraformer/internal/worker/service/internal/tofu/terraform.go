@@ -92,7 +92,7 @@ func (t *Terraform) Init() error {
 		log.Warn().Msgf("Error encountered while executing %s from %s: %v", cmd, t.Directory, err)
 
 		retryCmd := comm.Cmd{
-			Command: "tofu init",
+			Command: "tofu init -upgrade",
 			Dir:     t.Directory,
 			Stdout:  cmd.Stdout,
 			Stderr:  cmd.Stderr,

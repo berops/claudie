@@ -41,7 +41,7 @@
 //   - (nodepool projects only) the nodepool's public SSH key, in a file named
 //     after the nodepool: file("./{{ .Data.NodePool.Name }}").
 //
-// // What claudie does NOT generate are the provider configuration blocks
+// What claudie does NOT generate are the provider configuration blocks
 // themselves. Each of the networking, nodepool and dns subdirectories MUST
 // contain a file named "provider.tpl" declaring exactly the provider
 // configuration blocks the other files of that directory use — and nothing
@@ -178,6 +178,7 @@
 //	│   └── provider.tpl
 //	└── dns
 //	    └── dns.tpl
+//	    └── provider.tpl
 //
 // Working examples for every supported provider: https://github.com/berops/claudie-config
 package extofu

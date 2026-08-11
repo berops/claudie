@@ -104,7 +104,7 @@ func (k *K8Scluster) ReconcileAll(ctx context.Context, logger zerolog.Logger) er
 	return group.Wait()
 }
 
-// ReoncileNodePool reconciles the state of a single nodepool. It is expected that the nodepool with the passed in 'handle' is part
+// ReconcileNodePool reconciles the state of a single nodepool. It is expected that the nodepool with the passed in 'handle' is part
 // of the [K8Scluster.Cluster].
 //
 // When the reconciliation of the common nodepool infrastructure is performed the [ErrReconcileAll] error is returned hinting that all
@@ -140,7 +140,7 @@ func (c *K8Scluster) ReconcileNodePool(_ context.Context, logger zerolog.Logger,
 	case ReconcileModeRead:
 		latest, err := builder.OutputOnlyCommon()
 		if err != nil {
-			return fmt.Errorf("failed to reconcile common nodepool infrastructure: %w", err)
+			return fmt.Errorf("failed to read common nodepool infrastructure: %w", err)
 		}
 		return builder.ReconcileNodePool(latest, idx)
 	case ReconcileModeReadWrite:
@@ -221,6 +221,12 @@ func (k *K8Scluster) DestroyAll(ctx context.Context, logger zerolog.Logger, s3 s
 		return fmt.Errorf("failed to delete all nodepools: %w", err)
 	}
 
+	defer func() {
+		if err := os.RemoveAll(filepath.Join(cluster_builder.TemplatesRootDir, builder.ClusterId)); err != nil {
+			logger.Err(err).Msg("failed to delete external templates directory")
+		}
+	}()
+
 	commonInfraStateFileKey := store.ObjectKey(builder.InputManifest, cluster_builder.CommonInfraStateKey(builder.ClusterId))
 	if err := s3.Stat(ctx, commonInfraStateFileKey); err != nil {
 		if !errors.Is(err, store.ErrS3KeyNotExists) {
@@ -232,10 +238,6 @@ func (k *K8Scluster) DestroyAll(ctx context.Context, logger zerolog.Logger, s3 s
 
 	if err := builder.DestroyCommon(); err != nil {
 		return fmt.Errorf("failed to destroy common nodepool infrastructure: %w", err)
-	}
-
-	if err := os.RemoveAll(filepath.Join(cluster_builder.TemplatesRootDir, builder.ClusterId)); err != nil {
-		return fmt.Errorf("failed to delete external templates for cluster: %w", err)
 	}
 
 	if err := s3.DeleteStateFile(ctx, commonInfraStateFileKey); err != nil {

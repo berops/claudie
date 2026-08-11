@@ -121,7 +121,7 @@ outer:
 
 		file, err := os.ReadFile(filepath.Join(dir, gotpl.Name()))
 		if err != nil {
-			return rendered, fmt.Errorf("error while reading template file %s in %s: %w", gotpl, dir, err)
+			return rendered, fmt.Errorf("error while reading template file %s in %s: %w", gotpl.Name(), dir, err)
 		}
 
 		tpl, err := tmplutils.LoadTemplate(string(file))

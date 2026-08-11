@@ -351,11 +351,14 @@ func (l *LBcluster) DestroyAll(ctx context.Context, logger zerolog.Logger, s3 st
 		return nil
 	})
 
+	defer func() {
+		if err := os.RemoveAll(filepath.Join(cluster_builder.TemplatesRootDir, l.Cluster.ClusterInfo.Id())); err != nil {
+			logger.Err(err).Msg("failed to delete external templates directory")
+		}
+	}()
+
 	if err := group.Wait(); err != nil {
 		return fmt.Errorf("failed to fully destroy loadbalancer: %w", err)
-	}
-	if err := os.RemoveAll(filepath.Join(cluster_builder.TemplatesRootDir, l.Cluster.ClusterInfo.Id())); err != nil {
-		return fmt.Errorf("failed to delete external templates for cluster: %w", err)
 	}
 	return nil
 }
