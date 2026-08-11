@@ -35,6 +35,8 @@ func (t Templates) Generate(tpl *template.Template, outputFile string, d interfa
 	if err != nil {
 		return fmt.Errorf("failed to create the %s file in %s directory : %w", generatedFile, t.Directory, err)
 	}
+	defer f.Close()
+
 	if err := tpl.Execute(f, d); err != nil {
 		return fmt.Errorf("failed to execute the template file for %s : %w", generatedFile, err)
 	}
