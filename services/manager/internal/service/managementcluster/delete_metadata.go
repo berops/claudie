@@ -11,19 +11,17 @@ import (
 
 // DeleteClusterMetadata deletes the K8s secret (from the management cluster) containing cluster
 // metadata for the given K8s cluster.
-func DeleteClusterMetadata(clusters *spec.Clusters) error {
+func DeleteClusterMetadata(manifestName string, clusters *spec.Clusters) error {
 	namespace := envs.Namespace
-	clusterID := clusters.K8S.ClusterInfo.Id()
-
 	if namespace == "" {
 		return nil
 	}
 
 	kc := kubectl.Kubectl{
 		MaxKubectlRetries: kubectl.NoRetries,
-		Stdout:            comm.GetStdOut(clusterID),
-		Stderr:            comm.GetStdErr(clusterID),
+		Stdout:            comm.GetStdOut(clusters.K8S.ClusterInfo.Id()),
+		Stderr:            comm.GetStdErr(clusters.K8S.ClusterInfo.Id()),
 	}
 
-	return kc.KubectlDeleteResource("secret", fmt.Sprintf("%s-metadata", clusterID), "-n", namespace)
+	return kc.KubectlDeleteResource("secret", fmt.Sprintf("%s-%s-metadata", manifestName, clusters.K8S.ClusterInfo.Name), "-n", namespace)
 }
