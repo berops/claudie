@@ -2,8 +2,6 @@ package service
 
 import (
 	"github.com/berops/claudie/internal/clusters"
-	"github.com/berops/claudie/internal/command"
-	"github.com/berops/claudie/internal/kubectl"
 	"github.com/berops/claudie/proto/pb/spec"
 	kube_eleven "github.com/berops/claudie/services/kube-eleven/internal/worker/service/internal/kube-eleven"
 	"github.com/rs/zerolog"
@@ -33,8 +31,6 @@ func Reconcile(
 			logger.Info().Msg("Upgrading kubernetes version")
 			k8s.Kubernetes = upgrade.Version
 		}
-
-		removeKubeProxy(logger, k8s.ClusterInfo.Id(), k8s.Kubeconfig)
 	default:
 		logger.
 			Warn().
@@ -73,34 +69,4 @@ func Reconcile(
 	update := tracker.Result.Update()
 	update.Kubernetes(k.K8sCluster)
 	update.Commit()
-}
-
-// TODO: remove in future claudie versions.
-// Only added in version v0.13.0 for backwards
-// compatibility with versions v0.12.x with the
-// move to ebpf cilium.
-func removeKubeProxy(logger zerolog.Logger, clusterId, kubeconfig string) {
-	k := kubectl.Kubectl{
-		Kubeconfig:        kubeconfig,
-		MaxKubectlRetries: kubectl.NoRetries,
-	}
-
-	k.Stdout = command.GetStdOut(clusterId)
-	k.Stderr = command.GetStdErr(clusterId)
-
-	var anyerror bool
-
-	if err := k.KubectlDeleteResource("cm", "kube-proxy", "-n kube-system"); err != nil {
-		anyerror = true
-	}
-
-	if err := k.KubectlDeleteResource("ds", "kube-proxy", "-n kube-system"); err != nil {
-		anyerror = true
-	}
-
-	if anyerror {
-		logger.
-			Warn().
-			Msg("Errors encountered while deleting kube-proxy, assuming kube-proxy is not deployed. You can ignore this error as this is only for backwards compatibility and will be removed in the future")
-	}
 }

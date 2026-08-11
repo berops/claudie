@@ -5,68 +5,11 @@ import (
 	"slices"
 
 	"github.com/berops/claudie/internal/api/manifest"
-	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/rs/zerolog/log"
 	"google.golang.org/protobuf/proto"
 )
-
-func backwardsCompatibilityTransferMissingState(c *spec.Config, desired map[string]*spec.Clusters) {
-	for clusterName, state := range c.GetClusters() {
-		desired := desired[clusterName]
-		if desired == nil {
-			continue
-		}
-
-		for _, current := range state.GetCurrent().GetLoadBalancers().GetClusters() {
-			// TODO: remove in future versions, cloudflare account id may not be correctly
-			// propagated to the current state when upgrading claudie versions, since the
-			// [manifest.Cloudflare.AccountID] has a validation which requires the presence
-			// of a valid, non-empty `account_id`, which might be missing in the current state,
-			// that will result in errors on subsequent workflows, simply transfer the `account_id`
-			// from the desired state to the current state, only if it's empty. That will take care
-			// of the drift introduced during claudie updates.
-
-			if cc := current.GetDns().GetProvider().GetCloudflare(); cc != nil && cc.AccountID == "" {
-				i := clusters.IndexLoadbalancerById(current.GetClusterInfo().Id(), desired.GetLoadBalancers().GetClusters())
-				if i >= 0 {
-					dlb := desired.LoadBalancers.Clusters[i]
-					if dc := dlb.GetDns().GetProvider().GetCloudflare(); dc != nil {
-						log.
-							Info().
-							Str("cluster", current.GetClusterInfo().Id()).
-							Msg("detected drift in current state for Cloudflare AccountID, transferring state from desired state")
-						cc.AccountID = dc.AccountID
-					}
-				}
-			}
-		}
-	}
-}
-
-func backwardsCompatibility(c *spec.Config) {
-	for _, state := range c.GetClusters() {
-		currentLbs := state.GetCurrent().GetLoadBalancers().GetClusters()
-		for _, current := range currentLbs {
-			// TODO: remove in future versions, currently only for backwards compatibility.
-			// version 0.9.7 introced additional role settings, which may not be set in the
-			// current state. To have backwards compatibility add defaults to the current state.
-			for _, role := range current.Roles {
-				if role.Settings == nil {
-					log.Info().
-						Str("cluster", current.GetClusterInfo().Id()).
-						Msg("detected loadbalancer build with version older than 0.9.7, settings default role settings for its current state")
-
-					role.Settings = &spec.Role_Settings{
-						ProxyProtocol: true,
-					}
-				}
-			}
-		}
-	}
-}
 
 // Finds matching nodepools in desired that are also in current and that both have nodepool type of
 // [spec.NodePool_StaticNodePool]. For all of the nodes within the nodepool, Nodes with matching Public
