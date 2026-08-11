@@ -233,7 +233,7 @@ nodePools:
 kubernetes:
       clusters:
       - name: aws-cluster
-          version: 1.27.0
+          version: 1.36.0
           network: 192.168.2.0/24
           pools:
             control:
@@ -305,7 +305,7 @@ nodePools:
 kubernetes:
     clusters:
 #      - name: aws-cluster
-#          version: 1.27.0
+#          version: 1.36.0
 #          network: 192.168.2.0/24
 #          pools:
 #            control:
@@ -2643,7 +2643,7 @@ spec:
   kubernetes:
     clusters:
       - name: private-cluster
-        version: 1.27.0
+        version: 1.36.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -2709,7 +2709,7 @@ spec:
   kubernetes:
     clusters:
       - name: hybrid-cluster
-        version: 1.27.0
+        version: 1.36.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -3035,7 +3035,7 @@ spec:
   kubernetes:
     clusters:
       - name: dev-cluster
-        version: 1.27.0
+        version: 1.36.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -3051,7 +3051,7 @@ spec:
           endpoint: http://proxy.claudie.io:8880 # you can use your own HTTP proxy. If not specified http://proxy.claudie.io:8880 is the default value.
 
       - name: prod-cluster
-        version: 1.27.0
+        version: 1.36.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -3070,7 +3070,7 @@ spec:
           mode: "off" # can be on, off or default
 
       - name: hybrid-cluster
-        version: 1.27.0
+        version: 1.36.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -3909,7 +3909,7 @@ Name of the Kubernetes cluster. The name is limited by 28 characters. Each clust
 
 Kubernetes version of the cluster.
 
-Version should be defined in format `vX.Y`. In terms of supported versions of Kubernetes, Claudie follows `kubeone` releases and their supported versions. The current `kubeone` version used in Claudie is `1.12.0`. To see the list of supported versions, please refer to `kubeone` [documentation](https://docs.kubermatic.com/kubeone/v1.12/architecture/compatibility/supported-versions/).
+Version should be defined in format `vX.Y`. In terms of supported versions of Kubernetes, Claudie follows `kubeone` releases and their supported versions. The current `kubeone` version used in Claudie is `1.14.1`. To see the list of supported versions, please refer to `kubeone` [documentation](https://docs.kubermatic.com/kubeone/v1.14/architecture/compatibility/supported-versions/).
 
 - `network`
 
@@ -4369,7 +4369,7 @@ spec:
   kubernetes:
     clusters:
       - name: my-awesome-claudie-cluster
-        version: 1.27.0
+        version: 1.36.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -5150,7 +5150,7 @@ in the Input Manifest of the already build cluster.
 kubernetes:
   clusters:
     - name: claudie-cluster
-      version: v1.30.0
+      version: v1.34.0
       network: 192.168.2.0/24
       pools:
         ...
@@ -5163,7 +5163,7 @@ kubernetes:
 kubernetes:
   clusters:
     - name: claudie-cluster
-      version: 1.31.0
+      version: 1.35.0
       network: 192.168.2.0/24
       pools:
         ...
@@ -5400,7 +5400,7 @@ In case you don't want to utilize the HTTP proxy at all (even when there are nod
 kubernetes:
     clusters:
       - name: proxy-example
-        version: "1.30.0"
+        version: "1.36.0"
         network: 192.168.2.0/24
         installationProxy:
             mode: "off"
@@ -5413,7 +5413,7 @@ On the other hand, if you wish to use the HTTP proxy whenever building a K8s clu
 kubernetes:
     clusters:
       - name: proxy-example
-        version: "1.30.0"
+        version: "1.36.0"
         network: 192.168.2.0/24
         installationProxy:
             mode: "on"
@@ -5426,7 +5426,7 @@ If you want to utilize your own HTTP proxy you can set its URL in `endpoint` (se
 kubernetes:
     clusters:
       - name: proxy-example
-        version: "1.30.0"
+        version: "1.36.0"
         network: 192.168.2.0/24
         installationProxy:
             mode: "on"
@@ -5445,7 +5445,7 @@ The below example allows to bypass the Proxy for any endpoint ending with `.suse
 kubernetes:
     clusters:
       - name: proxy-example
-        version: "1.30.0"
+        version: "1.36.0"
         network: 192.168.2.0/24
         installationProxy:
             mode: "on"
