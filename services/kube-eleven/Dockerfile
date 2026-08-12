@@ -4,12 +4,12 @@ ARG TARGETARCH
 
 # download and unzip kube-one binary
 RUN apt-get -qq update && apt-get -qq install unzip
-RUN KUBEONE_V=1.13.5 && \
+RUN KUBEONE_V=1.14.1 && \
     wget -q https://github.com/kubermatic/kubeone/releases/download/v${KUBEONE_V}/kubeone_${KUBEONE_V}_linux_$TARGETARCH.zip && \
     unzip -qq kubeone_${KUBEONE_V}_linux_$TARGETARCH.zip -d kubeone_dir
 
 #Install kubectl
-RUN KC_VERSION=v1.34.0 && \
+RUN KC_VERSION=v1.35.0 && \
     wget -q https://dl.k8s.io/release/${KC_VERSION}/bin/linux/$TARGETARCH/kubectl
 
 #Unset the GOPATH
