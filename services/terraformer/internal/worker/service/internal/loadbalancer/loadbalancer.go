@@ -232,15 +232,10 @@ func (l *LBcluster) DestroyAll(ctx context.Context, logger zerolog.Logger, s3 st
 		l.NodePoolConcurrencyLimit = DefaultNodePoolConcurrencyLimit
 	}
 
-	nodeIPs := nodepools.PublicEndpoints(l.Cluster.ClusterInfo.NodePools)
-	dynamic := nodepools.Dynamic(l.Cluster.ClusterInfo.NodePools)
-	group, ctx := errgroup.WithContext(ctx)
-
-	// Exclude nodes with no IP's, as those are nodes that were not successfully built.
-	nodeIPs = slices.DeleteFunc(nodeIPs, func(s string) bool { return s == "" })
-
-	group.Go(func() error {
-		builder := cluster_builder.ClusterBuilder{
+	var (
+		nodeIPs  = nodepools.PublicEndpoints(l.Cluster.ClusterInfo.NodePools)
+		dynamic  = nodepools.Dynamic(l.Cluster.ClusterInfo.NodePools)
+		lbuilder = cluster_builder.ClusterBuilder{
 			ClusterName:   l.Cluster.ClusterInfo.Name,
 			ClusterHash:   l.Cluster.ClusterInfo.Hash,
 			ClusterId:     l.Cluster.ClusterInfo.Id(),
@@ -251,13 +246,32 @@ func (l *LBcluster) DestroyAll(ctx context.Context, logger zerolog.Logger, s3 st
 			},
 			SpawnProcessLimit: l.SpawnProcessLimit,
 		}
-
-		if err := builder.Init(logger, dynamic); err != nil {
-			return cluster_builder.ExplainUnknownCommit(err, builder.ClusterId)
+		dbuilder = cluster_builder.DnsBuilder{
+			ClusterName:       l.Cluster.ClusterInfo.Name,
+			ClusterHash:       l.Cluster.ClusterInfo.Hash,
+			ClusterId:         l.Cluster.ClusterInfo.Id(),
+			InputManifest:     l.ProjectName,
+			SpawnProcessLimit: l.SpawnProcessLimit,
 		}
-		defer builder.Cleanup()
+	)
 
-		latest, err := builder.OutputOnlyCommon()
+	// Exclude nodes with no IP's, as those are nodes that were not successfully built.
+	nodeIPs = slices.DeleteFunc(nodeIPs, func(s string) bool { return s == "" })
+
+	if err := lbuilder.Init(logger, dynamic); err != nil {
+		return cluster_builder.ExplainUnknownCommit(err, lbuilder.ClusterId)
+	}
+	defer lbuilder.Cleanup()
+
+	if err := dbuilder.Init(logger, nodeIPs, l.Cluster.Dns); err != nil {
+		return cluster_builder.ExplainUnknownCommit(err, dbuilder.ClusterId)
+	}
+	defer dbuilder.Cleanup()
+
+	group, ctx := errgroup.WithContext(ctx)
+
+	group.Go(func() error {
+		latest, err := lbuilder.OutputOnlyCommon()
 		if err != nil {
 			return fmt.Errorf("failed to read output of common nodepool infrastructure: %w", err)
 		}
@@ -266,7 +280,7 @@ func (l *LBcluster) DestroyAll(ctx context.Context, logger zerolog.Logger, s3 st
 		group.SetLimit(l.NodePoolConcurrencyLimit)
 
 		for i, np := range dynamic {
-			nodepoolStateFileKey := store.ObjectKey(builder.InputManifest, cluster_builder.NodePoolStateKey(builder.ClusterId, np.Name))
+			nodepoolStateFileKey := store.ObjectKey(lbuilder.InputManifest, cluster_builder.NodePoolStateKey(lbuilder.ClusterId, np.Name))
 			group.Go(func() error {
 				if err := s3.Stat(ctx, nodepoolStateFileKey); err != nil {
 					if !errors.Is(err, store.ErrS3KeyNotExists) {
@@ -280,7 +294,7 @@ func (l *LBcluster) DestroyAll(ctx context.Context, logger zerolog.Logger, s3 st
 					return nil
 				}
 
-				if err := builder.DestroyNodePool(latest, i); err != nil {
+				if err := lbuilder.DestroyNodePool(latest, i); err != nil {
 					return fmt.Errorf("failed to destroy nodepool %q: %w", np.Name, err)
 				}
 
@@ -295,7 +309,7 @@ func (l *LBcluster) DestroyAll(ctx context.Context, logger zerolog.Logger, s3 st
 			return fmt.Errorf("failed to delete all nodepools: %w", err)
 		}
 
-		commonInfraStateFileKey := store.ObjectKey(builder.InputManifest, cluster_builder.CommonInfraStateKey(builder.ClusterId))
+		commonInfraStateFileKey := store.ObjectKey(lbuilder.InputManifest, cluster_builder.CommonInfraStateKey(lbuilder.ClusterId))
 		if err := s3.Stat(ctx, commonInfraStateFileKey); err != nil {
 			if !errors.Is(err, store.ErrS3KeyNotExists) {
 				return fmt.Errorf("failed to check presence of state file for common nodepool infrastructure: %w", err)
@@ -304,7 +318,7 @@ func (l *LBcluster) DestroyAll(ctx context.Context, logger zerolog.Logger, s3 st
 			return nil
 		}
 
-		if err := builder.DestroyCommon(); err != nil {
+		if err := lbuilder.DestroyCommon(); err != nil {
 			return fmt.Errorf("failed to destroy common nodepool infrastructure: %w", err)
 		}
 
@@ -319,20 +333,7 @@ func (l *LBcluster) DestroyAll(ctx context.Context, logger zerolog.Logger, s3 st
 			return nil
 		}
 
-		builder := cluster_builder.DnsBuilder{
-			ClusterName:       l.Cluster.ClusterInfo.Name,
-			ClusterHash:       l.Cluster.ClusterInfo.Hash,
-			ClusterId:         l.Cluster.ClusterInfo.Id(),
-			InputManifest:     l.ProjectName,
-			SpawnProcessLimit: l.SpawnProcessLimit,
-		}
-
-		if err := builder.Init(logger, nodeIPs, l.Cluster.Dns); err != nil {
-			return cluster_builder.ExplainUnknownCommit(err, builder.ClusterId)
-		}
-		defer builder.Cleanup()
-
-		key := store.ObjectKey(builder.InputManifest, cluster_builder.DnsStateKey(builder.ClusterId))
+		key := store.ObjectKey(dbuilder.InputManifest, cluster_builder.DnsStateKey(dbuilder.ClusterId))
 		if err := s3.Stat(ctx, key); err != nil {
 			if !errors.Is(err, store.ErrS3KeyNotExists) {
 				return fmt.Errorf("failed to check presence of state file for dns: %w", err)
@@ -341,7 +342,7 @@ func (l *LBcluster) DestroyAll(ctx context.Context, logger zerolog.Logger, s3 st
 			return nil
 		}
 
-		if err := builder.DestroyRecords(); err != nil {
+		if err := dbuilder.DestroyRecords(); err != nil {
 			return fmt.Errorf("failed to destroy dns records: %w", err)
 		}
 
