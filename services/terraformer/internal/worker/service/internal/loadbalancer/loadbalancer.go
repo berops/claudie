@@ -378,7 +378,7 @@ func (l *LBcluster) DestroyNodePool(ctx context.Context, logger zerolog.Logger, 
 		}
 		nodeIPs := nodepools.PublicEndpoints(l.Cluster.ClusterInfo.NodePools) // include all of the nodes.
 		if err := builder.Init(logger, nodeIPs, l.Cluster.Dns); err != nil {
-			return err
+			return cluster_builder.ExplainUnknownCommit(err, builder.ClusterId)
 		}
 		defer builder.Cleanup()
 
