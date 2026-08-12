@@ -3,6 +3,7 @@ package scrapeconfig
 import (
 	"encoding/base64"
 	"fmt"
+	"os"
 
 	comm "github.com/berops/claudie/internal/command"
 	"github.com/berops/claudie/internal/kubectl"
@@ -48,6 +49,10 @@ const (
 // it will create the secret in a applied namespace
 // If there is no loadbalancers it will apply the config with no target endpoints
 func (sc *ScrapeConfig) GenerateAndApplyScrapeConfig() error {
+	if err := os.RemoveAll(sc.Directory); err != nil {
+		return fmt.Errorf("failed to remove %q: %w", sc.Directory, err)
+	}
+
 	// Generate loadbalancers scrape config
 	template := tmplutils.Templates{Directory: sc.Directory}
 
@@ -56,6 +61,7 @@ func (sc *ScrapeConfig) GenerateAndApplyScrapeConfig() error {
 	if err != nil {
 		return fmt.Errorf("error while loading scrape config file for %s: %w", sc.Cluster.ClusterInfo.Name, err)
 	}
+
 	scrapeConfig, err := template.GenerateToString(tpl, sc.getData())
 	if err != nil {
 		return fmt.Errorf("error while generating %s on %s: %w", scrapeConfigFile, sc.Cluster.ClusterInfo.Name, err)
@@ -66,8 +72,24 @@ func (sc *ScrapeConfig) GenerateAndApplyScrapeConfig() error {
 	if err != nil {
 		return fmt.Errorf("error while loading scrape config template for %s: %w", sc.Cluster.ClusterInfo.Name, err)
 	}
-	if err = template.Generate(tpl, scManifestFile, ScManifestData{Namespace: scrapeConfigNamespace,
-		ScrapeConfigB64: base64.StdEncoding.EncodeToString([]byte(scrapeConfig))}); err != nil {
+
+	data := ScManifestData{
+		Namespace:       scrapeConfigNamespace,
+		ScrapeConfigB64: base64.StdEncoding.EncodeToString([]byte(scrapeConfig)),
+	}
+
+	defer func() {
+		// ignore the error here, as there is no way to handle it
+		// nor is there also any logger passed into the function.
+		//
+		// If the removal of the directory fails due to any reason
+		// it shouldn't matter as if there is another call with
+		// the same directory it will be caught by the initial
+		// os.RemoveAll at the beginning of the function.
+		_ = os.RemoveAll(sc.Directory)
+	}()
+
+	if err = template.Generate(tpl, scManifestFile, data); err != nil {
 		return fmt.Errorf("error while generating %s on %s: %w", scManifestFile, sc.Cluster.ClusterInfo.Name, err)
 	}
 
