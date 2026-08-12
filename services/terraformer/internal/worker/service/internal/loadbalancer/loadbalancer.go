@@ -263,12 +263,34 @@ func (l *LBcluster) DestroyAll(ctx context.Context, logger zerolog.Logger, s3 st
 	}
 	defer lbuilder.Cleanup()
 
-	if err := dbuilder.Init(logger, nodeIPs, l.Cluster.Dns); err != nil {
-		return cluster_builder.ExplainUnknownCommit(err, dbuilder.ClusterId)
-	}
-	defer dbuilder.Cleanup()
-
 	group, ctx := errgroup.WithContext(ctx)
+
+	if l.Cluster.Dns != nil {
+		if err := dbuilder.Init(logger, nodeIPs, l.Cluster.Dns); err != nil {
+			return cluster_builder.ExplainUnknownCommit(err, dbuilder.ClusterId)
+		}
+		defer dbuilder.Cleanup()
+
+		group.Go(func() error {
+			key := store.ObjectKey(dbuilder.InputManifest, cluster_builder.DnsStateKey(dbuilder.ClusterId))
+			if err := s3.Stat(ctx, key); err != nil {
+				if !errors.Is(err, store.ErrS3KeyNotExists) {
+					return fmt.Errorf("failed to check presence of state file for dns: %w", err)
+				}
+				logger.Warn().Msg("No state file found for DNS, assuming it was deleted")
+				return nil
+			}
+
+			if err := dbuilder.DestroyRecords(); err != nil {
+				return fmt.Errorf("failed to destroy dns records: %w", err)
+			}
+
+			if err := s3.DeleteStateFile(ctx, key); err != nil {
+				return fmt.Errorf("failed to delete state file for dns: %w", err)
+			}
+			return nil
+		})
+	}
 
 	group.Go(func() error {
 		latest, err := lbuilder.OutputOnlyCommon()
@@ -324,30 +346,6 @@ func (l *LBcluster) DestroyAll(ctx context.Context, logger zerolog.Logger, s3 st
 
 		if err := s3.DeleteStateFile(ctx, commonInfraStateFileKey); err != nil {
 			return fmt.Errorf("failed to delete state file for common nodepool infrastructure: %w", err)
-		}
-		return nil
-	})
-
-	group.Go(func() error {
-		if l.Cluster.Dns == nil {
-			return nil
-		}
-
-		key := store.ObjectKey(dbuilder.InputManifest, cluster_builder.DnsStateKey(dbuilder.ClusterId))
-		if err := s3.Stat(ctx, key); err != nil {
-			if !errors.Is(err, store.ErrS3KeyNotExists) {
-				return fmt.Errorf("failed to check presence of state file for dns: %w", err)
-			}
-			logger.Warn().Msg("No state file found for DNS, assuming it was deleted")
-			return nil
-		}
-
-		if err := dbuilder.DestroyRecords(); err != nil {
-			return fmt.Errorf("failed to destroy dns records: %w", err)
-		}
-
-		if err := s3.DeleteStateFile(ctx, key); err != nil {
-			return fmt.Errorf("failed to delete state file for dns: %w", err)
 		}
 		return nil
 	})
