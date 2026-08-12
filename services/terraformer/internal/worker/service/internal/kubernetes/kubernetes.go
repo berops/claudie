@@ -179,7 +179,7 @@ func (k *K8Scluster) DestroyAll(ctx context.Context, logger zerolog.Logger, s3 s
 	}
 
 	if err := builder.Init(logger, dynamic); err != nil {
-		return err
+		return cluster_builder.ExplainUnknownCommit(err, builder.ClusterId)
 	}
 	defer builder.Cleanup()
 
@@ -271,7 +271,7 @@ func (c *K8Scluster) DestroyNodePool(ctx context.Context, logger zerolog.Logger,
 	dynamic = append(dynamic, deleted)
 
 	if err := builder.Init(logger, dynamic); err != nil {
-		return err
+		return cluster_builder.ExplainUnknownCommit(err, builder.ClusterId)
 	}
 
 	statefileExists := true

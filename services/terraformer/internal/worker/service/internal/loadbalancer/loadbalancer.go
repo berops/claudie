@@ -253,7 +253,7 @@ func (l *LBcluster) DestroyAll(ctx context.Context, logger zerolog.Logger, s3 st
 		}
 
 		if err := builder.Init(logger, dynamic); err != nil {
-			return err
+			return cluster_builder.ExplainUnknownCommit(err, builder.ClusterId)
 		}
 		defer builder.Cleanup()
 
@@ -328,7 +328,7 @@ func (l *LBcluster) DestroyAll(ctx context.Context, logger zerolog.Logger, s3 st
 		}
 
 		if err := builder.Init(logger, nodeIPs, l.Cluster.Dns); err != nil {
-			return err
+			return cluster_builder.ExplainUnknownCommit(err, builder.ClusterId)
 		}
 		defer builder.Cleanup()
 
@@ -397,7 +397,7 @@ func (l *LBcluster) DestroyNodePool(ctx context.Context, logger zerolog.Logger, 
 		}
 		nodeIPs := nodepools.PublicEndpoints(l.Cluster.ClusterInfo.NodePools) // include the current nodes of the cluster.
 		if err := dbuilder.Init(logger, nodeIPs, l.Cluster.Dns); err != nil {
-			return err
+			return cluster_builder.ExplainUnknownCommit(err, dbuilder.ClusterId)
 		}
 		defer dbuilder.Cleanup()
 
@@ -436,7 +436,7 @@ func (l *LBcluster) DestroyNodePool(ctx context.Context, logger zerolog.Logger, 
 		dynamic = append(dynamic, deleted)
 
 		if err := lbuilder.Init(logger, dynamic); err != nil {
-			return err
+			return cluster_builder.ExplainUnknownCommit(err, lbuilder.ClusterId)
 		}
 
 		if statefileExists {

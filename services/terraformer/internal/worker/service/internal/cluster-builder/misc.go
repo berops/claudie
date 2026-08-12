@@ -1,10 +1,12 @@
 package cluster_builder
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 
+	"github.com/berops/claudie/internal/extemplates"
 	"github.com/berops/claudie/internal/generics"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl/v2"
@@ -246,4 +248,17 @@ func generateProviderVersions(path string, usedProviders map[string]ProviderBloc
 		}))
 	}
 	return os.WriteFile(path, hclwrite.Format(f.Bytes()), 0o644)
+}
+
+func ExplainUnknownCommit(err error, clusterId string) error {
+	if err == nil || !errors.Is(err, extemplates.ErrUnknownCommit) {
+		return err
+	}
+	return fmt.Errorf(
+		"cannot destroy infrastructure of %q: %w. The templates commit pinned by the current "+
+			"state no longer exists in the templates repository. Point the provider's templates "+
+			"reference in the InputManifest to a reachable commit, let the cluster reconcile "+
+			"(which re-pins the commit), then retry the deletion",
+		clusterId, err,
+	)
 }
