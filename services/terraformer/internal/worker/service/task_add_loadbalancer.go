@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/terraformer/internal/worker/service/internal/loadbalancer"
 	"github.com/rs/zerolog"
@@ -17,15 +19,17 @@ func addLoadBalancer(
 ) {
 	logger.Info().Msg("Add LoadBalancer")
 
+	ctx := context.Background()
 	lb := loadbalancer.LBcluster{
 		ProjectName:       projectName,
 		Cluster:           toReconcile,
 		SpawnProcessLimit: processLimit,
 	}
 
-	buildLogger := logger.With().Str("cluster", lb.Cluster.ClusterInfo.Id()).Logger()
-	if err := BuildLoadbalancers(buildLogger, lb); err != nil {
-		buildLogger.Err(err).Msg("Failed to reconcile loadbalancer")
+	logger = logger.With().Str("cluster", lb.Cluster.ClusterInfo.Id()).Logger()
+
+	if err := lb.ReconcileAll(ctx, logger); err != nil {
+		logger.Err(err).Msg("Failed to reconcile loadbalancer")
 		tracker.Diagnostics.Push(err)
 		// Some part of the loadbalancer infrastructure was not build successfully.
 		// Since we still want to report the partially build infrastructure back to the

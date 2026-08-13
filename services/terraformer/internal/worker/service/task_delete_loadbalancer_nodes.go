@@ -1,6 +1,9 @@
 package service
 
 import (
+	"context"
+	"errors"
+
 	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -17,6 +20,7 @@ type DeleteLoadBalancerNodes struct {
 
 func deleteLoadBalancerNodes(
 	logger zerolog.Logger,
+	stores Stores,
 	projectName string,
 	processLimit *semaphore.Weighted,
 	action DeleteLoadBalancerNodes,
@@ -24,10 +28,6 @@ func deleteLoadBalancerNodes(
 ) {
 	logger.Info().Msg("Deleting LoadBalancer Nodes")
 
-	// Currently there is no special mechanism for deleting the
-	// nodes of the loadbalancer as the whole cluster shares a
-	// single state file, thus simply just remove the node from
-	// the state and reconcile the cluster.
 	idx := clusters.IndexLoadbalancerById(action.Delete.Handle, action.State.LoadBalancers)
 	if idx < 0 {
 		logger.
@@ -36,23 +36,38 @@ func deleteLoadBalancerNodes(
 		return
 	}
 
-	current := action.State.LoadBalancers[idx]
-	lb := loadbalancer.LBcluster{
-		ProjectName:       projectName,
-		Cluster:           current,
-		SpawnProcessLimit: processLimit,
-	}
+	var (
+		ctx     = context.Background()
+		current = action.State.LoadBalancers[idx]
+		lb      = loadbalancer.LBcluster{
+			ProjectName:       projectName,
+			Cluster:           current,
+			SpawnProcessLimit: processLimit,
+		}
+	)
+
+	logger = logger.With().Str("cluster", lb.Id()).Logger()
 
 	if action.Delete.WithNodePool {
 		deleted := nodepools.FindByName(action.Delete.Nodepool, current.ClusterInfo.NodePools)
-
-		// deleting whole nodepool, if the nodepool is not found there are no side-effects.
 		current.ClusterInfo.NodePools = nodepools.DeleteByName(current.ClusterInfo.NodePools, action.Delete.Nodepool)
 
-		// Include the deleted nodepools for generating the provider that was used
-		// in that nodepool so that the infrastructure will get correctly destroyed.
-		if deleted != nil {
-			lb.GhostNodePools = append(lb.GhostNodePools, deleted)
+		if err := lb.DestroyNodePool(ctx, logger, deleted, stores.s3); err != nil {
+			if !errors.Is(err, loadbalancer.ErrReconcileAll) {
+				logger.Err(err).Msgf("Failed to destroy nodepool %q", action.Delete.Nodepool)
+				tracker.Diagnostics.Push(err)
+				return
+			}
+
+			logger.
+				Warn().
+				Msgf("Handling reconcile all, after %q nodepool deletion", action.Delete.Nodepool)
+
+			if err := lb.ReconcileAll(ctx, logger); err != nil {
+				logger.Err(err).Msgf("Failed reconcile infra after nodepool %q destruction", action.Delete.Nodepool)
+				tracker.Diagnostics.Push(err)
+				return
+			}
 		}
 	} else {
 		np := nodepools.FindByName(action.Delete.Nodepool, current.ClusterInfo.NodePools)
@@ -60,20 +75,30 @@ func deleteLoadBalancerNodes(
 			logger.
 				Warn().
 				Msgf(
-					"Can't delete nodes from nodepool %q of loadbalancer %q as the nodepool is missing form the received state",
+					"Can't delete nodes from nodepool %q as the nodepool is missing from the received state",
 					action.Delete.Nodepool,
-					action.Delete.Handle,
 				)
 			return
 		}
-		nodepools.DeleteNodes(np, action.Delete.Nodes)
-	}
 
-	buildLogger := logger.With().Str("cluster", lb.Id()).Logger()
-	if err := BuildLoadbalancers(buildLogger, lb); err != nil {
-		buildLogger.Err(err).Msg("Failed to reconcile cluster after nodes deletion")
-		tracker.Diagnostics.Push(err)
-		return
+		nodepools.DeleteNodes(np, action.Delete.Nodes)
+		if err := lb.ReconcileNodePool(ctx, logger, action.Delete.Nodepool, loadbalancer.ReconcileModeRead); err != nil {
+			if !errors.Is(err, loadbalancer.ErrReconcileAll) {
+				logger.Err(err).Msgf("Failed to destroy nodes in nodepool %q", action.Delete.Nodepool)
+				tracker.Diagnostics.Push(err)
+				return
+			}
+
+			logger.
+				Warn().
+				Msgf("Handling reconcile all, after node deletion from %q", action.Delete.Nodepool)
+
+			if err := lb.ReconcileAll(ctx, logger); err != nil {
+				logger.Err(err).Msgf("Failed to reconcile infra after destruction of nodes in nodepool %q", action.Delete.Nodepool)
+				tracker.Diagnostics.Push(err)
+				return
+			}
+		}
 	}
 
 	update := tracker.Result.Update()

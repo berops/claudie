@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"slices"
 
 	"github.com/berops/claudie/internal/clusters"
@@ -42,15 +43,20 @@ func deleteLoadBalancerRoles(
 		return slices.Contains(action.Delete.Roles, r.Name)
 	})
 
+	ctx := context.Background()
 	lb := loadbalancer.LBcluster{
 		ProjectName:       projectName,
 		Cluster:           current,
 		SpawnProcessLimit: processLimit,
 	}
 
-	buildLogger := logger.With().Str("cluster", lb.Cluster.ClusterInfo.Id()).Logger()
-	if err := BuildLoadbalancers(buildLogger, lb); err != nil {
-		buildLogger.Err(err).Msg("Failed to reconcile cluster after roles deletion")
+	logger = logger.With().Str("cluster", lb.Cluster.ClusterInfo.Id()).Logger()
+
+	// This should only delete new rules into firewalls and no other
+	// changes should be done by the templates that would invalidate
+	// the nodepools that would result in needed to act on the [loadbalancer.ErrReconcileAll]
+	if err := lb.ReconcileCommon(ctx, logger); err != nil {
+		logger.Err(err).Msg("Failed to reconcile cluster after roles deletion")
 		tracker.Diagnostics.Push(err)
 		return
 	}

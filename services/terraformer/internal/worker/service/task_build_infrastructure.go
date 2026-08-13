@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+
 	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/concurrent"
 	"github.com/berops/claudie/proto/pb/spec"
@@ -45,16 +47,19 @@ func build(
 		return
 	}
 
-	cluster := kubernetes.K8Scluster{
-		ProjectName:       projectName,
-		Cluster:           k8s,
-		ExportPort6443:    clusters.FindAssignedLbApiEndpoint(lbs) == nil,
-		SpawnProcessLimit: processLimit,
-	}
+	var (
+		ctx     = context.Background()
+		cluster = kubernetes.K8Scluster{
+			ProjectName:       projectName,
+			Cluster:           k8s,
+			ExportPort6443:    clusters.FindAssignedLbApiEndpoint(lbs) == nil,
+			SpawnProcessLimit: processLimit,
+		}
+	)
 
 	buildLogger := logger.With().Str("cluster", cluster.Id()).Logger()
 
-	if err := BuildK8Scluster(buildLogger, cluster); err != nil {
+	if err := cluster.ReconcileAll(ctx, buildLogger); err != nil {
 		// Some of the infrastructure might have failed to build,
 		// nevertheless, we still send back the updated state for
 		// the manager to resolve the diff.
@@ -83,7 +88,7 @@ func build(
 
 	err := concurrent.Exec(loadbalancers, func(_ int, cluster loadbalancer.LBcluster) error {
 		buildLogger := logger.With().Str("cluster", cluster.Id()).Logger()
-		return BuildLoadbalancers(buildLogger, cluster)
+		return cluster.ReconcileAll(context.Background(), buildLogger)
 	})
 	if err != nil {
 		logger.Err(err).Msg("Failed to reconcile loadbalancers")

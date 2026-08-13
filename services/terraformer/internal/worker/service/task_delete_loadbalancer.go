@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+
 	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/terraformer/internal/worker/service/internal/loadbalancer"
@@ -28,15 +30,17 @@ func destroyLoadBalancer(
 		return
 	}
 
+	ctx := context.Background()
 	lb := loadbalancer.LBcluster{
 		ProjectName:       projectName,
 		Cluster:           lbs[idx],
 		SpawnProcessLimit: processLimit,
 	}
 
-	buildLogger := logger.With().Str("cluster", lb.Cluster.ClusterInfo.Id()).Logger()
-	if err := DestroyCluster(buildLogger, projectName, &lb, stores.s3); err != nil {
-		buildLogger.Err(err).Msg("Failed to destroy load balancer")
+	logger = logger.With().Str("cluster", lb.Cluster.ClusterInfo.Id()).Logger()
+
+	if err := lb.DestroyAll(ctx, logger, stores.s3); err != nil {
+		logger.Err(err).Msg("Failed to destroy load balancer")
 		tracker.Diagnostics.Push(err)
 		return
 	}

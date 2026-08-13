@@ -81,29 +81,25 @@ func (s *S3Adapter) HealthCheck() error {
 }
 
 // DeleteStateFile deletes tofu state file (related to the given cluster), from S3 bucket.
-func (s *S3Adapter) DeleteStateFile(ctx context.Context, projectName, clusterId string, keyFormat string) error {
-	key := fmt.Sprintf(keyFormat, projectName, clusterId)
-	_, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{
+func (s *S3Adapter) DeleteStateFile(ctx context.Context, key string) error {
+	i := s3.DeleteObjectInput{
 		Bucket: &s3Bucket,
 		Key:    &key,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to remove dns lock file for cluster %v: %w", clusterId, err)
 	}
-
+	if _, err := s.client.DeleteObject(ctx, &i); err != nil {
+		return fmt.Errorf("failed to remove state file %v: %w", key, err)
+	}
 	return nil
 }
 
 // Stat checks whether the given object exists in storage.
-func (s *S3Adapter) Stat(ctx context.Context, projectName, clusterId, keyFormat string) error {
-	key := fmt.Sprintf(keyFormat, projectName, clusterId)
-	_, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{
+func (s *S3Adapter) Stat(ctx context.Context, key string) error {
+	i := s3.HeadObjectInput{
 		Bucket: &s3Bucket,
 		Key:    &key,
-	})
-	if err != nil {
-		var notFound *types.NotFound
-		if errors.As(err, &notFound) {
+	}
+	if _, err := s.client.HeadObject(ctx, &i); err != nil {
+		if _, ok := errors.AsType[*types.NotFound](err); ok {
 			return ErrS3KeyNotExists
 		}
 		return fmt.Errorf("failed to check existence of object %s: %w", key, err)
