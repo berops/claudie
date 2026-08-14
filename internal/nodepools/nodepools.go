@@ -41,7 +41,7 @@ func NodeSSHPort(np *spec.NodePool, n *spec.Node) int32 {
 }
 
 // NodeSSHUsername returns the Username to be used when establishing an SSH
-// connection to the node. Defaults to 'root' is not set.
+// connection to the node. Defaults to 'root', if not set.
 func NodeSSHUsername(n *spec.Node) string {
 	u := "root"
 	if n.Username != "" {

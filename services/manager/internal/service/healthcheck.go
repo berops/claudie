@@ -49,7 +49,7 @@ type NodeDescription struct {
 	LastTransitionTime *metav1.Time
 }
 
-// UnreachableNodesMap unreachable nodepools to their unreachable nodes IPs.
+// UnreachableIPv4Map unreachable nodepools to their unreachable nodes IPs.
 type UnreachableIPv4Map = map[string][]string
 
 type UnknownNodeStatus struct {
