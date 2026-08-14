@@ -44,9 +44,6 @@ spec:
             capabilities:
               drop:
                 - all
-              add:
-                # needed to access raw sockets for ping.
-                - NET_RAW
           resources:
             requests:
               cpu: 80m
