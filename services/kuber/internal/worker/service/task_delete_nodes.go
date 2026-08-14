@@ -92,8 +92,8 @@ func deleteFromState(
 
 			// Do not propagate an update in this case as the nodepool is not tracked
 			// and the manager service wil refuse the update. This will also cause
-			// for the manager to not consume the update and therefore other stages
-			// of the scheduled pipeline, if any, will be skipped with a no-op.
+			// for the manager to not consume the update and therefore continue with
+			// other stages, if any.
 			return
 		}
 		nodepools.DeleteNodes(np, a.KDeleteNodes.Nodes)

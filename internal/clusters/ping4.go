@@ -23,7 +23,7 @@ const (
 
 	// PingRetryCount is the number of times the ping will be retried
 	// to determine if the node is healthy of not.
-	PingRetryCount = 3
+	PingRetryCount = 4
 )
 
 var (
@@ -94,6 +94,7 @@ func SSHPing(logger zerolog.Logger, retries int, dst NodeEndpoint) error {
 
 	var err error
 	for i := range retries {
+		logger.Debug().Msgf("SSH ping %s:%s", dst.Ip, dst.Port)
 		if err = sshPing(PingTimeout, dst); err == nil {
 			break
 		}
@@ -101,7 +102,7 @@ func SSHPing(logger zerolog.Logger, retries int, dst NodeEndpoint) error {
 			break
 		}
 		wait := 1 * time.Second
-		logger.Err(err).Msgf("failed to ssh ping node %q, retrying again in %s", dst.Ip, wait)
+		logger.Warn().Msgf("failed to ssh ping node %q: %v, retrying again in %s", dst.Ip, err, wait)
 		time.Sleep(wait)
 	}
 	if err != nil {
