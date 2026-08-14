@@ -21,11 +21,11 @@ const (
 	DefaultSSHPort = int32(22)
 )
 
-// SSHPort returns the effective SSH port for a nodepool and normalizes the
-// stored value in-place, replacing 0 with DefaultSSHPort.
+// SSHPort returns the effective SSH port for a nodepool, if the SSH
+// port is not set, the [DefaultSSHPort] value is returned as a default.
 func SSHPort(np *spec.NodePool) int32 {
 	if np.SshPort == 0 {
-		np.SshPort = DefaultSSHPort
+		return DefaultSSHPort
 	}
 	return np.SshPort
 }
@@ -38,6 +38,16 @@ func NodeSSHPort(np *spec.NodePool, n *spec.Node) int32 {
 		return n.SshPort
 	}
 	return SSHPort(np)
+}
+
+// NodeSSHUsername returns the Username to be used when establishing an SSH
+// connection to the node. Defaults to 'root' is not set.
+func NodeSSHUsername(n *spec.Node) string {
+	u := "root"
+	if n.Username != "" {
+		u = n.Username
+	}
+	return u
 }
 
 type RegionNetwork struct {
@@ -229,6 +239,7 @@ func PartialCopyWithReplacedNodes(np *spec.NodePool, nodes []*spec.Node, nodeKey
 		Labels:      np.Labels,
 		Taints:      np.Taints,
 		Annotations: np.Annotations,
+		SshPort:     np.SshPort,
 	}
 
 	// To avoid issues with possible node counts, deep clone the node type itself.
@@ -560,11 +571,7 @@ func RandomNodePublicEndpoint(nps []*spec.NodePool) (username, endpoint, key, ss
 	node := np.Nodes[idx]
 
 	endpoint = node.Public
-	username = "root"
-	if node.Username != "" && node.Username != username {
-		username = node.Username
-	}
-
+	username = NodeSSHUsername(node)
 	port := fmt.Sprint(NodeSSHPort(np, node))
 
 	switch t := np.Type.(type) {

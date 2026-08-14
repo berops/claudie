@@ -298,10 +298,7 @@ func validateWireguardSetup(nps []*spec.NodePool, expectedPeerList []Peer) error
 
 			var sshKey string
 			port := nodepools.NodeSSHPort(np, n)
-			username := n.Username
-			if username == "" {
-				username = "root"
-			}
+			username := nodepools.NodeSSHUsername(n)
 
 			switch typ := np.Type.(type) {
 			case *spec.NodePool_DynamicNodePool:
