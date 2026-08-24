@@ -91,7 +91,10 @@ func assertStage(t *testing.T, i int, got *spec.Stage, want expectedStage) {
 // then never consumed, any update committed by a later stage would be refused
 // by the manager, re-running that stage indefinitely.
 func TestScheduleDeletionsInNodePoolsPipelineShape(t *testing.T) {
-	const tracked = "pool-1"
+	const (
+		p1 = "pool-1"
+		p2 = "pool-2"
+	)
 
 	var (
 		kuberDelete = expectedStage{
@@ -122,8 +125,8 @@ func TestScheduleDeletionsInNodePoolsPipelineShape(t *testing.T) {
 	}{
 		{
 			name:     "tracked static nodepool with proxy schedules the full pipeline",
-			nodepool: namedStaticNodePool(tracked),
-			diff:     NodePoolsDiffResult{PartiallyDeleted: NodePoolsViewType{tracked: {"node-1"}}},
+			nodepool: namedStaticNodePool(p1),
+			diff:     NodePoolsDiffResult{PartiallyDeleted: NodePoolsViewType{p1: {"node-1"}}},
 			opts:     K8sNodeDeletionOptions{IsStatic: true, UseProxy: true},
 			wantPipeline: []expectedStage{
 				kuberDelete,
@@ -133,26 +136,26 @@ func TestScheduleDeletionsInNodePoolsPipelineShape(t *testing.T) {
 					proxyPasses...,
 				)},
 			},
-			wantNodepool: tracked,
+			wantNodepool: p1,
 			wantNodes:    []string{"node-1"},
 		},
 		{
 			name:     "tracked static nodepool without proxy schedules only the utilities cleanup",
-			nodepool: namedStaticNodePool(tracked),
-			diff:     NodePoolsDiffResult{PartiallyDeleted: NodePoolsViewType{tracked: {"node-1"}}},
+			nodepool: namedStaticNodePool(p2),
+			diff:     NodePoolsDiffResult{PartiallyDeleted: NodePoolsViewType{p2: {"node-1"}}},
 			opts:     K8sNodeDeletionOptions{IsStatic: true},
 			wantPipeline: []expectedStage{
 				kuberDelete,
 				kuberDelete,
 				{ansibler: []spec.StageAnsibler_SubPassKind{spec.StageAnsibler_REMOVE_CLAUDIE_UTILITIES}},
 			},
-			wantNodepool: tracked,
+			wantNodepool: p2,
 			wantNodes:    []string{"node-1"},
 		},
 		{
 			name:     "tracked dynamic nodepool with proxy also schedules the terraformer stage",
-			nodepool: namedDynamicNodePool(tracked),
-			diff:     NodePoolsDiffResult{PartiallyDeleted: NodePoolsViewType{tracked: {"node-1"}}},
+			nodepool: namedDynamicNodePool(p1),
+			diff:     NodePoolsDiffResult{PartiallyDeleted: NodePoolsViewType{p1: {"node-1"}}},
 			opts:     K8sNodeDeletionOptions{UseProxy: true},
 			wantPipeline: []expectedStage{
 				kuberDelete,
@@ -160,12 +163,12 @@ func TestScheduleDeletionsInNodePoolsPipelineShape(t *testing.T) {
 				{ansibler: proxyPasses},
 				{terraformer: []spec.StageTerraformer_SubPassKind{spec.StageTerraformer_UPDATE_INFRASTRUCTURE}},
 			},
-			wantNodepool: tracked,
+			wantNodepool: p1,
 			wantNodes:    []string{"node-1"},
 		},
 		{
 			name:         "untracked nodepool schedules only the tracked state removal stage",
-			nodepool:     namedStaticNodePool(tracked),
+			nodepool:     namedStaticNodePool(p1),
 			diff:         NodePoolsDiffResult{PartiallyDeleted: NodePoolsViewType{"": {"node-1"}}},
 			opts:         K8sNodeDeletionOptions{IsStatic: true, UseProxy: true},
 			wantPipeline: []expectedStage{kuberDelete},
@@ -174,8 +177,8 @@ func TestScheduleDeletionsInNodePoolsPipelineShape(t *testing.T) {
 		},
 		{
 			name:     "tracked whole nodepool deletion schedules the full pipeline",
-			nodepool: namedStaticNodePool(tracked),
-			diff:     NodePoolsDiffResult{Deleted: NodePoolsViewType{tracked: {"node-1", "node-2"}}},
+			nodepool: namedStaticNodePool(p2),
+			diff:     NodePoolsDiffResult{Deleted: NodePoolsViewType{p2: {"node-1", "node-2"}}},
 			opts:     K8sNodeDeletionOptions{IsStatic: true, UseProxy: true},
 			wantPipeline: []expectedStage{
 				kuberDelete,
@@ -186,12 +189,12 @@ func TestScheduleDeletionsInNodePoolsPipelineShape(t *testing.T) {
 				)},
 			},
 			wantWithNodePool: true,
-			wantNodepool:     tracked,
+			wantNodepool:     p2,
 			wantNodes:        []string{"node-1", "node-2"},
 		},
 		{
 			name:             "untracked whole nodepool deletion schedules only the tracked state removal stage",
-			nodepool:         namedStaticNodePool(tracked),
+			nodepool:         namedStaticNodePool(p2),
 			diff:             NodePoolsDiffResult{Deleted: NodePoolsViewType{"ghost": {"node-1"}}},
 			opts:             K8sNodeDeletionOptions{IsStatic: true, UseProxy: true},
 			wantPipeline:     []expectedStage{kuberDelete},
