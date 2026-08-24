@@ -31,7 +31,7 @@ Running Claudie services requires sufficient CPU and memory resources to ensure 
 As Claudie uses number of external tools to build and manage clusters, it is important these tools are installed on your local system.
 
 - `go` - check current version used in `go.mod` file
-- `terraform` - check current version used in Terraformer Dockerfile
+- `tofu` - check current version used in Terraformer Dockerfile
 - `ansible` - check current version used in Ansibler Dockerfile
 - `kubeone` - check current version used in Kube-eleven Dockerfile
 - `kubectl` - check current version used in Kuber Dockerfile
