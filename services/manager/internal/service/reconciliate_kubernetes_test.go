@@ -7,7 +7,7 @@ import (
 	"github.com/berops/claudie/proto/pb/spec"
 )
 
-func deletionClusters(nps ...*spec.NodePool) *spec.Clusters {
+func deletionClusters(lbs []*spec.LBcluster, nps ...*spec.NodePool) *spec.Clusters {
 	return &spec.Clusters{
 		K8S: &spec.K8Scluster{
 			ClusterInfo: &spec.ClusterInfo{
@@ -16,7 +16,25 @@ func deletionClusters(nps ...*spec.NodePool) *spec.Clusters {
 				NodePools: nps,
 			},
 		},
-		LoadBalancers: &spec.LoadBalancers{},
+		LoadBalancers: &spec.LoadBalancers{Clusters: lbs},
+	}
+}
+
+// lbTargeting returns a loadbalancer cluster with a single role targeting the
+// given nodepools, which is all that the target pool matching in
+// ScheduleDeletionsInNodePools reads.
+func lbTargeting(targets ...string) *spec.LBcluster {
+	return &spec.LBcluster{
+		ClusterInfo: &spec.ClusterInfo{
+			Name: "test-lb",
+			Hash: "hash",
+		},
+		Roles: []*spec.Role{
+			{
+				Name:        "api",
+				TargetPools: targets,
+			},
+		},
 	}
 }
 
@@ -90,6 +108,10 @@ func assertStage(t *testing.T, i int, got *spec.Stage, want expectedStage) {
 // from the cluster without committing an update, and since the task delta is
 // then never consumed, any update committed by a later stage would be refused
 // by the manager, re-running that stage indefinitely.
+//
+// This holds even when a loadbalancer still lists the absent nodepool among its
+// targets: the envoy reconciliation stage commits an update as well, so it has
+// to stay out of the pipeline too.
 func TestScheduleDeletionsInNodePoolsPipelineShape(t *testing.T) {
 	const (
 		p1 = "pool-1"
@@ -116,6 +138,7 @@ func TestScheduleDeletionsInNodePoolsPipelineShape(t *testing.T) {
 	tests := []struct {
 		name             string
 		nodepool         *spec.NodePool
+		lbs              []*spec.LBcluster
 		diff             NodePoolsDiffResult
 		opts             K8sNodeDeletionOptions
 		wantPipeline     []expectedStage
@@ -176,6 +199,16 @@ func TestScheduleDeletionsInNodePoolsPipelineShape(t *testing.T) {
 			wantNodes:    []string{"node-1"},
 		},
 		{
+			name:         "untracked nodepool still referenced by a loadbalancer omits the envoy stage",
+			nodepool:     namedStaticNodePool(p1),
+			lbs:          []*spec.LBcluster{lbTargeting("ghost")},
+			diff:         NodePoolsDiffResult{PartiallyDeleted: NodePoolsViewType{"ghost": {"node-1"}}},
+			opts:         K8sNodeDeletionOptions{IsStatic: true, UseProxy: true},
+			wantPipeline: []expectedStage{kuberDelete},
+			wantNodepool: "ghost",
+			wantNodes:    []string{"node-1"},
+		},
+		{
 			name:     "tracked whole nodepool deletion schedules the full pipeline",
 			nodepool: namedStaticNodePool(p2),
 			diff:     NodePoolsDiffResult{Deleted: NodePoolsViewType{p2: {"node-1", "node-2"}}},
@@ -202,11 +235,22 @@ func TestScheduleDeletionsInNodePoolsPipelineShape(t *testing.T) {
 			wantNodepool:     "ghost",
 			wantNodes:        []string{"node-1"},
 		},
+		{
+			name:             "untracked whole nodepool still referenced by a loadbalancer omits the envoy stage",
+			nodepool:         namedStaticNodePool(p2),
+			lbs:              []*spec.LBcluster{lbTargeting("ghost")},
+			diff:             NodePoolsDiffResult{Deleted: NodePoolsViewType{"ghost": {"node-1"}}},
+			opts:             K8sNodeDeletionOptions{IsStatic: true, UseProxy: true},
+			wantPipeline:     []expectedStage{kuberDelete},
+			wantWithNodePool: true,
+			wantNodepool:     "ghost",
+			wantNodes:        []string{"node-1"},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			te := ScheduleDeletionsInNodePools(deletionClusters(tt.nodepool), &tt.diff, tt.opts)
+			te := ScheduleDeletionsInNodePools(deletionClusters(tt.lbs, tt.nodepool), &tt.diff, tt.opts)
 			if te == nil {
 				t.Fatal("ScheduleDeletionsInNodePools() = nil, want a task event")
 			}
