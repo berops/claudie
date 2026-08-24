@@ -312,7 +312,7 @@ spec:
   kubernetes:
     clusters:
       - name: dev-cluster
-        version: 1.27.0
+        version: 1.36.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -328,7 +328,7 @@ spec:
           endpoint: http://proxy.claudie.io:8880 # you can use your own HTTP proxy. If not specified http://proxy.claudie.io:8880 is the default value.
 
       - name: prod-cluster
-        version: 1.27.0
+        version: 1.36.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -347,7 +347,7 @@ spec:
           mode: "off" # can be on, off or default
 
       - name: hybrid-cluster
-        version: 1.27.0
+        version: 1.36.0
         network: 192.168.2.0/24
         pools:
           control:

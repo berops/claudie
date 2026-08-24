@@ -309,9 +309,9 @@ type Cluster struct {
 	Name string `validate:"required,max=28" yaml:"name" json:"name"`
 	// Version should be defined in format vX.Y. In terms of supported versions of Kubernetes,
 	// Claudie follows kubeone releases and their supported versions.
-	// The current kubeone version used in Claudie is 1.12.1.
+	// The current kubeone version used in Claudie is 1.14.1.
 	// To see the list of supported versions, please refer to kubeone documentation.
-	// https://docs.kubermatic.com/kubeone/v1.12/architecture/compatibility/supported-versions/
+	// https://docs.kubermatic.com/kubeone/v1.14/architecture/compatibility/supported-versions/
 	Version string `validate:"required,ver" yaml:"version" json:"version"`
 	// Network range for the VPN of the cluster. The value should be defined in format A.B.C.D/mask.
 	// +kubebuilder:validation:MaxLength=50
