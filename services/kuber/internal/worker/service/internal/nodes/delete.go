@@ -19,11 +19,10 @@ import (
 
 const (
 	longhornNamespace = "longhorn-system"
+	drainTimeout      = 30 * time.Minute
 
-	UnreachableNodesPingCount = clusters.PingRetryCount + 3
-
-	drainTimeout = 30 * time.Minute
-
+	// Label used to prevent deletion of a node
+	// until the label itself is removed from the node.
 	upgradeLockLabelKey = "claudie.io/upgrade-lock"
 )
 
@@ -31,70 +30,47 @@ const (
 // drain because they have the claudie.io/upgrade-lock label set by the operator.
 var ErrUpgradeLocked = errors.New("nodes with claudie.io/upgrade-lock label skipped, waiting for operator to remove label")
 
-// etcdMemberList wraps parsed structures that are
-// needed from the output of the `etcdctl member list`
-// command, ignoring others.
-type etcdMemberList struct {
-	Members []struct {
-		// Hex encoded id of the member within etcd.
-		Id string
+type (
+	// etcdMemberList wraps parsed structures that are
+	// needed from the output of the `etcdctl member list`
+	// command, ignoring others.
+	etcdMemberList struct {
+		Members []struct {
+			// Hex encoded id of the member within etcd.
+			Id string
 
-		// Name of the node within the cluster.
-		Name string
+			// Name of the node within the cluster.
+			Name string
+		}
 	}
-}
 
-type nodeInfo struct {
-	fullname       string
-	k8sName        string
-	publicEndpoint string
-}
+	NodeInfo struct {
+		Fullname string
+		K8sName  string
+		Ep       clusters.NodeEndpoint
+	}
 
-type Deleter struct {
-	masterNodes   []nodeInfo
-	workerNodes   []nodeInfo
-	kubeconfig    string
-	clusterPrefix string
-	controlNode   string
-}
+	Deleter struct {
+		masterNodes   []NodeInfo
+		workerNodes   []NodeInfo
+		kubeconfig    string
+		clusterPrefix string
+		controlNode   string
+	}
+)
 
 // New returns new [Deleter] struct, used for node deletion from a k8s cluster
 // The passed in [spec.K8Scluster] is not modified in any way by any of the
 // functions of the deleter. The passed in deleteMaster and deleteWorker nodes
 // are being worked with to delete them from the kubernetes cluster via the
 // kubeconfig of the [spec.K8Scluster].
-func NewDeleter(
-	deleteMaster, deleteWorker []*spec.Node,
-	cluster *spec.K8Scluster,
-) (*Deleter, error) {
-	var (
-		clusterID = cluster.ClusterInfo.Id()
-		mn, wn    []nodeInfo
-	)
-
-	for i := range deleteMaster {
-		mn = append(mn, nodeInfo{
-			fullname:       deleteMaster[i].Name,
-			k8sName:        strings.TrimPrefix(deleteMaster[i].Name, fmt.Sprintf("%s-", clusterID)),
-			publicEndpoint: deleteMaster[i].Public,
-		})
-	}
-
-	for i := range deleteWorker {
-		wn = append(wn, nodeInfo{
-			fullname:       deleteWorker[i].Name,
-			k8sName:        strings.TrimPrefix(deleteWorker[i].Name, fmt.Sprintf("%s-", clusterID)),
-			publicEndpoint: deleteWorker[i].Public,
-		})
-	}
-
-	// find a control node that will not be deleted.
+func NewDeleter(deleteMaster, deleteWorker []NodeInfo, cluster *spec.K8Scluster) (*Deleter, error) {
 	var notDeleted string
 	for cn := range nodepools.Control(cluster.ClusterInfo.NodePools) {
 		for _, n := range cn.Nodes {
-			if !slices.ContainsFunc(deleteMaster, func(o *spec.Node) bool { return o.Name == n.Name }) {
-				// pick the first control node as the ones
-				// deleted are no longer in the cluster's state.
+			if !slices.ContainsFunc(deleteMaster, func(o NodeInfo) bool { return o.Fullname == n.Name }) {
+				// No need to check whether we are picking a deleted
+				// node, since they are not longer part of the [spec.K8Scluster].
 				notDeleted = n.Name
 				break
 			}
@@ -106,11 +82,11 @@ func NewDeleter(
 	}
 
 	return &Deleter{
-		masterNodes:   mn,
-		workerNodes:   wn,
+		masterNodes:   deleteMaster,
+		workerNodes:   deleteWorker,
 		kubeconfig:    cluster.Kubeconfig,
-		clusterPrefix: clusterID,
-		controlNode:   strings.TrimPrefix(notDeleted, fmt.Sprintf("%s-", clusterID)),
+		clusterPrefix: cluster.ClusterInfo.Id(),
+		controlNode:   strings.TrimPrefix(notDeleted, fmt.Sprintf("%s-", cluster.ClusterInfo.Id())),
 	}, nil
 }
 
@@ -141,78 +117,69 @@ func (d *Deleter) DeleteNodes(logger zerolog.Logger) error {
 
 	// Remove master nodes sequentially to minimise risk of faults in etcd
 	for _, master := range d.masterNodes {
-		if !slices.Contains(k8snodes, master.k8sName) {
+		if !slices.Contains(k8snodes, master.K8sName) {
 			logger.
 				Warn().
-				Msgf("Node with name %s not found in cluster", master.k8sName)
+				Msgf("Node with name %s not found in cluster", master.K8sName)
 			continue
 		}
 
-		hasLock, err := kubectl.KubectlNodeHasLabel(master.k8sName, upgradeLockLabelKey)
+		hasLock, err := kubectl.KubectlNodeHasLabel(master.K8sName, upgradeLockLabelKey)
 		if err != nil {
 			// Fail closed: treat the node as locked so the task is retried
 			// instead of draining on a transient kubectl failure.
-			logger.Warn().Err(err).Msgf("failed to check upgrade-lock label on node %s, deferring drain", master.k8sName)
+			logger.Warn().Err(err).Msgf("failed to check upgrade-lock label on node %s, deferring drain", master.K8sName)
 			locked = true
 			continue
 		}
 		if hasLock {
-			logger.Info().Msgf("node %s has upgrade-lock label, skipping drain", master.k8sName)
+			logger.Info().Msgf("node %s has upgrade-lock label, skipping drain", master.K8sName)
 			locked = true
 			continue
 		}
 
 		logger.
 			Info().
-			Msgf("verifying if node %s is reachable", master.k8sName)
+			Msgf("verifying if node %s is reachable", master.K8sName)
 
-		if err := clusters.Ping(logger, UnreachableNodesPingCount, master.publicEndpoint); err != nil {
-			if errors.Is(err, clusters.ErrEchoTimeout) {
-				logger.
-					Info().
-					Msgf(
-						"Node %s is unreachable, marking node with `out-of-service` taint "+
-							"before deleting it from the cluster", master.k8sName,
-					)
+		if err := clusters.SSHPing(logger, clusters.PingRetryCount, master.Ep); errors.Is(err, clusters.ErrUnreachable) {
+			logger.
+				Info().
+				Msgf(
+					"Node %s is unreachable, marking node with `out-of-service` taint "+
+						"before deleting it from the cluster", master.K8sName,
+				)
 
-				if err := kubectl.KubectlTaintNodeShutdown(master.k8sName); err != nil {
-					logger.
-						Err(err).
-						Msgf(
-							"Failed to taint node %s with 'out-of-service' taint, proceeding with default deletion",
-							master.k8sName,
-						)
-				}
-			} else {
+			if err := kubectl.KubectlTaintNodeShutdown(master.K8sName); err != nil {
 				logger.
 					Err(err).
 					Msgf(
-						"Failed to determine if node %s is reachable or not, proceeding with default deletion",
-						master.k8sName,
+						"Failed to taint node %s with 'out-of-service' taint, proceeding with default deletion",
+						master.K8sName,
 					)
 			}
 		}
 
 		// IMPORTANT: first you have to cordon and drain, and only after that you can remove from etcd
 		// kubectl cordon <node-name> <args>
-		if err := kubectl.KubectlCordon(master.k8sName); err != nil {
-			errDel = errors.Join(errDel, fmt.Errorf("error while cordon master node %s from cluster: %w", master.k8sName, err))
+		if err := kubectl.KubectlCordon(master.K8sName); err != nil {
+			errDel = errors.Join(errDel, fmt.Errorf("error while cordon master node %s from cluster: %w", master.K8sName, err))
 			continue
 		}
 
 		// kubectl drain <node-name> --ignore-daemonsets --delete-emptydir-data
-		if err := kubectl.KubectlDrainWithTimeout(drainTimeout, master.k8sName); err != nil {
+		if err := kubectl.KubectlDrainWithTimeout(drainTimeout, master.K8sName); err != nil {
 			if !errors.Is(err, context.DeadlineExceeded) {
-				return fmt.Errorf("error while draining node %s from cluster: %w", master.k8sName, err)
+				return fmt.Errorf("error while draining node %s from cluster: %w", master.K8sName, err)
 			}
 
 			logger.
 				Info().
-				Msgf("timeout for draining node %q reached, continuing with deletion", master.k8sName)
+				Msgf("timeout for draining node %q reached, continuing with deletion", master.K8sName)
 		}
 
 		// delete master nodes from etcd
-		if err := d.deleteFromEtcd(logger, kubectl, master.k8sName); err != nil {
+		if err := d.deleteFromEtcd(logger, kubectl, master.K8sName); err != nil {
 			return fmt.Errorf("error while deleting nodes from etcd: %w", err)
 		}
 
@@ -224,94 +191,85 @@ func (d *Deleter) DeleteNodes(logger zerolog.Logger) error {
 
 	// Remove worker nodes sequentially to minimise risk of fault when replicating PVC
 	for _, worker := range d.workerNodes {
-		if !slices.Contains(k8snodes, worker.k8sName) {
+		if !slices.Contains(k8snodes, worker.K8sName) {
 			logger.
 				Warn().
-				Msgf("Node with name %s not found in cluster", worker.k8sName)
+				Msgf("Node with name %s not found in cluster", worker.K8sName)
 			continue
 		}
 
-		hasLock, err := kubectl.KubectlNodeHasLabel(worker.k8sName, upgradeLockLabelKey)
+		hasLock, err := kubectl.KubectlNodeHasLabel(worker.K8sName, upgradeLockLabelKey)
 		if err != nil {
 			// Fail closed: treat the node as locked so the task is retried
 			// instead of draining on a transient kubectl failure.
-			logger.Warn().Err(err).Msgf("failed to check upgrade-lock label on node %s, deferring drain", worker.k8sName)
+			logger.Warn().Err(err).Msgf("failed to check upgrade-lock label on node %s, deferring drain", worker.K8sName)
 			locked = true
 			continue
 		}
 		if hasLock {
-			logger.Info().Msgf("node %s has upgrade-lock label, skipping drain", worker.k8sName)
+			logger.Info().Msgf("node %s has upgrade-lock label, skipping drain", worker.K8sName)
 			locked = true
 			continue
 		}
 
 		logger.
 			Info().
-			Msgf("verifying if node %s is reachable", worker.k8sName)
+			Msgf("verifying if node %s is reachable", worker.K8sName)
 
-		if err := clusters.Ping(logger, UnreachableNodesPingCount, worker.publicEndpoint); err != nil {
-			if errors.Is(err, clusters.ErrEchoTimeout) {
-				logger.
-					Info().
-					Msgf(
-						"Node %s is unreachable, marking node with `out-of-service` taint "+
-							"before deleting it from the cluster", worker.k8sName,
-					)
+		if err := clusters.SSHPing(logger, clusters.PingRetryCount, worker.Ep); errors.Is(err, clusters.ErrUnreachable) {
+			logger.
+				Info().
+				Msgf(
+					"Node %s is unreachable, marking node with `out-of-service` taint "+
+						"before deleting it from the cluster", worker.K8sName,
+				)
 
-				if err := kubectl.KubectlTaintNodeShutdown(worker.k8sName); err != nil {
-					logger.
-						Err(err).
-						Msgf(
-							"Failed to taint node %s with 'out-of-service' taint, proceeding with default deletion",
-							worker.k8sName,
-						)
-				}
-			} else {
+			if err := kubectl.KubectlTaintNodeShutdown(worker.K8sName); err != nil {
 				logger.
 					Err(err).
 					Msgf(
-						"Failed to determine if node %s is reachable or not, proceeding with default deletion",
-						worker.k8sName,
+						"Failed to taint node %s with 'out-of-service' taint, proceeding with default deletion",
+						worker.K8sName,
 					)
 			}
 		}
 
-		if err := disableDiskScheduling(kubectl, worker.k8sName); err != nil {
+		if err := disableDiskScheduling(kubectl, worker.K8sName); err != nil {
 			// not a fatal error.
 			logger.
 				Warn().
-				Msgf("failed to disable longhorn disk scheduling for node %q: %s", worker.k8sName, err)
+				Msgf("failed to disable longhorn disk scheduling for node %q: %s", worker.K8sName, err)
 		}
 
 		// kubectl cordon <node-name> <args>
-		if err := kubectl.KubectlCordon(worker.k8sName); err != nil {
-			errDel = errors.Join(errDel, fmt.Errorf("error while cordon worker node %s from cluster: %w", worker.k8sName, err))
+		if err := kubectl.KubectlCordon(worker.K8sName); err != nil {
+			errDel = errors.Join(errDel, fmt.Errorf("error while cordon worker node %s from cluster: %w", worker.K8sName, err))
 			continue
 		}
 
 		// kubectl drain <node-name> --ignore-daemonsets --delete-emptydir-data
-		if err := kubectl.KubectlDrainWithTimeout(drainTimeout, worker.k8sName); err != nil {
+		if err := kubectl.KubectlDrainWithTimeout(drainTimeout, worker.K8sName); err != nil {
 			if !errors.Is(err, context.DeadlineExceeded) {
-				return fmt.Errorf("error while draining node %s from cluster: %w", worker.k8sName, err)
+				return fmt.Errorf("error while draining node %s from cluster: %w", worker.K8sName, err)
 			}
 
 			logger.
 				Info().
-				Msgf("timeout for draining node %q reached, continuing with deletion", worker.k8sName)
+				Msgf("timeout for draining node %q reached, continuing with deletion", worker.K8sName)
 		}
 
 		if err := d.deleteNodesByName(logger, kubectl, worker, k8snodes); err != nil {
-			errDel = errors.Join(errDel, fmt.Errorf("error while deleting node %s from cluster: %w", worker.k8sName, err))
+			errDel = errors.Join(errDel, fmt.Errorf("error while deleting node %s from cluster: %w", worker.K8sName, err))
 			continue
 		}
 
-		if err := removeReplicasOnDeletedNode(kubectl, worker.k8sName); err != nil {
+		if err := removeReplicasOnDeletedNode(kubectl, worker.K8sName); err != nil {
 			// not a fatal error.
 			logger.
 				Warn().
 				Msgf(
 					"failed to delete unused replicas from replicas.longhorn.io, after node %s deletion: %s",
-					worker.k8sName,
+					worker.K8sName,
 					err,
 				)
 		}
@@ -324,17 +282,17 @@ func (d *Deleter) DeleteNodes(logger zerolog.Logger) error {
 }
 
 // deleteNodesByName deletes node from the k8s cluster.
-func (d *Deleter) deleteNodesByName(logger zerolog.Logger, kc kubectl.Kubectl, node nodeInfo, realNodeNames []string) error {
-	if !slices.Contains(realNodeNames, node.k8sName) {
-		logger.Warn().Msgf("Node with name %s not found in cluster", node.k8sName)
+func (d *Deleter) deleteNodesByName(logger zerolog.Logger, kc kubectl.Kubectl, node NodeInfo, realNodeNames []string) error {
+	if !slices.Contains(realNodeNames, node.K8sName) {
+		logger.Warn().Msgf("Node with name %s not found in cluster", node.K8sName)
 		return nil
 	}
 
-	logger.Info().Msgf("Deleting node %s from k8s cluster", node.k8sName)
+	logger.Info().Msgf("Deleting node %s from k8s cluster", node.K8sName)
 
 	//kubectl delete node <node-name>
-	if err := kc.KubectlDeleteResource("nodes", node.k8sName); err != nil {
-		return fmt.Errorf("error while deleting node %s from cluster: %w", node.k8sName, err)
+	if err := kc.KubectlDeleteResource("nodes", node.K8sName); err != nil {
+		return fmt.Errorf("error while deleting node %s from cluster: %w", node.K8sName, err)
 	}
 
 	return nil
