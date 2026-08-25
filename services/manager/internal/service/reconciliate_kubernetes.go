@@ -1326,35 +1326,35 @@ func ScheduleDeletionsInNodePools(
 	}
 
 	for np, nodes := range diff.Deleted {
+		// Nodepools deleted as a whole are always part of the claudie tracked
+		// state. [NodePoolsDiff] fills [NodePoolsDiffResult.Deleted] from the
+		// current state and the reconciliate_unreachable_nodes drift logic only
+		// ever fills [NodePoolsDiffResult.PartiallyDeleted], thus the lookup
+		// cannot return nil.
 		currentStateNodePool := nodepools.FindByName(np, current.K8S.ClusterInfo.NodePools)
-		if currentStateNodePool != nil {
-			// If the ApiServer is on the kubernetes cluster on deletion of the
-			// control plane nodes the Kubeadm config map needs to be updated which
-			// is used during the join operation of new nodes.
-			if opts.HasApiServer && currentStateNodePool.IsControl {
-				kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, []*spec.StageKuber_SubPass{
-					{
-						Kind: spec.StageKuber_PATCH_KUBEADM,
-						Description: &spec.StageDescription{
-							About:      "Updating Kubeadm certSANs",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-					{
-						Kind: spec.StageKuber_CILIUM_RESTART,
-						Description: &spec.StageDescription{
-							About: "Rollout restart of cilium pods",
-							// Rollout restart failing is not a fatal error.
-							ErrorLevel: spec.ErrorLevel_ERROR_WARN,
-						},
-					},
-				}...)
-			}
-		}
 
-		// Contrary to addition, when deleting we do not skip if the nodepool is not found.
-		// As deleting from a not found nodepool should be handled gracefully by the existing
-		// services.
+		// If the ApiServer is on the kubernetes cluster on deletion of the
+		// control plane nodes the Kubeadm config map needs to be updated which
+		// is used during the join operation of new nodes.
+		if opts.HasApiServer && currentStateNodePool.IsControl {
+			kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, []*spec.StageKuber_SubPass{
+				{
+					Kind: spec.StageKuber_PATCH_KUBEADM,
+					Description: &spec.StageDescription{
+						About:      "Updating Kubeadm certSANs",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+				},
+				{
+					Kind: spec.StageKuber_CILIUM_RESTART,
+					Description: &spec.StageDescription{
+						About: "Rollout restart of cilium pods",
+						// Rollout restart failing is not a fatal error.
+						ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+					},
+				},
+			}...)
+		}
 
 		// If the deletion of the last autoscaled nodepools is to be scheduled. Also remove
 		// the CA requirement for the cluster.
@@ -1428,30 +1428,16 @@ func ScheduleDeletionsInNodePools(
 		pipeline := []*spec.Stage{
 			removeFromTrackedStage,
 		}
-
-		// If the nodepool is missing from the current state
-		// and this function was called it means that the
-		// reconciliate_unreachable_nodes logic was involved.
-		//
-		// Scheduling a node/nodepool deletion that is not part
-		// of the tracked state is a valid operation, as the node
-		// may have been unreachable, claudie decided to delete it
-		// but it may have come back online and re-connected to the
-		// cluster. Therefore the following stages are only to be
-		// considered when the node/nodepool is part of the claudie
-		// tracked state.
-		if currentStateNodePool != nil {
-			if removeFromLBStage != nil {
-				pipeline = append(pipeline, removeFromLBStage)
-			}
-			pipeline = append(pipeline, removeFromClusterStage)
-			if len(ans.Ansibler.SubPasses) > 0 {
-				cleanUpStage = &spec.Stage{StageKind: &ans}
-				pipeline = append(pipeline, cleanUpStage)
-			}
-			if infraRemovalStage != nil {
-				pipeline = append(pipeline, infraRemovalStage)
-			}
+		if removeFromLBStage != nil {
+			pipeline = append(pipeline, removeFromLBStage)
+		}
+		pipeline = append(pipeline, removeFromClusterStage)
+		if len(ans.Ansibler.SubPasses) > 0 {
+			cleanUpStage = &spec.Stage{StageKind: &ans}
+			pipeline = append(pipeline, cleanUpStage)
+		}
+		if infraRemovalStage != nil {
+			pipeline = append(pipeline, infraRemovalStage)
 		}
 
 		return &spec.TaskEvent{

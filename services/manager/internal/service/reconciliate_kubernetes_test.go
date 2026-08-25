@@ -51,8 +51,11 @@ func namedDynamicNodePool(name string) *spec.NodePool {
 }
 
 // expectedStage describes a single pipeline stage of a scheduled deletion,
-// exactly one of the subpass slices is set, matching the stage kind.
+// exactly one of the subpass slices is set, matching the stage kind. The
+// about field pins the stage description, as stages of the same kind with
+// the same subpass kinds trigger different code paths in the services.
 type expectedStage struct {
+	about       string
 	kuber       []spec.StageKuber_SubPassKind
 	ansibler    []spec.StageAnsibler_SubPassKind
 	terraformer []spec.StageTerraformer_SubPassKind
@@ -67,6 +70,9 @@ func assertStage(t *testing.T, i int, got *spec.Stage, want expectedStage) {
 		if stage == nil {
 			t.Fatalf("pipeline stage %d = %T, want kuber", i, got.StageKind)
 		}
+		if stage.Description.About != want.about {
+			t.Errorf("pipeline stage %d description = %q, want %q", i, stage.Description.About, want.about)
+		}
 		var kinds []spec.StageKuber_SubPassKind
 		for _, sp := range stage.SubPasses {
 			kinds = append(kinds, sp.Kind)
@@ -78,6 +84,9 @@ func assertStage(t *testing.T, i int, got *spec.Stage, want expectedStage) {
 		stage := got.GetAnsibler()
 		if stage == nil {
 			t.Fatalf("pipeline stage %d = %T, want ansibler", i, got.StageKind)
+		}
+		if stage.Description.About != want.about {
+			t.Errorf("pipeline stage %d description = %q, want %q", i, stage.Description.About, want.about)
 		}
 		var kinds []spec.StageAnsibler_SubPassKind
 		for _, sp := range stage.SubPasses {
@@ -91,6 +100,9 @@ func assertStage(t *testing.T, i int, got *spec.Stage, want expectedStage) {
 		if stage == nil {
 			t.Fatalf("pipeline stage %d = %T, want terraformer", i, got.StageKind)
 		}
+		if stage.Description.About != want.about {
+			t.Errorf("pipeline stage %d description = %q, want %q", i, stage.Description.About, want.about)
+		}
 		var kinds []spec.StageTerraformer_SubPassKind
 		for _, sp := range stage.SubPasses {
 			kinds = append(kinds, sp.Kind)
@@ -98,6 +110,8 @@ func assertStage(t *testing.T, i int, got *spec.Stage, want expectedStage) {
 		if !slices.Equal(kinds, want.terraformer) {
 			t.Errorf("pipeline stage %d terraformer subpasses = %v, want %v", i, kinds, want.terraformer)
 		}
+	default:
+		t.Fatalf("pipeline stage %d expectation has no stage kind set", i)
 	}
 }
 
@@ -112,6 +126,9 @@ func assertStage(t *testing.T, i int, got *spec.Stage, want expectedStage) {
 // This holds even when a loadbalancer still lists the absent nodepool among its
 // targets: the envoy reconciliation stage commits an update as well, so it has
 // to stay out of the pipeline too.
+//
+// Only partial deletions can carry an untracked nodepool, whole nodepool
+// deletions always reference the current state, see [NodePoolsDiff].
 func TestScheduleDeletionsInNodePoolsPipelineShape(t *testing.T) {
 	const (
 		p1 = "pool-1"
@@ -119,10 +136,16 @@ func TestScheduleDeletionsInNodePoolsPipelineShape(t *testing.T) {
 	)
 
 	var (
-		kuberDelete = expectedStage{
+		kuberTrackedDelete = expectedStage{
+			about: "Removing Nodes from tracked state",
 			kuber: []spec.StageKuber_SubPassKind{spec.StageKuber_DELETE_NODES},
 		}
-		kuberDeleteWholeNodePool = expectedStage{
+		kuberClusterDelete = expectedStage{
+			about: "Reconciling cluster",
+			kuber: []spec.StageKuber_SubPassKind{spec.StageKuber_DELETE_NODES},
+		}
+		kuberClusterDeleteWholeNodePool = expectedStage{
+			about: "Reconciling cluster",
 			kuber: []spec.StageKuber_SubPassKind{
 				spec.StageKuber_DELETE_NODES,
 				spec.StageKuber_RECONCILE_LONGHORN_STORAGE_CLASSES,
@@ -152,12 +175,15 @@ func TestScheduleDeletionsInNodePoolsPipelineShape(t *testing.T) {
 			diff:     NodePoolsDiffResult{PartiallyDeleted: NodePoolsViewType{p1: {"node-1"}}},
 			opts:     K8sNodeDeletionOptions{IsStatic: true, UseProxy: true},
 			wantPipeline: []expectedStage{
-				kuberDelete,
-				kuberDelete,
-				{ansibler: append(
-					[]spec.StageAnsibler_SubPassKind{spec.StageAnsibler_REMOVE_CLAUDIE_UTILITIES},
-					proxyPasses...,
-				)},
+				kuberTrackedDelete,
+				kuberClusterDelete,
+				{
+					about: "Configuring nodes of the cluster and its loadbalancers",
+					ansibler: append(
+						[]spec.StageAnsibler_SubPassKind{spec.StageAnsibler_REMOVE_CLAUDIE_UTILITIES},
+						proxyPasses...,
+					),
+				},
 			},
 			wantNodepool: p1,
 			wantNodes:    []string{"node-1"},
@@ -168,9 +194,12 @@ func TestScheduleDeletionsInNodePoolsPipelineShape(t *testing.T) {
 			diff:     NodePoolsDiffResult{PartiallyDeleted: NodePoolsViewType{p2: {"node-1"}}},
 			opts:     K8sNodeDeletionOptions{IsStatic: true},
 			wantPipeline: []expectedStage{
-				kuberDelete,
-				kuberDelete,
-				{ansibler: []spec.StageAnsibler_SubPassKind{spec.StageAnsibler_REMOVE_CLAUDIE_UTILITIES}},
+				kuberTrackedDelete,
+				kuberClusterDelete,
+				{
+					about:    "Configuring nodes of the cluster and its loadbalancers",
+					ansibler: []spec.StageAnsibler_SubPassKind{spec.StageAnsibler_REMOVE_CLAUDIE_UTILITIES},
+				},
 			},
 			wantNodepool: p2,
 			wantNodes:    []string{"node-1"},
@@ -181,10 +210,16 @@ func TestScheduleDeletionsInNodePoolsPipelineShape(t *testing.T) {
 			diff:     NodePoolsDiffResult{PartiallyDeleted: NodePoolsViewType{p1: {"node-1"}}},
 			opts:     K8sNodeDeletionOptions{UseProxy: true},
 			wantPipeline: []expectedStage{
-				kuberDelete,
-				kuberDelete,
-				{ansibler: proxyPasses},
-				{terraformer: []spec.StageTerraformer_SubPassKind{spec.StageTerraformer_UPDATE_INFRASTRUCTURE}},
+				kuberTrackedDelete,
+				kuberClusterDelete,
+				{
+					about:    "Configuring nodes of the cluster and its loadbalancers",
+					ansibler: proxyPasses,
+				},
+				{
+					about:       "Reconciling infrastructure for kubernetes cluster",
+					terraformer: []spec.StageTerraformer_SubPassKind{spec.StageTerraformer_UPDATE_INFRASTRUCTURE},
+				},
 			},
 			wantNodepool: p1,
 			wantNodes:    []string{"node-1"},
@@ -194,7 +229,7 @@ func TestScheduleDeletionsInNodePoolsPipelineShape(t *testing.T) {
 			nodepool:     namedStaticNodePool(p1),
 			diff:         NodePoolsDiffResult{PartiallyDeleted: NodePoolsViewType{"": {"node-1"}}},
 			opts:         K8sNodeDeletionOptions{IsStatic: true, UseProxy: true},
-			wantPipeline: []expectedStage{kuberDelete},
+			wantPipeline: []expectedStage{kuberTrackedDelete},
 			wantNodepool: "",
 			wantNodes:    []string{"node-1"},
 		},
@@ -204,7 +239,7 @@ func TestScheduleDeletionsInNodePoolsPipelineShape(t *testing.T) {
 			lbs:          []*spec.LBcluster{lbTargeting("ghost")},
 			diff:         NodePoolsDiffResult{PartiallyDeleted: NodePoolsViewType{"ghost": {"node-1"}}},
 			opts:         K8sNodeDeletionOptions{IsStatic: true, UseProxy: true},
-			wantPipeline: []expectedStage{kuberDelete},
+			wantPipeline: []expectedStage{kuberTrackedDelete},
 			wantNodepool: "ghost",
 			wantNodes:    []string{"node-1"},
 		},
@@ -214,37 +249,19 @@ func TestScheduleDeletionsInNodePoolsPipelineShape(t *testing.T) {
 			diff:     NodePoolsDiffResult{Deleted: NodePoolsViewType{p2: {"node-1", "node-2"}}},
 			opts:     K8sNodeDeletionOptions{IsStatic: true, UseProxy: true},
 			wantPipeline: []expectedStage{
-				kuberDelete,
-				kuberDeleteWholeNodePool,
-				{ansibler: append(
-					[]spec.StageAnsibler_SubPassKind{spec.StageAnsibler_REMOVE_CLAUDIE_UTILITIES},
-					proxyPasses...,
-				)},
+				kuberTrackedDelete,
+				kuberClusterDeleteWholeNodePool,
+				{
+					about: "Configuring nodes of the cluster and its loadbalancers",
+					ansibler: append(
+						[]spec.StageAnsibler_SubPassKind{spec.StageAnsibler_REMOVE_CLAUDIE_UTILITIES},
+						proxyPasses...,
+					),
+				},
 			},
 			wantWithNodePool: true,
 			wantNodepool:     p2,
 			wantNodes:        []string{"node-1", "node-2"},
-		},
-		{
-			name:             "untracked whole nodepool deletion schedules only the tracked state removal stage",
-			nodepool:         namedStaticNodePool(p2),
-			diff:             NodePoolsDiffResult{Deleted: NodePoolsViewType{"ghost": {"node-1"}}},
-			opts:             K8sNodeDeletionOptions{IsStatic: true, UseProxy: true},
-			wantPipeline:     []expectedStage{kuberDelete},
-			wantWithNodePool: true,
-			wantNodepool:     "ghost",
-			wantNodes:        []string{"node-1"},
-		},
-		{
-			name:             "untracked whole nodepool still referenced by a loadbalancer omits the envoy stage",
-			nodepool:         namedStaticNodePool(p2),
-			lbs:              []*spec.LBcluster{lbTargeting("ghost")},
-			diff:             NodePoolsDiffResult{Deleted: NodePoolsViewType{"ghost": {"node-1"}}},
-			opts:             K8sNodeDeletionOptions{IsStatic: true, UseProxy: true},
-			wantPipeline:     []expectedStage{kuberDelete},
-			wantWithNodePool: true,
-			wantNodepool:     "ghost",
-			wantNodes:        []string{"node-1"},
 		},
 	}
 
