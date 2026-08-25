@@ -49,8 +49,7 @@ type NodeDescription struct {
 	LastTransitionTime *metav1.Time
 }
 
-// UnreachableNodesMap holds the nodepools and all of the nodes within
-// that nodepool that are unreachable via a Ping on the IPv4 public endpoint.
+// UnreachableIPv4Map unreachable nodepools to their unreachable nodes IPs.
 type UnreachableIPv4Map = map[string][]string
 
 type UnknownNodeStatus struct {
@@ -191,7 +190,7 @@ func CheckNodesStatus(logger zerolog.Logger, state *spec.Clusters, hc HealthChec
 
 	result.UnknownLoadBalancersNodes, err = clusters.PingLoadBalancerNodes(logger, state)
 	if err != nil {
-		if !errors.Is(err, clusters.ErrEchoTimeout) {
+		if !errors.Is(err, clusters.ErrUnreachable) {
 			logger.
 				Err(err).
 				Msg("Failed to determine if any nodes were unreachable")
@@ -200,9 +199,8 @@ func CheckNodesStatus(logger zerolog.Logger, state *spec.Clusters, hc HealthChec
 			// in which case the healthcheck cannot be interpreted properly.
 			return result, err
 		}
-
-		// If there is a [clusters.ErrEchoTimeout], fallthrough as the
-		// returned k, lb values will have unreachable nodes.
+		// If there is a [clusters.ErrUnreachable], fallthrough as the
+		// returned value will contain unreachable nodes.
 	}
 
 	return result, nil
