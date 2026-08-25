@@ -133,11 +133,11 @@ func reconciliate(pending *spec.Config, desiredStates map[string]*spec.Clusters)
 				del = clustersUnion(current, cs)
 			}
 
-			if err := managementcluster.DeleteKubeconfig(del); err != nil {
+			if err := managementcluster.DeleteKubeconfig(pending.Name, del); err != nil {
 				logger.Err(err).Msg("Failed to delete kubeconfig secret in the management cluster")
 			}
 
-			if err := managementcluster.DeleteClusterMetadata(del); err != nil {
+			if err := managementcluster.DeleteClusterMetadata(pending.Name, del); err != nil {
 				logger.Err(err).Msg("Failed to delete metadata secret in the management cluster")
 			}
 
