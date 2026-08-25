@@ -290,8 +290,8 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     kubectl get secrets -n claudie -l claudie.io/output=kubeconfig
     ```
     ```
-    NAME                                  TYPE     DATA   AGE
-    my-super-cluster-6ktx6rb-kubeconfig   Opaque   1      134m
+    NAME                                                 TYPE     DATA   AGE
+    default-cloud-bursting-my-super-cluster-kubeconfig   Opaque   1      134m
     ```
 
     You can recover kubeconfig for your cluster with the following command:

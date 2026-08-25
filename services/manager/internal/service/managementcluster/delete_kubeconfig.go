@@ -11,19 +11,17 @@ import (
 
 // DeleteKubeconfig deletes the K8s secret (in the management cluster) containing kubeconfig
 // for the given K8s cluster.
-func DeleteKubeconfig(clusters *spec.Clusters) error {
+func DeleteKubeconfig(manifestName string, clusters *spec.Clusters) error {
 	namespace := envs.Namespace
-	clusterID := clusters.K8S.ClusterInfo.Id()
 	if namespace == "" {
 		return nil
 	}
 
 	kc := kubectl.Kubectl{
 		MaxKubectlRetries: kubectl.NoRetries,
+		Stdout:            comm.GetStdOut(clusters.K8S.ClusterInfo.Id()),
+		Stderr:            comm.GetStdErr(clusters.K8S.ClusterInfo.Id()),
 	}
 
-	kc.Stdout = comm.GetStdOut(clusterID)
-	kc.Stderr = comm.GetStdErr(clusterID)
-
-	return kc.KubectlDeleteResource("secret", fmt.Sprintf("%s-kubeconfig", clusterID), "-n", namespace)
+	return kc.KubectlDeleteResource("secret", fmt.Sprintf("%s-%s-kubeconfig", manifestName, clusters.K8S.ClusterInfo.Name), "-n", namespace)
 }
