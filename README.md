@@ -183,7 +183,7 @@ For adding support for other cloud providers or on-premises environments, open a
       kubernetes:
           clusters:
           - name: aws-cluster
-              version: 1.27.0
+              version: 1.36.0
               network: 192.168.2.0/24
               pools:
                 control:
@@ -247,7 +247,7 @@ Claudie outputs base64 encoded kubeconfig secret `<input-manifest-namespace>-<in
       kubernetes:
         clusters:
     #      - name: aws-cluster
-    #          version: 1.27.0
+    #          version: 1.36.0
     #          network: 192.168.2.0/24
     #          pools:
     #            control:

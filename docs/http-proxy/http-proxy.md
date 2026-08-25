@@ -19,7 +19,7 @@ In case you don't want to utilize the HTTP proxy at all (even when there are nod
 kubernetes:
     clusters:
       - name: proxy-example
-        version: "1.30.0"
+        version: "1.36.0"
         network: 192.168.2.0/24
         installationProxy:
             mode: "off"
@@ -31,7 +31,7 @@ On the other hand, if you wish to use the HTTP proxy whenever building a K8s clu
 kubernetes:
     clusters:
       - name: proxy-example
-        version: "1.30.0"
+        version: "1.36.0"
         network: 192.168.2.0/24
         installationProxy:
             mode: "on"
@@ -43,7 +43,7 @@ If you want to utilize your own HTTP proxy you can set its URL in `endpoint` (se
 kubernetes:
     clusters:
       - name: proxy-example
-        version: "1.30.0"
+        version: "1.36.0"
         network: 192.168.2.0/24
         installationProxy:
             mode: "on"
@@ -61,7 +61,7 @@ By default, `endpoint` value is set to `http://proxy.claudie.io:8880`. In case y
 kubernetes:
     clusters:
       - name: proxy-example
-        version: "1.30.0"
+        version: "1.36.0"
         network: 192.168.2.0/24
         installationProxy:
             mode: "on"

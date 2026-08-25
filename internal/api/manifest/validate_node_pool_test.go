@@ -21,7 +21,7 @@ func TestValidateSpot(t *testing.T) {
 				{
 					Name:    "cluster-1",
 					Network: "10.0.0.0/8",
-					Version: "v1.33.0",
+					Version: "v1.34.0",
 					Pools: Pool{
 						Control: []string{"control-np"},
 						Compute: []string{"worker-np"},
@@ -43,7 +43,7 @@ func TestValidateSpot(t *testing.T) {
 				{
 					Name:    "cluster-1",
 					Network: "10.0.0.0/8",
-					Version: "v1.33.0",
+					Version: "v1.34.0",
 					Pools: Pool{
 						Compute: []string{"worker-np"},
 					},
@@ -65,7 +65,7 @@ func TestValidateSpot(t *testing.T) {
 				{
 					Name:    "cluster-1",
 					Network: "10.0.0.0/8",
-					Version: "v1.33.0",
+					Version: "v1.34.0",
 					Pools: Pool{
 						Compute: []string{"worker-np"},
 					},
@@ -87,7 +87,7 @@ func TestValidateSpot(t *testing.T) {
 				{
 					Name:    "cluster-1",
 					Network: "10.0.0.0/8",
-					Version: "v1.33.0",
+					Version: "v1.34.0",
 					Pools:   Pool{Compute: []string{"worker-np"}},
 				},
 			},
@@ -109,7 +109,7 @@ func TestValidateSpot(t *testing.T) {
 				{
 					Name:    "cluster-1",
 					Network: "10.0.0.0/8",
-					Version: "v1.33.0",
+					Version: "v1.34.0",
 					Pools:   Pool{Compute: []string{"worker-np"}},
 				},
 			},
@@ -132,7 +132,7 @@ func TestValidateSpot(t *testing.T) {
 				{
 					Name:    "cluster-1",
 					Network: "10.0.0.0/8",
-					Version: "v1.33.0",
+					Version: "v1.34.0",
 					Pools:   Pool{Compute: []string{"worker-np"}},
 				},
 			},

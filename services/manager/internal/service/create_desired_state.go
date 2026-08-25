@@ -115,9 +115,6 @@ func createDesiredState(pending *spec.Config, result *map[string]*spec.Clusters)
 		}
 	}
 
-	backwardsCompatibility(pending)
-	backwardsCompatibilityTransferMissingState(pending, desiredState)
-
 	// 4. After step 3. there can still be missing state that needs to be populated.
 	for _, desired := range desiredState {
 		if err := PopulateSSHKeys(desired); err != nil {
