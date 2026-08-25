@@ -2,9 +2,9 @@ FROM docker.io/library/golang:1.26.3 AS build
 
 ARG TARGETARCH
 
-# download and unzip kube-one binary
+# download and unzip opentofu binary
 RUN apt-get -qq update && apt-get -qq install unzip
-RUN VERSION=1.10.7 && \
+RUN VERSION=1.12.5 && \
     wget -q https://github.com/opentofu/opentofu/releases/download/v${VERSION}/tofu_${VERSION}_linux_$TARGETARCH.zip && \
     unzip -qq tofu_${VERSION}_linux_$TARGETARCH.zip -d tofu
 
