@@ -24,7 +24,7 @@ const (
 // SecretMetadata returns metadata for secrets created in the management cluster.
 func SecretMetadata(ci *spec.ClusterInfo, projectName string, outputType OutputType) Metadata {
 	return Metadata{
-		Name: fmt.Sprintf("%s-%s", ci.Id(), outputType),
+		Name: fmt.Sprintf("%s-%s-%s", projectName, ci.Name, outputType),
 		Labels: map[string]string{
 			"claudie.io/project":        projectName,
 			"claudie.io/cluster":        ci.Name,
