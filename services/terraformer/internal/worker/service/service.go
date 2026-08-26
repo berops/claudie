@@ -27,7 +27,7 @@ var (
 	Port = envs.GetOrDefaultInt("TERRAFORMER_PORT", 50052)
 
 	// SpawnProcessLimit is the number of processes concurrently executing tofu.
-	SpawnProcessLimit = envs.GetOrDefaultInt("TERRAFORMER_CONCURRENT_PROCESSES", 7)
+	SpawnProcessLimit = envs.GetOrDefaultInt("TERRAFORMER_CONCURRENT_PROCESSES", 8)
 
 	// Durable Name of this service.
 	DurableName = envs.GetOrDefault("TERRAFORMER_DURABLE_NAME", "terraformer")

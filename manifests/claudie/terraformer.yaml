@@ -56,7 +56,7 @@ spec:
               cpu: 200m
               memory: 1200Mi
             limits:
-              memory: 2000Mi
+              memory: 3500Mi
           env:
             - name: TERRAFORMER_TOFU_PARALLELISM
               valueFrom:

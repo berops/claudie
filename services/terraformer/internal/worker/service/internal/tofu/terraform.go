@@ -24,7 +24,7 @@ import (
 const maxTfCommandRetryCount = 1
 
 // Parallelism is the number of resource to be work on in parallel during the apply/destroy commands.
-var parallelism = envs.GetOrDefaultInt("TERRAFORMER_TOFU_PARALLELISM", 10)
+var parallelism = envs.GetOrDefaultInt("TERRAFORMER_TOFU_PARALLELISM", 40)
 
 type Terraform struct {
 	// Directory represents the directory of .tf files
