@@ -6,14 +6,14 @@ spec:
   providers:
     - name: aws-1
       templatesRef:
-        name: autoscaling-2-0.11
+        name: autoscaling-2-0.13
       providerType: aws
       secretRef:
         name: aws-secret
         namespace: e2e-secrets
     - name: aws-2
       templatesRef:
-        name: autoscaling-2-0.11
+        name: autoscaling-2-0.13
       providerType: aws
       secretRef:
         name: aws-secret

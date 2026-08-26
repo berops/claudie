@@ -7,42 +7,42 @@ spec:
     - name: hetzner-1
       providerType: hetzner
       templatesRef:
-        name: rolling-update-2-0.11
+        name: rolling-update-2-0.13
       secretRef:
         name: hetzner-secret
         namespace: e2e-secrets
     - name: hetzner-2
       providerType: hetzner
       templatesRef:
-        name: rolling-update-2-0.11
+        name: rolling-update-2-0.13
       secretRef:
         name: hetzner-secret
         namespace: e2e-secrets
     - name: oci-1
       providerType: oci
       templatesRef:
-        name: rolling-update-2-0.11
+        name: rolling-update-2-0.13
       secretRef:
         name: oci-secret
         namespace: e2e-secrets
     - name: aws-1
       providerType: aws
       templatesRef:
-        name: rolling-update-2-0.11
+        name: rolling-update-2-0.13
       secretRef:
         name: aws-secret
         namespace: e2e-secrets
     - name: aws-2
       providerType: aws
       templatesRef:
-        name: rolling-update-2-0.11
+        name: rolling-update-2-0.13
       secretRef:
         name: aws-secret
         namespace: e2e-secrets
     - name: azure-payed-1
       providerType: azure
       templatesRef:
-        name: rolling-update-2-0.11
+        name: rolling-update-2-0.13
       secretRef:
         name: azure-secret
         namespace: e2e-secrets
