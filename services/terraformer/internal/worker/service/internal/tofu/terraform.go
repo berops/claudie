@@ -24,7 +24,7 @@ import (
 const maxTfCommandRetryCount = 1
 
 // Parallelism is the number of resource to be work on in parallel during the apply/destroy commands.
-var parallelism = envs.GetOrDefaultInt("TERRAFORMER_TOFU_PARALLELISM", 30)
+var parallelism = envs.GetOrDefaultInt("TERRAFORMER_TOFU_PARALLELISM", 10)
 
 type Terraform struct {
 	// Directory represents the directory of .tf files
@@ -45,6 +45,11 @@ type Terraform struct {
 }
 
 func (t *Terraform) ProvidersLock() error {
+	if err := t.SpawnProcessLimit.Acquire(context.Background(), 1); err != nil {
+		return fmt.Errorf("failed to prepare tofu providers lock process: %w", err)
+	}
+	defer t.SpawnProcessLimit.Release(1)
+
 	absCache, err := filepath.Abs(t.CacheDir)
 	if err != nil {
 		return fmt.Errorf("failed to resolve absolute cache dir: %w", err)
@@ -192,6 +197,11 @@ func (t *Terraform) Destroy() error {
 }
 
 func (t *Terraform) OutputString(resourceName string) (string, error) {
+	if err := t.SpawnProcessLimit.Acquire(context.Background(), 1); err != nil {
+		return "", fmt.Errorf("failed to prepare tofu output process: %w", err)
+	}
+	defer t.SpawnProcessLimit.Release(1)
+
 	//nolint
 	cmd := exec.Command("tofu", "output", "-json", resourceName)
 	cmd.Dir = t.Directory
@@ -214,6 +224,11 @@ func (t *Terraform) OutputString(resourceName string) (string, error) {
 }
 
 func (t *Terraform) OutputAll() (map[string]any, error) {
+	if err := t.SpawnProcessLimit.Acquire(context.Background(), 1); err != nil {
+		return nil, fmt.Errorf("failed to prepare tofu output process: %w", err)
+	}
+	defer t.SpawnProcessLimit.Release(1)
+
 	//nolint
 	cmd := exec.Command("tofu", "output", "-json")
 	cmd.Dir = t.Directory

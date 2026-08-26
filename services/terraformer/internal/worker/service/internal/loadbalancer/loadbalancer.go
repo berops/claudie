@@ -19,7 +19,7 @@ import (
 )
 
 // The default value on how many nodepools can be built concurrently.
-const DefaultNodePoolConcurrencyLimit = 20
+const DefaultNodePoolConcurrencyLimit = 7
 
 // ReconcileNodePoolMode sets the mode for how to deal with the common infrastructure
 // when reconciling a single nodepool.

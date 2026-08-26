@@ -63,12 +63,12 @@ KUBE_ELEVEN_CONCURRENT_CLUSTERS=7
 KUBER_WORKERS=30
 
 # Defines how many processes terraformer will work on concurrently.
-# Default is 30
-TERRAFORMER_CONCURRENT_PROCESSES=30
+# Default is 7
+TERRAFORMER_CONCURRENT_PROCESSES=7
 
 # Defines how many resources will be worked on in parallel by tofu.
-# Default is 30
-TERRAFORMER_TOFU_PARALLELISM=30
+# Default is 10
+TERRAFORMER_TOFU_PARALLELISM=10
 ```
 
 Changes to the ConfigMap are reflected after the respective services are restarted.
