@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+
 	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/terraformer/internal/worker/service/internal/loadbalancer"
@@ -52,15 +54,20 @@ func replaceRoleExternalSettings(
 	toEdit.Protocol = action.Replace.Protocol
 	toEdit.RoleType = action.Replace.RoleType
 
+	ctx := context.Background()
 	lb := loadbalancer.LBcluster{
 		ProjectName:       projectName,
 		Cluster:           current,
 		SpawnProcessLimit: processLimit,
 	}
 
-	buildLogger := logger.With().Str("cluster", lb.Cluster.ClusterInfo.Id()).Logger()
-	if err := BuildLoadbalancers(buildLogger, lb); err != nil {
-		buildLogger.Err(err).Msg("Failed to reconcile cluster after role editing")
+	logger = logger.With().Str("cluster", lb.Cluster.ClusterInfo.Id()).Logger()
+
+	// This should only change rules into firewalls and no other
+	// changes should be done by the templates that would invalidate
+	// the nodepools that would result in needed to act on the [loadbalancer.ErrReconcileAll]
+	if err := lb.ReconcileCommon(ctx, logger); err != nil {
+		logger.Err(err).Msg("Failed to reconcile cluster after role editing")
 		tracker.Diagnostics.Push(err)
 		// Contrary to the deletion process, during the addition if any partial changes
 		// take effect we have to report them back, however since there is currently

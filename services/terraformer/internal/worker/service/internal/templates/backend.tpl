@@ -1,6 +1,6 @@
 terraform {
   backend "s3" {
-    key            = "{{ .ProjectName }}/{{ .ClusterName }}"
+    key            = "{{ .ProjectName }}/{{ .Target }}"
     region         = "{{or .Region "main" }}"
     bucket         = "{{ .BucketName }}"
     use_lockfile   = true

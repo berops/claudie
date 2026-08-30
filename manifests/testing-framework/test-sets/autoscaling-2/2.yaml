@@ -7,7 +7,7 @@ spec:
     - name: aws-1
       # performs a rolling update
       templatesRef:
-        name: autoscaling-2-0.12
+        name: autoscaling-2-0.13-test
       providerType: aws
       secretRef:
         name: aws-secret
@@ -15,7 +15,7 @@ spec:
     - name: aws-2
       # performs a rolling update
       templatesRef:
-        name: autoscaling-2-0.12
+        name: autoscaling-2-0.13-test
       providerType: aws
       secretRef:
         name: aws-secret

@@ -7,14 +7,14 @@ spec:
     - name: hetzner-1
       providerType: hetzner
       templatesRef:
-        name: rolling-update-2-0.12
+        name: rolling-update-2-0.13-test
       secretRef:
         name: hetzner-secret
         namespace: e2e-secrets
     - name: aws-2
       providerType: aws
       templatesRef:
-        name: rolling-update-2-0.12
+        name: rolling-update-2-0.13-test
       secretRef:
         name: aws-secret
         namespace: e2e-secrets
