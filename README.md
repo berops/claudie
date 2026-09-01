@@ -183,7 +183,7 @@ For adding support for other cloud providers or on-premises environments, open a
       kubernetes:
           clusters:
           - name: aws-cluster
-              version: 1.27.0
+              version: 1.36.0
               network: 192.168.2.0/24
               pools:
                 control:
@@ -196,7 +196,7 @@ For adding support for other cloud providers or on-premises environments, open a
     ***Deleting existing InputManifest resource deletes provisioned infrastructure!***
 
 ### Connect to your cluster
-Claudie outputs base64 encoded kubeconfig secret `<cluster-name>-<cluster-hash>-kubeconfig` in the namespace where it is deployed:
+Claudie outputs base64 encoded kubeconfig secret `<input-manifest-namespace>-<input-manifest-name>-<cluster-name>-kubeconfig` in the namespace where it is deployed:
 
 1. Recover kubeconfig of your cluster by running:
     ```bash
@@ -247,7 +247,7 @@ Claudie outputs base64 encoded kubeconfig secret `<cluster-name>-<cluster-hash>-
       kubernetes:
         clusters:
     #      - name: aws-cluster
-    #          version: 1.27.0
+    #          version: 1.36.0
     #          network: 192.168.2.0/24
     #          pools:
     #            control:

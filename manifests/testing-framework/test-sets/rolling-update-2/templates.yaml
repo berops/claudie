@@ -1,12 +1,12 @@
 apiVersion: claudie.io/v1beta1
 kind: TemplateGitReference
 metadata:
-  name: rolling-update-2-0.11
+  name: rolling-update-2-0.13
 spec:
   endpoint:
     url: github.com/berops/claudie-config
     protocol: https
-  commit: v0.11.0
+  commit: v0.13.0
   paths:
     terraformer: templates/terraformer
     playbooks: templates/playbooks
@@ -17,12 +17,12 @@ spec:
 apiVersion: claudie.io/v1beta1
 kind: TemplateGitReference
 metadata:
-  name: rolling-update-2-0.12
+  name: rolling-update-2-0.13-test
 spec:
   endpoint:
     url: github.com/berops/claudie-config
     protocol: https
-  commit: v0.12.0
+  commit: v0.13.0-test
   paths:
     terraformer: templates/terraformer
     playbooks: templates/playbooks

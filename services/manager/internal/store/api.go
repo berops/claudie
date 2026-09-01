@@ -131,10 +131,6 @@ type TaskEvent struct {
 	Pipeline      []Stage    `bson:"pipeline"`
 	CurrentStage  uint32     `bson:"currentStage"`
 	LowerPriority *TaskEvent `bson:"lowerPriority"`
-
-	// Deprecated.
-	// TODO: remove in future versions.
-	OnError []byte `bson:"onError"`
 }
 
 type Workflow struct {

@@ -13,3 +13,5 @@ In the following table, you can find the supported Kubernetes and OS versions fo
 | v0.9.1 | 1.29.x, 1.30.x, 1.31.x | Ubuntu 22.04 (Ubuntu 24.04 on Hetzner and Azure) |
 | v0.9.11 | 1.30.x, 1.31.x, 1.32.x | Ubuntu 22.04, Ubuntu 24.04 |
 | v0.10.0 | 1.32.x, 1.33.x, 1.34.x | Ubuntu 22.04, Ubuntu 24.04 |
+| v0.13.0 | 1.33.x, 1.34.x, 1.35.x | Ubuntu 22.04, Ubuntu 24.04 |
+| v0.16.0 | 1.34.x, 1.35.x, 1.36.x | Ubuntu 22.04, Ubuntu 24.04 |

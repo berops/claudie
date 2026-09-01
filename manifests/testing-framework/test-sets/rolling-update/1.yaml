@@ -7,35 +7,35 @@ spec:
     - name: hetzner-1
       providerType: hetzner
       templatesRef:
-        name: rolling-update-0.11
+        name: rolling-update-0.13
       secretRef:
         name: hetzner-secret
         namespace: e2e-secrets
     - name: oci-1
       providerType: oci
       templatesRef:
-        name: rolling-update-0.11
+        name: rolling-update-0.13
       secretRef:
         name: oci-secret
         namespace: e2e-secrets
     - name: aws-1
       providerType: aws
       templatesRef:
-        name: rolling-update-0.12
+        name: rolling-update-0.13-test
       secretRef:
         name: aws-secret
         namespace: e2e-secrets
     - name: azure-payed-1
       providerType: azure
       templatesRef:
-        name: rolling-update-0.11
+        name: rolling-update-0.13
       secretRef:
         name: azure-secret
         namespace: e2e-secrets
     - name: azure-sponsor-2
       providerType: azure
       templatesRef:
-        name: rolling-update-0.11
+        name: rolling-update-0.13
       secretRef:
         name: azure-sponsorship-secret
         namespace: e2e-secrets
@@ -86,7 +86,7 @@ spec:
   kubernetes:
     clusters:
       - name: ts-rolling-update-nodepools1
-        version: "1.35.0"
+        version: "1.36.0"
         network: 192.168.2.0/24
         pools:
           control:

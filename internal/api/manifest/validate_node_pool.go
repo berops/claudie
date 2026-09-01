@@ -3,6 +3,7 @@ package manifest
 import (
 	"fmt"
 	"math"
+	"slices"
 	"strings"
 
 	"github.com/berops/claudie/internal/generics"
@@ -91,24 +92,18 @@ func (p *NodePool) Validate(m *Manifest) error {
 // IsReferenced checks whether a nodepool is in use. Unused nodepools are considered as an error.
 func IsReferenced(name string, m *Manifest) bool {
 	for _, k8s := range m.Kubernetes.Clusters {
-		for _, control := range k8s.Pools.Control {
-			if control == name {
-				return true
-			}
+		if slices.Contains(k8s.Pools.Control, name) {
+			return true
 		}
 
-		for _, compute := range k8s.Pools.Compute {
-			if compute == name {
-				return true
-			}
+		if slices.Contains(k8s.Pools.Compute, name) {
+			return true
 		}
 	}
 
 	for _, lb := range m.LoadBalancer.Clusters {
-		for _, np := range lb.Pools {
-			if np == name {
-				return true
-			}
+		if slices.Contains(lb.Pools, name) {
+			return true
 		}
 	}
 
@@ -181,10 +176,8 @@ func (d *DynamicNodePool) validateGCPGpuConfig(m *Manifest) error {
 // isControlPlane reports whether a nodepool name appears in any cluster's control-plane pool list.
 func isControlPlane(name string, m *Manifest) bool {
 	for _, k8s := range m.Kubernetes.Clusters {
-		for _, control := range k8s.Pools.Control {
-			if control == name {
-				return true
-			}
+		if slices.Contains(k8s.Pools.Control, name) {
+			return true
 		}
 	}
 	return false

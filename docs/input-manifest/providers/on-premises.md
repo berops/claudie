@@ -67,7 +67,7 @@ spec:
   kubernetes:
     clusters:
       - name: private-cluster
-        version: 1.27.0
+        version: 1.36.0
         network: 192.168.2.0/24
         pools:
           control:
@@ -151,7 +151,7 @@ spec:
   kubernetes:
     clusters:
       - name: hybrid-cluster
-        version: 1.27.0
+        version: 1.36.0
         network: 192.168.2.0/24
         pools:
           control:

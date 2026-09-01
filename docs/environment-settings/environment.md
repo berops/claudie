@@ -42,9 +42,9 @@ AWS_REGION=local
 # Default is all namespaces
 CLAUDIE_NAMESPACES="dev"
 
-# Defines how many concurrent workers will ping nodes of the currently built cluster. Only applicable to Kuber and Manager services.
-# Default is 20
-PING_CONCURRENT_WORKERS=20
+# Defines how many concurrent workers will ssh ping the loadbalancer nodes during healthchecks. Only applicable to the Manager service.
+# Default is 10
+PING_CONCURRENT_WORKERS=10
 
 # Defines how many clusters ansibler will work on concurrently.
 # Default is 8
@@ -62,9 +62,9 @@ KUBE_ELEVEN_CONCURRENT_CLUSTERS=7
 # Default is 30
 KUBER_WORKERS=30
 
-# Defines how many clusters terraformer will work on concurrently.
-# Default is 7
-TERRAFORMER_CONCURRENT_CLUSTERS=7
+# Defines how many processes terraformer will work on concurrently.
+# Default is 8
+TERRAFORMER_CONCURRENT_PROCESSES=8
 
 # Defines how many resources will be worked on in parallel by tofu.
 # Default is 40

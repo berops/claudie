@@ -4,7 +4,7 @@ import (
 	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
-	"github.com/berops/claudie/services/terraformer/internal/worker/service/internal/loadbalancer"
+	cluster_builder "github.com/berops/claudie/services/terraformer/internal/worker/service/internal/cluster-builder"
 	"github.com/rs/zerolog"
 
 	"golang.org/x/sync/semaphore"
@@ -32,6 +32,14 @@ func replaceDns(
 	}
 
 	lb := action.State.LoadBalancers[idx]
+	dns := cluster_builder.DnsBuilder{
+		ClusterName:       lb.ClusterInfo.Name,
+		ClusterHash:       lb.ClusterInfo.Hash,
+		ClusterId:         lb.ClusterInfo.Id(),
+		InputManifest:     projectName,
+		SpawnProcessLimit: processLimit,
+	}
+
 	if lb.Dns != nil {
 		current := lb.Dns
 
@@ -45,20 +53,20 @@ func replaceDns(
 		update.Loadbalancers(lb)
 		update.Commit()
 
-		dns := loadbalancer.DNS{
-			ProjectName:       projectName,
-			ClusterName:       lb.ClusterInfo.Name,
-			ClusterHash:       lb.ClusterInfo.Hash,
-			NodeIPs:           nodepools.PublicEndpoints(lb.ClusterInfo.NodePools),
-			Dns:               current,
-			SpawnProcessLimit: processLimit,
+		ips := nodepools.PublicEndpoints(lb.ClusterInfo.NodePools)
+		if err := dns.Init(logger, ips, current); err != nil {
+			logger.Err(err).Msg("Failed to prepare resources for destroying DNS records")
+			tracker.Diagnostics.Push(err)
+			return
 		}
 
-		if err := dns.DestroyDNSRecords(logger); err != nil {
+		if err := dns.DestroyRecords(); err != nil {
+			dns.Cleanup()
 			logger.Err(err).Msg("Failed to destroy DNS records")
 			tracker.Diagnostics.Push(err)
 			return
 		}
+		dns.Cleanup()
 	}
 
 	if action.Replace.Dns == nil {
@@ -66,16 +74,15 @@ func replaceDns(
 	}
 
 	lb.Dns = action.Replace.Dns
-	dns := loadbalancer.DNS{
-		ProjectName:       projectName,
-		ClusterName:       lb.ClusterInfo.Name,
-		ClusterHash:       lb.ClusterInfo.Hash,
-		NodeIPs:           nodepools.PublicEndpoints(lb.ClusterInfo.NodePools),
-		Dns:               lb.Dns,
-		SpawnProcessLimit: processLimit,
+	ips := nodepools.PublicEndpoints(lb.ClusterInfo.NodePools)
+	if err := dns.Init(logger, ips, lb.Dns); err != nil {
+		logger.Err(err).Msg("Failed to prepare resources for reconciling DNS records")
+		tracker.Diagnostics.Push(err)
+		return
 	}
+	defer dns.Cleanup()
 
-	if err := dns.CreateDNSRecords(logger); err != nil {
+	if err := dns.ReconcileRecords(); err != nil {
 		logger.Err(err).Msg("Failed to create new DNS records")
 		tracker.Diagnostics.Push(err)
 		return

@@ -7,14 +7,14 @@ spec:
     - name: hetzner-1
       providerType: hetzner
       templatesRef:
-        name: rolling-update-2-0.12
+        name: rolling-update-2-0.13-test
       secretRef:
         name: hetzner-secret
         namespace: e2e-secrets
     - name: aws-2
       providerType: aws
       templatesRef:
-        name: rolling-update-2-0.12
+        name: rolling-update-2-0.13-test
       secretRef:
         name: aws-secret
         namespace: e2e-secrets
@@ -49,7 +49,7 @@ spec:
   kubernetes:
     clusters:
       - name: ts-rolling-update-nodepools1
-        version: "1.35.0"
+        version: "1.36.0"
         network: 192.168.2.0/24
         pools:
           control:

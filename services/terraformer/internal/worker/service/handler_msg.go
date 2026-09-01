@@ -20,9 +20,10 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/rs/zerolog/log"
 
-	"golang.org/x/sync/semaphore"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
+
+	"golang.org/x/sync/semaphore"
 )
 
 func (s *Service) Handler(msg jetstream.Msg) {

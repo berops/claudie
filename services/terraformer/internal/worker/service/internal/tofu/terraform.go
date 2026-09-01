@@ -1,7 +1,9 @@
 package tofu
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os/exec"
@@ -43,6 +45,11 @@ type Terraform struct {
 }
 
 func (t *Terraform) ProvidersLock() error {
+	if err := t.SpawnProcessLimit.Acquire(context.Background(), 1); err != nil {
+		return fmt.Errorf("failed to prepare tofu providers lock process: %w", err)
+	}
+	defer t.SpawnProcessLimit.Release(1)
+
 	absCache, err := filepath.Abs(t.CacheDir)
 	if err != nil {
 		return fmt.Errorf("failed to resolve absolute cache dir: %w", err)
@@ -80,7 +87,7 @@ func (t *Terraform) Init() error {
 	}
 
 	//nolint
-	cmd := exec.Command("tofu", "init", "-no-color")
+	cmd := exec.Command("tofu", "init", "-upgrade", "-no-color")
 	cmd.Dir = t.Directory
 	cmd.Stdout = t.Stdout
 	cmd.Stderr = t.Stderr
@@ -90,7 +97,7 @@ func (t *Terraform) Init() error {
 		log.Warn().Msgf("Error encountered while executing %s from %s: %v", cmd, t.Directory, err)
 
 		retryCmd := comm.Cmd{
-			Command: "tofu init -no-color",
+			Command: "tofu init -upgrade -no-color",
 			Dir:     t.Directory,
 			Stdout:  cmd.Stdout,
 			Stderr:  cmd.Stderr,
@@ -191,7 +198,12 @@ func (t *Terraform) Destroy() error {
 	return nil
 }
 
-func (t *Terraform) Output(resourceName string) (string, error) {
+func (t *Terraform) OutputString(resourceName string) (string, error) {
+	if err := t.SpawnProcessLimit.Acquire(context.Background(), 1); err != nil {
+		return "", fmt.Errorf("failed to prepare tofu output process: %w", err)
+	}
+	defer t.SpawnProcessLimit.Release(1)
+
 	//nolint
 	cmd := exec.Command("tofu", "output", "-json", resourceName)
 	cmd.Dir = t.Directory
@@ -211,4 +223,46 @@ func (t *Terraform) Output(resourceName string) (string, error) {
 		// fallthrough
 	}
 	return string(out), nil
+}
+
+func (t *Terraform) OutputAll() (map[string]any, error) {
+	if err := t.SpawnProcessLimit.Acquire(context.Background(), 1); err != nil {
+		return nil, fmt.Errorf("failed to prepare tofu output process: %w", err)
+	}
+	defer t.SpawnProcessLimit.Release(1)
+
+	//nolint
+	cmd := exec.Command("tofu", "output", "-json")
+	cmd.Dir = t.Directory
+	out, err := cmd.Output()
+	if err != nil {
+		log.Warn().Msgf("Error encountered while executing %s from %s: %v", cmd, t.Directory, err)
+		retryCmd := comm.Cmd{
+			Command: "tofu output -json",
+			Dir:     t.Directory,
+		}
+
+		out, err = retryCmd.RetryCommandWithOutput(maxTfCommandRetryCount)
+		if err != nil {
+			return nil, fmt.Errorf("failed to execute cmd: %s: %w", retryCmd.Command, err)
+		}
+		// fallthrough
+	}
+
+	var outputs map[string]struct {
+		Value any `json:"value"`
+	}
+
+	d := json.NewDecoder(bytes.NewReader(out))
+	d.UseNumber()
+
+	if err := d.Decode(&outputs); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal tofu outputs from %s: %w", t.Directory, err)
+	}
+
+	values := make(map[string]any, len(outputs))
+	for name, output := range outputs {
+		values[name] = output.Value
+	}
+	return values, nil
 }
