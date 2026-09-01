@@ -87,7 +87,7 @@ func (t *Terraform) Init() error {
 	}
 
 	//nolint
-	cmd := exec.Command("tofu", "init", "-upgrade")
+	cmd := exec.Command("tofu", "init", "-upgrade", "-no-color")
 	cmd.Dir = t.Directory
 	cmd.Stdout = t.Stdout
 	cmd.Stderr = t.Stderr
@@ -97,7 +97,7 @@ func (t *Terraform) Init() error {
 		log.Warn().Msgf("Error encountered while executing %s from %s: %v", cmd, t.Directory, err)
 
 		retryCmd := comm.Cmd{
-			Command: "tofu init -upgrade",
+			Command: "tofu init -upgrade -no-color",
 			Dir:     t.Directory,
 			Stdout:  cmd.Stdout,
 			Stderr:  cmd.Stderr,
@@ -125,6 +125,7 @@ func (t *Terraform) Apply() error {
 	args := []string{
 		"apply",
 		"--auto-approve",
+		"-no-color",
 		fmt.Sprintf("--parallelism=%v", t.Parallelism),
 	}
 
@@ -167,6 +168,7 @@ func (t *Terraform) Destroy() error {
 	args := []string{
 		"destroy",
 		"--auto-approve",
+		"-no-color",
 		fmt.Sprintf("--parallelism=%v", t.Parallelism),
 	}
 
