@@ -488,23 +488,8 @@ Once you've gained a comprehensive understanding of how Claudie operates through
 
 ## Claudie customization
 
-All of the customisable settings can be found in `claudie/.env` file.
-
-| Variable               | Default       | Type   | Description                                                  |
-|------------------------|---------------| ------ |--------------------------------------------------------------|
-| `GOLANG_LOG`           | `info`        | string | Log level for all services. Can be either `info` or `debug`. |
-| `DATABASE_HOSTNAME`    | `mongodb`     | string | Database hostname used for Claudie configs.                  |
-| `MANAGER_HOSTNAME`     | `manager`     | string | Manager service hostname.                                    |
-| `TERRAFORMER_HOSTNAME` | `terraformer` | string | Terraformer service hostname.                                |
-| `ANSIBLER_HOSTNAME`    | `ansibler`    | string | Ansibler service hostname.                                   |
-| `KUBE_ELEVEN_HOSTNAME` | `kube-eleven` | string | Kube-eleven service hostname.                                |
-| `KUBER_HOSTNAME`       | `kuber`       | string | Kuber service hostname.                                      |
-| `MINIO_HOSTNAME`       | `minio`       | string | MinIO hostname used for state files.                         |
-| `AWS_REGION`           | `local`       | string | Region for MinIO.                                            |
-| `DATABASE_PORT`        | 27017         | int    | Port of the database service.                                |
-| `TERRAFORMER_PORT`     | 50052         | int    | Port of the Terraformer service.                             |
-| `ANSIBLER_PORT`        | 50053         | int    | Port of the Ansibler service.                                |
-| `KUBE_ELEVEN_PORT`     | 50054         | int    | Port of the Kube-eleven service.                             |
-| `MANAGER_PORT`         | 50055         | int    | Port of the MANAGER service.                                 |
-| `KUBER_PORT`           | 50057         | int    | Port of the Kuber service.                                   |
-| `MINIO_PORT`           | 9000          | int    | Port of the MinIO service.                                   |
+Claudie can be customized via environment variables, most of which are set through the ConfigMap generated from the
+[`.env` file](https://github.com/berops/claudie/blob/master/manifests/claudie/.env) — log levels, service ports,
+concurrency limits, NATS and state-bucket settings and more. The full list, together with defaults and how the
+variables are wired into the deployments, is documented on the
+[environment variables reference page](../environment-settings/environment.md).

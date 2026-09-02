@@ -51,26 +51,16 @@ spec:
             limits:
               memory: 700Mi
           env:
-            - name: KUBER_WORKERS
+            - name: KUBER_CONCURRENT_WORKERS
               valueFrom:
                 configMapKeyRef:
                   name: env
-                  key: KUBER_WORKERS
+                  key: KUBER_CONCURRENT_WORKERS
             - name: KUBER_PORT
               valueFrom:
                 configMapKeyRef:
                   name: env
                   key: KUBER_PORT
-            - name: OPERATOR_PORT
-              valueFrom:
-                configMapKeyRef:
-                  name: env
-                  key: OPERATOR_PORT
-            - name: OPERATOR_HOSTNAME
-              valueFrom:
-                configMapKeyRef:
-                  name: env
-                  key: OPERATOR_HOSTNAME
             - name: GOLANG_LOG
               valueFrom:
                 configMapKeyRef:
