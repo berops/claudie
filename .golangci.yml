@@ -11,7 +11,7 @@ linters:
     - errname
     - errorlint
     - goconst
-    - gomodguard
+    - gomodguard_v2
     - goprintffuncname
     - govet
     - ineffassign
@@ -25,6 +25,10 @@ linters:
     - wastedassign
     - whitespace
   settings:
+    goconst:
+      exclude-types:
+        - Call
+        - CompositeLit
     govet:
       disable:
         - fieldalignment
