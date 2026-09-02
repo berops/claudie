@@ -4123,7 +4123,7 @@ How the variables reach the services:
 - Each Deployment references specific keys of the `env` ConfigMap explicitly (there is no `envFrom`), so adding a new key to the ConfigMap alone has no effect unless the Deployment also references it.
 - Any variable that is not set falls back to the default value built into the service (listed below).
 - `DATABASE_URL` (manager) and `AWS_ACCESS_KEY_ID`/ `AWS_SECRET_ACCESS_KEY` (terraformer) are sourced from the `mongo-secret` and `minio-secret` Secrets, not from the ConfigMap.
-- `NAMESPACE` is injected automatically from the pod metadata, and `NATS_CLUSTER_URL` is set directly in each Deployment to `nats://nats.$(NAMESPACE).svc.cluster.local`.
+- `NAMESPACE` is injected automatically from the pod metadata, and `NATS_CLUSTER_URL` is set directly in each NATS-using Deployment to `nats://nats.$(NAMESPACE).svc.cluster.local`.
 - To set a variable that is not wired into a Deployment (e.g. `CLAUDIE_NAMESPACES` or `PING_CONCURRENT_WORKERS`), add it to the respective Deployment.
 
 Changes to the ConfigMap are reflected after the respective services are restarted.
