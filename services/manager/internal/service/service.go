@@ -97,7 +97,7 @@ func New(ctx context.Context, opts ...grpc.ServerOption) (*Service, error) {
 
 	log.Info().Msgf("manager microservice bound to %s", listeningAddress)
 
-	mongo, err := store.NewMongoClient(ctx, envs.DatabaseURL)
+	mongo, err := store.NewMongoClient(envs.DatabaseURL)
 	if err != nil {
 		client.Close()
 		lis.Close()
