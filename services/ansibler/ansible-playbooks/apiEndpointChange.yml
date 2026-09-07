@@ -84,10 +84,10 @@
         - "containerd"
 
     - name: restart controller
-      shell: "crictl pods | grep kube-controller-manager | awk '{print $1}' | xargs -I {} sh -c 'crictl stopp {} && crictl rmp {}'"
+      shell: "crictl pods | grep kube-controller-manager | awk '{print $1}' | xargs -I {} sh -c 'crictl stopp {} && { crictl rmp {} || true; }'"
 
     - name: restart scheduler
-      shell: "crictl pods | grep kube-scheduler | awk '{print $1}' | xargs -I {} sh -c 'crictl stopp {} && crictl rmp {}'"
+      shell: "crictl pods | grep kube-scheduler | awk '{print $1}' | xargs -I {} sh -c 'crictl stopp {} && { crictl rmp {} || true; }'"
 
 - hosts: compute
   gather_facts: true
