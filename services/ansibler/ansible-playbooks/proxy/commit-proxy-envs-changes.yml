@@ -31,12 +31,6 @@
     - name: Update NO_PROXY and no_proxy in static pods /etc/kubernetes/manifests
       ansible.builtin.shell: |
         kubeadm init phase control-plane all --config {{file}}
-    - name: restart controller
-      ansible.builtin.shell: |
-        crictl pods | grep kube-controller-manager | awk '{print $1}' | xargs -I {} sh -c 'crictl stopp {} && crictl rmp {}'
-    - name: restart scheduler
-      ansible.builtin.shell: |
-        crictl pods | grep kube-scheduler | awk '{print $1}' | xargs -I {} sh -c 'crictl stopp {} && crictl rmp {}'
 
 - hosts: all
   gather_facts: false
