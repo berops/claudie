@@ -20,9 +20,6 @@ var (
 	// ManagerURL is a listening URL for Manager module
 	ManagerURL = os.Getenv("MANAGER_HOSTNAME") + ":" + os.Getenv("MANAGER_PORT")
 
-	// OperatorURL is a listening URL for claudie-operator connection
-	OperatorURL = os.Getenv("OPERATOR_HOSTNAME") + ":" + os.Getenv("OPERATOR_PORT")
-
 	// DatabaseURL is a listening URL for Database
 	DatabaseURL = os.Getenv("DATABASE_URL")
 
@@ -32,7 +29,7 @@ var (
 	BucketEndpoint = os.Getenv("BUCKET_URL")
 
 	// BucketName is the name of the bucket use for state
-	// If not defined it will default to "claudie-tf-state"
+	// If not defined it will default to "claudie-tf-state-files"
 	BucketName = os.Getenv("BUCKET_NAME")
 
 	// AwsAccesskeyId is part of credentials needed for connecting to bucket
@@ -58,11 +55,6 @@ func init() {
 		ManagerURL = "localhost:50055"
 	}
 	ManagerURL = strings.ReplaceAll(ManagerURL, ":tcp://", "")
-
-	if OperatorURL == ":" {
-		OperatorURL = "localhost:50058"
-	}
-	OperatorURL = strings.ReplaceAll(OperatorURL, ":tcp://", "")
 
 	if DatabaseURL == "" {
 		DatabaseURL = "mongodb://localhost:27017"
