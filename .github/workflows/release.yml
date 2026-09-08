@@ -82,7 +82,7 @@ jobs:
 
           echo "Using claudie-config release: $LATEST_TAG"
 
-          TAG="$LATEST_TAG" ./yq e -i \
+          TAG="$LATEST_TAG" yq e -i \
             '(select(.kind == "Deployment" and .metadata.name == "claudie-operator") |
               .spec.template.spec.containers[] |
               select(.name == "claudie-operator") |
