@@ -117,4 +117,4 @@ If no templates are specified Claudie generates a default custom resource that p
 
 - fix unreachable node deletion pipeline [#2193](https://github.com/berops/claudie/pull/2193)
 
-- fix leaked containerd-task #[2203](https://github.com/berops/claudie/pull/2203)
+- fix leaked containerd-task [#2203](https://github.com/berops/claudie/pull/2203)
