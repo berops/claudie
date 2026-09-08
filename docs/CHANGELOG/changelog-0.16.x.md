@@ -89,7 +89,7 @@ spec:
     - name: hetzner-1
       providerType: hetzner
       templatesRef:
-        name: example-templates
+        name: my-templates
         namespace: claudie
 ...
 ```
@@ -109,7 +109,7 @@ If no templates are specified Claudie generates a default custom resource that p
 - A single state file per cluster has been dropped in favor of a single state file per nodepool with an additional shared infrastructure state file for each cluster [#2177](https://github.com/berops/claudie/pull/2177).
   This speeds up scaling up/scaling down existing nodepools.
 
-- General maintainence dependencies update [#2201](https://github.com/berops/claudie/pull/2201)
+- General maintenance dependencies update [#2201](https://github.com/berops/claudie/pull/2201)
 
 ## Bug fixes
 
