@@ -11,11 +11,10 @@ import (
 	"github.com/berops/claudie/internal/sanitise"
 	"github.com/rs/zerolog/log"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo/readpref"
 )
 
 const (
@@ -31,9 +30,9 @@ type Mongo struct {
 	collection *mongo.Collection
 }
 
-func NewMongoClient(ctx context.Context, uri string) (*Mongo, error) {
+func NewMongoClient(uri string) (*Mongo, error) {
 	opts := options.Client().ApplyURI(uri)
-	conn, err := mongo.Connect(ctx, opts)
+	conn, err := mongo.Connect(opts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to %q: %w", sanitise.URI(uri), err)
 	}
@@ -78,7 +77,7 @@ func (m *Mongo) GetConfig(ctx context.Context, name string) (*Config, error) {
 }
 
 func (m *Mongo) ListConfigs(ctx context.Context, filter *ListFilter) ([]*Config, error) {
-	f := primitive.D{}
+	f := bson.D{}
 
 	if filter != nil && len(filter.ManifestState) > 0 {
 		f = append(f, bson.E{
