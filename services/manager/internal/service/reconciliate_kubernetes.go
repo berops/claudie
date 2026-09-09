@@ -867,12 +867,14 @@ func ScheduleAdditionsInNodePools(
 			pipeline = append(pipeline, terraformerStage)
 		}
 
-		pipeline = append(pipeline, ansiblerStage)
-		pipeline = append(pipeline, kubeElevenStage)
-		pipeline = append(pipeline, kuberStage)
+		if len(toAdd.Nodes) != 0 {
+			pipeline = append(pipeline, ansiblerStage)
+			pipeline = append(pipeline, kubeElevenStage)
+			pipeline = append(pipeline, kuberStage)
 
-		if updateLoadBalancersStage != nil {
-			pipeline = append(pipeline, updateLoadBalancersStage)
+			if updateLoadBalancersStage != nil {
+				pipeline = append(pipeline, updateLoadBalancersStage)
+			}
 		}
 
 		return &spec.TaskEvent{

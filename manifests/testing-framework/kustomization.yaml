@@ -92,4 +92,4 @@ secretGenerator:
 
 images:
 - name: ghcr.io/berops/claudie/testing-framework
-  newTag: 2f15a60-4479
+  newTag: 63a7324-4497
