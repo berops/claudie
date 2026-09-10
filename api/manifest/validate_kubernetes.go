@@ -122,7 +122,7 @@ func validateNodepools(m *Manifest, cluster *Cluster) error {
 			if !static {
 				return fmt.Errorf("nodepool %q used multiple times as compute nodepool, this effect can be achieved by increasing the \"count\" field, adjusting the \"autoscaler\" field or defining a new nodepool with a different name", pool)
 			}
-			return fmt.Errorf("static nodepool %q used multiple times as control nodepool, reusing the same static nodepool is discouraged as it can introduce issues within the cluster. Make sure to use a different static nodepool", pool)
+			return fmt.Errorf("static nodepool %q used multiple times as compute nodepool, reusing the same static nodepool is discouraged as it can introduce issues within the cluster. Make sure to use a different static nodepool", pool)
 		}
 		computeNames[pool] = true
 
