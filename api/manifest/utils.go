@@ -2,7 +2,6 @@ package manifest
 
 import (
 	"fmt"
-	"math"
 	"strings"
 
 	"github.com/berops/claudie/internal/nodepools"
@@ -541,10 +540,6 @@ func FetchCommitHash(tmpl *spec.TemplateRepository) error {
 
 // staticNodes returns slice of static nodes with initialised name.
 func staticNodes(np *StaticNodePool, isControl bool) []*spec.Node {
-	if len(np.Nodes) > math.MaxUint8 {
-		panic(fmt.Sprintf("static nodepool %q defined more than 255 nodes, which is the claudie internal maximum", np.Name))
-	}
-
 	nodes := make([]*spec.Node, 0, len(np.Nodes))
 	nodeType := spec.NodeType_worker
 	if isControl {
