@@ -16,8 +16,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
-	v1beta1manifest "github.com/berops/claudie/internal/api/crd/inputmanifest/v1beta1"
-	"github.com/berops/claudie/internal/api/crd/template-git-reference/v1beta1"
+	v1beta1manifest "github.com/berops/claudie/api/crd/inputmanifest/v1beta1"
+	"github.com/berops/claudie/api/crd/template-git-reference/v1beta1"
 	"github.com/berops/claudie/internal/envs"
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/proto/pb/spec"

@@ -28,8 +28,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	v1betamanifest "github.com/berops/claudie/internal/api/crd/inputmanifest/v1beta1"
-	templategitreference "github.com/berops/claudie/internal/api/crd/template-git-reference/v1beta1"
+	v1betamanifest "github.com/berops/claudie/api/crd/inputmanifest/v1beta1"
+	templategitreference "github.com/berops/claudie/api/crd/template-git-reference/v1beta1"
 	"github.com/berops/claudie/services/claudie-operator/server/domain/usecases"
 	"github.com/go-logr/logr"
 )

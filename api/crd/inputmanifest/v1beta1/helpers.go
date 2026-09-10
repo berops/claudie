@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"unicode/utf8"
 
-	"github.com/berops/claudie/internal/api/manifest"
+	"github.com/berops/claudie/api/manifest"
 )
 
 const (

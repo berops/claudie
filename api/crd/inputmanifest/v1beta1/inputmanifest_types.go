@@ -17,8 +17,8 @@ limitations under the License.
 package v1beta1
 
 import (
-	v1beta1templates "github.com/berops/claudie/internal/api/crd/template-git-reference/v1beta1"
-	"github.com/berops/claudie/internal/api/manifest"
+	v1beta1templates "github.com/berops/claudie/api/crd/template-git-reference/v1beta1"
+	"github.com/berops/claudie/api/manifest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

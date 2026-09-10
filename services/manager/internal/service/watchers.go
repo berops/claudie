@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/berops/claudie/internal/api/manifest"
+	"github.com/berops/claudie/api/manifest"
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/natsutils"
 	"github.com/berops/claudie/proto/pb/spec"

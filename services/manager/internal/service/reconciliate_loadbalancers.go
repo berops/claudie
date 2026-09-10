@@ -5,7 +5,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/berops/claudie/internal/api/manifest"
+	"github.com/berops/claudie/api/manifest"
 	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"

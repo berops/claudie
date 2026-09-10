@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/berops/claudie/internal/api/manifest"
+	"github.com/berops/claudie/api/manifest"
 	managerclient "github.com/berops/claudie/services/manager/client"
 	"github.com/rs/zerolog/log"
 

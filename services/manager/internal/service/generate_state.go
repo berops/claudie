@@ -11,7 +11,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/berops/claudie/internal/api/manifest"
+	"github.com/berops/claudie/api/manifest"
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/rs/zerolog/log"
