@@ -20,7 +20,13 @@ var (
 	testNodepoolAutoScalerSuccAC = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", StorageDiskSize: new(int32(50)), AutoscalerConfig: AutoscalerConfig{Min: 1, Max: 3}, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
 	testNodepoolAutoScalerSucc   = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", StorageDiskSize: new(int32(50)), Count: 1, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
 	testNodepoolAutoScalerFail   = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", StorageDiskSize: new(int32(50)), Count: 1, AutoscalerConfig: AutoscalerConfig{Min: 1, Max: 3}, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
-	testDomainFail               = &Manifest{
+
+	testNodepoolAutoScalerFailNoMax    = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", StorageDiskSize: new(int32(50)), AutoscalerConfig: AutoscalerConfig{Min: 3}, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
+	testNodepoolAutoScalerFailNegMin   = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", StorageDiskSize: new(int32(50)), AutoscalerConfig: AutoscalerConfig{Min: -1, Max: 5}, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
+	testNodepoolAutoScalerFailNegMax   = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", StorageDiskSize: new(int32(50)), AutoscalerConfig: AutoscalerConfig{Max: -3}, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
+	testNodepoolAutoScalerFailMinGtMax = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", StorageDiskSize: new(int32(50)), AutoscalerConfig: AutoscalerConfig{Min: 5, Max: 2}, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
+	testNodepoolAutoScalerSuccMinZero  = &DynamicNodePool{Name: "Test", ServerType: "s1", Image: "ubuntu", StorageDiskSize: new(int32(50)), AutoscalerConfig: AutoscalerConfig{Min: 0, Max: 3}, ProviderSpec: ProviderSpec{Name: "p1", Region: "a", Zone: "1"}}
+	testDomainFail                     = &Manifest{
 		Kubernetes: Kubernetes{
 			Clusters: []Cluster{
 				{Name: "VERY-LONG-NAME-FOR-CLUSTER", Pools: Pool{
@@ -311,6 +317,16 @@ func TestNodepool(t *testing.T) {
 	require.NoError(t, err)
 	err = testNodepoolAutoScalerFail.Validate(&Manifest{})
 	require.Error(t, err)
+	err = testNodepoolAutoScalerFailNoMax.Validate(&Manifest{})
+	require.Error(t, err)
+	err = testNodepoolAutoScalerFailNegMin.Validate(&Manifest{})
+	require.Error(t, err)
+	err = testNodepoolAutoScalerFailNegMax.Validate(&Manifest{})
+	require.Error(t, err)
+	err = testNodepoolAutoScalerFailMinGtMax.Validate(&Manifest{})
+	require.Error(t, err)
+	err = testNodepoolAutoScalerSuccMinZero.Validate(&Manifest{})
+	require.NoError(t, err)
 }
 
 // TestNodepool tests the nodepool spec validation for dynamic and static node pools.
