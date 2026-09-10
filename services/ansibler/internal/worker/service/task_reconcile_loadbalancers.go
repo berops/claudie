@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"slices"
 
-	"github.com/berops/claudie/internal/api/manifest"
+	"github.com/berops/claudie/api/manifest"
 	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/concurrent"
 	"github.com/berops/claudie/internal/fileutils"

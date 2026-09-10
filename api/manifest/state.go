@@ -31,8 +31,8 @@ const (
 	Error
 )
 
-// StateTransitionMap describes which states are accessible from which.
-var StateTransitionMap = map[State][]State{
+// stateTransitionMap describes which states are accessible from which.
+var stateTransitionMap = map[State][]State{
 	Pending:   {Pending, Scheduled},
 	Scheduled: {Scheduled, Done, Error},
 	Done:      {Done, Pending},
@@ -40,7 +40,7 @@ var StateTransitionMap = map[State][]State{
 }
 
 // ValidStateTransition validates if the state transition is acceptable.
-func ValidStateTransition(src, dst State) bool { return slices.Contains(StateTransitionMap[src], dst) }
+func ValidStateTransition(src, dst State) bool { return slices.Contains(stateTransitionMap[src], dst) }
 
 func ValidStateTransitionString(src string, dst State) (bool, error) {
 	switch src {

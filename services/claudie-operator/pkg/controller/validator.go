@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	v1beta "github.com/berops/claudie/internal/api/crd/inputmanifest/v1beta1"
-	v1betatemplates "github.com/berops/claudie/internal/api/crd/template-git-reference/v1beta1"
-	"github.com/berops/claudie/internal/api/manifest"
+	v1beta "github.com/berops/claudie/api/crd/inputmanifest/v1beta1"
+	v1betatemplates "github.com/berops/claudie/api/crd/template-git-reference/v1beta1"
+	"github.com/berops/claudie/api/manifest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 	wbhk "sigs.k8s.io/controller-runtime/pkg/webhook"

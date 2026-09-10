@@ -6,7 +6,7 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/berops/claudie/internal/api/manifest"
+	"github.com/berops/claudie/api/manifest"
 	"github.com/berops/claudie/internal/hash"
 )
 

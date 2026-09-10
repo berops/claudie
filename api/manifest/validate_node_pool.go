@@ -51,6 +51,9 @@ func (p *NodePool) Validate(m *Manifest) error {
 		if err := checkLabels(n.Labels); err != nil {
 			return fmt.Errorf("nodepool %s has incorrectly defined labels : %w", n.Name, err)
 		}
+		if err := checkAnnotations(n.Annotations); err != nil {
+			return fmt.Errorf("nodepool %s has incorrectly defined annotations: %w", n.Name, err)
+		}
 	}
 
 	reusedStaticIp := make(map[string]string)

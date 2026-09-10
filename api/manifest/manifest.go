@@ -278,7 +278,7 @@ type StaticNodePool struct {
 	// Name of the static nodepool.
 	Name string `validate:"required,max=14" yaml:"name" json:"name"`
 	// List of static nodes assigned to a particular nodepool.
-	Nodes []Node `validate:"dive" yaml:"nodes" json:"nodes"`
+	Nodes []Node `validate:"max=255,dive" yaml:"nodes" json:"nodes"`
 	// User defined labels for this nodepool.
 	// +optional
 	Labels map[string]string `validate:"omitempty" yaml:"labels" json:"labels"`

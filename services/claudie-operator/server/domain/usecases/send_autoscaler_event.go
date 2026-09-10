@@ -1,7 +1,7 @@
 package usecases
 
 import (
-	"github.com/berops/claudie/internal/api/crd/inputmanifest/v1beta1"
+	"github.com/berops/claudie/api/crd/inputmanifest/v1beta1"
 	"github.com/berops/claudie/proto/pb"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 )

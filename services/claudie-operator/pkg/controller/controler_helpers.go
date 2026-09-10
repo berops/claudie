@@ -21,8 +21,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	v1beta1manifest "github.com/berops/claudie/internal/api/crd/inputmanifest/v1beta1"
-	"github.com/berops/claudie/internal/api/manifest"
+	v1beta1manifest "github.com/berops/claudie/api/crd/inputmanifest/v1beta1"
+	"github.com/berops/claudie/api/manifest"
 	"github.com/berops/claudie/internal/generics"
 )
 
