@@ -92,8 +92,6 @@ func prettyPrintValidationError(err error) error {
 			nerr = fmt.Errorf("field '%s' is required to follow semantic version 2.0, ref: https://semver.org/", err.StructField())
 		case "required_without":
 			nerr = fmt.Errorf("'%s' needs to be set if '%s' is not specified", err.Field(), err.Param())
-		case "external_net":
-			nerr = fmt.Errorf("field '%s' is required to be defined when using Openstack provider", err.StructField())
 		default:
 			nerr = err
 		}

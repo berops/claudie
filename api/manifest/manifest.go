@@ -270,7 +270,7 @@ type ProviderSpec struct {
 	Zone string `yaml:"zone" json:"zone"`
 	// Name of the external provider network to which the nodes will be connected to. Currently only required for OpenStack.
 	// +optional
-	ExternalNetworkName string `validate:"external_net" yaml:"externalNetworkName" json:"externalNetworkName"`
+	ExternalNetworkName string `yaml:"externalNetworkName" json:"externalNetworkName"`
 }
 
 // StaticNodePool List of static nodepools of already existing machines, not created by Claudie, used for Kubernetes or loadbalancer clusters.
