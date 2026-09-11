@@ -197,7 +197,6 @@ spec:
           name: ovh-1
           region: DE1
           zone: nova
-          externalNetworkName: Ext-Net
         count: 2
         serverType: c3-4-flex
         image: "Ubuntu 24.04"
@@ -215,7 +214,6 @@ spec:
           name: ovh-1
           region: RBX-A
           zone: nova
-          externalNetworkName: Ext-Net
         count: 2
         serverType: c3-8-flex
         image: "Ubuntu 24.04"
