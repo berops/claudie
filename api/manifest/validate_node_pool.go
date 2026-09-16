@@ -133,13 +133,12 @@ func (d *DynamicNodePool) Validate(m *Manifest) error {
 		return err
 	}
 
-	validate := validator.New()
-
-	if err := validate.RegisterValidation("external_net", validateExternalNet); err != nil {
+	// Validate OpenStack external network requirement
+	if err := d.validateExternalNet(m); err != nil {
 		return err
 	}
 
-	if err := validate.Struct(d); err != nil {
+	if err := validator.New().Struct(d); err != nil {
 		return prettyPrintValidationError(err)
 	}
 	return nil
@@ -269,10 +268,22 @@ func checkAnnotations(annotations map[string]string) error {
 	return nil
 }
 
-func validateExternalNet(fl validator.FieldLevel) bool {
-	providerSpec := fl.Parent().Interface().(ProviderSpec)
-	if providerSpec.Name == "openstack" {
-		return providerSpec.ExternalNetworkName != ""
+// validateExternalNet requires externalNetworkName when the referenced provider type is openstack.
+func (d *DynamicNodePool) validateExternalNet(m *Manifest) error {
+	providerType, err := m.GetProviderType(d.ProviderSpec.Name)
+	if err != nil {
+		// Provider existence is validated in [NodePool.Validate] before
+		// calling [DynamicNodePool.Validate].
+		return nil
 	}
-	return true
+
+	if providerType != "openstack" {
+		return nil
+	}
+
+	if d.ProviderSpec.ExternalNetworkName == "" {
+		return fmt.Errorf("externalNetworkName is required for OpenStack provider")
+	}
+
+	return nil
 }
