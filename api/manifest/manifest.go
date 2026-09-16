@@ -254,9 +254,9 @@ type DynamicNodePool struct {
 // Autoscaler configuration on per nodepool basis. Defines the number of nodes, autoscaler will scale up or down specific nodepool.
 type AutoscalerConfig struct {
 	// Minimum number of nodes in nodepool.
-	Min int32 `yaml:"min" json:"min,omitempty"`
+	Min int32 `validate:"gte=0" yaml:"min" json:"min,omitempty"`
 	// Maximum number of nodes in nodepool.
-	Max int32 `validate:"max=255" yaml:"max" json:"max,omitempty"`
+	Max int32 `validate:"gte=0,max=255,gtefield=Min" yaml:"max" json:"max,omitempty"`
 }
 
 // Provider spec is further specification build on top of the data from any of the provider instance.
