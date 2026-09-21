@@ -4,6 +4,9 @@ import (
 	"testing"
 )
 
+// TestString tests the String sanitisation function for various inputs,
+// including uppercase-to-lowercase conversions, separator replacements,
+// consecutive/trailing characters, and edge cases.
 func TestString(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -72,6 +75,8 @@ func TestString(t *testing.T) {
 	}
 }
 
+// TestURI tests the URI sanitisation function for masking passwords in connection strings,
+// verifying support for various protocols, passwords with colons, empty usernames, and query strings.
 func TestURI(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -130,6 +135,8 @@ func TestURI(t *testing.T) {
 	}
 }
 
+// TestKubeconfig tests the Kubeconfig sanitisation function for obscuring sensitive credentials
+// in command arguments across single-quote, double-quote, process substitution, and multi-line formats.
 func TestKubeconfig(t *testing.T) {
 	tests := []struct {
 		name     string
