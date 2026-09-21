@@ -299,3 +299,125 @@ func TestValidateSpot(t *testing.T) {
 		})
 	}
 }
+
+// TestValidateExternalNet verifies externalNetworkName is required based on
+// provider type (openstack), not the provider instance name.
+func TestValidateExternalNet(t *testing.T) {
+	openstackManifest := &Manifest{
+		Providers: Provider{
+			Openstack: []Openstack{{
+				Name:                        "openstack-1",
+				AuthURL:                     "https://openstack.example.com:5000",
+				DomainId:                    "default",
+				ProjectId:                   "fake-project-id",
+				ApplicationCredentialId:     "fake-app-cred-id",
+				ApplicationCredentialSecret: "fake-app-cred-secret",
+			}},
+		},
+		Kubernetes: Kubernetes{
+			Clusters: []Cluster{
+				{
+					Name:    "cluster-1",
+					Network: "10.0.0.0/8",
+					Version: "v1.34.0",
+					Pools:   Pool{Compute: []string{"worker-np"}},
+				},
+			},
+		},
+	}
+
+	// Non-OpenStack provider whose instance name is literally "openstack".
+	hetznerNamedOpenstack := &Manifest{
+		Providers: Provider{
+			Hetzner: []Hetzner{{
+				Name:        "openstack",
+				Credentials: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			}},
+		},
+		Kubernetes: Kubernetes{
+			Clusters: []Cluster{
+				{
+					Name:    "cluster-1",
+					Network: "10.0.0.0/8",
+					Version: "v1.34.0",
+					Pools:   Pool{Compute: []string{"worker-np"}},
+				},
+			},
+		},
+	}
+
+	cases := []struct {
+		name            string
+		nodepool        *DynamicNodePool
+		manifest        *Manifest
+		wantError       bool
+		wantErrContains string
+	}{
+		{
+			name: "openstack provider with non-openstack instance name missing ExternalNetworkName fails",
+			nodepool: &DynamicNodePool{
+				Name:       "worker-np",
+				ServerType: "m1.medium",
+				Image:      "ubuntu-22.04",
+				Count:      1,
+				ProviderSpec: ProviderSpec{
+					Name:   "openstack-1",
+					Region: "RegionOne",
+					Zone:   "nova",
+				},
+			},
+			manifest:        openstackManifest,
+			wantError:       true,
+			wantErrContains: "externalNetworkName is required for OpenStack",
+		},
+		{
+			name: "non-openstack provider named openstack does not require ExternalNetworkName",
+			nodepool: &DynamicNodePool{
+				Name:       "worker-np",
+				ServerType: "cx21",
+				Image:      "ubuntu-22.04",
+				Count:      1,
+				ProviderSpec: ProviderSpec{
+					Name:   "openstack",
+					Region: "fsn1",
+					Zone:   "fsn1-dc14",
+				},
+			},
+			manifest:  hetznerNamedOpenstack,
+			wantError: false,
+		},
+		{
+			name: "openstack provider with ExternalNetworkName set passes",
+			nodepool: &DynamicNodePool{
+				Name:       "worker-np",
+				ServerType: "m1.medium",
+				Image:      "ubuntu-22.04",
+				Count:      1,
+				ProviderSpec: ProviderSpec{
+					Name:                "openstack-1",
+					Region:              "RegionOne",
+					Zone:                "nova",
+					ExternalNetworkName: "ext-net",
+				},
+			},
+			manifest:  openstackManifest,
+			wantError: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Call Validate (not validateExternalNet directly) so the test also
+			// catches regressions if Validate stops invoking validateExternalNet.
+			err := tc.nodepool.Validate(tc.manifest)
+			if tc.wantError {
+				require.Error(t, err, "expected error but got nil")
+				if tc.wantErrContains != "" {
+					require.ErrorContains(t, err, tc.wantErrContains)
+				}
+			} else {
+				require.NoError(t, err, "expected no error but got: %v", err)
+			}
+		})
+	}
+}
