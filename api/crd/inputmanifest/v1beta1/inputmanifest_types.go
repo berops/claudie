@@ -39,6 +39,7 @@ const (
 	CLOUDRIFT  ProviderType = "cloudrift"
 	VERDA      ProviderType = "verda"
 	OVH        ProviderType = "ovh"
+	VASTAI     ProviderType = "vastai"
 )
 
 type SecretField string
@@ -78,6 +79,8 @@ const (
 	OVH_CLIENT_SECRET                SecretField = "clientsecret"
 	OVH_SERVICE_NAME                 SecretField = "servicename"
 	OVH_ENDPOINT                     SecretField = "endpoint"
+	VASTAI_PERSONAL_API_KEY          SecretField = "personalapiakey"
+	VASTAI_TEAM_API_KEY              SecretField = "teamapikey"
 )
 
 // ProviderWithData helper type that assist in
@@ -109,7 +112,7 @@ type Provider struct {
 	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:MinLength=1
 	ProviderName string `json:"name"`
-	// +kubebuilder:validation:Enum=gcp;hetzner;aws;oci;azure;cloudflare;openstack;exoscale;cloudrift;verda;ovh;
+	// +kubebuilder:validation:Enum=gcp;hetzner;aws;oci;azure;cloudflare;openstack;exoscale;cloudrift;verda;ovh;vastai;
 	ProviderType ProviderType           `json:"providerType"`
 	SecretRef    corev1.SecretReference `json:"secretRef"`
 	// External template for building the cluster infrastructure.
