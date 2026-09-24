@@ -297,6 +297,22 @@ func constructInputManifest(
 				Endpoint:     strings.TrimSpace(oEndpoint),
 				Templates:    &tmpl,
 			})
+		case v1beta1manifest.VASTAI:
+			vaiPersonalApiKey, err := p.ProviderSecretField(v1beta1manifest.VASTAI_PERSONAL_API_KEY)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+			vaiTeamApiKey, err := p.ProviderSecretField(v1beta1manifest.VASTAI_TEAM_API_KEY)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+
+			providers.OVH = append(providers.OVH, manifest.OVH{
+				Name:         p.ProviderName,
+				ClientId:     strings.TrimSpace(vaiPersonalApiKey),
+				ClientSecret: strings.TrimSpace(vaiTeamApiKey),
+				Templates:    &tmpl,
+			})
 		}
 	}
 
