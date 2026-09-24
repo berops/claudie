@@ -93,6 +93,8 @@ func (pr *Provider) Credentials() string {
 		return p.Verda.ClientSecret
 	case *Provider_Ovh:
 		return p.Ovh.ClientSecret
+	case *Provider_Vastai:
+		return p.Vastai.PersonalApiKey
 	default:
 		panic(fmt.Sprintf("unexpected type %T", pr.ProviderType))
 	}
@@ -203,6 +205,15 @@ func (pr *Provider) CopyCredentials(other *Provider) (updated bool) {
 		p.Ovh.ClientId = o.Ovh.ClientId
 		p.Ovh.ClientSecret = o.Ovh.ClientSecret
 		p.Ovh.ServiceName = o.Ovh.ServiceName
+		updated = true
+	case *Provider_Vastai:
+		o, ok := other.ProviderType.(*Provider_Vastai)
+		if !ok {
+			return
+		}
+
+		p.Vastai.PersonalApiKey = o.Vastai.PersonalApiKey
+		p.Vastai.TeamApiKey = o.Vastai.TeamApiKey
 		updated = true
 	default:
 		// do nothing.

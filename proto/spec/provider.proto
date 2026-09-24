@@ -68,6 +68,11 @@ message OVHProvider {
   optional string endpoint = 4;
 }
 
+message VastAiProvider {
+  string personal_api_key = 1;
+  optional string team_api_key = 2;
+}
+
 message Provider {
   string specName = 1;
   string cloudProviderName = 2;
@@ -85,6 +90,7 @@ message Provider {
     CloudRiftProvider cloudrift = 14;
     VerdaProvider verda = 15;
     OVHProvider ovh = 16;
+    VastAiProvider vastai = 17;
   }
 
   TemplateRepository templates = 13;
