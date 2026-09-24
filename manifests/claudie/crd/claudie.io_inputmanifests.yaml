@@ -542,6 +542,7 @@ spec:
                       - cloudrift
                       - verda
                       - ovh
+                      - vastai
                       type: string
                     secretRef:
                       description: |-

@@ -24,6 +24,7 @@ spec:
       containers:
         - name: minio-mc
           image: quay.io/minio/mc
+          imagePullPolicy: IfNotPresent
           command: ["/bin/sh", "/config/initialize"]
           env:
             - name: MINIO_ENDPOINT
