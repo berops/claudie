@@ -58,6 +58,7 @@ type Provider struct {
 	CloudRift  []CloudRift  `yaml:"cloudrift"`
 	Verda      []Verda      `yaml:"verda"`
 	OVH        []OVH        `yaml:"ovh"`
+	VastAi     []VastAi     `yaml:"vastai"`
 }
 
 type Cloudflare struct {
@@ -152,6 +153,13 @@ type OVH struct {
 	ServiceName  string              `validate:"required" yaml:"serviceName"`
 	Endpoint     string              `validate:"omitempty" yaml:"endpoint"`
 	Templates    *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
+}
+
+type VastAi struct {
+	Name           string              `validate:"required,max=15" yaml:"name"`
+	PersonalApiKey string              `validate:"required" yaml:"personalApiKey"`
+	TeamApiKey     string              `validate:"required" yaml:"teamApiKey"`
+	Templates      *TemplateRepository `validate:"omitempty" yaml:"templates" json:"templates"`
 }
 
 // NodePools describes nodepools used for either kubernetes clusters
