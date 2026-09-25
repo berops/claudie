@@ -30,7 +30,6 @@ spec:
       containers:
         - name: minio
           image: quay.io/minio/minio
-          imagePullPolicy: IfNotPresent
           command:
             - "/bin/sh"
             - "-ce"

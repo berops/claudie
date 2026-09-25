@@ -33,7 +33,7 @@ spec:
           emptyDir: {}
       containers:
         - name: terraformer
-          imagePullPolicy: Never
+          imagePullPolicy: Always
           image: ghcr.io/berops/claudie/terraformer
           volumeMounts:
             - mountPath: /bin/services/terraformer/templates
