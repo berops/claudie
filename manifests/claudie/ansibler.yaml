@@ -41,7 +41,7 @@ spec:
             capabilities:
               drop:
                 - all
-          imagePullPolicy: Never
+          imagePullPolicy: Always
           image: ghcr.io/berops/claudie/ansibler
           resources:
             requests:

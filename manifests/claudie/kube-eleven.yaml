@@ -27,7 +27,7 @@ spec:
           emptyDir: {}
       containers:
         - name: kube-eleven
-          imagePullPolicy: Never
+          imagePullPolicy: Always
           image: ghcr.io/berops/claudie/kube-eleven
           volumeMounts:
             - mountPath: /bin/services/kube-eleven/clusters

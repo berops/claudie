@@ -32,7 +32,7 @@ spec:
           emptyDir: {}
       containers:
         - name: manager
-          imagePullPolicy: Never
+          imagePullPolicy: Always
           image: ghcr.io/berops/claudie/manager
           volumeMounts:
             - mountPath: /tmp
