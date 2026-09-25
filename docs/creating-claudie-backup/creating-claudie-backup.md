@@ -9,7 +9,7 @@ new cluster.
 Claudie stores its state in 3 different places. 
 
 -   Input Manifests are stored in <b>Mongo</b>.
--   Terraform/OpenTofu state files are stored in **MinIO**. This same **MinIO** instance is utilized for the locking mechanism, leveraging [S3 native state locking](https://opentofu.org/blog/opentofu-1-10-0/) in OpenTofu.
+-   Terraform/OpenTofu state files are stored in **Silo**, an S3-compatible object store (a maintained fork of MinIO). This same **Silo** instance is utilized for the locking mechanism, leveraging [S3 native state locking](https://opentofu.org/blog/opentofu-1-10-0/) in OpenTofu.
 -   In flight scheduled tasks are stored within NATS.
 
 These are the only services that will have a PVC attached to it, the other are stateless.
@@ -107,7 +107,7 @@ mkdir claudie-backup
 
 Put your Claudie inputmanifests into the created folder, e.g. `kubectl get InputManifest -A -oyaml > ./claudie-backup/all.yaml`
 
-We will now back up the state of the respective input manifests from MongoDB and MinIO and any in flight scheduled tasks from NATS.
+We will now back up the state of the respective input manifests from MongoDB and Silo and any in flight scheduled tasks from NATS.
 
 ```bash
 kubectl get pods -n claudie
@@ -131,24 +131,24 @@ To backup state from MongoDB execute the following command
 kubectl exec -n claudie <mongodb-pod-name> -- sh -c 'mongoexport --uri=mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@localhost:27017/claudie -c inputManifests --authenticationDatabase admin' > claudie-backup/inputManifests
 ```
 
-Next we need to backup the state from MinIO. Port-forward the MinIO service so that it is accessible from localhost.
+Next we need to backup the state from Silo. Port-forward the service so that it is accessible from localhost.
 
 ```bash
 kubectl port-forward -n claudie svc/minio 9000:9000
 ```
 
-Setup an alias for the [mc](https://min.io/docs/minio/linux/reference/minio-mc.html) command line tool.
+Setup an alias for the [mcli](https://github.com/pgsty/mc) command line tool. The command syntax is unchanged from the upstream `mc` client; standalone archives and packages install the binary as `mcli`, while the container image keeps the `mc` entrypoint.
 
 ```bash
-mc alias set claudie-minio http://127.0.0.1:9000 <your-access-key> <your-secret-key>
+mcli alias set claudie-silo http://127.0.0.1:9000 <your-access-key> <your-secret-key>
 ```
 
-!!! note "Provide the access and secret key for minio. The default can be found in the github repository in the `manifests/claudie/minio/secrets` folder. If you have not changed them, we strongly encourage you to do so!"
+!!! note "Provide the access and secret key for the state bucket. The default can be found in the github repository in the `manifests/claudie/minio/secrets` folder. If you have not changed them, we strongly encourage you to do so!"
 
 Download the state into the backup folder
 
 ```bash
-mc mirror claudie-minio/claudie-tf-state-files ./claudie-backup/<minio-backup-folder>
+mcli mirror claudie-silo/claudie-tf-state-files ./claudie-backup/<state-backup-folder>
 ```
 
 Finally, to backup NATS
@@ -181,10 +181,10 @@ kubectl exec -n claudie mongodb-<mongodb-pod-name> -- sh -c 'mongoimport --uri=m
 
 !!! note "Don't forget to delete the `/tmp/inputManifests` file"
 
-Port-forward the MinIO service and import the backed up state.
+Port-forward the Silo service and import the backed up state.
 
 ```bash
-mc cp --recursive ./claudie-backup/<minio-backup-folder> claudie-minio/claudie-tf-state-files
+mcli cp --recursive ./claudie-backup/<state-backup-folder> claudie-silo/claudie-tf-state-files
 ```
 
 Port-forward the NATS service, first delete `claudie-internal` stream, if it exists.
@@ -209,6 +209,6 @@ Now you can make any new changes to your inputmanifests on the new management cl
 
 !!! note "The secrets for the clusters, namely kubeconfig and cluster-metadata, are re-created after the workflow with the changes has finished."
 
-!!! note "Alternatively you may also use any GUI clients for MongoDB and Minio for more straightforward backup of the state. All you need to backup is the bucket `claudie-tf-state-files` in MinIO and the collection `inputManifests` from MongoDB"
+!!! note "Alternatively you may also use any GUI clients for MongoDB and any S3-compatible browser for more straightforward backup of the state. All you need to backup is the bucket `claudie-tf-state-files` in Silo and the collection `inputManifests` from MongoDB"
 
 Once all data is restored, you should be able to deploy new input manifests and also modify existing infrastructure  without any problems.

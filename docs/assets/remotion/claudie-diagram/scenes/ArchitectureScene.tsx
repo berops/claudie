@@ -78,7 +78,7 @@ const SERVICES: ServiceDef[] = [
 const DATA_STORES = [
   { name: "MongoDB", icon: "🗄️", x: 180, y: 290 },
   { name: "NATS", icon: "📨", x: 540, y: 570 },
-  { name: "MinIO", icon: "💾", x: 900, y: 290 },
+  { name: "Silo", icon: "💾", x: 900, y: 290 },
 ];
 
 const CONNECTIONS: [number, number][] = [
