@@ -29,11 +29,11 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: minio
-          image: quay.io/minio/minio
+          image: docker.io/pgsty/silo:RELEASE.2026-09-16T00-00-00Z
           command:
             - "/bin/sh"
             - "-ce"
-            - "/usr/bin/docker-entrypoint.sh minio server  http://minio-{0...3}.minio.${K8S_NAMESPACE}.svc.cluster.local/data --address :9000 --console-address :9001"
+            - "/usr/bin/docker-entrypoint.sh silo server  http://minio-{0...3}.minio.${K8S_NAMESPACE}.svc.cluster.local/data --address :9000 --console-address :9001"
           env:
             - name: MINIO_ROOT_USER
               valueFrom:
@@ -49,6 +49,9 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            # Silo disables the upstream in-place updater and callhome; set explicitly.
+            - name: MINIO_UPDATE
+              value: "off"
           ports:
             - name: http
               containerPort: 9000

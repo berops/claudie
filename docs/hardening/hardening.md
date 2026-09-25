@@ -5,7 +5,7 @@ deployment for claudie.
 
 ## Passwords
 
-When deploying the default manifests claudie uses simple passwords for MongoDB and MinIO.
+When deploying the default manifests claudie uses simple passwords for MongoDB and Silo (the S3-compatible object storage backing the state files).
 
 You can find the passwords at these paths:
 

@@ -37,20 +37,19 @@ kuber:
 operator:
 	GOLANG_LOG=debug go run ./services/claudie-operator
 
-# Start the database for configs, containing input manifests
 mongo:
 	mkdir -p ~/mongo/data
-	docker run --name mongo -d --rm -p 27017:27017 -v ~/mongo/data:/data/db mongo:5
+	docker run --name mongo -d --rm -p 27017:27017 -v ~/mongo/data:/data/db mongo:8.3
 
 nats:
 	mkdir -p ~/nats
 	docker run --name nats -d --rm -p 4222:4222 -v ~/nats:/data nats -js -sd /data
 
-# Start minio backend for state files used in terraform
+# Start silo (MinIO-compatible) backend for state files used in terraform
 minio:
 # mkdir will simulate the automatic bucket creation
 	mkdir -p ~/minio/data/claudie-tf-state-files
-	docker run --name minio -d --rm -p 9000:9000 -p 9001:9001 --name minio -v ~/minio/data:/data quay.io/minio/minio server /data --console-address ":9001"
+	docker run --name minio -d --rm -p 9000:9000 -p 9001:9001 -v ~/minio/data:/data -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin docker.io/pgsty/silo:RELEASE.2026-09-16T00-00-00Z server /data --console-address ":9001"
 
 # Start Testing-framework, which will inject manifests from /services/testing-framework/test-sets
 # -timeout 0 will disable default timeout
