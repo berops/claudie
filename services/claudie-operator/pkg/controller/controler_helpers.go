@@ -307,11 +307,11 @@ func constructInputManifest(
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
 
-			providers.OVH = append(providers.OVH, manifest.OVH{
-				Name:         p.ProviderName,
-				ClientId:     strings.TrimSpace(vaiPersonalApiKey),
-				ClientSecret: strings.TrimSpace(vaiTeamApiKey),
-				Templates:    &tmpl,
+			providers.VastAi = append(providers.VastAi, manifest.VastAi{
+				Name:           p.ProviderName,
+				PersonalApiKey: strings.TrimSpace(vaiPersonalApiKey),
+				TeamApiKey:     strings.TrimSpace(vaiTeamApiKey),
+				Templates:      &tmpl,
 			})
 		}
 	}

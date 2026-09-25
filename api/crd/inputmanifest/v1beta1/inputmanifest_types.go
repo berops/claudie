@@ -79,7 +79,7 @@ const (
 	OVH_CLIENT_SECRET                SecretField = "clientsecret"
 	OVH_SERVICE_NAME                 SecretField = "servicename"
 	OVH_ENDPOINT                     SecretField = "endpoint"
-	VASTAI_PERSONAL_API_KEY          SecretField = "personalapiakey"
+	VASTAI_PERSONAL_API_KEY          SecretField = "personalapikey"
 	VASTAI_TEAM_API_KEY              SecretField = "teamapikey"
 )
 
