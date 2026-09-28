@@ -4878,10 +4878,11 @@ new cluster.
 
 ## Claudie state(https://docs.claudie.io/latest/creating-claudie-backup/creating-claudie-backup/\#claudie-state)
 
-Claudie stores its state in 2 different places.
+Claudie stores its state in 3 different places.
 
 - Input Manifests are stored in **Mongo**.
 - Terraform/OpenTofu state files are stored in **Silo**, an S3-compatible object store (a maintained fork of MinIO). This same **Silo** instance is utilized for the locking mechanism, leveraging [S3 native state locking](https://opentofu.org/blog/opentofu-1-10-0/) in OpenTofu.
+- In flight scheduled tasks are stored within NATS.
 
 These are the only services that will have a PVC attached to it, the other are stateless.
 
@@ -4986,7 +4987,7 @@ mkdir claudie-backup
 
 Put your Claudie inputmanifests into the created folder, e.g. `kubectl get InputManifest -A -oyaml > ./claudie-backup/all.yaml`
 
-We will now back up the state of the respective input manifests from MongoDB and Silo.
+We will now back up the state of the respective input manifests from MongoDB and Silo and any in flight scheduled tasks from NATS.
 
 ```
 kubectl get pods -n claudie
@@ -5037,6 +5038,18 @@ mcli mirror claudie-silo/claudie-tf-state-files ./claudie-backup/<state-backup-f
 
 ```
 
+Finally, to backup NATS
+
+```
+kubectl port-forward svc/nats -n claudie 4222:4222
+
+```
+
+```
+natscli account backup claudie-backup/<nats-backup-folder>
+
+```
+
 You now have everything you need to restore your input manifests to a new management cluster.
 
 These files will contain your credentials, DO NOT STORE THEM OUT IN THE PUBLIC!
@@ -5063,6 +5076,20 @@ Port-forward the Silo service and import the backed up state.
 
 ```
 mcli cp --recursive ./claudie-backup/<state-backup-folder> claudie-silo/claudie-tf-state-files
+
+```
+
+Port-forward the NATS service, first delete `claudie-internal` stream, if it exists.
+
+```
+natscli stream rm claudie-internal
+
+```
+
+Then you will be able to restore the backup.
+
+```
+natscli account restore claudie-backup/<nats-backup-folder>
 
 ```
 
