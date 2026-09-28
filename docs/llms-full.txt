@@ -5033,7 +5033,7 @@ Provide the access and secret key for the state bucket. The default can be found
 Download the state into the backup folder
 
 ```
-mcli mirror claudie-silo/claudie-tf-state-files ./claudie-backup
+mcli mirror claudie-silo/claudie-tf-state-files ./claudie-backup/<state-backup-folder>
 
 ```
 
@@ -5062,7 +5062,7 @@ Don't forget to delete the `/tmp/inputManifests` file
 Port-forward the Silo service and import the backed up state.
 
 ```
-mcli cp --recursive ./claudie-backup/<your-folder-name-downloaded-from-silo> claudie-silo/claudie-tf-state-files
+mcli cp --recursive ./claudie-backup/<state-backup-folder> claudie-silo/claudie-tf-state-files
 
 ```
 
