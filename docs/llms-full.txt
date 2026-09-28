@@ -4142,7 +4142,7 @@ Variables shared by all services. They are read by every service, though some on
 | `MANAGER_HOSTNAME` | `localhost` | Hostname under which the manager gRPC API is reachable. Used by the manager's clients (claudie-operator, testing-framework) to connect. The shipped `.env` sets `manager`. |
 | `MANAGER_PORT` | `50055` | Port of the manager gRPC API. The manager listens on it; clients use it together with `MANAGER_HOSTNAME` to connect. |
 | `DATABASE_URL` | `mongodb://localhost:27017` | MongoDB connection string for storing Claudie configs. Sourced from the `mongo-secret` Secret. Only acted upon by the manager. |
-| `BUCKET_URL` | none | Endpoint of the MinIO/S3 deployment storing the tofu state files. When empty, an external AWS S3 bucket is used based on `AWS_REGION` and `BUCKET_NAME`. The shipped `.env` sets `http://minio:9000`. Only acted upon by terraformer. |
+| `BUCKET_URL` | none | Endpoint of the Silo/S3 deployment storing the tofu state files. When empty, an external AWS S3 bucket is used based on `AWS_REGION` and `BUCKET_NAME`. The shipped `.env` sets `http://minio:9000`. Only acted upon by terraformer. |
 | `BUCKET_NAME` | `claudie-tf-state-files` | Name of the bucket holding the tofu state files. Only acted upon by terraformer. |
 | `AWS_REGION` | `local` | Region of the bucket. Only acted upon by terraformer. |
 | `AWS_ACCESS_KEY_ID` | `fake` | Access key for the bucket. Sourced from the `minio-secret` Secret. Only acted upon by terraformer. |
@@ -4232,7 +4232,7 @@ Each of the manager, terraformer, ansibler, kube-eleven and kuber services addit
 ### Data stores(https://docs.claudie.io/latest/claudie-workflow/claudie-workflow/\#data-stores)
 
 - [MongoDB](https://github.com/berops/claudie/tree/master/manifests/claudie/mongo)
-- [Minio](https://github.com/berops/claudie/tree/master/manifests/claudie/minio)
+- [Silo](https://github.com/berops/claudie/tree/master/manifests/claudie/minio) (S3-compatible object storage, a maintained fork of MinIO)
 
 ### Tools used(https://docs.claudie.io/latest/claudie-workflow/claudie-workflow/\#tools-used)
 
@@ -4832,11 +4832,11 @@ The great thing about Claudie is that it utilizes open source tools to set up an
 
 ### Terraformer service not starting(https://docs.claudie.io/latest/troubleshooting/troubleshooting/\#terraformer-service-not-starting)
 
-Terraformer relies on MinIO datastore to be configured via jobs `make-bucket-job`. If the job fails to configure the datastore, or the datastore itself fails to start, Terraformer will also fail to start.
+Terraformer relies on the Silo datastore to be configured via jobs `make-bucket-job`. If the job fails to configure the datastore, or the datastore itself fails to start, Terraformer will also fail to start.
 
 ### Datastore initialization job(https://docs.claudie.io/latest/troubleshooting/troubleshooting/\#datastore-initialization-jobs)
 
-The `make-bucket-job` creates a bucket in the MinIO datastore. If this job encounter scheduling problems or experience slow autoscaling, it may fail to complete within the designated time frame. To handle this, we have set the `backoffLimit` to fail after approximately 42 minutes. If you encounter any issues with this job or believe the `backoffLimit` should be adjusted, please [create an issue](https://github.com/berops/claudie/issues).
+The `make-bucket-job` creates a bucket in the Silo datastore. If this job encounter scheduling problems or experience slow autoscaling, it may fail to complete within the designated time frame. To handle this, we have set the `backoffLimit` to `8` retries. If you encounter any issues with this job or believe the `backoffLimit` should be adjusted, please [create an issue](https://github.com/berops/claudie/issues).
 
 ## Networking issues(https://docs.claudie.io/latest/troubleshooting/troubleshooting/\#networking-issues)
 
@@ -4881,7 +4881,7 @@ new cluster.
 Claudie stores its state in 2 different places.
 
 - Input Manifests are stored in **Mongo**.
-- Terraform/OpenTofu state files are stored in **MinIO**. This same **MinIO** instance is utilized for the locking mechanism, leveraging [S3 native state locking](https://opentofu.org/blog/opentofu-1-10-0/) in OpenTofu.
+- Terraform/OpenTofu state files are stored in **Silo**, an S3-compatible object store (a maintained fork of MinIO). This same **Silo** instance is utilized for the locking mechanism, leveraging [S3 native state locking](https://opentofu.org/blog/opentofu-1-10-0/) in OpenTofu.
 
 These are the only services that will have a PVC attached to it, the other are stateless.
 
@@ -4986,7 +4986,7 @@ mkdir claudie-backup
 
 Put your Claudie inputmanifests into the created folder, e.g. `kubectl get InputManifest -A -oyaml > ./claudie-backup/all.yaml`
 
-We will now back up the state of the respective input manifests from MongoDB and MinIO.
+We will now back up the state of the respective input manifests from MongoDB and Silo.
 
 ```
 kubectl get pods -n claudie
@@ -5014,26 +5014,26 @@ kubectl exec -n claudie mongodb-<your-mongdb-pod> -- sh -c 'mongoexport --uri=mo
 
 ```
 
-Next we need to backup the state from MinIO. Port-forward the MinIO service so that it is accessible from localhost.
+Next we need to backup the state from Silo. Port-forward the service so that it is accessible from localhost.
 
 ```
 kubectl port-forward -n claudie svc/minio 9000:9000
 
 ```
 
-Setup an alias for the [mc](https://min.io/docs/minio/linux/reference/minio-mc.html) command line tool.
+Setup an alias for the [mcli](https://github.com/pgsty/mc) command line tool. The command syntax is unchanged from the upstream `mc` client; standalone archives and packages install the binary as `mcli`, while the container image keeps the `mc` entrypoint.
 
 ```
-mc alias set claudie-minio http://127.0.0.1:9000 <ACCESSKEY> <SECRETKEY>
+mcli alias set claudie-silo http://127.0.0.1:9000 <ACCESSKEY> <SECRETKEY>
 
 ```
 
-Provide the access and secret key for minio. The default can be found in the github repository in the `manifests/claudie/minio/secrets` folder. If you have not changed them, we strongly encourage you to do so!
+Provide the access and secret key for the state bucket. The default can be found in the github repository in the `manifests/claudie/minio/secrets` folder. If you have not changed them, we strongly encourage you to do so!
 
 Download the state into the backup folder
 
 ```
-mc mirror claudie-minio/claudie-tf-state-files ./claudie-backup
+mcli mirror claudie-silo/claudie-tf-state-files ./claudie-backup
 
 ```
 
@@ -5059,10 +5059,10 @@ kubectl exec -n claudie mongodb-<your-mongodb-pod> -- sh -c 'mongoimport --uri=m
 
 Don't forget to delete the `/tmp/inputManifests` file
 
-Port-forward the MinIO service and import the backed up state.
+Port-forward the Silo service and import the backed up state.
 
 ```
-mc cp --recursive ./claudie-backup/<your-folder-name-downloaded-from-minio> claudie-minio/claudie-tf-state-files
+mcli cp --recursive ./claudie-backup/<your-folder-name-downloaded-from-silo> claudie-silo/claudie-tf-state-files
 
 ```
 
@@ -5077,7 +5077,7 @@ Now you can make any new changes to your inputmanifests on the new management cl
 
 The secrets for the clusters, namely kubeconfig and cluster-metadata, are re-created after the workflow with the changes has finished.
 
-Alternatively you may also use any GUI clients for MongoDB and Minio for more straightforward backup of the state. All you need to backup is the bucket `claudie-tf-state-files` in MinIO and the collection `inputManifests` from MongoDB
+Alternatively you may also use any GUI clients for MongoDB and any S3-compatible browser for more straightforward backup of the state. All you need to backup is the bucket `claudie-tf-state-files` in Silo and the collection `inputManifests` from MongoDB
 
 Once all data is restored, you should be able to deploy new input manifests and also modify existing infrastructure without any problems.
 
@@ -5090,7 +5090,7 @@ deployment for claudie.
 
 ## Passwords(https://docs.claudie.io/latest/hardening/hardening/\#passwords)
 
-When deploying the default manifests claudie uses simple passwords for MongoDB, and MinIO.
+When deploying the default manifests claudie uses simple passwords for MongoDB, and Silo (the S3-compatible object storage backing the state files).
 
 You can find the passwords at these paths:
 
