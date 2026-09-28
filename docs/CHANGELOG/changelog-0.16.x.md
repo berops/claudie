@@ -120,7 +120,7 @@ If no templates are specified Claudie generates a default custom resource that p
 ## v0.16.1
 
 **Before upgrading, back up the state bucket as described in
-  [Creating a Claudie backup](https://docs.claudie.io/creating-claudie-backup/creating-claudie-backup/).
+  [Creating Claudie Backup](https://docs.claudie.io/latest/creating-claudie-backup/creating-claudie-backup/).
   Rolling back is not supported; restore from this backup instead.**
 
 ## What's Changed
