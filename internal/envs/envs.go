@@ -23,7 +23,7 @@ var (
 	// DatabaseURL is a listening URL for Database
 	DatabaseURL = os.Getenv("DATABASE_URL")
 
-	// BucketEndpoint is a listening URL for Minio deployment
+	// BucketEndpoint is a listening URL for the Silo (S3-compatible) deployment
 	// If not defined it will use and external S3 Bucket,
 	// by using AWS_REGION and BUCKET_NAME variables
 	BucketEndpoint = os.Getenv("BUCKET_URL")

@@ -17,7 +17,7 @@
 
 - [MongoDB](https://github.com/berops/claudie/tree/master/manifests/claudie/mongo)
 - [NATS](https://github.com/berops/claudie/tree/master/manifests/claudie/nats)
-- [Minio](https://github.com/berops/claudie/tree/master/manifests/claudie/minio)
+- [Silo](https://github.com/berops/claudie/tree/master/manifests/claudie/minio) (S3-compatible object storage, a maintained fork of MinIO)
 
 ### Tools used
 

@@ -91,9 +91,10 @@ data:
       fi
 
       # At this point, the bucket should exist, skip checking for existence
-      # Set policy on the bucket
-      echo "Setting policy of bucket '$BUCKET' to '$POLICY'."
-      ${MC} policy set $POLICY myminio/$BUCKET
+      # Set anonymous access policy on the bucket.
+      # NOTE: `mc policy` is a no-op stub in the mcli client and must not be used here.
+      echo "Setting anonymous access of bucket '$BUCKET' to '$POLICY'."
+      ${MC} anonymous set $POLICY myminio/$BUCKET
     }
 
     # Try connecting to MinIO instance
@@ -101,4 +102,6 @@ data:
     connectToMinio $scheme
 
     # Create the buckets
-    createBucket claudie-tf-state-files public false
+    # The state files hold plaintext cloud provider credentials, so the bucket must
+    # not be anonymously readable. Terraformer authenticates with SigV4 credentials.
+    createBucket claudie-tf-state-files private false

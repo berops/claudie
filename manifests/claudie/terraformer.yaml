@@ -79,8 +79,8 @@ spec:
                 configMapKeyRef:
                   name: env
                   key: GOLANG_LOG
-            # Bucket envs - default to local MinIO
-            # It will use AWS Credentials to auth to MinIO
+            # Bucket envs - default to the in-cluster Silo (S3-compatible) deployment.
+            # It will use AWS Credentials to auth to Silo.
             - name: BUCKET_NAME
               valueFrom:
                 configMapKeyRef:

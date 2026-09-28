@@ -70,10 +70,10 @@ Claudie relies on all services to be interconnected. If any of these services fa
         The great thing about Claudie is that it utilizes open source tools to set up and configure infrastructure based on your preferences. As a result, the majority of errors can be easily found and resolved through online resources.
 
 ### Terraformer service not starting
-Terraformer relies on MinIO datastore to be configured via jobs `make-bucket-job`. If the job fails to configure the datastore, or the datastore itself fails to start, Terraformer will also fail to start.
+Terraformer relies on the Silo datastore to be configured via jobs `make-bucket-job`. If the job fails to configure the datastore, or the datastore itself fails to start, Terraformer will also fail to start.
 
 ### Datastore initialization jobs
-The `make-bucket-job` creates a bucket in the MinIO datastore. If this job encounter scheduling problems or experience slow autoscaling, it may fail to complete within the designated time frame. To handle this, we have set the `backoffLimit` to fail after approximately 42 minutes. If you encounter any issues with this job or believe the `backoffLimit` should be adjusted, please [create an issue](https://github.com/berops/claudie/issues).
+The `make-bucket-job` creates a bucket in the Silo datastore. If this job encounter scheduling problems or experience slow autoscaling, it may fail to complete within the designated time frame. To handle this, we have set the `backoffLimit` to `8` retries. If you encounter any issues with this job or believe the `backoffLimit` should be adjusted, please [create an issue](https://github.com/berops/claudie/issues).
 
 ## Networking issues
 ### Wireguard MTU

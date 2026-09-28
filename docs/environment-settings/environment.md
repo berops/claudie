@@ -33,7 +33,7 @@ a specific service, noted in the description.
 | `MANAGER_HOSTNAME` | `localhost` | Hostname under which the manager gRPC API is reachable. Used by the manager's clients (claudie-operator, testing-framework) to connect. The shipped `.env` sets `manager`. |
 | `MANAGER_PORT` | `50055` | Port of the manager gRPC API. The manager listens on it; clients use it together with `MANAGER_HOSTNAME` to connect. |
 | `DATABASE_URL` | `mongodb://localhost:27017` | MongoDB connection string for storing Claudie configs. Sourced from the `mongo-secret` Secret. Only acted upon by the manager. |
-| `BUCKET_URL` | none | Endpoint of the MinIO/S3 deployment storing the tofu state files. When empty, an external AWS S3 bucket is used based on `AWS_REGION` and `BUCKET_NAME`. The shipped `.env` sets `http://minio:9000`. Only acted upon by terraformer. |
+| `BUCKET_URL` | none | Endpoint of the Silo/S3 deployment storing the tofu state files. When empty, an external AWS S3 bucket is used based on `AWS_REGION` and `BUCKET_NAME`. The shipped `.env` sets `http://minio:9000`. Only acted upon by terraformer. |
 | `BUCKET_NAME` | `claudie-tf-state-files` | Name of the bucket holding the tofu state files. Only acted upon by terraformer. |
 | `AWS_REGION` | `local` | Region of the bucket. Only acted upon by terraformer. |
 | `AWS_ACCESS_KEY_ID` | `fake` | Access key for the bucket. Sourced from the `minio-secret` Secret. Only acted upon by terraformer. |
