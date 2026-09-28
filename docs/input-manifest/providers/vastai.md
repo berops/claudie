@@ -1,6 +1,6 @@
 # VastAI
 
-VastAI cloud provider requires a personal API key - `personalapikey` and a team API key - `teamapikey` in the Kubernetes Secret.
+VastAI cloud provider requires a personal API key (`personalapikey`) and optionally accepts a team API key (`teamapikey`) in the Kubernetes Secret.
 
 ## Compute example
 
@@ -16,7 +16,7 @@ type: Opaque
 ```
 
 !!! warning "Personal API key required"
-VastAI SSH key operations require a **personal API key**, team API keys are not supported for them. SSH keys created under the personal account are automatically loaded onto machines provisioned under the team account. VMs are provisioned under the team account.
+VastAI SSH key operations require a **personal API key**; team API keys are not supported for them. If a team API key is provided, VMs are provisioned under the team account, and SSH keys created under the personal account are automatically loaded onto them.
 
 !!! note "No DNS support"
 VastAI does not provide DNS resources. If you need load balancer DNS records for VastAI clusters, use a separate DNS provider (e.g., Cloudflare, AWS Route53, GCP Cloud DNS).
@@ -76,7 +76,7 @@ The Ubuntu VM image requires at least 130 GB of storage, so set `storageDiskSize
 
 The VastAI location filter accepts only two-letter country codes. To simplify this, the `region` field accepts either:
 
-- a space-separated list of country codes, e.g. `region: DE US GB PL SK`, the list can be at most 63 bytes long, because Claudie also uses the region as a Kubernetes node label value
+- a space-separated list of country codes, e.g. `region: DE US GB PL SK`. The list can be at most 63 characters long, because Claudie also uses the region as a Kubernetes node label value.
 - one of the predefined regions: `europe`, `asia`, `africa`, `north-america`, `south-america`, `oceania` (see the [region mapping](#region-mapping) below)
 
 !!! note "Pricing"
@@ -86,13 +86,15 @@ The price of a node is not fixed, it depends on the offer that is rented. Claudi
 
 ### Create a secret for VastAI provider
 
-The secret for a VastAI provider must include the following mandatory fields: `personalapikey` and `teamapikey`.
+The secret for a VastAI provider must include `personalapikey` and can optionally include `teamapikey`.
 
 ```bash
 kubectl create secret generic vastai-secret-1 --namespace=<your-namespace> --from-literal=personalapikey='<your-personal-api-key>' --from-literal=teamapikey='<your-team-api-key>'
 ```
 
 ### Single provider cluster example
+
+This example uses the Hetzner provider for the control node, as it does not make sense to rent expensive GPUs for a control node.
 
 ```yaml
 apiVersion: claudie.io/v1beta1
