@@ -117,4 +117,38 @@ If no templates are specified Claudie generates a default custom resource that p
 
 - fix unreachable node deletion pipeline [#2193](https://github.com/berops/claudie/pull/2193)
 
-- fix leaked containerd-task [#2203](https://github.com/berops/claudie/pull/2203)
+## v0.16.1
+
+**Before upgrading, back up the state bucket as described in
+  [Creating a Claudie backup](https://docs.claudie.io/creating-claudie-backup/creating-claudie-backup/).
+  Rolling back is not supported; restore from this backup instead.**
+
+## What's Changed
+- Improve scheduling workflow for 0-sized nodepools [#2214](https://github.com/berops/claudie/pull/2214)
+- Drop MinIO for pgsty/silo [#2226](https://github.com/berops/claudie/pull/2226)
+  
+   MinIO images were withdrawn from public registries, so the tfstate object store now runs
+   [`pgsty/silo`](https://hub.docker.com/r/pgsty/silo) (a MinIO fork) with `pgsty/mc` as the
+   bucket-init client.
+
+**Upgrading**
+
+- A plain `kubectl apply` of the new manifests is enough. Silo starts on the existing MinIO
+  volumes without any data migration and the `minio` StatefulSet rolls in place.
+- During the rollout, silo pods log
+  `Following servers have mismatching configuration ... Expected Silo binary checksum ...`
+  and grid reconnect errors for peers still running MinIO. This is expected and stops once
+  all four pods are updated.
+- If `kubectl apply` fails with
+  `Job "make-bucket-job" is invalid ... field is immutable`, the previous bucket-init Job
+  still exists. Delete it and apply again:
+
+  ```sh
+  kubectl -n claudie delete job make-bucket-job
+  ```
+
+
+## Bug fixes
+- Fixed InputManifest validation to reject unusable AutoscalerConfig [#2220](https://github.com/berops/claudie/pull/2220)
+- Fixed InputManifest validation for correct handling of externalNetworkName [#2221](https://github.com/berops/claudie/pull/2221)
+
