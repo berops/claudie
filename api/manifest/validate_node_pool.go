@@ -18,7 +18,20 @@ const TotalAnnotationSizeLimitB int = 256 * (1 << 10) // 256 kB
 var (
 	controlPlaneDeniedProviders = []string{"vastai"}
 	loadBalancerDeniedProviders = []string{"vastai"}
+	// machineSpecRequiredFields maps provider types that must define a machineSpec
+	// to the fields that must be set within it.
+	machineSpecRequiredFields = map[string]machineSpecRequirement{
+		"vastai": {nvidiaGpuType: true, nvidiaGpuCount: true},
+	}
 )
+
+// machineSpecRequirement describes which machineSpec fields a provider type requires.
+type machineSpecRequirement struct {
+	nvidiaGpuType  bool
+	nvidiaGpuCount bool
+	cpuCount       bool
+	memory         bool
+}
 
 // Validate validates the parsed data inside the NodePool section of the manifest.
 // It checks for missing/invalid filled out values defined in the NodePool section of
@@ -145,6 +158,11 @@ func (d *DynamicNodePool) Validate(m *Manifest) error {
 
 	// Validate the provider is allowed to back load balancer nodepools
 	if err := d.validateLoadBalancer(m); err != nil {
+		return err
+	}
+
+	// Validate machineSpec is defined for providers that require it
+	if err := d.validateMachineSpec(m); err != nil {
 		return err
 	}
 
@@ -330,6 +348,45 @@ func checkAnnotations(annotations map[string]string) error {
 	if totalSize > (int64)(TotalAnnotationSizeLimitB) {
 		return fmt.Errorf("annotations size %d is larger than limit %d", totalSize, TotalAnnotationSizeLimitB)
 	}
+	return nil
+}
+
+// validateMachineSpec requires machineSpec, and the fields listed in machineSpecRequirements,
+// when the referenced provider type is listed there.
+func (d *DynamicNodePool) validateMachineSpec(m *Manifest) error {
+	providerType, err := m.GetProviderType(d.ProviderSpec.Name)
+	if err != nil {
+		// Provider existence is validated in [NodePool.Validate] before
+		// calling [DynamicNodePool.Validate].
+		return nil
+	}
+
+	req, ok := machineSpecRequiredFields[providerType]
+	if !ok {
+		return nil
+	}
+
+	if d.MachineSpec == nil {
+		return fmt.Errorf("machineSpec is required for provider type %q", providerType)
+	}
+
+	if req.cpuCount && d.MachineSpec.CpuCount == 0 {
+		return fmt.Errorf("machineSpec.cpuCount is required for provider type %q", providerType)
+	}
+
+	if req.memory && d.MachineSpec.Memory == 0 {
+		return fmt.Errorf("machineSpec.memory is required for provider type %q", providerType)
+	}
+
+	if req.nvidiaGpuType && d.MachineSpec.NvidiaGpuType == "" {
+		return fmt.Errorf("machineSpec.nvidiaGpuType is required for provider type %q", providerType)
+	}
+
+	// Check both NvidiaGpuCount (new) and NvidiaGpu (deprecated) for backward compatibility
+	if req.nvidiaGpuCount && d.MachineSpec.NvidiaGpuCount == 0 && d.MachineSpec.NvidiaGpu == 0 {
+		return fmt.Errorf("machineSpec.nvidiaGpuCount is required for provider type %q", providerType)
+	}
+
 	return nil
 }
 
