@@ -18,24 +18,8 @@ const TotalAnnotationSizeLimitB int = 256 * (1 << 10) // 256 kB
 var (
 	controlPlaneDeniedProviders = []string{"vastai"}
 	loadBalancerDeniedProviders = []string{"vastai"}
-	machineSpecRequiredFields   = map[string]machineSpecRequirement{
-		"vastai": {required: true, nvidiaGpuTypeAndCount: true},
-		"gcp":    {required: false, nvidiaGpuTypeAndCount: true},
-	}
-	minStorageDiskSize = map[string]int32{"vastai": 130}
+	minStorageDiskSize          = map[string]int32{"vastai": 130}
 )
-
-// machineSpecRequirement describes the machineSpec requirements of a provider type.
-// The field flags apply only when a machineSpec is provided.
-type machineSpecRequirement struct {
-	// required makes the machineSpec block itself mandatory.
-	required bool
-	// if the machineSpec block was specified, field below can be marked and required
-	cpuCount bool
-	memory   bool
-	// nvidiaGpuTypeAndCount requires both nvidiaGpuType and nvidiaGpuCount
-	nvidiaGpuTypeAndCount bool
-}
 
 // Validate validates the parsed data inside the NodePool section of the manifest.
 // It checks for missing/invalid filled out values defined in the NodePool section of
@@ -165,7 +149,7 @@ func (d *DynamicNodePool) Validate(m *Manifest) error {
 		return err
 	}
 
-	// Validate machineSpec is defined for providers that require it
+	// Validate provider specific machineSpec requirements
 	if err := d.validateMachineSpec(m); err != nil {
 		return err
 	}
@@ -346,8 +330,7 @@ func checkAnnotations(annotations map[string]string) error {
 	return nil
 }
 
-// validateMachineSpec validates the machineSpec against the requirements of the referenced
-// provider type listed in machineSpecRequiredFields.
+// validateMachineSpec validates the machineSpec against the provider specific requirements.
 func (d *DynamicNodePool) validateMachineSpec(m *Manifest) error {
 	providerType, err := m.GetProviderType(d.ProviderSpec.Name)
 	if err != nil {
@@ -356,35 +339,34 @@ func (d *DynamicNodePool) validateMachineSpec(m *Manifest) error {
 		return nil
 	}
 
-	req, ok := machineSpecRequiredFields[providerType]
-	if !ok {
-		return nil
-	}
+	spec := d.MachineSpec
 
-	if d.MachineSpec == nil && req.required {
-		return fmt.Errorf("machineSpec is required for provider type %q", providerType)
-	}
+	switch providerType {
+	case "vastai":
+		// machineSpec with both nvidiaGpuType and nvidiaGpuCount is mandatory.
+		if spec == nil {
+			return fmt.Errorf("machineSpec is required for VastAI provider")
+		}
 
-	if d.MachineSpec == nil {
-		return nil
-	}
+		// Check both NvidiaGpuCount (new) and NvidiaGpu (deprecated) for backward compatibility
+		if spec.NvidiaGpuType == "" || (spec.NvidiaGpuCount == 0 && spec.NvidiaGpu == 0) {
+			return fmt.Errorf("machineSpec.nvidiaGpuType and machineSpec.nvidiaGpuCount are required for VastAI provider")
+		}
 
-	if req.cpuCount && d.MachineSpec.CpuCount == 0 {
-		return fmt.Errorf("machineSpec.cpuCount is required for provider type %q", providerType)
-	}
+	case "gcp":
+		// machineSpec is optional. When provided it must specify either cpuCount/memory
+		// or both nvidiaGpuType and nvidiaGpuCount, as GCP attaches GPUs only with both.
+		if spec == nil {
+			return nil
+		}
 
-	if req.memory && d.MachineSpec.Memory == 0 {
-		return fmt.Errorf("machineSpec.memory is required for provider type %q", providerType)
-	}
+		// Check both NvidiaGpuCount (new) and NvidiaGpu (deprecated) for backward compatibility
+		hasGpuCount := spec.NvidiaGpuCount > 0 || spec.NvidiaGpu > 0
+		hasGpuType := spec.NvidiaGpuType != ""
 
-	// Check both NvidiaGpuCount (new) and NvidiaGpu (deprecated) for backward compatibility
-	gpuCount := d.MachineSpec.NvidiaGpuCount
-	if gpuCount == 0 {
-		gpuCount = d.MachineSpec.NvidiaGpu
-	}
-
-	if req.nvidiaGpuTypeAndCount && (gpuCount == 0 || d.MachineSpec.NvidiaGpuType == "") {
-		return fmt.Errorf("machineSpec.nvidiaGpuType and machineSpec.nvidiaGpuCount are required for provider type %q", providerType)
+		if hasGpuCount != hasGpuType {
+			return fmt.Errorf("machineSpec.nvidiaGpuType and machineSpec.nvidiaGpuCount must be specified together for GCP provider")
+		}
 	}
 
 	return nil
