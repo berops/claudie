@@ -313,10 +313,12 @@ type Cluster struct {
 	// To see the list of supported versions, please refer to kubeone documentation.
 	// https://docs.kubermatic.com/kubeone/v1.14/architecture/compatibility/supported-versions/
 	Version string `validate:"required,ver" yaml:"version" json:"version"`
-	// Network range for the VPN of the cluster. The value should be defined in format A.B.C.D/mask.
+	// Network range for the VPN of the cluster. The value should be defined in format A.B.C.D/mask
+	// and must be a private range as defined by RFC 1918, i.e. it must be contained within
+	// 10.0.0.0/8, 172.16.0.0/12 or 192.168.0.0/16.
 	// +kubebuilder:validation:MaxLength=50
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Network is immutable"
-	Network string `validate:"required,cidrv4" yaml:"network" json:"network"`
+	Network string `validate:"required,cidrv4,rfc1918" yaml:"network" json:"network"`
 	// List of nodepool names this cluster will use.
 	Pools Pool `yaml:"pools" json:"pools"`
 	// General information about a proxy used to build a K8s cluster.

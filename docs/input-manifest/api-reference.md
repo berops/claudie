@@ -563,7 +563,7 @@ Collection of data used to define a Kubernetes cluster.
 
 - `network`
 
-  Network range for the VPN of the cluster. The value should be defined in format `A.B.C.D/mask`.
+  Network range for the VPN of the cluster. The value should be defined in format `A.B.C.D/mask`. The range must be a private range as defined by [RFC 1918](https://datatracker.ietf.org/doc/html/rfc1918), i.e. it must be contained within `10.0.0.0/8`, `172.16.0.0/12` or `192.168.0.0/16`.
 
 - `pools`
 

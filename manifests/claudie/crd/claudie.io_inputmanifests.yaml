@@ -88,8 +88,10 @@ spec:
                             name will be of format <name>-<hash>.
                           type: string
                         network:
-                          description: Network range for the VPN of the cluster. The
-                            value should be defined in format A.B.C.D/mask.
+                          description: |-
+                            Network range for the VPN of the cluster. The value should be defined in format A.B.C.D/mask
+                            and must be a private range as defined by RFC 1918, i.e. it must be contained within
+                            10.0.0.0/8, 172.16.0.0/12 or 192.168.0.0/16.
                           maxLength: 50
                           type: string
                           x-kubernetes-validations:

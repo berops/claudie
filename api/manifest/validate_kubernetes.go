@@ -2,6 +2,7 @@ package manifest
 
 import (
 	"fmt"
+	"net/netip"
 	"regexp"
 	"strings"
 
@@ -72,6 +73,10 @@ func (c *Cluster) Validate() error {
 		return err
 	}
 
+	if err := validate.RegisterValidation("rfc1918", validateRFC1918, false); err != nil {
+		return err
+	}
+
 	if err := validate.Struct(c); err != nil {
 		return prettyPrintValidationError(err)
 	}
@@ -85,6 +90,28 @@ func validateVersion(fl validator.FieldLevel) bool {
 	semverString = strings.TrimPrefix(semverString, "v")
 
 	return kubernetesVersionRegex.MatchString(semverString)
+}
+
+// validateRFC1918 checks that the field is an IPv4 CIDR fully contained within one of
+// the private ranges defined by RFC 1918 (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16).
+func validateRFC1918(fl validator.FieldLevel) bool {
+	var rfc1918Prefixes = []netip.Prefix{
+		netip.MustParsePrefix("10.0.0.0/8"),
+		netip.MustParsePrefix("172.16.0.0/12"),
+		netip.MustParsePrefix("192.168.0.0/16"),
+	}
+
+	prefix, err := netip.ParsePrefix(fl.Field().String())
+	if err != nil || !prefix.Addr().Is4() {
+		return false
+	}
+	prefix = prefix.Masked()
+	for _, private := range rfc1918Prefixes {
+		if private.Overlaps(prefix) && prefix.Bits() >= private.Bits() {
+			return true
+		}
+	}
+	return false
 }
 
 func validateProxyMode(fl validator.FieldLevel) bool {
