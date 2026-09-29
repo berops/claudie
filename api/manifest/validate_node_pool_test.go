@@ -421,3 +421,61 @@ func TestValidateExternalNet(t *testing.T) {
 		})
 	}
 }
+
+// deniedProviders lists providers that cannot back control-plane or load balancer
+// nodepools, together with a nodepool using them. Add new providers here.
+var deniedProviders = []struct {
+	name      string
+	providers Provider
+	nodepool  DynamicNodePool
+}{
+	{
+		name:      "vastai",
+		providers: Provider{VastAi: []VastAi{{Name: "vastai-1", PersonalApiKey: "fake-api-key"}}},
+		nodepool: DynamicNodePool{
+			Name:         "np",
+			ServerType:   "amd64",
+			Image:        "image",
+			Count:        1,
+			ProviderSpec: ProviderSpec{Name: "vastai-1", Region: "europe"},
+		},
+	},
+}
+
+// singleClusterManifest returns a manifest with the given providers and one
+// cluster whose control plane is "control-np".
+func singleClusterManifest(p Provider) *Manifest {
+	return &Manifest{
+		Providers: p,
+		Kubernetes: Kubernetes{Clusters: []Cluster{{
+			Name:    "cluster-1",
+			Network: "10.0.0.0/8",
+			Version: "v1.34.0",
+			Pools:   Pool{Control: []string{"control-np"}},
+		}}},
+	}
+}
+
+// TestValidateControlPlane verifies denied providers are rejected as control-plane nodepools.
+func TestValidateControlPlane(t *testing.T) {
+	for _, tc := range deniedProviders {
+		t.Run(tc.name, func(t *testing.T) {
+			m := singleClusterManifest(tc.providers)
+			m.Kubernetes.Clusters[0].Pools.Control = []string{tc.nodepool.Name}
+
+			require.ErrorContains(t, tc.nodepool.Validate(m), "control-plane")
+		})
+	}
+}
+
+// TestValidateLoadBalancer verifies denied providers are rejected as load balancer nodepools.
+func TestValidateLoadBalancer(t *testing.T) {
+	for _, tc := range deniedProviders {
+		t.Run(tc.name, func(t *testing.T) {
+			m := singleClusterManifest(tc.providers)
+			m.LoadBalancer.Clusters = []LoadBalancerCluster{{Name: "lb-1", TargetedK8s: "cluster-1", Pools: []string{tc.nodepool.Name}}}
+
+			require.ErrorContains(t, tc.nodepool.Validate(m), "load balancer")
+		})
+	}
+}

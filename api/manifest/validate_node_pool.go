@@ -15,6 +15,11 @@ import (
 
 const TotalAnnotationSizeLimitB int = 256 * (1 << 10) // 256 kB
 
+var (
+	controlPlaneDeniedProviders = []string{"vastai"}
+	loadBalancerDeniedProviders = []string{"vastai"}
+)
+
 // Validate validates the parsed data inside the NodePool section of the manifest.
 // It checks for missing/invalid filled out values defined in the NodePool section of
 // the manifest.
@@ -133,6 +138,16 @@ func (d *DynamicNodePool) Validate(m *Manifest) error {
 		return err
 	}
 
+	// Validate the provider is allowed to back control-plane nodepools
+	if err := d.validateControlPlane(m); err != nil {
+		return err
+	}
+
+	// Validate the provider is allowed to back load balancer nodepools
+	if err := d.validateLoadBalancer(m); err != nil {
+		return err
+	}
+
 	// Validate OpenStack external network requirement
 	if err := d.validateExternalNet(m); err != nil {
 		return err
@@ -185,6 +200,16 @@ func isControlPlane(name string, m *Manifest) bool {
 	return false
 }
 
+// isLoadBalancer reports whether a nodepool name appears in any load balancer cluster's pool list.
+func isLoadBalancer(name string, m *Manifest) bool {
+	for _, lb := range m.LoadBalancer.Clusters {
+		if slices.Contains(lb.Pools, name) {
+			return true
+		}
+	}
+	return false
+}
+
 // validateSpot checks that spot instances are only requested on supported worker pools.
 func (d *DynamicNodePool) validateSpot(m *Manifest) error {
 	if !d.Spot {
@@ -206,6 +231,46 @@ func (d *DynamicNodePool) validateSpot(m *Manifest) error {
 
 	if isControlPlane(d.Name, m) {
 		return fmt.Errorf("spot instances are not allowed on control-plane nodepools (etcd data-corruption hazard)")
+	}
+
+	return nil
+}
+
+// validateControlPlane checks that the nodepool's provider is allowed to back a control-plane nodepool.
+func (d *DynamicNodePool) validateControlPlane(m *Manifest) error {
+	if !isControlPlane(d.Name, m) {
+		return nil
+	}
+
+	providerType, err := m.GetProviderType(d.ProviderSpec.Name)
+	if err != nil {
+		// Provider existence is validated in [NodePool.Validate] before
+		// calling [DynamicNodePool.Validate].
+		return nil
+	}
+
+	if slices.Contains(controlPlaneDeniedProviders, providerType) {
+		return fmt.Errorf("provider type %q cannot be used for control-plane nodepools, nodepool %q is used as a control-plane nodepool", providerType, d.Name)
+	}
+
+	return nil
+}
+
+// validateLoadBalancer checks that the nodepool's provider is allowed to back a load balancer nodepool.
+func (d *DynamicNodePool) validateLoadBalancer(m *Manifest) error {
+	if !isLoadBalancer(d.Name, m) {
+		return nil
+	}
+
+	providerType, err := m.GetProviderType(d.ProviderSpec.Name)
+	if err != nil {
+		// Provider existence is validated in [NodePool.Validate] before
+		// calling [DynamicNodePool.Validate].
+		return nil
+	}
+
+	if slices.Contains(loadBalancerDeniedProviders, providerType) {
+		return fmt.Errorf("provider type %q cannot be used for load balancer nodepools, nodepool %q is used as a load balancer nodepool", providerType, d.Name)
 	}
 
 	return nil
