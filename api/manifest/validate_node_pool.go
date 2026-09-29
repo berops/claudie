@@ -18,19 +18,22 @@ const TotalAnnotationSizeLimitB int = 256 * (1 << 10) // 256 kB
 var (
 	controlPlaneDeniedProviders = []string{"vastai"}
 	loadBalancerDeniedProviders = []string{"vastai"}
-	// machineSpecRequiredFields maps provider types that must define a machineSpec
-	// to the fields that must be set within it.
-	machineSpecRequiredFields = map[string]machineSpecRequirement{
-		"vastai": {nvidiaGpuType: true, nvidiaGpuCount: true},
+	machineSpecRequiredFields   = map[string]machineSpecRequirement{
+		"vastai": {required: true, nvidiaGpuTypeAndCount: true},
+		"gcp":    {required: false, nvidiaGpuTypeAndCount: true},
 	}
 )
 
-// machineSpecRequirement describes which machineSpec fields a provider type requires.
+// machineSpecRequirement describes the machineSpec requirements of a provider type.
+// The field flags apply only when a machineSpec is provided.
 type machineSpecRequirement struct {
-	nvidiaGpuType  bool
-	nvidiaGpuCount bool
-	cpuCount       bool
-	memory         bool
+	// required makes the machineSpec block itself mandatory.
+	required bool
+	// if the machineSpec block was specified, field below can be marked and required
+	cpuCount bool
+	memory   bool
+	// nvidiaGpuTypeAndCount requires both nvidiaGpuType and nvidiaGpuCount.
+	nvidiaGpuTypeAndCount bool
 }
 
 // Validate validates the parsed data inside the NodePool section of the manifest.
@@ -141,11 +144,6 @@ func (d *DynamicNodePool) Validate(m *Manifest) error {
 		return fmt.Errorf("max available count for a nodepool is 255")
 	}
 
-	// Validate GCP-specific GPU configuration
-	if err := d.validateGCPGpuConfig(m); err != nil {
-		return err
-	}
-
 	// Validate Spot instance constraints
 	if err := d.validateSpot(m); err != nil {
 		return err
@@ -174,37 +172,6 @@ func (d *DynamicNodePool) Validate(m *Manifest) error {
 	if err := validator.New().Struct(d); err != nil {
 		return prettyPrintValidationError(err)
 	}
-	return nil
-}
-
-// validateGCPGpuConfig validates that GCP nodepools with GPUs have the required type specified.
-// GCP requires the guest_accelerator block with both type and count to attach GPUs to instances.
-func (d *DynamicNodePool) validateGCPGpuConfig(m *Manifest) error {
-	providerType, err := m.GetProviderType(d.ProviderSpec.Name)
-	if err != nil {
-		// Provider existence is validated in [NodePool.Validate] before
-		// calling [DynamicNodePool.Validate].
-		return nil
-	}
-
-	if providerType != "gcp" {
-		return nil
-	}
-
-	if d.MachineSpec == nil {
-		return nil
-	}
-
-	// Check both NvidiaGpuCount (new) and NvidiaGpu (deprecated) for backward compatibility
-	gpuCount := d.MachineSpec.NvidiaGpuCount
-	if gpuCount == 0 {
-		gpuCount = d.MachineSpec.NvidiaGpu
-	}
-
-	if gpuCount > 0 && d.MachineSpec.NvidiaGpuType == "" {
-		return fmt.Errorf("nvidiaGpuType is required for GCP when nvidiaGpuCount > 0")
-	}
-
 	return nil
 }
 
@@ -351,8 +318,8 @@ func checkAnnotations(annotations map[string]string) error {
 	return nil
 }
 
-// validateMachineSpec requires machineSpec, and the fields listed in machineSpecRequirements,
-// when the referenced provider type is listed there.
+// validateMachineSpec validates the machineSpec against the requirements of the referenced
+// provider type listed in machineSpecRequiredFields.
 func (d *DynamicNodePool) validateMachineSpec(m *Manifest) error {
 	providerType, err := m.GetProviderType(d.ProviderSpec.Name)
 	if err != nil {
@@ -366,8 +333,12 @@ func (d *DynamicNodePool) validateMachineSpec(m *Manifest) error {
 		return nil
 	}
 
-	if d.MachineSpec == nil {
+	if d.MachineSpec == nil && req.required {
 		return fmt.Errorf("machineSpec is required for provider type %q", providerType)
+	}
+
+	if d.MachineSpec == nil {
+		return nil
 	}
 
 	if req.cpuCount && d.MachineSpec.CpuCount == 0 {
@@ -378,13 +349,14 @@ func (d *DynamicNodePool) validateMachineSpec(m *Manifest) error {
 		return fmt.Errorf("machineSpec.memory is required for provider type %q", providerType)
 	}
 
-	if req.nvidiaGpuType && d.MachineSpec.NvidiaGpuType == "" {
-		return fmt.Errorf("machineSpec.nvidiaGpuType is required for provider type %q", providerType)
+	// Check both NvidiaGpuCount (new) and NvidiaGpu (deprecated) for backward compatibility
+	gpuCount := d.MachineSpec.NvidiaGpuCount
+	if gpuCount == 0 {
+		gpuCount = d.MachineSpec.NvidiaGpu
 	}
 
-	// Check both NvidiaGpuCount (new) and NvidiaGpu (deprecated) for backward compatibility
-	if req.nvidiaGpuCount && d.MachineSpec.NvidiaGpuCount == 0 && d.MachineSpec.NvidiaGpu == 0 {
-		return fmt.Errorf("machineSpec.nvidiaGpuCount is required for provider type %q", providerType)
+	if req.nvidiaGpuTypeAndCount && (gpuCount == 0 || d.MachineSpec.NvidiaGpuType == "") {
+		return fmt.Errorf("machineSpec.nvidiaGpuType and machineSpec.nvidiaGpuCount are required for provider type %q", providerType)
 	}
 
 	return nil
