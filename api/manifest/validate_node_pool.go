@@ -22,6 +22,7 @@ var (
 		"vastai": {required: true, nvidiaGpuTypeAndCount: true},
 		"gcp":    {required: false, nvidiaGpuTypeAndCount: true},
 	}
+	minStorageDiskSize = map[string]int32{"vastai": 130}
 )
 
 // machineSpecRequirement describes the machineSpec requirements of a provider type.
@@ -32,7 +33,7 @@ type machineSpecRequirement struct {
 	// if the machineSpec block was specified, field below can be marked and required
 	cpuCount bool
 	memory   bool
-	// nvidiaGpuTypeAndCount requires both nvidiaGpuType and nvidiaGpuCount.
+	// nvidiaGpuTypeAndCount requires both nvidiaGpuType and nvidiaGpuCount
 	nvidiaGpuTypeAndCount bool
 }
 
@@ -144,6 +145,11 @@ func (d *DynamicNodePool) Validate(m *Manifest) error {
 		return fmt.Errorf("max available count for a nodepool is 255")
 	}
 
+	// Validate provider specific minimum storageDiskSize
+	if err := d.validateStorageDiskSize(m); err != nil {
+		return err
+	}
+
 	// Validate Spot instance constraints
 	if err := d.validateSpot(m); err != nil {
 		return err
@@ -193,6 +199,28 @@ func isLoadBalancer(name string, m *Manifest) bool {
 		}
 	}
 	return false
+}
+
+// validateStorageDiskSize requires an explicit storageDiskSize of at least the minimum
+// listed in minStorageDiskSize for the referenced provider type.
+func (d *DynamicNodePool) validateStorageDiskSize(m *Manifest) error {
+	providerType, err := m.GetProviderType(d.ProviderSpec.Name)
+	if err != nil {
+		// Provider existence is validated in [NodePool.Validate] before
+		// calling [DynamicNodePool.Validate].
+		return nil
+	}
+
+	minSize, ok := minStorageDiskSize[providerType]
+	if !ok {
+		return nil
+	}
+
+	if d.StorageDiskSize == nil || *d.StorageDiskSize < minSize {
+		return fmt.Errorf("storageDiskSize of at least %d is required for provider type %q", minSize, providerType)
+	}
+
+	return nil
 }
 
 // validateSpot checks that spot instances are only requested on supported worker pools.
