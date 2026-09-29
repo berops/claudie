@@ -313,7 +313,10 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 			}
 			vai := &spec.VastAiProvider{
 				PersonalApiKey: vaiConf.PersonalApiKey,
-				TeamApiKey:     &vaiConf.TeamApiKey,
+			}
+
+			if vaiConf.TeamApiKey != "" {
+				vai.TeamApiKey = &vaiConf.TeamApiKey
 			}
 			return &spec.Provider{
 				SpecName: providerSpecName,

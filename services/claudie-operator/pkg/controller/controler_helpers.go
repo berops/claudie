@@ -302,9 +302,13 @@ func constructInputManifest(
 			if err != nil {
 				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
 			}
-			vaiTeamApiKey, err := p.ProviderSecretField(v1beta1manifest.VASTAI_TEAM_API_KEY)
-			if err != nil {
-				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+
+			var vaiTeamApiKey string
+			if _, ok := p.ProviderSecret.Data[string(v1beta1manifest.VASTAI_TEAM_API_KEY)]; ok {
+				vaiTeamApiKey, err = p.ProviderSecretField(v1beta1manifest.VASTAI_TEAM_API_KEY)
+				if err != nil {
+					return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+				}
 			}
 
 			providers.VastAi = append(providers.VastAi, manifest.VastAi{
