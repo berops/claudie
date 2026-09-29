@@ -68,11 +68,8 @@ The following InputManifest fields map to VastAI API parameters:
 | `machineSpec.nvidiaGpuCount` | `num_gpus`       | [search offers](https://docs.vast.ai/api-reference/search/search-offers)        |
 | `image`                      | `image`          | [create instance](https://docs.vast.ai/api-reference/instances/create-instance) |
 
-!!! note
-`machineSpec.memory` maps to the total **GPU** RAM (in MB), not the system RAM.
-
-!!! note "Storage requirements"
-The Ubuntu VM image requires at least 130 GB of storage, so set `storageDiskSize` accordingly.
+!!! note "Machine spec values are minimums"
+`machineSpec.cpuCount`, `machineSpec.memory` and `storageDiskSize` set minimum requirements, so offers with more CPU cores, memory or disk space also match. `machineSpec.memory` is the total **GPU** RAM (in MB), not the system RAM. The Ubuntu VM image needs at least 130 GB of storage, so set `storageDiskSize` to 130 or more.
 
 The VastAI location filter accepts only two-letter country codes. To simplify this, the `region` field accepts either:
 
