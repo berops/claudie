@@ -330,6 +330,15 @@ func (pr *Provider) CredentialsEqual(other *Provider) (equal bool) {
 		serviceName := p.Ovh.ServiceName == o.Ovh.ServiceName
 
 		equal = clientID && clientSecret && serviceName
+	case *Provider_Vastai:
+		o, ok := other.ProviderType.(*Provider_Vastai)
+		if !ok {
+			return
+		}
+		personalApiKey := p.Vastai.PersonalApiKey == o.Vastai.PersonalApiKey
+		teamApiKey := p.Vastai.GetTeamApiKey() == o.Vastai.GetTeamApiKey()
+
+		equal = personalApiKey && teamApiKey
 	default:
 		// do nothing.
 	}
