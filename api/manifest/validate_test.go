@@ -12,7 +12,10 @@ import (
 )
 
 var (
-	testManifest                = &Manifest{NodePools: NodePool{Dynamic: []DynamicNodePool{{Name: "np1"}}}}
+	testManifest = &Manifest{
+		Providers: Provider{Hetzner: []Hetzner{{Name: "hetzner-1"}}},
+		NodePools: NodePool{Dynamic: []DynamicNodePool{{Name: "np1", ProviderSpec: ProviderSpec{Name: "hetzner-1"}}}},
+	}
 	testClusterVersionPass      = &Kubernetes{Clusters: []Cluster{{Name: "cluster1", Network: "10.0.0.0/8", Version: "v1.34.0", Pools: Pool{Control: []string{"np1"}}}}}
 	testClusterVersionFailMinor = &Kubernetes{Clusters: []Cluster{{Name: "cluster1", Network: "10.0.0.0/8", Version: "v1.21.0", Pools: Pool{Control: []string{"np1"}}}}}
 	testClusterVersionFailMajor = &Kubernetes{Clusters: []Cluster{{Name: "cluster1", Network: "10.0.0.0/8", Version: "v2.22.0", Pools: Pool{Control: []string{"np1"}}}}}

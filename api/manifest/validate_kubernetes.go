@@ -125,7 +125,6 @@ func validateNodepools(m *Manifest, cluster *Cluster) error {
 				}
 			}
 		}
-
 	}
 
 	for _, pool := range cluster.Pools.Compute {
