@@ -91,7 +91,7 @@ kubectl create secret generic vastai-secret-1 --namespace=<your-namespace> --fro
 
 ### Single provider cluster example
 
-VastAI nodepools can only be used as compute (worker) nodepools. Renting GPU instances for control-plane or load balancer nodes makes little sense, so Claudie rejects any input manifest that references a VastAI nodepool in a `control` pool or a load balancer `pools` list. This example therefore uses the Hetzner provider for the control node.
+VastAI nodepools can only be used as compute (worker) nodepools. Renting GPU instances for control-plane or load balancer nodes is not intended for this provider, so Claudie rejects any input manifest that references a VastAI nodepool in a `control` pool or a load balancer `pools` list. This example therefore uses the Hetzner provider for the control node.
 
 ```yaml
 apiVersion: claudie.io/v1beta1
