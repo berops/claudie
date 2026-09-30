@@ -3,6 +3,7 @@ package manifest
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
@@ -28,6 +29,8 @@ var (
 
 	// used to verify the proxy mode inside the manifest
 	proxyModeRegex = regexp.MustCompile(proxyModeRegexString)
+
+	controlPlaneDeniedProviders = []string{"vastai"}
 )
 
 // Validate validates the parsed data inside the Kubernetes section of the manifest.
@@ -110,6 +113,19 @@ func validateNodepools(m *Manifest, cluster *Cluster) error {
 			return fmt.Errorf("static nodepool %q used multiple times as control nodepool, reusing the same static nodepool is discouraged as it can introduce issues within the cluster. Make sure to use a different static nodepool", pool)
 		}
 		controlNames[pool] = true
+
+		if !static {
+			if np := m.FindDynamicNodePool(pool); np != nil {
+				providerType, err := m.GetProviderType(np.ProviderSpec.Name)
+				if err != nil {
+					return fmt.Errorf("failed to get provider type for control nodepool %q used inside cluster %q: %w", pool, cluster.Name, err)
+				}
+				if slices.Contains(controlPlaneDeniedProviders, providerType) {
+					return fmt.Errorf("provider type %q cannot be used for control-plane nodepools, nodepool %q is used as a control-plane nodepool in cluster %q", providerType, pool, cluster.Name)
+				}
+			}
+		}
+
 	}
 
 	for _, pool := range cluster.Pools.Compute {
