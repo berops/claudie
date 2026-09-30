@@ -37,6 +37,7 @@ Claudie is a platform for managing multi-cloud, hybrid-cloud, and on-premises Ku
 [![OpenStack](https://img.shields.io/badge/OpenStack-ED1944?style=for-the-badge)](./input-manifest/providers/openstack.md)
 [![OVHcloud](https://img.shields.io/badge/OVHcloud-123F6D?style=for-the-badge)](./input-manifest/providers/ovh.md)
 [![CloudRift](https://img.shields.io/badge/CloudRift-2e7da8?style=for-the-badge)](./input-manifest/providers/cloudrift.md)
+[![VastAI](https://img.shields.io/badge/VastAI-000000?style=for-the-badge)](./input-manifest/providers/vastai.md)
 [![Verda](https://img.shields.io/badge/Verda-0E8C6B?style=for-the-badge)](./input-manifest/providers/verda.md)
 [![On-Premises](https://img.shields.io/badge/On--Premises-555555?style=for-the-badge)](./input-manifest/providers/on-premises.md)
 

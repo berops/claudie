@@ -15,6 +15,8 @@ import (
 
 const TotalAnnotationSizeLimitB int = 256 * (1 << 10) // 256 kB
 
+var minStorageDiskSize = map[string]int32{"vastai": 130}
+
 // Validate validates the parsed data inside the NodePool section of the manifest.
 // It checks for missing/invalid filled out values defined in the NodePool section of
 // the manifest.
@@ -123,13 +125,18 @@ func (d *DynamicNodePool) Validate(m *Manifest) error {
 		return fmt.Errorf("max available count for a nodepool is 255")
 	}
 
-	// Validate GCP-specific GPU configuration
-	if err := d.validateGCPGpuConfig(m); err != nil {
+	// Validate provider specific minimum storageDiskSize
+	if err := d.validateStorageDiskSize(m); err != nil {
 		return err
 	}
 
 	// Validate Spot instance constraints
 	if err := d.validateSpot(m); err != nil {
+		return err
+	}
+
+	// Validate provider specific machineSpec requirements
+	if err := d.validateMachineSpec(m); err != nil {
 		return err
 	}
 
@@ -144,37 +151,6 @@ func (d *DynamicNodePool) Validate(m *Manifest) error {
 	return nil
 }
 
-// validateGCPGpuConfig validates that GCP nodepools with GPUs have the required type specified.
-// GCP requires the guest_accelerator block with both type and count to attach GPUs to instances.
-func (d *DynamicNodePool) validateGCPGpuConfig(m *Manifest) error {
-	providerType, err := m.GetProviderType(d.ProviderSpec.Name)
-	if err != nil {
-		// Provider existence is validated in [NodePool.Validate] before
-		// calling [DynamicNodePool.Validate].
-		return nil
-	}
-
-	if providerType != "gcp" {
-		return nil
-	}
-
-	if d.MachineSpec == nil {
-		return nil
-	}
-
-	// Check both NvidiaGpuCount (new) and NvidiaGpu (deprecated) for backward compatibility
-	gpuCount := d.MachineSpec.NvidiaGpuCount
-	if gpuCount == 0 {
-		gpuCount = d.MachineSpec.NvidiaGpu
-	}
-
-	if gpuCount > 0 && d.MachineSpec.NvidiaGpuType == "" {
-		return fmt.Errorf("nvidiaGpuType is required for GCP when nvidiaGpuCount > 0")
-	}
-
-	return nil
-}
-
 // isControlPlane reports whether a nodepool name appears in any cluster's control-plane pool list.
 func isControlPlane(name string, m *Manifest) bool {
 	for _, k8s := range m.Kubernetes.Clusters {
@@ -183,6 +159,28 @@ func isControlPlane(name string, m *Manifest) bool {
 		}
 	}
 	return false
+}
+
+// validateStorageDiskSize requires an explicit storageDiskSize of at least the minimum
+// listed in minStorageDiskSize for the referenced provider type.
+func (d *DynamicNodePool) validateStorageDiskSize(m *Manifest) error {
+	providerType, err := m.GetProviderType(d.ProviderSpec.Name)
+	if err != nil {
+		// Provider existence is validated in [NodePool.Validate] before
+		// calling [DynamicNodePool.Validate].
+		return nil
+	}
+
+	minSize, ok := minStorageDiskSize[providerType]
+	if !ok {
+		return nil
+	}
+
+	if d.StorageDiskSize == nil || *d.StorageDiskSize < minSize {
+		return fmt.Errorf("storageDiskSize of at least %d is required for provider type %q", minSize, providerType)
+	}
+
+	return nil
 }
 
 // validateSpot checks that spot instances are only requested on supported worker pools.
@@ -265,6 +263,50 @@ func checkAnnotations(annotations map[string]string) error {
 	if totalSize > (int64)(TotalAnnotationSizeLimitB) {
 		return fmt.Errorf("annotations size %d is larger than limit %d", totalSize, TotalAnnotationSizeLimitB)
 	}
+	return nil
+}
+
+// validateMachineSpec validates the machineSpec against the provider specific requirements.
+func (d *DynamicNodePool) validateMachineSpec(m *Manifest) error {
+	providerType, err := m.GetProviderType(d.ProviderSpec.Name)
+	if err != nil {
+		// Provider existence is validated in [NodePool.Validate] before
+		// calling [DynamicNodePool.Validate].
+		return nil
+	}
+
+	spec := d.MachineSpec
+
+	switch providerType {
+	case "vastai":
+		// machineSpec with both nvidiaGpuType and nvidiaGpuCount is mandatory.
+		if spec == nil {
+			return fmt.Errorf("machineSpec is required for VastAI provider")
+		}
+
+		// Check both NvidiaGpuCount (new) and NvidiaGpu (deprecated) for backward compatibility
+		if spec.NvidiaGpuType == "" || (spec.NvidiaGpuCount == 0 && spec.NvidiaGpu == 0) {
+			return fmt.Errorf("machineSpec.nvidiaGpuType and machineSpec.nvidiaGpuCount are required for VastAI provider")
+		}
+
+	case "gcp":
+		// machineSpec is optional
+		// when a GPU count is provided, nvidiaGpuType is required
+		if spec == nil {
+			return nil
+		}
+
+		// Check both NvidiaGpuCount (new) and NvidiaGpu (deprecated) for backward compatibility
+		gpuCount := spec.NvidiaGpuCount
+		if gpuCount == 0 {
+			gpuCount = spec.NvidiaGpu
+		}
+
+		if gpuCount > 0 && spec.NvidiaGpuType == "" {
+			return fmt.Errorf("nvidiaGpuType is required for GCP when nvidiaGpuCount > 0")
+		}
+	}
+
 	return nil
 }
 

@@ -397,6 +397,61 @@ func TestCopyCredentials(t *testing.T) {
 		},
 
 		{
+			name: "VastAi copies personal and team api keys",
+			pr: &Provider{ProviderType: &Provider_Vastai{
+				Vastai: &VastAiProvider{PersonalApiKey: "old-personal", TeamApiKey: new("old-team")},
+			}},
+			other: &Provider{ProviderType: &Provider_Vastai{
+				Vastai: &VastAiProvider{PersonalApiKey: "new-personal", TeamApiKey: new("new-team")},
+			}},
+			assertFunc: func(t *testing.T, pr *Provider) {
+				vai := pr.ProviderType.(*Provider_Vastai).Vastai
+				if vai.PersonalApiKey != "new-personal" {
+					t.Errorf("PersonalApiKey = %q, want %q", vai.PersonalApiKey, "new-personal")
+				}
+				if vai.GetTeamApiKey() != "new-team" {
+					t.Errorf("TeamApiKey = %q, want %q", vai.GetTeamApiKey(), "new-team")
+				}
+			},
+		},
+		{
+			name: "VastAi copies unset team api key (nil overwrite)",
+			pr: &Provider{ProviderType: &Provider_Vastai{
+				Vastai: &VastAiProvider{PersonalApiKey: "old-personal", TeamApiKey: new("old-team")},
+			}},
+			other: &Provider{ProviderType: &Provider_Vastai{
+				Vastai: &VastAiProvider{PersonalApiKey: "new-personal"},
+			}},
+			assertFunc: func(t *testing.T, pr *Provider) {
+				vai := pr.ProviderType.(*Provider_Vastai).Vastai
+				if vai.PersonalApiKey != "new-personal" {
+					t.Errorf("PersonalApiKey = %q, want %q", vai.PersonalApiKey, "new-personal")
+				}
+				if vai.TeamApiKey != nil {
+					t.Errorf("TeamApiKey = %q, want nil", *vai.TeamApiKey)
+				}
+			},
+		},
+		{
+			name: "VastAi type mismatch — no change",
+			pr: &Provider{ProviderType: &Provider_Vastai{
+				Vastai: &VastAiProvider{PersonalApiKey: "personal", TeamApiKey: new("team")},
+			}},
+			other: &Provider{ProviderType: &Provider_Hetzner{
+				Hetzner: &HetznerProvider{Token: "hetzner-token"},
+			}},
+			assertFunc: func(t *testing.T, pr *Provider) {
+				vai := pr.ProviderType.(*Provider_Vastai).Vastai
+				if vai.PersonalApiKey != "personal" {
+					t.Errorf("PersonalApiKey = %q, want %q", vai.PersonalApiKey, "personal")
+				}
+				if vai.GetTeamApiKey() != "team" {
+					t.Errorf("TeamApiKey = %q, want %q", vai.GetTeamApiKey(), "team")
+				}
+			},
+		},
+
+		{
 			name: "AWS source provider is not mutated after copy",
 			pr: &Provider{ProviderType: &Provider_Aws{
 				Aws: &AWSProvider{AccessKey: "old-key", SecretKey: "old-secret"},
@@ -816,6 +871,77 @@ func TestCredentialsEqual(t *testing.T) {
 			}},
 			other: &Provider{ProviderType: &Provider_Openstack{
 				Openstack: &OpenstackProvider{},
+			}},
+			expected: true,
+		},
+
+		{
+			name: "VastAi equal credentials",
+			pr: &Provider{ProviderType: &Provider_Vastai{
+				Vastai: &VastAiProvider{PersonalApiKey: "personal", TeamApiKey: new("team")},
+			}},
+			other: &Provider{ProviderType: &Provider_Vastai{
+				Vastai: &VastAiProvider{PersonalApiKey: "personal", TeamApiKey: new("team")},
+			}},
+			expected: true,
+		},
+		{
+			name: "VastAi different personal api key",
+			pr: &Provider{ProviderType: &Provider_Vastai{
+				Vastai: &VastAiProvider{PersonalApiKey: "personal-A", TeamApiKey: new("team")},
+			}},
+			other: &Provider{ProviderType: &Provider_Vastai{
+				Vastai: &VastAiProvider{PersonalApiKey: "personal-B", TeamApiKey: new("team")},
+			}},
+			expected: false,
+		},
+		{
+			name: "VastAi different team api key",
+			pr: &Provider{ProviderType: &Provider_Vastai{
+				Vastai: &VastAiProvider{PersonalApiKey: "personal", TeamApiKey: new("team-A")},
+			}},
+			other: &Provider{ProviderType: &Provider_Vastai{
+				Vastai: &VastAiProvider{PersonalApiKey: "personal", TeamApiKey: new("team-B")},
+			}},
+			expected: false,
+		},
+		{
+			name: "VastAi team api key set vs unset",
+			pr: &Provider{ProviderType: &Provider_Vastai{
+				Vastai: &VastAiProvider{PersonalApiKey: "personal", TeamApiKey: new("team")},
+			}},
+			other: &Provider{ProviderType: &Provider_Vastai{
+				Vastai: &VastAiProvider{PersonalApiKey: "personal"},
+			}},
+			expected: false,
+		},
+		{
+			name: "VastAi team api key unset on both sides",
+			pr: &Provider{ProviderType: &Provider_Vastai{
+				Vastai: &VastAiProvider{PersonalApiKey: "personal"},
+			}},
+			other: &Provider{ProviderType: &Provider_Vastai{
+				Vastai: &VastAiProvider{PersonalApiKey: "personal"},
+			}},
+			expected: true,
+		},
+		{
+			name: "VastAi type mismatch",
+			pr: &Provider{ProviderType: &Provider_Vastai{
+				Vastai: &VastAiProvider{PersonalApiKey: "personal"},
+			}},
+			other: &Provider{ProviderType: &Provider_Hetzner{
+				Hetzner: &HetznerProvider{Token: "personal"},
+			}},
+			expected: false,
+		},
+		{
+			name: "VastAi empty credentials (zero value)",
+			pr: &Provider{ProviderType: &Provider_Vastai{
+				Vastai: &VastAiProvider{},
+			}},
+			other: &Provider{ProviderType: &Provider_Vastai{
+				Vastai: &VastAiProvider{},
 			}},
 			expected: true,
 		},

@@ -41,6 +41,8 @@ const (
 	ReservedPortRangeStart = ReservedPortRangeEnd - (MaxRolesPerLoadBalancer + AdditionalReservedPorts)
 )
 
+var loadBalancerDeniedProviders = []string{"vastai"}
+
 // Validate validates the parsed data inside the LoadBalancer section of the manifest.
 // It checks for missing/invalid filled out values defined in the LoadBalancer section
 // of the manifest.
@@ -225,6 +227,18 @@ func (l *LoadBalancer) Validate(m *Manifest) error {
 				return fmt.Errorf("static nodepool %q used multiple times as loadbalancer nodepool, reusing the same static nodepool is discouraged as it can introduce issues within the cluster. Make sure to use a different static nodepool", pool)
 			}
 			poolNames[pool] = true
+
+			if !static {
+				if np := m.FindDynamicNodePool(pool); np != nil {
+					providerType, err := m.GetProviderType(np.ProviderSpec.Name)
+					if err != nil {
+						return fmt.Errorf("failed to get provider type for nodepool %q used inside cluster %q: %w", pool, cluster.Name, err)
+					}
+					if slices.Contains(loadBalancerDeniedProviders, providerType) {
+						return fmt.Errorf("provider type %q cannot be used for load balancer nodepools, nodepool %q is used as a load balancer nodepool in cluster %q", providerType, pool, cluster.Name)
+					}
+				}
+			}
 		}
 	}
 

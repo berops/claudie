@@ -297,6 +297,26 @@ func constructInputManifest(
 				Endpoint:     strings.TrimSpace(oEndpoint),
 				Templates:    &tmpl,
 			})
+		case v1beta1manifest.VASTAI:
+			vaiPersonalApiKey, err := p.ProviderSecretField(v1beta1manifest.VASTAI_PERSONAL_API_KEY)
+			if err != nil {
+				return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+			}
+
+			var vaiTeamApiKey string
+			if _, ok := p.ProviderSecret.Data[string(v1beta1manifest.VASTAI_TEAM_API_KEY)]; ok {
+				vaiTeamApiKey, err = p.ProviderSecretField(v1beta1manifest.VASTAI_TEAM_API_KEY)
+				if err != nil {
+					return manifest.Manifest{}, buildSecretError(secretNamespaceName, err)
+				}
+			}
+
+			providers.VastAi = append(providers.VastAi, manifest.VastAi{
+				Name:           p.ProviderName,
+				PersonalApiKey: strings.TrimSpace(vaiPersonalApiKey),
+				TeamApiKey:     strings.TrimSpace(vaiTeamApiKey),
+				Templates:      &tmpl,
+			})
 		}
 	}
 
