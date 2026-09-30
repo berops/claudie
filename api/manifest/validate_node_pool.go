@@ -290,18 +290,20 @@ func (d *DynamicNodePool) validateMachineSpec(m *Manifest) error {
 		}
 
 	case "gcp":
-		// machineSpec is optional. When provided it must specify either cpuCount/memory
-		// or both nvidiaGpuType and nvidiaGpuCount, as GCP attaches GPUs only with both.
+		// machineSpec is optional
+		// when a GPU count is provided, nvidiaGpuType is required
 		if spec == nil {
 			return nil
 		}
 
 		// Check both NvidiaGpuCount (new) and NvidiaGpu (deprecated) for backward compatibility
-		hasGpuCount := spec.NvidiaGpuCount > 0 || spec.NvidiaGpu > 0
-		hasGpuType := spec.NvidiaGpuType != ""
+		gpuCount := spec.NvidiaGpuCount
+		if gpuCount == 0 {
+			gpuCount = spec.NvidiaGpu
+		}
 
-		if hasGpuCount != hasGpuType {
-			return fmt.Errorf("machineSpec.nvidiaGpuType and machineSpec.nvidiaGpuCount must be specified together for GCP provider")
+		if gpuCount > 0 && spec.NvidiaGpuType == "" {
+			return fmt.Errorf("nvidiaGpuType is required for GCP when nvidiaGpuCount > 0")
 		}
 	}
 
