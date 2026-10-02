@@ -318,6 +318,12 @@ func WithMachineSpecCpuCount(c int32) FakeMachineSpecOption {
 	}
 }
 
+func WithMachineSpecVram(v int32) FakeMachineSpecOption {
+	return func(s *spec.MachineSpec) {
+		s.Vram = v
+	}
+}
+
 func WithMachineSpecMemory(m int32) FakeMachineSpecOption {
 	return func(s *spec.MachineSpec) {
 		s.Memory = m

@@ -56,20 +56,33 @@ The search offers endpoint supports many more parameters than the InputManifest 
 
 The following InputManifest fields map to VastAI API parameters:
 
-| InputManifest field          | VastAI API param | VastAI endpoint                                                                 |
-| ---------------------------- | ---------------- | ------------------------------------------------------------------------------- |
-| `serverType`                 | `cpu_arch`       | [search offers](https://docs.vast.ai/api-reference/search/search-offers)        |
-| `region`                     | `geolocation`    | [search offers](https://docs.vast.ai/api-reference/search/search-offers)        |
-| `storageDiskSize`            | `disk_space`     | [search offers](https://docs.vast.ai/api-reference/search/search-offers)        |
-| `storageDiskSize`            | `disk`           | [create instance](https://docs.vast.ai/api-reference/instances/create-instance) |
-| `machineSpec.cpuCount`       | `cpu_cores`      | [search offers](https://docs.vast.ai/api-reference/search/search-offers)        |
-| `machineSpec.memory`         | `gpu_total_ram`  | [search offers](https://docs.vast.ai/api-reference/search/search-offers)        |
-| `machineSpec.nvidiaGpuType`  | `gpu_name`       | [search offers](https://docs.vast.ai/api-reference/search/search-offers)        |
-| `machineSpec.nvidiaGpuCount` | `num_gpus`       | [search offers](https://docs.vast.ai/api-reference/search/search-offers)        |
-| `image`                      | `image`          | [create instance](https://docs.vast.ai/api-reference/instances/create-instance) |
+| InputManifest field          | VastAI API param      | VastAI endpoint                                                                 |
+| ---------------------------- | --------------------- | ------------------------------------------------------------------------------- |
+| `serverType`                 | `cpu_arch`            | [search offers](https://docs.vast.ai/api-reference/search/search-offers)        |
+| `region`                     | `geolocation`         | [search offers](https://docs.vast.ai/api-reference/search/search-offers)        |
+| `storageDiskSize`            | `disk_space`          | [search offers](https://docs.vast.ai/api-reference/search/search-offers)        |
+| `storageDiskSize`            | `disk`                | [create instance](https://docs.vast.ai/api-reference/instances/create-instance) |
+| `image`                      | `image`               | [create instance](https://docs.vast.ai/api-reference/instances/create-instance) |
+| `machineSpec.cpuCount`       | `cpu_cores_effective` | [search offers](https://docs.vast.ai/api-reference/search/search-offers)        |
+| `machineSpec.memory`         | `cpu_ram`             | [search offers](https://docs.vast.ai/api-reference/search/search-offers)        |
+| `machineSpec.vram`           | `gpu_ram`             | [search offers](https://docs.vast.ai/api-reference/search/search-offers)        |
+| `machineSpec.nvidiaGpuType`  | `gpu_name`            | [search offers](https://docs.vast.ai/api-reference/search/search-offers)        |
+| `machineSpec.nvidiaGpuCount` | `num_gpus`            | [search offers](https://docs.vast.ai/api-reference/search/search-offers)        |
 
-!!! note "Machine spec values are minimums"
-`machineSpec.cpuCount`, `machineSpec.memory` and `storageDiskSize` set minimum requirements, so offers with more CPU cores, memory or disk space also match. `machineSpec.memory` is the total **GPU** RAM (in MB), not the system RAM. The Ubuntu VM image needs at least 130 GB of storage, so set `storageDiskSize` to 130 or more.
+!!! note "All machine spec fields are required"
+    All `machineSpec` fields (`cpuCount`, `memory`, `vram`, `nvidiaGpuType` and `nvidiaGpuCount`) must be set for VastAI nodepools, otherwise the InputManifest is rejected.
+
+Claudie uses the machine spec to filter VastAI offers:
+
+- **Minimum values**: `machineSpec.cpuCount`, `machineSpec.memory` and `storageDiskSize`. Offers with more resources also match.
+- **Exact values**: `machineSpec.vram`, `machineSpec.nvidiaGpuType` and `machineSpec.nvidiaGpuCount`. Offers must match exactly.
+
+!!! note "Units"
+    - `machineSpec.memory` is the system RAM, in GB.
+    - `machineSpec.vram` is the RAM of a single GPU, in GB.
+
+!!! warning "Minimum disk size"
+    The Ubuntu VM image needs at least 130 GB of storage, so set `storageDiskSize` to 130 or more.
 
 The VastAI location filter accepts only two-letter country codes. To simplify this, the `region` field accepts either:
 
@@ -155,9 +168,10 @@ spec:
         storageDiskSize: 150
         machineSpec:
           cpuCount: 1
-          memory: 4096
+          memory: 4
           nvidiaGpuCount: 1
           nvidiaGpuType: RTX 4090
+          vram: 24
 
   kubernetes:
     clusters:
