@@ -201,7 +201,7 @@ type MachineSpec struct {
 	// Memory specifies the memory the provided instance type will have.
 	// +optional
 	Memory int `validate:"required_with=CpuCount,gte=0" yaml:"memory" json:"memory"`
-	// Vram specifies the VRAM per GPU in MB.
+	// Vram specifies the VRAM per GPU in GB.
 	// +optional
 	Vram int `validate:"gte=0" yaml:"vram" json:"vram,omitempty"`
 	// NvidiaGpuCount specifies the number of NVIDIA GPUs the provided instance type will have.

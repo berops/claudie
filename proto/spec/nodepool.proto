@@ -127,13 +127,13 @@ message DynamicNodePool {
 message MachineSpec {
   // Number of CPU cores.
   int32 cpuCount = 1;
-  // Memory in MB.
+  // Memory in GB.
   int32 memory = 2;
   // Number of NVIDIA GPUs.
   int32 nvidiaGpuCount = 3;
   // NVIDIA GPU accelerator type (required for GCP when using GPUs).
   string nvidiaGpuType = 4;
-  // VRAM per GPU in MB.
+  // VRAM per GPU in GB.
   int32 vram = 5;
 }
 

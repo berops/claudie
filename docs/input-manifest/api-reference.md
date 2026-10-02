@@ -409,7 +409,7 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
   - `cpuCount`: specifies the number of cpus used by the `serverType`
   - `memory`: specifies the memory in GBs used by the `serverType`
-  - `vram`: specifies the VRAM per GPU in MB
+  - `vram`: specifies the VRAM per GPU in GB
   - `nvidiaGpuCount`: specifies the number of NVIDIA GPUs used by the `serverType`
   - `nvidiaGpuType`: specifies the NVIDIA GPU accelerator type (required for GCP when using GPUs). Examples: `nvidia-tesla-t4`, `nvidia-tesla-v100`, `nvidia-tesla-a100`, `nvidia-l4`
   - `nvidiaGpu`: (deprecated) use `nvidiaGpuCount` instead

@@ -332,7 +332,7 @@ spec:
                                 Examples: nvidia-tesla-k80, nvidia-tesla-v100, nvidia-tesla-a100, nvidia-l4
                               type: string
                             vram:
-                              description: Vram specifies the VRAM per GPU in MB.
+                              description: Vram specifies the VRAM per GPU in GB.
                               type: integer
                           type: object
                         name:

@@ -48,7 +48,7 @@ The search offers endpoint supports many more parameters than the InputManifest 
 | `reliability`    | `>= 0.98`             | Minimum machine reliability score.                 |
 | `vms_enabled`    | `true`                | Machines supporting VM instances.                  |
 | `static_ip`      | `true`                | Machines with a static IP address.                 |
-| `duration`       | `>= 604800`           | Offer available for at least 7 days (in seconds).  |
+| `duration`       | `>= 2592000`          | Offer available for at least 30 days (in seconds). |
 | `inet_down`      | `>= 300`              | Minimum download bandwidth in Mbps.                |
 | `order`          | `dph_total` ascending | Sort the offers from the cheapest one.             |
 
@@ -78,8 +78,8 @@ Claudie uses the machine spec to filter VastAI offers:
 - **Exact values**: `machineSpec.vram`, `machineSpec.nvidiaGpuType` and `machineSpec.nvidiaGpuCount`. Offers must match exactly.
 
 !!! note "Units"
-    - `machineSpec.memory` is the system RAM, in MB.
-    - `machineSpec.vram` is the RAM of a single GPU, in MB.
+    - `machineSpec.memory` is the system RAM, in GB.
+    - `machineSpec.vram` is the RAM of a single GPU, in GB.
 
 !!! warning "Minimum disk size"
     The Ubuntu VM image needs at least 130 GB of storage, so set `storageDiskSize` to 130 or more.
@@ -168,10 +168,10 @@ spec:
         storageDiskSize: 150
         machineSpec:
           cpuCount: 1
-          memory: 4096
+          memory: 4
           nvidiaGpuCount: 1
           nvidiaGpuType: RTX 4090
-          vram: 4096
+          vram: 24
 
   kubernetes:
     clusters:

@@ -674,13 +674,13 @@ type MachineSpec struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Number of CPU cores.
 	CpuCount int32 `protobuf:"varint,1,opt,name=cpuCount,proto3" json:"cpuCount,omitempty"`
-	// Memory in MB.
+	// Memory in GB.
 	Memory int32 `protobuf:"varint,2,opt,name=memory,proto3" json:"memory,omitempty"`
 	// Number of NVIDIA GPUs.
 	NvidiaGpuCount int32 `protobuf:"varint,3,opt,name=nvidiaGpuCount,proto3" json:"nvidiaGpuCount,omitempty"`
 	// NVIDIA GPU accelerator type (required for GCP when using GPUs).
 	NvidiaGpuType string `protobuf:"bytes,4,opt,name=nvidiaGpuType,proto3" json:"nvidiaGpuType,omitempty"`
-	// VRAM per GPU in MB.
+	// VRAM per GPU in GB.
 	Vram          int32 `protobuf:"varint,5,opt,name=vram,proto3" json:"vram,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
