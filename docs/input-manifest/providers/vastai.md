@@ -48,7 +48,7 @@ The search offers endpoint supports many more parameters than the InputManifest 
 | `reliability`    | `>= 0.98`             | Minimum machine reliability score.                 |
 | `vms_enabled`    | `true`                | Machines supporting VM instances.                  |
 | `static_ip`      | `true`                | Machines with a static IP address.                 |
-| `duration`       | `>= 2592000`          | Offer available for at least 30 days (in seconds). |
+| `duration`       | `>= 604800`           | Offer available for at least 7 days (in seconds).  |
 | `inet_down`      | `>= 300`              | Minimum download bandwidth in Mbps.                |
 | `order`          | `dph_total` ascending | Sort the offers from the cheapest one.             |
 
