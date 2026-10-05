@@ -48,7 +48,7 @@ The search offers endpoint supports many more parameters than the InputManifest 
 | `reliability`    | `>= 0.98`             | Minimum machine reliability score.                 |
 | `vms_enabled`    | `true`                | Machines supporting VM instances.                  |
 | `static_ip`      | `true`                | Machines with a static IP address.                 |
-| `duration`       | `>= 2592000`          | Offer available for at least 30 days (in seconds). |
+| `duration`       | `>= 604800`           | Offer available for at least 7 days (in seconds).  |
 | `inet_down`      | `>= 300`              | Minimum download bandwidth in Mbps.                |
 | `order`          | `dph_total` ascending | Sort the offers from the cheapest one.             |
 
@@ -74,8 +74,8 @@ The following InputManifest fields map to VastAI API parameters:
 
 Claudie uses the machine spec to filter VastAI offers:
 
-- **Minimum values**: `machineSpec.cpuCount`, `machineSpec.memory` and `storageDiskSize`. Offers with more resources also match.
-- **Exact values**: `machineSpec.vram`, `machineSpec.nvidiaGpuType` and `machineSpec.nvidiaGpuCount`. Offers must match exactly.
+- **Minimum values**: `machineSpec.cpuCount`, `machineSpec.memory`, `machineSpec.vram`, and `storageDiskSize`. Offers with more resources also match.
+- **Exact values**: `machineSpec.nvidiaGpuType` and `machineSpec.nvidiaGpuCount`. Offers must match exactly.
 
 !!! note "Units"
     - `machineSpec.memory` is the system RAM, in GB.
