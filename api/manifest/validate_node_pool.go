@@ -279,14 +279,30 @@ func (d *DynamicNodePool) validateMachineSpec(m *Manifest) error {
 
 	switch providerType {
 	case "vastai":
-		// machineSpec with both nvidiaGpuType and nvidiaGpuCount is mandatory.
+		// machineSpec with all of its fields is mandatory.
 		if spec == nil {
 			return fmt.Errorf("machineSpec is required for VastAI provider")
 		}
 
+		var missing []string
+		if spec.CpuCount == 0 {
+			missing = append(missing, "machineSpec.cpuCount")
+		}
+		if spec.Memory == 0 {
+			missing = append(missing, "machineSpec.memory")
+		}
 		// Check both NvidiaGpuCount (new) and NvidiaGpu (deprecated) for backward compatibility
-		if spec.NvidiaGpuType == "" || (spec.NvidiaGpuCount == 0 && spec.NvidiaGpu == 0) {
-			return fmt.Errorf("machineSpec.nvidiaGpuType and machineSpec.nvidiaGpuCount are required for VastAI provider")
+		if spec.NvidiaGpuCount == 0 && spec.NvidiaGpu == 0 {
+			missing = append(missing, "machineSpec.nvidiaGpuCount")
+		}
+		if spec.NvidiaGpuType == "" {
+			missing = append(missing, "machineSpec.nvidiaGpuType")
+		}
+		if spec.Vram == 0 {
+			missing = append(missing, "machineSpec.vram")
+		}
+		if len(missing) > 0 {
+			return fmt.Errorf("%s required for VastAI provider", strings.Join(missing, ", "))
 		}
 
 	case "gcp":
