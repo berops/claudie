@@ -11,5 +11,4 @@
   # abort playbook on any fatal error, the golang code will trigger a retry
   any_errors_fatal: true
   roles:
-    - role: "./apt-upgrades-defer"
     - role: "./wireguard"

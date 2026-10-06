@@ -53,15 +53,16 @@
     - name: Gracefully stop unattended-upgrade and wait until no apt daily process is running
       ansible.builtin.shell: |
         if [ -x /usr/share/unattended-upgrades/unattended-upgrade-shutdown ]; then
-          /usr/share/unattended-upgrades/unattended-upgrade-shutdown --stop-only --delay 30 || exit 2
+          /usr/share/unattended-upgrades/unattended-upgrade-shutdown --stop-only --delay 10 || exit 2
         fi
-        if pgrep -af '^(/usr)?/bin/sh /usr/lib/apt/apt\.systemd\.daily( |$)|^/usr/bin/python3 /usr/bin/unattended-upgrade( |$)'; then
+        # -x also matches scripts by their path, e.g. "/bin/sh /usr/lib/apt/apt.systemd.daily lock_is_held install".
+        if pidof -x /usr/lib/apt/apt.systemd.daily /usr/bin/unattended-upgrade; then
           exit 1
         fi
       register: apt_daily_stop
       until: apt_daily_stop.rc == 0
-      retries: 60
-      delay: 5
+      retries: 6
+      delay: 20
       changed_when: false
 
     # 2. Postpone apt maintenance to 1-3h after boot.
@@ -75,16 +76,17 @@
         - apt-daily.timer
         - apt-daily-upgrade.timer
 
-    # OnCalendar= and Persistent=false remove the scheduled run and its catch-up right after boot.
-    # OnActiveSec counts from the timer activation, which is at boot, so with RandomizedDelaySec the timers
-    # run 1-3h after boot. When this playbook restarts the timers it counts from the restart, unlike
-    # OnBootSec, which would fire immediately if the node is up for longer than 1h.
-    # OnUnitActiveSec keeps the daily runs.
+    # The stock timers keep their daily OnCalendar= schedule, only their Persistent=true catch-up of a run
+    # missed while the node was off is disabled, as it fires right after boot (only RandomizedDelaySec applies
+    # to it, which can be close to 0). The missed run is replaced by OnActiveSec, which counts from the timer
+    # activation, which is at boot, so with RandomizedDelaySec the timers run 1-3h after boot. When this
+    # playbook restarts the timers it counts from the restart, unlike OnBootSec, which would fire immediately
+    # if the node is up for longer than 1h. If the restarts keep postponing it, the next daily run still runs.
     # Drop-ins from all directories are applied in filename order and the last value wins, so the "zz-" prefix
     # keeps this one last, after e.g. an override.conf from "systemctl edit" or an image-provided drop-in.
     - name: Postpone apt daily timers to 1-3h after boot
       ansible.builtin.copy:
-        dest: "/etc/systemd/system/{{ item }}.d/zz-claudie.conf"
+        dest: "/etc/systemd/system/{{ item }}.d/claudie.conf"
         mode: "0644"
         content: |
           # Managed by Claudie: run apt maintenance 1-3h after boot instead of right after boot.
@@ -104,7 +106,7 @@
         daemon_reload: true
       when: apt_daily_dropins.changed
 
-    # Only timers that were active before are started again.
+    # Timers that are enabled are started again, even if a previous failed run left them stopped.
     - name: Start apt daily timers
       ansible.builtin.systemd:
         name: "{{ item.item }}"
@@ -112,7 +114,7 @@
       loop: "{{ apt_daily_timers.results }}"
       loop_control:
         label: "{{ item.item }}"
-      when: item.status.ActiveState | default('inactive') == 'active'
+      when: item.status.UnitFileState | default('') == 'enabled'
 
     # Previous Claudie versions masked unattended-upgrades.service. It does not run upgrades, it only
     # gracefully stops a running upgrade on shutdown, so it is unmasked again.

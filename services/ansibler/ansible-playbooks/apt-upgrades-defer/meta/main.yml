@@ -1,9 +1,0 @@
-galaxy_info:
-  author: Berops
-  description: Defers apt daily maintenance and gracefully stops in-flight unattended upgrades
-  company: Berops
-  license: Apache-2.0
-  min_ansible_version: "2.9"
-  galaxy_tags: []
-
-dependencies: []
