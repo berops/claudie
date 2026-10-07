@@ -50,6 +50,7 @@ needs to be defined.
   | `hetzner`      | [Hetzner](#hetzner) provider type           |
   | `oci`          | [OCI](#oci) provider type                   |
   | `ovh`          | [OVHcloud](#ovhcloud) provider type         |
+  | `vastai`       | [VastAI](#vastai) provider type               |
   | `verda`        | [Verda](#verda) provider type               |
 
 - `secretRef` [SecretRef](#secretref)
@@ -326,6 +327,24 @@ To configure OVHcloud provider and API credentials, follow the [OVHcloud provide
   - `name`: Name of a `TemplateGitReference` custom resource that defines the git repository, commit reference, and template paths.
   - `namespace`: Namespace of the `TemplateGitReference` custom resource.
 
+### VastAi
+
+The fields that need to be included in a Kubernetes Secret resource to utilize the VastAI Cloud provider.
+To find out how to configure the VastAI provider and API credentials, follow the instructions [here](./providers/vastai.md).
+
+- `personalapikey`
+
+  API key tied to your personal account, issued by the VastAI console under **Left sidebar > Keys > API Keys**.
+
+- `teamapikey` *(optional)*
+
+  API key tied to a team account. Switch to the team account in the left sidebar and then navigate to the API keys settings again. Do not forget to toggle the team view using the button in the top right corner. Shown only once at creation time in the VastAI console.
+
+- `templatesRef`
+  - `name`: Name of a `TemplateGitReference` custom resource that defines the git repository, commit reference, and template paths.
+  - `namespace`: Namespace of the `TemplateGitReference` custom resource.
+
+
 ### Verda
 
 The fields that need to be included in a Kubernetes Secret resource to utilize the Verda Cloud provider.
@@ -390,6 +409,7 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
   - `cpuCount`: specifies the number of cpus used by the `serverType`
   - `memory`: specifies the memory in GBs used by the `serverType`
+  - `vram`: specifies the VRAM per GPU in GB
   - `nvidiaGpuCount`: specifies the number of NVIDIA GPUs used by the `serverType`
   - `nvidiaGpuType`: specifies the NVIDIA GPU accelerator type (required for GCP when using GPUs). Examples: `nvidia-tesla-t4`, `nvidia-tesla-v100`, `nvidia-tesla-a100`, `nvidia-l4`
   - `nvidiaGpu`: (deprecated) use `nvidiaGpuCount` instead
@@ -448,7 +468,7 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
 ## Provider Spec
 
-Provider spec is an additional specification built on top of the data from any of the provider instance. Here are provider configuration examples for each individual provider: [aws](providers/aws.md), [azure](providers/azure.md), [cloudrift](providers/cloudrift.md), [exoscale](providers/exoscale.md), [gcp](providers/gcp.md), [cloudflare](providers/cloudflare.md), [hetzner](providers/hetzner.md), [oci](providers/oci.md), [ovh](providers/ovh.md) and [verda](providers/verda.md).
+Provider spec is an additional specification built on top of the data from any of the provider instance. Here are provider configuration examples for each individual provider: [aws](providers/aws.md), [azure](providers/azure.md), [cloudrift](providers/cloudrift.md), [exoscale](providers/exoscale.md), [gcp](providers/gcp.md), [cloudflare](providers/cloudflare.md), [hetzner](providers/hetzner.md), [oci](providers/oci.md), [ovh](providers/ovh.md), [vastai](providers/vastai.md) and [verda](providers/verda.md).
 
 - `name`
 

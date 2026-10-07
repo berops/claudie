@@ -302,6 +302,33 @@ func (ds *Manifest) GetProvider(providerSpecName string) (*spec.Provider, error)
 		}
 	}
 
+	for _, vaiConf := range ds.Providers.VastAi {
+		if vaiConf.Name == providerSpecName {
+			t, err := convertToGrpcTemplates(vaiConf.Templates)
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert template for provider %q: %w", vaiConf.Name, err)
+			}
+			if err := FetchCommitHash(t); err != nil {
+				return nil, err
+			}
+			vai := &spec.VastAiProvider{
+				PersonalApiKey: vaiConf.PersonalApiKey,
+			}
+
+			if vaiConf.TeamApiKey != "" {
+				vai.TeamApiKey = &vaiConf.TeamApiKey
+			}
+			return &spec.Provider{
+				SpecName: providerSpecName,
+				ProviderType: &spec.Provider_Vastai{
+					Vastai: vai,
+				},
+				CloudProviderName: "vastai",
+				Templates:         t,
+			}, nil
+		}
+	}
+
 	return nil, fmt.Errorf("failed to find provider with name: %s", providerSpecName)
 }
 
@@ -394,6 +421,7 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.Nod
 				machineSpec = &spec.MachineSpec{
 					CpuCount:       int32(nodePool.MachineSpec.CpuCount),
 					Memory:         int32(nodePool.MachineSpec.Memory),
+					Vram:           int32(nodePool.MachineSpec.Vram),
 					NvidiaGpuCount: gpuCount,
 					NvidiaGpuType:  nodePool.MachineSpec.NvidiaGpuType,
 				}
@@ -679,6 +707,11 @@ func (ds *Manifest) ForEachProvider(do func(name, typ string) bool) {
 	}
 	for _, c := range ds.Providers.OVH {
 		if !do(c.Name, "ovh") {
+			return
+		}
+	}
+	for _, c := range ds.Providers.VastAi {
+		if !do(c.Name, "vastai") {
 			return
 		}
 	}

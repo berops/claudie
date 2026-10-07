@@ -105,6 +105,7 @@ Before you begin, please make sure you have the following prerequisites installe
    | [Hetzner](https://docs.claudie.io/latest/input-manifest/providers/hetzner/)       | :heavy_check_mark: | :heavy_check_mark: | N/A               | :heavy_check_mark: | N/A                |
    | [CloudRift](https://docs.claudie.io/latest/input-manifest/providers/cloudrift/)    | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: | N/A                |
    | [Verda](https://docs.claudie.io/latest/input-manifest/providers/verda/)            | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: | :heavy_check_mark: |
+   | [VastAI](https://docs.claudie.io/latest/input-manifest/providers/vastai/)          | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: | N/A                |
    | [Cloudflare](https://docs.claudie.io/latest/input-manifest/providers/cloudflare/) | N/A                | :heavy_check_mark: |:heavy_check_mark: | N/A                | N/A                |
    | [OVHcloud](https://docs.claudie.io/latest/input-manifest/providers/ovh/)         | :heavy_check_mark: | :heavy_check_mark: | N/A               | :heavy_check_mark: | N/A                |
    | [Openstack](https://docs.claudie.io/latest/input-manifest/providers/openstack/)   | :heavy_check_mark: | N/A                | N/A               | :heavy_check_mark: | N/A                |
@@ -189,10 +190,10 @@ For adding support for other cloud providers or on-premises environments, open a
                 control:
                     - control-aws
                 compute:
-                    - compute-1-aws        
+                    - compute-1-aws
     EOF
     ```
-    
+
     ***Deleting existing InputManifest resource deletes provisioned infrastructure!***
 
 ### Connect to your cluster
@@ -253,7 +254,7 @@ Claudie outputs base64 encoded kubeconfig secret `<input-manifest-namespace>-<in
     #            control:
     #                - control-aws
     #            compute:
-    #                - compute-1-aws         
+    #                - compute-1-aws
     EOF
     ```
 2. To delete all clusters defined in the input manifest, delete the InputManifest. This triggers the deletion process, removing the infrastructure and all data associated with the manifest.
@@ -292,10 +293,10 @@ To see the vision behind Claudie, please refer to the [roadmap](https://docs.cla
 
 ## Reach out to us
 
-Claudie is proudly developed by Berops.  
-Project office hours on Fridays @1300 UTC on [Google Meet](http://meet.google.com/amd-dtkb-ixa).  
-Feel free to request a demo [here](mailto:claudie-demo&commat;berops&period;com).  
-For information on enterprise support, contact us [here](mailto:claudie&commat;berops&period;com).  
+Claudie is proudly developed by Berops.
+Project office hours on Fridays @1300 UTC on [Google Meet](http://meet.google.com/amd-dtkb-ixa).
+Feel free to request a demo [here](mailto:claudie-demo&commat;berops&period;com).
+For information on enterprise support, contact us [here](mailto:claudie&commat;berops&period;com).
 
 ## LICENSE
 
