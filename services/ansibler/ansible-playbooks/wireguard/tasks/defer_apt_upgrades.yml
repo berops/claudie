@@ -6,122 +6,150 @@
 # Not every provider supports cloud-init, so the upgrade can not be prevented before boot. Instead:
 #   1. if apt maintenance is running, shut it down gracefully,
 #   2. postpone the timers, so that they run 1-3h after boot instead of right after boot.
+#
+# This runs on every reconciliation, which is roughly every 30 minutes on an idle cluster.
+# Both steps only run when the drop-in changes, as every timer restart postpones the next run.
 
-- name: Check if apt daily timers are present
-  ansible.builtin.stat:
-    path: /lib/systemd/system/apt-daily-upgrade.timer
-  register: apt_daily_upgrade_timer
-
-- name: Gracefully stop apt maintenance and postpone it
-  when: apt_daily_upgrade_timer.stat.exists
+- name: Defer apt maintenance
+  vars:
+    apt_daily_timers:
+      - apt-daily.timer
+      - apt-daily-upgrade.timer
+    apt_daily_dropin: |
+      # Managed by Claudie: run apt maintenance 1-3h after boot instead of right after boot.
+      [Timer]
+      OnCalendar=
+      Persistent=false
+      OnActiveSec=1h
+      OnUnitActiveSec=1d
+      RandomizedDelaySec=2h
   block:
-    # 1. Shut down running apt maintenance.
+    - name: Check if apt daily timers are present
+      ansible.builtin.stat:
+        path: /lib/systemd/system/apt-daily-upgrade.timer
+      register: apt_daily_upgrade_timer
 
-    # Stopping a timer does not stop an already running service, it only prevents new runs.
-    - name: Stop apt daily timers
-      ansible.builtin.systemd:
-        name: "{{ item }}"
-        state: stopped
-      loop:
-        - apt-daily.timer
-        - apt-daily-upgrade.timer
-      register: apt_daily_timers
+    - name: Gracefully stop apt maintenance and postpone it
+      when: apt_daily_upgrade_timer.stat.exists
+      block:
+        - name: Create drop-in directories for apt daily timers
+          ansible.builtin.file:
+            path: "/etc/systemd/system/{{ item }}.d"
+            state: directory
+            mode: "0755"
+          loop: "{{ apt_daily_timers }}"
 
-    # apt-daily.service only runs "apt-get update", which is safe to interrupt, stop waits until all its processes exit.
-    # apt-daily-upgrade.service has KillMode=process, stop only sends SIGTERM to its main process.
-    - name: Stop apt daily services
-      ansible.builtin.systemd:
-        name: "{{ item }}"
-        state: stopped
-      loop:
-        - apt-daily.service
-        - apt-daily-upgrade.service
+        - name: Check if apt daily timer drop-ins are up to date
+          ansible.builtin.copy:
+            dest: "/etc/systemd/system/{{ item }}.d/claudie.conf"
+            mode: "0644"
+            content: "{{ apt_daily_dropin }}"
+          loop: "{{ apt_daily_timers }}"
+          check_mode: true
+          register: apt_daily_dropins_check
 
-    # The main process of apt-daily-upgrade.service only holds a lock and runs the actual work in a child
-    # "apt.systemd.daily lock_is_held install", which survives the stop above. It either runs
-    # unattended-upgrade already or may still start it.
-    #
-    # unattended-upgrade-shutdown is the helper unattended-upgrades uses on shutdown. If unattended-upgrade
-    # is running it sends it SIGTERM and waits until it exits, otherwise it exits immediately.
-    # unattended-upgrade never interrupts a running dpkg: with Unattended-Upgrade::MinimalSteps "true"
-    # (Ubuntu default) it exits after the current package, with "false" the upgrade is a single step and
-    # has to finish. Its locks are released when it exits. The helper gives up after --delay minutes.
-    #
-    # Once unattended-upgrade exits, the leftover apt.systemd.daily finishes on its own. The helper is
-    # repeated until neither of them is running, which also catches an unattended-upgrade started by the
-    # leftover apt.systemd.daily after a previous helper run found nothing to stop.
-    - name: Gracefully stop unattended-upgrade and wait until no apt daily process is running
-      ansible.builtin.shell: |
-        if [ -x /usr/share/unattended-upgrades/unattended-upgrade-shutdown ]; then
-          /usr/share/unattended-upgrades/unattended-upgrade-shutdown --stop-only --delay 10 || exit 2
-        fi
-        # -x also matches scripts by their path, e.g. "/bin/sh /usr/lib/apt/apt.systemd.daily lock_is_held install".
-        if pidof -x /usr/lib/apt/apt.systemd.daily /usr/bin/unattended-upgrade; then
-          exit 1
-        fi
-      register: apt_daily_stop
-      until: apt_daily_stop.rc == 0
-      retries: 6
-      delay: 20
-      changed_when: false
+        # The drop-ins are written after apt maintenance is stopped, so if a previous run failed before that,
+        # they still differ and the whole block runs again.
+        - name: Apply apt daily timer drop-ins
+          when: apt_daily_dropins_check.changed
+          block:
+            # 1. Shut down running apt maintenance.
 
-    # 2. Postpone apt maintenance to 1-3h after boot.
+            # Stopping a timer does not stop an already running service, it only prevents new runs.
+            - name: Stop apt daily timers
+              ansible.builtin.systemd:
+                name: "{{ item }}"
+                state: stopped
+              loop: "{{ apt_daily_timers }}"
+              register: apt_daily_timers_stop
 
-    - name: Create drop-in directories for apt daily timers
+            # apt-daily.service only runs "apt-get update", which is safe to interrupt, stop waits until all its processes exit.
+            # apt-daily-upgrade.service has KillMode=process, stop only sends SIGTERM to its main process.
+            - name: Stop apt daily services
+              ansible.builtin.systemd:
+                name: "{{ item }}"
+                state: stopped
+              loop:
+                - apt-daily.service
+                - apt-daily-upgrade.service
+
+            # unattended-upgrade-shutdown is the helper unattended-upgrades uses on shutdown. If unattended-upgrade
+            # is running it sends it SIGTERM and waits until it exits, otherwise it exits immediately.
+            # unattended-upgrade never interrupts a running dpkg: with Unattended-Upgrade::MinimalSteps "true"
+            # (Ubuntu default) it exits after the current package, with "false" the upgrade is a single step and
+            # has to finish. Its locks are released when it exits. The helper gives up after --delay minutes.
+
+            # Once unattended-upgrade exits, the leftover apt.systemd.daily finishes on its own. The task is
+            # retried until it is gone too, which also catches an unattended-upgrade started by the leftover
+            # apt.systemd.daily after a previous helper run found nothing to stop. It runs unattended-upgrade
+            # at most once, so the helper waits for an upgrade at most once.
+            #
+            # Exit codes: 0 = nothing is running, 1 = only apt.systemd.daily is running (retried),
+            # 2 = the helper gave up while unattended-upgrade is still running (not retried).
+            - name: Gracefully stop unattended-upgrade and wait until no apt daily process is running
+              ansible.builtin.shell: |
+                if [ -x /usr/share/unattended-upgrades/unattended-upgrade-shutdown ]; then
+                  /usr/share/unattended-upgrades/unattended-upgrade-shutdown --stop-only --delay 20
+                fi
+                # The helper only returns while unattended-upgrade is running if it gave up after --delay minutes.
+                # -x also matches scripts by their path, e.g. "/usr/bin/python3 /usr/bin/unattended-upgrade".
+                if pidof -x /usr/bin/unattended-upgrade; then
+                  exit 2
+                fi
+                if pidof -x /usr/lib/apt/apt.systemd.daily; then
+                  exit 1
+                fi
+              register: apt_daily_stop
+              until: apt_daily_stop.rc != 1
+              retries: 6
+              delay: 10
+              failed_when: apt_daily_stop.rc != 0
+              changed_when: false
+
+            # 2. Postpone apt maintenance to 1-3h after boot.
+
+            - name: Write apt daily timer drop-ins
+              ansible.builtin.copy:
+                dest: "/etc/systemd/system/{{ item }}.d/claudie.conf"
+                mode: "0644"
+                content: "{{ apt_daily_dropin }}"
+              loop: "{{ apt_daily_timers }}"
+
+            - name: Reload systemd configuration
+              ansible.builtin.systemd:
+                daemon_reload: true
+
+            - name: Start apt daily timers
+              ansible.builtin.systemd:
+                name: "{{ item.item }}"
+                state: started
+              loop: "{{ apt_daily_timers_stop.results }}"
+              loop_control:
+                label: "{{ item.item }}"
+              when: item.status.UnitFileState | default('') == 'enabled'
+
+        # Previous Claudie versions masked unattended-upgrades.service. It does not run upgrades, it only
+        # gracefully stops a running upgrade on shutdown, so it is unmasked again.
+        - name: Enable unattended-upgrades shutdown guard
+          ansible.builtin.systemd:
+            name: unattended-upgrades.service
+            masked: false
+            enabled: true
+            state: started
+          failed_when: false
+
+  # A failure must not abort the playbook
+  rescue:
+    - name: Warn that apt maintenance could not be deferred
+      ansible.builtin.debug:
+        msg: "Failed to defer apt maintenance, continuing: {{ ansible_failed_result.msg | default('unknown error') }}"
+
+    # If the drop-ins were already written, the next run would skip the block and leave the stopped timers
+    # stopped. Removing them makes the next run apply the whole block again.
+    - name: Remove apt daily timer drop-ins to retry on the next run
       ansible.builtin.file:
-        path: "/etc/systemd/system/{{ item }}.d"
-        state: directory
-        mode: "0755"
-      loop:
-        - apt-daily.timer
-        - apt-daily-upgrade.timer
-
-    # The stock timers keep their daily OnCalendar= schedule, only their Persistent=true catch-up of a run
-    # missed while the node was off is disabled, as it fires right after boot (only RandomizedDelaySec applies
-    # to it, which can be close to 0). The missed run is replaced by OnActiveSec, which counts from the timer
-    # activation, which is at boot, so with RandomizedDelaySec the timers run 1-3h after boot. When this
-    # playbook restarts the timers it counts from the restart, unlike OnBootSec, which would fire immediately
-    # if the node is up for longer than 1h. If the restarts keep postponing it, the next daily run still runs.
-    # Drop-ins from all directories are applied in filename order and the last value wins, so the "zz-" prefix
-    # keeps this one last, after e.g. an override.conf from "systemctl edit" or an image-provided drop-in.
-    - name: Postpone apt daily timers to 1-3h after boot
-      ansible.builtin.copy:
-        dest: "/etc/systemd/system/{{ item }}.d/claudie.conf"
-        mode: "0644"
-        content: |
-          # Managed by Claudie: run apt maintenance 1-3h after boot instead of right after boot.
-          [Timer]
-          OnCalendar=
-          Persistent=false
-          OnActiveSec=1h
-          OnUnitActiveSec=1d
-          RandomizedDelaySec=2h
-      loop:
-        - apt-daily.timer
-        - apt-daily-upgrade.timer
-      register: apt_daily_dropins
-
-    - name: Reload systemd configuration
-      ansible.builtin.systemd:
-        daemon_reload: true
-      when: apt_daily_dropins.changed
-
-    # Timers that are enabled are started again, even if a previous failed run left them stopped.
-    - name: Start apt daily timers
-      ansible.builtin.systemd:
-        name: "{{ item.item }}"
-        state: started
-      loop: "{{ apt_daily_timers.results }}"
-      loop_control:
-        label: "{{ item.item }}"
-      when: item.status.UnitFileState | default('') == 'enabled'
-
-    # Previous Claudie versions masked unattended-upgrades.service. It does not run upgrades, it only
-    # gracefully stops a running upgrade on shutdown, so it is unmasked again.
-    - name: Enable unattended-upgrades shutdown guard
-      ansible.builtin.systemd:
-        name: unattended-upgrades.service
-        masked: false
-        enabled: true
-        state: started
+        path: "/etc/systemd/system/{{ item }}.d/claudie.conf"
+        state: absent
+      loop: "{{ apt_daily_timers }}"
+      when: apt_daily_dropins_check.changed | default(false)
       failed_when: false
