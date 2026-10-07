@@ -84,6 +84,8 @@ func prettyPrintValidationError(err error) error {
 			nerr = fmt.Errorf("field '%s' is required to have a valid IPv4 address value", err.StructField())
 		case "cidrv4":
 			nerr = fmt.Errorf("field '%s' is required to have a valid CIDRv4 value", err.StructField())
+		case "rfc1918":
+			nerr = fmt.Errorf("field '%s' with value %q is required to be a private RFC 1918 range contained within 10.0.0.0/8, 172.16.0.0/12 or 192.168.0.0/16", err.StructField(), err.Value())
 		case "ver":
 			nerr = fmt.Errorf("field '%s' is required to have a kubernetes version of: 1.34.x, 1.35.x, 1.36.x", err.StructField())
 		case "proxyMode":
