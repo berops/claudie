@@ -10,8 +10,10 @@ import (
 const (
 	defaultHttpProxyUrl = "http://proxy.claudie.io:8880"
 
-	// 10.244.0.0/16 is kubeone's default PodCIDR and 10.96.0.0/12 is kubeone's default ServiceCIDR
-	noProxyDefault = "127.0.0.1/8,localhost,cluster.local,10.244.0.0/16,10.96.0.0/12"
+	// 10.244.0.0/16 is kubeone's default PodCIDR and 10.96.0.0/12 is kubeone's default ServiceCIDR.
+	// 10.0.0.0/8, 172.16.0.0/12 and 192.168.0.0/16 are the RFC 1918 private ranges, which the
+	// proxy cannot reach anyway. They also cover the private IPs of the cluster's own nodes.
+	noProxyDefault = "127.0.0.1/8,localhost,cluster.local,10.244.0.0/16,10.96.0.0/12,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
 )
 
 type Proxy struct {
@@ -21,8 +23,9 @@ type Proxy struct {
 
 // Returns the filled out [Proxy] structure based on the passed in
 // values. The provided [*spec.K8Scluster] and [][*spec.LBCluster]
-// are only traversed to collect the private IPs of the nodes of the
-// cluster to from the NoProxyList. The **actuall Proxy arguments are
+// are only traversed to collect the public IPs of the nodes and the
+// DNS endpoints of the loadbalancers to form the NoProxyList. Private
+// IPs are covered by the RFC 1918 ranges in the defaults. The **actuall Proxy arguments are
 // read from the passed in [*spec.InstallationProxy] parameter**. This
 // could be the same one as the one within the passed in [*spec.K8Scluster]
 // or could be a completely different one.
@@ -53,7 +56,7 @@ func createNoProxyList(
 
 	for _, np := range k8s.ClusterInfo.NodePools {
 		for _, node := range np.Nodes {
-			noProxyList = fmt.Sprintf("%s,%s,%s", noProxyList, node.Private, node.Public)
+			noProxyList = fmt.Sprintf("%s,%s", noProxyList, node.Public)
 		}
 	}
 
@@ -66,7 +69,7 @@ func createNoProxyList(
 		}
 		for _, np := range lbCluster.ClusterInfo.NodePools {
 			for _, node := range np.Nodes {
-				noProxyList = fmt.Sprintf("%s,%s,%s", noProxyList, node.Private, node.Public)
+				noProxyList = fmt.Sprintf("%s,%s", noProxyList, node.Public)
 			}
 		}
 	}
