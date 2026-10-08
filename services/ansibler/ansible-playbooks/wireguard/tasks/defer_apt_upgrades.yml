@@ -4,14 +4,18 @@
 # (e.g. kubeone in kube-eleven) runs apt-get, which fails.
 #
 # Not every provider supports cloud-init, so the upgrade can not be prevented before boot. Instead:
-#   1. if apt maintenance is running, shut it down gracefully,
-#   2. postpone the timers, so that they run 1-3h after boot instead of right after boot.
+#   1. make apt wait for the dpkg lock instead of failing,
+#   2. if apt maintenance is running, shut it down gracefully,
+#   3. postpone the timers, so that they run 1-3h after boot instead of right after boot.
 #
 # This runs on every reconciliation, which is roughly every 30 minutes on an idle cluster.
-# Both steps only run when the drop-in changes, as every timer restart postpones the next run.
+# Steps 2 and 3 only run when the timer drop-in changes, as every timer restart postpones the next run.
 
 - name: Defer apt maintenance
   vars:
+    apt_dpkg_lock_timeout_conf: |
+      // Managed by Claudie: wait up to 10 minutes for the dpkg lock instead of failing immediately.
+      DPkg::Lock::Timeout "600";
     apt_daily_timers:
       - apt-daily.timer
       - apt-daily-upgrade.timer
@@ -24,6 +28,25 @@
       OnUnitActiveSec=1d
       RandomizedDelaySec=2h
   block:
+    # 1. Wait for the dpkg lock.
+
+    # Postponing the timers only covers the time right after boot. Later they fire once a day at a random
+    # time, so an apt-get run by Claudie (e.g. kubeone during a Kubernetes upgrade) can still find the dpkg
+    # lock held. The default DPkg::Lock::Timeout is 0, which makes apt-get fail immediately with exit code 100.
+    # With a timeout, every apt-get (including kubeone's) waits until the lock is released instead.
+    - name: Create apt configuration directory
+      ansible.builtin.file:
+        path: /etc/apt/apt.conf.d
+        state: directory
+        mode: "0755"
+
+    # Files in apt.conf.d are read in alphanumeric order, the zzz- prefix makes this one win.
+    - name: Configure dpkg lock timeout
+      ansible.builtin.copy:
+        dest: /etc/apt/apt.conf.d/zzz-claudie.conf
+        mode: "0644"
+        content: "{{ apt_dpkg_lock_timeout_conf }}"
+
     - name: Check if apt daily timers are present
       ansible.builtin.stat:
         path: /lib/systemd/system/apt-daily-upgrade.timer
@@ -41,7 +64,7 @@
 
         - name: Check if apt daily timer drop-ins are up to date
           ansible.builtin.copy:
-            dest: "/etc/systemd/system/{{ item }}.d/claudie.conf"
+            dest: "/etc/systemd/system/{{ item }}.d/zzz-claudie.conf"
             mode: "0644"
             content: "{{ apt_daily_dropin }}"
           loop: "{{ apt_daily_timers }}"
@@ -53,7 +76,7 @@
         - name: Apply apt daily timer drop-ins
           when: apt_daily_dropins_check.changed
           block:
-            # 1. Shut down running apt maintenance.
+            # 2. Shut down running apt maintenance.
 
             # Stopping a timer does not stop an already running service, it only prevents new runs.
             - name: Stop apt daily timers
@@ -106,11 +129,11 @@
               failed_when: apt_daily_stop.rc != 0
               changed_when: false
 
-            # 2. Postpone apt maintenance to 1-3h after boot.
+            # 3. Postpone apt maintenance to 1-3h after boot.
 
             - name: Write apt daily timer drop-ins
               ansible.builtin.copy:
-                dest: "/etc/systemd/system/{{ item }}.d/claudie.conf"
+                dest: "/etc/systemd/system/{{ item }}.d/zzz-claudie.conf"
                 mode: "0644"
                 content: "{{ apt_daily_dropin }}"
               loop: "{{ apt_daily_timers }}"
@@ -148,7 +171,7 @@
     # stopped. Removing them makes the next run apply the whole block again.
     - name: Remove apt daily timer drop-ins to retry on the next run
       ansible.builtin.file:
-        path: "/etc/systemd/system/{{ item }}.d/claudie.conf"
+        path: "/etc/systemd/system/{{ item }}.d/zzz-claudie.conf"
         state: absent
       loop: "{{ apt_daily_timers }}"
       when: apt_daily_dropins_check.changed | default(false)
