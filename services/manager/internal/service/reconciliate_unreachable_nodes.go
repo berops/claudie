@@ -85,6 +85,16 @@ func HandleKubernetesUnknownNodes(logger zerolog.Logger, r KubernetesUnreachable
 		}
 	}
 
+	// Etcd accepts membership changes only while a majority of its
+	// members is healthy, thus the healthy control nodes across all
+	// control nodepools must form a quorum for the deletion to succeed.
+	var total, unhealthy int
+	for cnp := range nodepools.Control(r.Current.K8S.ClusterInfo.NodePools) {
+		total += len(cnp.Nodes)
+		unhealthy += len(unknownK8sNodes[cnp.Name])
+	}
+	controlQuorum := (total-unhealthy)*2 > total
+
 	for np, nodes := range unknownK8sNodes {
 		// cnp could be nil if a node is in the k8s cluster that
 		// is not tracked by claudie.
@@ -194,6 +204,19 @@ func HandleKubernetesUnknownNodes(logger zerolog.Logger, r KubernetesUnreachable
 				}
 
 				// fallthrough
+			}
+
+			if n.IsControl && !controlQuorum {
+				errUnreachable = errors.Join(
+					errUnreachable,
+					fmt.Errorf(" - control node %q, nodepool %q, endpoint %q is unhealthy, "+
+						"healthy control nodes do not form a quorum to remove it",
+						n.K8sName,
+						np,
+						n.PublicIPv4,
+					),
+				)
+				continue
 			}
 
 			canDelete = append(canDelete, n)
