@@ -74,6 +74,15 @@ func (v *InputManifestValidator) ValidateCreate(ctx context.Context, obj *v1beta
 
 // ValidateUpdate defines the logic when a kubernetes obj resource is updated
 func (v *InputManifestValidator) ValidateUpdate(ctx context.Context, oldObj, newObj *v1beta.InputManifest) (admission.Warnings, error) {
+	// When the InputManifest is being deleted, the operator has to remove the
+	// claudie finalizer from it via an update. If the manifest no longer passes
+	// validation, e.g. after upgrading to a Claudie version with stricter rules,
+	// the update would be rejected and the InputManifest could never be deleted.
+	// Thus skip the validation for InputManifests that are being deleted.
+	if !newObj.GetDeletionTimestamp().IsZero() {
+		return nil, nil
+	}
+
 	nmap := getDynamicNodepoolsMap(oldObj)
 	for _, desired := range newObj.Spec.NodePools.Dynamic {
 		current, exists := nmap[desired.Name]
