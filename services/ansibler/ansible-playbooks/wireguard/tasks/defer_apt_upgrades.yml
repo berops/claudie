@@ -149,7 +149,7 @@
               loop: "{{ apt_daily_timers_stop.results }}"
               loop_control:
                 label: "{{ item.item }}"
-              when: item.status.UnitFileState | default('') == 'enabled'
+              when: item.status.UnitFileState | default('') in ['enabled', 'enabled-runtime', 'alias', 'static', 'indirect', 'generated', 'transient']
 
         # Previous Claudie versions masked unattended-upgrades.service. It does not run upgrades, it only
         # gracefully stops a running upgrade on shutdown, so it is unmasked again.
