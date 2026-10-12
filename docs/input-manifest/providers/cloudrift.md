@@ -19,6 +19,9 @@ type: Opaque
 !!! note "No DNS support"
     CloudRift does not provide DNS resources. If you need load balancer DNS records for CloudRift clusters, use a separate DNS provider (e.g., Cloudflare, AWS Route53, GCP Cloud DNS).
 
+!!! warning "Not supported for control-plane and load balancer nodepools"
+    CloudRift firewall rules are applied at VM creation and any change to them replaces the VM, which would break the cluster. CloudRift nodepools can therefore only be used as compute nodepools.
+
 ## Create CloudRift API credentials
 You can create a CloudRift API key from the [CloudRift console](https://console.cloudrift.ai/). Navigate to **Settings > API Keys** and generate a new personal API key.
 
@@ -78,7 +81,7 @@ To provision under a team account:
 kubectl create secret generic cloudrift-secret-1 --namespace=<your-namespace> --from-literal=token='<your-personal-api-token>' --from-literal=teamid='<your-team-id>'
 ```
 
-### Single-provider, multi-datacenter cluster example
+### Multi-datacenter cluster example
 
 ```yaml
 apiVersion: claudie.io/v1beta1
@@ -114,20 +117,22 @@ spec:
       secretRef:
         name: cloudrift-secret-1
         namespace: <your-namespace>
+    - name: hetzner-1
+      providerType: hetzner
+      secretRef:
+        name: hetzner-secret-1
+        namespace: <your-namespace>
 
   nodePools:
     dynamic:
-      - name: control-cr
+      - name: control-htz
+        # CloudRift does not support control nodes, Hetzner is used as an example.
         providerSpec:
-          # Name of the provider instance.
-          name: cloudrift-1
-          # Datacenter of the nodepool.
-          region: us-east-nc-nr-1
+          name: hetzner-1
+          region: hel1
         count: 1
-        # Instance type name.
-        serverType: rtx49-7-50-500-nr.1
-        # OS recipe name.
-        image: "Ubuntu 22.04 Server (NVidia)"
+        serverType: cpx22
+        image: ubuntu-24.04
 
       - name: compute-1-cr
         providerSpec:
@@ -148,7 +153,7 @@ spec:
         network: 192.168.2.0/24
         pools:
           control:
-            - control-cr
+            - control-htz
           compute:
             - compute-1-cr
 ```
@@ -189,16 +194,22 @@ spec:
       secretRef:
         name: cloudrift-secret-1
         namespace: <your-namespace>
+    - name: hetzner-1
+      providerType: hetzner
+      secretRef:
+        name: hetzner-secret-1
+        namespace: <your-namespace>
 
   nodePools:
     dynamic:
-      - name: control-cr
+      - name: control-htz
+        # CloudRift does not support control nodes, Hetzner is used as an example.
         providerSpec:
-          name: cloudrift-1
-          region: us-east-nc-nr-1
+          name: hetzner-1
+          region: hel1
         count: 1
-        serverType: rtx49-7-50-500-nr.1
-        image: "Ubuntu 22.04 Server (NVidia)"
+        serverType: cpx22
+        image: ubuntu-24.04
 
       - name: compute-cr
         providerSpec:
@@ -218,7 +229,7 @@ spec:
         network: 192.168.2.0/24
         pools:
           control:
-            - control-cr
+            - control-htz
           compute:
             - compute-cr
 ```
