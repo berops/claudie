@@ -22,6 +22,9 @@ type: Opaque
 !!! note "Public IP by default"
     Every Claudie-provisioned OVH instance gets a routable public IPv4 (`network { public = true }`). Floating IPs are not modelled in v1 because the OVH provider does not yet expose a native floating-IP resource ([issue](https://github.com/ovh/terraform-provider-ovh/issues/1245)).
 
+!!! warning "Not supported for control-plane nodepools"
+    OVH firewall rules are applied at VM creation and any change to them replaces the VM, which would break the control plane. OVH nodepools can therefore only be used as compute nodepools.
+
 ## Create OVH API credentials
 
 Claudie uses the OAuth2 client-credentials grant. Follow the [OVH provider OAuth2 setup guide](https://search.opentofu.org/provider/ovh/ovh/latest#oauth2) to create a service account and obtain the `client_id` and `client_secret`. Scope the service account for your Public Cloud project, and for your DNS zone if you plan to use OVH as a DNS provider for load balancers.
@@ -99,7 +102,7 @@ kubectl create secret generic ovh-secret-1 \
 # Optionally add: --from-literal=endpoint='ovh-eu'
 ```
 
-### Single-provider, single-region cluster
+### Single-region cluster
 
 ```yaml
 apiVersion: claudie.io/v1beta1
@@ -135,16 +138,22 @@ spec:
       secretRef:
         name: ovh-secret-1
         namespace: <your-namespace>
+    - name: hetzner-1
+      providerType: hetzner
+      secretRef:
+        name: hetzner-secret-1
+        namespace: <your-namespace>
 
   nodePools:
     dynamic:
-      - name: control-ovh
+      - name: control-htz
+        # OVH does not support control nodes, Hetzner is used as an example.
         providerSpec:
-          name: ovh-1
-          region: GRA11
+          name: hetzner-1
+          region: hel1
         count: 1
-        serverType: b3-8
-        image: "Ubuntu 24.04"
+        serverType: cpx22
+        image: ubuntu-24.04
 
       - name: compute-ovh
         providerSpec:
@@ -161,7 +170,7 @@ spec:
         network: 192.168.2.0/24
         pools:
           control:
-            - control-ovh
+            - control-htz
           compute:
             - compute-ovh
 ```
@@ -202,16 +211,22 @@ spec:
       secretRef:
         name: ovh-secret-1
         namespace: <your-namespace>
+    - name: hetzner-1
+      providerType: hetzner
+      secretRef:
+        name: hetzner-secret-1
+        namespace: <your-namespace>
 
   nodePools:
     dynamic:
-      - name: control-ovh
+      - name: control-htz
+        # OVH does not support control nodes, Hetzner is used as an example.
         providerSpec:
-          name: ovh-1
-          region: GRA11
+          name: hetzner-1
+          region: hel1
         count: 1
-        serverType: b3-8
-        image: "Ubuntu 24.04"
+        serverType: cpx22
+        image: ubuntu-24.04
 
       - name: gpu-ovh
         providerSpec:
@@ -228,7 +243,7 @@ spec:
         network: 192.168.2.0/24
         pools:
           control:
-            - control-ovh
+            - control-htz
           compute:
             - gpu-ovh
 ```
@@ -269,16 +284,22 @@ spec:
       secretRef:
         name: ovh-secret-1
         namespace: <your-namespace>
+    - name: hetzner-1
+      providerType: hetzner
+      secretRef:
+        name: hetzner-secret-1
+        namespace: <your-namespace>
 
   nodePools:
     dynamic:
-      - name: control-ovh
+      - name: control-htz
+        # OVH does not support control nodes, Hetzner is used as an example.
         providerSpec:
-          name: ovh-1
-          region: GRA11
+          name: hetzner-1
+          region: hel1
         count: 1
-        serverType: b3-8
-        image: "Ubuntu 24.04"
+        serverType: cpx22
+        image: ubuntu-24.04
 
       - name: compute-ovh
         providerSpec:
@@ -303,7 +324,7 @@ spec:
         network: 192.168.2.0/24
         pools:
           control:
-            - control-ovh
+            - control-htz
           compute:
             - compute-ovh
 
@@ -363,16 +384,22 @@ spec:
       secretRef:
         name: ovh-secret-1
         namespace: <your-namespace>
+    - name: hetzner-1
+      providerType: hetzner
+      secretRef:
+        name: hetzner-secret-1
+        namespace: <your-namespace>
 
   nodePools:
     dynamic:
-      - name: control-ovh
+      - name: control-htz
+        # OVH does not support control nodes, Hetzner is used as an example.
         providerSpec:
-          name: ovh-1
-          region: GRA11
+          name: hetzner-1
+          region: hel1
         count: 1
-        serverType: b3-8
-        image: "Ubuntu 24.04"
+        serverType: cpx22
+        image: ubuntu-24.04
 
       - name: compute-ovh
         providerSpec:
@@ -391,7 +418,7 @@ spec:
         network: 192.168.2.0/24
         pools:
           control:
-            - control-ovh
+            - control-htz
           compute:
             - compute-ovh
 ```

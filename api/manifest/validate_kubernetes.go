@@ -31,7 +31,11 @@ var (
 	// used to verify the proxy mode inside the manifest
 	proxyModeRegex = regexp.MustCompile(proxyModeRegexString)
 
-	controlPlaneDeniedProviders = []string{"vastai"}
+	// these providers use firewall rules which are applied inside the OS
+	// via user data/startup script at VM creation and cannot be updated
+	// in-place, any change to the rules forces the VM to be replaced, which would
+	// break the control plane.
+	controlPlaneDeniedProviders = []string{"vastai", "ovh", "verda", "cloudrift"}
 )
 
 // Validate validates the parsed data inside the Kubernetes section of the manifest.

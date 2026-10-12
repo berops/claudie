@@ -26,6 +26,9 @@ type: Opaque
 !!! warning "60-character limit on instance description"
     The Verda API caps `verda_instance.description` at 60 characters. Claudie's nodepool template renders the description as `Claudie <clusterName>-<clusterHash>`, where `<clusterHash>` is a 7-character suffix. This leaves **at most 44 characters for `kubernetes.clusters[].name`** (`60 - len("Claudie ") - len("-") - 7 = 44`). Cluster names beyond that bound will cause `tofu apply` to fail at instance creation with `API error 400`. Keep cluster names short.
 
+!!! warning "Not supported for control-plane nodepools"
+    Verda firewall rules are applied at VM creation and any change to them replaces the VM, which would break the control plane. Verda nodepools can therefore only be used as compute nodepools.
+
 ## Create Verda API credentials
 
 Generate OAuth2 client credentials from the [Verda console](https://console.verda.com/) under **Keys > Cloud API Credentials**. You receive a `client_id` and a `client_secret` (the secret is shown only once at creation time).
@@ -119,16 +122,22 @@ spec:
       secretRef:
         name: verda-secret-1
         namespace: <your-namespace>
+    - name: hetzner-1
+      providerType: hetzner
+      secretRef:
+        name: hetzner-secret-1
+        namespace: <your-namespace>
 
   nodePools:
     dynamic:
-      - name: control-verda
+      - name: control-htz
+        # Verda does not support control nodes, Hetzner is used as an example.
         providerSpec:
-          name: verda-1
-          region: FIN-01
+          name: hetzner-1
+          region: hel1
         count: 1
-        serverType: CPU.4V.16G
-        image: "ubuntu-24.04"
+        serverType: cpx22
+        image: ubuntu-24.04
 
       - name: spot-workers
         providerSpec:
@@ -148,7 +157,7 @@ spec:
         network: 192.168.2.0/24
         pools:
           control:
-            - control-verda
+            - control-htz
           compute:
             - spot-workers
 ```
@@ -175,7 +184,7 @@ kubectl create secret generic verda-secret-1 \
   --from-literal=clientsecret='<your-client-secret>'
 ```
 
-### Single-provider, single-location cluster example
+### Single-location cluster example
 
 ```yaml
 apiVersion: claudie.io/v1beta1
@@ -211,20 +220,22 @@ spec:
       secretRef:
         name: verda-secret-1
         namespace: <your-namespace>
+    - name: hetzner-1
+      providerType: hetzner
+      secretRef:
+        name: hetzner-secret-1
+        namespace: <your-namespace>
 
   nodePools:
     dynamic:
-      - name: control-verda
+      - name: control-htz
+        # Verda does not support control nodes, Hetzner is used as an example.
         providerSpec:
-          # Name of the provider instance.
-          name: verda-1
-          # Location of the nodepool.
-          region: FIN-01
+          name: hetzner-1
+          region: hel1
         count: 1
-        # Instance type name.
-        serverType: CPU.4V.16G
-        # OS image name (use a non-Docker variant).
-        image: "ubuntu-24.04"
+        serverType: cpx22
+        image: ubuntu-24.04
 
       - name: compute-verda
         providerSpec:
@@ -242,7 +253,7 @@ spec:
         network: 192.168.2.0/24
         pools:
           control:
-            - control-verda
+            - control-htz
           compute:
             - compute-verda
 ```
@@ -283,16 +294,22 @@ spec:
       secretRef:
         name: verda-secret-1
         namespace: <your-namespace>
+    - name: hetzner-1
+      providerType: hetzner
+      secretRef:
+        name: hetzner-secret-1
+        namespace: <your-namespace>
 
   nodePools:
     dynamic:
-      - name: control-verda
+      - name: control-htz
+        # Verda does not support control nodes, Hetzner is used as an example.
         providerSpec:
-          name: verda-1
-          region: FIN-01
+          name: hetzner-1
+          region: hel1
         count: 1
-        serverType: CPU.4V.16G
-        image: "ubuntu-24.04"
+        serverType: cpx22
+        image: ubuntu-24.04
 
       - name: gpu-verda
         providerSpec:
@@ -312,7 +329,7 @@ spec:
         network: 192.168.2.0/24
         pools:
           control:
-            - control-verda
+            - control-htz
           compute:
             - gpu-verda
 ```
@@ -353,16 +370,22 @@ spec:
       secretRef:
         name: verda-secret-1
         namespace: <your-namespace>
+    - name: hetzner-1
+      providerType: hetzner
+      secretRef:
+        name: hetzner-secret-1
+        namespace: <your-namespace>
 
   nodePools:
     dynamic:
-      - name: control-verda
+      - name: control-htz
+        # Verda does not support control nodes, Hetzner is used as an example.
         providerSpec:
-          name: verda-1
-          region: FIN-01
+          name: hetzner-1
+          region: hel1
         count: 1
-        serverType: CPU.4V.16G
-        image: "ubuntu-24.04"
+        serverType: cpx22
+        image: ubuntu-24.04
 
       - name: gpu-verda
         providerSpec:
@@ -383,7 +406,7 @@ spec:
         network: 192.168.2.0/24
         pools:
           control:
-            - control-verda
+            - control-htz
           compute:
             - gpu-verda
 ```
