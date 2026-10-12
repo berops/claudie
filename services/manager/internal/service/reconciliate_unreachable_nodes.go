@@ -88,12 +88,10 @@ func HandleKubernetesUnknownNodes(logger zerolog.Logger, r KubernetesUnreachable
 	// Etcd accepts membership changes only while a majority of its
 	// members is healthy, thus the healthy control nodes across all
 	// control nodepools must form a quorum for the deletion to succeed.
-	var total, unhealthy int
+	var totalControlNodes int
 	for cnp := range nodepools.Control(r.Current.K8S.ClusterInfo.NodePools) {
-		total += len(cnp.Nodes)
-		unhealthy += len(unknownK8sNodes[cnp.Name])
+		totalControlNodes += len(cnp.Nodes)
 	}
-	controlQuorum := (total-unhealthy)*2 > total
 
 	for np, nodes := range unknownK8sNodes {
 		// cnp could be nil if a node is in the k8s cluster that
@@ -102,39 +100,23 @@ func HandleKubernetesUnknownNodes(logger zerolog.Logger, r KubernetesUnreachable
 		dnp := nodepools.FindByName(np, r.Desired.K8S.ClusterInfo.NodePools)
 
 		if cnp != nil && dnp == nil {
-			if cnp.IsControl {
-				controlpools := slices.Collect(nodepools.Control(r.Current.K8S.ClusterInfo.NodePools))
-				if len(controlpools) == 1 {
-					// Deleting nodes from the last control plane nodepool will result in an invalid cluster.
-					errUnreachable = errors.Join(
-						errUnreachable,
-						fmt.Errorf("can't delete nodes with unknown status from nodepool %q, the "+
-							"nodepool is the last control nodepool, the deletion would result in a broken cluster",
-							np,
-						),
-					)
+			if cnp.GetIsControl() && r.Diff.ApiEndpoint.Current != "" && cnp.EndpointNode() != nil {
+				// deleted api endpoint in desired
+				//
+				// Note:
+				//
+				// In future, we could implement a "last resort" move of the api
+				// endpoint and allow the the nodepool to be deleted, that would be
+				// risky, but a way out of the deadlock.
+				errUnreachable = errors.Join(
+					errUnreachable,
+					fmt.Errorf("can't delete nodepool %q with unknown node status, the "+
+						"nodepool has the kubeapi server endpoint which would result in a broken cluster",
+						np,
+					),
+				)
 
-					continue
-				}
-
-				if r.Diff.ApiEndpoint.Current != "" && cnp.EndpointNode() != nil {
-					// deleted api endpoint in desired
-					//
-					// Note:
-					//
-					// In future, we could implement a "last resort" move of the api
-					// endpoint and allow the the nodepool to be deleted, that would be
-					// risky, but a way out of the deadlock.
-					errUnreachable = errors.Join(
-						errUnreachable,
-						fmt.Errorf("can't delete nodepool %q with unknown node status, the "+
-							"nodepool has the kubeapi server endpoint which would result in a broken cluster",
-							np,
-						),
-					)
-
-					continue
-				}
+				continue
 			}
 
 			opts := K8sNodeDeletionOptions{
@@ -155,6 +137,23 @@ func HandleKubernetesUnknownNodes(logger zerolog.Logger, r KubernetesUnreachable
 					// k8s names have the cluster ID stripped.
 					fullname := fmt.Sprintf("%s-%s", r.Current.K8S.ClusterInfo.Id(), n.K8sName)
 					diff.PartiallyDeleted[cnp.Name] = append(diff.PartiallyDeleted[cnp.Name], fullname)
+				}
+			}
+
+			if cnp.GetIsControl() {
+				deletedControlNodes := len(diff.PartiallyDeleted[cnp.Name])
+				controlQuorum := (totalControlNodes-deletedControlNodes)*2 > totalControlNodes
+				if !controlQuorum {
+					errUnreachable = errors.Join(
+						errUnreachable,
+						fmt.Errorf("can't delete %d control nodes with unknown status from nodepool %q, the "+
+							"remaining control nodes would not form a quorum",
+							deletedControlNodes,
+							np,
+						),
+					)
+
+					continue
 				}
 			}
 
@@ -206,19 +205,6 @@ func HandleKubernetesUnknownNodes(logger zerolog.Logger, r KubernetesUnreachable
 				// fallthrough
 			}
 
-			if n.IsControl && !controlQuorum {
-				errUnreachable = errors.Join(
-					errUnreachable,
-					fmt.Errorf(" - control node %q, nodepool %q, endpoint %q is unhealthy, "+
-						"healthy control nodes do not form a quorum to remove it",
-						n.K8sName,
-						np,
-						n.PublicIPv4,
-					),
-				)
-				continue
-			}
-
 			canDelete = append(canDelete, n)
 		}
 
@@ -245,6 +231,23 @@ func HandleKubernetesUnknownNodes(logger zerolog.Logger, r KubernetesUnreachable
 				fullname = fmt.Sprintf("%s-%s", r.Current.K8S.ClusterInfo.Id(), n.K8sName)
 			}
 			diff.PartiallyDeleted[np] = append(diff.PartiallyDeleted[np], fullname)
+		}
+
+		if cnp.GetIsControl() {
+			deletedControlNodes := len(diff.PartiallyDeleted[np])
+			controlQuorum := (totalControlNodes-deletedControlNodes)*2 > totalControlNodes
+			if !controlQuorum {
+				errUnreachable = errors.Join(
+					errUnreachable,
+					fmt.Errorf(" - can't delete %d control nodes with unknown status from nodepool %q, the "+
+						"remaining control nodes would not form a quorum",
+						deletedControlNodes,
+						np,
+					),
+				)
+
+				continue
+			}
 		}
 
 		logger.
