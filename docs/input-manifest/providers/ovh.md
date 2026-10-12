@@ -22,8 +22,8 @@ type: Opaque
 !!! note "Public IP by default"
     Every Claudie-provisioned OVH instance gets a routable public IPv4 (`network { public = true }`). Floating IPs are not modelled in v1 because the OVH provider does not yet expose a native floating-IP resource ([issue](https://github.com/ovh/terraform-provider-ovh/issues/1245)).
 
-!!! warning "Not supported for control-plane nodepools"
-    OVH firewall rules are applied at VM creation and any change to them replaces the VM, which would break the control plane. OVH nodepools can therefore only be used as compute nodepools.
+!!! warning "Not supported for control-plane and load balancer nodepools"
+    OVH firewall rules are applied at VM creation and any change to them replaces the VM, which would break the cluster. OVH nodepools can therefore only be used as compute nodepools.
 
 ## Create OVH API credentials
 
@@ -309,13 +309,14 @@ spec:
         serverType: b3-8
         image: "Ubuntu 24.04"
 
-      - name: lb-ovh
+      - name: lb-htz
+        # OVH does not support load balancer nodes, Hetzner is used as an example.
         providerSpec:
-          name: ovh-1
-          region: GRA11
+          name: hetzner-1
+          region: hel1
         count: 1
-        serverType: b3-8
-        image: "Ubuntu 24.04"
+        serverType: cpx22
+        image: ubuntu-24.04
 
   kubernetes:
     clusters:
@@ -345,7 +346,7 @@ spec:
           provider: ovh-1
         targetedK8s: ovh-cluster
         pools:
-          - lb-ovh
+          - lb-htz
 ```
 
 ### Autoscaling compute pool

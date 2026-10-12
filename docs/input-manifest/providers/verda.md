@@ -26,8 +26,8 @@ type: Opaque
 !!! warning "60-character limit on instance description"
     The Verda API caps `verda_instance.description` at 60 characters. Claudie's nodepool template renders the description as `Claudie <clusterName>-<clusterHash>`, where `<clusterHash>` is a 7-character suffix. This leaves **at most 44 characters for `kubernetes.clusters[].name`** (`60 - len("Claudie ") - len("-") - 7 = 44`). Cluster names beyond that bound will cause `tofu apply` to fail at instance creation with `API error 400`. Keep cluster names short.
 
-!!! warning "Not supported for control-plane nodepools"
-    Verda firewall rules are applied at VM creation and any change to them replaces the VM, which would break the control plane. Verda nodepools can therefore only be used as compute nodepools.
+!!! warning "Not supported for control-plane and load balancer nodepools"
+    Verda firewall rules are applied at VM creation and any change to them replaces the VM, which would break the cluster. Verda nodepools can therefore only be used as compute nodepools.
 
 ## Create Verda API credentials
 

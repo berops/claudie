@@ -19,8 +19,8 @@ type: Opaque
 !!! note "No DNS support"
     CloudRift does not provide DNS resources. If you need load balancer DNS records for CloudRift clusters, use a separate DNS provider (e.g., Cloudflare, AWS Route53, GCP Cloud DNS).
 
-!!! warning "Not supported for control-plane nodepools"
-    CloudRift firewall rules are applied at VM creation and any change to them replaces the VM, which would break the control plane. CloudRift nodepools can therefore only be used as compute nodepools.
+!!! warning "Not supported for control-plane and load balancer nodepools"
+    CloudRift firewall rules are applied at VM creation and any change to them replaces the VM, which would break the cluster. CloudRift nodepools can therefore only be used as compute nodepools.
 
 ## Create CloudRift API credentials
 You can create a CloudRift API key from the [CloudRift console](https://console.cloudrift.ai/). Navigate to **Settings > API Keys** and generate a new personal API key.
