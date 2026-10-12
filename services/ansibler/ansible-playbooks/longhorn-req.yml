@@ -14,7 +14,7 @@
   tasks:
     - name: install open-iscsi and nfs-common
       ansible.builtin.apt:
-        name: 
+        name:
           - open-iscsi
           - nfs-common
         state: present

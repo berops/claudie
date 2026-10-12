@@ -311,16 +311,16 @@ func CreatePipeline(clusters *spec.Clusters, isCreate bool) []*spec.Stage {
 						},
 					},
 					{
-						Kind: spec.StageAnsibler_INSTALL_NODE_REQUIREMENTS,
+						Kind: spec.StageAnsibler_INSTALL_VPN,
 						Description: &spec.StageDescription{
-							About:      "Installing pre-requisites on all of the nodes of the cluster",
+							About:      "Setting up VPN across the nodes of the kuberentes and loadbalancer clusters",
 							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 						},
 					},
 					{
-						Kind: spec.StageAnsibler_INSTALL_VPN,
+						Kind: spec.StageAnsibler_INSTALL_NODE_REQUIREMENTS,
 						Description: &spec.StageDescription{
-							About:      "Setting up VPN across the nodes of the kuberentes and loadbalancer clusters",
+							About:      "Installing pre-requisites on all of the nodes of the cluster",
 							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 						},
 					},
@@ -351,16 +351,16 @@ func CreatePipeline(clusters *spec.Clusters, isCreate bool) []*spec.Stage {
 				},
 				SubPasses: []*spec.StageAnsibler_SubPass{
 					{
-						Kind: spec.StageAnsibler_INSTALL_NODE_REQUIREMENTS,
+						Kind: spec.StageAnsibler_INSTALL_VPN,
 						Description: &spec.StageDescription{
-							About:      "Installing pre-requisites on all of the nodes of the cluster",
+							About:      "Setting up VPN across the nodes of the kuberentes and loadbalancer clusters",
 							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 						},
 					},
 					{
-						Kind: spec.StageAnsibler_INSTALL_VPN,
+						Kind: spec.StageAnsibler_INSTALL_NODE_REQUIREMENTS,
 						Description: &spec.StageDescription{
-							About:      "Setting up VPN across the nodes of the kuberentes and loadbalancer clusters",
+							About:      "Installing pre-requisites on all of the nodes of the cluster",
 							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 						},
 					},
