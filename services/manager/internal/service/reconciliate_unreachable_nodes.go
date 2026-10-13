@@ -88,10 +88,12 @@ func HandleKubernetesUnknownNodes(logger zerolog.Logger, r KubernetesUnreachable
 	// Etcd accepts membership changes only while a majority of its
 	// members is healthy, thus the healthy control nodes across all
 	// control nodepools must form a quorum for the deletion to succeed.
-	var totalControlNodes int
+	var totalControlNodes, unhealthyControlNodes int
 	for cnp := range nodepools.Control(r.Current.K8S.ClusterInfo.NodePools) {
 		totalControlNodes += len(cnp.Nodes)
+		unhealthyControlNodes += len(unknownK8sNodes[cnp.Name])
 	}
+	controlQuorum := (totalControlNodes-unhealthyControlNodes)*2 > totalControlNodes
 
 	for np, nodes := range unknownK8sNodes {
 		// cnp could be nil if a node is in the k8s cluster that
@@ -140,21 +142,18 @@ func HandleKubernetesUnknownNodes(logger zerolog.Logger, r KubernetesUnreachable
 				}
 			}
 
-			if cnp.GetIsControl() {
-				deletedControlNodes := len(diff.PartiallyDeleted[cnp.Name])
-				controlQuorum := (totalControlNodes-deletedControlNodes)*2 > totalControlNodes
-				if !controlQuorum {
-					errUnreachable = errors.Join(
-						errUnreachable,
-						fmt.Errorf("can't delete %d control nodes with unknown status from nodepool %q, the "+
-							"remaining control nodes would not form a quorum",
-							deletedControlNodes,
-							np,
-						),
-					)
+			if cnp.GetIsControl() && !controlQuorum {
+				errUnreachable = errors.Join(
+					errUnreachable,
+					fmt.Errorf("can't delete control nodes with unknown status from nodepool %q, "+
+						"only %d out of %d control nodes are healthy, which does not form a quorum",
+						np,
+						totalControlNodes-unhealthyControlNodes,
+						totalControlNodes,
+					),
+				)
 
-					continue
-				}
+				continue
 			}
 
 			logger.
@@ -233,21 +232,18 @@ func HandleKubernetesUnknownNodes(logger zerolog.Logger, r KubernetesUnreachable
 			diff.PartiallyDeleted[np] = append(diff.PartiallyDeleted[np], fullname)
 		}
 
-		if cnp.GetIsControl() {
-			deletedControlNodes := len(diff.PartiallyDeleted[np])
-			controlQuorum := (totalControlNodes-deletedControlNodes)*2 > totalControlNodes
-			if !controlQuorum {
-				errUnreachable = errors.Join(
-					errUnreachable,
-					fmt.Errorf(" - can't delete %d control nodes with unknown status from nodepool %q, the "+
-						"remaining control nodes would not form a quorum",
-						deletedControlNodes,
-						np,
-					),
-				)
+		if cnp.GetIsControl() && !controlQuorum {
+			errUnreachable = errors.Join(
+				errUnreachable,
+				fmt.Errorf(" - can't delete control nodes with unknown status from nodepool %q, "+
+					"only %d out of %d control nodes are healthy, which does not form a quorum",
+					np,
+					totalControlNodes-unhealthyControlNodes,
+					totalControlNodes,
+				),
+			)
 
-				continue
-			}
+			continue
 		}
 
 		logger.
