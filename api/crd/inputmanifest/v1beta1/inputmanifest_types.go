@@ -256,7 +256,3 @@ type InputManifestList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []InputManifest `json:"items"`
 }
-
-func init() {
-	SchemeBuilder.Register(&InputManifest{}, &InputManifestList{})
-}
