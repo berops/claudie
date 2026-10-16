@@ -152,3 +152,28 @@ If no templates are specified Claudie generates a default custom resource that p
 - Fixed InputManifest validation to reject unusable AutoscalerConfig [#2220](https://github.com/berops/claudie/pull/2220)
 - Fixed InputManifest validation for correct handling of externalNetworkName [#2221](https://github.com/berops/claudie/pull/2221)
 
+## v0.16.2
+
+**Before upgrading, check that the `network` field of every cluster in your InputManifests
+  belongs to an RFC 1918 private range (`10.0.0.0/8`, `172.16.0.0/12` or `192.168.0.0/16`).
+  The field is immutable, so clusters with any other range must be recreated with a valid
+  range and their workloads migrated.**
+
+## What's Changed
+- Added Vast.ai as a supported provider [#2229](https://github.com/berops/claudie/pull/2229)
+
+  Vast.ai requires a personal API key, a team API key is optional. Vast.ai can only be used
+  for compute nodepools, not for control plane or load balancer nodepools.
+
+- Added `vram` parameter to `machineSpec`, all `machineSpec` fields are now required for Vast.ai nodepools [#2231](https://github.com/berops/claudie/pull/2231)
+- Cluster VPN `network` ranges must be valid IPv4 CIDRs within an RFC 1918 private range [#2234](https://github.com/berops/claudie/pull/2234)
+
+  Any changes to an InputManifest are rejected until the `network` field contains a valid range.
+
+- Postpone `unattended-upgrades` to 1-3 hours after VM boot to avoid apt lock clashes with `kube-eleven` [#2233](https://github.com/berops/claudie/pull/2233)
+- General maintenance dependencies update [#2243](https://github.com/berops/claudie/pull/2243)
+
+## Bug fixes
+- Fixed the operator ClusterRole missing the `events` resource from the `events.k8s.io` API group [#2236](https://github.com/berops/claudie/pull/2236)
+- Fixed InputManifest validation to reject OVH, Verda and CloudRift providers for control plane and load balancer nodepools [#2239](https://github.com/berops/claudie/pull/2239)
+- Fixed manager scheduling removal of control plane nodes that would break the quorum of healthy nodes [#2238](https://github.com/berops/claudie/pull/2238)
