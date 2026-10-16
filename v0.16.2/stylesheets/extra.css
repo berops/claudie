@@ -1,0 +1,352 @@
+/* ── Claudie brand colors ── */
+:root {
+  --claudie-blue: #2e7da8;
+  --claudie-blue-light: #3a9fd4;
+  --claudie-blue-dark: #1b5f82;
+  --claudie-accent: #f0883e;
+}
+
+/* ── Light mode overrides ── */
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: var(--claudie-blue);
+  --md-primary-fg-color--light: var(--claudie-blue-light);
+  --md-primary-fg-color--dark: var(--claudie-blue-dark);
+  --md-accent-fg-color: var(--claudie-blue);
+  --md-typeset-a-color: var(--claudie-blue);
+}
+
+/* ── Dark mode overrides ── */
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: var(--claudie-blue);
+  --md-primary-fg-color--light: var(--claudie-blue-light);
+  --md-primary-fg-color--dark: var(--claudie-blue-dark);
+  --md-accent-fg-color: var(--claudie-blue-light);
+  --md-typeset-a-color: var(--claudie-blue-light);
+}
+
+/* ── Sidebar scrollbar ── */
+.md-sidebar__scrollwrap {
+  scrollbar-width: thin;                                      /* Firefox */
+  scrollbar-color: rgba(46, 125, 168, 0.25) transparent;     /* Firefox */
+}
+
+.md-sidebar__scrollwrap::-webkit-scrollbar {
+  width: 4px;
+}
+
+.md-sidebar__scrollwrap::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.md-sidebar__scrollwrap::-webkit-scrollbar-thumb {
+  background: rgba(46, 125, 168, 0.25) !important;
+  border-radius: 4px;
+}
+
+.md-sidebar__scrollwrap::-webkit-scrollbar-thumb:hover {
+  background: var(--claudie-blue) !important;
+}
+
+.md-sidebar__scrollwrap::-webkit-scrollbar-thumb:active {
+  background: var(--claudie-blue) !important;
+}
+
+
+/* ── Navigation sidebar ── */
+.md-nav--primary .md-nav__title {
+  color: var(--claudie-blue);
+  font-weight: 700;
+}
+
+.md-nav__item--active > .md-nav__link {
+  color: var(--claudie-blue);
+  font-weight: 600;
+}
+
+/* Section labels in sidebar */
+.md-nav--primary > .md-nav__list > .md-nav__item--section > .md-nav__link {
+  color: var(--claudie-blue-dark);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+}
+
+[data-md-color-scheme="slate"] .md-nav--primary > .md-nav__list > .md-nav__item--section > .md-nav__link {
+  color: var(--claudie-blue-light);
+}
+
+/* ── Header logo: hide site name text, show only SVG logo ── */
+
+.md-logo img {
+  height: 36px;
+  width: auto;
+  max-width: none;
+}
+
+/* Swap logo for dark mode */
+[data-md-color-scheme="slate"] .md-logo img {
+  content: url("../assets/logo-dark.svg");
+}
+
+/* Hide site name — logo SVG contains "claudie Docs" */
+.md-header__topic:first-child .md-ellipsis {
+  display: none;
+}
+
+
+/* ── Header bar ── */
+[data-md-color-scheme="default"] .md-header {
+  background: #ffffff;
+  color: #333333;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12) !important;
+}
+
+[data-md-color-scheme="default"] .md-header .md-header__title,
+[data-md-color-scheme="default"] .md-header .md-header__topic,
+[data-md-color-scheme="default"] .md-header .md-header__button,
+[data-md-color-scheme="default"] .md-header .md-header-nav__button {
+  color: #333333;
+}
+
+[data-md-color-scheme="default"] .md-search__input {
+  background-color: #f5f5f5;
+  color: #333333;
+}
+
+[data-md-color-scheme="default"] .md-search__input::placeholder {
+  color: #999999;
+}
+
+[data-md-color-scheme="default"] .md-search__icon {
+  color: #999999;
+}
+
+[data-md-color-scheme="default"] .md-header__button[data-md-color-scheme] .md-icon,
+[data-md-color-scheme="default"] .md-header [data-md-toggle="palette"] .md-icon,
+[data-md-color-scheme="default"] form.md-header__option .md-icon {
+  color: #666666;
+}
+
+[data-md-color-scheme="default"] .md-header__button[data-md-color-scheme] .md-icon:hover,
+[data-md-color-scheme="default"] .md-header [data-md-toggle="palette"] .md-icon:hover,
+[data-md-color-scheme="default"] form.md-header__option .md-icon:hover {
+  color: var(--claudie-blue);
+}
+
+/* ── Admonitions ── */
+.md-typeset .admonition.tip,
+.md-typeset details.tip {
+  border-color: var(--claudie-accent);
+}
+
+.md-typeset .tip > .admonition-title,
+.md-typeset .tip > summary {
+  background-color: rgba(240, 136, 62, 0.1);
+}
+
+/* ── Code blocks ── */
+.md-typeset code {
+  border-radius: 4px;
+}
+
+.md-typeset pre > code {
+  border-radius: 6px;
+  scrollbar-color: rgba(46, 125, 168, 0.25) transparent;
+}
+
+.md-typeset pre > code::-webkit-scrollbar {
+  height: 4px;
+}
+
+.md-typeset pre > code::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.md-typeset pre > code::-webkit-scrollbar-thumb {
+  background: rgba(46, 125, 168, 0.25);
+  border-radius: 4px;
+}
+
+.md-typeset pre > code::-webkit-scrollbar-thumb:hover,
+.md-typeset pre > code::-webkit-scrollbar-thumb:active {
+  background: var(--claudie-blue);
+}
+
+/* ── Footer ── */
+.md-footer {
+  background: var(--claudie-blue-dark);
+}
+
+/* ── Search bar ── */
+.md-search__input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ── Content area polish ── */
+.md-typeset h1 {
+  color: var(--claudie-blue-dark);
+  font-weight: 700;
+}
+
+[data-md-color-scheme="slate"] .md-typeset h1 {
+  color: var(--claudie-blue-light);
+}
+
+.md-typeset h2 {
+  font-weight: 700;
+  color: var(--claudie-blue-dark);
+}
+
+[data-md-color-scheme="slate"] .md-typeset h2 {
+  color: var(--claudie-blue-light);
+}
+
+
+/* ── Hero section ── */
+.hero {
+  text-align: center;
+  padding: 2rem 1rem 1.5rem;
+}
+
+.hero h1 {
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 1rem;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.hero p:first-of-type {
+  font-size: 1.1rem;
+  color: #555;
+  max-width: 600px;
+  margin: 0 auto 1.5rem;
+  line-height: 1.6;
+}
+
+[data-md-color-scheme="slate"] .hero p:first-of-type {
+  color: #aaa;
+}
+
+.hero .md-button {
+  margin: 0.3rem;
+  border-radius: 6px;
+}
+
+.hero .md-button--primary {
+  background-color: var(--claudie-blue);
+  border-color: var(--claudie-blue);
+  color: #fff;
+}
+
+.hero .md-button--primary:hover {
+  background-color: var(--claudie-blue-dark);
+  border-color: var(--claudie-blue-dark);
+}
+
+/* ── Provider badges grid ── */
+.provider-grid p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.provider-grid a {
+  background-image: none !important;
+}
+
+/* ── Feedback widget ── */
+.md-feedback__icon:hover {
+  color: var(--claudie-accent);
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+/* ── Smooth scroll ── */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ── Page content fade-in on navigation ── */
+@keyframes fade-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.md-content__inner {
+  animation: fade-slide-in 0.35s ease-out;
+}
+
+/* ── Sidebar nav link hover transitions ── */
+.md-nav__link {
+  transition: color 0.2s ease, padding-left 0.2s ease;
+}
+
+.md-nav__link:hover {
+  color: var(--claudie-blue) !important;
+  padding-left: 4px;
+}
+
+[data-md-color-scheme="slate"] .md-nav__link:hover {
+  color: var(--claudie-blue-light) !important;
+}
+
+
+/* ── TOC active link indicator ── */
+.md-nav--secondary .md-nav__link {
+  transition: color 0.2s ease, border-left-color 0.2s ease;
+  border-left: 2px solid transparent;
+  padding-left: 0.6em;
+}
+
+.md-nav--secondary .md-nav__link--active {
+  border-left-color: var(--claudie-blue);
+  color: var(--claudie-blue);
+}
+
+[data-md-color-scheme="slate"] .md-nav--secondary .md-nav__link--active {
+  border-left-color: var(--claudie-blue-light);
+  color: var(--claudie-blue-light);
+}
+
+
+/* ── Header show/hide transition ── */
+.md-header {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* ── Search expand transition ── */
+.md-search__input {
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.md-search__input:focus {
+  box-shadow: 0 0 0 3px rgba(46, 125, 168, 0.15);
+}
+
+/* ── Reduced motion preference ── */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .md-content__inner,
+  .md-nav__link,
+  .md-nav--secondary .md-nav__link,
+  .md-header,
+  .md-search__input {
+    animation: none !important;
+    transition: none !important;
+  }
+}
