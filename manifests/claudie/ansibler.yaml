@@ -84,6 +84,11 @@ spec:
                   key: NATS_CLUSTER_SIZE
             - name: ANSIBLE_PIPELINING
               value: "True"
+            - name: ANSIBLE_STRATEGY
+              value: "mitogen_linear"
+            # TMPDIR is needed as Mitogen creates its unix sockets there and the root filesystem (/tmp) is read-only.
+            - name: TMPDIR
+              value: "/.ansible"
           ports:
             - containerPort: 50053
             - name: "metrics"
