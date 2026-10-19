@@ -1,5 +1,4 @@
 - hosts: all
-  strategy: free
   gather_facts: false
   become: true
   tasks:
