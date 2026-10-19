@@ -82,6 +82,8 @@ spec:
                 configMapKeyRef:
                   name: env
                   key: NATS_CLUSTER_SIZE
+            - name: ANSIBLE_PIPELINING
+              value: "True"
           ports:
             - containerPort: 50053
             - name: "metrics"
