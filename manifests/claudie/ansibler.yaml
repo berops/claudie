@@ -89,9 +89,9 @@ spec:
             # TMPDIR is needed as Mitogen creates its unix sockets there and the root filesystem (/tmp) is read-only.
             - name: TMPDIR
               value: "/.ansible"
-            # Fail any task running longer than 30 minutes (e.g. hung on a dead connection) so that the playbook is retried.
+            # Fail any task running longer than 10 minutes (e.g. hung on a dead connection) so that the playbook is retried.
             - name: ANSIBLE_TASK_TIMEOUT
-              value: "1800"
+              value: "600"
           ports:
             - containerPort: 50053
             - name: "metrics"
