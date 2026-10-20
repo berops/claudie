@@ -92,6 +92,9 @@ spec:
             # Fail any task running longer than 10 minutes (e.g. hung on a dead connection) so that the playbook is retried.
             - name: ANSIBLE_TASK_TIMEOUT
               value: "600"
+            # The default 10s is too short when many hosts bootstrap at once through a single Mitogen multiplexer.
+            - name: ANSIBLE_TIMEOUT
+              value: "60"
           ports:
             - containerPort: 50053
             - name: "metrics"
