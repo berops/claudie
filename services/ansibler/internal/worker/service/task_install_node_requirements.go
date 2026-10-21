@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/hash"
@@ -32,9 +33,10 @@ func InstallNodeRequirements(
 		Msg("Installing node requirements")
 
 	var (
-		nps       []*spec.NodePool
-		clusterId string
-		network   string
+		nps        []*spec.NodePool
+		clusterId  string
+		network    string
+		k8sVersion string
 	)
 
 	switch do := tracker.Task.Do.(type) {
@@ -42,9 +44,11 @@ func InstallNodeRequirements(
 		nps = do.Create.K8S.ClusterInfo.NodePools
 		clusterId = do.Create.K8S.ClusterInfo.Id()
 		network = do.Create.K8S.Network
+		k8sVersion = do.Create.K8S.Kubernetes
 	case *spec.Task_Update:
 		clusterId = do.Update.State.K8S.ClusterInfo.Id()
 		network = do.Update.State.K8S.Network
+		k8sVersion = do.Update.State.K8S.Kubernetes
 
 		// Try to only launch the playbook on new nodes, if possible.
 		// This is done to minimize the time for adding new nodes to
@@ -70,7 +74,7 @@ func InstallNodeRequirements(
 		ClusterNetwork: network,
 	}
 
-	if err := installLonghornRequirements(&ni, processLimit); err != nil {
+	if err := installLonghornRequirements(&ni, k8sVersion, processLimit); err != nil {
 		logger.Err(err).Msg("Failed to install node requirements")
 		tracker.Diagnostics.Push(err)
 		return
@@ -81,8 +85,11 @@ func InstallNodeRequirements(
 		Msg("Successfully installed node requirements")
 }
 
-// installLonghornRequirements installs pre-requisite tools for LongHorn in all the nodes
-func installLonghornRequirements(nodepoolsInfo *NodepoolsInfo, processLimit *semaphore.Weighted) error {
+// installLonghornRequirements installs pre-requisite tools for LongHorn in all the nodes.
+// When k8sVersion is non-empty, the playbook also pre-installs containerd, kubelet, kubeadm
+// and kubectl of that version, which kubeone would otherwise install one node group at a
+// time (control plane first, then workers) during `kubeone apply` in kube-eleven.
+func installLonghornRequirements(nodepoolsInfo *NodepoolsInfo, k8sVersion string, processLimit *semaphore.Weighted) error {
 	clusterDirectory := filepath.Join(
 		BaseDirectory,
 		OutputDirectory,
@@ -120,6 +127,10 @@ func installLonghornRequirements(nodepoolsInfo *NodepoolsInfo, processLimit *sem
 		Inventory:         utils.InventoryFileName,
 		Directory:         clusterDirectory,
 		SpawnProcessLimit: processLimit,
+	}
+
+	if v := strings.TrimPrefix(strings.TrimSpace(k8sVersion), "v"); v != "" {
+		ansible.Flags = fmt.Sprintf("--extra-vars \"kubernetes_version=%s\"", v)
 	}
 
 	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("Node requirements - %s", nodepoolsInfo.ClusterID)); err != nil {

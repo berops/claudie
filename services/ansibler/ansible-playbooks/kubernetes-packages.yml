@@ -1,0 +1,139 @@
+# Pre-install the packages that kubeone installs on every node during its
+# "Installing prerequisites..." task, so that kube-eleven's `kubeone apply` finds them
+# already present and its apt-get calls finish in a fraction of the time.
+#
+# kubeone runs the prerequisites task on all control plane nodes first and only then on all
+# worker nodes, so the ~25s apt install is paid twice per `kubeone apply`. Here it is paid once,
+# in parallel across all nodes of the playbook.
+#
+# This mirrors the Debian/Ubuntu install script of kubeone (pkg/scripts/os_debian.go and the
+# "apt-containerd" template in pkg/scripts/render.go) of the kubeone version pinned in
+# services/kube-eleven/Dockerfile. Only package installation is done here. The configuration of
+# containerd, kubelet, sysctl, swap, ufw, journald etc. is left to kubeone, which still runs its
+# script in full; a matching package is simply a no-op for apt.
+#
+# Nothing is done when kubelet is already installed (existing nodes, Kubernetes upgrades), as
+# kubeone unholds/upgrades the packages itself in that case.
+#
+# This is purely an optimization: a failure here must never fail the playbook, as kubeone
+# installs whatever is missing anyway. Hence the rescue at the end, which only logs a warning.
+
+- name: Check whether kubelet is already installed
+  ansible.builtin.stat:
+    path: /usr/bin/kubelet
+  register: kubelet_binary
+
+- name: Pre-install Kubernetes packages
+  when: not kubelet_binary.stat.exists
+  vars:
+    # kubeone pins containerd.io to this version (defaultContainerdVersion in pkg/scripts/funcs.go).
+    # If this ever differs from the kubeone in use, kubeone replaces the package itself.
+    containerd_version: "2.2.*"
+    # Same as the other apt tasks in the playbooks: 2 retries, 10s apart, for transient
+    # network/mirror errors. Anything else is handled by the rescue below.
+    apt_retries: 2
+    apt_retry_delay: 10
+    # kubernetes_version is passed from ansibler without the "v" prefix, e.g. 1.35.0.
+    # The apt repository is per minor version (v1.35), the packages are pinned to the patch version.
+    kubernetes_major_minor: "{{ kubernetes_version.split('.')[:2] | join('.') }}"
+    kubernetes_packages:
+      - kubelet
+      - kubeadm
+      - kubectl
+      - kubernetes-cni
+      - cri-tools
+  block:
+    - name: Install kubeone base packages
+      ansible.builtin.apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - apparmor-utils
+          - lsb-release
+          - rsync
+        state: present
+        update_cache: true
+        install_recommends: false
+        dpkg_options: force-confold
+        lock_timeout: 600
+      retries: "{{ apt_retries }}"
+      delay: "{{ apt_retry_delay }}"
+      register: base_packages
+      until: base_packages is not failed
+
+    - name: Create apt keyrings directory
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+
+    # apt accepts ASCII-armored keys in signed-by= as long as the file name ends with .asc,
+    # so the keys are used as downloaded. kubeone later rewrites kubernetes.list and docker.list
+    # with its own (dearmored) keyrings; same file names, so no duplicate repositories.
+    - name: Download apt repository keys
+      ansible.builtin.get_url:
+        url: "{{ item.url }}"
+        dest: "/etc/apt/keyrings/{{ item.name }}.asc"
+        mode: "0644"
+      loop:
+        - name: kubernetes
+          url: "https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_major_minor }}/deb/Release.key"
+        - name: docker
+          url: https://download.docker.com/linux/ubuntu/gpg
+      retries: "{{ apt_retries }}"
+      delay: "{{ apt_retry_delay }}"
+      register: apt_keys
+      until: apt_keys is not failed
+
+    - name: Get Ubuntu release codename
+      ansible.builtin.command: lsb_release -cs
+      register: ubuntu_codename
+      changed_when: false
+
+    - name: Add Kubernetes apt repository
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/etc/apt/keyrings/kubernetes.asc] https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_major_minor }}/deb/ /"
+        filename: kubernetes
+        update_cache: false
+
+    - name: Add Docker apt repository (containerd.io)
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ubuntu_codename.stdout }} stable"
+        filename: docker
+        update_cache: false
+
+    - name: Install containerd and Kubernetes packages
+      ansible.builtin.apt:
+        name:
+          - "containerd.io={{ containerd_version }}"
+          - "kubelet={{ kubernetes_version }}-*"
+          - "kubeadm={{ kubernetes_version }}-*"
+          - "kubectl={{ kubernetes_version }}-*"
+          - kubernetes-cni
+          - cri-tools
+        state: present
+        update_cache: true
+        install_recommends: false
+        dpkg_options: force-confold
+        lock_timeout: 600
+      retries: "{{ apt_retries }}"
+      delay: "{{ apt_retry_delay }}"
+      register: k8s_packages
+      until: k8s_packages is not failed
+
+    # kubeone holds these as well; keeping them held prevents unattended-upgrades from touching them
+    # before kubeone runs.
+    - name: Hold containerd and Kubernetes packages
+      ansible.builtin.dpkg_selections:
+        name: "{{ item }}"
+        selection: hold
+      loop: "{{ ['containerd.io'] + kubernetes_packages }}"
+  rescue:
+    - name: Pre-install of Kubernetes packages failed, leaving the installation to kubeone
+      ansible.builtin.debug:
+        msg: >-
+          Pre-installing Kubernetes packages failed on {{ inventory_hostname }}
+          ({{ ansible_failed_task.name }}: {{ ansible_failed_result.msg | default('no message') }}).
+          Continuing, kubeone will install the packages itself.
