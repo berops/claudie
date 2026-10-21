@@ -54,3 +54,9 @@
       until: result.finished
       retries: 60
       delay: 5
+
+    # Pre-installs everything `kubeone apply` in kube-eleven would otherwise install.
+    # After the async wait so that the two apt runs do not compete for the dpkg lock.
+    - name: pre-install Kubernetes packages for kubeone
+      include_tasks: ./kubernetes-packages.yml
+      when: kubernetes_version is defined and (kubernetes_version | length) > 0
