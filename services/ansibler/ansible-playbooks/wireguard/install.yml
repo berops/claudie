@@ -3,7 +3,6 @@
   ansible.builtin.apt:
     pkg:
       - wireguard
-      - net-tools
     state: present
     update_cache: true
   retries: 2
