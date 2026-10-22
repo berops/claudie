@@ -3,6 +3,12 @@
   gather_facts: false
   become: yes
 
+  vars:
+    wg_conf_dir: "/etc/wireguard"
+    wg_listen_port: 51820
+    wg_interface_name: "wg0"
+    mtu_size: 1380
+
   pre_tasks:
     - name: Wait 100 seconds for target connection to become reachable/usable
       wait_for_connection:
@@ -10,5 +16,12 @@
 
   # abort playbook on any fatal error, the golang code will trigger a retry
   any_errors_fatal: true
-  roles:
-    - role: "./wireguard"
+  tasks:
+    - include_tasks: ./wireguard/defer_apt_upgrades.yml
+      tags: install
+
+    - include_tasks: ./wireguard/install.yml
+      tags: install
+
+    - include_tasks: ./wireguard/configure.yml
+      tags: configure
