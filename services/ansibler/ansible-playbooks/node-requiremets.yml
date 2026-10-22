@@ -1,0 +1,8 @@
+---
+- hosts: all
+  become: yes
+  gather_facts: false
+  pre_tasks:
+    - name: Wait 100 seconds for target connection to become reachable/usable
+      wait_for_connection:
+        timeout: 100
