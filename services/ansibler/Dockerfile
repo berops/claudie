@@ -33,23 +33,27 @@ LABEL org.opencontainers.image.description="Image for Ansibler from Claudie"
 # Ansible is installed straight into the system Python of the final stage, so there is no
 # /usr/lib/python3.X path to keep in sync with the Python version shipped by the alpine base image.
 RUN set -eux \
-	&& apk add --no-cache \
-	# tini init system for cleaning up zombie processes left by spawned ansible playbooks \
-	# https://github.com/berops/claudie/issues/1317
-	tini \
-	bash \
-	# Issue: #85 libgcc required for ansible-vault
-	libgcc \
-	py3-pip \
-	python3 \
-	openssh-client \
-	# Issue: #76 yaml required for 'libyaml = True' (faster startup time)
-	yaml \
-	&& ln -sf /usr/bin/python3 /usr/bin/python \
-	# ansible 13.x ships ansible-core 2.20, which supports the Python 3.14 of alpine 3.24.
-	&& pip3 install --no-cache-dir --break-system-packages ansible==13.8.0 \
-	# Pre-compile Python for better performance
-	&& python3 -m compileall -q -j 0 /usr/lib/python3.*
+    && apk add --no-cache \
+    # tini init system for cleaning up zombie processes left by spawned ansible playbooks \
+    # https://github.com/berops/claudie/issues/1317
+    tini \
+    bash \
+    # Issue: #85 libgcc required for ansible-vault
+    libgcc \
+    py3-pip \
+    python3 \
+    openssh-client \
+    # Issue: #76 yaml required for 'libyaml = True' (faster startup time)
+    yaml \
+    && ln -sf /usr/bin/python3 /usr/bin/python \
+    # ansible 13.x ships ansible-core 2.20, which supports the Python 3.14 of alpine 3.24.
+    && pip3 install --no-cache-dir --break-system-packages ansible==13.8.0 mitogen==0.3.54 \
+    # Make the Mitogen strategies (mitogen_linear, mitogen_free) available in ansible's default strategy plugin path,
+    # they are enabled with ANSIBLE_STRATEGY.
+    && mkdir -p /usr/share/ansible/plugins \
+    && ln -s "$(python3 -c 'import ansible_mitogen, os; print(os.path.dirname(ansible_mitogen.__file__))')/plugins/strategy" /usr/share/ansible/plugins/strategy \
+    # Pre-compile Python for better performance
+    && python3 -m compileall -q -j 0 /usr/lib/python3.*
 
 #Copy the binaries to empty base image
 COPY --from=go_builder /go/services/ansibler/cmd/worker/worker /bin/services/ansibler/worker

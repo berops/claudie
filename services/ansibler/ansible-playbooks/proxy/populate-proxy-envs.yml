@@ -1,7 +1,11 @@
 - hosts: all
-  strategy: free
   gather_facts: false
   become: true
+  pre_tasks:
+    - name: Wait 100 seconds for target connection to become reachable/usable
+      wait_for_connection:
+        timeout: 100
+
   tasks:
     - name: Ensure apt and systemd drop-in directories exist
       ansible.builtin.file:

@@ -1,7 +1,16 @@
 ---
 - hosts: all
-  gather_facts: true
+  gather_facts: false
   become: true
+  pre_tasks:
+    - name: Wait 100 seconds for target connection to become reachable/usable
+      wait_for_connection:
+        timeout: 100
+
+    # Gather facts manually after we made sure, VMs are accessible
+    - name: Gather facts from nodes
+      ansible.builtin.setup:
+
   tasks:
     - name: Add iptables DNAT for same-provider peer nodes
       ansible.builtin.iptables:
