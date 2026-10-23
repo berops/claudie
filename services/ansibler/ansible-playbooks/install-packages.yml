@@ -13,6 +13,11 @@
   become: yes
   gather_facts: false
   strategy: mitogen_free
+  # Ubuntu runs needrestart after every apt run (dpkg post-invoke hook): it scans every process for
+  # outdated libraries and, non-interactively, only prints what could be restarted. Nothing is
+  # restarted while configuring a node and nothing reads the report, so the scan is skipped.
+  environment:
+    NEEDRESTART_SUSPEND: "1"
 
   vars:
     # kubeone pins containerd.io to this version (defaultContainerdVersion in pkg/scripts/funcs.go).
@@ -55,20 +60,12 @@
     - name: Defer apt maintenance
       ansible.builtin.import_tasks: tasks/defer-apt-upgrades.yml
 
-    - name: Install Wireguard and dependencies
-      ansible.builtin.apt:
-        pkg:
-          - wireguard
-        state: present
-        update_cache: true
-      # wireguard packages are few hundred Kibs in size
-      # having a timeout of 8 mins with 2 attempts is generous.
-      timeout: 480
-      retries: 2
-      delay: 10
-
     # Longhorn dependencies and Kubernetes packages. The apt run continues in the background, it is
     # not waited for.
+    #
+    # The apt repositories are added before the WireGuard install, so that its `apt-get update` fetches
+    # the package lists of all repositories at once and the background apt run below reuses the apt
+    # cache instead of running a second `apt-get update`.
     # TODO: runs on the loadbalancer nodes as well, which do not need any of these packages.
     # Installs the Longhorn dependencies and pre-installs the packages that kubeone installs on every
     # node, in a single apt run.
@@ -159,6 +156,18 @@
           ansible.builtin.set_fact:
             preinstall_kubernetes: false
 
+    # The only `apt-get update` of the playbook, see above. The WireGuard packages are a few hundred
+    # KiB in size, a timeout of 8 minutes with 2 attempts is generous.
+    - name: Install Wireguard and dependencies
+      ansible.builtin.apt:
+        pkg:
+          - wireguard
+        state: present
+        update_cache: true
+      timeout: 480
+      retries: 2
+      delay: 10
+
     # One apt run for everything. With the kubeone packages, `state: latest` matters: kubeone runs a
     # plain `apt-get install <pkgs>`, which also upgrades already installed packages (curl, gnupg,
     # apparmor, rsync, ...) to the newest version in the archive. With `present` those upgrades
@@ -170,9 +179,10 @@
         name: "{{ longhorn_packages + (kubeone_packages if preinstall_kubernetes else []) }}"
         state: present
         update_cache: true
-        # Without the kubeone packages (existing nodes, on every run of the playbook) no new repository
-        # is involved, so a recent apt cache is reused instead of running `apt-get update` every time.
-        cache_valid_time: "{{ omit if preinstall_kubernetes else 3600 }}"
+        # The WireGuard install above has just refreshed the apt cache with all repositories, so it is
+        # reused instead of running `apt-get update` again. On existing nodes (every run of the
+        # playbook) the same applies, no new repository is involved there.
+        cache_valid_time: 3600
         install_recommends: "{{ false if preinstall_kubernetes else omit }}"
         dpkg_options: "{{ 'force-confold' if preinstall_kubernetes else omit }}"
         lock_timeout: 600
