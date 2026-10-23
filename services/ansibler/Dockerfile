@@ -58,7 +58,6 @@ RUN set -eux \
 #Copy the binaries to empty base image
 COPY --from=go_builder /go/services/ansibler/cmd/worker/worker /bin/services/ansibler/worker
 COPY --from=go_builder /go/services/ansibler/ansible-playbooks /bin/services/ansibler/ansible-playbooks
-COPY --from=go_builder /go/services/ansibler/ansible-tasks /bin/services/ansibler/ansible-tasks
 
 #Run worker
 WORKDIR /bin

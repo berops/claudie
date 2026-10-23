@@ -1,0 +1,16 @@
+---
+# Sets up every node of the kubernetes cluster and its loadbalancers. Run by the ansibler on the
+# SETUP_NODE stage, see task_setup_node.go.
+#
+# The per-node work runs with the free strategy, so that a slow node does not hold up the others;
+# only the WireGuard configuration, which needs the public keys of all nodes, runs in lockstep.
+# Each part sets its own strategy, see the comments in the files.
+
+# apt deferral, WireGuard install, Longhorn dependencies and Kubernetes packages (in the background)
+- import_playbook: install-packages.yml
+
+# WireGuard keys, interface and peers
+- import_playbook: configure-wireguard.yml
+
+# multipath blacklist and node limits
+- import_playbook: configure-node.yml
