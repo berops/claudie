@@ -7,6 +7,11 @@
   become: yes
   gather_facts: false
   strategy: mitogen_free
+  # Ubuntu runs needrestart after every apt run (dpkg post-invoke hook): it scans every process for
+  # outdated libraries and, non-interactively, only prints what could be restarted. Nothing is
+  # restarted while configuring a node and nothing reads the report, so the scan is skipped.
+  environment:
+    NEEDRESTART_SUSPEND: "1"
 
   vars:
     # The apt run started in install-packages.yml is waited for in post_tasks. Registered results
