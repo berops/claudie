@@ -2,7 +2,7 @@
 
 !!! warning "This release is not backwards compatible with previous `v0.15.x` versions, due to an internal rework of handling state files for clusters"
 
-## Readme Before Deploying 
+## Readme Before Deploying
 
 ## ⚠️ Breaking Change: No upgrade path from pre-`v0.16.x` clusters
 
@@ -74,7 +74,7 @@ spec:
     playbooks: templates/playbooks
     configLb: templates/config-lb
     configK8s: templates/config-k8s
-    manifestsK8s: templates/manifests-k8s 
+    manifestsK8s: templates/manifests-k8s
 ```
 
 Inside the `InputManifest` you can then reference the Custom Resource under the provider as follows:
@@ -126,7 +126,7 @@ If no templates are specified Claudie generates a default custom resource that p
 ## What's Changed
 - Improve scheduling workflow for 0-sized nodepools [#2214](https://github.com/berops/claudie/pull/2214)
 - Drop MinIO for pgsty/silo [#2226](https://github.com/berops/claudie/pull/2226)
-  
+
    MinIO images were withdrawn from public registries, so the tfstate object store now runs
    [`pgsty/silo`](https://hub.docker.com/r/pgsty/silo) (a MinIO fork) with `pgsty/mc` as the
    bucket-init client.
@@ -177,3 +177,14 @@ If no templates are specified Claudie generates a default custom resource that p
 - Fixed the operator ClusterRole missing the `events` resource from the `events.k8s.io` API group [#2236](https://github.com/berops/claudie/pull/2236)
 - Fixed InputManifest validation to reject OVH, Verda and CloudRift providers for control plane and load balancer nodepools [#2239](https://github.com/berops/claudie/pull/2239)
 - Fixed manager scheduling removal of control plane nodes that would break the quorum of healthy nodes [#2238](https://github.com/berops/claudie/pull/2238)
+
+## v0.16.3
+
+## What's Changed
+- `ansibler` service speedup [#2248](https://github.com/berops/claudie/pull/2248)
+
+  Ansible now runs with `ANSIBLE_PIPELINING=True` and the Mitogen `mitogen_linear` strategy.
+  Pipelining sends each module over the existing SSH connection instead of copying it to a temp
+  file on the node first, and Mitogen replaces the per-task SSH and Python startup with one
+  long-lived Python process per host. Most tasks drop from seconds to milliseconds, which
+  significantly shortens cluster builds and scaling on large nodepools.
