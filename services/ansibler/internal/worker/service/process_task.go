@@ -111,10 +111,8 @@ passes:
 		switch pass.Kind {
 		case spec.StageAnsibler_DETERMINE_API_ENDPOINT_CHANGE:
 			MoveApiEndpoint(logger, work.InputManifestName, processlimit, tracker)
-		case spec.StageAnsibler_INSTALL_NODE_REQUIREMENTS:
-			InstallNodeRequirements(logger, work.InputManifestName, processlimit, tracker)
-		case spec.StageAnsibler_INSTALL_VPN:
-			InstallVPN(logger, work.InputManifestName, processlimit, tracker)
+		case spec.StageAnsibler_SETUP_NODE:
+			SetupNode(logger, work.InputManifestName, processlimit, tracker)
 		case spec.StageAnsibler_RECONCILE_LOADBALANCERS:
 			ReconcileLoadBalancers(logger, work.InputManifestName, processlimit, tracker)
 		case spec.StageAnsibler_REMOVE_CLAUDIE_UTILITIES:
