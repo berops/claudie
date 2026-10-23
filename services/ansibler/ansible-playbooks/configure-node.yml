@@ -1,0 +1,66 @@
+---
+# Third part of node-setup.yml, not run on its own.
+#
+# Per-node tuning that does not depend on the VPN or on other nodes, so it runs with the free
+# strategy again (see install-packages.yml).
+- hosts: all
+  become: yes
+  gather_facts: false
+  strategy: mitogen_free
+
+  vars:
+    # The apt run started in install-packages.yml is waited for in post_tasks. Registered results
+    # (async_job, preinstall_kubernetes) carry over between plays, play vars do not, hence the copy.
+    longhorn_packages:
+      - open-iscsi
+      - nfs-common
+    apt_retries: 2
+    apt_retry_delay: 10
+
+  tasks:
+    - name: Blacklist Longhorn block devices in multipath
+      ansible.builtin.import_tasks: tasks/longhorn-multipath.yml
+
+    - name: Configure node limits
+      ansible.builtin.import_tasks: tasks/node-limits.yml
+      vars:
+        nofile_soft: 65535
+        nofile_hard: 65535
+        file_max: 2097152
+        max_user_watches: 2097152
+        max_user_instances: 65535
+        max_queued_events: 65535
+
+  post_tasks:
+    # Last thing in node-setup.yml: collect the result of the background apt run started in
+    # install-packages.yml. It has usually finished by now, so this costs one round trip; if not,
+    # kube-eleven would only block on the dpkg lock anyway. The Longhorn dependencies are required,
+    # so if the combined run failed they are installed again on their own, and only a failure of
+    # that fails the playbook.
+    - name: Wait for the installation of Longhorn dependencies and Kubernetes packages
+      when: async_job is defined
+      block:
+        - name: Check async task result
+          async_status:
+            jid: "{{ async_job.ansible_job_id }}"
+          register: result
+          until: result.finished
+          retries: 120
+          delay: 5
+      rescue:
+        - name: Installation failed, leaving the installation of Kubernetes packages to kubeone
+          ansible.builtin.debug:
+            msg: >-
+              Installing node requirements failed on {{ inventory_hostname }}
+              ({{ ansible_failed_result.msg | default('no message') }}).
+              Retrying with the Longhorn dependencies only{{ ', kubeone will install the Kubernetes packages itself' if preinstall_kubernetes | default(false) else '' }}.
+
+        # Not optional, a failure here fails the playbook.
+        - name: Install Longhorn dependencies
+          ansible.builtin.apt:
+            name: "{{ longhorn_packages }}"
+            state: present
+            update_cache: true
+            lock_timeout: 600
+          retries: "{{ apt_retries }}"
+          delay: "{{ apt_retry_delay }}"
