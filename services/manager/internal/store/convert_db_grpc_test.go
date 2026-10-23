@@ -536,7 +536,7 @@ func TestConvertFromGRPCStages(t *testing.T) {
 							},
 							SubPasses: []*spec.StageAnsibler_SubPass{
 								{
-									Kind: spec.StageAnsibler_INSTALL_VPN,
+									Kind: spec.StageAnsibler_SETUP_NODE,
 									Description: &spec.StageDescription{
 										About:      "Ansibler subpass about",
 										ErrorLevel: spec.ErrorLevel_ERROR_WARN,
@@ -556,7 +556,7 @@ func TestConvertFromGRPCStages(t *testing.T) {
 					},
 					SubPasses: []store.SubPass{
 						{
-							Kind: spec.StageAnsibler_INSTALL_VPN.String(),
+							Kind: spec.StageAnsibler_SETUP_NODE.String(),
 							Description: store.StageDescription{
 								About:      "Ansibler subpass about",
 								ErrorLevel: spec.ErrorLevel_ERROR_WARN.String(),
@@ -857,7 +857,7 @@ func TestConvertToGRPCStages(t *testing.T) {
 					},
 					SubPasses: []store.SubPass{
 						{
-							Kind: spec.StageAnsibler_INSTALL_VPN.String(),
+							Kind: spec.StageAnsibler_SETUP_NODE.String(),
 							Description: store.StageDescription{
 								About:      "Ansibler subpass about",
 								ErrorLevel: spec.ErrorLevel_ERROR_WARN.String(),
@@ -876,7 +876,7 @@ func TestConvertToGRPCStages(t *testing.T) {
 							},
 							SubPasses: []*spec.StageAnsibler_SubPass{
 								{
-									Kind: spec.StageAnsibler_INSTALL_VPN,
+									Kind: spec.StageAnsibler_SETUP_NODE,
 									Description: &spec.StageDescription{
 										About:      "Ansibler subpass about",
 										ErrorLevel: spec.ErrorLevel_ERROR_WARN,

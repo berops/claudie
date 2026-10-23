@@ -152,7 +152,7 @@ func TestScheduleDeletionsInNodePoolsPipelineShape(t *testing.T) {
 			},
 		}
 		proxyPasses = []spec.StageAnsibler_SubPassKind{
-			spec.StageAnsibler_INSTALL_VPN,
+			spec.StageAnsibler_SETUP_NODE,
 			spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES,
 			spec.StageAnsibler_COMMIT_PROXY_ENVS,
 		}
