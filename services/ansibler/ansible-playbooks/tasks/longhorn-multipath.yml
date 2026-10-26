@@ -5,7 +5,7 @@
 # claims them and the volume mount fails.
 
 - name: Update /etc/multipath.conf with blacklist configuration
-  blockinfile:
+  ansible.builtin.blockinfile:
     path: /etc/multipath.conf
     block: |
       blacklist {

@@ -1,5 +1,10 @@
 ---
-# Imported by install-packages.yml, not run on its own.
+# Imported by install-packages.yml, not run on its own. Must run before the first apt run of the
+# playbook, the settings apply to every apt/dpkg run on the node afterwards, kubeone's included.
+#
+# Configures apt on the node. Two concerns, one apt configuration file: apt maintenance is deferred
+# so that it does not hold the dpkg lock while Claudie runs apt, and the work apt does around a
+# package installation that a Kubernetes node never needs is turned off (see "Speed up apt" below).
 #
 # unattended-upgrades is started by apt-daily-upgrade.timer (apt-daily.timer runs "apt-get update").
 # The stock timers use Persistent=true, so if the VM was off at the scheduled time they fire right
@@ -13,12 +18,46 @@
 #
 # This runs on every reconciliation, which is roughly every 30 minutes on an idle cluster.
 # Steps 2 and 3 only run when the timer drop-in changes, as every timer restart postpones the next run.
+#
+# Speed up apt. On a fresh Ubuntu 24.04 cloud image the work around a package installation costs more
+# than the packages themselves: installing the 92 KiB wireguard packages takes 5.2s, 1.8s without the
+# apt hooks.
+#   4. apt hooks: Ubuntu runs scripts after every `apt-get update` (APT::Update::Post-Invoke-Success)
+#      and after every dpkg run (DPkg::Post-Invoke). Only two of them do something a node needs:
+#      needrestart restarts services with replaced libraries after unattended upgrades, and the
+#      update-success-stamp touch records the last `apt-get update` for the apt tooling. The rest is
+#      cosmetic and some of it expensive: update-notifier's apt-check simulates a full upgrade each
+#      time (twice per apt task) to count the updates for the login message, command-not-found
+#      rebuilds the database behind its "command not found, try apt install" hint, the Ubuntu Pro
+#      client (official cloud images) fetches its ESM package counts and renders its message, the
+#      PackageKit hook starts the PackageKit daemon over D-Bus where it is installed. apt can not
+#      drop single entries of a hook list, so the files registering them are removed: all are
+#      conffiles of their packages, dpkg leaves a conffile deleted by the admin deleted on package
+#      upgrades, and a file an image does not have is skipped. Which files an image has depends on
+#      the packages it ships, the file names are the same on every Ubuntu.
+#   5. apt translations: `apt-get update` also downloads the package description translations
+#      of the configured locale, one more index per repository, which nothing on the node reads.
+#   6. man-db trigger: after every dpkg run, man-db rebuilds the manual page index. Ubuntu's
+#      minimal images disable it the same way: the trigger script exits at once when the
+#      auto-update stamp file is missing, the debconf answer keeps it missing across upgrades.
+# Ansible's own apt tasks additionally set NEEDRESTART_SUSPEND (see install-packages.yml), which
+# covers the first apt run of a node that this file could not configure.
+#
+# The settings persist on the node, static nodes included.
 
-- name: Defer apt maintenance
+- name: Configure apt
   vars:
-    apt_dpkg_lock_timeout_conf: |
-      // Managed by Claudie: wait up to 10 minutes for the dpkg lock instead of failing immediately.
+    apt_claudie_conf: |
+      // Managed by Claudie, see services/ansibler/ansible-playbooks/tasks/apt-config.yml.
+      // Wait up to 10 minutes for the dpkg lock instead of failing immediately.
       DPkg::Lock::Timeout "600";
+      // No package description translations on `apt-get update`.
+      Acquire::Languages "none";
+    apt_hooks_to_remove:
+      - /etc/apt/apt.conf.d/99update-notifier
+      - /etc/apt/apt.conf.d/50command-not-found
+      - /etc/apt/apt.conf.d/20apt-esm-hook.conf
+      - /etc/apt/apt.conf.d/20packagekit
     apt_daily_timers:
       - apt-daily.timer
       - apt-daily-upgrade.timer
@@ -31,7 +70,7 @@
       OnUnitActiveSec=1d
       RandomizedDelaySec=2h
   block:
-    # 1. Wait for the dpkg lock.
+    # 1. Wait for the dpkg lock, 5. no translations.
 
     # Postponing the timers only covers the time right after boot. Later they fire once a day at a random
     # time, so an apt-get run by Claudie (e.g. kubeone during a Kubernetes upgrade) can still find the dpkg
@@ -44,11 +83,35 @@
         mode: "0755"
 
     # Files in apt.conf.d are read in alphanumeric order, the zzz- prefix makes this one win.
-    - name: Configure dpkg lock timeout
+    - name: Configure apt
       ansible.builtin.copy:
         dest: /etc/apt/apt.conf.d/zzz-claudie.conf
         mode: "0644"
-        content: "{{ apt_dpkg_lock_timeout_conf }}"
+        content: "{{ apt_claudie_conf }}"
+
+    # 4. Only the needrestart and update-success-stamp hooks stay.
+    - name: Remove the cosmetic apt hooks
+      ansible.builtin.shell: |
+        for f in {{ apt_hooks_to_remove | join(' ') }}; do
+          if [ -e "$f" ]; then
+            rm -f "$f"
+            echo "removed $f"
+          fi
+        done
+      register: apt_hooks_removed
+      changed_when: apt_hooks_removed.stdout != ""
+
+    # 6. No man-db index rebuild after dpkg runs.
+    - name: Disable the man-db index update trigger
+      ansible.builtin.shell: |
+        set -e
+        echo "man-db man-db/auto-update boolean false" | debconf-set-selections
+        if [ -e /var/lib/man-db/auto-update ]; then
+          rm -f /var/lib/man-db/auto-update
+          echo changed
+        fi
+      register: man_db_trigger
+      changed_when: "'changed' in man_db_trigger.stdout"
 
     - name: Check if apt daily timers are present
       ansible.builtin.stat:
@@ -166,9 +229,9 @@
 
   # A failure must not abort the playbook
   rescue:
-    - name: Warn that apt maintenance could not be deferred
+    - name: Warn that apt could not be configured
       ansible.builtin.debug:
-        msg: "Failed to defer apt maintenance, continuing: {{ ansible_failed_result.msg | default('unknown error') }}"
+        msg: "Failed to defer apt maintenance / speed up apt, continuing: {{ ansible_failed_result.msg | default('unknown error') }}"
 
     # If the drop-ins were already written, the next run would skip the block and leave the stopped timers
     # stopped. Removing them makes the next run apply the whole block again.

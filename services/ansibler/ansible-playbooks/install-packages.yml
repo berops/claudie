@@ -13,11 +13,6 @@
   become: yes
   gather_facts: false
   strategy: mitogen_free
-  # Ubuntu runs needrestart after every apt run (dpkg post-invoke hook): it scans every process for
-  # outdated libraries and, non-interactively, only prints what could be restarted. Nothing is
-  # restarted while configuring a node and nothing reads the report, so the scan is skipped.
-  environment:
-    NEEDRESTART_SUSPEND: "1"
 
   vars:
     # kubeone pins containerd.io to this version (defaultContainerdVersion in pkg/scripts/funcs.go).
@@ -51,14 +46,15 @@
 
   pre_tasks:
     - name: Wait 100 seconds for target connection to become reachable/usable
-      wait_for_connection:
+      ansible.builtin.wait_for_connection:
         timeout: 100
 
   tasks:
     # Make apt wait for the dpkg lock and postpone the apt daily timers, so that unattended-upgrades
-    # does not hold the lock while Claudie or kubeone runs apt-get. See the file for details.
-    - name: Defer apt maintenance
-      ansible.builtin.import_tasks: tasks/defer-apt-upgrades.yml
+    # does not hold the lock while Claudie or kubeone runs apt-get, and turn off the apt hooks, the
+    # apt translations and the man-db trigger before the first apt run. See the file for details.
+    - name: Configure apt
+      ansible.builtin.import_tasks: tasks/apt-config.yml
 
     # Longhorn dependencies and Kubernetes packages. The apt run continues in the background, it is
     # not waited for.
@@ -158,7 +154,7 @@
 
     # The only `apt-get update` of the playbook, see above. The WireGuard packages are a few hundred
     # KiB in size, a timeout of 8 minutes with 2 attempts is generous.
-    - name: Install Wireguard and dependencies
+    - name: Install Wireguard
       ansible.builtin.apt:
         pkg:
           - wireguard

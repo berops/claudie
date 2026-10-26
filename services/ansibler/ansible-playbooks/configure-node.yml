@@ -7,11 +7,6 @@
   become: yes
   gather_facts: false
   strategy: mitogen_free
-  # Ubuntu runs needrestart after every apt run (dpkg post-invoke hook): it scans every process for
-  # outdated libraries and, non-interactively, only prints what could be restarted. Nothing is
-  # restarted while configuring a node and nothing reads the report, so the scan is skipped.
-  environment:
-    NEEDRESTART_SUSPEND: "1"
 
   vars:
     # The apt run started in install-packages.yml is waited for in post_tasks. Registered results
@@ -38,20 +33,21 @@
 
   post_tasks:
     # Last thing in node-setup.yml: collect the result of the background apt run started in
-    # install-packages.yml. It has usually finished by now, so this costs one round trip; if not,
-    # kube-eleven would only block on the dpkg lock anyway. The Longhorn dependencies are required,
-    # so if the combined run failed they are installed again on their own, and only a failure of
-    # that fails the playbook.
+    # install-packages.yml. The Longhorn dependencies are required, so if the combined run failed
+    # they are installed again on their own, and only a failure of that fails the playbook.
+    #
+    # Polled once a second: a poll is one cheap round trip with Mitogen, and the wait ends within a
+    # second of the job finishing. 600 attempts match the async timeout of the apt task.
     - name: Wait for the installation of Longhorn dependencies and Kubernetes packages
       when: async_job is defined
       block:
         - name: Check async task result
-          async_status:
+          ansible.builtin.async_status:
             jid: "{{ async_job.ansible_job_id }}"
           register: result
           until: result.finished
-          retries: 120
-          delay: 5
+          retries: 600
+          delay: 1
       rescue:
         - name: Installation failed, leaving the installation of Kubernetes packages to kubeone
           ansible.builtin.debug:
