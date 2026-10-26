@@ -1,6 +1,4 @@
 ---
-# Imported by configure-node.yml, not run on its own.
-#
 # Keep multipathd away from the block devices Longhorn attaches over iSCSI, otherwise multipath
 # claims them and the volume mount fails.
 
@@ -13,11 +11,9 @@
           devnode "^vd[a-z0-9]+"
           devnode "^nvme[a-z0-9]+"
       }
-    create: yes
+    create: true
   register: multipath_conf
 
-# Only when the configuration changed, as this runs on every node on every run of the playbook,
-# also on nodes that already have Longhorn volumes attached.
 - name: Restart multipathd.service
   ansible.builtin.systemd:
     name: multipathd.service
@@ -25,4 +21,4 @@
   when: multipath_conf is changed
   # some cloud providers may not use the multipathd service
   # thus make the error not fatal.
-  ignore_errors: yes
+  ignore_errors: true

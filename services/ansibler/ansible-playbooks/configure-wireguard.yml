@@ -1,30 +1,21 @@
 ---
-# Second part of node-setup.yml, not run on its own.
-#
-# Every node templates the public keys of all other nodes, so all nodes have to be in step here:
-# mitogen_linear waits for every node after each task.
 - hosts: all
-  become: yes
+  become: true
   gather_facts: false
   strategy: mitogen_linear
-
   vars:
     wg_conf_dir: "/etc/wireguard"
     wg_listen_port: 51820
     wg_interface_name: "wg0"
     mtu_size: 1380
-
-  # abort playbook on any fatal error, the golang code will trigger a retry
   any_errors_fatal: true
   pre_tasks:
-    # A node that failed or was unreachable in the previous play is silently left out of this one,
-    # and the other nodes would fail on its missing public key. Abort with a clear message instead.
+    # Every node needs the public keys of all other nodes. Abort if any node failed in the previous play.
     - name: Abort when a node dropped out in the previous play
       ansible.builtin.fail:
         msg: "Nodes failed or were unreachable in the previous play: {{ groups['all'] | difference(ansible_play_hosts) | join(', ') }}"
       when: groups['all'] | difference(ansible_play_hosts) | length > 0
       run_once: true
-
   tasks:
     - name: Create wireguard config dir
       ansible.builtin.file:
@@ -62,7 +53,7 @@
       ansible.builtin.command:
         cmd: ip -o addr show dev wg0
       register: wg0_ip_info
-      changed_when: false 
+      changed_when: false
 
     - name: Assign IP address
       ansible.builtin.command:
@@ -88,7 +79,7 @@
     - name: Ensure file /etc/dhcp/dhclient.conf exists and make MTU change persistent across reboots
       ansible.builtin.blockinfile:
         path: /etc/dhcp/dhclient.conf
-        create: yes
+        create: true
         insertbefore: "^request"
         block: |
           interface "{{ wg_interface_name }}" {

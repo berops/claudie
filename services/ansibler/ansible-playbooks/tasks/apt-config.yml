@@ -1,49 +1,25 @@
 ---
-# Imported by install-packages.yml, not run on its own. Must run before the first apt run of the
-# playbook, the settings apply to every apt/dpkg run on the node afterwards, kubeone's included.
+# This playbook does two thing:
+#   1. stop, configures and defers unattended upgrades
+#     unattended-upgrades is started by apt-daily-upgrade.timer (apt-daily.timer runs "apt-get update").
+#     The stock timers use Persistent=true, so if the VM was off at the scheduled time they fire right
+#     after boot (plus RandomizedDelaySec). The upgrade then holds the dpkg lock while Claudie
+#     (e.g. kubeone in kube-eleven) runs apt-get, which fails.
 #
-# Configures apt on the node. Two concerns, one apt configuration file: apt maintenance is deferred
-# so that it does not hold the dpkg lock while Claudie runs apt, and the work apt does around a
-# package installation that a Kubernetes node never needs is turned off (see "Speed up apt" below).
+#     Not every provider supports cloud-init, so the upgrade can not be prevented before boot. Instead:
+#       1. make apt wait for the dpkg lock instead of failing,
+#       2. if apt maintenance is running, shut it down gracefully,
+#       3. postpone the timers, so that they run 1-3h after boot instead of right after boot.
 #
-# unattended-upgrades is started by apt-daily-upgrade.timer (apt-daily.timer runs "apt-get update").
-# The stock timers use Persistent=true, so if the VM was off at the scheduled time they fire right
-# after boot (plus RandomizedDelaySec). The upgrade then holds the dpkg lock while Claudie
-# (e.g. kubeone in kube-eleven) runs apt-get, which fails.
-#
-# Not every provider supports cloud-init, so the upgrade can not be prevented before boot. Instead:
-#   1. make apt wait for the dpkg lock instead of failing,
-#   2. if apt maintenance is running, shut it down gracefully,
-#   3. postpone the timers, so that they run 1-3h after boot instead of right after boot.
-#
-# This runs on every reconciliation, which is roughly every 30 minutes on an idle cluster.
-# Steps 2 and 3 only run when the timer drop-in changes, as every timer restart postpones the next run.
-#
-# Speed up apt. On a fresh Ubuntu 24.04 cloud image the work around a package installation costs more
-# than the packages themselves: installing the 92 KiB wireguard packages takes 5.2s, 1.8s without the
-# apt hooks.
-#   4. apt hooks: Ubuntu runs scripts after every `apt-get update` (APT::Update::Post-Invoke-Success)
+#     This runs on every reconciliation, which is roughly every 30 minutes on an idle cluster.
+#     Steps 2 and 3 only run when the timer drop-in changes, as every timer restart postpones the next run.
+#   2. disables unnecessary APT hooks
+#      Ubuntu runs scripts after every `apt-get update` (APT::Update::Post-Invoke-Success)
 #      and after every dpkg run (DPkg::Post-Invoke). Only two of them do something a node needs:
 #      needrestart restarts services with replaced libraries after unattended upgrades, and the
 #      update-success-stamp touch records the last `apt-get update` for the apt tooling. The rest is
-#      cosmetic and some of it expensive: update-notifier's apt-check simulates a full upgrade each
-#      time (twice per apt task) to count the updates for the login message, command-not-found
-#      rebuilds the database behind its "command not found, try apt install" hint, the Ubuntu Pro
-#      client (official cloud images) fetches its ESM package counts and renders its message, the
-#      PackageKit hook starts the PackageKit daemon over D-Bus where it is installed. apt can not
-#      drop single entries of a hook list, so the files registering them are removed: all are
-#      conffiles of their packages, dpkg leaves a conffile deleted by the admin deleted on package
-#      upgrades, and a file an image does not have is skipped. Which files an image has depends on
-#      the packages it ships, the file names are the same on every Ubuntu.
-#   5. apt translations: `apt-get update` also downloads the package description translations
-#      of the configured locale, one more index per repository, which nothing on the node reads.
-#   6. man-db trigger: after every dpkg run, man-db rebuilds the manual page index. Ubuntu's
-#      minimal images disable it the same way: the trigger script exits at once when the
-#      auto-update stamp file is missing, the debconf answer keeps it missing across upgrades.
-# Ansible's own apt tasks additionally set NEEDRESTART_SUSPEND (see install-packages.yml), which
-# covers the first apt run of a node that this file could not configure.
-#
-# The settings persist on the node, static nodes included.
+#      cosmetic and some of it expensive.
+
 
 - name: Configure apt
   vars:
@@ -70,7 +46,7 @@
       OnUnitActiveSec=1d
       RandomizedDelaySec=2h
   block:
-    # 1. Wait for the dpkg lock, 5. no translations.
+    # 1. Wait for the dpkg lock.
 
     # Postponing the timers only covers the time right after boot. Later they fire once a day at a random
     # time, so an apt-get run by Claudie (e.g. kubeone during a Kubernetes upgrade) can still find the dpkg
@@ -82,15 +58,13 @@
         state: directory
         mode: "0755"
 
-    # Files in apt.conf.d are read in alphanumeric order, the zzz- prefix makes this one win.
     - name: Configure apt
       ansible.builtin.copy:
         dest: /etc/apt/apt.conf.d/zzz-claudie.conf
         mode: "0644"
         content: "{{ apt_claudie_conf }}"
 
-    # 4. Only the needrestart and update-success-stamp hooks stay.
-    - name: Remove the cosmetic apt hooks
+    - name: Remove the unnecessary apt hooks
       ansible.builtin.shell: |
         for f in {{ apt_hooks_to_remove | join(' ') }}; do
           if [ -e "$f" ]; then
@@ -101,7 +75,6 @@
       register: apt_hooks_removed
       changed_when: apt_hooks_removed.stdout != ""
 
-    # 6. No man-db index rebuild after dpkg runs.
     - name: Disable the man-db index update trigger
       ansible.builtin.shell: |
         set -e
@@ -142,7 +115,6 @@
         - name: Apply apt daily timer drop-ins
           when: apt_daily_dropins_check.changed
           block:
-            # 2. Shut down running apt maintenance.
 
             # Stopping a timer does not stop an already running service, it only prevents new runs.
             - name: Stop apt daily timers
@@ -195,7 +167,7 @@
               failed_when: apt_daily_stop.rc != 0
               changed_when: false
 
-            # 3. Postpone apt maintenance to 1-3h after boot.
+            # Postpone apt maintenance to 1-3h after boot.
 
             - name: Write apt daily timer drop-ins
               ansible.builtin.copy:

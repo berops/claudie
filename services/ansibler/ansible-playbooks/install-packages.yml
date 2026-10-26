@@ -1,16 +1,6 @@
 ---
-# First part of node-setup.yml, not run on its own.
-#
-# Nothing in this play depends on another node, so every node runs through it at its own pace
-# (mitogen_free) and a node with a slow apt mirror does not hold up the others. The strategy is
-# set here on purpose, it overrides ANSIBLE_STRATEGY (mitogen_linear), which every other playbook
-# keeps.
-#
-# any_errors_fatal is not supported by the free strategy (nodes run independently), so a failing
-# node only drops out here; configure-wireguard.yml aborts when that happened and the golang code
-# retries the whole playbook.
 - hosts: all
-  become: yes
+  become: true
   gather_facts: false
   strategy: mitogen_free
 
@@ -18,14 +8,11 @@
     # kubeone pins containerd.io to this version (defaultContainerdVersion in pkg/scripts/funcs.go).
     # If this ever differs from the kubeone in use, kubeone replaces the package itself.
     containerd_version: "2.2.*"
-    # Same as the other apt tasks in the playbooks: 2 retries, 10s apart, for transient
-    # network/mirror errors.
     apt_retries: 2
     apt_retry_delay: 10
     # kubernetes_version is passed from ansibler without the "v" prefix, e.g. 1.35.0.
     # The apt repository is per minor version (v1.35), the packages are pinned to the patch version.
     kubernetes_major_minor: "{{ kubernetes_version.split('.')[:2] | join('.') }}"
-    # Everything kubeone installs.
     kubeone_packages:
       - apt-transport-https
       - ca-certificates
@@ -50,56 +37,22 @@
         timeout: 100
 
   tasks:
-    # Make apt wait for the dpkg lock and postpone the apt daily timers, so that unattended-upgrades
-    # does not hold the lock while Claudie or kubeone runs apt-get, and turn off the apt hooks, the
-    # apt translations and the man-db trigger before the first apt run. See the file for details.
-    - name: Configure apt
+    - name: Configure apt (defer upgrades and disable hooks)
       ansible.builtin.import_tasks: tasks/apt-config.yml
 
-    # Longhorn dependencies and Kubernetes packages. The apt run continues in the background, it is
-    # not waited for.
-    #
-    # The apt repositories are added before the WireGuard install, so that its `apt-get update` fetches
-    # the package lists of all repositories at once and the background apt run below reuses the apt
-    # cache instead of running a second `apt-get update`.
-    # TODO: runs on the loadbalancer nodes as well, which do not need any of these packages.
-    # Installs the Longhorn dependencies and pre-installs the packages that kubeone installs on every
-    # node, in a single apt run.
-    #
     # Pre-installing the kubeone packages (during its "Installing prerequisites..." task) makes
-    # kube-eleven's `kubeone apply` find them already present, so its apt-get calls finish in a
-    # fraction of the time. kubeone runs the prerequisites task on all control plane nodes first and
-    # only then on all worker nodes, so the ~25s apt install is paid twice per `kubeone apply`. Here it
-    # is paid once, in parallel across all nodes of the playbook.
-    #
-    # This mirrors the Debian/Ubuntu install script of kubeone (pkg/scripts/os_debian.go and the
-    # "apt-containerd" template in pkg/scripts/render.go) of the kubeone version pinned in
-    # services/kube-eleven/Dockerfile. Only package installation is done here. The configuration of
-    # containerd, kubelet, sysctl, swap, ufw, journald etc. is left to kubeone, which still runs its
-    # script in full; a matching package is simply a no-op for apt.
-    #
-    # The kubeone packages are skipped when kubelet is already installed (existing nodes, Kubernetes
-    # upgrades), as kubeone unholds/upgrades the packages itself in that case.
-    #
-    # Pre-installing the kubeone packages is purely an optimization: a failure there must never fail
-    # the playbook, as kubeone installs whatever is missing anyway.
-    #
-    # The apt run is started in the background and runs while the WireGuard configuration and the
-    # node tuning happen; configure-node.yml waits for it at the very end of node-setup.yml.
-    #
-    # The variables (longhorn_packages, kubeone_packages, ...) are play variables of node-setup.yml.
-
+    # kube-eleven's `kubeone apply` find them already present, so its apt-get calls finish faster
     - name: Check whether kubelet is already installed
       ansible.builtin.stat:
         path: /usr/bin/kubelet
       register: kubelet_binary
       when: kubernetes_version is defined and (kubernetes_version | length) > 0
 
-    - name: Decide whether to pre-install Kubernetes packages
+    - name: Decide whether to pre-install KubeOne packages
       ansible.builtin.set_fact:
         preinstall_kubernetes: "{{ kubernetes_version is defined and (kubernetes_version | length) > 0 and not kubelet_binary.stat.exists }}"
 
-    - name: Add apt repositories for Kubernetes packages
+    - name: Add apt repositories for KubeOne packages
       when: preinstall_kubernetes
       block:
         - name: Create apt keyrings directory
@@ -141,7 +94,7 @@
             filename: docker
             update_cache: false
       rescue:
-        - name: Adding apt repositories failed, leaving the installation of Kubernetes packages to kubeone
+        - name: Adding apt repositories failed, leaving the installation of Kubernetes packages to KubeOne
           ansible.builtin.debug:
             msg: >-
               Pre-installing Kubernetes packages failed on {{ inventory_hostname }}
@@ -152,8 +105,8 @@
           ansible.builtin.set_fact:
             preinstall_kubernetes: false
 
-    # The only `apt-get update` of the playbook, see above. The WireGuard packages are a few hundred
-    # KiB in size, a timeout of 8 minutes with 2 attempts is generous.
+    # Install WireGuard first, so we can move to the configuration phase as fast as possible
+    # Longhorn and KubeOne dependencies are installed in async manner and we wait for the competion at the end of node -setup
     - name: Install Wireguard
       ansible.builtin.apt:
         pkg:
@@ -164,22 +117,13 @@
       retries: 2
       delay: 10
 
-    # One apt run for everything. With the kubeone packages, `state: latest` matters: kubeone runs a
-    # plain `apt-get install <pkgs>`, which also upgrades already installed packages (curl, gnupg,
-    # apparmor, rsync, ...) to the newest version in the archive. With `present` those upgrades
-    # would be left for kubeone to do, costing it ~10s per node group again.
-    # Without them (kubelet already installed, the node may already have Longhorn volumes attached)
-    # the Longhorn dependencies are only installed if missing, never upgraded.
     - name: Install Longhorn dependencies and Kubernetes packages
       ansible.builtin.apt:
         name: "{{ longhorn_packages + (kubeone_packages if preinstall_kubernetes else []) }}"
         state: present
         update_cache: true
-        # The WireGuard install above has just refreshed the apt cache with all repositories, so it is
-        # reused instead of running `apt-get update` again. On existing nodes (every run of the
-        # playbook) the same applies, no new repository is involved there.
-        cache_valid_time: 3600
-        install_recommends: "{{ false if preinstall_kubernetes else omit }}"
+        cache_valid_time: 120
+        install_recommends: false
         dpkg_options: "{{ 'force-confold' if preinstall_kubernetes else omit }}"
         lock_timeout: 600
       register: async_job

@@ -1,21 +1,13 @@
 ---
-# Third part of node-setup.yml, not run on its own.
-#
-# Per-node tuning that does not depend on the VPN or on other nodes, so it runs with the free
-# strategy again (see install-packages.yml).
 - hosts: all
-  become: yes
+  become: true
   gather_facts: false
   strategy: mitogen_free
 
   vars:
-    # The apt run started in install-packages.yml is waited for in post_tasks. Registered results
-    # (async_job, preinstall_kubernetes) carry over between plays, play vars do not, hence the copy.
     longhorn_packages:
       - open-iscsi
       - nfs-common
-    apt_retries: 2
-    apt_retry_delay: 10
 
   tasks:
     - name: Blacklist Longhorn block devices in multipath
@@ -32,13 +24,9 @@
         max_queued_events: 65535
 
   post_tasks:
-    # Last thing in node-setup.yml: collect the result of the background apt run started in
-    # install-packages.yml. The Longhorn dependencies are required, so if the combined run failed
-    # they are installed again on their own, and only a failure of that fails the playbook.
-    #
-    # Polled once a second: a poll is one cheap round trip with Mitogen, and the wait ends within a
-    # second of the job finishing. 600 attempts match the async timeout of the apt task.
-    - name: Wait for the installation of Longhorn dependencies and Kubernetes packages
+    # The Longhorn dependencies are required, so they are retried on their own.
+    # The kubeone packages are left out: kubeone installs them itself if they are missing.
+    - name: Wait for the installation of Longhorn and KubeOne packages
       when: async_job is defined
       block:
         - name: Check async task result
@@ -55,13 +43,12 @@
               Installing node requirements failed on {{ inventory_hostname }}
               ({{ ansible_failed_result.msg | default('no message') }}).
               Retrying with the Longhorn dependencies only{{ ', kubeone will install the Kubernetes packages itself' if preinstall_kubernetes | default(false) else '' }}.
-
-        # Not optional, a failure here fails the playbook.
+        # A failure here fails the playbook.
         - name: Install Longhorn dependencies
           ansible.builtin.apt:
             name: "{{ longhorn_packages }}"
             state: present
             update_cache: true
             lock_timeout: 600
-          retries: "{{ apt_retries }}"
-          delay: "{{ apt_retry_delay }}"
+          retries: 2
+          delay: 10

@@ -33,12 +33,12 @@
 
 - name: Reload systemd configuration
   ansible.builtin.systemd:
-    daemon_reload: yes
+    daemon_reload: true
 
 - name: Configure kernel parameters
   ansible.builtin.blockinfile:
     path: /etc/sysctl.d/99-claudie-custom.conf
-    create: yes
+    create: true
     owner: root
     group: root
     mode: '0644'
