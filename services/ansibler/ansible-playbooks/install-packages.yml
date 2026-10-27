@@ -33,7 +33,7 @@
 
   pre_tasks:
     - name: Wait 100 seconds for target connection to become reachable/usable
-      ansible.builtin.wait_for_connection:
+      wait_for_connection:
         timeout: 100
 
   tasks:
