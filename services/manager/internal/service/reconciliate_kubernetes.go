@@ -645,7 +645,7 @@ func ScheduleAdditionsInNodePools(
 			{
 				Kind: spec.StageAnsibler_SETUP_NODE,
 				Description: &spec.StageDescription{
-					About:      "Installing VPN and interconnect new nodes with existing infrastructure",
+					About:      "Installing node requirements and VPN, interconnecting new nodes with existing infrastructure",
 					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 				},
 			},
@@ -662,7 +662,7 @@ func ScheduleAdditionsInNodePools(
 			{
 				Kind: spec.StageAnsibler_SETUP_NODE,
 				Description: &spec.StageDescription{
-					About:      "Installing VPN and interconnect new nodes with existing infrastructure",
+					About:      "Installing node requirements and VPN, interconnecting new nodes with existing infrastructure",
 					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 				},
 			},
@@ -1127,7 +1127,7 @@ func ScheduleDeletionsInNodePools(
 	if opts.UseProxy {
 		ans.Ansibler.SubPasses = append(ans.Ansibler.SubPasses, []*spec.StageAnsibler_SubPass{
 			{
-				Kind: spec.StageAnsibler_SETUP_NODE,
+				Kind: spec.StageAnsibler_INSTALL_VPN,
 				Description: &spec.StageDescription{
 					About:      "Refreshing VPN on nodes after deletion",
 					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,

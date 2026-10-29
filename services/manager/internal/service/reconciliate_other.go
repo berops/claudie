@@ -147,7 +147,7 @@ func ScheduleRefreshVPN(usesProxy bool, current *spec.Clusters) *spec.TaskEvent 
 				},
 				SubPasses: []*spec.StageAnsibler_SubPass{
 					{
-						Kind: spec.StageAnsibler_SETUP_NODE,
+						Kind: spec.StageAnsibler_INSTALL_VPN,
 						Description: &spec.StageDescription{
 							About:      "Fixing drift in VPN across nodes of the kuberentes and loadbalancer clusters",
 							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
@@ -172,7 +172,7 @@ func ScheduleRefreshVPN(usesProxy bool, current *spec.Clusters) *spec.TaskEvent 
 						},
 					},
 					{
-						Kind: spec.StageAnsibler_SETUP_NODE,
+						Kind: spec.StageAnsibler_INSTALL_VPN,
 						Description: &spec.StageDescription{
 							About:      "Fixing drift in VPN across nodes of the kuberentes and loadbalancer clusters",
 							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
@@ -306,7 +306,7 @@ func CreatePipeline(clusters *spec.Clusters, isCreate bool) []*spec.Stage {
 					{
 						Kind: spec.StageAnsibler_SETUP_NODE,
 						Description: &spec.StageDescription{
-							About:      "Setting up VPN across the nodes of the kuberentes and loadbalancer clusters",
+							About:      "Installing node requirements and setting up VPN across the nodes of the kuberentes and loadbalancer clusters",
 							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 						},
 					},
@@ -332,7 +332,7 @@ func CreatePipeline(clusters *spec.Clusters, isCreate bool) []*spec.Stage {
 					{
 						Kind: spec.StageAnsibler_SETUP_NODE,
 						Description: &spec.StageDescription{
-							About:      "Setting up VPN across the nodes of the kuberentes and loadbalancer clusters",
+							About:      "Installing node requirements and setting up VPN across the nodes of the kuberentes and loadbalancer clusters",
 							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 						},
 					},

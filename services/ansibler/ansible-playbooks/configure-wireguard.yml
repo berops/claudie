@@ -17,6 +17,32 @@
       when: groups['all'] | difference(ansible_play_hosts) | length > 0
       run_once: true
   tasks:
+    # When run as part of node-setup.yml, install-packages.yml has already installed WireGuard.
+    # When run alone (INSTALL_VPN stage, task_install_vpn.go), WireGuard may be missing, so install it here.
+    - name: Wait 100 seconds for target connection to become reachable/usable
+      ansible.builtin.wait_for_connection:
+        timeout: 100
+
+    - name: Check whether WireGuard is already installed
+      ansible.builtin.stat:
+        path: /usr/bin/wg
+      register: wg_binary
+
+    - name: Install WireGuard if missing
+      when: not wg_binary.stat.exists
+      block:
+        - name: Install Wireguard
+          ansible.builtin.apt:
+            pkg:
+              - wireguard
+            state: present
+            update_cache: true
+          timeout: 480
+          retries: 2
+          delay: 10
+          register: wg_install
+          until: wg_install is not failed
+
     - name: Create wireguard config dir
       ansible.builtin.file:
         path: "/etc/wireguard"
