@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	wireguardPlaybook     = "../../ansible-playbooks/configure-wireguard.yml"
+	wireguardPlaybook     = "../../ansible-playbooks/wireguard.yml"
 	natHairpinFixPlaybook = "../../ansible-playbooks/nat-hairpin-fix.yml"
 )
 
@@ -51,28 +51,6 @@ func InstallVPN(
 ) {
 	logger.Info().Msg("Installing VPN")
 
-	k8s, lbs, vi, ok := vpnTargets(logger, tracker)
-	if !ok {
-		return
-	}
-
-	if err := runPlaybookOnVPNNodes(k8s.ClusterInfo.Id(), vi, wireguardPlaybook, "", processLimit); err != nil {
-		logger.Err(err).Msg("Failed to install VPN")
-		tracker.Diagnostics.Push(err)
-		return
-	}
-
-	update := tracker.Result.Update()
-	update.Kubernetes(k8s)
-	update.Loadbalancers(lbs...)
-	update.Commit()
-
-	logger.Info().Msg("Finished Installing VPN")
-}
-
-// vpnTargets collects the reachable nodes of the kubernetes cluster and its loadbalancers
-// from the task. Returns false if the task is not a create or update task.
-func vpnTargets(logger zerolog.Logger, tracker Tracker) (*spec.K8Scluster, []*spec.LBcluster, *VPNInfo, bool) {
 	var (
 		k8s *spec.K8Scluster
 		lbs []*spec.LBcluster
@@ -98,7 +76,7 @@ func vpnTargets(logger zerolog.Logger, tracker Tracker) (*spec.K8Scluster, []*sp
 		logger.
 			Warn().
 			Msgf("Received task with action %T while wanting to install vpn, assuming the task was misscheduled, ignoring", tracker.Task.GetDo())
-		return nil, nil, nil, false
+		return
 	}
 
 	k8snps := k8s.ClusterInfo.NodePools
@@ -140,16 +118,25 @@ func vpnTargets(logger zerolog.Logger, tracker Tracker) (*spec.K8Scluster, []*sp
 			},
 			ClusterID:      handle,
 			ClusterNetwork: k8s.Network,
-			IsLoadBalancer: true,
 		})
 	}
 
-	return k8s, lbs, &vi, true
+	if err := installWireguardVPN(k8s.ClusterInfo.Id(), &vi, processLimit); err != nil {
+		logger.Err(err).Msg("Failed to install VPN")
+		tracker.Diagnostics.Push(err)
+		return
+	}
+
+	update := tracker.Result.Update()
+	update.Kubernetes(k8s)
+	update.Loadbalancers(lbs...)
+	update.Commit()
+
+	logger.Info().Msg("Finished Installing VPN")
 }
 
-// runPlaybookOnVPNNodes assigns private IPs to the nodes, fixes hairpin NAT where needed
-// and runs the given playbook, which sets up the wireguard VPN, on all nodes in the infrastructure.
-func runPlaybookOnVPNNodes(clusterID string, vpnInfo *VPNInfo, playbook, flags string, processLimit *semaphore.Weighted) error {
+// installWireguardVPN install wireguard VPN for all nodes in the infrastructure.
+func installWireguardVPN(clusterID string, vpnInfo *VPNInfo, processLimit *semaphore.Weighted) error {
 	// Directory where files (required by Ansible) will be generated.
 	clusterDirectory := filepath.Join(
 		BaseDirectory,
@@ -201,10 +188,9 @@ func runPlaybookOnVPNNodes(clusterID string, vpnInfo *VPNInfo, playbook, flags s
 	}
 
 	ansible := utils.Ansible{
-		Playbook:          playbook,
+		Playbook:          wireguardPlaybook,
 		Inventory:         utils.InventoryFileName,
 		Directory:         clusterDirectory,
-		Flags:             flags,
 		SpawnProcessLimit: processLimit,
 	}
 
