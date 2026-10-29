@@ -1,11 +1,9 @@
 ---
-# Sets up every node of the kubernetes cluster and its loadbalancers.
-# Run by the ansibler on the SETUP_NODE stage, see task_setup_node.go.
+# Installs the node requirements on the nodes of the kubernetes cluster.
+# Run by the ansibler on the INSTALL_NODE_REQUIREMENTS stage, see task_install_node_requirements.go.
+# WireGuard is set up beforehand by the INSTALL_VPN stage (configure-wireguard.yml).
 
 # runs with mitogen_free strategy
 - import_playbook: install-packages.yml
-# this task runs with the mitogen_linear strategy and serves as a synchronization point
-# all nodes must have WireGuard installed before continuing
-- import_playbook: configure-wireguard.yml
 # runs with mitogen_free strategy
 - import_playbook: configure-node.yml

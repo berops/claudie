@@ -9,16 +9,8 @@
     wg_interface_name: "wg0"
     mtu_size: 1380
   any_errors_fatal: true
-  pre_tasks:
-    # Every node needs the public keys of all other nodes. Abort if any node failed in the previous play.
-    - name: Abort when a node dropped out in the previous play
-      ansible.builtin.fail:
-        msg: "Nodes failed or were unreachable in the previous play: {{ groups['all'] | difference(ansible_play_hosts) | join(', ') }}"
-      when: groups['all'] | difference(ansible_play_hosts) | length > 0
-      run_once: true
+  # Run by the INSTALL_VPN stage (task_install_vpn.go) on all nodes.
   tasks:
-    # When run as part of node-setup.yml, install-packages.yml has already installed WireGuard.
-    # When run alone (INSTALL_VPN stage, task_install_vpn.go), WireGuard may be missing, so install it here.
     - name: Wait 100 seconds for target connection to become reachable/usable
       ansible.builtin.wait_for_connection:
         timeout: 100

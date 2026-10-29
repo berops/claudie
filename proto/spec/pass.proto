@@ -44,8 +44,7 @@ message StageTerraformer {
 
 message StageAnsibler {
   enum SubPassKind {
-    // Replaced by SETUP_NODE.
-    INSTALL_NODE_REQUIREMENTS = 0 [deprecated = true];
+    INSTALL_NODE_REQUIREMENTS = 0;
     INSTALL_VPN = 1;
     DETERMINE_API_ENDPOINT_CHANGE = 2;
     RECONCILE_LOADBALANCERS = 3;
@@ -54,7 +53,6 @@ message StageAnsibler {
     COMMIT_PROXY_ENVS = 6;
     UPDATE_PROXY_ENVS_ON_NODES = 7;
     CLEAR_PROXY_ENVS_ON_NODES = 8;
-    SETUP_NODE = 9;
   }
   message SubPass {
     SubPassKind kind = 1;

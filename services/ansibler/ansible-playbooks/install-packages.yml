@@ -48,7 +48,7 @@
 
     - name: Decide whether to pre-install KubeOne packages
       ansible.builtin.set_fact:
-        preinstall_kubernetes: "{{ not (is_loadbalancer | bool) and kubernetes_version is defined and (kubernetes_version | length) > 0 and not kubelet_binary.stat.exists }}"
+        preinstall_kubernetes: "{{ kubernetes_version is defined and (kubernetes_version | length) > 0 and not kubelet_binary.stat.exists }}"
 
     - name: Add apt repositories for KubeOne packages
       when: preinstall_kubernetes
@@ -103,21 +103,9 @@
           ansible.builtin.set_fact:
             preinstall_kubernetes: false
 
-    # Install WireGuard first, so we can move to the configuration phase as fast as possible
-    # Longhorn and KubeOne dependencies are installed in async manner and we wait for the competion at the end of node -setup
-    - name: Install Wireguard
-      ansible.builtin.apt:
-        pkg:
-          - wireguard
-        state: present
-        update_cache: true
-      timeout: 480
-      retries: 2
-      delay: 10
-
+    # Longhorn and KubeOne dependencies are installed in async manner, configure-node.yml waits for the completion.
+    # The cache is always refreshed, as the apt repositories above may have just been added.
     - name: Install Longhorn dependencies and Kubernetes packages
-      # Loadbalancer nodes only need WireGuard (is_loadbalancer host var from the inventory).
-      when: not (is_loadbalancer | bool)
       ansible.builtin.apt:
         name: "{{ longhorn_packages + (kubeone_packages if preinstall_kubernetes else []) }}"
         state: present

@@ -23,7 +23,7 @@
     # The Longhorn dependencies are required, so they are retried on their own.
     # The kubeone packages are left out: kubeone installs them itself if they are missing.
     - name: Wait for the installation of Longhorn and KubeOne packages
-      when: async_job.ansible_job_id is defined
+      when: async_job is defined
       block:
         - name: Check async task result
           ansible.builtin.async_status:

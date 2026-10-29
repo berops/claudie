@@ -536,7 +536,7 @@ func TestConvertFromGRPCStages(t *testing.T) {
 							},
 							SubPasses: []*spec.StageAnsibler_SubPass{
 								{
-									Kind: spec.StageAnsibler_SETUP_NODE,
+									Kind: spec.StageAnsibler_INSTALL_VPN,
 									Description: &spec.StageDescription{
 										About:      "Ansibler subpass about",
 										ErrorLevel: spec.ErrorLevel_ERROR_WARN,

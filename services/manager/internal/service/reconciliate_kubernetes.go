@@ -643,9 +643,16 @@ func ScheduleAdditionsInNodePools(
 				},
 			},
 			{
-				Kind: spec.StageAnsibler_SETUP_NODE,
+				Kind: spec.StageAnsibler_INSTALL_VPN,
 				Description: &spec.StageDescription{
-					About:      "Installing node requirements and VPN, interconnecting new nodes with existing infrastructure",
+					About:      "Installing VPN and interconnect new nodes with existing infrastructure",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+			},
+			{
+				Kind: spec.StageAnsibler_INSTALL_NODE_REQUIREMENTS,
+				Description: &spec.StageDescription{
+					About:      "Installing node requirments for newly added nodes",
 					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 				},
 			},
@@ -660,9 +667,16 @@ func ScheduleAdditionsInNodePools(
 	} else {
 		ans.Ansibler.SubPasses = append(ans.Ansibler.SubPasses, []*spec.StageAnsibler_SubPass{
 			{
-				Kind: spec.StageAnsibler_SETUP_NODE,
+				Kind: spec.StageAnsibler_INSTALL_VPN,
 				Description: &spec.StageDescription{
-					About:      "Installing node requirements and VPN, interconnecting new nodes with existing infrastructure",
+					About:      "Installing VPN and interconnect new nodes with existing infrastructure",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+			},
+			{
+				Kind: spec.StageAnsibler_INSTALL_NODE_REQUIREMENTS,
+				Description: &spec.StageDescription{
+					About:      "Installing node requirments for newly added nodes",
 					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 				},
 			},
