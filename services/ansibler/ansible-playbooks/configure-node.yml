@@ -43,6 +43,18 @@
               Installing node requirements failed on {{ inventory_hostname }}
               ({{ ansible_failed_result.msg | default('no message') }}).
               Retrying with the Longhorn dependencies only{{ ', kubeone will install the Kubernetes packages itself' if preinstall_kubernetes | default(false) else '' }}.
+        # A job killed at its async limit can leave dpkg interrupted, after which every apt call (including
+        # kubeone's) fails with "dpkg was interrupted, you must manually run 'dpkg --configure -a'"
+        - name: Repair interrupted dpkg
+          ansible.builtin.command: dpkg --force-confdef --force-confold --configure -a
+          environment:
+            DEBIAN_FRONTEND: noninteractive
+          register: dpkg_configure
+          until: dpkg_configure is not failed
+          retries: 6
+          delay: 10
+          changed_when: dpkg_configure.stdout | length > 0
+
         # A failure here fails the playbook.
         - name: Install Longhorn dependencies
           ansible.builtin.apt:
