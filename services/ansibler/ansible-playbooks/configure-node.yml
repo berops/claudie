@@ -3,12 +3,8 @@
   become: true
   gather_facts: false
   strategy: mitogen_free
-
-  vars:
-    longhorn_packages:
-      - open-iscsi
-      - nfs-common
-
+  vars_files:
+    - vars/shared.yml
   tasks:
     - name: Blacklist Longhorn block devices in multipath
       ansible.builtin.import_tasks: tasks/longhorn-multipath.yml

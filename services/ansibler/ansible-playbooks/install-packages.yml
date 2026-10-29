@@ -3,7 +3,8 @@
   become: true
   gather_facts: false
   strategy: mitogen_free
-
+  vars_files:
+    - vars/shared.yml
   vars:
     # kubeone pins containerd.io to this version (defaultContainerdVersion in pkg/scripts/funcs.go).
     # If this ever differs from the kubeone in use, kubeone replaces the package itself.
@@ -27,9 +28,6 @@
       - "kubectl={{ kubernetes_version }}-*"
       - kubernetes-cni
       - cri-tools
-    longhorn_packages:
-      - open-iscsi
-      - nfs-common
 
   pre_tasks:
     - name: Wait 100 seconds for target connection to become reachable/usable
