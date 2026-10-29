@@ -48,7 +48,7 @@
 
     - name: Decide whether to pre-install KubeOne packages
       ansible.builtin.set_fact:
-        preinstall_kubernetes: "{{ kubernetes_version is defined and (kubernetes_version | length) > 0 and not kubelet_binary.stat.exists }}"
+        preinstall_kubernetes: "{{ not (is_loadbalancer | bool) and kubernetes_version is defined and (kubernetes_version | length) > 0 and not kubelet_binary.stat.exists }}"
 
     - name: Add apt repositories for KubeOne packages
       when: preinstall_kubernetes
@@ -116,6 +116,8 @@
       delay: 10
 
     - name: Install Longhorn dependencies and Kubernetes packages
+      # Loadbalancer nodes only need WireGuard (is_loadbalancer host var from the inventory).
+      when: not (is_loadbalancer | bool)
       ansible.builtin.apt:
         name: "{{ longhorn_packages + (kubeone_packages if preinstall_kubernetes else []) }}"
         state: present

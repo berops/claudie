@@ -56,6 +56,7 @@ type (
 		Nodepools      NodePools
 		ClusterID      string
 		ClusterNetwork string
+		IsLoadBalancer bool
 	}
 
 	AllNodesInventoryData struct {

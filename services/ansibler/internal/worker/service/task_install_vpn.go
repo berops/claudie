@@ -140,6 +140,7 @@ func vpnTargets(logger zerolog.Logger, tracker Tracker) (*spec.K8Scluster, []*sp
 			},
 			ClusterID:      handle,
 			ClusterNetwork: k8s.Network,
+			IsLoadBalancer: true,
 		})
 	}
 
