@@ -188,3 +188,13 @@ If no templates are specified Claudie generates a default custom resource that p
   file on the node first, and Mitogen replaces the per-task SSH and Python startup with one
   long-lived Python process per host. Most tasks drop from seconds to milliseconds, which
   significantly shortens cluster builds and scaling on large nodepools.
+## v0.16.4
+
+## What's Changed
+- `ansibler` node setup speedup [#2252](https://github.com/berops/claudie/pull/2252)
+
+  - Kubernetes packages are pre-installed by `ansibler` instead of `kubeone` in `kube-eleven`.
+  - Removed the redundant second `populate-proxy-envs` run, private IPs are known in advance.
+  - Python interpreter path is set explicitly, halving playbook startup time.
+  - Reorganized playbooks to introduce more parallelism.
+  - Unnecessary apt hooks are removed.
