@@ -110,7 +110,6 @@
         name: "{{ longhorn_packages + (kubeone_packages if preinstall_kubernetes else []) }}"
         state: present
         update_cache: true
-        cache_valid_time: 120
         install_recommends: false
         dpkg_options: "{{ 'force-confold' if preinstall_kubernetes else omit }}"
         lock_timeout: 600
