@@ -382,6 +382,16 @@ func CreatePipeline(clusters *spec.Clusters, isCreate bool) []*spec.Stage {
 					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 				},
 				SubPasses: []*spec.StageKuber_SubPass{
+					// The cluster created by the ansibler has no CNI, the nodes stay
+					// NotReady and no pods can be scheduled until Cilium is deployed,
+					// thus this has to be the first sub-pass and is fatal.
+					{
+						Kind: spec.StageKuber_DEPLOY_CILIUM,
+						Description: &spec.StageDescription{
+							About:      "Deploying Cilium CNI",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
 					{
 						Kind: spec.StageKuber_DEPLOY_KUBELET_CSR_APPROVER,
 						Description: &spec.StageDescription{
@@ -425,8 +435,8 @@ func CreatePipeline(clusters *spec.Clusters, isCreate bool) []*spec.Stage {
 		})
 	}
 
+	// terraformer, ansibler (which also bootstraps the cluster with kubeadm), kuber.
 	pipeline := []*spec.Stage{
-		{StageKind: nil},
 		{StageKind: nil},
 		{StageKind: nil},
 		{StageKind: &kuber},

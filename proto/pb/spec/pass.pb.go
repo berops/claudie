@@ -7,12 +7,11 @@
 package spec
 
 import (
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
-
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -159,6 +158,7 @@ var (
 		6: "COMMIT_PROXY_ENVS",
 		7: "UPDATE_PROXY_ENVS_ON_NODES",
 		8: "CLEAR_PROXY_ENVS_ON_NODES",
+		9: "CREATE_CLUSTER",
 	}
 	StageAnsibler_SubPassKind_value = map[string]int32{
 		"INSTALL_NODE_REQUIREMENTS":     0,
@@ -170,6 +170,7 @@ var (
 		"COMMIT_PROXY_ENVS":             6,
 		"UPDATE_PROXY_ENVS_ON_NODES":    7,
 		"CLEAR_PROXY_ENVS_ON_NODES":     8,
+		"CREATE_CLUSTER":                9,
 	}
 )
 
@@ -261,6 +262,7 @@ const (
 	StageKuber_DISABLE_LONGHORN_CA                StageKuber_SubPassKind = 10
 	StageKuber_RECONCILE_LONGHORN_STORAGE_CLASSES StageKuber_SubPassKind = 11
 	StageKuber_DEPLOY_KUBELET_CSR_APPROVER        StageKuber_SubPassKind = 12
+	StageKuber_DEPLOY_CILIUM                      StageKuber_SubPassKind = 13
 )
 
 // Enum value maps for StageKuber_SubPassKind.
@@ -278,6 +280,7 @@ var (
 		10: "DISABLE_LONGHORN_CA",
 		11: "RECONCILE_LONGHORN_STORAGE_CLASSES",
 		12: "DEPLOY_KUBELET_CSR_APPROVER",
+		13: "DEPLOY_CILIUM",
 	}
 	StageKuber_SubPassKind_value = map[string]int32{
 		"CILIUM_RESTART":                     0,
@@ -292,6 +295,7 @@ var (
 		"DISABLE_LONGHORN_CA":                10,
 		"RECONCILE_LONGHORN_STORAGE_CLASSES": 11,
 		"DEPLOY_KUBELET_CSR_APPROVER":        12,
+		"DEPLOY_CILIUM":                      13,
 	}
 )
 
@@ -924,13 +928,13 @@ const file_spec_pass_proto_rawDesc = "" +
 	"\x14BUILD_INFRASTRUCTURE\x10\x00\x12\x19\n" +
 	"\x15UPDATE_INFRASTRUCTURE\x10\x01\x12\x1a\n" +
 	"\x16DESTROY_INFRASTRUCTURE\x10\x02\x12\x1a\n" +
-	"\x16API_PORT_ON_KUBERNETES\x10\x03\"\x8b\x04\n" +
+	"\x16API_PORT_ON_KUBERNETES\x10\x03\"\x9f\x04\n" +
 	"\rStageAnsibler\x128\n" +
 	"\vdescription\x18\x01 \x01(\v2\x16.spec.StageDescriptionR\vdescription\x129\n" +
 	"\tsubPasses\x18\x02 \x03(\v2\x1b.spec.StageAnsibler.SubPassR\tsubPasses\x1ax\n" +
 	"\aSubPass\x123\n" +
 	"\x04kind\x18\x01 \x01(\x0e2\x1f.spec.StageAnsibler.SubPassKindR\x04kind\x128\n" +
-	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"\x8a\x02\n" +
+	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"\x9e\x02\n" +
 	"\vSubPassKind\x12\x1d\n" +
 	"\x19INSTALL_NODE_REQUIREMENTS\x10\x00\x12\x0f\n" +
 	"\vINSTALL_VPN\x10\x01\x12!\n" +
@@ -940,7 +944,8 @@ const file_spec_pass_proto_rawDesc = "" +
 	"\x13UPDATE_API_ENDPOINT\x10\x05\x12\x15\n" +
 	"\x11COMMIT_PROXY_ENVS\x10\x06\x12\x1e\n" +
 	"\x1aUPDATE_PROXY_ENVS_ON_NODES\x10\a\x12\x1d\n" +
-	"\x19CLEAR_PROXY_ENVS_ON_NODES\x10\b\"\xbf\x02\n" +
+	"\x19CLEAR_PROXY_ENVS_ON_NODES\x10\b\x12\x12\n" +
+	"\x0eCREATE_CLUSTER\x10\t\"\xbf\x02\n" +
 	"\x0fStageKubeEleven\x128\n" +
 	"\vdescription\x18\x01 \x01(\v2\x16.spec.StageDescriptionR\vdescription\x12;\n" +
 	"\tsubPasses\x18\x02 \x03(\v2\x1d.spec.StageKubeEleven.SubPassR\tsubPasses\x1az\n" +
@@ -949,14 +954,14 @@ const file_spec_pass_proto_rawDesc = "" +
 	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"9\n" +
 	"\vSubPassKind\x12\x15\n" +
 	"\x11RECONCILE_CLUSTER\x10\x00\x12\x13\n" +
-	"\x0fDESTROY_CLUSTER\x10\x01\"\xb2\x04\n" +
+	"\x0fDESTROY_CLUSTER\x10\x01\"\xc5\x04\n" +
 	"\n" +
 	"StageKuber\x128\n" +
 	"\vdescription\x18\x01 \x01(\v2\x16.spec.StageDescriptionR\vdescription\x126\n" +
 	"\tsubPasses\x18\x02 \x03(\v2\x18.spec.StageKuber.SubPassR\tsubPasses\x1au\n" +
 	"\aSubPass\x120\n" +
 	"\x04kind\x18\x01 \x01(\x0e2\x1c.spec.StageKuber.SubPassKindR\x04kind\x128\n" +
-	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"\xba\x02\n" +
+	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"\xcd\x02\n" +
 	"\vSubPassKind\x12\x12\n" +
 	"\x0eCILIUM_RESTART\x10\x00\x12\x10\n" +
 	"\fDELETE_NODES\x10\x01\x12\x19\n" +
@@ -970,7 +975,8 @@ const file_spec_pass_proto_rawDesc = "" +
 	"\x13DISABLE_LONGHORN_CA\x10\n" +
 	"\x12&\n" +
 	"\"RECONCILE_LONGHORN_STORAGE_CLASSES\x10\v\x12\x1f\n" +
-	"\x1bDEPLOY_KUBELET_CSR_APPROVER\x10\f\"\xe6\x01\n" +
+	"\x1bDEPLOY_KUBELET_CSR_APPROVER\x10\f\x12\x11\n" +
+	"\rDEPLOY_CILIUM\x10\r\"\xe6\x01\n" +
 	"\x05Stage\x12:\n" +
 	"\vterraformer\x18\x01 \x01(\v2\x16.spec.StageTerraformerH\x00R\vterraformer\x121\n" +
 	"\bansibler\x18\x02 \x01(\v2\x13.spec.StageAnsiblerH\x00R\bansibler\x127\n" +
