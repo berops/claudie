@@ -1,8 +1,8 @@
 ---
 # Installs the node requirements on the nodes of the kubernetes cluster.
 # Run by the ansibler on the INSTALL_NODE_REQUIREMENTS stage, see task_install_node_requirements.go.
-# Runs before the INSTALL_VPN stage (configure-wireguard.yml), so the apt configuration
-# from tasks/apt-config.yml is already in place when WireGuard is installed.
+# WireGuard and the apt configuration (tasks/apt-config.yml) are set up beforehand
+# by the INSTALL_VPN stage (configure-wireguard.yml).
 
 # runs with mitogen_free strategy
 - import_playbook: install-packages.yml

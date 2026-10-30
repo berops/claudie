@@ -35,9 +35,6 @@
         timeout: 100
 
   tasks:
-    - name: Configure apt (defer upgrades and disable hooks)
-      ansible.builtin.import_tasks: tasks/apt-config.yml
-
     # Pre-installing the kubeone packages (during its "Installing prerequisites..." task) makes
     # kube-eleven's `kubeone apply` find them already present, so its apt-get calls finish faster
     - name: Check whether kubelet is already installed

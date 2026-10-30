@@ -15,6 +15,9 @@
       ansible.builtin.wait_for_connection:
         timeout: 100
 
+    - name: Configure apt (defer upgrades and disable hooks)
+      ansible.builtin.import_tasks: tasks/apt-config.yml
+
     - name: Check whether WireGuard is already installed
       ansible.builtin.stat:
         path: /usr/bin/wg
