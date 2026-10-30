@@ -324,6 +324,13 @@ func CreatePipeline(clusters *spec.Clusters, isCreate bool) []*spec.Stage {
 							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 						},
 					},
+					{
+						Kind: spec.StageAnsibler_CREATE_CLUSTER,
+						Description: &spec.StageDescription{
+							About:      "Creating a Kubernetes cluster using kubeadm",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
 					// NOTE: there is no need to Commit Proxy envs, if the pipeline is used for creation.
 				},
 			},
@@ -357,21 +364,10 @@ func CreatePipeline(clusters *spec.Clusters, isCreate bool) []*spec.Stage {
 							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 						},
 					},
-				},
-			},
-		}
-
-		kubeeleven = spec.Stage_KubeEleven{
-			KubeEleven: &spec.StageKubeEleven{
-				Description: &spec.StageDescription{
-					About:      "Reconciling kubernetes cluster",
-					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-				},
-				SubPasses: []*spec.StageKubeEleven_SubPass{
 					{
-						Kind: spec.StageKubeEleven_RECONCILE_CLUSTER,
+						Kind: spec.StageAnsibler_CREATE_CLUSTER,
 						Description: &spec.StageDescription{
-							About:      "Creating kubernetes cluster from the set up infrastructure",
+							About:      "Creating a Kubernetes cluster using kubeadm",
 							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 						},
 					},
@@ -432,7 +428,7 @@ func CreatePipeline(clusters *spec.Clusters, isCreate bool) []*spec.Stage {
 	pipeline := []*spec.Stage{
 		{StageKind: nil},
 		{StageKind: nil},
-		{StageKind: &kubeeleven},
+		{StageKind: nil},
 		{StageKind: &kuber},
 	}
 

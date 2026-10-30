@@ -1,0 +1,20 @@
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: JoinConfiguration
+discovery:
+  bootstrapToken:
+    apiServerEndpoint: {{ control_plane_endpoint }}
+    token: {{ hostvars[first_control_node].join_token }}
+    caCertHashes:
+      - {{ hostvars[first_control_node].join_ca_cert_hash }}
+nodeRegistration:
+  name: {{ inventory_hostname }}
+  kubeletExtraArgs:
+    - name: node-ip
+      value: {{ node_ip }}
+{% if join_as_control_plane %}
+controlPlane:
+  localAPIEndpoint:
+    advertiseAddress: {{ node_ip }}
+    bindPort: {{ api_server_port }}
+  certificateKey: {{ hostvars[first_control_node].join_certificate_key }}
+{% endif %}

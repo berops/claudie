@@ -1,0 +1,61 @@
+---
+# Bootstraps a Kubernetes cluster with kubeadm on the nodes of the kubernetes cluster.
+# Run by the ansibler on the CREATE_CLUSTER stage, see task_create_cluster.go.
+#
+# Expects the inventory generated from templates/k8s-inventory.goini ([control] and [compute]
+# groups, private_ip per host) and the kubernetes_version extra var (e.g. 1.35.0) passed by
+# the ansibler. WireGuard is set up beforehand by the INSTALL_VPN stage, so private_ip is
+# reachable between all nodes.
+#
+# The ansibler retries the whole playbook on failure, so every play has to be re-runnable:
+# a node that is already part of the cluster is left untouched.
+
+- name: Prepare all nodes
+  hosts: all
+  become: true
+  strategy: mitogen_free
+  any_errors_fatal: true
+  vars_files:
+    - vars/k8s.yaml
+  pre_tasks:
+    - name: Wait 100 seconds for target connection to become reachable/usable
+      ansible.builtin.wait_for_connection:
+        timeout: 100
+  roles:
+    - node-prereq
+
+- name: Init first control node
+  hosts: control[0]
+  become: true
+  gather_facts: false
+  any_errors_fatal: true
+  vars_files:
+    - vars/k8s.yaml
+  roles:
+    - kubeadm_init
+
+# Control nodes join one at a time, joining a control node adds an etcd member and
+# concurrent membership changes are refused by etcd.
+- name: Join remaining control nodes
+  hosts: control[1:]
+  become: true
+  gather_facts: false
+  serial: 1
+  any_errors_fatal: true
+  vars_files:
+    - vars/k8s.yaml
+  roles:
+    - role: kubeadm_join
+      join_as_control_plane: true
+
+- name: Join all worker nodes
+  hosts: compute
+  become: true
+  gather_facts: false
+  strategy: mitogen_free
+  any_errors_fatal: true
+  vars_files:
+    - vars/k8s.yaml
+  roles:
+    - role: kubeadm_join
+      join_as_control_plane: false

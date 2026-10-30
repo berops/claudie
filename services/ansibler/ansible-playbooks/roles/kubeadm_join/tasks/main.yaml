@@ -1,0 +1,28 @@
+---
+# A node that already has a kubelet config is part of the cluster and is left untouched:
+# the join config contains a fresh token on every run, so writing it unconditionally
+# would never be idempotent.
+- name: Check whether the node already joined the cluster
+  ansible.builtin.stat:
+    path: /etc/kubernetes/kubelet.conf
+  register: kubelet_conf
+
+- name: Join the cluster
+  when: not kubelet_conf.stat.exists
+  block:
+    - name: Create directory for kubeadm configs
+      ansible.builtin.file:
+        path: /root/kubeadm
+        state: directory
+        mode: "0700"
+
+    - name: Write the kubeadm join config
+      ansible.builtin.template:
+        src: join.yaml.j2
+        dest: /root/kubeadm/join.yaml
+        mode: "0600"
+
+    - name: Run kubeadm join
+      ansible.builtin.command:
+        cmd: kubeadm join --config /root/kubeadm/join.yaml
+        creates: /etc/kubernetes/kubelet.conf

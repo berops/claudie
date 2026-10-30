@@ -1,0 +1,19 @@
+---
+# Variables shared by the plays of create-cluster.yml.
+# kubernetes_version is passed by the ansibler as an extra var without the "v" prefix, e.g. 1.35.0.
+
+# The apt repository is per minor version (v1.35), the packages are pinned to the patch version.
+kubernetes_major_minor: "{{ kubernetes_version.split('.')[:2] | join('.') }}"
+
+# Inventory hostname of the node running kubeadm init.
+first_control_node: "{{ groups['control'][0] }}"
+# WireGuard IP of the current host, from the generated inventory.
+node_ip: "{{ private_ip }}"
+api_server_port: 6443
+# Public IP of the first control node. Clusters with an API load balancer
+# need its DNS hostname here instead.
+control_plane_endpoint: "{{ hostvars[first_control_node].ansible_host }}:{{ api_server_port }}"
+
+# Same ranges as the clusters built by kubeone, so that both kinds of clusters look alike.
+pod_subnet: 10.244.0.0/16
+service_subnet: 10.96.0.0/12

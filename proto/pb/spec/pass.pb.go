@@ -7,11 +7,12 @@
 package spec
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -143,6 +144,7 @@ const (
 	StageAnsibler_COMMIT_PROXY_ENVS             StageAnsibler_SubPassKind = 6
 	StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES    StageAnsibler_SubPassKind = 7
 	StageAnsibler_CLEAR_PROXY_ENVS_ON_NODES     StageAnsibler_SubPassKind = 8
+	StageAnsibler_CREATE_CLUSTER                StageAnsibler_SubPassKind = 9
 )
 
 // Enum value maps for StageAnsibler_SubPassKind.
