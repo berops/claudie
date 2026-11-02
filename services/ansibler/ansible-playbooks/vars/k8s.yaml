@@ -17,3 +17,7 @@ control_plane_endpoint: "{{ hostvars[first_control_node].ansible_host }}:{{ api_
 # Same ranges as the clusters built by kubeone, so that both kinds of clusters look alike.
 pod_subnet: 10.244.0.0/16
 service_subnet: 10.96.0.0/12
+
+# Link-local IP of the NodeLocal DNSCache deployed by kuber (task_deploy_addons.go), the kubelets
+# hand it to pods as their DNS server. Must match nodeLocalDNSIP in kuber. Same as kubeone.
+node_local_dns_ip: 169.254.20.10
