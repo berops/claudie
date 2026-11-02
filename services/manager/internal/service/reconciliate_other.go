@@ -402,7 +402,7 @@ func CreatePipeline(clusters *spec.Clusters, isCreate bool) []*spec.Stage {
 					{
 						Kind: spec.StageKuber_DEPLOY_ADDONS,
 						Description: &spec.StageDescription{
-							About:      "Deploying cluster addons (nodelocaldns, metrics-server)",
+							About:      "Deploying cluster addons (nodelocaldns, coredns-pdb, metrics-server)",
 							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 						},
 					},

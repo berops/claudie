@@ -21,6 +21,7 @@ import (
 const (
 	metricsServerYaml = "services/kuber/manifests/metrics-server.yaml"
 	nodeLocalDNSYaml  = "services/kuber/manifests/nodelocaldns.yaml"
+	coreDNSPDBYaml    = "services/kuber/manifests/coredns-pdb.yaml"
 )
 
 // DeployAddons deploys the cluster addons previously installed by kubeone.
@@ -67,6 +68,11 @@ func deployAddons(logger zerolog.Logger, k8s *spec.K8Scluster) error {
 	logger.Info().Msg("Deploying NodeLocal DNSCache")
 	if err := deployNodeLocalDNS(k, dir); err != nil {
 		return fmt.Errorf("failed to deploy NodeLocal DNSCache: %w", err)
+	}
+
+	logger.Info().Msg("Deploying CoreDNS PodDisruptionBudget")
+	if err := applyManifest(k, dir, coreDNSPDBYaml, nil); err != nil {
+		return fmt.Errorf("failed to deploy CoreDNS PodDisruptionBudget: %w", err)
 	}
 
 	logger.Info().Msg("Deploying metrics-server")

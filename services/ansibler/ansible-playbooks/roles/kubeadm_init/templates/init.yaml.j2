@@ -28,6 +28,8 @@ cgroupDriver: systemd
 # by kuber; metrics-server relies on this to scrape kubelets over verified TLS.
 serverTLSBootstrap: true
 rotateCertificates: true
+# Same as kubeone, the kubelet default is 10Mi.
+containerLogMaxSize: 100Mi
 # Pods resolve through the NodeLocal DNSCache instead of the kube-dns service,
 # kubeadm defaults this to the kube-dns IP and logs a warning about the override.
 clusterDNS:
