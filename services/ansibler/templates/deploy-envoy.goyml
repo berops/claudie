@@ -15,7 +15,7 @@
     max_queued_events: 65535
   tasks:
     - name: update node limits
-      include_tasks: ../../../ansible-playbooks/node-limits.yml
+      include_tasks: ../../../ansible-playbooks/tasks/node-limits.yml
 
     - name: Get dpkg architecture
       command: dpkg --print-architecture

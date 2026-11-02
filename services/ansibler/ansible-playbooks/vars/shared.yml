@@ -1,0 +1,4 @@
+---
+longhorn_packages:
+  - open-iscsi
+  - nfs-common

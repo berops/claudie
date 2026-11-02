@@ -1,0 +1,62 @@
+---
+- hosts: all
+  become: true
+  gather_facts: false
+  strategy: mitogen_free
+  vars_files:
+    - vars/shared.yml
+  tasks:
+    - name: Blacklist Longhorn block devices in multipath
+      ansible.builtin.import_tasks: tasks/longhorn-multipath.yml
+
+    - name: Configure node limits
+      ansible.builtin.import_tasks: tasks/node-limits.yml
+      vars:
+        nofile_soft: 65535
+        nofile_hard: 65535
+        file_max: 2097152
+        max_user_watches: 2097152
+        max_user_instances: 65535
+        max_queued_events: 65535
+
+  post_tasks:
+    # The Longhorn dependencies are required, so they are retried on their own.
+    # The kubeone packages are left out: kubeone installs them itself if they are missing.
+    - name: Wait for the installation of Longhorn and KubeOne packages
+      when: async_job is defined
+      block:
+        - name: Check async task result
+          ansible.builtin.async_status:
+            jid: "{{ async_job.ansible_job_id }}"
+          register: result
+          until: result.finished
+          retries: 600
+          delay: 1
+      rescue:
+        - name: Installation failed, leaving the installation of Kubernetes packages to kubeone
+          ansible.builtin.debug:
+            msg: >-
+              Installing node requirements failed on {{ inventory_hostname }}
+              ({{ ansible_failed_result.msg | default('no message') }}).
+              Retrying with the Longhorn dependencies only{{ ', kubeone will install the Kubernetes packages itself' if preinstall_kubernetes | default(false) else '' }}.
+        # A job killed at its async limit can leave dpkg interrupted, after which every apt call (including
+        # kubeone's) fails with "dpkg was interrupted, you must manually run 'dpkg --configure -a'"
+        - name: Repair interrupted dpkg
+          ansible.builtin.command: dpkg --force-confdef --force-confold --configure -a
+          environment:
+            DEBIAN_FRONTEND: noninteractive
+          register: dpkg_configure
+          until: dpkg_configure is not failed
+          retries: 6
+          delay: 10
+          changed_when: dpkg_configure.stdout | length > 0
+
+        # A failure here fails the playbook.
+        - name: Install Longhorn dependencies
+          ansible.builtin.apt:
+            name: "{{ longhorn_packages }}"
+            state: present
+            update_cache: true
+            lock_timeout: 600
+          retries: 2
+          delay: 10

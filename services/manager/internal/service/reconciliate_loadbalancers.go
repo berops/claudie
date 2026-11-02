@@ -599,13 +599,6 @@ func ScheduleAdditionLoadBalancerNodePools(
 				},
 			},
 			{
-				Kind: spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES,
-				Description: &spec.StageDescription{
-					About:      "Updating HttpProxy,NoProxy environment variables, after populating private addresses on nodes",
-					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-				},
-			},
-			{
 				Kind: spec.StageAnsibler_COMMIT_PROXY_ENVS,
 				Description: &spec.StageDescription{
 					About:      "Committing proxy environment variables",
@@ -1339,13 +1332,6 @@ func ScheduleJoinLoadBalancer(useProxy bool, current, desired *spec.Clusters, di
 						Kind: spec.StageAnsibler_INSTALL_VPN,
 						Description: &spec.StageDescription{
 							About:      "Installing VPN and interconnect with existing infrastructure",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-					{
-						Kind: spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES,
-						Description: &spec.StageDescription{
-							About:      "Updating HttpProxy,NoProxy environment variables, after populating private addresses on nodes",
 							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 						},
 					},

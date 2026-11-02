@@ -1,0 +1,24 @@
+---
+# Keep multipathd away from the block devices Longhorn attaches over iSCSI, otherwise multipath
+# claims them and the volume mount fails.
+
+- name: Update /etc/multipath.conf with blacklist configuration
+  ansible.builtin.blockinfile:
+    path: /etc/multipath.conf
+    block: |
+      blacklist {
+          devnode "^sd[a-z0-9]+"
+          devnode "^vd[a-z0-9]+"
+          devnode "^nvme[a-z0-9]+"
+      }
+    create: true
+  register: multipath_conf
+
+- name: Restart multipathd.service
+  ansible.builtin.systemd:
+    name: multipathd.service
+    state: restarted
+  when: multipath_conf is changed
+  # some cloud providers may not use the multipathd service
+  # thus make the error not fatal.
+  ignore_errors: true

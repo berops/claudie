@@ -1,7 +1,10 @@
 ---
-# Update node limits.
+# Imported by configure-node.yml, not run on its own.
+#
+# Raises the open file / inotify / network limits for the kubelet and the container workloads.
+
 - name: Modify limits.conf
-  blockinfile:
+  ansible.builtin.blockinfile:
     path: /etc/security/limits.conf
     block: |
       * soft nofile {{ nofile_soft }}
@@ -30,12 +33,12 @@
 
 - name: Reload systemd configuration
   ansible.builtin.systemd:
-    daemon_reload: yes
+    daemon_reload: true
 
 - name: Configure kernel parameters
   ansible.builtin.blockinfile:
     path: /etc/sysctl.d/99-claudie-custom.conf
-    create: yes
+    create: true
     owner: root
     group: root
     mode: '0644'
@@ -48,6 +51,6 @@
       net.core.somaxconn = 65535
       net.ipv4.tcp_fin_timeout = 30
 
-  
+
 - name: Reload sysctl at once with new settings
   ansible.builtin.command: sysctl --system

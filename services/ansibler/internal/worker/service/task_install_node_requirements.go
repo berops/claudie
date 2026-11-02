@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/hash"
@@ -13,11 +14,10 @@ import (
 	"github.com/berops/claudie/services/ansibler/templates"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-
 	"golang.org/x/sync/semaphore"
 )
 
-const nodeRequirementsPlayBook = "../../ansible-playbooks/longhorn-req.yml"
+const nodeRequirementsPlayBook = "../../ansible-playbooks/node-setup.yml"
 
 // InstallNodeRequirements install pre-requisite tools on all nodes, of the kubernetes cluster,
 // that are required by Claudie to operate.
@@ -35,6 +35,7 @@ func InstallNodeRequirements(
 		nps       []*spec.NodePool
 		clusterId string
 		network   string
+		version   string
 	)
 
 	switch do := tracker.Task.Do.(type) {
@@ -42,9 +43,11 @@ func InstallNodeRequirements(
 		nps = do.Create.K8S.ClusterInfo.NodePools
 		clusterId = do.Create.K8S.ClusterInfo.Id()
 		network = do.Create.K8S.Network
+		version = do.Create.K8S.Kubernetes
 	case *spec.Task_Update:
 		clusterId = do.Update.State.K8S.ClusterInfo.Id()
 		network = do.Update.State.K8S.Network
+		version = do.Update.State.K8S.Kubernetes
 
 		// Try to only launch the playbook on new nodes, if possible.
 		// This is done to minimize the time for adding new nodes to
@@ -70,7 +73,14 @@ func InstallNodeRequirements(
 		ClusterNetwork: network,
 	}
 
-	if err := installLonghornRequirements(&ni, processLimit); err != nil {
+	// Pre-install the Kubernetes packages of this version, which kubeone would otherwise
+	// install one node group at a time during `kubeone apply` in kube-eleven.
+	var flags string
+	if v := strings.TrimPrefix(strings.TrimSpace(version), "v"); v != "" {
+		flags = fmt.Sprintf("--extra-vars \"kubernetes_version=%s\"", v)
+	}
+
+	if err := installLonghornRequirements(&ni, flags, processLimit); err != nil {
 		logger.Err(err).Msg("Failed to install node requirements")
 		tracker.Diagnostics.Push(err)
 		return
@@ -81,8 +91,8 @@ func InstallNodeRequirements(
 		Msg("Successfully installed node requirements")
 }
 
-// installLonghornRequirements installs pre-requisite tools for LongHorn in all the nodes
-func installLonghornRequirements(nodepoolsInfo *NodepoolsInfo, processLimit *semaphore.Weighted) error {
+// installLonghornRequirements installs pre-requisite tools for LongHorn and Kubernetes in all the nodes
+func installLonghornRequirements(nodepoolsInfo *NodepoolsInfo, flags string, processLimit *semaphore.Weighted) error {
 	clusterDirectory := filepath.Join(
 		BaseDirectory,
 		OutputDirectory,
@@ -119,6 +129,7 @@ func installLonghornRequirements(nodepoolsInfo *NodepoolsInfo, processLimit *sem
 		Playbook:          nodeRequirementsPlayBook,
 		Inventory:         utils.InventoryFileName,
 		Directory:         clusterDirectory,
+		Flags:             flags,
 		SpawnProcessLimit: processLimit,
 	}
 

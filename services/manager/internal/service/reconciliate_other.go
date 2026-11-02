@@ -179,13 +179,6 @@ func ScheduleRefreshVPN(usesProxy bool, current *spec.Clusters) *spec.TaskEvent 
 						},
 					},
 					{
-						Kind: spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES,
-						Description: &spec.StageDescription{
-							About:      "Updating HttpProxy,NoProxy environment variables, after populating private addresses on nodes",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-					{
 						Kind: spec.StageAnsibler_COMMIT_PROXY_ENVS,
 						Description: &spec.StageDescription{
 							About:      "Committing proxy environment variables",
@@ -321,13 +314,6 @@ func CreatePipeline(clusters *spec.Clusters, isCreate bool) []*spec.Stage {
 						Kind: spec.StageAnsibler_INSTALL_NODE_REQUIREMENTS,
 						Description: &spec.StageDescription{
 							About:      "Installing pre-requisites on all of the nodes of the cluster",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-					{
-						Kind: spec.StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES,
-						Description: &spec.StageDescription{
-							About:      "Updating HttpProxy,NoProxy environment variables, after populating private addresses on nodes",
 							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 						},
 					},

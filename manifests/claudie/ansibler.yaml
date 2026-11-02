@@ -89,14 +89,17 @@ spec:
             # TMPDIR is needed as Mitogen creates its unix sockets there and the root filesystem (/tmp) is read-only.
             - name: TMPDIR
               value: "/.ansible"
-            # Fail any task running longer than 25 minutes so that the playbook is retried.
             # Must stay above the 20 minutes becasue "unattended-upgrade-shutdown --delay 20" may wait for a running upgrade
-            # in ansible-playbooks/wireguard/tasks/defer_apt_upgrades.yml.
             - name: ANSIBLE_TASK_TIMEOUT
               value: "1500"
-            # The default 10s is too short when many hosts bootstrap at once through a single Mitogen multiplexer.
+            # Connection timeout, also used by Mitogen as its connect/bootstrap deadline. The default 10s is too short
+            # when many hosts bootstrap at once through a single Mitogen multiplexer.
             - name: ANSIBLE_TIMEOUT
               value: "60"
+            # Skip python interpreter discovery, all supported images are Ubuntu where python3 is always /usr/bin/python3
+            # It can save ~5 seconds on each playbook
+            - name: ANSIBLE_PYTHON_INTERPRETER
+              value: "/usr/bin/python3"
           ports:
             - containerPort: 50053
             - name: "metrics"
