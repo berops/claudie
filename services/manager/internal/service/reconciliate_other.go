@@ -400,6 +400,13 @@ func CreatePipeline(clusters *spec.Clusters, isCreate bool) []*spec.Stage {
 						},
 					},
 					{
+						Kind: spec.StageKuber_DEPLOY_ADDONS,
+						Description: &spec.StageDescription{
+							About:      "Deploying cluster addons (metrics-server)",
+							ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+						},
+					},
+					{
 						Kind: spec.StageKuber_PATCH_NODES,
 						Description: &spec.StageDescription{
 							About:      "Patching nodes",

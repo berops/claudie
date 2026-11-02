@@ -116,6 +116,8 @@ passes:
 			DeployKubeletCSRApprover(logger, work.InputManifestName, tracker)
 		case spec.StageKuber_DEPLOY_CILIUM:
 			DeployCilium(logger, tracker)
+		case spec.StageKuber_DEPLOY_ADDONS:
+			DeployAddons(logger, tracker)
 		default:
 			logger.Warn().Msg("Stage not recognized, skipping")
 			continue

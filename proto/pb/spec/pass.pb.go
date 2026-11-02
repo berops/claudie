@@ -263,6 +263,7 @@ const (
 	StageKuber_RECONCILE_LONGHORN_STORAGE_CLASSES StageKuber_SubPassKind = 11
 	StageKuber_DEPLOY_KUBELET_CSR_APPROVER        StageKuber_SubPassKind = 12
 	StageKuber_DEPLOY_CILIUM                      StageKuber_SubPassKind = 13
+	StageKuber_DEPLOY_ADDONS                      StageKuber_SubPassKind = 14
 )
 
 // Enum value maps for StageKuber_SubPassKind.
@@ -281,6 +282,7 @@ var (
 		11: "RECONCILE_LONGHORN_STORAGE_CLASSES",
 		12: "DEPLOY_KUBELET_CSR_APPROVER",
 		13: "DEPLOY_CILIUM",
+		14: "DEPLOY_ADDONS",
 	}
 	StageKuber_SubPassKind_value = map[string]int32{
 		"CILIUM_RESTART":                     0,
@@ -296,6 +298,7 @@ var (
 		"RECONCILE_LONGHORN_STORAGE_CLASSES": 11,
 		"DEPLOY_KUBELET_CSR_APPROVER":        12,
 		"DEPLOY_CILIUM":                      13,
+		"DEPLOY_ADDONS":                      14,
 	}
 )
 
@@ -954,14 +957,14 @@ const file_spec_pass_proto_rawDesc = "" +
 	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"9\n" +
 	"\vSubPassKind\x12\x15\n" +
 	"\x11RECONCILE_CLUSTER\x10\x00\x12\x13\n" +
-	"\x0fDESTROY_CLUSTER\x10\x01\"\xc5\x04\n" +
+	"\x0fDESTROY_CLUSTER\x10\x01\"\xd8\x04\n" +
 	"\n" +
 	"StageKuber\x128\n" +
 	"\vdescription\x18\x01 \x01(\v2\x16.spec.StageDescriptionR\vdescription\x126\n" +
 	"\tsubPasses\x18\x02 \x03(\v2\x18.spec.StageKuber.SubPassR\tsubPasses\x1au\n" +
 	"\aSubPass\x120\n" +
 	"\x04kind\x18\x01 \x01(\x0e2\x1c.spec.StageKuber.SubPassKindR\x04kind\x128\n" +
-	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"\xcd\x02\n" +
+	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"\xe0\x02\n" +
 	"\vSubPassKind\x12\x12\n" +
 	"\x0eCILIUM_RESTART\x10\x00\x12\x10\n" +
 	"\fDELETE_NODES\x10\x01\x12\x19\n" +
@@ -976,7 +979,8 @@ const file_spec_pass_proto_rawDesc = "" +
 	"\x12&\n" +
 	"\"RECONCILE_LONGHORN_STORAGE_CLASSES\x10\v\x12\x1f\n" +
 	"\x1bDEPLOY_KUBELET_CSR_APPROVER\x10\f\x12\x11\n" +
-	"\rDEPLOY_CILIUM\x10\r\"\xe6\x01\n" +
+	"\rDEPLOY_CILIUM\x10\r\x12\x11\n" +
+	"\rDEPLOY_ADDONS\x10\x0e\"\xe6\x01\n" +
 	"\x05Stage\x12:\n" +
 	"\vterraformer\x18\x01 \x01(\v2\x16.spec.StageTerraformerH\x00R\vterraformer\x121\n" +
 	"\bansibler\x18\x02 \x01(\v2\x13.spec.StageAnsiblerH\x00R\bansibler\x127\n" +
