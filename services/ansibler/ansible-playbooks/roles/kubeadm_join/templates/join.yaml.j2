@@ -3,9 +3,9 @@ kind: JoinConfiguration
 discovery:
   bootstrapToken:
     apiServerEndpoint: {{ control_plane_endpoint }}
-    token: {{ hostvars[first_control_node].join_token }}
+    token: {{ hostvars[init_control_node].join_token }}
     caCertHashes:
-      - {{ hostvars[first_control_node].join_ca_cert_hash }}
+      - {{ hostvars[init_control_node].join_ca_cert_hash }}
 nodeRegistration:
   name: {{ inventory_hostname }}
   kubeletExtraArgs:
@@ -16,5 +16,5 @@ controlPlane:
   localAPIEndpoint:
     advertiseAddress: {{ node_ip }}
     bindPort: {{ api_server_port }}
-  certificateKey: {{ hostvars[first_control_node].join_certificate_key }}
+  certificateKey: {{ hostvars[init_control_node].join_certificate_key }}
 {% endif %}

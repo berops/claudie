@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/nodepools"
@@ -25,6 +26,10 @@ const (
 	// kubeconfigFileName is the name of the file, within the cluster directory,
 	// into which the playbook fetches the admin kubeconfig of the created cluster.
 	kubeconfigFileName = "kubeconfig"
+
+	// apiServerPort is the port of the ApiServer role of the loadbalancer,
+	// the manifest validation only allows 6443.
+	apiServerPort = 6443
 )
 
 // CreateCluster bootstraps a new Kubernetes cluster with kubeadm on the
@@ -48,7 +53,7 @@ func CreateCluster(
 	k8s := create.Create.K8S
 	lbs := create.Create.LoadBalancers
 
-	if err := createCluster(k8s, processLimit); err != nil {
+	if err := createCluster(k8s, lbs, processLimit); err != nil {
 		logger.Err(err).Msg("Failed to create a Kubernetes cluster")
 		tracker.Diagnostics.Push(err)
 		return
@@ -71,7 +76,7 @@ func CreateCluster(
 
 // createCluster runs the create-cluster playbook against all nodes of the cluster
 // and stores the kubeconfig of the created cluster in the passed in cluster.
-func createCluster(cluster *spec.K8Scluster, processLimit *semaphore.Weighted) error {
+func createCluster(cluster *spec.K8Scluster, lbs []*spec.LBcluster, processLimit *semaphore.Weighted) error {
 	clusterID := cluster.ClusterInfo.Id()
 
 	// Directory where files (required by Ansible) will be generated.
@@ -89,7 +94,7 @@ func createCluster(cluster *spec.K8Scluster, processLimit *semaphore.Weighted) e
 		return fmt.Errorf("failed to determine the kubeconfig path for %s : %w", clusterDirectory, err)
 	}
 
-	flags, err := createClusterFlags(cluster, kubeconfigPath)
+	flags, err := createClusterFlags(cluster, lbs, kubeconfigPath)
 	if err != nil {
 		return fmt.Errorf("failed to determine playbook variables for %s : %w", clusterID, err)
 	}
@@ -157,10 +162,9 @@ func createCluster(cluster *spec.K8Scluster, processLimit *semaphore.Weighted) e
 	return nil
 }
 
-// createClusterFlags builds the --extra-vars passed to the create-cluster playbook.
-// Only the kubernetes version and the (controller side) path for the fetched kubeconfig
-// are passed in, the remaining variables are initialized within the playbook.
-func createClusterFlags(cluster *spec.K8Scluster, kubeconfigPath string) (string, error) {
+// createClusterFlags builds the --extra-vars passed to the create-cluster playbook. Only values
+// the playbook can't get from the inventory are passed in, the rest is set in vars/k8s.yaml.
+func createClusterFlags(cluster *spec.K8Scluster, lbs []*spec.LBcluster, kubeconfigPath string) (string, error) {
 	if nodepools.FirstControlNode(cluster.ClusterInfo.NodePools) == nil {
 		return "", errors.New("cluster has no control plane nodes")
 	}
@@ -170,5 +174,43 @@ func createClusterFlags(cluster *spec.K8Scluster, kubeconfigPath string) (string
 		return "", errors.New("cluster has no kubernetes version set")
 	}
 
-	return fmt.Sprintf("--extra-vars \"kubernetes_version=%s kubeconfig_dest=%s\"", version, kubeconfigPath), nil
+	vars := fmt.Sprintf("kubernetes_version=%s kubeconfig_dest=%s", version, kubeconfigPath)
+
+	// With a loadbalancer with the ApiServer role, the api endpoint is its DNS hostname instead
+	// of the public IP of the first control node (the default in vars/k8s.yaml), whose port 6443
+	// is not opened by terraformer in that case.
+	if lb := clusters.FindAssignedLbApiEndpoint(lbs); lb != nil {
+		endpoint := lb.GetDns().GetEndpoint()
+		if endpoint == "" {
+			return "", fmt.Errorf("loadbalancer %q is assigned as the api endpoint but has no dns endpoint", lb.ClusterInfo.Id())
+		}
+		vars += fmt.Sprintf(" control_plane_endpoint=%s:%d", endpoint, apiServerPort)
+
+		// kubeadm init reaches its own api server through the loadbalancer, thus it has to run on
+		// a node the loadbalancer forwards to, the first control node may not be one of them.
+		initNode, err := loadbalancerTargetNode(cluster, lb)
+		if err != nil {
+			return "", err
+		}
+		vars += fmt.Sprintf(" init_control_node=%s", initNode)
+	}
+
+	return fmt.Sprintf("--extra-vars \"%s\"", vars), nil
+}
+
+// loadbalancerTargetNode returns the inventory hostname of the first control node targeted
+// by the ApiServer role of the loadbalancer.
+func loadbalancerTargetNode(cluster *spec.K8Scluster, lb *spec.LBcluster) (string, error) {
+	for _, role := range lb.Roles {
+		if role.RoleType != spec.RoleType_ApiServer {
+			continue
+		}
+		// Same matching as the Envoy config, see task_reconcile_loadbalancers.go.
+		for _, n := range targetNodes(role.TargetPools, cluster.ClusterInfo.NodePools) {
+			// The inventory trims the cluster ID prefix of dynamic nodes, static nodes have none.
+			return strings.TrimPrefix(n.Name, fmt.Sprintf("%s-", cluster.ClusterInfo.Id())), nil
+		}
+	}
+
+	return "", fmt.Errorf("the ApiServer role of loadbalancer %q targets no nodes", lb.ClusterInfo.Id())
 }

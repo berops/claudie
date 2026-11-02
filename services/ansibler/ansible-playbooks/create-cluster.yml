@@ -24,8 +24,10 @@
   roles:
     - node-prereq
 
-- name: Init first control node
-  hosts: control[0]
+# With an api loadbalancer the ansibler passes init_control_node, a control node the
+# loadbalancer forwards to (task_create_cluster.go).
+- name: Init the cluster on init_control_node
+  hosts: "{{ init_control_node | default('control[0]') }}"
   become: true
   gather_facts: false
   any_errors_fatal: true
@@ -36,8 +38,8 @@
 
 # Control nodes join one at a time, joining a control node adds an etcd member and
 # concurrent membership changes are refused by etcd.
-- name: Join remaining control nodes
-  hosts: control[1:]
+- name: Join the other control nodes
+  hosts: "control:!{{ init_control_node | default('control[0]') }}"
   become: true
   gather_facts: false
   serial: 1
