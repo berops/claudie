@@ -5,24 +5,11 @@
 # Expects the inventory generated from templates/k8s-inventory.goini ([control] and [compute]
 # groups, private_ip per host) and the kubernetes_version extra var (e.g. 1.35.0) passed by
 # the ansibler, along with init_control_node. WireGuard is set up beforehand by the INSTALL_VPN
-# stage, so private_ip is reachable between all nodes.
+# stage, so private_ip is reachable between all nodes, and the packages, containerd and the
+# kernel settings by the INSTALL_NODE_REQUIREMENTS stage (node-setup.yml).
 #
 # The ansibler retries the whole playbook on failure, so every play has to be re-runnable:
 # a node that is already part of the cluster is left untouched.
-
-- name: Prepare all nodes
-  hosts: all
-  become: true
-  strategy: mitogen_free
-  any_errors_fatal: true
-  vars_files:
-    - vars/k8s.yaml
-  pre_tasks:
-    - name: Wait 100 seconds for target connection to become reachable/usable
-      ansible.builtin.wait_for_connection:
-        timeout: 100
-  roles:
-    - node-prereq
 
 # The ansibler passes init_control_node: the node marked as the api endpoint, or with an api
 # loadbalancer a control node the loadbalancer forwards to (task_create_cluster.go).

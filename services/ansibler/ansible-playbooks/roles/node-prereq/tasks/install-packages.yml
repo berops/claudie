@@ -1,0 +1,20 @@
+---
+# Starts the package installation in the background, wait-for-packages.yml waits for it.
+# The Longhorn dependencies go to every node, the Kubernetes packages only to the nodes
+# that did not join a cluster yet.
+
+- name: Select the packages to install
+  ansible.builtin.set_fact:
+    node_packages: "{{ longhorn_packages + ([] if kubelet_conf.stat.exists else kubernetes_packages) }}"
+
+# The cache is always refreshed, the apt repositories may have just been added.
+- name: Start installing packages
+  ansible.builtin.apt:
+    name: "{{ node_packages }}"
+    state: present
+    update_cache: true
+    install_recommends: false
+    lock_timeout: 600
+  async: 600
+  poll: 0
+  register: node_packages_job

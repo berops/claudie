@@ -1,0 +1,42 @@
+---
+# Waits for the package installation started by install-packages.yml.
+
+- name: Wait for the package installation
+  block:
+    - name: Wait for the package installation to finish
+      ansible.builtin.async_status:
+        jid: "{{ node_packages_job.ansible_job_id }}"
+      register: node_packages_result
+      until: node_packages_result.finished
+      retries: 600
+      delay: 1
+  # A background job can't be retried, a transient apt or network failure
+  # gets another chance in the foreground. A failure there fails the playbook.
+  rescue:
+    - name: Report the failed package installation
+      ansible.builtin.debug:
+        msg: >-
+          Installing packages failed on {{ inventory_hostname }}
+          ({{ ansible_failed_result.msg | default('no message') }}), retrying.
+
+    # A job killed at its async limit can leave dpkg interrupted, after which every apt call fails
+    # with "dpkg was interrupted, you must manually run 'dpkg --configure -a'".
+    - name: Repair interrupted dpkg
+      ansible.builtin.command: dpkg --force-confdef --force-confold --configure -a
+      environment:
+        DEBIAN_FRONTEND: noninteractive
+      register: dpkg_configure
+      until: dpkg_configure is not failed
+      retries: 6
+      delay: 10
+      changed_when: dpkg_configure.stdout | length > 0
+
+    - name: Retry installing packages
+      ansible.builtin.apt:
+        name: "{{ node_packages }}"
+        state: present
+        update_cache: true
+        install_recommends: false
+        lock_timeout: 600
+      retries: 2
+      delay: 10

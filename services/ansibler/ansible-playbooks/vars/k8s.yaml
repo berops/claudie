@@ -1,9 +1,27 @@
 ---
-# Variables shared by the plays of create-cluster.yml.
+# Variables shared by the plays of node-setup.yml and create-cluster.yml.
 # kubernetes_version is passed by the ansibler as an extra var without the "v" prefix, e.g. 1.35.0.
 
 # The apt repository is per minor version (v1.35), the packages are pinned to the patch version.
 kubernetes_major_minor: "{{ kubernetes_version.split('.')[:2] | join('.') }}"
+
+# Same version as kubeone pins (defaultContainerdVersion in pkg/scripts/funcs.go), so that clusters
+# built by kubeadm and by kubeone run the same containerd.
+containerd_version: "2.2.*"
+
+# Installed on the nodes that did not join a cluster yet (roles/node-prereq).
+kubernetes_packages:
+  - "containerd.io={{ containerd_version }}"
+  - "kubelet={{ kubernetes_version }}-*"
+  - "kubeadm={{ kubernetes_version }}-*"
+  - "kubectl={{ kubernetes_version }}-*"
+  - kubernetes-cni
+  - cri-tools
+
+# Installed on every node, Longhorn attaches its volumes over iSCSI and serves RWX volumes over NFS.
+longhorn_packages:
+  - open-iscsi
+  - nfs-common
 
 # init_control_node, the inventory hostname of the control node running kubeadm init,
 # is always passed by the ansibler (task_create_cluster.go).

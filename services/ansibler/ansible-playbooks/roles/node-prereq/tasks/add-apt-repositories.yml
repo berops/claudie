@@ -1,0 +1,36 @@
+---
+# Adds the apt repositories of the Kubernetes packages (pkgs.k8s.io) and of containerd.io (Docker).
+# deb822_repository downloads the signing keys itself, into /etc/apt/keyrings/<name>.asc.
+# The module needs the python3-debian library on the node, it installs it when missing.
+#
+# TODO: kubeone (kube-eleven still joins the nodes added to kubeone-built clusters) writes the
+# same repositories to kubernetes.list and docker.list with other keyrings, apt then fails with
+# "Conflicting values set for option Signed-By". Resolved once those nodes are joined by kubeadm.
+
+- name: Get Ubuntu release codename
+  ansible.builtin.shell: . /etc/os-release && echo "$VERSION_CODENAME"
+  register: ubuntu_codename
+  changed_when: false
+
+- name: Add Kubernetes apt repository
+  ansible.builtin.deb822_repository:
+    name: kubernetes
+    types: deb
+    uris: "https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_major_minor }}/deb/"
+    suites: /
+    signed_by: "https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_major_minor }}/deb/Release.key"
+    install_python_debian: true
+  retries: 2
+  delay: 10
+
+- name: Add Docker apt repository (containerd.io)
+  ansible.builtin.deb822_repository:
+    name: docker
+    types: deb
+    uris: https://download.docker.com/linux/ubuntu
+    suites: "{{ ubuntu_codename.stdout }}"
+    components: stable
+    signed_by: https://download.docker.com/linux/ubuntu/gpg
+    install_python_debian: true
+  retries: 2
+  delay: 10

@@ -1,0 +1,45 @@
+---
+# Kernel settings kubeadm and the container networking expect: no swap, the overlay and
+# br_netfilter modules, IP forwarding and bridged traffic passing through iptables.
+
+- name: Turn swap off
+  ansible.builtin.shell: |
+    if [ -n "$(tail -n +2 /proc/swaps)" ]; then
+      swapoff -a
+      echo changed
+    fi
+  register: swapoff
+  changed_when: "'changed' in swapoff.stdout"
+
+- name: Keep swap off across reboots
+  ansible.builtin.replace:
+    path: /etc/fstab
+    regexp: '^([^#\s]\S*\s+\S+\s+swap\s+.*)$'
+    replace: '# \1'
+
+- name: Load kernel modules for container networking
+  community.general.modprobe:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - overlay
+    - br_netfilter
+
+- name: Load kernel modules for container networking across reboots
+  ansible.builtin.copy:
+    dest: /etc/modules-load.d/k8s.conf
+    mode: "0644"
+    content: |
+      overlay
+      br_netfilter
+
+- name: Configure kernel networking for Kubernetes
+  ansible.posix.sysctl:
+    name: "{{ item }}"
+    value: "1"
+    sysctl_file: /etc/sysctl.d/99-kubernetes.conf
+    reload: true
+  loop:
+    - net.ipv4.ip_forward
+    - net.bridge.bridge-nf-call-iptables
+    - net.bridge.bridge-nf-call-ip6tables

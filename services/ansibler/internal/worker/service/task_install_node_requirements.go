@@ -73,8 +73,8 @@ func InstallNodeRequirements(
 		ClusterNetwork: network,
 	}
 
-	// Pre-install the Kubernetes packages of this version, which kubeone would otherwise
-	// install one node group at a time during `kubeone apply` in kube-eleven.
+	// The nodes that did not join a cluster yet get the Kubernetes packages of this version,
+	// used by kubeadm (CREATE_CLUSTER) and by kubeone in kube-eleven for the added nodes.
 	var flags string
 	if v := strings.TrimPrefix(strings.TrimSpace(version), "v"); v != "" {
 		flags = fmt.Sprintf("--extra-vars \"kubernetes_version=%s\"", v)

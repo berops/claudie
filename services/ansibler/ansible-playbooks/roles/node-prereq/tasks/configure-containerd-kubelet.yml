@@ -1,0 +1,39 @@
+---
+# Holds the Kubernetes packages, configures containerd for kubeadm and enables the kubelet.
+# The containerd restart is applied by the flush_handlers in main.yml.
+
+# Unattended upgrades must not move the cluster to a new patch behind our back.
+- name: Hold Kubernetes packages
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop:
+    - kubelet
+    - kubeadm
+    - kubectl
+
+# The containerd.io package ships a config that disables the CRI plugin, and the default
+# config uses the cgroupfs driver while the kubelet is configured with the systemd driver.
+- name: Render the default containerd configuration
+  ansible.builtin.command: containerd config default
+  register: containerd_default_config
+  changed_when: false
+
+- name: Write the containerd configuration
+  ansible.builtin.copy:
+    dest: /etc/containerd/config.toml
+    mode: "0644"
+    content: "{{ containerd_default_config.stdout | regex_replace('SystemdCgroup = false', 'SystemdCgroup = true') }}\n"
+  notify: Restart containerd
+
+- name: Enable and start containerd
+  ansible.builtin.systemd:
+    name: containerd
+    enabled: true
+    state: started
+
+# kubeadm starts the kubelet itself, it only has to come back after a reboot.
+- name: Enable kubelet
+  ansible.builtin.systemd:
+    name: kubelet
+    enabled: true
