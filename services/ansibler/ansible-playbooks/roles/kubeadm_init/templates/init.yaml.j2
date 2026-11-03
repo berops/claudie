@@ -16,6 +16,11 @@ apiVersion: kubeadm.k8s.io/v1beta4
 kind: ClusterConfiguration
 kubernetesVersion: {{ kubernetes_version }}
 controlPlaneEndpoint: {{ control_plane_endpoint }}
+apiServer:
+  certSANs:
+{% for san in api_server_cert_sans %}
+    - "{{ san }}"
+{% endfor %}
 networking:
   podSubnet: {{ pod_subnet }}
   serviceSubnet: {{ service_subnet }}

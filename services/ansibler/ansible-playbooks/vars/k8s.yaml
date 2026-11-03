@@ -13,6 +13,12 @@ api_server_port: 6443
 # Public IP of the init node. With an api loadbalancer, the ansibler
 # overrides it with the DNS hostname of the loadbalancer.
 control_plane_endpoint: "{{ hostvars[init_control_node].ansible_host }}:{{ api_server_port }}"
+# Public IPs of all control nodes, added to the api server certificate so that the api endpoint
+# can later be moved to any of them without regenerating certificates (same as
+# apiEndpoint.alternativeNames of kubeone). kubeadm adds the advertise address and the
+# control_plane_endpoint host on its own. Control nodes added after the cluster was created
+# are not covered.
+api_server_cert_sans: "{{ groups['control'] | map('extract', hostvars, 'ansible_host') | list }}"
 
 # Same ranges as the clusters built by kubeone, so that both kinds of clusters look alike.
 pod_subnet: 10.244.0.0/16
