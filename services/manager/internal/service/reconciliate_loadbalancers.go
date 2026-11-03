@@ -229,7 +229,7 @@ func PostKubernetesDiff(r LoadBalancersReconciliate) *spec.TaskEvent {
 		return ScheduleDeleteLoadBalancer(r.Proxy.CurrentUsed, r.Current, lb)
 	}
 
-	if ep := clusters.FindAssignedLbApiEndpoint(r.Current.LoadBalancers.Clusters); ep != nil {
+	if ep := clusters.FindLoadBalancerApiServerEndpoint(r.Current.LoadBalancers.Clusters); ep != nil {
 		if r.Hc.Cluster.ControlNodesHave6443 {
 			return ScheduleControlNodesPort6443(r.Current, false)
 		}

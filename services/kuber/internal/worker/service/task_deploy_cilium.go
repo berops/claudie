@@ -1,7 +1,6 @@
 package service
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,7 +11,6 @@ import (
 	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/kubectl"
-	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -25,7 +23,13 @@ const (
 
 	// ciliumAPIEndpointPlaceholder is the value of k8sServiceHost the manifest was rendered
 	// with. With kube-proxy replacement Cilium can't reach the API server via the kubernetes
-	// service, thus it is replaced with the API endpoint of the cluster before applying.
+	// service, as Cilium itself implements it, thus it is replaced with the API endpoint of
+	// the cluster before applying. The endpoint comes from [clusters.ControlPlaneEndpointHost],
+	// the same function the ansibler uses for the kubeadm controlPlaneEndpoint.
+	//
+	// k8sServiceHost=auto of the chart is not an option, it is resolved by a helm lookup of
+	// the kube-public/cluster-info ConfigMap at render time, which fails with helm template
+	// and would not follow later moves of the API endpoint either.
 	ciliumAPIEndpointPlaceholder = "claudie-api-endpoint-replace-me"
 )
 
@@ -70,7 +74,7 @@ func deployCilium(k8s *spec.K8Scluster, lbs []*spec.LBcluster) error {
 		return fmt.Errorf("cluster %s has no kubeconfig, can't deploy Cilium", clusterID)
 	}
 
-	endpoint, err := apiEndpoint(k8s, lbs)
+	endpoint, err := clusters.ControlPlaneEndpointHost(k8s, lbs)
 	if err != nil {
 		return fmt.Errorf("failed to determine the api endpoint of %s for Cilium: %w", clusterID, err)
 	}
@@ -117,27 +121,4 @@ func deployCilium(k8s *spec.K8Scluster, lbs []*spec.LBcluster) error {
 	}
 
 	return nil
-}
-
-// apiEndpoint returns the publicly accessible endpoint of the api server, which is
-// either the DNS endpoint of the loadbalancer with the ApiServer role or the public
-// IP of the control plane node chosen as the api endpoint by the manager.
-func apiEndpoint(k8s *spec.K8Scluster, lbs []*spec.LBcluster) (string, error) {
-	if lb := clusters.FindAssignedLbApiEndpoint(lbs); lb != nil {
-		if ep := lb.GetDns().GetEndpoint(); ep != "" {
-			return ep, nil
-		}
-		return "", fmt.Errorf("loadbalancer %q is assigned as the api endpoint but has no dns endpoint", lb.ClusterInfo.Id())
-	}
-
-	_, node := nodepools.FindApiEndpoint(k8s.ClusterInfo.NodePools)
-	if node == nil {
-		return "", errors.New("malformed k8s state, no loadbalancer attached with api role nor any control plane node has api server role")
-	}
-
-	if node.Public == "" {
-		return "", fmt.Errorf("api endpoint node %q has no public ip", node.Name)
-	}
-
-	return node.Public, nil
 }

@@ -10,6 +10,7 @@ import (
 	"slices"
 	"sync"
 
+	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 )
@@ -640,7 +641,7 @@ func AddNodes(count int, ci *spec.ClusterInfo, typ NodeFilter) map[string][]stri
 		case NodesDynamicSkipApiServer:
 			np = dyn[int(uint32(rng.Uint64()))%len(dyn)]
 			for {
-				if _, node := nodepools.FindApiEndpoint([]*spec.NodePool{np}); node == nil {
+				if _, node := clusters.FindControlNodeApiServerEndpoint([]*spec.NodePool{np}); node == nil {
 					break
 				}
 				np = dyn[int(uint32(rng.Uint64()))%len(dyn)]
@@ -700,7 +701,7 @@ func DeleteNodes(count int, ci *spec.ClusterInfo, typ NodeFilter) ([]*spec.NodeP
 					np = ci.NodePools[int(uint32(rng.Uint64()))%len(ci.NodePools)]
 					continue
 				}
-				if _, node := nodepools.FindApiEndpoint([]*spec.NodePool{np}); node != nil {
+				if _, node := clusters.FindControlNodeApiServerEndpoint([]*spec.NodePool{np}); node != nil {
 					np = ci.NodePools[int(uint32(rng.Uint64()))%len(ci.NodePools)]
 					continue
 				}

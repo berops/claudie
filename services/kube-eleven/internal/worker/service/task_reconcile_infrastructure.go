@@ -41,7 +41,7 @@ func Reconcile(
 	logger.Info().Msgf("Reconciling kubernetes cluster")
 
 	var loadbalancerApiEndpoint string
-	if ep := clusters.FindAssignedLbApiEndpoint(lbs); ep != nil {
+	if ep := clusters.FindLoadBalancerApiServerEndpoint(lbs); ep != nil {
 		loadbalancerApiEndpoint = ep.Dns.Endpoint
 	}
 

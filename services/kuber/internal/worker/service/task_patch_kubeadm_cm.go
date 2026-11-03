@@ -54,7 +54,7 @@ func PatchKubeadmCM(logger zerolog.Logger, tracker Tracker) {
 	}()
 
 	var lbApiEndpoint string
-	if ep := clusters.FindAssignedLbApiEndpoint(action.Update.State.LoadBalancers); ep != nil {
+	if ep := clusters.FindLoadBalancerApiServerEndpoint(action.Update.State.LoadBalancers); ep != nil {
 		lbApiEndpoint = ep.Dns.Endpoint
 	}
 

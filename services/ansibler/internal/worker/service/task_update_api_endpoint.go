@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/nodepools"
@@ -106,7 +107,7 @@ func updateApiEndpoint(
 		return fmt.Errorf("error while creating inventory file for %s : %w", clusterDirectory, err)
 	}
 
-	_, apiEndpointNode := nodepools.FindApiEndpoint(cluster.ClusterInfo.NodePools)
+	_, apiEndpointNode := clusters.FindControlNodeApiServerEndpoint(cluster.ClusterInfo.NodePools)
 	if apiEndpointNode == nil {
 		return fmt.Errorf("current state cluster doesn't have api endpoint as a control plane node")
 	}

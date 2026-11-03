@@ -26,10 +26,6 @@ const (
 	// kubeconfigFileName is the name of the file, within the cluster directory,
 	// into which the playbook fetches the admin kubeconfig of the created cluster.
 	kubeconfigFileName = "kubeconfig"
-
-	// apiServerPort is the port of the ApiServer role of the loadbalancer,
-	// the manifest validation only allows 6443.
-	apiServerPort = 6443
 )
 
 // CreateCluster bootstraps a new Kubernetes cluster with kubeadm on the
@@ -170,36 +166,38 @@ func createClusterFlags(cluster *spec.K8Scluster, lbs []*spec.LBcluster, kubecon
 		return "", errors.New("cluster has no kubernetes version set")
 	}
 
-	vars := fmt.Sprintf("kubernetes_version=%s kubeconfig_dest=%s", version, kubeconfigPath)
-
-	// With a loadbalancer with the ApiServer role, the api endpoint is its DNS hostname instead of
-	// the public IP of the init node (the default in vars/k8s.yaml), whose port 6443 is not opened
-	// by terraformer in that case. kubeadm init reaches its own api server through the loadbalancer,
-	// thus it has to run on a node the loadbalancer forwards to.
-	if lb := clusters.FindAssignedLbApiEndpoint(lbs); lb != nil {
-		endpoint := lb.GetDns().GetEndpoint()
-		if endpoint == "" {
-			return "", fmt.Errorf("loadbalancer %q is assigned as the api endpoint but has no dns endpoint", lb.ClusterInfo.Id())
-		}
-
-		initNode, err := loadbalancerTargetNode(cluster, lb)
-		if err != nil {
-			return "", err
-		}
-
-		vars += fmt.Sprintf(" control_plane_endpoint=%s:%d init_control_node=%s", endpoint, apiServerPort, initNode)
-		return fmt.Sprintf("--extra-vars \"%s\"", vars), nil
+	// The same endpoint is used by kuber for Cilium, see [clusters.ControlPlaneEndpointHost].
+	endpoint, err := clusters.ControlPlaneEndpointHost(cluster, lbs)
+	if err != nil {
+		return "", err
 	}
 
-	// Without a loadbalancer, kubeadm init runs on the control node the manager marked with
-	// NodeType_apiEndpoint, the same node kuber (Cilium) uses, and its public IP is the endpoint.
-	np, node := nodepools.FindApiEndpoint(cluster.ClusterInfo.NodePools)
+	initNode, err := initControlNode(cluster, lbs)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf(
+		"--extra-vars \"kubernetes_version=%s kubeconfig_dest=%s control_plane_endpoint_host=%s init_control_node=%s\"",
+		version, kubeconfigPath, endpoint, initNode,
+	), nil
+}
+
+// initControlNode returns the inventory hostname of the control node that runs kubeadm init.
+// kubeadm init reaches its own api server through the api endpoint. With a loadbalancer it has
+// to be a node the loadbalancer forwards to, otherwise it is the node the manager marked with
+// NodeType_apiEndpoint, whose public IP is the api endpoint.
+func initControlNode(cluster *spec.K8Scluster, lbs []*spec.LBcluster) (string, error) {
+	if lb := clusters.FindLoadBalancerApiServerEndpoint(lbs); lb != nil {
+		return loadbalancerTargetNode(cluster, lb)
+	}
+
+	np, node := clusters.FindControlNodeApiServerEndpoint(cluster.ClusterInfo.NodePools)
 	if node == nil {
-		return "", errors.New("malformed k8s state, no loadbalancer attached with api role nor any control plane node has api server role")
+		return "", errors.New("malformed k8s state, no control plane node has api server role")
 	}
 
-	vars += fmt.Sprintf(" init_control_node=%s", inventoryHostname(cluster, np, node))
-	return fmt.Sprintf("--extra-vars \"%s\"", vars), nil
+	return inventoryHostname(cluster, np, node), nil
 }
 
 // loadbalancerTargetNode returns the inventory hostname of the first control node targeted

@@ -4,9 +4,10 @@
 #
 # Expects the inventory generated from templates/k8s-inventory.goini ([control] and [compute]
 # groups, private_ip per host) and the kubernetes_version extra var (e.g. 1.35.0) passed by
-# the ansibler, along with init_control_node. WireGuard is set up beforehand by the INSTALL_VPN
-# stage, so private_ip is reachable between all nodes, and the packages, containerd and the
-# kernel settings by the INSTALL_NODE_REQUIREMENTS stage (node-setup.yml).
+# the ansibler, along with init_control_node and control_plane_endpoint_host. WireGuard is
+# set up beforehand by the INSTALL_VPN stage, so private_ip is reachable between all nodes,
+# and the packages, containerd and the kernel settings by the INSTALL_NODE_REQUIREMENTS
+# stage (node-setup.yml).
 #
 # The ansibler retries the whole playbook on failure, so every play has to be re-runnable:
 # a node that is already part of the cluster is left untouched.
