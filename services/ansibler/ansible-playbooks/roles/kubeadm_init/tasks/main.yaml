@@ -59,4 +59,3 @@
     src: /etc/kubernetes/admin.conf
     dest: "{{ kubeconfig_dest }}"
     flat: true
-p3xf9e9ehpxk

@@ -4,8 +4,8 @@
 #
 # Expects the inventory generated from templates/k8s-inventory.goini ([control] and [compute]
 # groups, private_ip per host) and the kubernetes_version extra var (e.g. 1.35.0) passed by
-# the ansibler. WireGuard is set up beforehand by the INSTALL_VPN stage, so private_ip is
-# reachable between all nodes.
+# the ansibler, along with init_control_node. WireGuard is set up beforehand by the INSTALL_VPN
+# stage, so private_ip is reachable between all nodes.
 #
 # The ansibler retries the whole playbook on failure, so every play has to be re-runnable:
 # a node that is already part of the cluster is left untouched.
@@ -24,10 +24,10 @@
   roles:
     - node-prereq
 
-# With an api loadbalancer the ansibler passes init_control_node, a control node the
-# loadbalancer forwards to (task_create_cluster.go).
+# The ansibler passes init_control_node: the node marked as the api endpoint, or with an api
+# loadbalancer a control node the loadbalancer forwards to (task_create_cluster.go).
 - name: Init the cluster on init_control_node
-  hosts: "{{ init_control_node | default('control[0]') }}"
+  hosts: "{{ init_control_node }}"
   become: true
   gather_facts: false
   any_errors_fatal: true
@@ -39,7 +39,7 @@
 # Control nodes join one at a time, joining a control node adds an etcd member and
 # concurrent membership changes are refused by etcd.
 - name: Join the other control nodes
-  hosts: "control:!{{ init_control_node | default('control[0]') }}"
+  hosts: "control:!{{ init_control_node }}"
   become: true
   gather_facts: false
   serial: 1

@@ -5,12 +5,12 @@
 # The apt repository is per minor version (v1.35), the packages are pinned to the patch version.
 kubernetes_major_minor: "{{ kubernetes_version.split('.')[:2] | join('.') }}"
 
-# Inventory hostname of the control node running kubeadm init.
-init_control_node: "{{ groups['control'][0] }}"
+# init_control_node, the inventory hostname of the control node running kubeadm init,
+# is always passed by the ansibler (task_create_cluster.go).
 # WireGuard IP of the current host, from the generated inventory.
 node_ip: "{{ private_ip }}"
 api_server_port: 6443
-# Public IP of the first control node. With an api loadbalancer, the ansibler
+# Public IP of the init node. With an api loadbalancer, the ansibler
 # overrides it with the DNS hostname of the loadbalancer.
 control_plane_endpoint: "{{ hostvars[init_control_node].ansible_host }}:{{ api_server_port }}"
 
