@@ -42,38 +42,26 @@ func ScheduleDeleteCluster(current *spec.Clusters) *spec.TaskEvent {
 	var pipeline []*spec.Stage
 
 	if static := nodepools.Static(current.K8S.ClusterInfo.NodePools); len(static) > 0 {
-		// The idea is to continue during the destruction of these two stages even if the
-		// kube-eleven stage fails. The static nodes could already be unreachable, for
-		// example when credits on a provider expired and there is no way to reach those
-		// VMs anymore.
-		ke := &spec.Stage{
-			StageKind: &spec.Stage_KubeEleven{
-				KubeEleven: &spec.StageKubeEleven{
-					Description: &spec.StageDescription{
-						About:      "Destroying kubernetes cluster and related binaries",
-						ErrorLevel: spec.ErrorLevel_ERROR_WARN,
-					},
-					SubPasses: []*spec.StageKubeEleven_SubPass{
-						{
-							Kind: spec.StageKubeEleven_DESTROY_CLUSTER,
-							Description: &spec.StageDescription{
-								About:      "Tearing down kuberentes cluster",
-								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-							},
-						},
-					},
-				},
-			},
-		}
-
+		// The idea is to continue with the destruction of the infrastructure even if
+		// cleaning up the static nodes fails. The static nodes could already be unreachable,
+		// for example when credits on a provider expired and there is no way to reach those
+		// VMs anymore. Only the static nodes are cleaned up, the dynamic ones are destroyed
+		// with the infrastructure.
 		ans := &spec.Stage{
 			StageKind: &spec.Stage_Ansibler{
 				Ansibler: &spec.StageAnsibler{
 					Description: &spec.StageDescription{
-						About:      "Removing claudie installed utilities across nodes",
+						About:      "Destroying kubernetes cluster and removing claudie installed utilities across nodes",
 						ErrorLevel: spec.ErrorLevel_ERROR_WARN,
 					},
 					SubPasses: []*spec.StageAnsibler_SubPass{
+						{
+							Kind: spec.StageAnsibler_DESTROY_CLUSTER,
+							Description: &spec.StageDescription{
+								About:      "Tearing down kubernetes cluster and removing kubernetes packages",
+								ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+							},
+						},
 						{
 							Kind: spec.StageAnsibler_REMOVE_CLAUDIE_UTILITIES,
 							Description: &spec.StageDescription{
@@ -86,7 +74,6 @@ func ScheduleDeleteCluster(current *spec.Clusters) *spec.TaskEvent {
 			},
 		}
 
-		pipeline = append(pipeline, ke)
 		pipeline = append(pipeline, ans)
 	}
 
