@@ -1,14 +1,17 @@
 ---
-# A node that already has a kubelet config is part of the cluster and is left untouched:
-# the join config contains a fresh token on every run, so writing it unconditionally
-# would never be idempotent.
-- name: Check whether the node already joined the cluster
+# kubeadm join exits 0 only after all of its phases succeeded, the marker records that.
+# kubelet.conf alone is not enough, kubeadm writes it in the kubelet-start phase, before a
+# control plane node adds its etcd member and writes its static pod manifests. A node with
+# the marker is left untouched: the join config contains a fresh token on every run, so
+# writing it unconditionally would never be idempotent. The marker lives next to the join
+# config, in the directory owned by this role.
+- name: Check whether kubeadm join already completed
   ansible.builtin.stat:
-    path: /etc/kubernetes/kubelet.conf
-  register: kubelet_conf
+    path: /root/kubeadm/join.done
+  register: kubeadm_join_done
 
 - name: Join the cluster
-  when: not kubelet_conf.stat.exists
+  when: not kubeadm_join_done.stat.exists
   block:
     - name: Create directory for kubeadm configs
       ansible.builtin.file:
@@ -22,7 +25,20 @@
         dest: /root/kubeadm/join.yaml
         mode: "0600"
 
+    # A previous attempt may have failed partway through, kubeadm join refuses to run over
+    # the leftover kubelet config, manifests and etcd data, so the node is reset first (a
+    # no-op on a fresh node). On a control plane node the reset also removes the etcd member
+    # added by the failed attempt, through the etcd members of the other control nodes.
+    - name: Reset a partially joined node
+      ansible.builtin.command:
+        cmd: kubeadm reset --force
+
     - name: Run kubeadm join
       ansible.builtin.command:
         cmd: kubeadm join --config /root/kubeadm/join.yaml
-        creates: /etc/kubernetes/kubelet.conf
+
+    - name: Mark kubeadm join as completed
+      ansible.builtin.file:
+        path: /root/kubeadm/join.done
+        state: touch
+        mode: "0600"
