@@ -11,17 +11,41 @@
     dest: /root/kubeadm/init.yaml
     mode: "0600"
 
+# kubeadm init exits 0 only after all of its phases succeeded, the marker records that.
+# admin.conf alone is not enough, kubeadm writes it in the kubeconfig phase, before the
+# bootstrap token, cluster-info and CoreDNS are created. The marker lives next to the
+# init config, in the directory owned by this role.
+- name: Check whether kubeadm init already completed
+  ansible.builtin.stat:
+    path: /root/kubeadm/init.done
+  register: kubeadm_init_done
+
+# A previous attempt may have failed partway through, kubeadm init refuses to run over the
+# leftover manifests and etcd data, so the node is reset first (a no-op on a fresh node).
+# No other node can have joined yet, joining needs the bootstrap token created by init.
+- name: Reset a partially initialized control plane
+  ansible.builtin.command:
+    cmd: kubeadm reset --force
+  when: not kubeadm_init_done.stat.exists
+
 # --upload-certs stores the CA material in a Secret so extra control planes can
 # join; kube-proxy is skipped because Cilium replaces it.
 - name: Run kubeadm init
   ansible.builtin.command:
     cmd: kubeadm init --config /root/kubeadm/init.yaml --upload-certs
-    creates: /etc/kubernetes/admin.conf
+  when: not kubeadm_init_done.stat.exists
   register: kubeadm_init_out
+
+- name: Mark kubeadm init as completed
+  ansible.builtin.file:
+    path: /root/kubeadm/init.done
+    state: touch
+    mode: "0600"
+  when: kubeadm_init_out is changed
 
 # kubeadm init prints the join commands with the bootstrap token, the CA cert
 # hash and, thanks to --upload-certs, the certificate key. The join role reads
-# these facts through hostvars[first_control_node].
+# these facts through hostvars[init_control_node].
 - name: Save join values from the kubeadm init output as facts
   ansible.builtin.set_fact:
     join_token: "{{ kubeadm_init_out.stdout | regex_search('--token (\\S+)', '\\1') | first }}"
