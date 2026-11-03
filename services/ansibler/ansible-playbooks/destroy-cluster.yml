@@ -1,0 +1,12 @@
+---
+# The ansibler passes only the static nodes in the inventory generated from
+# templates/k8s-inventory.goini, the dynamic nodes are destroyed with their infrastructure.
+# WireGuard and the rest of the Claudie utilities are removed afterwards by the
+# REMOVE_CLAUDIE_UTILITIES stage (wireguard-uninstall.yml).
+- name: Reset all nodes of the cluster
+  hosts: all
+  become: true
+  gather_facts: false
+  strategy: mitogen_free
+  roles:
+    - kubeadm_reset
