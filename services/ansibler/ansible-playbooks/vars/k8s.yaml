@@ -1,5 +1,5 @@
 ---
-# Variables shared by the plays of node-setup.yml and create-cluster.yml.
+# Variables shared by the plays of node-setup.yml, create-cluster.yml and add-nodes.yml.
 # kubernetes_version is passed by the ansibler as an extra var without the "v" prefix, e.g. 1.35.0.
 
 # The apt repository is per minor version (v1.35), the packages are pinned to the patch version.
@@ -23,11 +23,12 @@ longhorn_packages:
   - open-iscsi
   - nfs-common
 
-# init_control_node, the inventory hostname of the control node running kubeadm init, and
 # control_plane_endpoint_host, the DNS hostname of the api loadbalancer or the public IP of
-# the api endpoint node, are always passed by the ansibler (task_create_cluster.go). The host
-# comes from clusters.ControlPlaneEndpointHost, the same function kuber uses for the API
-# server address of Cilium.
+# the api endpoint node, is always passed by the ansibler (task_create_cluster.go,
+# task_node_addition.go). The host comes from clusters.ControlPlaneEndpointHost, the same function
+# kuber uses for the API server address of Cilium. create-cluster.yml is also passed
+# init_control_node, the control node running kubeadm init.
+
 # WireGuard IP of the current host, from the generated inventory.
 node_ip: "{{ private_ip }}"
 api_server_port: 6443

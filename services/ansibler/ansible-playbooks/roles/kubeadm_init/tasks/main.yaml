@@ -22,17 +22,18 @@
 
 # A previous attempt may have failed partway through, kubeadm init refuses to run over the
 # leftover manifests and etcd data, so the node is reset first (a no-op on a fresh node).
-# No other node can have joined yet, joining needs the bootstrap token created by init.
+# No other node can have joined yet, the join credentials are created only after init.
 - name: Reset a partially initialized control plane
   ansible.builtin.command:
     cmd: kubeadm reset --force
   when: not kubeadm_init_done.stat.exists
 
-# --upload-certs stores the CA material in a Secret so extra control planes can
-# join; kube-proxy is skipped because Cilium replaces it.
+# kube-proxy is skipped in the config because Cilium replaces it. The control plane
+# certificates are uploaded by the kubeadm_join_credentials role, not by init, so that the
+# join credentials always come from one place.
 - name: Run kubeadm init
   ansible.builtin.command:
-    cmd: kubeadm init --config /root/kubeadm/init.yaml --upload-certs
+    cmd: kubeadm init --config /root/kubeadm/init.yaml
   when: not kubeadm_init_done.stat.exists
   register: kubeadm_init_out
 
@@ -42,39 +43,6 @@
     state: touch
     mode: "0600"
   when: kubeadm_init_out is changed
-
-# kubeadm init prints the join commands with the bootstrap token, the CA cert
-# hash and, thanks to --upload-certs, the certificate key. The join role reads
-# these facts through hostvars[init_control_node].
-- name: Save join values from the kubeadm init output as facts
-  ansible.builtin.set_fact:
-    join_token: "{{ kubeadm_init_out.stdout | regex_search('--token (\\S+)', '\\1') | first }}"
-    join_ca_cert_hash: "{{ kubeadm_init_out.stdout | regex_search('--discovery-token-ca-cert-hash (\\S+)', '\\1') | first }}"
-    join_certificate_key: "{{ kubeadm_init_out.stdout | regex_search('--certificate-key (\\S+)', '\\1') | first }}"
-  when: kubeadm_init_out is changed
-
-# On a re-run (the ansibler retries the whole playbook when a later play fails) kubeadm init
-# is skipped, so the join values are created afresh: the bootstrap token from the init run may
-# have expired and the uploaded certificates are deleted after two hours.
-- name: Create join values for an already initialized cluster
-  when: kubeadm_init_out is not changed
-  block:
-    - name: Create a bootstrap token with its join command
-      ansible.builtin.command:
-        cmd: kubeadm token create --ttl 1h --print-join-command
-      register: kubeadm_join_command
-
-    - name: Upload the control plane certificates with a new certificate key
-      ansible.builtin.command:
-        cmd: kubeadm init phase upload-certs --upload-certs
-      register: kubeadm_upload_certs
-
-    - name: Save join values as facts
-      ansible.builtin.set_fact:
-        join_token: "{{ kubeadm_join_command.stdout | regex_search('--token (\\S+)', '\\1') | first }}"
-        join_ca_cert_hash: "{{ kubeadm_join_command.stdout | regex_search('--discovery-token-ca-cert-hash (\\S+)', '\\1') | first }}"
-        # The certificate key is the last line of the output.
-        join_certificate_key: "{{ kubeadm_upload_certs.stdout_lines | last }}"
 
 # The ansibler reads the kubeconfig from kubeconfig_dest after the playbook finished and
 # stores it in the cluster state for the later stages (kuber).

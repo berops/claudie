@@ -23,6 +23,8 @@
     - vars/k8s.yaml
   roles:
     - kubeadm_init
+    # The join plays below read the credentials from init_control_node.
+    - kubeadm_join_credentials
 
 # Control nodes join one at a time, joining a control node adds an etcd member and
 # concurrent membership changes are refused by etcd.
@@ -37,6 +39,7 @@
   roles:
     - role: kubeadm_join
       join_as_control_plane: true
+      existing_control_node: "{{ init_control_node }}"
 
 - name: Join all worker nodes
   hosts: compute
@@ -49,3 +52,4 @@
   roles:
     - role: kubeadm_join
       join_as_control_plane: false
+      existing_control_node: "{{ init_control_node }}"

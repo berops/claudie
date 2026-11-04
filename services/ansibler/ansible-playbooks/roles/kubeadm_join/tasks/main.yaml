@@ -1,4 +1,8 @@
 ---
+# Joins the host into the cluster with the join credentials saved as facts on
+# existing_control_node by the kubeadm_join_credentials role. join_as_control_plane selects
+# whether the host joins as a control plane node or as a worker.
+#
 # kubeadm join exits 0 only after all of its phases succeeded, the marker records that.
 # kubelet.conf alone is not enough, kubeadm writes it in the kubelet-start phase, before a
 # control plane node adds its etcd member and writes its static pod manifests. A node with
