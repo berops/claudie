@@ -131,6 +131,8 @@ passes:
 			CreateCluster(logger, work.InputManifestName, processlimit, tracker)
 		case spec.StageAnsibler_DESTROY_CLUSTER:
 			DestroyCluster(logger, work.InputManifestName, processlimit, tracker)
+		case spec.StageAnsibler_NODE_ADDITION:
+			AddNodes(logger, work.InputManifestName, processlimit, tracker)
 		default:
 			logger.Warn().Msg("Stage not recognized, skipping")
 			continue
