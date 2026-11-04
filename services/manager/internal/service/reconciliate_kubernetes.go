@@ -595,7 +595,6 @@ func ScheduleAdditionsInNodePools(
 
 		terraformerStage *spec.Stage
 		ansiblerStage    *spec.Stage
-		kubeElevenStage  *spec.Stage
 		kuberStage       *spec.Stage
 	)
 
@@ -683,25 +682,14 @@ func ScheduleAdditionsInNodePools(
 		}...)
 	}
 
-	kubeElevenStage = &spec.Stage{
-		StageKind: &spec.Stage_KubeEleven{
-			KubeEleven: &spec.StageKubeEleven{
-				Description: &spec.StageDescription{
-					About:      "Reconciling kubernetes cluster",
-					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-				},
-				SubPasses: []*spec.StageKubeEleven_SubPass{
-					{
-						Kind: spec.StageKubeEleven_RECONCILE_CLUSTER,
-						Description: &spec.StageDescription{
-							About:      "Joining new nodes into the kubernetes cluster",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-				},
-			},
+	// Last, so that the subpasses above already configured the new nodes.
+	ans.Ansibler.SubPasses = append(ans.Ansibler.SubPasses, &spec.StageAnsibler_SubPass{
+		Kind: spec.StageAnsibler_NODE_ADDITION,
+		Description: &spec.StageDescription{
+			About:      "Joining new nodes into the kubernetes cluster",
+			ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 		},
-	}
+	})
 
 	kuber := spec.Stage_Kuber{
 		Kuber: &spec.StageKuber{
@@ -862,7 +850,6 @@ func ScheduleAdditionsInNodePools(
 
 		if len(toAdd.Nodes) != 0 {
 			pipeline = append(pipeline, ansiblerStage)
-			pipeline = append(pipeline, kubeElevenStage)
 			pipeline = append(pipeline, kuberStage)
 
 			if updateLoadBalancersStage != nil {
@@ -1002,7 +989,6 @@ func ScheduleAdditionsInNodePools(
 		}
 
 		pipeline = append(pipeline, ansiblerStage)
-		pipeline = append(pipeline, kubeElevenStage)
 		pipeline = append(pipeline, kuberStage)
 
 		if updateLoadBalancersStage != nil {
