@@ -1,0 +1,43 @@
+---
+# The only place that creates join credentials, for a freshly initialized cluster
+# (create-cluster.yml) and for an existing one (add-nodes.yml) alike. Runs on a control node
+# of the cluster and saves the credentials as facts, which the kubeadm_join role reads through
+# hostvars[existing_control_node]:
+#
+#   join_token            bootstrap token, valid for an hour
+#   join_ca_cert_hash     hash of the cluster CA public key, the new node verifies the cluster with it
+#   join_certificate_key  key of the uploaded control plane certificates, only used by control nodes
+#
+# Fresh credentials are created on every run. A bootstrap token expires, and kubeadm deletes the
+# uploaded certificates after two hours, so credentials from an earlier run can't be relied on.
+
+# kubeadm validates the key format, generating it here means it is never parsed out of a
+# longer output.
+- name: Generate a certificate key
+  ansible.builtin.command:
+    cmd: kubeadm certs certificate-key
+  register: kubeadm_certificate_key
+  changed_when: false
+
+# Stores the CA and the other shared control plane certificates in the kubeadm-certs Secret,
+# encrypted with the certificate key. Joining control nodes download them from there.
+- name: Upload the control plane certificates
+  ansible.builtin.command:
+    cmd: kubeadm init phase upload-certs --upload-certs --certificate-key {{ kubeadm_certificate_key.stdout | trim }}
+
+# The join command is the one kubeadm output that carries the CA cert hash, the token is
+# printed with it.
+- name: Create a bootstrap token with its join command
+  ansible.builtin.command:
+    cmd: kubeadm token create --ttl 1h --print-join-command
+  register: kubeadm_join_command
+
+# The join command is "kubeadm join <endpoint> --token <token> --discovery-token-ca-cert-hash
+# <hash>", each value is the argument after its flag.
+- name: Save join credentials as facts
+  ansible.builtin.set_fact:
+    join_token: "{{ join_args[join_args.index('--token') + 1] }}"
+    join_ca_cert_hash: "{{ join_args[join_args.index('--discovery-token-ca-cert-hash') + 1] }}"
+    join_certificate_key: "{{ kubeadm_certificate_key.stdout | trim }}"
+  vars:
+    join_args: "{{ kubeadm_join_command.stdout.split() }}"
