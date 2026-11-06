@@ -23,9 +23,10 @@ import (
 const (
 	createClusterPlaybook = "../../ansible-playbooks/create-cluster.yml"
 
-	// kubeconfigFileName is the name of the file, within the cluster directory,
-	// into which the playbook fetches the admin kubeconfig of the created cluster.
-	kubeconfigFileName = "kubeconfig"
+	// kubeconfigFileNameFormat is the name of the file, within the cluster directory, into
+	// which the playbook fetches the admin kubeconfig of the created cluster, formatted with
+	// the cluster name.
+	kubeconfigFileNameFormat = "%s-kubeconfig"
 )
 
 // CreateCluster bootstraps a new Kubernetes cluster with kubeadm on the
@@ -85,7 +86,7 @@ func createCluster(cluster *spec.K8Scluster, lbs []*spec.LBcluster, processLimit
 	// Ansible resolves relative paths against the playbook directory, not against
 	// the directory it is executed from, thus the playbook is given an absolute path
 	// to fetch the kubeconfig into.
-	kubeconfigPath, err := filepath.Abs(filepath.Join(clusterDirectory, kubeconfigFileName))
+	kubeconfigPath, err := filepath.Abs(filepath.Join(clusterDirectory, fmt.Sprintf(kubeconfigFileNameFormat, cluster.ClusterInfo.Name)))
 	if err != nil {
 		return fmt.Errorf("failed to determine the kubeconfig path for %s : %w", clusterDirectory, err)
 	}

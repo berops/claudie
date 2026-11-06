@@ -5,16 +5,16 @@
     state: directory
     mode: "0700"
 
-- name: Write the kubeadm init config
+- name: Write the kubeadm cluster config
   ansible.builtin.template:
-    src: init.yaml.j2
-    dest: /root/kubeadm/init.yaml
+    src: cluster-config.yaml.j2
+    dest: /root/kubeadm/cluster-config.yaml
     mode: "0600"
 
 # kubeadm init exits 0 only after all of its phases succeeded, the marker records that.
 # admin.conf alone is not enough, kubeadm writes it in the kubeconfig phase, before the
 # bootstrap token, cluster-info and CoreDNS are created. The marker lives next to the
-# init config, in the directory owned by this role.
+# cluster config, in the directory owned by this role.
 - name: Check whether kubeadm init already completed
   ansible.builtin.stat:
     path: /root/kubeadm/init.done
@@ -33,7 +33,7 @@
 # join credentials always come from one place.
 - name: Run kubeadm init
   ansible.builtin.command:
-    cmd: kubeadm init --config /root/kubeadm/init.yaml
+    cmd: kubeadm init --config /root/kubeadm/cluster-config.yaml
   when: not kubeadm_init_done.stat.exists
   register: kubeadm_init_out
 

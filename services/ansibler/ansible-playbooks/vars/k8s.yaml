@@ -1,5 +1,6 @@
 ---
-# Variables shared by the plays of node-setup.yml, create-cluster.yml and add-nodes.yml.
+# Variables shared by the plays of node-setup.yml, create-cluster.yml, add-nodes.yml and
+# api-server-endpoint-change.yml.
 # kubernetes_version is passed by the ansibler as an extra var without the "v" prefix, e.g. 1.35.0.
 
 # The apt repository is per minor version (v1.35), the packages are pinned to the patch version.
@@ -25,19 +26,25 @@ longhorn_packages:
 
 # control_plane_endpoint_host, the DNS hostname of the api loadbalancer or the public IP of
 # the api endpoint node, is always passed by the ansibler (task_create_cluster.go,
-# task_node_addition.go). The host comes from clusters.ControlPlaneEndpointHost, the same function
-# kuber uses for the API server address of Cilium. create-cluster.yml is also passed
-# init_control_node, the control node running kubeadm init.
+# task_node_addition.go). The host comes from
+# clusters.ControlPlaneEndpointHost, the same function kuber uses for the API server address of
+# Cilium. create-cluster.yml is also passed init_control_node, the control node running kubeadm
+# init.
 
 # WireGuard IP of the current host, from the generated inventory.
 node_ip: "{{ private_ip }}"
 api_server_port: 6443
 control_plane_endpoint: "{{ control_plane_endpoint_host }}:{{ api_server_port }}"
-# Public IPs of all control nodes, added to the api server certificate so that the api endpoint
-# can later be moved to any of them without regenerating certificates (same as
+# api-server-endpoint-change.yml is passed old_control_plane_endpoint_host and
+# new_control_plane_endpoint_host instead (internal/api_endpoint.go), the endpoint hosts the cluster
+# moves from and to, in the same form as control_plane_endpoint_host.
+old_control_plane_endpoint: "{{ old_control_plane_endpoint_host }}:{{ api_server_port }}"
+new_control_plane_endpoint: "{{ new_control_plane_endpoint_host }}:{{ api_server_port }}"
+# Public IPs of all control nodes, added to the api server certificate (same as
 # apiEndpoint.alternativeNames of kubeone). kubeadm adds the advertise address and the
-# control_plane_endpoint host on its own. Control nodes added after the cluster was created
-# are not covered.
+# control_plane_endpoint host on its own. Control nodes added after the cluster was created are
+# not covered until the api endpoint moves, api-server-endpoint-change.yml issues the certificates
+# again for the control nodes of that time.
 api_server_cert_sans: "{{ groups['control'] | map('extract', hostvars, 'ansible_host') | list }}"
 
 # Same ranges as the clusters built by kubeone, so that both kinds of clusters look alike.
