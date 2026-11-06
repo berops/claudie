@@ -1,6 +1,6 @@
 ---
-# Variables shared by the plays of node-setup.yml, create-cluster.yml, add-nodes.yml and
-# api-server-endpoint-change.yml.
+# Variables shared by the plays of node-setup.yml, create-cluster.yml, add-nodes.yml,
+# api-server-endpoint-change.yml and upgrade-k8s-version.yml.
 # kubernetes_version is passed by the ansibler as an extra var without the "v" prefix, e.g. 1.35.0.
 
 # The apt repository is per minor version (v1.35), the packages are pinned to the patch version.
