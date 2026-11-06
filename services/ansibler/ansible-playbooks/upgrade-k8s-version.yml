@@ -1,0 +1,63 @@
+---
+# Upgrades a kubeadm cluster to kubernetes_version, following "Upgrading kubeadm clusters" of the
+# kubeadm docs. Run by the ansibler on the UPGRADE_K8S_VERSION stage, see task_upgrade_k8s_version.go.
+#
+# Expects the inventory generated from templates/k8s-inventory.goini with all nodes of the cluster
+# and the extra vars kubernetes_version (e.g. 1.35.0) and kubeconfig_dest. kubeadm upgrades one minor
+# version at a time, its preflight checks refuse anything else.
+#
+# The ansibler retries the whole playbook on failure, so every play has to be re-runnable: a node
+# whose kubelet already runs kubernetes_version is not upgraded again (roles/kubeadm_upgrade).
+
+# kubeadm upgrade apply upgrades the cluster configuration, which kubeadm upgrade node then applies
+# on the other nodes, so it runs first.
+- name: Upgrade the first control node
+  hosts: control[0]
+  become: true
+  gather_facts: false
+  any_errors_fatal: true
+  vars_files:
+    - vars/k8s.yaml
+  roles:
+    - role: kubeadm_upgrade
+      first_control_node: true
+
+# Control nodes are upgraded one at a time, as the kubeadm docs require: each upgrade restarts the
+# etcd member and the api server of the node, and the addons are upgraded with the last one.
+- name: Upgrade the other control nodes
+  hosts: control[1:]
+  become: true
+  gather_facts: false
+  serial: 1
+  any_errors_fatal: true
+  vars_files:
+    - vars/k8s.yaml
+  roles:
+    - role: kubeadm_upgrade
+      first_control_node: false
+
+# One at a time as well, so that the pods drained from the node have room on the other nodes.
+- name: Upgrade the worker nodes
+  hosts: compute
+  become: true
+  gather_facts: false
+  serial: 1
+  any_errors_fatal: true
+  vars_files:
+    - vars/k8s.yaml
+  roles:
+    - role: kubeadm_upgrade
+      first_control_node: false
+
+# kubeadm upgrade apply renewed the client certificate in admin.conf. The ansibler stores the
+# kubeconfig in the cluster state for the later stages (kuber).
+- name: Fetch the admin kubeconfig to the ansibler
+  hosts: control[0]
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Fetch the admin kubeconfig to the ansibler
+      ansible.builtin.fetch:
+        src: /etc/kubernetes/admin.conf
+        dest: "{{ kubeconfig_dest }}"
+        flat: true

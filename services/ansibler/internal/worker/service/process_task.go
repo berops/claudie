@@ -133,6 +133,8 @@ passes:
 			ResetStaticNodes(logger, work.InputManifestName, processlimit, tracker)
 		case spec.StageAnsibler_NODE_ADDITION:
 			AddNodes(logger, work.InputManifestName, processlimit, tracker)
+		case spec.StageAnsibler_UPGRADE_K8S_VERSION:
+			UpgradeK8sVersion(logger, work.InputManifestName, processlimit, tracker)
 		default:
 			logger.Warn().Msg("Stage not recognized, skipping")
 			continue

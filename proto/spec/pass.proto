@@ -56,6 +56,7 @@ message StageAnsibler {
     CREATE_CLUSTER = 9;
     RESET_STATIC_NODES = 10;
     NODE_ADDITION = 11;
+    UPGRADE_K8S_VERSION = 12;
   }
   message SubPass {
     SubPassKind kind = 1;

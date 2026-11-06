@@ -146,6 +146,7 @@ const (
 	StageAnsibler_CREATE_CLUSTER                StageAnsibler_SubPassKind = 9
 	StageAnsibler_RESET_STATIC_NODES            StageAnsibler_SubPassKind = 10
 	StageAnsibler_NODE_ADDITION                 StageAnsibler_SubPassKind = 11
+	StageAnsibler_UPGRADE_K8S_VERSION           StageAnsibler_SubPassKind = 12
 )
 
 // Enum value maps for StageAnsibler_SubPassKind.
@@ -163,6 +164,7 @@ var (
 		9:  "CREATE_CLUSTER",
 		10: "RESET_STATIC_NODES",
 		11: "NODE_ADDITION",
+		12: "UPGRADE_K8S_VERSION",
 	}
 	StageAnsibler_SubPassKind_value = map[string]int32{
 		"INSTALL_NODE_REQUIREMENTS":     0,
@@ -177,6 +179,7 @@ var (
 		"CREATE_CLUSTER":                9,
 		"RESET_STATIC_NODES":            10,
 		"NODE_ADDITION":                 11,
+		"UPGRADE_K8S_VERSION":           12,
 	}
 )
 
@@ -937,13 +940,13 @@ const file_spec_pass_proto_rawDesc = "" +
 	"\x14BUILD_INFRASTRUCTURE\x10\x00\x12\x19\n" +
 	"\x15UPDATE_INFRASTRUCTURE\x10\x01\x12\x1a\n" +
 	"\x16DESTROY_INFRASTRUCTURE\x10\x02\x12\x1a\n" +
-	"\x16API_PORT_ON_KUBERNETES\x10\x03\"\xca\x04\n" +
+	"\x16API_PORT_ON_KUBERNETES\x10\x03\"\xe3\x04\n" +
 	"\rStageAnsibler\x128\n" +
 	"\vdescription\x18\x01 \x01(\v2\x16.spec.StageDescriptionR\vdescription\x129\n" +
 	"\tsubPasses\x18\x02 \x03(\v2\x1b.spec.StageAnsibler.SubPassR\tsubPasses\x1ax\n" +
 	"\aSubPass\x123\n" +
 	"\x04kind\x18\x01 \x01(\x0e2\x1f.spec.StageAnsibler.SubPassKindR\x04kind\x128\n" +
-	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"\xc9\x02\n" +
+	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"\xe2\x02\n" +
 	"\vSubPassKind\x12\x1d\n" +
 	"\x19INSTALL_NODE_REQUIREMENTS\x10\x00\x12\x0f\n" +
 	"\vINSTALL_VPN\x10\x01\x12!\n" +
@@ -957,7 +960,8 @@ const file_spec_pass_proto_rawDesc = "" +
 	"\x0eCREATE_CLUSTER\x10\t\x12\x16\n" +
 	"\x12RESET_STATIC_NODES\x10\n" +
 	"\x12\x11\n" +
-	"\rNODE_ADDITION\x10\v\"\xbf\x02\n" +
+	"\rNODE_ADDITION\x10\v\x12\x17\n" +
+	"\x13UPGRADE_K8S_VERSION\x10\f\"\xbf\x02\n" +
 	"\x0fStageKubeEleven\x128\n" +
 	"\vdescription\x18\x01 \x01(\v2\x16.spec.StageDescriptionR\vdescription\x12;\n" +
 	"\tsubPasses\x18\x02 \x03(\v2\x1d.spec.StageKubeEleven.SubPassR\tsubPasses\x1az\n" +
