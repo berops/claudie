@@ -1,0 +1,80 @@
+---
+# Issues the api server certificate of the control node again, for the ClusterConfiguration in the
+# kubeadm-config ConfigMap, which roles/kubeadm_cluster_config_endpoint already pointed at the new
+# control plane endpoint. Follows "Reconfiguring a kubeadm cluster" of the kubeadm docs: the
+# certificate is written by kubeadm init phase certs from a config that matches the
+# ClusterConfiguration of the cluster. The static pod manifests stay as they are,
+# controlPlaneEndpoint and the cert SANs are not used in them. Used when the control plane endpoint
+# moves, see api-server-endpoint-change.yml.
+#
+# The api server is reached through the address of the node (node_ip), which is in its certificate:
+# the old endpoint may already be gone and the new one is not in the certificates yet.
+
+- name: Read the ClusterConfiguration of the cluster
+  ansible.builtin.command:
+    cmd: >-
+      kubectl --kubeconfig /etc/kubernetes/admin.conf --server https://{{ node_ip }}:{{ api_server_port }}
+      --namespace kube-system get configmap kubeadm-config --output jsonpath={.data.ClusterConfiguration}
+  register: kubeadm_cluster_configuration
+  changed_when: false
+
+# kubeadm does not replace an existing certificate, so it is moved aside first. The kubeadm docs
+# advise a backup before reconfiguring: if kubeadm fails, the previous certificate is put back, so
+# the api server can still start after a crash or reboot. A retry after a failed run finds no
+# certificate to move and keeps the backup.
+- name: Issue the api server certificate for the new control plane endpoint
+  block:
+    - name: Back up the api server certificate
+      ansible.builtin.command:
+        cmd: mv -f {{ item }} {{ item }}.bak
+        removes: "{{ item }}"
+      loop:
+        - /etc/kubernetes/pki/apiserver.crt
+        - /etc/kubernetes/pki/apiserver.key
+
+    # kubeadm gets the ClusterConfiguration of the cluster as it is, without a file on the node
+    # that could drift from it: it reads the config from stdin. The InitConfiguration in front is
+    # needed because the api server certificate is also issued for the node name and the advertise
+    # address, both are set as in roles/kubeadm_init and roles/kubeadm_join. Same apiVersion as
+    # the stored ClusterConfiguration.
+    - name: Issue the api server certificate
+      ansible.builtin.command:
+        cmd: kubeadm init phase certs apiserver --config /dev/stdin
+        stdin: |
+          apiVersion: {{ (kubeadm_cluster_configuration.stdout | from_yaml).apiVersion }}
+          kind: InitConfiguration
+          localAPIEndpoint:
+            advertiseAddress: {{ node_ip }}
+            bindPort: {{ api_server_port }}
+          nodeRegistration:
+            name: {{ inventory_hostname }}
+          ---
+          {{ kubeadm_cluster_configuration.stdout }}
+  rescue:
+    - name: Restore the previous api server certificate
+      ansible.builtin.command:
+        cmd: mv -f {{ item }}.bak {{ item }}
+        removes: "{{ item }}.bak"
+      loop:
+        - /etc/kubernetes/pki/apiserver.crt
+        - /etc/kubernetes/pki/apiserver.key
+
+    - name: Fail after restoring the previous api server certificate
+      ansible.builtin.fail:
+        msg: "Issuing the api server certificate failed: {{ ansible_failed_result.stderr | default(ansible_failed_result.msg | default('')) }}"
+
+# The api server reloads its serving certificate when the files change, it is not restarted. The
+# files were moved aside and written again, which breaks the api server's watch on them until it
+# retries the watch, so the reload can take up to about a minute. Connects through node_ip but
+# verifies the certificate for the new endpoint, so it only passes once the api server serves the
+# new certificate.
+- name: Wait for the api server to serve the new certificate
+  ansible.builtin.command:
+    cmd: >-
+      kubectl --kubeconfig /etc/kubernetes/admin.conf --server https://{{ node_ip }}:{{ api_server_port }}
+      --tls-server-name {{ new_control_plane_endpoint_host }} --request-timeout 10s get --raw /readyz
+  register: kube_apiserver_ready
+  until: kube_apiserver_ready is succeeded
+  retries: 30
+  delay: 10
+  changed_when: false

@@ -17,9 +17,15 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
+// Data of templates/k8s-inventory.goini.
 type KubernetesInventoryParameters struct {
 	K8sNodepools NodePools
 	ClusterID    string
+
+	// ExistingControlNode is a control node that is already part of the cluster, in a copy of its
+	// nodepool holding only that node, rendered into its own [existing_control_node] group.
+	// Only set by node addition, see task_node_addition.go.
+	ExistingControlNode *spec.NodePool
 }
 
 // MoveApiEndpoint moves the api endpoint to another node/loadbalancer within the specified cluster.
@@ -211,5 +217,12 @@ func handleAPIEndpointChange(
 	}
 
 	logger.Debug().Str("LB-cluster", state.K8S.ClusterInfo.Id()).Msgf("Changing the API endpoint from %s to %s", oldEndpoint, newEndpoint)
-	return utils.ChangeAPIEndpoint(state.K8S.ClusterInfo.Name, oldEndpoint, newEndpoint, outputDirectory, processLimit)
+	kubeconfig, err := utils.ChangeAPIEndpoint(state.K8S.ClusterInfo.Name, oldEndpoint, newEndpoint, outputDirectory, processLimit)
+	if err != nil {
+		return err
+	}
+
+	state.K8S.Kubeconfig = kubeconfig
+
+	return nil
 }

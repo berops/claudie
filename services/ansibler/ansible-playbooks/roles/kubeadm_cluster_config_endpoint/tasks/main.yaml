@@ -1,0 +1,40 @@
+---
+# Sets controlPlaneEndpoint to new_control_plane_endpoint and the api server cert SANs to
+# api_server_cert_sans in the ClusterConfiguration of the kubeadm-config ConfigMap, the rest of it
+# stays as it is. Same as the kubectl edit of "Reconfiguring a kubeadm cluster" in the kubeadm
+# docs, without an editor: the ConfigMap is read, changed and patched back. The ConfigMap is stored
+# in etcd, so this runs on a single control node. Used when the control plane endpoint moves, see
+# api-server-endpoint-change.yml.
+#
+# The api server is reached through the address of the node (node_ip), which is in its certificate:
+# the old endpoint may already be gone and the new one is not in the certificates yet.
+
+- name: Read the ClusterConfiguration of the cluster
+  ansible.builtin.command:
+    cmd: >-
+      kubectl --kubeconfig /etc/kubernetes/admin.conf --server https://{{ node_ip }}:{{ api_server_port }}
+      --namespace kube-system get configmap kubeadm-config --output jsonpath={.data.ClusterConfiguration}
+  register: kubeadm_cluster_configuration
+  changed_when: false
+
+# The cert SANs list is replaced, not merged, so public IPs of removed control nodes are dropped.
+- name: Set the new control plane endpoint in the ClusterConfiguration of the cluster
+  vars:
+    updated_cluster_configuration: >-
+      {{ kubeadm_cluster_configuration.stdout | from_yaml | combine({
+           'controlPlaneEndpoint': new_control_plane_endpoint,
+           'apiServer': {'certSANs': api_server_cert_sans},
+         }, recursive=true) }}
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - --kubeconfig=/etc/kubernetes/admin.conf
+      - --server=https://{{ node_ip }}:{{ api_server_port }}
+      - --namespace=kube-system
+      - patch
+      - configmap
+      - kubeadm-config
+      - --type=merge
+      - "--patch={{ {'data': {'ClusterConfiguration': updated_cluster_configuration | to_nice_yaml(indent=2)}} | to_json }}"
+  register: kubeadm_config_patch
+  changed_when: "'(no change)' not in kubeadm_config_patch.stdout"
