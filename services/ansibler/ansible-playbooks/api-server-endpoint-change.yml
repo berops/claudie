@@ -1,0 +1,82 @@
+---
+# Moves the control plane endpoint of a kubeadm cluster from old_control_plane_endpoint_host to
+# new_control_plane_endpoint_host. Run by the ansibler when the api endpoint moves, see
+# internal/api_endpoint.go.
+#
+# Expects the inventory generated from templates/k8s-inventory.goini with all nodes of the cluster
+# and the extra vars old_control_plane_endpoint_host and new_control_plane_endpoint_host (each the
+# DNS hostname of the api loadbalancer or the public IP of the api endpoint node, without the port)
+# and kubeconfig_dest. After the playbook, kuber points the cluster-info ConfigMap and Cilium at
+# the new endpoint with the fetched kubeconfig.
+#
+# The ansibler retries the whole playbook on failure, so every play has to be re-runnable.
+
+- name: Set the new control plane endpoint in the ClusterConfiguration of the cluster
+  hosts: control[0]
+  become: true
+  gather_facts: false
+  any_errors_fatal: true
+  vars_files:
+    - vars/k8s.yaml
+  roles:
+    - kubeadm_cluster_config_endpoint
+
+# Every api server has to serve a certificate for the new endpoint before any node is pointed at
+# it. One control node at a time, as the kubeadm docs advise for reconfiguring the control plane.
+- name: Issue the api server certificates for the new control plane endpoint
+  hosts: control
+  become: true
+  gather_facts: false
+  serial: 1
+  any_errors_fatal: true
+  vars_files:
+    - vars/k8s.yaml
+  roles:
+    - kubeadm_apiserver_cert
+
+- name: Point the kubeconfigs on the control nodes at the new control plane endpoint
+  hosts: control
+  become: true
+  gather_facts: false
+  strategy: mitogen_free
+  any_errors_fatal: true
+  vars_files:
+    - vars/k8s.yaml
+  roles:
+    - role: kubeconfig_server_rewrite
+      kubeconfigs:
+        - kubelet.conf
+        - admin.conf
+        - super-admin.conf
+        # controller-manager.conf and scheduler.conf are not included, kubeadm points them at the
+        # api server of the node itself (https://<advertise address>:6443), not at the control
+        # plane endpoint.
+      old_server: "{{ old_control_plane_endpoint }}"
+      new_server: "{{ new_control_plane_endpoint }}"
+
+- name: Point the kubeconfigs on the worker nodes at the new control plane endpoint
+  hosts: compute
+  become: true
+  gather_facts: false
+  strategy: mitogen_free
+  any_errors_fatal: true
+  vars_files:
+    - vars/k8s.yaml
+  roles:
+    - role: kubeconfig_server_rewrite
+      kubeconfigs:
+        - kubelet.conf
+      old_server: "{{ old_control_plane_endpoint }}"
+      new_server: "{{ new_control_plane_endpoint }}"
+
+# The ansibler stores the kubeconfig in the cluster state for the later stages (kuber).
+- name: Fetch the admin kubeconfig to the ansibler
+  hosts: control[0]
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Fetch the admin kubeconfig to the ansibler
+      ansible.builtin.fetch:
+        src: /etc/kubernetes/admin.conf
+        dest: "{{ kubeconfig_dest }}"
+        flat: true
