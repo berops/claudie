@@ -34,7 +34,9 @@ kubernetes:
 
 When re-applied this will trigger a new workflow for the cluster that will result in the updated kubernetes version.
 
-!!! note "Downgrading a version is not supported once you've upgraded a cluster to a newer version"
+!!! note "The version can be upgraded by one minor version at a time, e.g. from v1.34.x to v1.35.x. An InputManifest that skips a minor version is rejected."
+
+!!! note "Downgrading a version is not supported once you've upgraded a cluster to a newer version, an InputManifest with a lower version is rejected."
 
 # Updating Dynamic Nodepool
 

@@ -1,0 +1,6 @@
+---
+# kubectl runs on the first control node, the worker nodes have no admin kubeconfig.
+kubectl_node: "{{ groups['control'] | first }}"
+
+# Marks a node cordoned by the upgrade, which is the only kind of node the upgrade uncordons.
+upgrade_cordon_annotation: claudie.io/upgrade-cordoned
