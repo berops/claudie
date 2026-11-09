@@ -1,0 +1,98 @@
+name: E2E Hetzner
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, labeled]
+
+# Least privilege by default, jobs ask for more only where they need it.
+permissions:
+  contents: read
+
+jobs:
+  build-images:
+    # The only gate in the workflow. Downstream jobs need this one and are skipped with it.
+    # Fork PRs are skipped, their GITHUB_TOKEN cannot push to ghcr.io.
+    # On "labeled", only the conformance-test label itself triggers, not every label added later.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository && (
+        (github.event.action == 'labeled' && github.event.label.name == 'conformance-test') ||
+        (github.event.action == 'opened' && contains(github.event.pull_request.labels.*.name, 'conformance-test'))
+      ))
+    name: build-images (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        service: [ansibler, claudie-operator, kuber, manager, terraformer]
+    # A newer run for the same PR supersedes this build. The service must be part of the key,
+    # otherwise the matrix legs would cancel each other.
+    concurrency:
+      group: ${{ github.workflow }}-build-${{ matrix.service }}-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The Dockerfiles COPY the whole repo including .git, keep the token out of the build.
+          persist-credentials: false
+
+      - uses: ./.github/actions/build-images
+        with:
+          service: ${{ matrix.service }}
+          # On pull_request, github.sha is the merge commit of the PR into master, which is what gets built.
+          tag: ${{ github.sha }}
+
+  deploy-claudie:
+    # Skipped whenever build-images is skipped, so it needs no gate of its own.
+    needs: build-images
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      namespace: ${{ steps.deploy.outputs.namespace }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - id: deploy
+        uses: ./.github/actions/deploy-claudie
+        with:
+          kubeconfig: ${{ secrets.E2E_CLUSTER_KUBECONFIG }}
+          image-tag: ${{ github.sha }}
+
+  conformance-test:
+    needs: deploy-claudie
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Write management cluster kubeconfig
+        env:
+          KUBECONFIG_DATA: ${{ secrets.E2E_CLUSTER_KUBECONFIG }}
+        run: |
+          kubeconfig="$RUNNER_TEMP/mgmt.kubeconfig"
+          printf '%s' "$KUBECONFIG_DATA" > "$kubeconfig"
+          chmod 600 "$kubeconfig"
+          echo "MGMT_KUBECONFIG=$kubeconfig" >> "$GITHUB_ENV"
+
+      - name: Install Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.27.1"
+
+      - name: Install Cilium CLI
+        uses: cilium/cilium-cli@v0.20.2
+        with:
+          release-version: v0.20.2
+
+      - name: Install Hydrophone
+        run: go install sigs.k8s.io/hydrophone@v0.8.0
+
+      - name: Run tests
+        env:
+          CLAUDIE_NAMESPACE: ${{ needs.deploy-claudie.outputs.namespace }}
+        run: go test -tags e2e -v -timeout 240m ./test/e2e/ -run TestConformance
