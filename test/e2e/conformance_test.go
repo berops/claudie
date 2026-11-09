@@ -69,7 +69,13 @@ func TestConformance(t *testing.T) {
 	}
 
 	t.Run("cilium", func(t *testing.T) {
-		t.Cleanup(func() { run(t, kubeconfigPath, "cilium", "connectivity", "test", "--cleanup") })
+		// Removes the test namespaces and everything in them. Both commands use the
+		// default --test-namespace, which is the only one --cleanup deletes.
+		t.Cleanup(func() {
+			if err := run(t, kubeconfigPath, "cilium", "connectivity", "test", "--cleanup"); err != nil {
+				t.Errorf("cleaning up cilium connectivity test: %v", err)
+			}
+		})
 
 		if err := run(t, kubeconfigPath, "cilium", "status", "--wait", "--wait-duration", "10m", "--interactive=false"); err != nil {
 			t.Fatal(err)
