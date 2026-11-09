@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/berops/claudie/api/manifest"
 	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/loggerutils"
 	"github.com/berops/claudie/internal/nodepools"
@@ -367,7 +368,26 @@ Failed to extract state from failed 'InFlight' state: %v
 				break
 			}
 
-			if state.InFlight = handleUpdate(hc, diff, current, localDesired); state.InFlight != nil {
+			next := handleUpdate(hc, diff, current, localDesired)
+
+			// Never schedule a kubernetes version change that kubeadm cannot apply,
+			// such as a downgrade or a skipped minor version. Such a task would fail
+			// and, as version upgrades are always rescheduled, would be retried forever.
+			// Schedule nothing and report the error until the desired version is fixed.
+			if err := validateUpgradeVersionTask(current, next); err != nil {
+				clusterResult[cluster] = NotReady
+
+				state.State.Status = spec.Workflow_ERROR
+				state.State.Description = fmt.Sprintf(
+					"Can't schedule kubernetes version change, fix the version in the InputManifest: %v",
+					err,
+				)
+
+				logger.Error().Msg(state.State.Description)
+				break event_switch
+			}
+
+			if state.InFlight = next; state.InFlight != nil {
 				clusterResult[cluster] = Reschedule
 
 				logger.
@@ -728,6 +748,17 @@ func handleUpdate(hc HealthCheckStatus, diff DiffResult, current, desired *spec.
 	}
 
 	return nil
+}
+
+// validateUpgradeVersionTask returns an error if the task is a kubernetes version
+// upgrade that cannot be applied to the current state, i.e. a downgrade or an upgrade
+// that skips a minor version. Any other task, including nil, is valid.
+func validateUpgradeVersionTask(current *spec.Clusters, task *spec.TaskEvent) error {
+	upgrade := task.GetTask().GetUpdate().GetUpgradeVersion()
+	if upgrade == nil {
+		return nil
+	}
+	return manifest.ValidateVersionUpgrade(current.GetK8S().GetKubernetes(), upgrade.GetVersion())
 }
 
 // Checks whether the inFlight task should be rescheduled again.

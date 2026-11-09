@@ -2,11 +2,13 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	v1beta "github.com/berops/claudie/api/crd/inputmanifest/v1beta1"
 	v1betatemplates "github.com/berops/claudie/api/crd/template-git-reference/v1beta1"
 	"github.com/berops/claudie/api/manifest"
+	managerclient "github.com/berops/claudie/services/manager/client"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 	wbhk "sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -20,13 +22,15 @@ import (
 
 // InputManifestValidator validates InputManifest containing the input-manifest
 type InputManifestValidator struct {
-	Logger logr.Logger
-	kc     client.Client
+	Logger  logr.Logger
+	kc      client.Client
+	manager managerclient.CrudAPI
 }
 
 // NewWebhook returns a new validation webhook for InputManifest resource
 func NewWebhook(
 	kc client.Client,
+	manager managerclient.CrudAPI,
 	scheme *runtime.Scheme,
 	port int,
 	dir,
@@ -40,7 +44,7 @@ func NewWebhook(
 
 	validator := admission.WithValidator[*v1beta.InputManifest](
 		scheme,
-		&InputManifestValidator{log, kc},
+		&InputManifestValidator{log, kc, manager},
 	)
 
 	hookServer.Register(path, validator)
@@ -95,7 +99,54 @@ func (v *InputManifestValidator) ValidateUpdate(ctx context.Context, oldObj, new
 		}
 	}
 
+	if err := v.validateVersionUpgrades(ctx, newObj); err != nil {
+		return nil, err
+	}
+
 	return nil, v.validate(ctx, newObj)
+}
+
+// validateVersionUpgrades checks the kubernetes version of every cluster in the InputManifest
+// against the version the cluster runs, as stored in the current state by the manager. The
+// previous InputManifest is not enough: its version may not have been applied to the cluster yet.
+// If a version upgrade is in flight, running or failed and waiting to be retried, the version is
+// also checked against its target, as the cluster will run that version once the upgrade finishes.
+// Clusters that were not built yet have no current state and are skipped.
+func (v *InputManifestValidator) validateVersionUpgrades(ctx context.Context, im *v1beta.InputManifest) error {
+	resp, err := v.manager.GetConfig(ctx, &managerclient.GetConfigRequest{Name: im.GetNamespacedNameDashed()})
+	if errors.Is(err, managerclient.ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("failed to read the current state of the clusters to validate their kubernetes versions: %w", err)
+	}
+
+	for _, desired := range im.Spec.Kubernetes.Clusters {
+		state := resp.Config.GetClusters()[desired.Name]
+
+		current := state.GetCurrent().GetK8S().GetKubernetes()
+		if current == "" {
+			continue
+		}
+
+		if err := manifest.ValidateVersionUpgrade(current, desired.Version); err != nil {
+			return fmt.Errorf("kubernetes version check for cluster %q failed: %w", desired.Name, err)
+		}
+
+		inFlight := state.GetInFlight().GetTask().GetUpdate().GetUpgradeVersion().GetVersion()
+		if inFlight == "" {
+			continue
+		}
+
+		if err := manifest.ValidateVersionUpgrade(inFlight, desired.Version); err != nil {
+			return fmt.Errorf(
+				"kubernetes version check for cluster %q failed, an upgrade to version %s is in progress: %w",
+				desired.Name, inFlight, err,
+			)
+		}
+	}
+
+	return nil
 }
 
 // ValidateDelete defines the logic when a kubernetes obj resource is deleted
