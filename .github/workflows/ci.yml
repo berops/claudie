@@ -96,3 +96,11 @@ jobs:
         env:
           CLAUDIE_NAMESPACE: ${{ needs.deploy-claudie.outputs.namespace }}
         run: go test -tags e2e -v -timeout 240m ./test/e2e/ -run TestConformance
+
+      # Only after a passing run, a failed or cancelled run leaves Claudie in place for debugging.
+      # The test has already deleted the InputManifest, so no infrastructure depends on Claudie anymore.
+      - name: Delete Claudie namespace
+        if: success()
+        env:
+          CLAUDIE_NAMESPACE: ${{ needs.deploy-claudie.outputs.namespace }}
+        run: kubectl delete namespace "$CLAUDIE_NAMESPACE" --kubeconfig "$MGMT_KUBECONFIG" --ignore-not-found --wait --timeout 10m
