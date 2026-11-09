@@ -5,7 +5,6 @@ resources:
 - operator.yaml
 - terraformer.yaml
 - ansibler.yaml
-- kube-eleven.yaml
 - kuber.yaml
 - manager.yaml
 - cluster-rbac
@@ -20,7 +19,6 @@ replacements:
     kind: Namespace
   targets:
   - fieldPaths:
-    - webhooks.*.namespaceSelector.matchLabels.kubernetes\.io/metadata\.name
     - webhooks.*.clientConfig.service.namespace
     select:
       kind: ValidatingWebhookConfiguration
