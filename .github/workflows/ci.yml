@@ -3,7 +3,7 @@ name: CIv2
 on:
   workflow_dispatch:
   pull_request:
-    types: [opened, labeled]
+    types: [opened, labeled, synchronize]
 
 # Least privilege by default, jobs ask for more only where they need it.
 permissions:
@@ -18,8 +18,10 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event.pull_request.head.repo.full_name == github.repository && (
         (github.event.action == 'labeled' && github.event.label.name == 'conformance-test') ||
-        (github.event.action == 'opened' && contains(github.event.pull_request.labels.*.name, 'conformance-test'))
+        (contains(fromJSON('["opened","synchronize"]'), github.event.action) &&
+          contains(github.event.pull_request.labels.*.name, 'conformance-test'))
       ))
+
     name: build-images (${{ matrix.service }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
