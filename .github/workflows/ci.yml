@@ -1,4 +1,4 @@
-name: E2E Hetzner
+name: CIv2
 
 on:
   workflow_dispatch:
