@@ -1,0 +1,35 @@
+name: Deploy Claudie
+description: Renders manifests/claudie with the given image tag and applies it to the management cluster.
+
+inputs:
+  kubeconfig:
+    description: Contents of the management cluster kubeconfig.
+    required: true
+  image-tag:
+    description: Tag of the Claudie images to deploy.
+    required: true
+
+outputs:
+  namespace:
+    description: Namespace Claudie was deployed in.
+    value: ${{ steps.deploy.outputs.namespace }}
+
+runs:
+  using: composite
+  steps:
+    - name: Deploy Claudie
+      id: deploy
+      shell: bash
+      working-directory: manifests/claudie
+      env:
+        KUBECONFIG_DATA: ${{ inputs.kubeconfig }}
+        IMAGE_TAG: ${{ inputs.image-tag }}
+      run: |
+        kubeconfig="$RUNNER_TEMP/mgmt.kubeconfig"
+        printf '%s' "$KUBECONFIG_DATA" > "$kubeconfig"
+        chmod 600 "$kubeconfig"
+
+        yq -i '.images[].newTag = strenv(IMAGE_TAG)' kustomization.yaml
+        kubectl kustomize . | kubectl apply --kubeconfig "$kubeconfig" -f -
+
+        echo "namespace=$(yq '.namespace' kustomization.yaml)" >> "$GITHUB_OUTPUT"
