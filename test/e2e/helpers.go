@@ -30,6 +30,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/retry"
 
 	"github.com/berops/claudie/api/crd/inputmanifest/v1beta1"
 	"golang.org/x/crypto/ssh"
@@ -44,15 +45,28 @@ const (
 var (
 	inputManifests = v1beta1.GroupVersion.WithResource("inputmanifests")
 	secrets        = corev1.SchemeGroupVersion.WithResource("secrets")
+
+	// k8sCallBackoff makes the first attempt and three retries.
+	k8sCallBackoff = wait.Backoff{Steps: 4, Duration: 5 * time.Second, Factor: 2}
 )
 
-// ReplaceManifestValue copies the manifest in path to a temp file with the value at pointer
+// retryK8sCall runs call and retries it on any error, as calls to the API sometimes fail.
+func retryK8sCall[T any](call func() (T, error)) (T, error) {
+	var result T
+	err := retry.OnError(k8sCallBackoff, func(error) bool { return true }, func() (err error) {
+		result, err = call()
+		return err
+	})
+	return result, err
+}
+
+// replaceManifestValue copies the manifest in path to a temp file with the value at pointer
 // replaced and returns the copy's path. pointer is a JSON Pointer (RFC 6901), e.g.
 // "/spec/nodePools/static/0/nodes/0/endpoint". The field must already exist, so a wrong
 // pointer fails the test instead of adding a field nobody reads.
 //
 // The copy is written as JSON, which is valid YAML, so it applies like the original.
-func ReplaceManifestValue(t *testing.T, path, pointer string, value any) string {
+func replaceManifestValue(t *testing.T, path, pointer string, value any) string {
 	t.Helper()
 
 	data, err := os.ReadFile(path)
@@ -116,11 +130,11 @@ func replaceAt(doc any, pointer string, value any) error {
 	return nil
 }
 
-// ClaudieNamespace returns the namespace Claudie is deployed in, from CLAUDIE_NAMESPACE.
+// claudieNamespace returns the namespace Claudie is deployed in, from CLAUDIE_NAMESPACE.
 //
 // A missing value fails the test instead of skipping it, a skipped test passes in CI and
 // would hide a broken setup. The e2e build tag already keeps these tests out of plain runs.
-func ClaudieNamespace(t *testing.T) string {
+func claudieNamespace(t *testing.T) string {
 	t.Helper()
 
 	namespace := os.Getenv("CLAUDIE_NAMESPACE")
@@ -130,9 +144,9 @@ func ClaudieNamespace(t *testing.T) string {
 	return namespace
 }
 
-// E2EClusterKubeconfig returns the path of the kubeconfig of the e2e cluster, the management
+// e2eClusterKubeconfig returns the path of the kubeconfig of the e2e cluster, the management
 // cluster Claudie runs in, from KUBECONFIG.
-func E2EClusterKubeconfig(t *testing.T) string {
+func e2eClusterKubeconfig(t *testing.T) string {
 	t.Helper()
 
 	path := os.Getenv("KUBECONFIG")
@@ -142,28 +156,28 @@ func E2EClusterKubeconfig(t *testing.T) string {
 	return path
 }
 
-// NewClient returns a client for the cluster in the kubeconfig file, built by newClient:
+// newClient returns a client for the cluster in the kubeconfig file, built by newForConfig:
 //
-//	e2eClusterClient := NewClient(t, E2EClusterKubeconfig(t), dynamic.NewForConfig)
-//	childClusterClient := NewClient(t, ChildKubeconfig(t, e2eClusterClient, namespace, cluster), kubernetes.NewForConfig)
-func NewClient[T any](t *testing.T, kubeconfig string, newClient func(*rest.Config) (T, error)) T {
+//	e2eClusterClient := newClient(t, e2eClusterKubeconfig(t), dynamic.NewForConfig)
+//	childClusterClient := newClient(t, childKubeconfig(t, e2eClusterClient, namespace, cluster), kubernetes.NewForConfig)
+func newClient[T any](t *testing.T, kubeconfig string, newForConfig func(*rest.Config) (T, error)) T {
 	t.Helper()
 
 	cfg, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
 		t.Fatalf("loading kubeconfig %q: %v", kubeconfig, err)
 	}
-	client, err := newClient(cfg)
+	client, err := newForConfig(cfg)
 	if err != nil {
 		t.Fatalf("creating client for kubeconfig %q: %v", kubeconfig, err)
 	}
 	return client
 }
 
-// ApplyInputManifest server-side applies the InputManifest in path to namespace and returns
+// applyInputManifest server-side applies the InputManifest in path to namespace and returns
 // its name. Applying an updated manifest with the same name updates the InputManifest.
 // The InputManifest and its infrastructure are deleted when the test ends.
-func ApplyInputManifest(t *testing.T, client dynamic.Interface, path, namespace string) string {
+func applyInputManifest(t *testing.T, client dynamic.Interface, path, namespace string) string {
 	t.Helper()
 
 	data, err := os.ReadFile(path)
@@ -179,7 +193,7 @@ func ApplyInputManifest(t *testing.T, client dynamic.Interface, path, namespace 
 	}
 	obj.SetNamespace(namespace)
 
-	t.Cleanup(func() { DeleteInputManifest(t, client, obj.GetName(), namespace, time.Hour) })
+	t.Cleanup(func() { deleteInputManifest(t, client, obj.GetName(), namespace, time.Hour) })
 	// Force takes over fields set by an earlier kubectl apply or another manager.
 	_, err = client.Resource(inputManifests).Namespace(namespace).
 		Apply(t.Context(), obj.GetName(), &obj, metav1.ApplyOptions{FieldManager: fieldManager, Force: true})
@@ -189,10 +203,10 @@ func ApplyInputManifest(t *testing.T, client dynamic.Interface, path, namespace 
 	return obj.GetName()
 }
 
-// WaitForInputManifest waits until Claudie has built the InputManifest and fails the test
+// waitForInputManifest waits until Claudie has built the InputManifest and fails the test
 // when it ends in an error or is not built within timeout. The status can flip during
 // reconciliation, so a state only counts once it held for stablePolls polls in a row.
-func WaitForInputManifest(t *testing.T, client dynamic.Interface, name, namespace string, timeout time.Duration) {
+func waitForInputManifest(t *testing.T, client dynamic.Interface, name, namespace string, timeout time.Duration) {
 	t.Helper()
 
 	const stablePolls = 8
@@ -246,11 +260,11 @@ func inputManifestOutcome(t *testing.T, im v1beta1.InputManifest) (done, failed 
 	return done, failed
 }
 
-// DeleteInputManifest deletes the InputManifest and waits until Claudie has destroyed its
+// deleteInputManifest deletes the InputManifest and waits until Claudie has destroyed its
 // infrastructure and removed the finalizer. A missing InputManifest is not an error.
 // It is meant for cleanups too, so it does not use t.Context, which is already cancelled
 // when cleanups run.
-func DeleteInputManifest(t *testing.T, client dynamic.Interface, name, namespace string, timeout time.Duration) {
+func deleteInputManifest(t *testing.T, client dynamic.Interface, name, namespace string, timeout time.Duration) {
 	t.Helper()
 
 	ctx := context.Background()
@@ -299,9 +313,9 @@ func outputSecret(t *testing.T, client dynamic.Interface, namespace, cluster, ou
 	return secret
 }
 
-// ChildKubeconfig writes the kubeconfig of a cluster built by Claudie to a temp file and
+// childKubeconfig writes the kubeconfig of a cluster built by Claudie to a temp file and
 // returns its path. Claudie keeps it in the kubeconfig output Secret in its namespace.
-func ChildKubeconfig(t *testing.T, client dynamic.Interface, namespace, cluster string) string {
+func childKubeconfig(t *testing.T, client dynamic.Interface, namespace, cluster string) string {
 	t.Helper()
 
 	secret := outputSecret(t, client, namespace, cluster, "kubeconfig")
@@ -317,17 +331,17 @@ func ChildKubeconfig(t *testing.T, client dynamic.Interface, namespace, cluster 
 	return path
 }
 
-// DynamicNode is a node of the Kubernetes cluster that Claudie created on a cloud provider.
-type DynamicNode struct {
+// dynamicNode is a node of the Kubernetes cluster that Claudie created on a cloud provider.
+type dynamicNode struct {
 	Name string
 	IP   string
 	// Key is the private SSH key of the nodepool of the node.
 	Key []byte
 }
 
-// DynamicNodes returns the dynamic nodes of a cluster built by Claudie. Claudie keeps them in
+// dynamicNodes returns the dynamic nodes of a cluster built by Claudie. Claudie keeps them in
 // the metadata output Secret in its namespace and deletes the Secret with the cluster.
-func DynamicNodes(t *testing.T, client dynamic.Interface, namespace, cluster string) []DynamicNode {
+func dynamicNodes(t *testing.T, client dynamic.Interface, namespace, cluster string) []dynamicNode {
 	t.Helper()
 
 	secret := outputSecret(t, client, namespace, cluster, "metadata")
@@ -345,17 +359,17 @@ func DynamicNodes(t *testing.T, client dynamic.Interface, namespace, cluster str
 		t.Fatalf("decoding metadata of cluster %s from secret %s: %v", cluster, secret.Name, err)
 	}
 
-	var nodes []DynamicNode
+	var nodes []dynamicNode
 	for _, np := range md.DynamicNodepools {
 		for name, ips := range np.NodeIps {
-			nodes = append(nodes, DynamicNode{Name: name, IP: ips.PublicIP, Key: []byte(np.PrivateKey)})
+			nodes = append(nodes, dynamicNode{Name: name, IP: ips.PublicIP, Key: []byte(np.PrivateKey)})
 		}
 	}
 	return nodes
 }
 
-// SecretValue returns the key field of the Secret, failing the test if it is missing or empty.
-func SecretValue(t *testing.T, client dynamic.Interface, namespace, name, key string) []byte {
+// secretValue returns the key field of the Secret, failing the test if it is missing or empty.
+func secretValue(t *testing.T, client dynamic.Interface, namespace, name, key string) []byte {
 	t.Helper()
 
 	obj, err := client.Resource(secrets).Namespace(namespace).Get(t.Context(), name, metav1.GetOptions{})
@@ -374,9 +388,9 @@ func SecretValue(t *testing.T, client dynamic.Interface, namespace, name, key st
 	return value
 }
 
-// RunSSH runs command on host as root over SSH with the private key and returns its stdout.
+// runSSH runs command on host as root over SSH with the private key and returns its stdout.
 // A non-zero exit code fails the test.
-func RunSSH(t *testing.T, host string, key []byte, command string) string {
+func runSSH(t *testing.T, host string, key []byte, command string) string {
 	t.Helper()
 
 	client, err := dialSSH(host, key)
@@ -413,11 +427,13 @@ func dialSSH(host string, key []byte) (*ssh.Client, error) {
 	})
 }
 
-// ReadyNodeCount returns how many nodes of the cluster behind client are Ready.
-func ReadyNodeCount(t *testing.T, client kubernetes.Interface) int {
+// readyNodeCount returns how many nodes of the cluster behind client are Ready.
+func readyNodeCount(t *testing.T, client kubernetes.Interface) int {
 	t.Helper()
 
-	nodes, err := client.CoreV1().Nodes().List(t.Context(), metav1.ListOptions{})
+	nodes, err := retryK8sCall(func() (*corev1.NodeList, error) {
+		return client.CoreV1().Nodes().List(t.Context(), metav1.ListOptions{})
+	})
 	if err != nil {
 		t.Fatalf("listing nodes: %v", err)
 	}
@@ -436,12 +452,12 @@ func isNodeReady(n corev1.Node) bool {
 	})
 }
 
-// ProvisionStaticNodes creates the static nodes with the tofu script in STATIC_NODES_TF and
+// provisionStaticNodes creates the static nodes with the tofu script in STATIC_NODES_TF and
 // returns their IPs. The nodes are destroyed when the test ends.
 //
 // Cleanups run in reverse order, so the destroy runs after the cleanups the test registers
 // later, e.g. deleting the InputManifest that uses the nodes.
-func ProvisionStaticNodes(t *testing.T) []string {
+func provisionStaticNodes(t *testing.T) []string {
 	t.Helper()
 
 	script, err := base64.StdEncoding.DecodeString(os.Getenv("STATIC_NODES_TF"))
@@ -515,4 +531,50 @@ func runTofu(ctx context.Context, dir string, args ...string) error {
 		return fmt.Errorf("tofu %v failed: %w", args, err)
 	}
 	return nil
+}
+
+// ciliumQuickTests check pod, service, NodePort, host and external traffic and cilium-health.
+// --test matches "<test>/<scenario>", so the anchors keep no-policies off no-policies-extra.
+var ciliumQuickTests = []string{"^no-policies/", "^no-policies-extra/", "^health/"}
+
+// runCiliumConnectivityTestFull runs every test cilium connectivity test has. It is slow, so
+// only the conformance test runs it.
+func runCiliumConnectivityTestFull(t *testing.T, kubeconfig string) error {
+	t.Helper()
+	return runCiliumConnectivityTest(t, kubeconfig, "--timeout", "30m")
+}
+
+// runCiliumConnectivityTestQuick runs only ciliumQuickTests, a basic connectivity check.
+func runCiliumConnectivityTestQuick(t *testing.T, kubeconfig string) error {
+	t.Helper()
+	return runCiliumConnectivityTest(t, kubeconfig, "--test", strings.Join(ciliumQuickTests, ","), "--timeout", "10m")
+}
+
+// runCiliumConnectivityTest waits until Cilium is ready and runs cilium connectivity test with
+// args. The test namespaces are deleted when the test ends.
+func runCiliumConnectivityTest(t *testing.T, kubeconfig string, args ...string) error {
+	t.Helper()
+
+	// Both commands use the default --test-namespace, the only one --cleanup deletes.
+	t.Cleanup(func() {
+		if err := runCLI(t, kubeconfig, "cilium", "connectivity", "test", "--cleanup"); err != nil {
+			t.Errorf("cleaning up cilium connectivity test: %v", err)
+		}
+	})
+
+	if err := runCLI(t, kubeconfig, "cilium", "status", "--wait", "--wait-duration", "10m", "--interactive=false"); err != nil {
+		return fmt.Errorf("waiting for cilium to be ready: %w", err)
+	}
+	// Hubble flow validation is off. Cilium runs with monitor aggregation "medium"
+	// (services/kuber/manifests/cilium.yaml), which skips most flow checks anyway.
+	return runCLI(t, kubeconfig, "cilium", append([]string{"connectivity", "test", "--hubble=false"}, args...)...)
+}
+
+// runCLI runs a CLI against the cluster in kubeconfig and streams its output.
+func runCLI(t *testing.T, kubeconfig, name string, args ...string) error {
+	t.Logf("running: %s %s", name, strings.Join(args, " "))
+	cmd := exec.Command(name, args...)
+	cmd.Env = append(os.Environ(), "KUBECONFIG="+kubeconfig)
+	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	return cmd.Run()
 }
