@@ -13,7 +13,8 @@ Claudie builds and manages multi-cloud, hybrid and on-premises Kubernetes cluste
 - They create real, paid infrastructure. Every test MUST delete its InputManifest so the infrastructure is destroyed.
 - If all tests pass, [.github/workflows/ci.yml](.github/workflows/ci.yml) deletes the Claudie namespace in the e2e cluster. If any test fails, the namespace is kept for manual investigation.
 - Use the official client-go library to talk to Kubernetes, not the legacy [internal/kubectl](internal/kubectl) wrapper. Each call made with the k8s client should have three retries. Calls sometimes fail, so we want to retry them instead of failing the test right away.
+- Shared helpers live in [test/e2e/helpers.go](test/e2e/helpers.go), helpers used by one scenario in its `*_test.go` file. Nothing imports the package, so only `TestXxx` functions are exported.
 - Setup helpers fail the test themselves.
-- Assertions belong in the test function, not in helpers. Keep them one-line: a small function returns the value and the test checks it, e.g. `if got := ReadyNodeCount(t, client); got != want { t.Fatalf(...) }`. Don't inline loops or counting into the test.
+- Assertions belong in the test function, not in helpers. Keep them one-line: a small function returns the value and the test checks it, e.g. `if got := readyNodeCount(t, client); got != want { t.Fatalf(...) }`. Don't inline loops or counting into the test.
 - Failure messages print got and want, with context.
 - Use descriptive, idiomatic Go names instead of comments. Comment only in exceptional cases, and try to keep comments concise: prefer one-line comments, two lines at most.
