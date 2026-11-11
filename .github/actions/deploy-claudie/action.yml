@@ -17,19 +17,31 @@ outputs:
 runs:
   using: composite
   steps:
+    # Exports KUBECONFIG for the rest of the job.
+    - name: Set management cluster kubeconfig
+      uses: azure/k8s-set-context@v5
+      with:
+        kubeconfig: ${{ inputs.kubeconfig }}
+
     - name: Deploy Claudie
       id: deploy
       shell: bash
       working-directory: manifests/claudie
       env:
-        KUBECONFIG_DATA: ${{ inputs.kubeconfig }}
         IMAGE_TAG: ${{ inputs.image-tag }}
       run: |
-        kubeconfig="$RUNNER_TEMP/mgmt.kubeconfig"
-        printf '%s' "$KUBECONFIG_DATA" > "$kubeconfig"
-        chmod 600 "$kubeconfig"
+        # Each run gets its own Claudie, so pipelines running at the same time don't collide.
+        export NAMESPACE="claudie-${GITHUB_SHA::7}-${GITHUB_RUN_NUMBER}"
+        yq -i '.images[].newTag = strenv(IMAGE_TAG) | .namespace = strenv(NAMESPACE)' kustomization.yaml
 
-        yq -i '.images[].newTag = strenv(IMAGE_TAG)' kustomization.yaml
-        kubectl kustomize . | kubectl apply --kubeconfig "$kubeconfig" -f -
+        # Cluster-scoped objects get a per-run name and a label for the cleanup. The operator and its
+        # webhook only handle their own namespace, e2e-secrets holds the secrets the tests reference.
+        kubectl kustomize . | yq '
+          (select(.kind == "ClusterRoleBinding" or .kind == "ValidatingWebhookConfiguration") | .metadata.name) += "-" + strenv(NAMESPACE)
+          | (select(.kind == "ClusterRoleBinding" or .kind == "ValidatingWebhookConfiguration") | .metadata.labels["claudie.io/ci-namespace"]) = strenv(NAMESPACE)
+          | (select(.kind == "ValidatingWebhookConfiguration") | .webhooks[].namespaceSelector) = {"matchLabels": {"kubernetes.io/metadata.name": strenv(NAMESPACE)}}
+          | (select(.kind == "Deployment" and .metadata.name == "claudie-operator") | .spec.template.spec.containers[0].env) += [{"name": "CLAUDIE_NAMESPACES", "value": strenv(NAMESPACE) + ",e2e-secrets"}]
+        ' - | kubectl apply -f -
 
-        echo "namespace=$(yq '.namespace' kustomization.yaml)" >> "$GITHUB_OUTPUT"
+        kubectl wait deployment --all --for=condition=Available --namespace "$NAMESPACE" --timeout 15m
+        echo "namespace=$NAMESPACE" >> "$GITHUB_OUTPUT"

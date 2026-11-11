@@ -1,6 +1,6 @@
 # Cluster architecture
 #
-# One Kubernetes cluster "conformance-test" spanning all 7 provider types.
+# One Kubernetes cluster "conformance-test-cluster" spanning all 7 provider types.
 # Kubernetes 1.36.0, network 192.168.2.0/24, installation proxy "on".
 # Every provider except Exoscale contributes one control plane node and one compute node.
 # A Hetzner load balancer "conformance-apiserver-lb" fronts all control plane nodes on 6443,
@@ -31,7 +31,7 @@
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
-  name: conformance-test
+  name: conformance
 spec:
   providers:
     - name: gcp-1
@@ -287,7 +287,7 @@ spec:
             ["conformance-test"]
   kubernetes:
     clusters:
-      - name: conformance-test
+      - name: conformance-test-cluster
         version: "1.36.0"
         network: 192.168.2.0/24
         installationProxy:
@@ -328,6 +328,6 @@ spec:
         dns:
           dnsZone: claudie.org
           provider: hetzner-1
-        targetedK8s: conformance-test
+        targetedK8s: conformance-test-cluster
         pools:
           - htz-lb-nodes

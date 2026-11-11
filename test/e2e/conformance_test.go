@@ -3,114 +3,61 @@
 package e2e
 
 import (
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
 	"testing"
 	"time"
+
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 )
 
-// Values must match manifests/conformance.yaml.
-const (
-	manifestFile = "manifests/conformance.yaml"
-	manifestName = "conformance-test"
-	clusterName  = "conformance-test"
-	// Taint keys on the control plane nodes. The conformance suite treats nodes with
-	// any other taint as unschedulable and refuses to start.
-	nonBlockingTaints = "node-role.kubernetes.io/control-plane,test"
-)
-
-// TestConformance provisions the multi-cloud cluster from manifests/conformance.yaml
-// with Claudie, validates it, and deletes it.
-//
-// MGMT_KUBECONFIG is the management cluster kubeconfig, CLAUDIE_NAMESPACE the namespace
-// Claudie is deployed in. Run with:
-//
-//	MGMT_KUBECONFIG=/path/to/mgmt.kubeconfig CLAUDIE_NAMESPACE=claudie go test -tags e2e -v -timeout 240m ./test/e2e/ -run TestConformance
+// TestConformance builds a cluster spanning all provider types and runs the full Cilium
+// connectivity test and the Kubernetes conformance suite on it.
 func TestConformance(t *testing.T) {
-	mgmt := os.Getenv("MGMT_KUBECONFIG")
-	if mgmt == "" {
-		t.Skip("MGMT_KUBECONFIG must be set")
-	}
-	namespace := os.Getenv("CLAUDIE_NAMESPACE")
-	if namespace == "" {
-		t.Fatal("CLAUDIE_NAMESPACE must be set to the namespace Claudie is deployed in")
-	}
+	// Values must match manifests/conformance.yaml.
+	const (
+		clusterManifestFile = "manifests/conformance.yaml"
+		clusterName         = "conformance-test-cluster"
+		expectedNodeCount   = 13
+	)
 
-	if err := ApplyManifest(manifestFile, namespace, mgmt); err != nil {
-		t.Fatal(err)
-	}
+	namespace := claudieNamespace(t)
+	e2eClusterClient := newClient(t, e2eClusterKubeconfig(t), dynamic.NewForConfig)
 
-	t.Cleanup(func() {
-		// Delete the InputManifest first and wait, Claudie still needs the
-		// provider secret and templates to destroy the infrastructure.
-		if err := DeleteInputManifest(manifestName, namespace, mgmt); err != nil {
-			t.Errorf("deleting inputmanifest: %v", err)
-			return
-		}
-		if err := DeleteManifest(manifestFile, namespace, mgmt); err != nil {
-			t.Errorf("deleting manifest: %v", err)
-		}
-	})
+	manifest := applyInputManifest(t, e2eClusterClient, clusterManifestFile, namespace)
+	waitForInputManifest(t, e2eClusterClient, manifest, namespace, time.Hour)
 
-	if err := WaitForInputManifestDone(t, manifestName, namespace, mgmt, 60*time.Minute); err != nil {
-		t.Fatal(err)
+	childClusterKubeconfig := childKubeconfig(t, e2eClusterClient, namespace, clusterName)
+	childClusterClient := newClient(t, childClusterKubeconfig, kubernetes.NewForConfig)
+	if got := readyNodeCount(t, childClusterClient); got != expectedNodeCount {
+		t.Fatalf("cluster %s: got %d Ready nodes, want %d", clusterName, got, expectedNodeCount)
 	}
 
-	kubeconfig, err := GetChildClusterKubeconfig(t.Context(), mgmt, namespace, clusterName)
-	if err != nil {
-		t.Fatal(err)
+	if err := runCiliumConnectivityTestFull(t, childClusterKubeconfig); err != nil {
+		t.Fatalf("cluster %s: cilium connectivity test: %v", clusterName, err)
 	}
-
-	kubeconfigPath := filepath.Join(t.TempDir(), "kubeconfig")
-	if err := os.WriteFile(kubeconfigPath, kubeconfig, 0o600); err != nil {
-		t.Fatal(err)
+	if err := runKubernetesConformance(t, childClusterKubeconfig); err != nil {
+		t.Fatalf("cluster %s: kubernetes conformance: %v", clusterName, err)
 	}
-
-	t.Run("cilium", func(t *testing.T) {
-		// Removes the test namespaces and everything in them. Both commands use the
-		// default --test-namespace, which is the only one --cleanup deletes.
-		t.Cleanup(func() {
-			if err := run(t, kubeconfigPath, "cilium", "connectivity", "test", "--cleanup"); err != nil {
-				t.Errorf("cleaning up cilium connectivity test: %v", err)
-			}
-		})
-
-		if err := run(t, kubeconfigPath, "cilium", "status", "--wait", "--wait-duration", "10m", "--interactive=false"); err != nil {
-			t.Fatal(err)
-		}
-		// Hubble flow validation is off. Cilium runs with monitor aggregation "medium"
-		// (services/kuber/manifests/cilium.yaml), which skips most flow checks anyway.
-		if err := run(t, kubeconfigPath, "cilium", "connectivity", "test", "--hubble=false", "--timeout", "30m"); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	// Kubernetes conformance takes about an hour and can't pass on a broken network.
-	if t.Failed() {
-		return
-	}
-
-	t.Run("kubernetes", func(t *testing.T) {
-		t.Cleanup(func() { run(t, kubeconfigPath, "hydrophone", "--cleanup") })
-
-		// Parallel to fit into CI, an official conformance submission needs a serial run.
-		// The extra args value contains a comma, so it is quoted as a single field.
-		if err := run(t, kubeconfigPath, "hydrophone", "--conformance", "--parallel", "8",
-			"--output-dir", t.TempDir(),
-			`--extra-args="--non-blocking-taints=`+nonBlockingTaints+`"`,
-		); err != nil {
-			t.Fatal(err)
-		}
-	})
 }
 
-// run runs a CLI against the cluster in kubeconfig and streams its output.
-func run(t *testing.T, kubeconfig, name string, args ...string) error {
-	t.Logf("running: %s %s", name, strings.Join(args, " "))
-	cmd := exec.Command(name, args...)
-	cmd.Env = append(os.Environ(), "KUBECONFIG="+kubeconfig)
-	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
-	return cmd.Run()
+// runKubernetesConformance runs the Kubernetes conformance suite with hydrophone. Its
+// resources are deleted when the test ends.
+func runKubernetesConformance(t *testing.T, kubeconfig string) error {
+	t.Helper()
+
+	// Taint keys of the control plane nodes in manifests/conformance.yaml. The suite treats
+	// nodes with any other taint as unschedulable and refuses to start.
+	const nonBlockingTaints = "node-role.kubernetes.io/control-plane,test"
+
+	t.Cleanup(func() {
+		if err := runCLI(t, kubeconfig, "hydrophone", "--cleanup"); err != nil {
+			t.Logf("cleaning up kubernetes conformance: %v", err)
+		}
+	})
+
+	// The extra args value contains a comma, so it is quoted as a single field.
+	return runCLI(t, kubeconfig, "hydrophone", "--conformance",
+		"--output-dir", t.TempDir(),
+		`--extra-args="--non-blocking-taints=`+nonBlockingTaints+`"`,
+	)
 }
