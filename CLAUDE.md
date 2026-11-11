@@ -8,7 +8,6 @@ Claudie builds and manages multi-cloud, hybrid and on-premises Kubernetes cluste
 
 ## E2E Tests
 - E2E tests live in [test/e2e](test/e2e). They replace the legacy framework in [services/testing-framework](services/testing-framework) (`make test`, test sets in [manifests/testing-framework/test-sets](manifests/testing-framework/test-sets)). Don't extend the legacy framework or copy its patterns.
-- Each `*_test.go` file covers one scenario.
 - They run only in the CI pipeline.
 - They create real, paid infrastructure. Every test MUST delete its InputManifest so the infrastructure is destroyed.
 - If all tests pass, [.github/workflows/ci.yml](.github/workflows/ci.yml) deletes the Claudie namespace in the e2e cluster. If any test fails, the namespace is kept for manual investigation.

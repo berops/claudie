@@ -78,7 +78,8 @@ jobs:
             {
               "e2e-test-conformance": "TestConformance",
               "e2e-test-upgrade-cluster": "TestK8sUpgrade",
-              "e2e-test-destroy-cluster": "TestDestroyCluster"
+              "e2e-test-destroy-cluster": "TestDestroyCluster",
+              "e2e-test-loadbalancer": "TestLoadBalancer"
             } as $testByLabel
             | [.] | flatten
             | if index("e2e-test") then [$testByLabel[]] else map($testByLabel[.] // empty) end
@@ -156,7 +157,7 @@ jobs:
           go-version: "1.27.1"
 
       - name: Install Cilium CLI
-        if: matrix.test == 'TestConformance' || matrix.test == 'TestK8sUpgrade'
+        if: matrix.test == 'TestConformance' || matrix.test == 'TestK8sUpgrade' || matrix.test == 'TestLoadBalancer'
         uses: cilium/cilium-cli@v0.20.2
         with:
           release-version: v0.20.2
