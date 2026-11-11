@@ -335,6 +335,8 @@ func childKubeconfig(t *testing.T, client dynamic.Interface, namespace, cluster 
 type dynamicNode struct {
 	Name string
 	IP   string
+	// NodePool is the nodepool name from the InputManifest with the hash Claudie appends.
+	NodePool string
 	// Key is the private SSH key of the nodepool of the node.
 	Key []byte
 }
@@ -360,9 +362,9 @@ func dynamicNodes(t *testing.T, client dynamic.Interface, namespace, cluster str
 	}
 
 	var nodes []dynamicNode
-	for _, np := range md.DynamicNodepools {
+	for nodePool, np := range md.DynamicNodepools {
 		for name, ips := range np.NodeIps {
-			nodes = append(nodes, dynamicNode{Name: name, IP: ips.PublicIP, Key: []byte(np.PrivateKey)})
+			nodes = append(nodes, dynamicNode{Name: name, IP: ips.PublicIP, NodePool: nodePool, Key: []byte(np.PrivateKey)})
 		}
 	}
 	return nodes
