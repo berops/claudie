@@ -1,4 +1,4 @@
-name: CIv2
+name: Claudie CI
 
 on:
   workflow_dispatch:
@@ -9,18 +9,88 @@ on:
 permissions:
   contents: read
 
+# One run per PR at a time, a new run waits for the running one. Only the latest waiting run is kept.
+# Runs for non-e2e labels do nothing, so they get their own group and never wait or replace a run.
+# The e2e labels are e2e-test for all tests and e2e-test-<scenario> for one, see select-e2e-tests.
+concurrency:
+  group: ${{ github.workflow }}-${{ (github.event.action == 'labeled' && !startsWith(github.event.label.name, 'e2e-test')) && github.run_id || github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  build-images:
-    # The only gate in the workflow. Downstream jobs need this one and are skipped with it.
-    # Fork PRs are skipped, their GITHUB_TOKEN cannot push to ghcr.io.
-    # On "labeled", only the conformance-test label itself triggers, not every label added later.
+  # lint and unit-tests run in parallel on every PR, without e2e labels and for forks too,
+  # they use no secrets. They only skip "labeled" events for non-e2e labels.
+  lint:
+    if: github.event.action != 'labeled' || startsWith(github.event.label.name, 'e2e-test')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.27.1"
+
+      - uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.13.2
+
+  unit-tests:
+    if: github.event.action != 'labeled' || startsWith(github.event.label.name, 'e2e-test')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.27.1"
+
+      # -short skips the old testing-framework e2e test, the e2e tests in test/e2e/ are behind the e2e build tag.
+      - name: Run unit tests
+        run: go test -short ./...
+
+  # Picks the e2e tests to run: all of them for e2e-test or workflow_dispatch, otherwise one per
+  # e2e-test-<scenario> label. On "labeled", only the added label counts, so earlier ones don't rerun.
+  select-e2e-tests:
+    # Fork PRs are skipped, their GITHUB_TOKEN cannot push the images to ghcr.io.
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (github.event.pull_request.head.repo.full_name == github.repository && (
-        (github.event.action == 'labeled' && github.event.label.name == 'conformance-test') ||
-        (contains(fromJSON('["opened","synchronize"]'), github.event.action) &&
-          contains(github.event.pull_request.labels.*.name, 'conformance-test'))
-      ))
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+        (github.event.action != 'labeled' || startsWith(github.event.label.name, 'e2e-test')))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      tests: ${{ steps.select.outputs.tests }}
+    steps:
+      - id: select
+        # Label names come in through env, never interpolated into the script.
+        env:
+          LABELS: >-
+            ${{ github.event_name == 'workflow_dispatch' && '"e2e-test"'
+              || github.event.action == 'labeled' && toJSON(github.event.label.name)
+              || toJSON(github.event.pull_request.labels.*.name) }}
+        run: |
+          tests=$(jq -c '
+            {
+              "e2e-test-conformance": "TestConformance",
+              "e2e-test-upgrade-cluster": "TestK8sUpgrade",
+              "e2e-test-destroy-cluster": "TestDestroyCluster"
+            } as $testByLabel
+            | [.] | flatten
+            | if index("e2e-test") then [$testByLabel[]] else map($testByLabel[.] // empty) end
+          ' <<<"$LABELS")
+          echo "tests=$tests" | tee -a "$GITHUB_OUTPUT"
+
+  build-images:
+    # Images are only built once lint and unit-tests pass. An if without a status function implies
+    # success(), so a failed check skips this job and everything downstream of it.
+    needs: [lint, unit-tests, select-e2e-tests]
+    # The gate for the e2e run. Downstream jobs need this one and are skipped with it.
+    if: needs.select-e2e-tests.outputs.tests != '[]'
 
     name: build-images (${{ matrix.service }})
     runs-on: ubuntu-latest
@@ -31,11 +101,6 @@ jobs:
     strategy:
       matrix:
         service: [ansibler, claudie-operator, kuber, manager, terraformer]
-    # A newer run for the same PR supersedes this build. The service must be part of the key,
-    # otherwise the matrix legs would cancel each other.
-    concurrency:
-      group: ${{ github.workflow }}-build-${{ matrix.service }}-${{ github.event.pull_request.number || github.ref }}
-      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v7
         with:
@@ -66,20 +131,24 @@ jobs:
           kubeconfig: ${{ secrets.E2E_CLUSTER_KUBECONFIG }}
           image-tag: ${{ github.sha }}
 
-  conformance-test:
-    needs: deploy-claudie
+  # One job per e2e test, all against the same Claudie deployment. Each test uses its own
+  # InputManifest and cluster name, so they run in parallel without colliding.
+  e2e-tests:
+    needs: [select-e2e-tests, deploy-claudie]
+    name: e2e-tests (${{ matrix.test }})
     runs-on: ubuntu-latest
+    strategy:
+      # A failing test doesn't cancel the others, cancelling would leave their clusters behind.
+      fail-fast: false
+      matrix:
+        test: ${{ fromJSON(needs.select-e2e-tests.outputs.tests) }}
     steps:
       - uses: actions/checkout@v7
 
-      - name: Write management cluster kubeconfig
-        env:
-          KUBECONFIG_DATA: ${{ secrets.E2E_CLUSTER_KUBECONFIG }}
-        run: |
-          kubeconfig="$RUNNER_TEMP/mgmt.kubeconfig"
-          printf '%s' "$KUBECONFIG_DATA" > "$kubeconfig"
-          chmod 600 "$kubeconfig"
-          echo "MGMT_KUBECONFIG=$kubeconfig" >> "$GITHUB_ENV"
+      - name: Set management cluster kubeconfig
+        uses: azure/k8s-set-context@v5
+        with:
+          kubeconfig: ${{ secrets.E2E_CLUSTER_KUBECONFIG }}
 
       - name: Install Go
         uses: actions/setup-go@v6
@@ -87,22 +156,44 @@ jobs:
           go-version: "1.27.1"
 
       - name: Install Cilium CLI
+        if: matrix.test == 'TestConformance' || matrix.test == 'TestK8sUpgrade'
         uses: cilium/cilium-cli@v0.20.2
         with:
           release-version: v0.20.2
 
       - name: Install Hydrophone
+        if: matrix.test == 'TestConformance'
         run: go install sigs.k8s.io/hydrophone@v0.8.0
 
-      - name: Run tests
-        env:
-          CLAUDIE_NAMESPACE: ${{ needs.deploy-claudie.outputs.namespace }}
-        run: go test -tags e2e -v -timeout 240m ./test/e2e/ -run TestConformance
+      - name: Install OpenTofu
+        if: matrix.test == 'TestDestroyCluster'
+        uses: opentofu/setup-opentofu@v2
+        with:
+          tofu_wrapper: false
 
-      # Only after a passing run, a failed or cancelled run leaves Claudie in place for debugging.
-      # The test has already deleted the InputManifest, so no infrastructure depends on Claudie anymore.
-      - name: Delete Claudie namespace
-        if: success()
+      - name: Run test
         env:
           CLAUDIE_NAMESPACE: ${{ needs.deploy-claudie.outputs.namespace }}
-        run: kubectl delete namespace "$CLAUDIE_NAMESPACE" --kubeconfig "$MGMT_KUBECONFIG" --ignore-not-found --wait --timeout 10m
+          # Base64 encoded tofu script creating the static nodes, the test decodes it itself.
+          # Only exposed to the test that needs it.
+          STATIC_NODES_TF: ${{ matrix.test == 'TestDestroyCluster' && secrets.CREATE_STATIC_NODES || '' }}
+        run: go test -tags e2e -v -timeout 240m ./test/e2e/ -run '^${{ matrix.test }}$'
+
+  cleanup:
+    # Only after every test passed, a failed or cancelled run leaves Claudie in place for debugging.
+    # The tests have already deleted their InputManifests, so no infrastructure depends on Claudie anymore.
+    needs: [deploy-claudie, e2e-tests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Set management cluster kubeconfig
+        uses: azure/k8s-set-context@v5
+        with:
+          kubeconfig: ${{ secrets.E2E_CLUSTER_KUBECONFIG }}
+
+      - name: Delete Claudie namespace
+        env:
+          CLAUDIE_NAMESPACE: ${{ needs.deploy-claudie.outputs.namespace }}
+        run: |
+          kubectl delete namespace "$CLAUDIE_NAMESPACE" --ignore-not-found --wait --timeout 10m
+          kubectl delete clusterrolebinding,validatingwebhookconfiguration -l claudie.io/ci-namespace="$CLAUDIE_NAMESPACE"
