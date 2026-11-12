@@ -15,10 +15,10 @@ import (
 // TestK8sUpgrade builds a cluster, bumps its Kubernetes version and checks that every node
 // runs the new version and the cluster network still works.
 func TestK8sUpgrade(t *testing.T) {
-	// Values must match manifests/upgrade-cluster-*.yaml.
+	// Values must match manifests/upgrade-cluster/*.yaml.
 	const (
-		clusterFromManifestFile = "manifests/upgrade-cluster-from.yaml"
-		clusterToManifestFile   = "manifests/upgrade-cluster-to.yaml"
+		clusterFromManifestFile = "manifests/upgrade-cluster/from-version.yaml"
+		clusterToManifestFile   = "manifests/upgrade-cluster/to-version.yaml"
 		clusterName             = "upgrade-cluster-test-cluster"
 		expectedNodeCount       = 4
 		upgradeFromVersion      = "v1.35.0"

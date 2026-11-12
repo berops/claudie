@@ -1,7 +1,7 @@
 apiVersion: claudie.io/v1beta1
 kind: InputManifest
 metadata:
-  name: loadbalancer
+  name: api-endpoint-moves
 spec:
   providers:
     - name: hetzner-1
@@ -13,12 +13,12 @@ spec:
         namespace: e2e-secrets
   nodePools:
     dynamic:
-      - name: htz-ctrl-nodes
+      - name: htz-ctrl-b
         providerSpec:
           name: hetzner-1
           region: nbg1
           zone: nbg1-dc3
-        count: 2
+        count: 1
         serverType: cpx22
         image: ubuntu-24.04
       - name: htz-cmpt-nodes
@@ -30,44 +30,16 @@ spec:
         serverType: cpx22
         image: ubuntu-24.04
         storageDiskSize: 50
-      - name: htz-lb-nodes
-        providerSpec:
-          name: hetzner-1
-          region: nbg1
-          zone: nbg1-dc3
-        count: 1
-        serverType: cpx22
-        image: ubuntu-24.04
 
   kubernetes:
     clusters:
-      - name: loadbalancer-test-cluster
+      - name: api-endpoint-moves-cluster
         version: "1.36.0"
         network: 192.168.2.0/24
         installationProxy:
           mode: "on"
         pools:
           control:
-            - htz-ctrl-nodes
+            - htz-ctrl-b
           compute:
             - htz-cmpt-nodes
-
-  loadBalancers:
-    roles:
-      - name: apiserver
-        protocol: tcp
-        port: 6443
-        targetPort: 6443
-        targetPools:
-          - htz-ctrl-nodes
-    clusters:
-      - name: loadbalancer-apiserver-lb
-        roles:
-          - apiserver
-        dns:
-          dnsZone: claudie.org
-          provider: hetzner-1
-          hostname: replace-me
-        targetedK8s: loadbalancer-test-cluster
-        pools:
-          - htz-lb-nodes

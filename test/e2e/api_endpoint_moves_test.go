@@ -19,20 +19,19 @@ import (
 
 const apiServerPort = "6443"
 
-// TestLoadBalancer builds a cluster with a load balancer for the API server, detaches the load
-// balancer, attaches it again and replaces its DNS hostname. After each step it checks that
-// the API endpoint of the cluster moved.
-func TestLoadBalancer(t *testing.T) {
-	// Values must match manifests/loadbalancer-test/*.yaml.
+func TestAPIEndpointMoves(t *testing.T) {
+	// Values must match manifests/api-endpoint-moves/*.yaml.
 	const (
-		withLoadBalancerManifestFile         = "manifests/loadbalancer-test/with-loadbalancer.yaml"
-		withoutLoadBalancerManifestFile      = "manifests/loadbalancer-test/without-loadbalancer.yaml"
-		withLoadBalancerHostnameManifestFile = "manifests/loadbalancer-test/with-loadbalancer-hostname.yaml"
-		loadBalancerHostnamePlaceholder      = "/spec/loadBalancers/clusters/0/dns/hostname"
-		clusterName                          = "loadbalancer-test-cluster"
-		controlNodePool                      = "htz-ctrl-nodes"
-		loadBalancerDNSZone                  = "claudie.org"
-		expectedNodeCount                    = 4
+		withLoadBalancerManifestFile           = "manifests/api-endpoint-moves/with-loadbalancer.yaml"
+		withoutLoadBalancerManifestFile        = "manifests/api-endpoint-moves/without-loadbalancer.yaml"
+		withoutEndpointControlNodeManifestFile = "manifests/api-endpoint-moves/without-endpoint-control-node.yaml"
+		withLoadBalancerHostnameManifestFile   = "manifests/api-endpoint-moves/with-loadbalancer-hostname.yaml"
+		loadBalancerHostnamePlaceholder        = "/spec/loadBalancers/clusters/0/dns/hostname"
+		clusterName                            = "api-endpoint-moves-cluster"
+		// Listed first in pools.control, so detaching the load balancer moves the API endpoint here.
+		firstControlNodePool  = "htz-ctrl-a"
+		secondControlNodePool = "htz-ctrl-b"
+		loadBalancerDNSZone   = "claudie.org"
 	)
 
 	namespace := claudieNamespace(t)
@@ -43,16 +42,52 @@ func TestLoadBalancer(t *testing.T) {
 	withNewHostnameManifestFile := replaceManifestValue(t, withLoadBalancerHostnameManifestFile, loadBalancerHostnamePlaceholder, newLoadBalancerHostname)
 
 	testCases := []struct {
-		name         string
-		manifestFile string
+		name          string
+		manifestFile  string
+		wantNodeCount int
+		// wantAPIEndpointNodePool is the control nodepool that has to hold the API endpoint.
+		// Empty when the API endpoint has to be a load balancer.
+		wantAPIEndpointNodePool string
 		// wantAPIEndpointSuffix is the DNS zone of the load balancer, or its whole hostname
-		// when the manifest sets it. Empty when the API endpoint has to be a control node.
+		// when the manifest sets it.
 		wantAPIEndpointSuffix string
 	}{
-		{"create with load balancer", withLoadBalancerManifestFile, "." + loadBalancerDNSZone},
-		{"detach load balancer", withoutLoadBalancerManifestFile, ""},
-		{"attach load balancer", withLoadBalancerManifestFile, "." + loadBalancerDNSZone},
-		{"replace load balancer hostname", withNewHostnameManifestFile, newLoadBalancerHostname + "." + loadBalancerDNSZone},
+		{
+			name:                  "create cluster with load balancer attached",
+			manifestFile:          withLoadBalancerManifestFile,
+			wantNodeCount:         4,
+			wantAPIEndpointSuffix: "." + loadBalancerDNSZone,
+		},
+		{
+			name:                    "detach load balancer",
+			manifestFile:            withoutLoadBalancerManifestFile,
+			wantNodeCount:           4,
+			wantAPIEndpointNodePool: firstControlNodePool,
+		},
+		{
+			name:                    "delete API endpoint control node",
+			manifestFile:            withoutEndpointControlNodeManifestFile,
+			wantNodeCount:           3,
+			wantAPIEndpointNodePool: secondControlNodePool,
+		},
+		{
+			name:                    "add control node back",
+			manifestFile:            withoutLoadBalancerManifestFile,
+			wantNodeCount:           4,
+			wantAPIEndpointNodePool: secondControlNodePool,
+		},
+		{
+			name:                  "attach load balancer",
+			manifestFile:          withLoadBalancerManifestFile,
+			wantNodeCount:         4,
+			wantAPIEndpointSuffix: "." + loadBalancerDNSZone,
+		},
+		{
+			name:                  "replace load balancer hostname",
+			manifestFile:          withNewHostnameManifestFile,
+			wantNodeCount:         4,
+			wantAPIEndpointSuffix: newLoadBalancerHostname + "." + loadBalancerDNSZone,
+		},
 	}
 
 	for _, step := range testCases {
@@ -65,15 +100,14 @@ func TestLoadBalancer(t *testing.T) {
 			// Fetched in every step, Claudie replaces the kubeconfig when the API endpoint moves.
 			childClusterKubeconfig := childKubeconfig(t, e2eClusterClient, namespace, clusterName)
 			childClusterClient := newClient(t, childClusterKubeconfig, kubernetes.NewForConfig)
-			if got := readyNodeCount(t, childClusterClient); got != expectedNodeCount {
-				t.Errorf("cluster %s: got %d Ready nodes, want %d", clusterName, got, expectedNodeCount)
+			if got := readyNodeCount(t, childClusterClient); got != step.wantNodeCount {
+				t.Errorf("cluster %s: got %d Ready nodes, want %d", clusterName, got, step.wantNodeCount)
 			}
 
-			controlNodeIPs := nodePoolIPs(t, e2eClusterClient, namespace, clusterName, controlNodePool)
 			kubeconfigApiEndpoint := apiServerHost(childClusterClient)
-			if step.wantAPIEndpointSuffix == "" {
-				if !slices.Contains(controlNodeIPs, kubeconfigApiEndpoint) {
-					t.Errorf("cluster %s: got API endpoint %s, want one of the control node IPs %v", clusterName, kubeconfigApiEndpoint, controlNodeIPs)
+			if step.wantAPIEndpointNodePool != "" {
+				if ips := nodePoolIPs(t, e2eClusterClient, namespace, clusterName, step.wantAPIEndpointNodePool); !slices.Contains(ips, kubeconfigApiEndpoint) {
+					t.Errorf("cluster %s: got API endpoint %s, want one of the %s node IPs %v", clusterName, kubeconfigApiEndpoint, step.wantAPIEndpointNodePool, ips)
 				}
 			} else if !strings.HasSuffix(kubeconfigApiEndpoint, step.wantAPIEndpointSuffix) {
 				t.Errorf("cluster %s: got API endpoint %s, want a load balancer hostname ending in %s", clusterName, kubeconfigApiEndpoint, step.wantAPIEndpointSuffix)
