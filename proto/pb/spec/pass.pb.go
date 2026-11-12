@@ -144,7 +144,7 @@ const (
 	StageAnsibler_UPDATE_PROXY_ENVS_ON_NODES    StageAnsibler_SubPassKind = 7
 	StageAnsibler_CLEAR_PROXY_ENVS_ON_NODES     StageAnsibler_SubPassKind = 8
 	StageAnsibler_CREATE_CLUSTER                StageAnsibler_SubPassKind = 9
-	StageAnsibler_DESTROY_CLUSTER               StageAnsibler_SubPassKind = 10
+	StageAnsibler_RESET_STATIC_NODES            StageAnsibler_SubPassKind = 10
 )
 
 // Enum value maps for StageAnsibler_SubPassKind.
@@ -160,7 +160,7 @@ var (
 		7:  "UPDATE_PROXY_ENVS_ON_NODES",
 		8:  "CLEAR_PROXY_ENVS_ON_NODES",
 		9:  "CREATE_CLUSTER",
-		10: "DESTROY_CLUSTER",
+		10: "RESET_STATIC_NODES",
 	}
 	StageAnsibler_SubPassKind_value = map[string]int32{
 		"INSTALL_NODE_REQUIREMENTS":     0,
@@ -173,7 +173,7 @@ var (
 		"UPDATE_PROXY_ENVS_ON_NODES":    7,
 		"CLEAR_PROXY_ENVS_ON_NODES":     8,
 		"CREATE_CLUSTER":                9,
-		"DESTROY_CLUSTER":               10,
+		"RESET_STATIC_NODES":            10,
 	}
 )
 
@@ -934,13 +934,13 @@ const file_spec_pass_proto_rawDesc = "" +
 	"\x14BUILD_INFRASTRUCTURE\x10\x00\x12\x19\n" +
 	"\x15UPDATE_INFRASTRUCTURE\x10\x01\x12\x1a\n" +
 	"\x16DESTROY_INFRASTRUCTURE\x10\x02\x12\x1a\n" +
-	"\x16API_PORT_ON_KUBERNETES\x10\x03\"\xb4\x04\n" +
+	"\x16API_PORT_ON_KUBERNETES\x10\x03\"\xb7\x04\n" +
 	"\rStageAnsibler\x128\n" +
 	"\vdescription\x18\x01 \x01(\v2\x16.spec.StageDescriptionR\vdescription\x129\n" +
 	"\tsubPasses\x18\x02 \x03(\v2\x1b.spec.StageAnsibler.SubPassR\tsubPasses\x1ax\n" +
 	"\aSubPass\x123\n" +
 	"\x04kind\x18\x01 \x01(\x0e2\x1f.spec.StageAnsibler.SubPassKindR\x04kind\x128\n" +
-	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"\xb3\x02\n" +
+	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"\xb6\x02\n" +
 	"\vSubPassKind\x12\x1d\n" +
 	"\x19INSTALL_NODE_REQUIREMENTS\x10\x00\x12\x0f\n" +
 	"\vINSTALL_VPN\x10\x01\x12!\n" +
@@ -951,8 +951,8 @@ const file_spec_pass_proto_rawDesc = "" +
 	"\x11COMMIT_PROXY_ENVS\x10\x06\x12\x1e\n" +
 	"\x1aUPDATE_PROXY_ENVS_ON_NODES\x10\a\x12\x1d\n" +
 	"\x19CLEAR_PROXY_ENVS_ON_NODES\x10\b\x12\x12\n" +
-	"\x0eCREATE_CLUSTER\x10\t\x12\x13\n" +
-	"\x0fDESTROY_CLUSTER\x10\n" +
+	"\x0eCREATE_CLUSTER\x10\t\x12\x16\n" +
+	"\x12RESET_STATIC_NODES\x10\n" +
 	"\"\xbf\x02\n" +
 	"\x0fStageKubeEleven\x128\n" +
 	"\vdescription\x18\x01 \x01(\v2\x16.spec.StageDescriptionR\vdescription\x12;\n" +

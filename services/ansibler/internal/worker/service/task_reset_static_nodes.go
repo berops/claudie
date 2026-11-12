@@ -17,26 +17,26 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-const destroyClusterPlaybook = "../../ansible-playbooks/destroy-cluster.yml"
+const resetStaticNodesPlaybook = "../../ansible-playbooks/reset-static-nodes.yml"
 
-// DestroyCluster resets the Kubernetes cluster from the delete task on its static
-// nodes and removes the Kubernetes packages from them.
+// ResetStaticNodes resets the static nodes of the Kubernetes cluster from the delete task
+// and removes the Kubernetes packages from them.
 //
 // The dynamic nodes are skipped, they are destroyed together with the infrastructure
 // of the cluster right after.
-func DestroyCluster(
+func ResetStaticNodes(
 	logger zerolog.Logger,
 	projectName string,
 	processLimit *semaphore.Weighted,
 	tracker Tracker,
 ) {
-	logger.Info().Msg("Destroying Kubernetes cluster")
+	logger.Info().Msg("Resetting static nodes of the Kubernetes cluster")
 
 	del, ok := tracker.Task.Do.(*spec.Task_Delete)
 	if !ok {
 		logger.
 			Warn().
-			Msgf("Received task with action %T while wanting to destroy kubernetes cluster, assuming the task was misscheduled, ignoring", tracker.Task.GetDo())
+			Msgf("Received task with action %T while wanting to reset static nodes of the kubernetes cluster, assuming the task was misscheduled, ignoring", tracker.Task.GetDo())
 		return
 	}
 
@@ -44,12 +44,12 @@ func DestroyCluster(
 
 	static := nodepools.Static(k8s.ClusterInfo.NodePools)
 	if len(static) == 0 {
-		logger.Info().Msg("No static nodes in the cluster, nothing to destroy")
+		logger.Info().Msg("No static nodes in the cluster, nothing to reset")
 		return
 	}
 
-	if err := destroyCluster(k8s.ClusterInfo.Id(), static, processLimit); err != nil {
-		logger.Err(err).Msg("Failed to destroy the Kubernetes cluster")
+	if err := resetStaticNodes(k8s.ClusterInfo.Id(), static, processLimit); err != nil {
+		logger.Err(err).Msg("Failed to reset the static nodes of the Kubernetes cluster")
 		tracker.Diagnostics.Push(err)
 		return
 	}
@@ -60,11 +60,13 @@ func DestroyCluster(
 	update.Kubernetes(k8s)
 	update.Commit()
 
-	logger.Info().Msg("Finished destroying Kubernetes cluster")
+	logger.Info().Msg("Finished resetting static nodes of the Kubernetes cluster")
 }
 
-// destroyCluster runs the destroy-cluster playbook against the passed in static nodepools.
-func destroyCluster(clusterID string, static []*spec.NodePool, processLimit *semaphore.Weighted) error {
+// resetStaticNodes runs the reset-static-nodes playbook against the passed in static nodepools. The
+// playbook does not touch the etcd membership, so the nodes must be either all nodes of a destroyed
+// cluster or nodes that kuber already deleted from the cluster.
+func resetStaticNodes(clusterID string, static []*spec.NodePool, processLimit *semaphore.Weighted) error {
 	clusterDirectory := filepath.Join(
 		BaseDirectory,
 		OutputDirectory,
@@ -98,13 +100,13 @@ func destroyCluster(clusterID string, static []*spec.NodePool, processLimit *sem
 	}
 
 	ansible := utils.Ansible{
-		Playbook:          destroyClusterPlaybook,
+		Playbook:          resetStaticNodesPlaybook,
 		Inventory:         utils.InventoryFileName,
 		Directory:         clusterDirectory,
 		SpawnProcessLimit: processLimit,
 	}
 
-	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("Destroy cluster - %s", clusterID)); err != nil {
+	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("Reset static nodes - %s", clusterID)); err != nil {
 		return fmt.Errorf("error while running ansible for %s : %w", clusterDirectory, err)
 	}
 

@@ -54,7 +54,7 @@ message StageAnsibler {
     UPDATE_PROXY_ENVS_ON_NODES = 7;
     CLEAR_PROXY_ENVS_ON_NODES = 8;
     CREATE_CLUSTER = 9;
-    DESTROY_CLUSTER = 10;
+    RESET_STATIC_NODES = 10;
   }
   message SubPass {
     SubPassKind kind = 1;
