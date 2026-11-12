@@ -159,7 +159,7 @@ type kubeadmClusterConfiguration struct {
 func kubeadmClusterConfig(t *testing.T, client kubernetes.Interface) kubeadmClusterConfiguration {
 	t.Helper()
 
-	configMap, err := retryK8sCall(func() (*corev1.ConfigMap, error) {
+	configMap, err := retryValue(func() (*corev1.ConfigMap, error) {
 		return client.CoreV1().ConfigMaps(metav1.NamespaceSystem).Get(t.Context(), "kubeadm-config", metav1.GetOptions{})
 	})
 	if err != nil {

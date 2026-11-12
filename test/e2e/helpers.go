@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"maps"
 	"net"
@@ -40,32 +41,50 @@ const (
 	// fieldManager owns the fields the e2e tests set with server-side apply.
 	fieldManager = "claudie-e2e"
 	pollInterval = 15 * time.Second
+	// sshConnectTimeout bounds both the TCP connect and the SSH handshake.
+	sshConnectTimeout = 30 * time.Second
 )
 
 var (
 	inputManifests = v1beta1.GroupVersion.WithResource("inputmanifests")
 	secrets        = corev1.SchemeGroupVersion.WithResource("secrets")
 
-	// k8sCallBackoff makes the first attempt and three retries.
-	k8sCallBackoff = wait.Backoff{Steps: 4, Duration: 5 * time.Second, Factor: 2}
+	// retryBackoff makes the first attempt and three retries.
+	retryBackoff = wait.Backoff{Steps: 4, Duration: 5 * time.Second, Factor: 2}
 )
 
-// retryK8sCall runs call and retries it on any error, as calls to the API sometimes fail.
-func retryK8sCall[T any](call func() (T, error)) (T, error) {
-	var result T
-	err := retry.OnError(k8sCallBackoff, func(error) bool { return true }, func() (err error) {
-		result, err = call()
-		return err
-	})
-	return result, err
+// retryCall runs call and retries it on a retriable error, as calls to a cluster sometimes fail.
+func retryCall(call func() error) error {
+	return retry.OnError(retryBackoff, isRetriable, call)
 }
 
-// replaceManifestValue copies the manifest in path to a temp file with the value at pointer
-// replaced and returns the copy's path. pointer is a JSON Pointer (RFC 6901), e.g.
-// "/spec/nodePools/static/0/nodes/0/endpoint". The field must already exist, so a wrong
-// pointer fails the test instead of adding a field nobody reads.
-//
-// The copy is written as JSON, which is valid YAML, so it applies like the original.
+// retryValue is retryCall for calls that also return a value.
+func retryValue[T any](call func() (T, error)) (T, error) {
+	var value T
+	err := retryCall(func() (err error) {
+		value, err = call()
+		return err
+	})
+	return value, err
+}
+
+// isRetriable reports whether a failed call can succeed when repeated. A cancelled call and
+// a request the API server rejected as malformed or not allowed cannot.
+func isRetriable(err error) bool {
+	return !errors.Is(err, context.Canceled) &&
+		!apierrors.IsInvalid(err) && !apierrors.IsBadRequest(err) && !apierrors.IsForbidden(err)
+}
+
+// ignoreNotFound keeps retryCall from retrying a call whose object is already gone.
+func ignoreNotFound(err error) error {
+	if apierrors.IsNotFound(err) {
+		return nil
+	}
+	return err
+}
+
+// replaceManifestValue copies the manifest in path to a temp file with the value at the JSON
+// Pointer (RFC 6901) replaced and returns the copy's path. The field must already exist.
 func replaceManifestValue(t *testing.T, path, pointer string, value any) string {
 	t.Helper()
 
@@ -81,6 +100,7 @@ func replaceManifestValue(t *testing.T, path, pointer string, value any) string 
 		t.Fatalf("manifest %s: %v", path, err)
 	}
 
+	// JSON is valid YAML, so the copy applies like the original.
 	out, err := json.MarshalIndent(doc, "", "  ")
 	if err != nil {
 		t.Fatalf("encoding manifest %s: %v", path, err)
@@ -131,9 +151,7 @@ func replaceAt(doc any, pointer string, value any) error {
 }
 
 // claudieNamespace returns the namespace Claudie is deployed in, from CLAUDIE_NAMESPACE.
-//
-// A missing value fails the test instead of skipping it, a skipped test passes in CI and
-// would hide a broken setup. The e2e build tag already keeps these tests out of plain runs.
+// A missing value fails the test, a skipped test would pass in CI and hide a broken setup.
 func claudieNamespace(t *testing.T) string {
 	t.Helper()
 
@@ -156,10 +174,8 @@ func e2eClusterKubeconfig(t *testing.T) string {
 	return path
 }
 
-// newClient returns a client for the cluster in the kubeconfig file, built by newForConfig:
-//
-//	e2eClusterClient := newClient(t, e2eClusterKubeconfig(t), dynamic.NewForConfig)
-//	childClusterClient := newClient(t, childKubeconfig(t, e2eClusterClient, namespace, cluster), kubernetes.NewForConfig)
+// newClient returns a client for the cluster in the kubeconfig file, built by newForConfig,
+// e.g. dynamic.NewForConfig or kubernetes.NewForConfig.
 func newClient[T any](t *testing.T, kubeconfig string, newForConfig func(*rest.Config) (T, error)) T {
 	t.Helper()
 
@@ -174,9 +190,8 @@ func newClient[T any](t *testing.T, kubeconfig string, newForConfig func(*rest.C
 	return client
 }
 
-// applyInputManifest server-side applies the InputManifest in path to namespace and returns
-// its name. Applying an updated manifest with the same name updates the InputManifest.
-// The InputManifest and its infrastructure are deleted when the test ends.
+// applyInputManifest server-side applies the InputManifest in path, creating or updating it, and
+// returns its name. The InputManifest and its infrastructure are deleted when the test ends.
 func applyInputManifest(t *testing.T, client dynamic.Interface, path, namespace string) string {
 	t.Helper()
 
@@ -195,17 +210,18 @@ func applyInputManifest(t *testing.T, client dynamic.Interface, path, namespace 
 
 	t.Cleanup(func() { deleteInputManifest(t, client, obj.GetName(), namespace, time.Hour) })
 	// Force takes over fields set by an earlier kubectl apply or another manager.
-	_, err = client.Resource(inputManifests).Namespace(namespace).
-		Apply(t.Context(), obj.GetName(), &obj, metav1.ApplyOptions{FieldManager: fieldManager, Force: true})
+	_, err = retryValue(func() (*unstructured.Unstructured, error) {
+		return client.Resource(inputManifests).Namespace(namespace).
+			Apply(t.Context(), obj.GetName(), &obj, metav1.ApplyOptions{FieldManager: fieldManager, Force: true})
+	})
 	if err != nil {
 		t.Fatalf("applying inputmanifest %s: %v", obj.GetName(), err)
 	}
 	return obj.GetName()
 }
 
-// waitForInputManifest waits until Claudie has built the InputManifest and fails the test
-// when it ends in an error or is not built within timeout. The status can flip during
-// reconciliation, so a state only counts once it held for stablePolls polls in a row.
+// waitForInputManifest waits until Claudie has built the InputManifest and fails the test on an
+// error or timeout. The status can flip, so a state counts once it held for stablePolls polls.
 func waitForInputManifest(t *testing.T, client dynamic.Interface, name, namespace string, timeout time.Duration) {
 	t.Helper()
 
@@ -254,26 +270,44 @@ func inputManifestOutcome(t *testing.T, im v1beta1.InputManifest) (done, failed 
 	}
 
 	state := im.Status.State
-	failed = failed || state == v1beta1.STATUS_ERROR
+	// Claudie appends a message to the watch state when it cannot start, e.g. on a missing secret.
+	blocked := state != v1beta1.STATUS_WATCH && strings.HasPrefix(state, v1beta1.STATUS_WATCH)
+	failed = failed || blocked || state == v1beta1.STATUS_ERROR
 	done = !failed && (state == v1beta1.STATUS_DONE ||
-		strings.HasPrefix(state, v1beta1.STATUS_WATCH) && clustersDone)
+		state == v1beta1.STATUS_WATCH && clustersDone)
 	return done, failed
 }
 
 // deleteInputManifest deletes the InputManifest and waits until Claudie has destroyed its
 // infrastructure and removed the finalizer. A missing InputManifest is not an error.
-// It is meant for cleanups too, so it does not use t.Context, which is already cancelled
-// when cleanups run.
 func deleteInputManifest(t *testing.T, client dynamic.Interface, name, namespace string, timeout time.Duration) {
 	t.Helper()
 
+	// Not t.Context, it is already cancelled when a cleanup calls this.
 	ctx := context.Background()
 	res := client.Resource(inputManifests).Namespace(namespace)
-	if err := res.Delete(ctx, name, metav1.DeleteOptions{}); err != nil && !apierrors.IsNotFound(err) {
+
+	existing, err := retryValue(func() (*unstructured.Unstructured, error) {
+		im, err := res.Get(ctx, name, metav1.GetOptions{})
+		return im, ignoreNotFound(err)
+	})
+	if err != nil {
+		t.Fatalf("getting inputmanifest %s: %v", name, err)
+	}
+	if existing == nil {
+		return
+	}
+	// An earlier call already waited for this deletion, e.g. the cleanup of another apply.
+	if existing.GetDeletionTimestamp() != nil {
+		t.Fatalf("inputmanifest %s is still being deleted", name)
+	}
+
+	err = retryCall(func() error { return ignoreNotFound(res.Delete(ctx, name, metav1.DeleteOptions{})) })
+	if err != nil {
 		t.Fatalf("deleting inputmanifest %s: %v", name, err)
 	}
 
-	err := wait.PollUntilContextTimeout(ctx, pollInterval, timeout, true, func(ctx context.Context) (bool, error) {
+	err = wait.PollUntilContextTimeout(ctx, pollInterval, timeout, true, func(ctx context.Context) (bool, error) {
 		_, err := res.Get(ctx, name, metav1.GetOptions{})
 		if apierrors.IsNotFound(err) {
 			return true, nil
@@ -297,7 +331,9 @@ func outputSecret(t *testing.T, client dynamic.Interface, namespace, cluster, ou
 		"claudie.io/output":  output,
 		"claudie.io/cluster": cluster,
 	}).String()
-	list, err := client.Resource(secrets).Namespace(namespace).List(t.Context(), metav1.ListOptions{LabelSelector: selector})
+	list, err := retryValue(func() (*unstructured.UnstructuredList, error) {
+		return client.Resource(secrets).Namespace(namespace).List(t.Context(), metav1.ListOptions{LabelSelector: selector})
+	})
 	if err != nil {
 		t.Fatalf("listing %s secrets of cluster %s: %v", output, cluster, err)
 	}
@@ -374,7 +410,9 @@ func dynamicNodes(t *testing.T, client dynamic.Interface, namespace, cluster str
 func secretValue(t *testing.T, client dynamic.Interface, namespace, name, key string) []byte {
 	t.Helper()
 
-	obj, err := client.Resource(secrets).Namespace(namespace).Get(t.Context(), name, metav1.GetOptions{})
+	obj, err := retryValue(func() (*unstructured.Unstructured, error) {
+		return client.Resource(secrets).Namespace(namespace).Get(t.Context(), name, metav1.GetOptions{})
+	})
 	if err != nil {
 		t.Fatalf("getting secret %s/%s: %v", namespace, name, err)
 	}
@@ -395,7 +433,7 @@ func secretValue(t *testing.T, client dynamic.Interface, namespace, name, key st
 func runSSH(t *testing.T, host string, key []byte, command string) string {
 	t.Helper()
 
-	client, err := dialSSH(host, key)
+	client, err := retryValue(func() (*ssh.Client, error) { return dialSSH(host, key) })
 	if err != nil {
 		t.Fatalf("connecting to %s: %v", host, err)
 	}
@@ -420,20 +458,40 @@ func dialSSH(host string, key []byte) (*ssh.Client, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parsing ssh key: %w", err)
 	}
-	return ssh.Dial("tcp", net.JoinHostPort(host, "22"), &ssh.ClientConfig{
+	config := &ssh.ClientConfig{
 		User: "root",
 		Auth: []ssh.AuthMethod{ssh.PublicKeys(signer)},
 		// The tests connect to nodes they created, there is no known host key to check.
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-		Timeout:         30 * time.Second,
-	})
+	}
+
+	addr := net.JoinHostPort(host, "22")
+	conn, err := (&net.Dialer{Timeout: sshConnectTimeout}).DialContext(context.Background(), "tcp", addr)
+	if err != nil {
+		return nil, err
+	}
+	// ssh.Dial bounds only the TCP connect, the deadline bounds the handshake too.
+	if err := conn.SetDeadline(time.Now().Add(sshConnectTimeout)); err != nil {
+		conn.Close()
+		return nil, err
+	}
+	sshConn, channels, requests, err := ssh.NewClientConn(conn, addr, config)
+	if err != nil {
+		conn.Close()
+		return nil, err
+	}
+	if err := conn.SetDeadline(time.Time{}); err != nil {
+		sshConn.Close()
+		return nil, err
+	}
+	return ssh.NewClient(sshConn, channels, requests), nil
 }
 
 // readyNodeCount returns how many nodes of the cluster behind client are Ready.
 func readyNodeCount(t *testing.T, client kubernetes.Interface) int {
 	t.Helper()
 
-	nodes, err := retryK8sCall(func() (*corev1.NodeList, error) {
+	nodes, err := retryValue(func() (*corev1.NodeList, error) {
 		return client.CoreV1().Nodes().List(t.Context(), metav1.ListOptions{})
 	})
 	if err != nil {
@@ -456,9 +514,6 @@ func isNodeReady(n corev1.Node) bool {
 
 // provisionStaticNodes creates the static nodes with the tofu script in STATIC_NODES_TF and
 // returns their IPs. The nodes are destroyed when the test ends.
-//
-// Cleanups run in reverse order, so the destroy runs after the cleanups the test registers
-// later, e.g. deleting the InputManifest that uses the nodes.
 func provisionStaticNodes(t *testing.T) []string {
 	t.Helper()
 
@@ -475,9 +530,10 @@ func provisionStaticNodes(t *testing.T) []string {
 		t.Fatal(err)
 	}
 
-	// Registered before apply so a partially applied script is destroyed too.
-	// context.Background because t.Context is already cancelled when cleanups run.
+	// Registered before apply, so a partially applied script is destroyed too. It runs after the
+	// cleanups registered later, e.g. deleting the InputManifest that uses the nodes.
 	t.Cleanup(func() {
+		// Not t.Context, it is already cancelled when cleanups run.
 		if err := runTofu(context.Background(), dir, "destroy", "-auto-approve"); err != nil {
 			t.Errorf("destroying static nodes: %v", err)
 		}
