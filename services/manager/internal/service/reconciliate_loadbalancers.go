@@ -882,7 +882,7 @@ func ScheduleReplaceDns(
 							},
 						},
 						{
-							Kind: spec.StageKuber_DEPLOY_CILIUM,
+							Kind: spec.StageKuber_RECONCILE_CILIUM,
 							Description: &spec.StageDescription{
 								About:      "Pointing Cilium at the new endpoint",
 								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
@@ -1071,7 +1071,7 @@ func ScheduleMoveApiEndpoint(
 								},
 							},
 							{
-								Kind: spec.StageKuber_DEPLOY_CILIUM,
+								Kind: spec.StageKuber_RECONCILE_CILIUM,
 								Description: &spec.StageDescription{
 									About:      "Pointing Cilium at the new endpoint",
 									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
