@@ -113,9 +113,13 @@ func TestAPIEndpointMoves(t *testing.T) {
 				t.Errorf("cluster %s: got API endpoint %s, want a load balancer hostname ending in %s", clusterName, kubeconfigApiEndpoint, step.wantAPIEndpointSuffix)
 			}
 
-			kubeadmConfigApiEndpoint := kubeadmClusterConfig(t, childClusterClient).ControlPlaneEndpoint
-			if got, want := kubeadmConfigApiEndpoint, net.JoinHostPort(kubeconfigApiEndpoint, apiServerPort); got != want {
+			kubeadmConfig := kubeadmClusterConfig(t, childClusterClient)
+			if got, want := kubeadmConfig.ControlPlaneEndpoint, net.JoinHostPort(kubeconfigApiEndpoint, apiServerPort); got != want {
 				t.Errorf("cluster %s: got kubeadm-config controlPlaneEndpoint %s, want %s", clusterName, got, want)
+			}
+			// kubeadm join issues the API server certificate of a control node for these.
+			if got, want := kubeadmConfig.APIServer.CertSANs, nodePoolIPs(t, e2eClusterClient, namespace, clusterName, firstControlNodePool, secondControlNodePool); !slices.Equal(got, want) {
+				t.Errorf("cluster %s: got kubeadm-config certSANs %v, want the control node IPs %v", clusterName, got, want)
 			}
 			// Cilium reaches the API server through the API endpoint, so this also covers the load balancer.
 			if err := runCiliumConnectivityTestQuick(t, childClusterKubeconfig); err != nil {
@@ -130,14 +134,14 @@ func apiServerHost(client kubernetes.Interface) string {
 	return client.CoreV1().RESTClient().Get().URL().Hostname()
 }
 
-// nodePoolIPs returns the sorted public IPs of the cluster's dynamic nodes in nodePool, named
+// nodePoolIPs returns the sorted public IPs of the cluster's dynamic nodes in nodePools, named
 // as in the InputManifest.
-func nodePoolIPs(t *testing.T, client dynamic.Interface, namespace, cluster, nodePool string) []string {
+func nodePoolIPs(t *testing.T, client dynamic.Interface, namespace, cluster string, nodePools ...string) []string {
 	t.Helper()
 
 	var ips []string
 	for _, n := range dynamicNodes(t, client, namespace, cluster) {
-		if strings.HasPrefix(n.NodePool, nodePool+"-") {
+		if slices.ContainsFunc(nodePools, func(nodePool string) bool { return strings.HasPrefix(n.NodePool, nodePool+"-") }) {
 			ips = append(ips, n.IP)
 		}
 	}
