@@ -1,4 +1,4 @@
-# Cilium CNI for clusters bootstrapped with kubeadm by the ansibler, applied by kuber (task_deploy_cilium.go).
+# Cilium CNI for clusters bootstrapped with kubeadm by the ansibler, applied by kuber (task_reconcile_cilium.go).
 # Generated, do not edit by hand. Regenerate with:
 #
 #   helm template cilium cilium/cilium --version 1.20.4 --namespace kube-system \

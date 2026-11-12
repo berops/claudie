@@ -33,11 +33,11 @@ const (
 	ciliumAPIEndpointPlaceholder = "claudie-api-endpoint-replace-me"
 )
 
-// DeployCilium deploys, or updates, the Cilium CNI on the cluster. Applying the manifest
+// ReconcileCilium deploys, or updates, the Cilium CNI on the cluster. Applying the manifest
 // again after the API endpoint changed updates the API server address used by Cilium,
 // which rolls out the Cilium pods with the new address.
-func DeployCilium(logger zerolog.Logger, tracker Tracker) {
-	logger.Info().Msg("Deploying CNI Cilium")
+func ReconcileCilium(logger zerolog.Logger, tracker Tracker) {
+	logger.Info().Msg("Reconciling CNI Cilium")
 
 	var (
 		k8s *spec.K8Scluster
@@ -54,24 +54,24 @@ func DeployCilium(logger zerolog.Logger, tracker Tracker) {
 	default:
 		logger.
 			Warn().
-			Msgf("Received task %T while wanting to deploy Cilium, assuming it was mischeduled, ignoring", tracker.Task.Do)
+			Msgf("Received task %T while wanting to reconcile Cilium, assuming it was mischeduled, ignoring", tracker.Task.Do)
 		return
 	}
 
-	if err := deployCilium(k8s, lbs); err != nil {
-		logger.Err(err).Msg("Failed to deploy Cilium")
+	if err := applyCiliumManifest(k8s, lbs); err != nil {
+		logger.Err(err).Msg("Failed to reconcile Cilium")
 		tracker.Diagnostics.Push(err)
 		return
 	}
 
-	logger.Info().Msg("Cilium successfully deployed")
+	logger.Info().Msg("Cilium successfully reconciled")
 }
 
-func deployCilium(k8s *spec.K8Scluster, lbs []*spec.LBcluster) error {
+func applyCiliumManifest(k8s *spec.K8Scluster, lbs []*spec.LBcluster) error {
 	clusterID := k8s.ClusterInfo.Id()
 
 	if k8s.Kubeconfig == "" {
-		return fmt.Errorf("cluster %s has no kubeconfig, can't deploy Cilium", clusterID)
+		return fmt.Errorf("cluster %s has no kubeconfig, can't reconcile Cilium", clusterID)
 	}
 
 	endpoint, err := clusters.ControlPlaneEndpointHost(k8s, lbs)
@@ -94,7 +94,7 @@ func deployCilium(k8s *spec.K8Scluster, lbs []*spec.LBcluster) error {
 	// thus it is written to a file and applied from there.
 	clusterDir := filepath.Join(OutputDir, fmt.Sprintf("%s-%s", clusterID, hash.Create(hash.Length)))
 	if err := fileutils.CreateDirectory(clusterDir); err != nil {
-		return fmt.Errorf("error while creating directory %s when deploying Cilium: %w", clusterDir, err)
+		return fmt.Errorf("error while creating directory %s when reconciling Cilium: %w", clusterDir, err)
 	}
 
 	defer func() {

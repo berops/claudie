@@ -386,7 +386,7 @@ func CreatePipeline(clusters *spec.Clusters, isCreate bool) []*spec.Stage {
 					// NotReady and no pods can be scheduled until Cilium is deployed,
 					// thus this has to be the first sub-pass and is fatal.
 					{
-						Kind: spec.StageKuber_DEPLOY_CILIUM,
+						Kind: spec.StageKuber_RECONCILE_CILIUM,
 						Description: &spec.StageDescription{
 							About:      "Deploying Cilium CNI",
 							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
