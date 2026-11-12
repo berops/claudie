@@ -56,9 +56,9 @@ func ScheduleDeleteCluster(current *spec.Clusters) *spec.TaskEvent {
 					},
 					SubPasses: []*spec.StageAnsibler_SubPass{
 						{
-							Kind: spec.StageAnsibler_DESTROY_CLUSTER,
+							Kind: spec.StageAnsibler_RESET_STATIC_NODES,
 							Description: &spec.StageDescription{
-								About:      "Tearing down kubernetes cluster and removing kubernetes packages",
+								About:      "Resetting static nodes and removing kubernetes packages",
 								ErrorLevel: spec.ErrorLevel_ERROR_WARN,
 							},
 						},
