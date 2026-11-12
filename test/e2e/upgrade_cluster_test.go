@@ -61,7 +61,7 @@ func TestK8sUpgrade(t *testing.T) {
 func nodesNotOnKubeletVersion(t *testing.T, client kubernetes.Interface, version string) map[string]string {
 	t.Helper()
 
-	nodes, err := retryK8sCall(func() (*corev1.NodeList, error) {
+	nodes, err := retryValue(func() (*corev1.NodeList, error) {
 		return client.CoreV1().Nodes().List(t.Context(), metav1.ListOptions{})
 	})
 	if err != nil {
