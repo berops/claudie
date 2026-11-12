@@ -1,0 +1,66 @@
+---
+# Reverts what roles/node-prereq installed on the node, so that the node can later join another
+# cluster: the Kubernetes and containerd packages with their apt repositories and configuration,
+# and the kernel settings for Kubernetes. Also removes the same leftovers of clusters built by
+# kubeone. Runs after roles/kubeadm_reset, which needs the kubeadm binary and stops the kubelet.
+#
+# Kept on the node: the Longhorn packages, the multipath blacklist and the node limits (shared with
+# the loadbalancer nodes), and the swap entries commented out in /etc/fstab, which can't be told
+# apart from the ones commented out by the user.
+
+# The packages are held (roles/node-prereq, kubeone also holds kubernetes-cni and cri-tools).
+# Purging also removes the configuration the packages own.
+- name: Remove the Kubernetes and containerd packages
+  ansible.builtin.apt:
+    name:
+      - kubelet
+      - kubeadm
+      - kubectl
+      - kubernetes-cni
+      - cri-tools
+      - containerd.io
+    state: absent
+    purge: true
+    allow_change_held_packages: true
+    lock_timeout: 600
+
+# /opt/cni holds the CNI plugins, including the cilium-cni binary installed by Cilium, which the
+# kubernetes-cni package does not own. The containerd configuration is rendered by
+# roles/node-prereq, its data directory holds the images and the container state.
+- name: Remove the files left by the packages
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /opt/cni
+    - /etc/containerd
+    - /var/lib/containerd
+
+# roles/node-prereq writes deb822 .sources files with .asc keys, kubeone (and the node setup
+# before kubeadm) writes .list files.
+- name: Remove the Kubernetes and Docker apt repositories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/apt/sources.list.d/kubernetes.sources
+    - /etc/apt/sources.list.d/docker.sources
+    - /etc/apt/keyrings/kubernetes.asc
+    - /etc/apt/keyrings/docker.asc
+    - /etc/apt/sources.list.d/kubernetes.list
+    - /etc/apt/sources.list.d/docker.list
+    - /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+    - /etc/apt/keyrings/docker.gpg
+
+# The running kernel keeps the modules and the sysctl values until the next reboot.
+- name: Remove the kernel settings for Kubernetes
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/modules-load.d/k8s.conf
+    - /etc/sysctl.d/99-kubernetes.conf
+
+- name: Reload systemd after the kubelet and containerd units were removed
+  ansible.builtin.systemd:
+    daemon_reload: true
