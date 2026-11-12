@@ -1,9 +1,10 @@
 ---
-# Removes Kubernetes from static nodes: all nodes of a destroyed cluster (RESET_STATIC_NODES stage) or
-# the nodes deleted from a running cluster (REMOVE_CLAUDIE_UTILITIES stage). The ansibler passes
-# only the static nodes in the inventory generated from templates/k8s-inventory.goini, the dynamic
-# nodes are destroyed with their infrastructure. WireGuard and the rest of the Claudie utilities
-# are removed afterwards by wireguard-uninstall.yml.
+# Removes Kubernetes from static nodes that leave the cluster: all static nodes of a destroyed
+# cluster or the static nodes deleted from a running cluster. Run by the ansibler on the
+# RESET_STATIC_NODES stage, see task_reset_static_nodes.go. The inventory generated from
+# templates/k8s-inventory.goini holds only those static nodes, the dynamic nodes are destroyed
+# with their infrastructure. WireGuard and the rest of the Claudie utilities are removed
+# afterwards by the REMOVE_CLAUDIE_UTILITIES stage (wireguard-uninstall.yml).
 - name: Reset the nodes and remove the node requirements
   hosts: all
   become: true
