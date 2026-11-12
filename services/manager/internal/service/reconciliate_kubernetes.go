@@ -725,13 +725,6 @@ func ScheduleAdditionsInNodePools(
 		if opts.HasApiServer && toAdd.IsControl {
 			kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, []*spec.StageKuber_SubPass{
 				{
-					Kind: spec.StageKuber_PATCH_KUBEADM,
-					Description: &spec.StageDescription{
-						About:      "Updating Kubeadm certSANs",
-						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-					},
-				},
-				{
 					Kind: spec.StageKuber_CILIUM_RESTART,
 					Description: &spec.StageDescription{
 						About: "Rollout restart of cilium pods",
@@ -876,13 +869,6 @@ func ScheduleAdditionsInNodePools(
 		if matchedNodePool := nodepools.FindByName(np, current.K8S.ClusterInfo.NodePools); matchedNodePool != nil {
 			if opts.HasApiServer && matchedNodePool.IsControl {
 				kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, []*spec.StageKuber_SubPass{
-					{
-						Kind: spec.StageKuber_PATCH_KUBEADM,
-						Description: &spec.StageDescription{
-							About:      "Updating Kubeadm certSANs",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
 					{
 						Kind: spec.StageKuber_CILIUM_RESTART,
 						Description: &spec.StageDescription{
@@ -1193,13 +1179,6 @@ func ScheduleDeletionsInNodePools(
 			if opts.HasApiServer && currentStateNodePool.IsControl {
 				kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, []*spec.StageKuber_SubPass{
 					{
-						Kind: spec.StageKuber_PATCH_KUBEADM,
-						Description: &spec.StageDescription{
-							About:      "Updating Kubeadm certSANs",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-					{
 						Kind: spec.StageKuber_CILIUM_RESTART,
 						Description: &spec.StageDescription{
 							About: "Rollout restart of cilium pods",
@@ -1330,13 +1309,6 @@ func ScheduleDeletionsInNodePools(
 		// is used during the join operation of new nodes.
 		if opts.HasApiServer && currentStateNodePool.IsControl {
 			kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, []*spec.StageKuber_SubPass{
-				{
-					Kind: spec.StageKuber_PATCH_KUBEADM,
-					Description: &spec.StageDescription{
-						About:      "Updating Kubeadm certSANs",
-						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-					},
-				},
 				{
 					Kind: spec.StageKuber_CILIUM_RESTART,
 					Description: &spec.StageDescription{
