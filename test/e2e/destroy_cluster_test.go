@@ -14,9 +14,9 @@ import (
 // TestDestroyCluster builds a cluster with dynamic and static nodes, deletes its InputManifest
 // and checks that Claudie destroyed the dynamic nodes and cleaned up the static node.
 func TestDestroyCluster(t *testing.T) {
-	// Values must match manifests/destroy-cluster.yaml.
+	// Values must match manifests/destroy-cluster/cluster.yaml.
 	const (
-		clusterManifestFile           = "manifests/destroy-cluster.yaml"
+		clusterManifestFile           = "manifests/destroy-cluster/cluster.yaml"
 		clusterName                   = "destroy-cluster-test-cluster"
 		expectedNodeCount             = 3
 		expectedDynamicNodeCount      = 2

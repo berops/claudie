@@ -13,9 +13,9 @@ import (
 // TestConformance builds a cluster spanning all provider types and runs the full Cilium
 // connectivity test and the Kubernetes conformance suite on it.
 func TestConformance(t *testing.T) {
-	// Values must match manifests/conformance.yaml.
+	// Values must match manifests/conformance/cluster.yaml.
 	const (
-		clusterManifestFile = "manifests/conformance.yaml"
+		clusterManifestFile = "manifests/conformance/cluster.yaml"
 		clusterName         = "conformance-test-cluster"
 		expectedNodeCount   = 13
 	)
@@ -45,7 +45,7 @@ func TestConformance(t *testing.T) {
 func runKubernetesConformance(t *testing.T, kubeconfig string) error {
 	t.Helper()
 
-	// Taint keys of the control plane nodes in manifests/conformance.yaml. The suite treats
+	// Taint keys of the control plane nodes in manifests/conformance/cluster.yaml. The suite treats
 	// nodes with any other taint as unschedulable and refuses to start.
 	const nonBlockingTaints = "node-role.kubernetes.io/control-plane,test"
 
