@@ -1,13 +1,10 @@
 ---
-# Reverts what the kubeadm roles and roles/node-prereq produced on the node, so that the node can
-# later join another cluster: the cluster state, the Kubernetes and containerd packages with their
-# apt repositories and configuration, and the kernel settings for Kubernetes. Also removes the same
-# leftovers of clusters built by kubeone. Only for destroying the whole cluster, the etcd membership
-# is not cleaned up.
+# Reverts what the kubeadm_init and kubeadm_join roles produced on the node: the cluster state and
+# the kubeadm configs and markers of those roles. Also removes the same leftovers of clusters built
+# by kubeone. The etcd membership is not cleaned up: either the whole cluster is destroyed, or kuber
+# already removed the deleted node from etcd.
 #
-# Kept on the node: the Longhorn packages, the multipath blacklist and the node limits (shared with
-# the loadbalancer nodes), and the swap entries commented out in /etc/fstab, which can't be told
-# apart from the ones commented out by the user.
+# Needs the kubeadm binary, so it runs before roles/node-prereq-remove, which removes the packages.
 
 # The nodes of clusters built by kubeone have no /root/kubeadm yet.
 - name: Create directory for kubeadm configs
@@ -29,26 +26,9 @@
     cmd: kubeadm reset --config /root/kubeadm/reset.yaml
     removes: /usr/bin/kubeadm
 
-# The packages are held (roles/node-prereq, kubeone also holds kubernetes-cni and cri-tools).
-# Purging also removes the configuration the packages own.
-- name: Remove the Kubernetes and containerd packages
-  ansible.builtin.apt:
-    name:
-      - kubelet
-      - kubeadm
-      - kubectl
-      - kubernetes-cni
-      - cri-tools
-      - containerd.io
-    state: absent
-    purge: true
-    allow_change_held_packages: true
-    lock_timeout: 600
-
-# kubeadm reset leaves /etc/kubernetes itself, the etcd data and the emptied kubelet directory.
-# /root/kubeadm holds the configs and the init.done/join.done markers of the kubeadm roles, a
-# leftover marker would make a later join skip this node. /opt/cni holds the CNI plugins, including
-# the cilium-cni binary installed by Cilium, which the kubernetes-cni package does not own.
+# kubeadm reset leaves /etc/kubernetes itself, the etcd data, the emptied kubelet directory and
+# the CNI configuration in /etc/cni. /root/kubeadm holds the configs and the init.done/join.done
+# markers of the kubeadm roles, a leftover marker would make a later join skip this node.
 - name: Remove the cluster files
   ansible.builtin.file:
     path: "{{ item }}"
@@ -58,38 +38,4 @@
     - /var/lib/etcd
     - /var/lib/kubelet
     - /root/kubeadm
-    - /opt/cni
-    - /etc/containerd
-    - /var/lib/containerd
-    # Left by kubeone, its work directory lives in the home of the SSH user.
-    - "~{{ ansible_user }}/kubeone"
-    - /etc/kubeone
-
-# roles/node-prereq writes deb822 .sources files with .asc keys, kubeone (and the node setup
-# before kubeadm) writes .list files.
-- name: Remove the Kubernetes and Docker apt repositories
-  ansible.builtin.file:
-    path: "{{ item }}"
-    state: absent
-  loop:
-    - /etc/apt/sources.list.d/kubernetes.sources
-    - /etc/apt/sources.list.d/docker.sources
-    - /etc/apt/keyrings/kubernetes.asc
-    - /etc/apt/keyrings/docker.asc
-    - /etc/apt/sources.list.d/kubernetes.list
-    - /etc/apt/sources.list.d/docker.list
-    - /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-    - /etc/apt/keyrings/docker.gpg
-
-# The running kernel keeps the modules and the sysctl values until the next reboot.
-- name: Remove the kernel settings for Kubernetes
-  ansible.builtin.file:
-    path: "{{ item }}"
-    state: absent
-  loop:
-    - /etc/modules-load.d/k8s.conf
-    - /etc/sysctl.d/99-kubernetes.conf
-
-- name: Reload systemd after the kubelet and containerd units were removed
-  ansible.builtin.systemd:
-    daemon_reload: true
+    - /etc/cni
