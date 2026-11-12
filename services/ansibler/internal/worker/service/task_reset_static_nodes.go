@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/hash"
@@ -19,11 +20,11 @@ import (
 
 const resetStaticNodesPlaybook = "../../ansible-playbooks/reset-static-nodes.yml"
 
-// ResetStaticNodes resets the static nodes of the Kubernetes cluster from the delete task
-// and removes the Kubernetes packages from them.
+// ResetStaticNodes resets the static nodes that leave the Kubernetes cluster and removes the
+// Kubernetes packages from them: all static nodes of the cluster on a delete task, the deleted
+// static nodes on an update task.
 //
-// The dynamic nodes are skipped, they are destroyed together with the infrastructure
-// of the cluster right after.
+// The dynamic nodes are skipped, they are destroyed together with their infrastructure.
 func ResetStaticNodes(
 	logger zerolog.Logger,
 	projectName string,
@@ -32,19 +33,34 @@ func ResetStaticNodes(
 ) {
 	logger.Info().Msg("Resetting static nodes of the Kubernetes cluster")
 
-	del, ok := tracker.Task.Do.(*spec.Task_Delete)
-	if !ok {
+	var (
+		k8s    *spec.K8Scluster
+		static []*spec.NodePool
+	)
+
+	switch do := tracker.Task.Do.(type) {
+	case *spec.Task_Delete:
+		k8s = do.Delete.K8S
+		static = nodepools.Static(k8s.ClusterInfo.NodePools)
+	case *spec.Task_Update:
+		deleted := do.Update.GetDeletedK8SNodes()
+		if deleted == nil {
+			logger.
+				Warn().
+				Msgf("Received update task with delta %T while wanting to reset static nodes of the kubernetes cluster, assuming the task was misscheduled, ignoring", do.Update.GetDelta())
+			return
+		}
+		k8s = do.Update.State.K8S
+		static = deletedStaticNodes(k8s, deleted)
+	default:
 		logger.
 			Warn().
-			Msgf("Received task with action %T while wanting to reset static nodes of the kubernetes cluster, assuming the task was misscheduled, ignoring", tracker.Task.GetDo())
+			Msgf("Received task with action %T while wanting to reset static nodes of the kubernetes cluster, assuming the task was misscheduled, ignoring", do)
 		return
 	}
 
-	k8s := del.Delete.K8S
-
-	static := nodepools.Static(k8s.ClusterInfo.NodePools)
-	if len(static) == 0 {
-		logger.Info().Msg("No static nodes in the cluster, nothing to reset")
+	if !slices.ContainsFunc(static, func(np *spec.NodePool) bool { return len(np.Nodes) > 0 }) {
+		logger.Info().Msg("No reachable static nodes to reset")
 		return
 	}
 
@@ -54,13 +70,32 @@ func ResetStaticNodes(
 		return
 	}
 
-	// No changes to the loadbalancers, the cluster has no kubeconfig anymore.
-	k8s.Kubeconfig = ""
-	update := tracker.Result.Update()
-	update.Kubernetes(k8s)
-	update.Commit()
+	// The cluster of an update task keeps running, with the same kubeconfig.
+	if _, ok := tracker.Task.Do.(*spec.Task_Delete); ok {
+		// No changes to the loadbalancers, the cluster has no kubeconfig anymore.
+		k8s.Kubeconfig = ""
+		update := tracker.Result.Update()
+		update.Kubernetes(k8s)
+		update.Commit()
+	}
 
 	logger.Info().Msg("Finished resetting static nodes of the Kubernetes cluster")
+}
+
+// deletedStaticNodes returns the reachable static nodes deleted from the cluster, in a copy
+// of their nodepool. The nodes are no longer part of the nodepools of the cluster.
+func deletedStaticNodes(k8s *spec.K8Scluster, deleted *spec.Update_DeletedK8SNodes) []*spec.NodePool {
+	np := DefaultKubernetesToDeletedNodesOnly(k8s, deleted)
+	if np == nil {
+		return nil
+	}
+
+	static := nodepools.Static([]*spec.NodePool{np})
+	if deleted.Unreachable != nil {
+		static = DefaultNodePoolsToReachableInfrastructureOnly(static, deleted.Unreachable.Kubernetes)
+	}
+
+	return static
 }
 
 // resetStaticNodes runs the reset-static-nodes playbook against the passed in static nodepools. The
