@@ -826,6 +826,31 @@ func ScheduleAdditionsInNodePools(
 		}
 
 		if len(toAdd.Nodes) != 0 {
+			// If the ApiServer is on the kubernetes cluster on addition of the
+			// control plane nodes the Kubeadm config map needs to be updated which
+			// is used during the join operation of new nodes, thus the update is
+			// scheduled before the stage that joins them.
+			if opts.HasApiServer && toAdd.IsControl {
+				pipeline = append(pipeline, &spec.Stage{
+					StageKind: &spec.Stage_Kuber{
+						Kuber: &spec.StageKuber{
+							Description: &spec.StageDescription{
+								About:      "Preparing kubernetes cluster for new control nodes",
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+							SubPasses: []*spec.StageKuber_SubPass{
+								{
+									Kind: spec.StageKuber_PATCH_KUBEADM,
+									Description: &spec.StageDescription{
+										About:      "Updating Kubeadm certSANs",
+										ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+									},
+								},
+							},
+						},
+					},
+				})
+			}
 			pipeline = append(pipeline, ansiblerStage)
 			pipeline = append(pipeline, kuberStage)
 
@@ -848,7 +873,8 @@ func ScheduleAdditionsInNodePools(
 
 	for np, nodes := range diff.PartiallyAdded {
 		// Not possible to add nodes into a nodepool that is not tracked.
-		if nodepools.FindByName(np, current.K8S.ClusterInfo.NodePools) == nil {
+		matchedNodePool := nodepools.FindByName(np, current.K8S.ClusterInfo.NodePools)
+		if matchedNodePool == nil {
 			continue
 		}
 
@@ -942,6 +968,31 @@ func ScheduleAdditionsInNodePools(
 			pipeline = append(pipeline, terraformerStage)
 		}
 
+		// If the ApiServer is on the kubernetes cluster on addition of the
+		// control plane nodes the Kubeadm config map needs to be updated which
+		// is used during the join operation of new nodes, thus the update is
+		// scheduled before the stage that joins them.
+		if opts.HasApiServer && matchedNodePool.IsControl {
+			pipeline = append(pipeline, &spec.Stage{
+				StageKind: &spec.Stage_Kuber{
+					Kuber: &spec.StageKuber{
+						Description: &spec.StageDescription{
+							About:      "Preparing kubernetes cluster for new control nodes",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+						SubPasses: []*spec.StageKuber_SubPass{
+							{
+								Kind: spec.StageKuber_PATCH_KUBEADM,
+								Description: &spec.StageDescription{
+									About:      "Updating Kubeadm certSANs",
+									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+								},
+							},
+						},
+					},
+				},
+			})
+		}
 		pipeline = append(pipeline, ansiblerStage)
 		pipeline = append(pipeline, kuberStage)
 
@@ -1141,6 +1192,21 @@ func ScheduleDeletionsInNodePools(
 	for np, nodes := range diff.PartiallyDeleted {
 		currentStateNodePool := nodepools.FindByName(np, current.K8S.ClusterInfo.NodePools)
 
+		if currentStateNodePool != nil {
+			// If the ApiServer is on the kubernetes cluster on deletion of the
+			// control plane nodes the Kubeadm config map needs to be updated which
+			// is used during the join operation of new nodes.
+			if opts.HasApiServer && currentStateNodePool.IsControl {
+				kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, &spec.StageKuber_SubPass{
+					Kind: spec.StageKuber_PATCH_KUBEADM,
+					Description: &spec.StageDescription{
+						About:      "Updating Kubeadm certSANs",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+				})
+			}
+		}
+
 		// This is a separate stage
 		// as it depends on the success on all of the
 		// previous stages to complete successfully.
@@ -1248,6 +1314,26 @@ func ScheduleDeletionsInNodePools(
 	}
 
 	for np, nodes := range diff.Deleted {
+		// Nodepools deleted as a whole are always part of the claudie tracked
+		// state. [NodePoolsDiff] fills [NodePoolsDiffResult.Deleted] from the
+		// current state and the reconciliate_unreachable_nodes drift logic only
+		// ever fills [NodePoolsDiffResult.PartiallyDeleted], thus the lookup
+		// cannot return nil.
+		currentStateNodePool := nodepools.FindByName(np, current.K8S.ClusterInfo.NodePools)
+
+		// If the ApiServer is on the kubernetes cluster on deletion of the
+		// control plane nodes the Kubeadm config map needs to be updated which
+		// is used during the join operation of new nodes.
+		if opts.HasApiServer && currentStateNodePool.IsControl {
+			kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, &spec.StageKuber_SubPass{
+				Kind: spec.StageKuber_PATCH_KUBEADM,
+				Description: &spec.StageDescription{
+					About:      "Updating Kubeadm certSANs",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+				},
+			})
+		}
+
 		// If the deletion of the last autoscaled nodepools is to be scheduled. Also remove
 		// the CA requirement for the cluster.
 		if a := nodepools.Autoscaled(current.K8S.ClusterInfo.NodePools); len(a) == 1 {

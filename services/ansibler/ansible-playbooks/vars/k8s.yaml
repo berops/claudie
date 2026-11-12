@@ -42,9 +42,9 @@ old_control_plane_endpoint: "{{ old_control_plane_endpoint_host }}:{{ api_server
 new_control_plane_endpoint: "{{ new_control_plane_endpoint_host }}:{{ api_server_port }}"
 # Public IPs of all control nodes, added to the api server certificate (same as
 # apiEndpoint.alternativeNames of kubeone). kubeadm adds the advertise address and the
-# control_plane_endpoint host on its own. Control nodes added after the cluster was created are
-# not covered until the api endpoint moves, api-server-endpoint-change.yml issues the certificates
-# again for the control nodes of that time.
+# control_plane_endpoint host on its own. kubeadm join issues the certificate of a new control node
+# for the cert SANs in the kubeadm-config ConfigMap. Without an api loadbalancer kuber sets them to
+# the same list before control nodes join and after they are deleted (task_patch_kubeadm_cm.go).
 api_server_cert_sans: "{{ groups['control'] | map('extract', hostvars, 'ansible_host') | list }}"
 
 # Same ranges as the clusters built by kubeone, so that both kinds of clusters look alike.
