@@ -1,0 +1,228 @@
+name: Claudie CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, labeled]
+
+permissions:
+  contents: read
+
+# One run per branch at a time, PR and manual runs alike. A new run waits for the running one. Only the latest waiting run is kept.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  golangci-lint:
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.13.2
+
+  unit-tests:
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      # -short skips the old testing-framework e2e test, the e2e tests in test/e2e/ are behind the e2e build tag.
+      - name: Run unit tests
+        run: go test -short ./...
+
+  build-images:
+    needs: [golangci-lint, unit-tests]
+    if: github.event.pull_request.head.repo.fork == false
+    name: build-images (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        service: [ansibler, claudie-operator, kuber, manager, terraformer]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: services/${{ matrix.service }}/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ghcr.io/${{ github.repository }}/${{ matrix.service }}:${{ github.sha }}
+          # One cache scope per service, so parallel builds don't overwrite each other.
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,scope=${{ matrix.service }},mode=max
+
+  deploy-claudie:
+    needs: build-images
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      namespace: ${{ steps.deploy.outputs.namespace }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set management cluster kubeconfig
+        uses: azure/k8s-set-context@v5
+        with:
+          kubeconfig: ${{ secrets.E2E_CLUSTER_KUBECONFIG }}
+
+      - name: Deploy Claudie
+        id: deploy
+        working-directory: manifests/claudie
+        run: |
+          # Each run gets its own Claudie, so pipelines running at the same time don't collide.
+          export NAMESPACE="claudie-${GITHUB_SHA::7}-${GITHUB_RUN_NUMBER}"
+          yq -i '.images[].newTag = strenv(GITHUB_SHA) | .namespace = strenv(NAMESPACE)' kustomization.yaml
+
+          # Cluster-scoped objects get a per-run name and a label for the cleanup. The operator and its
+          # webhook only handle their own namespace, e2e-secrets holds the secrets the tests reference.
+          kubectl kustomize . | yq '
+            (select(.kind == "ClusterRoleBinding" or .kind == "ValidatingWebhookConfiguration") | .metadata.name) += "-" + strenv(NAMESPACE)
+            | (select(.kind == "ClusterRoleBinding" or .kind == "ValidatingWebhookConfiguration") | .metadata.labels["claudie.io/ci-namespace"]) = strenv(NAMESPACE)
+            | (select(.kind == "ValidatingWebhookConfiguration") | .webhooks[].namespaceSelector) = {"matchLabels": {"kubernetes.io/metadata.name": strenv(NAMESPACE)}}
+            | (select(.kind == "Deployment" and .metadata.name == "claudie-operator") | .spec.template.spec.containers[0].env) += [{"name": "CLAUDIE_NAMESPACES", "value": strenv(NAMESPACE) + ",e2e-secrets"}]
+          ' - | kubectl apply -f -
+
+          kubectl wait deployment --all --for=condition=Available --namespace "$NAMESPACE" --timeout 15m
+          echo "namespace=$NAMESPACE" >> "$GITHUB_OUTPUT"
+
+  e2e-tests:
+    needs: deploy-claudie
+    name: e2e-tests (${{ matrix.test }})
+    # GitHub-hosted runners are in the US, far from the test clusters, which makes cilium connectivity test several times slower.
+    runs-on: self-hosted
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        # One test for its own label, all of them for test-all and workflow_dispatch.
+        test: >-
+          ${{ fromJSON(
+            github.event.label.name == 'test-conformance'        && '["TestConformance"]' ||
+            github.event.label.name == 'test-upgrade-cluster'    && '["TestUpgradeCluster"]' ||
+            github.event.label.name == 'test-destroy-cluster'    && '["TestDestroyCluster"]' ||
+            github.event.label.name == 'test-api-endpoint-moves' && '["TestAPIEndpointMoves"]' ||
+            '["TestConformance", "TestUpgradeCluster", "TestDestroyCluster", "TestAPIEndpointMoves"]'
+          ) }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set management cluster kubeconfig
+        uses: azure/k8s-set-context@v5
+        with:
+          kubeconfig: ${{ secrets.E2E_CLUSTER_KUBECONFIG }}
+
+      - name: Install Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Install Cilium CLI
+        uses: cilium/cilium-cli@v0.20.2
+        with:
+          release-version: v0.20.2
+
+      - name: Install Hydrophone
+        if: matrix.test == 'TestConformance'
+        run: go install sigs.k8s.io/hydrophone@v0.8.0
+
+      - name: Install OpenTofu
+        uses: opentofu/setup-opentofu@v2
+        with:
+          tofu_wrapper: false
+
+      - name: Run test
+        env:
+          CLAUDIE_NAMESPACE: ${{ needs.deploy-claudie.outputs.namespace }}
+          # Base64 encoded tofu script creating the static nodes, the test decodes it itself.
+          # Only exposed to the test that needs it.
+          STATIC_NODES_TF: ${{ matrix.test == 'TestDestroyCluster' && secrets.CREATE_STATIC_NODES || '' }}
+          STATIC_NODES_DIR: ${{ runner.temp }}/static-nodes
+        run: |
+          mkdir -p "$RUNNER_TEMP/e2e-artifacts"
+          go test -tags e2e -v -artifacts -outputdir "$RUNNER_TEMP/e2e-artifacts" ./test/e2e/ -run '^${{ matrix.test }}$'
+
+      # The test's own cleanup does not run when go test times out or the job is cancelled. A step
+      # of this job, the tofu state is only on this runner. A killed tofu leaves its state lock behind.
+      - name: Destroy leftover static nodes
+        if: always() && matrix.test == 'TestDestroyCluster'
+        run: |
+          cd "$RUNNER_TEMP/static-nodes"
+          [ ! -f terraform.tfstate ] || tofu destroy -auto-approve -input=false -lock=false
+
+      # Files the tests keep with t.ArtifactDir, e.g. the hydrophone logs. Only on a failed test.
+      - name: Upload test artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-artifacts-${{ matrix.test }}
+          path: ${{ runner.temp }}/e2e-artifacts
+          if-no-files-found: ignore
+
+  # A test's own cleanups do not run when job times out or the run is cancelled
+  delete-leftover-inputmanifests:
+    needs: [deploy-claudie, e2e-tests]
+    if: always() && needs.deploy-claudie.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Set management cluster kubeconfig
+        uses: azure/k8s-set-context@v5
+        with:
+          kubeconfig: ${{ secrets.E2E_CLUSTER_KUBECONFIG }}
+
+      - name: Delete InputManifests
+        env:
+          CLAUDIE_NAMESPACE: ${{ needs.deploy-claudie.outputs.namespace }}
+        run: kubectl delete inputmanifests.claudie.io --all --namespace "$CLAUDIE_NAMESPACE" --wait=true
+
+  delete-claudie-namespace:
+    needs: [deploy-claudie, e2e-tests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Set management cluster kubeconfig
+        uses: azure/k8s-set-context@v5
+        with:
+          kubeconfig: ${{ secrets.E2E_CLUSTER_KUBECONFIG }}
+
+      - name: Delete Claudie namespace
+        env:
+          CLAUDIE_NAMESPACE: ${{ needs.deploy-claudie.outputs.namespace }}
+        run: |
+          kubectl delete namespace "$CLAUDIE_NAMESPACE" --ignore-not-found --wait --timeout 10m
+          kubectl delete clusterrolebinding,validatingwebhookconfiguration -l claudie.io/ci-namespace="$CLAUDIE_NAMESPACE"

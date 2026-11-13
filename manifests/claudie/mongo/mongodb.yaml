@@ -32,7 +32,7 @@ spec:
               cpu: 100m
               memory: 200Mi
             limits:
-              memory: 300Mi
+              memory: 512Mi
           env:
             - name: MONGO_INITDB_ROOT_USERNAME
               valueFrom:
