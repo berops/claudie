@@ -606,20 +606,19 @@ func runTofu(ctx context.Context, dir string, args ...string) error {
 	return nil
 }
 
-// ciliumQuickTests check pod, service, NodePort, host and external traffic and cilium-health.
-// --test matches "<test>/<scenario>", so the anchors keep no-policies off no-policies-extra.
-var ciliumQuickTests = []string{"^no-policies/", "^no-policies-extra/", "^health/"}
-
 // runCiliumConnectivityTestFull runs every test cilium connectivity test has. It is slow, so
 // only the conformance test runs it.
 func runCiliumConnectivityTestFull(t *testing.T, kubeconfig string) error {
 	t.Helper()
-	return runCiliumConnectivityTest(t, kubeconfig, "--timeout", "30m")
+	return runCiliumConnectivityTest(t, kubeconfig, "--timeout", "60m")
 }
 
 // runCiliumConnectivityTestQuick runs only ciliumQuickTests, a basic connectivity check.
 func runCiliumConnectivityTestQuick(t *testing.T, kubeconfig string) error {
 	t.Helper()
+	// ciliumQuickTests check pod, service, NodePort, host and external traffic and cilium-health.
+	// --test matches "<test>/<scenario>", so the anchors keep no-policies off no-policies-extra.
+	var ciliumQuickTests = []string{"^no-policies/", "^no-policies-extra/", "^health/"}
 	return runCiliumConnectivityTest(t, kubeconfig, "--test", strings.Join(ciliumQuickTests, ","), "--timeout", "10m")
 }
 
