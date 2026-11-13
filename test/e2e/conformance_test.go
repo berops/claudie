@@ -52,6 +52,8 @@ func runKubernetesConformance(t *testing.T, kubeconfig string) error {
 	// nodes with any other taint as unschedulable and refuses to start.
 	const nonBlockingTaints = "node-role.kubernetes.io/control-plane,test"
 
+	const parallelThreads = "4"
+
 	t.Cleanup(func() {
 		if err := runCLI(context.Background(), t, kubeconfig, "hydrophone", "--cleanup"); err != nil {
 			t.Logf("cleaning up kubernetes conformance: %v", err)
@@ -59,6 +61,7 @@ func runKubernetesConformance(t *testing.T, kubeconfig string) error {
 	})
 
 	return runCLI(t.Context(), t, kubeconfig, "hydrophone", "--conformance",
+		"--parallel", parallelThreads,
 		"--output-dir", t.ArtifactDir(),
 		`--extra-args="--non-blocking-taints=`+nonBlockingTaints+`"`,
 	)
