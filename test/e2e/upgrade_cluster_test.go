@@ -14,9 +14,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// TestK8sUpgrade builds a cluster, bumps its Kubernetes version and checks after each step that
+// TestUpgradeCluster builds a cluster, bumps its Kubernetes version and checks after each step that
 // every node and the control plane run the wanted version and the cluster network works.
-func TestK8sUpgrade(t *testing.T) {
+func TestUpgradeCluster(t *testing.T) {
 	// Values must match manifests/upgrade-cluster/*.yaml.
 	const (
 		clusterFromManifestFile = "manifests/upgrade-cluster/from-version.yaml"

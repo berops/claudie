@@ -48,44 +48,9 @@ jobs:
       - name: Run unit tests
         run: go test -short ./...
 
-  # Picks the e2e tests to run: all of them for e2e-test or workflow_dispatch, otherwise one per
-  # e2e-test-<scenario> label. On "labeled", only the added label counts, so earlier ones don't rerun.
-  select-e2e-tests:
-    if: >-
-      !github.event.pull_request.head.repo.fork &&
-      (github.event.action != 'labeled' || startsWith(github.event.label.name, 'e2e-test'))
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      tests: ${{ steps.select.outputs.tests }}
-    steps:
-      - id: select
-        # Label names come in through env, never interpolated into the script.
-        env:
-          LABELS: >-
-            ${{ github.event_name == 'workflow_dispatch' && '"e2e-test"'
-              || github.event.action == 'labeled' && toJSON(github.event.label.name)
-              || toJSON(github.event.pull_request.labels.*.name) }}
-        run: |
-          tests=$(jq -c '
-            {
-              "e2e-test-conformance": "TestConformance",
-              "e2e-test-upgrade-cluster": "TestK8sUpgrade",
-              "e2e-test-destroy-cluster": "TestDestroyCluster",
-              "e2e-test-api-endpoint-moves": "TestAPIEndpointMoves"
-            } as $testByLabel
-            | [.] | flatten
-            | if index("e2e-test") then [$testByLabel[]] else map($testByLabel[.] // empty) end
-          ' <<<"$LABELS")
-          echo "tests=$tests" | tee -a "$GITHUB_OUTPUT"
-
   build-images:
-    # Images are only built once lint and unit-tests pass. An if without a status function implies
-    # success(), so a failed check skips this job and everything downstream of it.
-    needs: [lint, unit-tests, select-e2e-tests]
-    # The gate for the e2e run. Downstream jobs need this one and are skipped with it.
-    if: needs.select-e2e-tests.outputs.tests != '[]'
-
+    needs: [golangci-lint, unit-tests]
+    if: github.event.pull_request.head.repo.fork == false
     name: build-images (${{ matrix.service }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -98,17 +63,14 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          # The Dockerfiles COPY the whole repo including .git, keep the token out of the build.
           persist-credentials: false
 
       - uses: ./.github/actions/build-images
         with:
           service: ${{ matrix.service }}
-          # On pull_request, github.sha is the merge commit of the PR into master, which is what gets built.
           tag: ${{ github.sha }}
 
   deploy-claudie:
-    # Skipped whenever build-images is skipped, so it needs no gate of its own.
     needs: build-images
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -125,19 +87,24 @@ jobs:
           kubeconfig: ${{ secrets.E2E_CLUSTER_KUBECONFIG }}
           image-tag: ${{ github.sha }}
 
-  # One job per e2e test, all against the same Claudie deployment. Each test uses its own
-  # InputManifest and cluster name, so they run in parallel without colliding.
   e2e-tests:
-    needs: [select-e2e-tests, deploy-claudie]
+    needs: deploy-claudie
     name: e2e-tests (${{ matrix.test }})
     # GitHub-hosted runners are in the US, far from the test clusters, which makes cilium connectivity test several times slower.
     runs-on: self-hosted
-    timeout-minutes: 300
+    timeout-minutes: 240
     strategy:
-      # A failing test doesn't cancel the others, cancelling would leave their clusters behind.
       fail-fast: false
       matrix:
-        test: ${{ fromJSON(needs.select-e2e-tests.outputs.tests) }}
+        # One test for its own label, all of them for test-all and workflow_dispatch.
+        test: >-
+          ${{ fromJSON(
+            github.event.label.name == 'test-conformance'        && '["TestConformance"]' ||
+            github.event.label.name == 'test-upgrade-cluster'    && '["TestUpgradeCluster"]' ||
+            github.event.label.name == 'test-destroy-cluster'    && '["TestDestroyCluster"]' ||
+            github.event.label.name == 'test-api-endpoint-moves' && '["TestAPIEndpointMoves"]' ||
+            '["TestConformance", "TestUpgradeCluster", "TestDestroyCluster", "TestAPIEndpointMoves"]'
+          ) }}
     steps:
       - uses: actions/checkout@v7
 
@@ -152,7 +119,6 @@ jobs:
           go-version-file: go.mod
 
       - name: Install Cilium CLI
-        if: matrix.test == 'TestConformance' || matrix.test == 'TestK8sUpgrade' || matrix.test == 'TestAPIEndpointMoves'
         uses: cilium/cilium-cli@v0.20.2
         with:
           release-version: v0.20.2
@@ -162,7 +128,6 @@ jobs:
         run: go install sigs.k8s.io/hydrophone@v0.8.0
 
       - name: Install OpenTofu
-        if: matrix.test == 'TestDestroyCluster'
         uses: opentofu/setup-opentofu@v2
         with:
           tofu_wrapper: false
@@ -174,10 +139,9 @@ jobs:
           # Only exposed to the test that needs it.
           STATIC_NODES_TF: ${{ matrix.test == 'TestDestroyCluster' && secrets.CREATE_STATIC_NODES || '' }}
           STATIC_NODES_DIR: ${{ runner.temp }}/static-nodes
-        # go test does not create the output directory.
         run: |
           mkdir -p "$RUNNER_TEMP/e2e-artifacts"
-          go test -tags e2e -v -timeout 240m -artifacts -outputdir "$RUNNER_TEMP/e2e-artifacts" ./test/e2e/ -run '^${{ matrix.test }}$'
+          go test -tags e2e -v -artifacts -outputdir "$RUNNER_TEMP/e2e-artifacts" ./test/e2e/ -run '^${{ matrix.test }}$'
 
       # The test's own cleanup does not run when go test times out or the job is cancelled. A step
       # of this job, the tofu state is only on this runner. A killed tofu leaves its state lock behind.
@@ -187,23 +151,21 @@ jobs:
           cd "$RUNNER_TEMP/static-nodes"
           [ ! -f terraform.tfstate ] || tofu destroy -auto-approve -input=false -lock=false
 
-      # Files the tests keep with t.ArtifactDir, e.g. the hydrophone logs. Also on a failed test.
+      # Files the tests keep with t.ArtifactDir, e.g. the hydrophone logs. Only on a failed test.
       - name: Upload test artifacts
-        if: ${{ !cancelled() }}
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: e2e-artifacts-${{ matrix.test }}
           path: ${{ runner.temp }}/e2e-artifacts
           if-no-files-found: ignore
 
-  # A test's own cleanups do not run when go test times out or the run is cancelled. Once all tests
-  # ended, every InputManifest still in the namespace is a leftover. Not waited for, Claudie stays
-  # deployed after such a run and finishes the deletion on its own.
+  # A test's own cleanups do not run when job times out or the run is cancelled
   delete-leftover-inputmanifests:
     needs: [deploy-claudie, e2e-tests]
     if: always() && needs.deploy-claudie.result == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 60
     steps:
       - name: Set management cluster kubeconfig
         uses: azure/k8s-set-context@v5
@@ -213,11 +175,9 @@ jobs:
       - name: Delete InputManifests
         env:
           CLAUDIE_NAMESPACE: ${{ needs.deploy-claudie.outputs.namespace }}
-        run: kubectl delete inputmanifests.claudie.io --all --namespace "$CLAUDIE_NAMESPACE" --wait=false
+        run: kubectl delete inputmanifests.claudie.io --all --namespace "$CLAUDIE_NAMESPACE" --wait=true
 
-  cleanup:
-    # Only after every test passed, a failed or cancelled run leaves Claudie in place for debugging.
-    # The tests have already deleted their InputManifests, so no infrastructure depends on Claudie anymore.
+  delete-claudie-namespace:
     needs: [deploy-claudie, e2e-tests]
     runs-on: ubuntu-latest
     timeout-minutes: 15
