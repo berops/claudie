@@ -137,7 +137,8 @@ jobs:
   e2e-tests:
     needs: [select-e2e-tests, deploy-claudie]
     name: e2e-tests (${{ matrix.test }})
-    runs-on: ubuntu-latest
+    # GitHub-hosted runners are in the US, far from the test clusters, which makes cilium connectivity test several times slower.
+    runs-on: self-hosted
     strategy:
       # A failing test doesn't cancel the others, cancelling would leave their clusters behind.
       fail-fast: false
