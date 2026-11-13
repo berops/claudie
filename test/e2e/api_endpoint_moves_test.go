@@ -42,15 +42,11 @@ func TestAPIEndpointMoves(t *testing.T) {
 	withNewHostnameManifestFile := replaceManifestValue(t, withLoadBalancerHostnameManifestFile, loadBalancerHostnamePlaceholder, newLoadBalancerHostname)
 
 	testCases := []struct {
-		name          string
-		manifestFile  string
-		wantNodeCount int
-		// wantAPIEndpointNodePool is the control nodepool that has to hold the API endpoint.
-		// Empty when the API endpoint has to be a load balancer.
+		name                    string
+		manifestFile            string
+		wantNodeCount           int
 		wantAPIEndpointNodePool string
-		// wantAPIEndpointSuffix is the DNS zone of the load balancer, or its whole hostname
-		// when the manifest sets it.
-		wantAPIEndpointSuffix string
+		wantAPIEndpointSuffix   string
 	}{
 		{
 			name:                  "create cluster with load balancer attached",
@@ -94,14 +90,17 @@ func TestAPIEndpointMoves(t *testing.T) {
 		manifest := applyInputManifest(t, e2eClusterClient, step.manifestFile, namespace)
 		// Gives Claudie time to pick up the change, otherwise the old DONE state passes the wait.
 		time.Sleep(time.Minute)
-		waitForInputManifest(t, e2eClusterClient, manifest, namespace, time.Hour)
+		waitForInputManifest(t, e2eClusterClient, manifest, namespace)
 
 		t.Run(step.name, func(t *testing.T) {
 			// Fetched in every step, Claudie replaces the kubeconfig when the API endpoint moves.
 			childClusterKubeconfig := childKubeconfig(t, e2eClusterClient, namespace, clusterName)
 			childClusterClient := newClient(t, childClusterKubeconfig, kubernetes.NewForConfig)
-			if got := readyNodeCount(t, childClusterClient); got != step.wantNodeCount {
-				t.Errorf("cluster %s: got %d Ready nodes, want %d", clusterName, got, step.wantNodeCount)
+			if got := nodeCount(t, childClusterClient); got != step.wantNodeCount {
+				t.Errorf("cluster %s: got %d nodes, want %d", clusterName, got, step.wantNodeCount)
+			}
+			if got := notReadyNodes(t, childClusterClient); len(got) > 0 {
+				t.Errorf("cluster %s: got not Ready nodes %v, want none", clusterName, got)
 			}
 
 			kubeconfigApiEndpoint := apiServerHost(childClusterClient)
@@ -126,6 +125,9 @@ func TestAPIEndpointMoves(t *testing.T) {
 				t.Errorf("cluster %s: cilium connectivity test: %v", clusterName, err)
 			}
 		})
+		if t.Failed() {
+			t.FailNow()
+		}
 	}
 }
 

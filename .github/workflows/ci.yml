@@ -178,7 +178,19 @@ jobs:
           # Base64 encoded tofu script creating the static nodes, the test decodes it itself.
           # Only exposed to the test that needs it.
           STATIC_NODES_TF: ${{ matrix.test == 'TestDestroyCluster' && secrets.CREATE_STATIC_NODES || '' }}
-        run: go test -tags e2e -v -timeout 240m ./test/e2e/ -run '^${{ matrix.test }}$'
+        # go test does not create the output directory.
+        run: |
+          mkdir -p "$RUNNER_TEMP/e2e-artifacts"
+          go test -tags e2e -v -timeout 240m -artifacts -outputdir "$RUNNER_TEMP/e2e-artifacts" ./test/e2e/ -run '^${{ matrix.test }}$'
+
+      # Files the tests keep with t.ArtifactDir, e.g. the hydrophone logs. Also on a failed test.
+      - name: Upload test artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-artifacts-${{ matrix.test }}
+          path: ${{ runner.temp }}/e2e-artifacts
+          if-no-files-found: ignore
 
   cleanup:
     # Only after every test passed, a failed or cancelled run leaves Claudie in place for debugging.

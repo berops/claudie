@@ -41,6 +41,8 @@ const (
 	// fieldManager owns the fields the e2e tests set with server-side apply.
 	fieldManager = "claudie-e2e"
 	pollInterval = 15 * time.Second
+	// inputManifestBuildTimeout bounds how long Claudie may take to build an InputManifest.
+	inputManifestBuildTimeout = time.Hour
 	// sshConnectTimeout bounds both the TCP connect and the SSH handshake.
 	sshConnectTimeout = 30 * time.Second
 )
@@ -222,12 +224,12 @@ func applyInputManifest(t *testing.T, client dynamic.Interface, path, namespace 
 
 // waitForInputManifest waits until Claudie has built the InputManifest and fails the test on an
 // error or timeout. The status can flip, so a state counts once it held for stablePolls polls.
-func waitForInputManifest(t *testing.T, client dynamic.Interface, name, namespace string, timeout time.Duration) {
+func waitForInputManifest(t *testing.T, client dynamic.Interface, name, namespace string) {
 	t.Helper()
 
 	const stablePolls = 8
 	var done, failed int
-	err := wait.PollUntilContextTimeout(t.Context(), pollInterval, timeout, false, func(ctx context.Context) (bool, error) {
+	err := wait.PollUntilContextTimeout(t.Context(), pollInterval, inputManifestBuildTimeout, false, func(ctx context.Context) (bool, error) {
 		obj, err := client.Resource(inputManifests).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			t.Logf("getting inputmanifest %s: %v", name, err)
@@ -487,8 +489,8 @@ func dialSSH(host string, key []byte) (*ssh.Client, error) {
 	return ssh.NewClient(sshConn, channels, requests), nil
 }
 
-// readyNodeCount returns how many nodes of the cluster behind client are Ready.
-func readyNodeCount(t *testing.T, client kubernetes.Interface) int {
+// listNodes returns the nodes of the cluster behind client.
+func listNodes(t *testing.T, client kubernetes.Interface) []corev1.Node {
 	t.Helper()
 
 	nodes, err := retryValue(func() (*corev1.NodeList, error) {
@@ -497,13 +499,26 @@ func readyNodeCount(t *testing.T, client kubernetes.Interface) int {
 	if err != nil {
 		t.Fatalf("listing nodes: %v", err)
 	}
-	ready := 0
-	for _, n := range nodes.Items {
-		if isNodeReady(n) {
-			ready++
+	return nodes.Items
+}
+
+// nodeCount returns how many nodes the cluster behind client has, Ready or not.
+func nodeCount(t *testing.T, client kubernetes.Interface) int {
+	t.Helper()
+	return len(listNodes(t, client))
+}
+
+// notReadyNodes returns the names of the nodes of the cluster behind client that are not Ready.
+func notReadyNodes(t *testing.T, client kubernetes.Interface) []string {
+	t.Helper()
+
+	var notReady []string
+	for _, n := range listNodes(t, client) {
+		if !isNodeReady(n) {
+			notReady = append(notReady, n.Name)
 		}
 	}
-	return ready
+	return notReady
 }
 
 func isNodeReady(n corev1.Node) bool {
@@ -615,23 +630,24 @@ func runCiliumConnectivityTest(t *testing.T, kubeconfig string, args ...string) 
 
 	// Both commands use the default --test-namespace, the only one --cleanup deletes.
 	t.Cleanup(func() {
-		if err := runCLI(t, kubeconfig, "cilium", "connectivity", "test", "--cleanup"); err != nil {
+		// Not t.Context, it is already cancelled when cleanups run.
+		if err := runCLI(context.Background(), t, kubeconfig, "cilium", "connectivity", "test", "--cleanup"); err != nil {
 			t.Errorf("cleaning up cilium connectivity test: %v", err)
 		}
 	})
 
-	if err := runCLI(t, kubeconfig, "cilium", "status", "--wait", "--wait-duration", "10m", "--interactive=false"); err != nil {
+	if err := runCLI(t.Context(), t, kubeconfig, "cilium", "status", "--wait", "--wait-duration", "10m", "--interactive=false"); err != nil {
 		return fmt.Errorf("waiting for cilium to be ready: %w", err)
 	}
 	// Hubble flow validation is off. Cilium runs with monitor aggregation "medium"
 	// (services/kuber/manifests/cilium.yaml), which skips most flow checks anyway.
-	return runCLI(t, kubeconfig, "cilium", append([]string{"connectivity", "test", "--hubble=false"}, args...)...)
+	return runCLI(t.Context(), t, kubeconfig, "cilium", append([]string{"connectivity", "test", "--hubble=false"}, args...)...)
 }
 
 // runCLI runs a CLI against the cluster in kubeconfig and streams its output.
-func runCLI(t *testing.T, kubeconfig, name string, args ...string) error {
+func runCLI(ctx context.Context, t *testing.T, kubeconfig, name string, args ...string) error {
 	t.Logf("running: %s %s", name, strings.Join(args, " "))
-	cmd := exec.Command(name, args...)
+	cmd := exec.CommandContext(ctx, name, args...)
 	cmd.Env = append(os.Environ(), "KUBECONFIG="+kubeconfig)
 	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 	return cmd.Run()

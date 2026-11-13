@@ -3,8 +3,8 @@
 package e2e
 
 import (
+	"context"
 	"testing"
-	"time"
 
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -24,12 +24,15 @@ func TestConformance(t *testing.T) {
 	e2eClusterClient := newClient(t, e2eClusterKubeconfig(t), dynamic.NewForConfig)
 
 	manifest := applyInputManifest(t, e2eClusterClient, clusterManifestFile, namespace)
-	waitForInputManifest(t, e2eClusterClient, manifest, namespace, time.Hour)
+	waitForInputManifest(t, e2eClusterClient, manifest, namespace)
 
 	childClusterKubeconfig := childKubeconfig(t, e2eClusterClient, namespace, clusterName)
 	childClusterClient := newClient(t, childClusterKubeconfig, kubernetes.NewForConfig)
-	if got := readyNodeCount(t, childClusterClient); got != expectedNodeCount {
-		t.Fatalf("cluster %s: got %d Ready nodes, want %d", clusterName, got, expectedNodeCount)
+	if got := nodeCount(t, childClusterClient); got != expectedNodeCount {
+		t.Fatalf("cluster %s: got %d nodes, want %d", clusterName, got, expectedNodeCount)
+	}
+	if got := notReadyNodes(t, childClusterClient); len(got) > 0 {
+		t.Fatalf("cluster %s: got not Ready nodes %v, want none", clusterName, got)
 	}
 
 	if err := runCiliumConnectivityTestFull(t, childClusterKubeconfig); err != nil {
@@ -41,7 +44,7 @@ func TestConformance(t *testing.T) {
 }
 
 // runKubernetesConformance runs the Kubernetes conformance suite with hydrophone. Its
-// resources are deleted when the test ends.
+// resources are deleted when the test ends. The logs are kept with go test -artifacts.
 func runKubernetesConformance(t *testing.T, kubeconfig string) error {
 	t.Helper()
 
@@ -50,14 +53,13 @@ func runKubernetesConformance(t *testing.T, kubeconfig string) error {
 	const nonBlockingTaints = "node-role.kubernetes.io/control-plane,test"
 
 	t.Cleanup(func() {
-		if err := runCLI(t, kubeconfig, "hydrophone", "--cleanup"); err != nil {
+		if err := runCLI(context.Background(), t, kubeconfig, "hydrophone", "--cleanup"); err != nil {
 			t.Logf("cleaning up kubernetes conformance: %v", err)
 		}
 	})
 
-	// The extra args value contains a comma, so it is quoted as a single field.
-	return runCLI(t, kubeconfig, "hydrophone", "--conformance",
-		"--output-dir", t.TempDir(),
+	return runCLI(t.Context(), t, kubeconfig, "hydrophone", "--conformance",
+		"--output-dir", t.ArtifactDir(),
 		`--extra-args="--non-blocking-taints=`+nonBlockingTaints+`"`,
 	)
 }
