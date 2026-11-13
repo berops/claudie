@@ -65,10 +65,24 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: ./.github/actions/build-images
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
         with:
-          service: ${{ matrix.service }}
-          tag: ${{ github.sha }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: services/${{ matrix.service }}/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ghcr.io/${{ github.repository }}/${{ matrix.service }}:${{ github.sha }}
+          # One cache scope per service, so parallel builds don't overwrite each other.
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,scope=${{ matrix.service }},mode=max
 
   deploy-claudie:
     needs: build-images
@@ -81,11 +95,30 @@ jobs:
         with:
           persist-credentials: false
 
-      - id: deploy
-        uses: ./.github/actions/deploy-claudie
+      - name: Set management cluster kubeconfig
+        uses: azure/k8s-set-context@v5
         with:
           kubeconfig: ${{ secrets.E2E_CLUSTER_KUBECONFIG }}
-          image-tag: ${{ github.sha }}
+
+      - name: Deploy Claudie
+        id: deploy
+        working-directory: manifests/claudie
+        run: |
+          # Each run gets its own Claudie, so pipelines running at the same time don't collide.
+          export NAMESPACE="claudie-${GITHUB_SHA::7}-${GITHUB_RUN_NUMBER}"
+          yq -i '.images[].newTag = strenv(GITHUB_SHA) | .namespace = strenv(NAMESPACE)' kustomization.yaml
+
+          # Cluster-scoped objects get a per-run name and a label for the cleanup. The operator and its
+          # webhook only handle their own namespace, e2e-secrets holds the secrets the tests reference.
+          kubectl kustomize . | yq '
+            (select(.kind == "ClusterRoleBinding" or .kind == "ValidatingWebhookConfiguration") | .metadata.name) += "-" + strenv(NAMESPACE)
+            | (select(.kind == "ClusterRoleBinding" or .kind == "ValidatingWebhookConfiguration") | .metadata.labels["claudie.io/ci-namespace"]) = strenv(NAMESPACE)
+            | (select(.kind == "ValidatingWebhookConfiguration") | .webhooks[].namespaceSelector) = {"matchLabels": {"kubernetes.io/metadata.name": strenv(NAMESPACE)}}
+            | (select(.kind == "Deployment" and .metadata.name == "claudie-operator") | .spec.template.spec.containers[0].env) += [{"name": "CLAUDIE_NAMESPACES", "value": strenv(NAMESPACE) + ",e2e-secrets"}]
+          ' - | kubectl apply -f -
+
+          kubectl wait deployment --all --for=condition=Available --namespace "$NAMESPACE" --timeout 15m
+          echo "namespace=$NAMESPACE" >> "$GITHUB_OUTPUT"
 
   e2e-tests:
     needs: deploy-claudie
