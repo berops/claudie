@@ -9,7 +9,9 @@ Claudie builds and manages multi-cloud, hybrid and on-premises Kubernetes cluste
 ## E2E Tests
 - E2E tests live in [test/e2e](test/e2e). They replace the legacy framework in [services/testing-framework](services/testing-framework) (`make test`, test sets in [manifests/testing-framework/test-sets](manifests/testing-framework/test-sets)). Don't extend the legacy framework or copy its patterns.
 - They run only in the CI pipeline.
-- They create real, paid infrastructure. Every test MUST delete its InputManifest so the infrastructure is destroyed.
+- They create real, paid infrastructure. Every test MUST delete its InputManifest so Claudie destroys what it created.
+- Some tests also create static nodes that Claudie doesn't manage. The test MUST delete these itself.
+- Cleanup MUST run in every case: test failure, timeout, and manual cancellation of the workflow. No infrastructure may be left running.
 - If all tests pass, [.github/workflows/ci.yml](.github/workflows/ci.yml) deletes the Claudie namespace in the e2e cluster. If any test fails, the namespace is kept for manual investigation.
 - Use the official client-go library to talk to Kubernetes, not the legacy [internal/kubectl](internal/kubectl) wrapper. Each call made with the k8s client should have three retries. Calls sometimes fail, so we want to retry them instead of failing the test right away.
 - Shared helpers live in [test/e2e/helpers.go](test/e2e/helpers.go), helpers used by one scenario in its `*_test.go` file. Nothing imports the package, so only `TestXxx` functions are exported.
