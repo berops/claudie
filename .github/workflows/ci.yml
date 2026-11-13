@@ -3,24 +3,19 @@ name: Claudie CI
 on:
   workflow_dispatch:
   pull_request:
-    types: [opened, labeled, synchronize]
+    types: [opened, labeled]
 
-# Least privilege by default, jobs ask for more only where they need it.
 permissions:
   contents: read
 
-# One run per PR at a time, a new run waits for the running one. Only the latest waiting run is kept.
-# Runs for non-e2e labels do nothing, so they get their own group and never wait or replace a run.
-# The e2e labels are e2e-test for all tests and e2e-test-<scenario> for one, see select-e2e-tests.
+# One run per branch at a time, PR and manual runs alike. A new run waits for the running one. Only the latest waiting run is kept.
 concurrency:
-  group: ${{ github.workflow }}-${{ (github.event.action == 'labeled' && !startsWith(github.event.label.name, 'e2e-test')) && github.run_id || github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
-  # lint and unit-tests run in parallel on every PR, without e2e labels and for forks too,
-  # they use no secrets. They only skip "labeled" events for non-e2e labels.
-  lint:
-    if: github.event.action != 'labeled' || startsWith(github.event.label.name, 'e2e-test')
+  golangci-lint:
+    if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -30,14 +25,14 @@ jobs:
 
       - uses: actions/setup-go@v6
         with:
-          go-version: "1.27.1"
+          go-version-file: go.mod
 
       - uses: golangci/golangci-lint-action@v9
         with:
           version: v2.13.2
 
   unit-tests:
-    if: github.event.action != 'labeled' || startsWith(github.event.label.name, 'e2e-test')
+    if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -47,7 +42,7 @@ jobs:
 
       - uses: actions/setup-go@v6
         with:
-          go-version: "1.27.1"
+          go-version-file: go.mod
 
       # -short skips the old testing-framework e2e test, the e2e tests in test/e2e/ are behind the e2e build tag.
       - name: Run unit tests
@@ -56,11 +51,9 @@ jobs:
   # Picks the e2e tests to run: all of them for e2e-test or workflow_dispatch, otherwise one per
   # e2e-test-<scenario> label. On "labeled", only the added label counts, so earlier ones don't rerun.
   select-e2e-tests:
-    # Fork PRs are skipped, their GITHUB_TOKEN cannot push the images to ghcr.io.
     if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.pull_request.head.repo.full_name == github.repository &&
-        (github.event.action != 'labeled' || startsWith(github.event.label.name, 'e2e-test')))
+      !github.event.pull_request.head.repo.fork &&
+      (github.event.action != 'labeled' || startsWith(github.event.label.name, 'e2e-test'))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -139,6 +132,7 @@ jobs:
     name: e2e-tests (${{ matrix.test }})
     # GitHub-hosted runners are in the US, far from the test clusters, which makes cilium connectivity test several times slower.
     runs-on: self-hosted
+    timeout-minutes: 300
     strategy:
       # A failing test doesn't cancel the others, cancelling would leave their clusters behind.
       fail-fast: false
@@ -155,7 +149,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v6
         with:
-          go-version: "1.27.1"
+          go-version-file: go.mod
 
       - name: Install Cilium CLI
         if: matrix.test == 'TestConformance' || matrix.test == 'TestK8sUpgrade' || matrix.test == 'TestAPIEndpointMoves'
@@ -179,10 +173,19 @@ jobs:
           # Base64 encoded tofu script creating the static nodes, the test decodes it itself.
           # Only exposed to the test that needs it.
           STATIC_NODES_TF: ${{ matrix.test == 'TestDestroyCluster' && secrets.CREATE_STATIC_NODES || '' }}
+          STATIC_NODES_DIR: ${{ runner.temp }}/static-nodes
         # go test does not create the output directory.
         run: |
           mkdir -p "$RUNNER_TEMP/e2e-artifacts"
           go test -tags e2e -v -timeout 240m -artifacts -outputdir "$RUNNER_TEMP/e2e-artifacts" ./test/e2e/ -run '^${{ matrix.test }}$'
+
+      # The test's own cleanup does not run when go test times out or the job is cancelled. A step
+      # of this job, the tofu state is only on this runner. A killed tofu leaves its state lock behind.
+      - name: Destroy leftover static nodes
+        if: always() && matrix.test == 'TestDestroyCluster'
+        run: |
+          cd "$RUNNER_TEMP/static-nodes"
+          [ ! -f terraform.tfstate ] || tofu destroy -auto-approve -input=false -lock=false
 
       # Files the tests keep with t.ArtifactDir, e.g. the hydrophone logs. Also on a failed test.
       - name: Upload test artifacts
@@ -192,6 +195,25 @@ jobs:
           name: e2e-artifacts-${{ matrix.test }}
           path: ${{ runner.temp }}/e2e-artifacts
           if-no-files-found: ignore
+
+  # A test's own cleanups do not run when go test times out or the run is cancelled. Once all tests
+  # ended, every InputManifest still in the namespace is a leftover. Not waited for, Claudie stays
+  # deployed after such a run and finishes the deletion on its own.
+  delete-leftover-inputmanifests:
+    needs: [deploy-claudie, e2e-tests]
+    if: always() && needs.deploy-claudie.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Set management cluster kubeconfig
+        uses: azure/k8s-set-context@v5
+        with:
+          kubeconfig: ${{ secrets.E2E_CLUSTER_KUBECONFIG }}
+
+      - name: Delete InputManifests
+        env:
+          CLAUDIE_NAMESPACE: ${{ needs.deploy-claudie.outputs.namespace }}
+        run: kubectl delete inputmanifests.claudie.io --all --namespace "$CLAUDIE_NAMESPACE" --wait=false
 
   cleanup:
     # Only after every test passed, a failed or cancelled run leaves Claudie in place for debugging.
