@@ -528,7 +528,8 @@ func isNodeReady(n corev1.Node) bool {
 }
 
 // provisionStaticNodes creates the static nodes with the tofu script in STATIC_NODES_TF and
-// returns their IPs. The nodes are destroyed when the test ends.
+// returns their IPs. The nodes are destroyed when the test ends. The tofu state is kept in
+// STATIC_NODES_DIR, where the CI destroys the nodes of a test that timed out or was cancelled.
 func provisionStaticNodes(t *testing.T) []string {
 	t.Helper()
 
@@ -540,7 +541,13 @@ func provisionStaticNodes(t *testing.T) []string {
 		t.Fatal("STATIC_NODES_TF must be set to the base64 encoded tofu script creating the static nodes")
 	}
 
-	dir := t.TempDir()
+	dir := os.Getenv("STATIC_NODES_DIR")
+	if dir == "" {
+		t.Fatal("STATIC_NODES_DIR must be set to the directory to keep the tofu script and state in")
+	}
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
 	if err := os.WriteFile(filepath.Join(dir, "main.tf"), script, 0o600); err != nil {
 		t.Fatal(err)
 	}
