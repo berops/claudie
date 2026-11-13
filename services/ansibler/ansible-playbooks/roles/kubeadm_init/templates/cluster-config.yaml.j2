@@ -22,6 +22,17 @@ apiServer:
 {% for san in api_server_cert_sans %}
     - "{{ san }}"
 {% endfor %}
+etcd:
+  local:
+    extraEnvs:
+      - name: ETCDCTL_CACERT
+        value: /etc/kubernetes/pki/etcd/ca.crt
+      - name: ETCDCTL_CERT
+        value: /etc/kubernetes/pki/etcd/healthcheck-client.crt
+      - name: ETCDCTL_KEY
+        value: /etc/kubernetes/pki/etcd/healthcheck-client.key
+      - name: ETCDCTL_ENDPOINTS
+        value: https://127.0.0.1:2379
 networking:
   podSubnet: {{ pod_subnet }}
   serviceSubnet: {{ service_subnet }}
