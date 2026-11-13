@@ -31,11 +31,14 @@ func TestDestroyCluster(t *testing.T) {
 	staticNodeIP := provisionStaticNodes(t)[0]
 	manifest := replaceManifestValue(t, clusterManifestFile, staticNodeEndpointPlaceholder, staticNodeIP)
 	manifest = applyInputManifest(t, e2eClusterClient, manifest, namespace)
-	waitForInputManifest(t, e2eClusterClient, manifest, namespace, time.Hour)
+	waitForInputManifest(t, e2eClusterClient, manifest, namespace)
 
 	childClusterClient := newClient(t, childKubeconfig(t, e2eClusterClient, namespace, clusterName), kubernetes.NewForConfig)
-	if got := readyNodeCount(t, childClusterClient); got != expectedNodeCount {
-		t.Fatalf("cluster %s before deletion: got %d Ready nodes, want %d", clusterName, got, expectedNodeCount)
+	if got := nodeCount(t, childClusterClient); got != expectedNodeCount {
+		t.Fatalf("cluster %s before deletion: got %d nodes, want %d", clusterName, got, expectedNodeCount)
+	}
+	if got := notReadyNodes(t, childClusterClient); len(got) > 0 {
+		t.Fatalf("cluster %s before deletion: got not Ready nodes %v, want none", clusterName, got)
 	}
 
 	nodes := dynamicNodes(t, e2eClusterClient, namespace, clusterName)
