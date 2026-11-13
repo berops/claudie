@@ -4,7 +4,8 @@
 #
 # Expects the inventory generated from templates/k8s-inventory.goini ([control] and [compute]
 # groups, private_ip per host) and the kubernetes_version extra var (e.g. 1.35.0) passed by
-# the ansibler, along with init_control_node and control_plane_endpoint_host. WireGuard is
+# the ansibler, along with init_control_node, control_plane_endpoint_host and cluster_name
+# (the name in the kubeconfig, as KubeOne set it). WireGuard is
 # set up beforehand by the INSTALL_VPN stage, so private_ip is reachable between all nodes,
 # and the packages, containerd and the kernel settings by the INSTALL_NODE_REQUIREMENTS
 # stage (node-setup.yml).

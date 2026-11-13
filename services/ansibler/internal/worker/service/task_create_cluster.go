@@ -179,8 +179,8 @@ func createClusterFlags(cluster *spec.K8Scluster, lbs []*spec.LBcluster, kubecon
 	}
 
 	return fmt.Sprintf(
-		"--extra-vars \"kubernetes_version=%s kubeconfig_dest=%s control_plane_endpoint_host=%s init_control_node=%s\"",
-		version, kubeconfigPath, endpoint, initNode,
+		"--extra-vars \"kubernetes_version=%s kubeconfig_dest=%s control_plane_endpoint_host=%s init_control_node=%s cluster_name=%s\"",
+		version, kubeconfigPath, endpoint, initNode, cluster.ClusterInfo.Name,
 	), nil
 }
 
