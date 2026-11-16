@@ -24,6 +24,7 @@
 - name: Upload the control plane certificates
   ansible.builtin.command:
     cmd: kubeadm init phase upload-certs --upload-certs --certificate-key {{ kubeadm_certificate_key.stdout | trim }}
+  no_log: true
 
 # The join command is the one kubeadm output that carries the CA cert hash, the token is
 # printed with it.
