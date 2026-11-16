@@ -382,7 +382,7 @@ func CreatePipeline(clusters *spec.Clusters, isCreate bool) []*spec.Stage {
 						Kind: spec.StageKuber_DEPLOY_KUBELET_CSR_APPROVER,
 						Description: &spec.StageDescription{
 							About:      "Deploying kubelet csr-approver",
-							ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 						},
 					},
 					{
