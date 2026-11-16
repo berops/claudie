@@ -197,10 +197,11 @@ jobs:
           path: ${{ runner.temp }}/e2e-artifacts
           if-no-files-found: ignore
 
-  # A test's own cleanups do not run when job times out or the run is cancelled
+  # A test's own cleanups do not run when job times out or the run is cancelled.
+  # Skipped on a failed test, its InputManifest is kept for debugging.
   delete-leftover-inputmanifests:
     needs: [deploy-claudie, e2e-tests]
-    if: always() && needs.deploy-claudie.result == 'success'
+    if: always() && needs.deploy-claudie.result == 'success' && (cancelled() || needs.e2e-tests.result != 'failure')
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:

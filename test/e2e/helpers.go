@@ -193,7 +193,8 @@ func newClient[T any](t *testing.T, kubeconfig string, newForConfig func(*rest.C
 }
 
 // applyInputManifest server-side applies the InputManifest in path, creating or updating it, and
-// returns its name. The InputManifest and its infrastructure are deleted when the test ends.
+// returns its name. The InputManifest and its infrastructure are deleted when the test passes,
+// on a failed test they are kept for debugging.
 func applyInputManifest(t *testing.T, client dynamic.Interface, path, namespace string) string {
 	t.Helper()
 
@@ -210,7 +211,13 @@ func applyInputManifest(t *testing.T, client dynamic.Interface, path, namespace 
 	}
 	obj.SetNamespace(namespace)
 
-	t.Cleanup(func() { deleteInputManifest(t, client, obj.GetName(), namespace, time.Hour) })
+	t.Cleanup(func() {
+		// keep manifests there so we can inspect the infra and debug the failure
+		if t.Failed() {
+			return
+		}
+		deleteInputManifest(t, client, obj.GetName(), namespace, time.Hour)
+	})
 	// Force takes over fields set by an earlier kubectl apply or another manager.
 	_, err = retryValue(func() (*unstructured.Unstructured, error) {
 		return client.Resource(inputManifests).Namespace(namespace).
