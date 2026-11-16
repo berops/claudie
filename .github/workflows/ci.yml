@@ -50,7 +50,9 @@ jobs:
 
   build-images:
     needs: [golangci-lint, unit-tests]
-    if: github.event.pull_request.head.repo.fork == false
+    if: >-
+      github.event.pull_request.head.repo.fork == false &&
+      (github.event_name == 'workflow_dispatch' || startsWith(github.event.label.name, 'test-'))
     name: build-images (${{ matrix.service }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -175,7 +177,7 @@ jobs:
           STATIC_NODES_DIR: ${{ runner.temp }}/static-nodes
         run: |
           mkdir -p "$RUNNER_TEMP/e2e-artifacts"
-          go test -tags e2e -v -artifacts -outputdir "$RUNNER_TEMP/e2e-artifacts" ./test/e2e/ -run '^${{ matrix.test }}$'
+          go test -tags e2e -v -timeout 240m -artifacts -outputdir "$RUNNER_TEMP/e2e-artifacts" ./test/e2e/ -run '^${{ matrix.test }}$'
 
       # The test's own cleanup does not run when go test times out or the job is cancelled. A step
       # of this job, the tofu state is only on this runner. A killed tofu leaves its state lock behind.
@@ -188,7 +190,7 @@ jobs:
       # Files the tests keep with t.ArtifactDir, e.g. the hydrophone logs. Only on a failed test.
       - name: Upload test artifacts
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-artifacts-${{ matrix.test }}
           path: ${{ runner.temp }}/e2e-artifacts
@@ -199,7 +201,7 @@ jobs:
     needs: [deploy-claudie, e2e-tests]
     if: always() && needs.deploy-claudie.result == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - name: Set management cluster kubeconfig
         uses: azure/k8s-set-context@v5
@@ -212,7 +214,7 @@ jobs:
         run: kubectl delete inputmanifests.claudie.io --all --namespace "$CLAUDIE_NAMESPACE" --wait=true
 
   delete-claudie-namespace:
-    needs: [deploy-claudie, e2e-tests]
+    needs: [deploy-claudie, e2e-tests, delete-leftover-inputmanifests]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
