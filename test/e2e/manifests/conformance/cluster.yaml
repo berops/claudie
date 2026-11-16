@@ -10,10 +10,10 @@
 # |---------|----------------|-----------------------------|-------------------------------|-------|-----------------|------|----------------------|
 # | control | htz-ctrl-nodes | hetzner   (hetzner-1)       | nbg1 / nbg1-dc3               | 1     | cpx22           | -    | -                    |
 # | control | gcp-ctrl-nodes | gcp       (gcp-1)           | europe-west2 / europe-west2-c | 1     | e2-medium       | -    | -                    |
-# | control | oci-ctrl-nodes | oci       (oci-1)           | eu-frankfurt-1 / AD-1         | 1     | VM.Standard2.1  | -    | test:NoSchedule      |
-# | control | aws-ctrl-nodes | aws       (aws-1)           | eu-north-1 / eu-north-1a      | 1     | t3.medium       | -    | test=test:NoSchedule |
-# | control | azr-ctrl-nodes | azure     (azure-sponsor-2) | Germany West Central / 1      | 1     | Standard_B2s    | -    | test=test:NoSchedule |
-# | control | ovh-ctrl-nodes | openstack (ovh-1)           | DE1 / nova                    | 1     | c3-4-flex       | -    | test=test:NoSchedule |
+# | control | oci-ctrl-nodes | oci       (oci-1)           | eu-frankfurt-1 / AD-1         | 1     | VM.Standard2.1  | -    | -                    |
+# | control | aws-ctrl-nodes | aws       (aws-1)           | eu-north-1 / eu-north-1a      | 1     | t3.medium       | -    | -                    |
+# | control | azr-ctrl-nodes | azure     (azure-sponsor-2) | Germany West Central / 1      | 1     | Standard_B2s    | -    | -                    |
+# | control | ovh-ctrl-nodes | openstack (ovh-1)           | DE1 / nova                    | 1     | c3-4-flex       | -    | -                    |
 # | compute | htz-cmpt-nodes | hetzner   (hetzner-1)       | nbg1 / nbg1-dc3               | 1     | cpx22           | 50G  | -                    |
 # | compute | gcp-cmpt-nodes | gcp       (gcp-1)           | europe-west1 / europe-west1-b | 1     | e2-standard-4   | 50G  | -                    |
 # | compute | oci-cmpt-nodes | oci       (oci-1)           | eu-frankfurt-1 / AD-1         | 1     | VM.Standard1.2  | 50G  | -                    |
@@ -169,9 +169,6 @@ spec:
         serverType: VM.Standard2.1
         # https://docs.oracle.com/en-us/iaas/images/ubuntu-2404/canonical-ubuntu-24-04-2024-08-28-0.htm
         image: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaa7hxwyz4qiasffo7n7s4ep5lywpzwgkc2am65frqrqinoyitmxxla
-        taints:
-          - key: test
-            effect: NoSchedule
       - name: oci-cmpt-nodes
         providerSpec:
           name: oci-1
@@ -192,10 +189,6 @@ spec:
         serverType: t3.medium
         #ubuntu
         image: ami-08eb150f611ca277f
-        taints:
-          - key: test
-            value: test
-            effect: NoSchedule
       - name: aws-cmpt-nodes
         providerSpec:
           name: aws-2
@@ -215,10 +208,6 @@ spec:
         count: 1
         serverType: Standard_B2s
         image: Canonical:ubuntu-24_04-lts:server:24.04.202510010
-        taints:
-          - key: test
-            value: test
-            effect: NoSchedule
         labels:
           test-set: conformance-test
         annotations:
@@ -261,10 +250,6 @@ spec:
         count: 1
         serverType: c3-4-flex
         image: "Ubuntu 24.04"
-        taints:
-          - key: test
-            value: test
-            effect: NoSchedule
         labels:
           test-set: conformance-test
         annotations:

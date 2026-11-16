@@ -3,7 +3,6 @@
 package e2e
 
 import (
-	"crypto/rand"
 	"net"
 	"slices"
 	"strings"
@@ -20,13 +19,12 @@ import (
 const apiServerPort = "6443"
 
 func TestAPIEndpointMoves(t *testing.T) {
-	// Values must match manifests/api-endpoint-moves/*.yaml.
 	const (
 		withLoadBalancerManifestFile           = "manifests/api-endpoint-moves/with-loadbalancer.yaml"
 		withoutLoadBalancerManifestFile        = "manifests/api-endpoint-moves/without-loadbalancer.yaml"
 		withoutEndpointControlNodeManifestFile = "manifests/api-endpoint-moves/without-endpoint-control-node.yaml"
 		withLoadBalancerHostnameManifestFile   = "manifests/api-endpoint-moves/with-loadbalancer-hostname.yaml"
-		loadBalancerHostnamePlaceholder        = "/spec/loadBalancers/clusters/0/dns/hostname"
+		newLoadBalancerHostname                = "e2e-api-endpoint-moves"
 		clusterName                            = "api-endpoint-moves-cluster"
 		// Listed first in pools.control, so detaching the load balancer moves the API endpoint here.
 		firstControlNodePool  = "htz-ctrl-a"
@@ -36,10 +34,6 @@ func TestAPIEndpointMoves(t *testing.T) {
 
 	namespace := claudieNamespace(t)
 	e2eClusterClient := newClient(t, e2eClusterKubeconfig(t), dynamic.NewForConfig)
-
-	// Unique per run, a fixed hostname would collide with other runs in the same DNS zone.
-	newLoadBalancerHostname := "e2e-" + strings.ToLower(rand.Text())
-	withNewHostnameManifestFile := replaceManifestValue(t, withLoadBalancerHostnameManifestFile, loadBalancerHostnamePlaceholder, newLoadBalancerHostname)
 
 	testCases := []struct {
 		name                    string
@@ -80,7 +74,7 @@ func TestAPIEndpointMoves(t *testing.T) {
 		},
 		{
 			name:                  "replace load balancer hostname",
-			manifestFile:          withNewHostnameManifestFile,
+			manifestFile:          withLoadBalancerHostnameManifestFile,
 			wantNodeCount:         4,
 			wantAPIEndpointSuffix: newLoadBalancerHostname + "." + loadBalancerDNSZone,
 		},

@@ -17,7 +17,6 @@ import (
 // TestUpgradeCluster builds a cluster, bumps its Kubernetes version and checks after each step that
 // every node and the control plane run the wanted version and the cluster network works.
 func TestUpgradeCluster(t *testing.T) {
-	// Values must match manifests/upgrade-cluster/*.yaml.
 	const (
 		clusterFromManifestFile = "manifests/upgrade-cluster/from-version.yaml"
 		clusterToManifestFile   = "manifests/upgrade-cluster/to-version.yaml"

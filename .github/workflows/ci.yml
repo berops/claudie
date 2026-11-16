@@ -8,10 +8,11 @@ on:
 permissions:
   contents: read
 
-# One run per branch at a time, PR and manual runs alike. A new run waits for the running one. Only the latest waiting run is kept.
+# One run per PR, or per branch for manual runs, at a time. New runs wait in order, none is cancelled.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: false
+  queue: max
 
 jobs:
   golangci-lint:
@@ -50,9 +51,9 @@ jobs:
 
   build-images:
     needs: [golangci-lint, unit-tests]
+    # Only known labels, so a mistyped one doesn't fall through to the e2e-tests matrix default of all tests.
     if: >-
-      github.event.pull_request.head.repo.fork == false &&
-      (github.event_name == 'workflow_dispatch' || startsWith(github.event.label.name, 'test-'))
+      github.event_name == 'workflow_dispatch' || !github.event.pull_request.head.repo.fork)
     name: build-images (${{ matrix.service }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -177,7 +178,8 @@ jobs:
           STATIC_NODES_DIR: ${{ runner.temp }}/static-nodes
         run: |
           mkdir -p "$RUNNER_TEMP/e2e-artifacts"
-          go test -tags e2e -v -timeout 240m -artifacts -outputdir "$RUNNER_TEMP/e2e-artifacts" ./test/e2e/ -run '^${{ matrix.test }}$'
+          # Below the job's 240m, so a hung test fails instead of cancelling the job, which leaves the cleanup steps only ~5 minutes.
+          go test -tags e2e -v -timeout 220m -artifacts -outputdir "$RUNNER_TEMP/e2e-artifacts" ./test/e2e/ -run '^${{ matrix.test }}$'
 
       # The test's own cleanup does not run when go test times out or the job is cancelled. A step
       # of this job, the tofu state is only on this runner. A killed tofu leaves its state lock behind.

@@ -77,7 +77,7 @@ spec:
         dns:
           dnsZone: claudie.org
           provider: hetzner-1
-          hostname: replace-me
+          hostname: e2e-api-endpoint-moves
         targetedK8s: api-endpoint-moves-cluster
         pools:
           - htz-lb-nodes

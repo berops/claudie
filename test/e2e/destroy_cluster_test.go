@@ -14,7 +14,6 @@ import (
 // TestDestroyCluster builds a cluster with dynamic and static nodes, deletes its InputManifest
 // and checks that Claudie destroyed the dynamic nodes and cleaned up the static node.
 func TestDestroyCluster(t *testing.T) {
-	// Values must match manifests/destroy-cluster/cluster.yaml.
 	const (
 		clusterManifestFile           = "manifests/destroy-cluster/cluster.yaml"
 		clusterName                   = "destroy-cluster-test-cluster"
@@ -79,8 +78,6 @@ var staticNodeInstallation = []string{
 	"/opt/claudie/bin", "/etc/profile.d/claudie_path.sh",
 }
 
-// reachableDynamicNodes returns the names of the nodes that still accept an SSH login with
-// their nodepool key. A server that got a released IP afterwards rejects the key.
 func reachableDynamicNodes(nodes []dynamicNode) []string {
 	var reachable []string
 	for _, n := range nodes {
@@ -92,7 +89,6 @@ func reachableDynamicNodes(nodes []dynamicNode) []string {
 	return reachable
 }
 
-// staticNodeLeftovers returns the paths from staticNodeInstallation still on the node.
 func staticNodeLeftovers(t *testing.T, ip string, key []byte) []string {
 	t.Helper()
 
