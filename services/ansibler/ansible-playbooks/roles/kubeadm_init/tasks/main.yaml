@@ -31,18 +31,11 @@
 # kube-proxy is skipped in the config because Cilium replaces it. The control plane
 # certificates are uploaded by the kubeadm_join_credentials role, not by init, so that the
 # join credentials always come from one place.
+# The marker is written in the same command, so no failure can land between the two.
 - name: Run kubeadm init
-  ansible.builtin.command:
-    cmd: kubeadm init --config /root/kubeadm/cluster-config.yaml
+  ansible.builtin.shell:
+    cmd: kubeadm init --config /root/kubeadm/cluster-config.yaml && touch /root/kubeadm/init.done
   when: not kubeadm_init_done.stat.exists
-  register: kubeadm_init_out
-
-- name: Mark kubeadm init as completed
-  ansible.builtin.file:
-    path: /root/kubeadm/init.done
-    state: touch
-    mode: "0600"
-  when: kubeadm_init_out is changed
 
 # The ansibler reads the kubeconfig from kubeconfig_dest after the playbook finished and
 # stores it in the cluster state for the later stages (kuber).

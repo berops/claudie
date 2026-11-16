@@ -37,12 +37,8 @@
       ansible.builtin.command:
         cmd: kubeadm reset --force
 
+    # The marker is written in the same command, so a play abort (any_errors_fatal) or an
+    # SSH drop cannot land between the join and the marker.
     - name: Run kubeadm join
-      ansible.builtin.command:
-        cmd: kubeadm join --config /root/kubeadm/join.yaml
-
-    - name: Mark kubeadm join as completed
-      ansible.builtin.file:
-        path: /root/kubeadm/join.done
-        state: touch
-        mode: "0600"
+      ansible.builtin.shell:
+        cmd: kubeadm join --config /root/kubeadm/join.yaml && touch /root/kubeadm/join.done
