@@ -21,10 +21,13 @@
 
 # Stops the kubelet, removes the containers and the cluster state kubeadm created.
 # Skipped on a re-run after the packages were already removed.
+# A failed reset must not stop the cleanup below: a leftover kubelet.conf or init.done/join.done
+# marker would make a reused node skip its setup and keep the state of this cluster.
 - name: Reset the node
   ansible.builtin.command:
     cmd: kubeadm reset --config /root/kubeadm/reset.yaml
     removes: /usr/bin/kubeadm
+  ignore_errors: true
 
 # kubeadm reset leaves /etc/kubernetes itself, the etcd data, the emptied kubelet directory and
 # the CNI configuration in /etc/cni. /root/kubeadm holds the configs and the init.done/join.done
