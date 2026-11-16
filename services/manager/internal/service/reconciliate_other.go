@@ -324,13 +324,6 @@ func CreatePipeline(clusters *spec.Clusters, isCreate bool) []*spec.Stage {
 							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 						},
 					},
-					{
-						Kind: spec.StageAnsibler_CREATE_CLUSTER,
-						Description: &spec.StageDescription{
-							About:      "Creating a Kubernetes cluster using kubeadm",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
 					// NOTE: there is no need to Commit Proxy envs, if the pipeline is used for creation.
 				},
 			},
@@ -361,13 +354,6 @@ func CreatePipeline(clusters *spec.Clusters, isCreate bool) []*spec.Stage {
 						Kind: spec.StageAnsibler_RECONCILE_LOADBALANCERS,
 						Description: &spec.StageDescription{
 							About:      "Reconciling Envoy service across the loadbalancer nodes",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-					{
-						Kind: spec.StageAnsibler_CREATE_CLUSTER,
-						Description: &spec.StageDescription{
-							About:      "Creating a Kubernetes cluster using kubeadm",
 							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 						},
 					},
@@ -440,6 +426,16 @@ func CreatePipeline(clusters *spec.Clusters, isCreate bool) []*spec.Stage {
 				ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 			},
 		})
+	} else {
+		createCluster := &spec.StageAnsibler_SubPass{
+			Kind: spec.StageAnsibler_CREATE_CLUSTER,
+			Description: &spec.StageDescription{
+				About:      "Creating a Kubernetes cluster using kubeadm",
+				ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+			},
+		}
+		ansProxy.Ansibler.SubPasses = append(ansProxy.Ansibler.SubPasses, createCluster)
+		ansNoProxy.Ansibler.SubPasses = append(ansNoProxy.Ansibler.SubPasses, createCluster)
 	}
 
 	// terraformer, ansibler (which also bootstraps the cluster with kubeadm), kuber.
