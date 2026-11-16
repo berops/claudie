@@ -3,19 +3,22 @@
 # existing_control_node by the kubeadm_join_credentials role. join_as_control_plane selects
 # whether the host joins as a control plane node or as a worker.
 #
-# kubeadm join exits 0 only after all of its phases succeeded, the marker records that.
-# kubelet.conf alone is not enough, kubeadm writes it in the kubelet-start phase, before a
-# control plane node adds its etcd member and writes its static pod manifests. A node with
-# the marker is left untouched: the join config contains a fresh token on every run, so
-# writing it unconditionally would never be idempotent. The marker lives next to the join
-# config, in the directory owned by this role.
-- name: Check whether kubeadm join already completed
-  ansible.builtin.stat:
-    path: /root/kubeadm/join.done
-  register: kubeadm_join_done
+# The API server decides whether the host already joined, not a file on the host: files
+# outlive the cluster, so a reused node would skip the join. A control node is registered
+# before its etcd member and static pods exist, so it counts only once mark-control-plane
+# labeled it, after the etcd join.
+- name: Check whether the host already joined the cluster
+  ansible.builtin.command:
+    cmd: >-
+      kubectl --kubeconfig /etc/kubernetes/admin.conf get nodes -o name
+      --field-selector metadata.name={{ inventory_hostname }}
+      {{ '-l node-role.kubernetes.io/control-plane' if join_as_control_plane else '' }}
+  delegate_to: "{{ existing_control_node }}"
+  register: kubeadm_joined_node
+  changed_when: false
 
 - name: Join the cluster
-  when: not kubeadm_join_done.stat.exists
+  when: kubeadm_joined_node.stdout == ''
   block:
     - name: Create directory for kubeadm configs
       ansible.builtin.file:
@@ -37,8 +40,6 @@
       ansible.builtin.command:
         cmd: kubeadm reset --force
 
-    # The marker is written in the same command, so a play abort (any_errors_fatal) or an
-    # SSH drop cannot land between the join and the marker.
     - name: Run kubeadm join
-      ansible.builtin.shell:
-        cmd: kubeadm join --config /root/kubeadm/join.yaml && touch /root/kubeadm/join.done
+      ansible.builtin.command:
+        cmd: kubeadm join --config /root/kubeadm/join.yaml
