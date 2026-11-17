@@ -22,8 +22,11 @@ func TestUpgradeCluster(t *testing.T) {
 		clusterToManifestFile   = "manifests/upgrade-cluster/to-version.yaml"
 		clusterName             = "upgrade-cluster-test-cluster"
 		expectedNodeCount       = 4
-		upgradeFromVersion      = "v1.35.0"
-		upgradeToVersion        = "v1.36.0"
+		controlNodeCount        = 2
+		// kube-apiserver, kube-controller-manager and kube-scheduler on each control node.
+		expectedControlPlanePodCount = 3 * controlNodeCount
+		upgradeFromVersion           = "v1.35.0"
+		upgradeToVersion             = "v1.36.0"
 	)
 
 	namespace := claudieNamespace(t)
@@ -64,7 +67,11 @@ func TestUpgradeCluster(t *testing.T) {
 			if got := nodesNotOnKubeletVersion(t, childClusterClient, step.wantVersion); len(got) > 0 {
 				t.Errorf("cluster %s: got nodes on other kubelet versions %v, want all on %s", clusterName, got, step.wantVersion)
 			}
-			if got, want := controlPlaneVersions(t, childClusterClient), []string{step.wantVersion}; !slices.Equal(got, want) {
+			pods := controlPlanePods(t, childClusterClient)
+			if got := len(pods); got != expectedControlPlanePodCount {
+				t.Errorf("cluster %s: got %d control plane pods, want %d", clusterName, got, expectedControlPlanePodCount)
+			}
+			if got, want := controlPlaneVersions(t, pods), []string{step.wantVersion}; !slices.Equal(got, want) {
 				t.Errorf("cluster %s: got control plane versions %v, want %v", clusterName, got, want)
 			}
 			if err := runCiliumConnectivityTestQuick(t, childClusterKubeconfig); err != nil {
@@ -92,9 +99,9 @@ func nodesNotOnKubeletVersion(t *testing.T, client kubernetes.Interface, version
 	return otherVersions
 }
 
-// controlPlaneVersions returns the sorted, distinct image versions of the kube-apiserver,
-// kube-controller-manager and kube-scheduler pods of the cluster behind client.
-func controlPlaneVersions(t *testing.T, client kubernetes.Interface) []string {
+// controlPlanePods returns the kube-apiserver, kube-controller-manager and kube-scheduler pods
+// of the cluster behind client.
+func controlPlanePods(t *testing.T, client kubernetes.Interface) []corev1.Pod {
 	t.Helper()
 
 	// kubeadm labels its static pods with their component.
@@ -105,8 +112,15 @@ func controlPlaneVersions(t *testing.T, client kubernetes.Interface) []string {
 	if err != nil {
 		t.Fatalf("listing control plane pods: %v", err)
 	}
+	return pods.Items
+}
+
+// controlPlaneVersions returns the sorted, distinct image versions of pods.
+func controlPlaneVersions(t *testing.T, pods []corev1.Pod) []string {
+	t.Helper()
+
 	var versions []string
-	for _, p := range pods.Items {
+	for _, p := range pods {
 		for _, c := range p.Spec.Containers {
 			version := c.Image[strings.LastIndex(c.Image, ":")+1:]
 			t.Logf("  pod %s: %s", p.Name, version)
