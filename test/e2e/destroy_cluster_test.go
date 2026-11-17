@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/crypto/ssh"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 )
@@ -45,6 +46,10 @@ func TestDestroyCluster(t *testing.T) {
 		t.Fatalf("cluster %s before deletion: got %d dynamic nodes in metadata, want %d", clusterName, got, expectedDynamicNodeCount)
 	}
 
+	if got := reachableDynamicNodes(nodes); len(got) != expectedDynamicNodeCount {
+		t.Fatalf("cluster %s before deletion: got %d dynamic nodes reachable over SSH (%v), want %d", clusterName, len(got), got, expectedDynamicNodeCount)
+	}
+
 	deleteInputManifest(t, e2eClusterClient, manifest, namespace, time.Hour)
 
 	if got := reachableDynamicNodes(nodes); len(got) > 0 {
@@ -81,7 +86,7 @@ var staticNodeInstallation = []string{
 func reachableDynamicNodes(nodes []dynamicNode) []string {
 	var reachable []string
 	for _, n := range nodes {
-		if client, err := dialSSH(n.IP, n.Key); err == nil {
+		if client, err := retryValue(func() (*ssh.Client, error) { return dialSSH(n.IP, n.Key) }); err == nil {
 			client.Close()
 			reachable = append(reachable, n.Name)
 		}
