@@ -7,16 +7,14 @@
   ansible.builtin.set_fact:
     node_packages: "{{ longhorn_packages + ([] if kubelet_conf.stat.exists else kubernetes_packages) }}"
 
-# The cache is always refreshed, the apt repositories may have just been added.
 - name: Start installing packages
   ansible.builtin.apt:
     name: "{{ node_packages }}"
     state: present
     update_cache: true
     install_recommends: false
-    # A node reused from another cluster may still hold the packages of that cluster, in another
-    # version. The Kubernetes packages are only installed on nodes that are not part of a cluster.
     allow_change_held_packages: true
+    allow_downgrade: true
     lock_timeout: 600
   async: 600
   poll: 0

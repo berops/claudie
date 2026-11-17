@@ -38,6 +38,7 @@
         update_cache: true
         install_recommends: false
         allow_change_held_packages: true
+        allow_downgrade: true
         lock_timeout: 600
       retries: 2
       delay: 10
