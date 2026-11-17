@@ -46,7 +46,7 @@ func TestAPIEndpointMoves(t *testing.T) {
 			name:                  "create cluster with load balancer attached",
 			manifestFile:          withLoadBalancerManifestFile,
 			wantNodeCount:         4,
-			wantAPIEndpointSuffix: "." + loadBalancerDNSZone,
+			wantAPIEndpointSuffix: loadBalancerDNSZone,
 		},
 		{
 			name:                    "detach load balancer",
@@ -70,7 +70,7 @@ func TestAPIEndpointMoves(t *testing.T) {
 			name:                  "attach load balancer",
 			manifestFile:          withLoadBalancerManifestFile,
 			wantNodeCount:         4,
-			wantAPIEndpointSuffix: "." + loadBalancerDNSZone,
+			wantAPIEndpointSuffix: loadBalancerDNSZone,
 		},
 		{
 			name:                  "replace load balancer hostname",
@@ -102,8 +102,8 @@ func TestAPIEndpointMoves(t *testing.T) {
 				if ips := nodePoolIPs(t, e2eClusterClient, namespace, clusterName, step.wantAPIEndpointNodePool); !slices.Contains(ips, kubeconfigApiEndpoint) {
 					t.Errorf("cluster %s: got API endpoint %s, want one of the %s node IPs %v", clusterName, kubeconfigApiEndpoint, step.wantAPIEndpointNodePool, ips)
 				}
-			} else if !strings.HasSuffix(kubeconfigApiEndpoint, step.wantAPIEndpointSuffix) {
-				t.Errorf("cluster %s: got API endpoint %s, want a load balancer hostname ending in %s", clusterName, kubeconfigApiEndpoint, step.wantAPIEndpointSuffix)
+			} else if !strings.HasSuffix("."+kubeconfigApiEndpoint, "."+step.wantAPIEndpointSuffix) {
+				t.Errorf("cluster %s: got API endpoint %s, want a load balancer hostname ending in DNS labels %s", clusterName, kubeconfigApiEndpoint, step.wantAPIEndpointSuffix)
 			}
 
 			kubeadmConfig := kubeadmClusterConfig(t, childClusterClient)
