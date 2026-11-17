@@ -99,20 +99,32 @@ func (v *InputManifestValidator) ValidateUpdate(ctx context.Context, oldObj, new
 		}
 	}
 
-	if err := v.validateVersionUpgrades(ctx, newObj); err != nil {
+	if err := v.validateVersionUpgrades(ctx, oldObj, newObj); err != nil {
 		return nil, err
 	}
 
 	return nil, v.validate(ctx, newObj)
 }
 
-// validateVersionUpgrades checks the kubernetes version of every cluster in the InputManifest
-// against the version the cluster runs, as stored in the current state by the manager. The
-// previous InputManifest is not enough: its version may not have been applied to the cluster yet.
-// If a version upgrade is in flight, running or failed and waiting to be retried, the version is
-// also checked against its target, as the cluster will run that version once the upgrade finishes.
-// Clusters that were not built yet have no current state and are skipped.
-func (v *InputManifestValidator) validateVersionUpgrades(ctx context.Context, im *v1beta.InputManifest) error {
+// validateVersionUpgrades checks each cluster's kubernetes version against the previous
+// InputManifest and against the version the cluster actually runs.
+func (v *InputManifestValidator) validateVersionUpgrades(ctx context.Context, oldIm, im *v1beta.InputManifest) error {
+	previous := make(map[string]string)
+	for _, c := range oldIm.Spec.Kubernetes.Clusters {
+		previous[c.Name] = c.Version
+	}
+
+	for _, desired := range im.Spec.Kubernetes.Clusters {
+		prev, ok := previous[desired.Name]
+		if !ok {
+			continue
+		}
+
+		if err := manifest.ValidateVersionUpgrade(prev, desired.Version); err != nil {
+			return fmt.Errorf("kubernetes version check for cluster %q against the previous InputManifest failed: %w", desired.Name, err)
+		}
+	}
+
 	resp, err := v.manager.GetConfig(ctx, &managerclient.GetConfigRequest{Name: im.GetNamespacedNameDashed()})
 	if errors.Is(err, managerclient.ErrNotFound) {
 		return nil
@@ -131,18 +143,6 @@ func (v *InputManifestValidator) validateVersionUpgrades(ctx context.Context, im
 
 		if err := manifest.ValidateVersionUpgrade(current, desired.Version); err != nil {
 			return fmt.Errorf("kubernetes version check for cluster %q failed: %w", desired.Name, err)
-		}
-
-		inFlight := state.GetInFlight().GetTask().GetUpdate().GetUpgradeVersion().GetVersion()
-		if inFlight == "" {
-			continue
-		}
-
-		if err := manifest.ValidateVersionUpgrade(inFlight, desired.Version); err != nil {
-			return fmt.Errorf(
-				"kubernetes version check for cluster %q failed, an upgrade to version %s is in progress: %w",
-				desired.Name, inFlight, err,
-			)
 		}
 	}
 
