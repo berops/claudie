@@ -30,7 +30,7 @@ func Destroy(
 	logger.Info().Msgf("Destroying kubernetes cluster")
 
 	var loadbalancerApiEndpoint string
-	if ep := clusters.FindAssignedLbApiEndpoint(toDelete.LoadBalancers); ep != nil {
+	if ep := clusters.FindLoadBalancerApiServerEndpoint(toDelete.LoadBalancers); ep != nil {
 		loadbalancerApiEndpoint = ep.Dns.Endpoint
 	}
 

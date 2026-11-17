@@ -160,7 +160,7 @@ func handleAPIEndpointChange(
 		oldEndpoint = change.CurrentEndpointId
 		newEndpoint = change.DesiredEndpointId
 	case spec.ApiEndpointChangeState_AttachingLoadBalancer:
-		_, n := nodepools.FindApiEndpoint(state.K8S.ClusterInfo.NodePools)
+		_, n := clusters.FindControlNodeApiServerEndpoint(state.K8S.ClusterInfo.NodePools)
 		if n == nil {
 			return fmt.Errorf("failed to find APIEndpoint k8s node, couldn't update Api server endpoint")
 		}

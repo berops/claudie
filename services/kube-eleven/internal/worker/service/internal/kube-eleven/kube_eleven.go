@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/internal/sanitise"
 	"github.com/berops/claudie/internal/tmplutils"
@@ -224,7 +225,7 @@ func (k *KubeEleven) apiEndpoint() (string, bool, error) {
 		return k.LoadBalancerEndpoint, false, nil
 	}
 
-	_, n := nodepools.FindApiEndpoint(k.K8sCluster.ClusterInfo.NodePools)
+	_, n := clusters.FindControlNodeApiServerEndpoint(k.K8sCluster.ClusterInfo.NodePools)
 	if n == nil {
 		// This should never happen as the apiEndpoint role is always chosen by the manager service.
 		return "", false, errors.New("malformed k8s state, no loadbalancer attached with api role nor any control plane node has api server role")

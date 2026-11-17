@@ -1,0 +1,57 @@
+# {{ ansible_managed }}
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: {{ node_ip }}
+  bindPort: {{ api_server_port }}
+nodeRegistration:
+  name: {{ inventory_hostname }}
+  kubeletExtraArgs:
+    - name: node-ip
+      value: {{ node_ip }}
+skipPhases:
+  - addon/kube-proxy
+---
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+clusterName: "{{ cluster_name }}"
+kubernetesVersion: {{ kubernetes_version }}
+controlPlaneEndpoint: {{ control_plane_endpoint }}
+apiServer:
+  certSANs:
+{% for san in api_server_cert_sans %}
+    - "{{ san }}"
+{% endfor %}
+etcd:
+  local:
+    extraEnvs:
+      - name: ETCDCTL_CACERT
+        value: /etc/kubernetes/pki/etcd/ca.crt
+      - name: ETCDCTL_CERT
+        value: /etc/kubernetes/pki/etcd/healthcheck-client.crt
+      - name: ETCDCTL_KEY
+        value: /etc/kubernetes/pki/etcd/healthcheck-client.key
+      - name: ETCDCTL_ENDPOINTS
+        value: https://127.0.0.1:2379
+networking:
+  podSubnet: {{ pod_subnet }}
+  serviceSubnet: {{ service_subnet }}
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+cgroupDriver: systemd
+# Kubelets request their serving certificates from the cluster CA instead of
+# self-signing them. The CSRs are approved by the kubelet-csr-approver deployed
+# by kuber; metrics-server relies on this to scrape kubelets over verified TLS.
+serverTLSBootstrap: true
+rotateCertificates: true
+# Same as kubeone, the kubelet default is 10Mi.
+containerLogMaxSize: 100Mi
+systemReserved:
+  memory: 200Mi
+kubeReserved:
+  memory: 200Mi
+# Pods resolve through the NodeLocal DNSCache instead of the kube-dns service,
+# kubeadm defaults this to the kube-dns IP and logs a warning about the override.
+clusterDNS:
+  - {{ node_local_dns_ip }}

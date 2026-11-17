@@ -1,0 +1,13 @@
+# PodDisruptionBudget for CoreDNS deployed by kubeadm, applied by kuber (task_deploy_addons.go).
+# Same as the coredns-pdb addon of kubeone v1.14.1 (addons/coredns-pdb), enabled for the existing
+# clusters by deployPodDisruptionBudget: true in kube-eleven's kubeone.tpl.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: coredns
+  namespace: kube-system
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      k8s-app: kube-dns

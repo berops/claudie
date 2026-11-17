@@ -361,24 +361,6 @@ func CreatePipeline(clusters *spec.Clusters, isCreate bool) []*spec.Stage {
 			},
 		}
 
-		kubeeleven = spec.Stage_KubeEleven{
-			KubeEleven: &spec.StageKubeEleven{
-				Description: &spec.StageDescription{
-					About:      "Reconciling kubernetes cluster",
-					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-				},
-				SubPasses: []*spec.StageKubeEleven_SubPass{
-					{
-						Kind: spec.StageKubeEleven_RECONCILE_CLUSTER,
-						Description: &spec.StageDescription{
-							About:      "Creating kubernetes cluster from the set up infrastructure",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-				},
-			},
-		}
-
 		kuber = spec.Stage_Kuber{
 			Kuber: &spec.StageKuber{
 				Description: &spec.StageDescription{
@@ -386,11 +368,28 @@ func CreatePipeline(clusters *spec.Clusters, isCreate bool) []*spec.Stage {
 					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 				},
 				SubPasses: []*spec.StageKuber_SubPass{
+					// The cluster created by the ansibler has no CNI, the nodes stay
+					// NotReady and no pods can be scheduled until Cilium is deployed,
+					// thus this has to be the first sub-pass and is fatal.
+					{
+						Kind: spec.StageKuber_RECONCILE_CILIUM,
+						Description: &spec.StageDescription{
+							About:      "Deploying Cilium CNI",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
 					{
 						Kind: spec.StageKuber_DEPLOY_KUBELET_CSR_APPROVER,
 						Description: &spec.StageDescription{
 							About:      "Deploying kubelet csr-approver",
-							ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
+						Kind: spec.StageKuber_DEPLOY_ADDONS,
+						Description: &spec.StageDescription{
+							About:      "Deploying cluster addons (nodelocaldns, coredns-pdb, metrics-server)",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 						},
 					},
 					{
@@ -427,12 +426,22 @@ func CreatePipeline(clusters *spec.Clusters, isCreate bool) []*spec.Stage {
 				ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 			},
 		})
+	} else {
+		createCluster := &spec.StageAnsibler_SubPass{
+			Kind: spec.StageAnsibler_CREATE_CLUSTER,
+			Description: &spec.StageDescription{
+				About:      "Creating a Kubernetes cluster using kubeadm",
+				ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+			},
+		}
+		ansProxy.Ansibler.SubPasses = append(ansProxy.Ansibler.SubPasses, createCluster)
+		ansNoProxy.Ansibler.SubPasses = append(ansNoProxy.Ansibler.SubPasses, createCluster)
 	}
 
+	// terraformer, ansibler (which also bootstraps the cluster with kubeadm), kuber.
 	pipeline := []*spec.Stage{
 		{StageKind: nil},
 		{StageKind: nil},
-		{StageKind: &kubeeleven},
 		{StageKind: &kuber},
 	}
 

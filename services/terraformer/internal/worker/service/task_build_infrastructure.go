@@ -52,7 +52,7 @@ func build(
 		cluster = kubernetes.K8Scluster{
 			ProjectName:       projectName,
 			Cluster:           k8s,
-			ExportPort6443:    clusters.FindAssignedLbApiEndpoint(lbs) == nil,
+			ExportPort6443:    clusters.FindLoadBalancerApiServerEndpoint(lbs) == nil,
 			SpawnProcessLimit: processLimit,
 		}
 	)

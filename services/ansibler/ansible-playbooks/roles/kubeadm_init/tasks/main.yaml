@@ -1,0 +1,46 @@
+---
+- name: Create directory for kubeadm configs
+  ansible.builtin.file:
+    path: /root/kubeadm
+    state: directory
+    mode: "0700"
+
+- name: Write the kubeadm cluster config
+  ansible.builtin.template:
+    src: cluster-config.yaml.j2
+    dest: /root/kubeadm/cluster-config.yaml
+    mode: "0600"
+
+# kubeadm init exits 0 only after all of its phases succeeded, the marker records that.
+# admin.conf alone is not enough, kubeadm writes it in the kubeconfig phase, before the
+# bootstrap token, cluster-info and CoreDNS are created. The marker lives next to the
+# cluster config, in the directory owned by this role.
+- name: Check whether kubeadm init already completed
+  ansible.builtin.stat:
+    path: /root/kubeadm/init.done
+  register: kubeadm_init_done
+
+# A previous attempt may have failed partway through, kubeadm init refuses to run over the
+# leftover manifests and etcd data, so the node is reset first (a no-op on a fresh node).
+# No other node can have joined yet, the join credentials are created only after init.
+- name: Reset a partially initialized control plane
+  ansible.builtin.command:
+    cmd: kubeadm reset --force
+  when: not kubeadm_init_done.stat.exists
+
+# kube-proxy is skipped in the config because Cilium replaces it. The control plane
+# certificates are uploaded by the kubeadm_join_credentials role, not by init, so that the
+# join credentials always come from one place.
+# The marker is written in the same command, so no failure can land between the two.
+- name: Run kubeadm init
+  ansible.builtin.shell:
+    cmd: kubeadm init --config /root/kubeadm/cluster-config.yaml && touch /root/kubeadm/init.done
+  when: not kubeadm_init_done.stat.exists
+
+# The ansibler reads the kubeconfig from kubeconfig_dest after the playbook finished and
+# stores it in the cluster state for the later stages (kuber).
+- name: Fetch the admin kubeconfig to the ansibler
+  ansible.builtin.fetch:
+    src: /etc/kubernetes/admin.conf
+    dest: "{{ kubeconfig_dest }}"
+    flat: true

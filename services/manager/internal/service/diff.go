@@ -885,7 +885,7 @@ func determineLBApiEndpointChange(
 		}
 	}
 
-	if current := clusters.FindAssignedLbApiEndpoint(currentLbs); current != nil {
+	if current := clusters.FindLoadBalancerApiServerEndpoint(currentLbs); current != nil {
 		if len(desired) == 0 && current.Dns == nil { // current state has no dns, but lb was deleted.
 			return none, none, spec.ApiEndpointChangeState_NoChange
 		}

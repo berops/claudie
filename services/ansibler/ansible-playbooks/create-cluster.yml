@@ -1,0 +1,56 @@
+---
+# Bootstraps a Kubernetes cluster with kubeadm on the nodes of the kubernetes cluster.
+# Run by the ansibler on the CREATE_CLUSTER stage, see task_create_cluster.go.
+#
+# Expects the inventory generated from templates/k8s-inventory.goini ([control] and [compute]
+# groups, private_ip per host) and the kubernetes_version extra var (e.g. 1.35.0) passed by
+# the ansibler, along with init_control_node, control_plane_endpoint_host and cluster_name
+# (the name in the kubeconfig, as KubeOne set it). WireGuard is
+# set up beforehand by the INSTALL_VPN stage, so private_ip is reachable between all nodes,
+# and the packages, containerd and the kernel settings by the INSTALL_NODE_REQUIREMENTS
+# stage (node-setup.yml).
+#
+# The ansibler retries the whole playbook on failure, so every play has to be re-runnable:
+# a node that is already part of the cluster is left untouched.
+
+# The ansibler passes init_control_node: the node marked as the api endpoint, or with an api
+# loadbalancer a control node the loadbalancer forwards to (task_create_cluster.go).
+- name: Init the cluster on init_control_node
+  hosts: "{{ init_control_node }}"
+  become: true
+  gather_facts: false
+  any_errors_fatal: true
+  vars_files:
+    - vars/k8s.yaml
+  roles:
+    - kubeadm_init
+    # The join plays below read the credentials from init_control_node.
+    - kubeadm_join_credentials
+
+# Control nodes join one at a time, joining a control node adds an etcd member and
+# concurrent membership changes are refused by etcd.
+- name: Join the other control nodes
+  hosts: "control:!{{ init_control_node }}"
+  become: true
+  gather_facts: false
+  serial: 1
+  any_errors_fatal: true
+  vars_files:
+    - vars/k8s.yaml
+  roles:
+    - role: kubeadm_join
+      join_as_control_plane: true
+      existing_control_node: "{{ init_control_node }}"
+
+- name: Join all worker nodes
+  hosts: compute
+  become: true
+  gather_facts: false
+  strategy: mitogen_free
+  any_errors_fatal: true
+  vars_files:
+    - vars/k8s.yaml
+  roles:
+    - role: kubeadm_join
+      join_as_control_plane: false
+      existing_control_node: "{{ init_control_node }}"

@@ -53,6 +53,7 @@ message StageAnsibler {
     COMMIT_PROXY_ENVS = 6;
     UPDATE_PROXY_ENVS_ON_NODES = 7;
     CLEAR_PROXY_ENVS_ON_NODES = 8;
+    CREATE_CLUSTER = 9;
   }
   message SubPass {
     SubPassKind kind = 1;
@@ -89,6 +90,8 @@ message StageKuber {
     DISABLE_LONGHORN_CA = 10;
     RECONCILE_LONGHORN_STORAGE_CLASSES = 11;
     DEPLOY_KUBELET_CSR_APPROVER = 12;
+    RECONCILE_CILIUM = 13;
+    DEPLOY_ADDONS = 14;
   }
   message SubPass {
     SubPassKind kind = 1;
