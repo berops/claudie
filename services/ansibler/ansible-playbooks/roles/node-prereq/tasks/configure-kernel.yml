@@ -14,7 +14,7 @@
 - name: Keep swap off across reboots
   ansible.builtin.replace:
     path: /etc/fstab
-    regexp: '^([^#\s]\S*\s+\S+\s+swap\s+.*)$'
+    regexp: '^([ \t]*[^#\s]\S*\s+\S+\s+swap\s+.*)$'
     replace: '# \1'
 
 - name: Load kernel modules for container networking
