@@ -217,6 +217,7 @@ jobs:
 
   delete-claudie-namespace:
     needs: [deploy-claudie, e2e-tests, delete-leftover-inputmanifests]
+    if: always() && needs.delete-leftover-inputmanifests.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
