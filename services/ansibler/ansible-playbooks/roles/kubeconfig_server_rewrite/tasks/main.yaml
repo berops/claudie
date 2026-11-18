@@ -1,0 +1,35 @@
+---
+# Rewrites the api server address in kubeconfigs under /etc/kubernetes from old_server to
+# new_server (both host:port), only the server changes, the credentials stay. Parameters:
+#   kubeconfigs  file names under /etc/kubernetes, e.g. [kubelet.conf, admin.conf]; files missing
+#                on the node are skipped (super-admin.conf is only on the node that ran kubeadm init)
+#   old_server   the address to replace, a kubeconfig with another server is left as it is
+#   new_server   the new address
+#
+# Used when the control plane endpoint moves, see api-server-endpoint-change.yml. The files are
+# edited, not generated again: kubeadm keeps an existing kubeconfig with another server and only
+# warns about it, generating one needs the CA key that only control nodes have, and a generated
+# kubelet.conf embeds a fixed client certificate instead of the one the kubelet rotates.
+
+- name: Find the kubeconfigs to rewrite
+  ansible.builtin.find:
+    paths: /etc/kubernetes
+    patterns: "{{ kubeconfigs }}"
+  register: server_rewrite_kubeconfigs
+
+# \g<1> instead of \1, the address can start with a digit.
+- name: Point the kubeconfigs at the new api server address
+  ansible.builtin.replace:
+    path: "{{ item }}"
+    regexp: '^(\s+server: https://){{ old_server | regex_escape }}$'
+    replace: '\g<1>{{ new_server }}'
+  loop: "{{ server_rewrite_kubeconfigs.files | map(attribute='path') | list }}"
+
+# The kubelet reads its kubeconfig only on start. Restarted unconditionally, so that a retried run
+# also restarts a kubelet whose kubeconfig the failed run already rewrote. The running pods are not
+# affected by a kubelet restart.
+- name: Restart the kubelet
+  ansible.builtin.systemd_service:
+    name: kubelet
+    state: restarted
+  when: "'kubelet.conf' in kubeconfigs"
