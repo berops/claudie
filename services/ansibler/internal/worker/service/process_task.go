@@ -129,6 +129,8 @@ passes:
 			CommitProxyEnvs(logger, work.InputManifestName, processlimit, tracker)
 		case spec.StageAnsibler_CREATE_CLUSTER:
 			CreateCluster(logger, work.InputManifestName, processlimit, tracker)
+		case spec.StageAnsibler_RESET_STATIC_NODES:
+			ResetStaticNodes(logger, work.InputManifestName, processlimit, tracker)
 		default:
 			logger.Warn().Msg("Stage not recognized, skipping")
 			continue

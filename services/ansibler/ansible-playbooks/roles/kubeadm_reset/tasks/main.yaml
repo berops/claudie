@@ -1,0 +1,44 @@
+---
+# Reverts what the kubeadm_init and kubeadm_join roles produced on the node: the cluster state and
+# the kubeadm configs and markers of those roles. Also removes the same leftovers of clusters built
+# by kubeone. The etcd membership is not cleaned up: either the whole cluster is destroyed, or kuber
+# already removed the deleted node from etcd.
+#
+# Needs the kubeadm binary, so it runs before roles/node-prereq-remove, which removes the packages.
+
+# The nodes of clusters built by kubeone have no /root/kubeadm yet.
+- name: Create directory for kubeadm configs
+  ansible.builtin.file:
+    path: /root/kubeadm
+    state: directory
+    mode: "0700"
+
+- name: Write the kubeadm reset config
+  ansible.builtin.template:
+    src: reset.yaml.j2
+    dest: /root/kubeadm/reset.yaml
+    mode: "0600"
+
+# Stops the kubelet, removes the containers and the cluster state kubeadm created.
+# Skipped on a re-run after the packages were already removed.
+# A failed reset must not stop the cleanup below: a leftover kubelet.conf or init.done
+# marker would make a reused node skip its setup and keep the state of this cluster.
+- name: Reset the node
+  ansible.builtin.command:
+    cmd: kubeadm reset --config /root/kubeadm/reset.yaml
+    removes: /usr/bin/kubeadm
+  ignore_errors: true
+
+# kubeadm reset leaves /etc/kubernetes itself, the etcd data, the emptied kubelet directory and
+# the CNI configuration in /etc/cni. /root/kubeadm holds the configs and the init.done
+# marker of the kubeadm_init role, a leftover marker would make a later init skip this node.
+- name: Remove the cluster files
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/kubernetes
+    - /var/lib/etcd
+    - /var/lib/kubelet
+    - /root/kubeadm
+    - /etc/cni

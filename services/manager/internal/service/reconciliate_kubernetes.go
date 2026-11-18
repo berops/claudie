@@ -1122,16 +1122,27 @@ func ScheduleDeletionsInNodePools(
 	}
 
 	// Unless static nodes are being deleted in which case a cleanup
-	// needs to be executed that removes claudie installed utilities.
+	// needs to be executed that resets the nodes and removes claudie
+	// installed utilities, same as on the deletion of the whole cluster.
 	if opts.IsStatic {
-		ans.Ansibler.SubPasses = append(ans.Ansibler.SubPasses, &spec.StageAnsibler_SubPass{
-			Kind: spec.StageAnsibler_REMOVE_CLAUDIE_UTILITIES,
-			Description: &spec.StageDescription{
-				About: "Removing claudie install utilities",
-				// Failing to remove the utilities is not considered as a fatal error.
-				ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+		ans.Ansibler.SubPasses = append(ans.Ansibler.SubPasses, []*spec.StageAnsibler_SubPass{
+			{
+				Kind: spec.StageAnsibler_RESET_STATIC_NODES,
+				Description: &spec.StageDescription{
+					About: "Resetting static nodes and removing kubernetes packages",
+					// Failing to reset the nodes is not considered as a fatal error.
+					ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+				},
 			},
-		})
+			{
+				Kind: spec.StageAnsibler_REMOVE_CLAUDIE_UTILITIES,
+				Description: &spec.StageDescription{
+					About: "Removing claudie install utilities",
+					// Failing to remove the utilities is not considered as a fatal error.
+					ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+				},
+			},
+		}...)
 	}
 
 	// Unless the proxy is in use, in which case the task needs to also
