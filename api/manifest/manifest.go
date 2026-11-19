@@ -260,6 +260,8 @@ type DynamicNodePool struct {
 	// Worker pools only. Currently supported on: GCP, Verda, AWS, Azure, OCI.
 	// +optional
 	Spot bool `validate:"omitempty" yaml:"spot,omitempty" json:"spot,omitempty"`
+	// Inlined in the InputManifest as containerdConfigMap.
+	Containerd `yaml:"containerd,omitempty" json:",inline"`
 }
 
 // Autoscaler configuration on per nodepool basis. Defines the number of nodes, autoscaler will scale up or down specific nodepool.
@@ -284,6 +286,15 @@ type ProviderSpec struct {
 	ExternalNetworkName string `yaml:"externalNetworkName" json:"externalNetworkName"`
 }
 
+// Containerd is the containerd drop-in of a nodepool, written to /etc/containerd/conf.d/ on its nodes.
+type Containerd struct {
+	// ConfigMap in the namespace of the InputManifest whose only entry is the containerd drop-in TOML. Kubernetes nodepools only.
+	// +optional
+	ConfigMap string `yaml:"configMap,omitempty" json:"containerdConfigMap,omitempty"`
+	// TOML of ConfigMap, filled by the operator and kept out of the CRD.
+	Config string `yaml:"config,omitempty" json:"-"`
+}
+
 // StaticNodePool List of static nodepools of already existing machines, not created by Claudie, used for Kubernetes or loadbalancer clusters.
 type StaticNodePool struct {
 	// Name of the static nodepool.
@@ -302,6 +313,8 @@ type StaticNodePool struct {
 	// SSH port used to connect to the static nodes. Defaults to 22 if not set.
 	// +optional
 	SshPort *int32 `validate:"omitempty,min=1,max=65535" yaml:"sshPort" json:"sshPort"`
+	// Inlined in the InputManifest as containerdConfigMap.
+	Containerd `yaml:"containerd,omitempty" json:",inline"`
 }
 
 // Node represents a static node assigned to a particular static nodepool.
