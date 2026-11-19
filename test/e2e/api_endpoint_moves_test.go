@@ -24,7 +24,6 @@ func TestAPIEndpointMoves(t *testing.T) {
 		withoutLoadBalancerManifestFile        = "manifests/api-endpoint-moves/without-loadbalancer.yaml"
 		withoutEndpointControlNodeManifestFile = "manifests/api-endpoint-moves/without-endpoint-control-node.yaml"
 		withLoadBalancerHostnameManifestFile   = "manifests/api-endpoint-moves/with-loadbalancer-hostname.yaml"
-		newLoadBalancerHostname                = "e2e-api-endpoint-moves"
 		clusterName                            = "api-endpoint-moves-cluster"
 		// Listed first in pools.control, so detaching the load balancer moves the API endpoint here.
 		firstControlNodePool  = "htz-ctrl-a"
@@ -76,7 +75,7 @@ func TestAPIEndpointMoves(t *testing.T) {
 			name:                  "replace load balancer hostname",
 			manifestFile:          withLoadBalancerHostnameManifestFile,
 			wantNodeCount:         4,
-			wantAPIEndpointSuffix: newLoadBalancerHostname + "." + loadBalancerDNSZone,
+			wantAPIEndpointSuffix: namespace + "." + loadBalancerDNSZone,
 		},
 	}
 
