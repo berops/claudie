@@ -45,6 +45,9 @@ const (
 	inputManifestBuildTimeout = time.Hour
 	// sshConnectTimeout bounds both the TCP connect and the SSH handshake.
 	sshConnectTimeout = 30 * time.Second
+	// dynamicNodeSSHPort is where the default claudie-config templates move sshd of dynamic nodes.
+	dynamicNodeSSHPort = "22522"
+	staticNodeSSHPort  = "22"
 )
 
 var (
@@ -439,10 +442,10 @@ func secretValue(t *testing.T, client dynamic.Interface, namespace, name, key st
 
 // runSSH runs command on host as root over SSH with the private key and returns its stdout.
 // A non-zero exit code fails the test.
-func runSSH(t *testing.T, host string, key []byte, command string) string {
+func runSSH(t *testing.T, host, port string, key []byte, command string) string {
 	t.Helper()
 
-	client, err := retryValue(func() (*ssh.Client, error) { return dialSSH(host, key) })
+	client, err := retryValue(func() (*ssh.Client, error) { return dialSSH(host, port, key) })
 	if err != nil {
 		t.Fatalf("connecting to %s: %v", host, err)
 	}
@@ -462,7 +465,7 @@ func runSSH(t *testing.T, host string, key []byte, command string) string {
 }
 
 // dialSSH logs in to host as root with the private key.
-func dialSSH(host string, key []byte) (*ssh.Client, error) {
+func dialSSH(host, port string, key []byte) (*ssh.Client, error) {
 	signer, err := ssh.ParsePrivateKey(key)
 	if err != nil {
 		return nil, fmt.Errorf("parsing ssh key: %w", err)
@@ -474,7 +477,7 @@ func dialSSH(host string, key []byte) (*ssh.Client, error) {
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
-	addr := net.JoinHostPort(host, "22")
+	addr := net.JoinHostPort(host, port)
 	conn, err := (&net.Dialer{Timeout: sshConnectTimeout}).DialContext(context.Background(), "tcp", addr)
 	if err != nil {
 		return nil, err

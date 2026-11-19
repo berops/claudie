@@ -110,9 +110,14 @@ func TestAPIEndpointMoves(t *testing.T) {
 			if got, want := kubeadmConfig.ControlPlaneEndpoint, net.JoinHostPort(kubeconfigApiEndpoint, apiServerPort); got != want {
 				t.Errorf("cluster %s: got kubeadm-config controlPlaneEndpoint %s, want %s", clusterName, got, want)
 			}
+			controlNodeIPs := nodePoolIPs(t, e2eClusterClient, namespace, clusterName, firstControlNodePool, secondControlNodePool)
 			// kubeadm join issues the API server certificate of a control node for these.
-			if got, want := kubeadmConfig.APIServer.CertSANs, nodePoolIPs(t, e2eClusterClient, namespace, clusterName, firstControlNodePool, secondControlNodePool); !slices.Equal(got, want) {
-				t.Errorf("cluster %s: got kubeadm-config certSANs %v, want the control node IPs %v", clusterName, got, want)
+			if got := kubeadmConfig.APIServer.CertSANs; !slices.Equal(got, controlNodeIPs) {
+				t.Errorf("cluster %s: got kubeadm-config certSANs %v, want the control node IPs %v", clusterName, got, controlNodeIPs)
+			}
+			wantCertNames := append([]string{kubeconfigApiEndpoint}, controlNodeIPs...)
+			if got := unverifiedAPIServerNames(t, e2eClusterClient, namespace, clusterName, controlNodeIPs, wantCertNames); len(got) > 0 {
+				t.Errorf("cluster %s: got served API server certificates not verifying for %v by control node, want all verifying for %v", clusterName, got, wantCertNames)
 			}
 			// Cilium reaches the API server through the API endpoint, so this also covers the load balancer.
 			if err := runCiliumConnectivityTestQuick(t, childClusterKubeconfig); err != nil {
@@ -143,6 +148,27 @@ func nodePoolIPs(t *testing.T, client dynamic.Interface, namespace, cluster stri
 	}
 	slices.Sort(ips)
 	return ips
+}
+
+// unverifiedAPIServerNames returns, by node name, which of names the certificate served by the API
+// server of the nodes with nodeIPs does not verify for with the cluster CA. Nodes that pass are left out.
+func unverifiedAPIServerNames(t *testing.T, client dynamic.Interface, namespace, cluster string, nodeIPs, names []string) map[string][]string {
+	t.Helper()
+
+	unverified := map[string][]string{}
+	for _, n := range dynamicNodes(t, client, namespace, cluster) {
+		if !slices.Contains(nodeIPs, n.IP) {
+			continue
+		}
+		for _, name := range names {
+			verify := "kubectl --kubeconfig /etc/kubernetes/admin.conf --server https://127.0.0.1:" + apiServerPort +
+				" --tls-server-name " + name + " --request-timeout 10s get --raw /readyz >/dev/null 2>&1 || echo unverified"
+			if runSSH(t, n.IP, dynamicNodeSSHPort, n.Key, verify) != "" {
+				unverified[n.Name] = append(unverified[n.Name], name)
+			}
+		}
+	}
+	return unverified
 }
 
 // kubeadmClusterConfiguration holds the fields the tests check in the ClusterConfiguration

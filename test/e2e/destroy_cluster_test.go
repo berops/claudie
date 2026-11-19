@@ -86,7 +86,7 @@ var staticNodeInstallation = []string{
 func reachableDynamicNodes(nodes []dynamicNode) []string {
 	var reachable []string
 	for _, n := range nodes {
-		if client, err := retryValue(func() (*ssh.Client, error) { return dialSSH(n.IP, n.Key) }); err == nil {
+		if client, err := retryValue(func() (*ssh.Client, error) { return dialSSH(n.IP, dynamicNodeSSHPort, n.Key) }); err == nil {
 			client.Close()
 			reachable = append(reachable, n.Name)
 		}
@@ -97,6 +97,6 @@ func reachableDynamicNodes(nodes []dynamicNode) []string {
 func staticNodeLeftovers(t *testing.T, ip string, key []byte) []string {
 	t.Helper()
 
-	out := runSSH(t, ip, key, "ls -d "+strings.Join(staticNodeInstallation, " ")+" 2>/dev/null || true")
+	out := runSSH(t, ip, staticNodeSSHPort, key, "ls -d "+strings.Join(staticNodeInstallation, " ")+" 2>/dev/null || true")
 	return strings.Fields(out)
 }
