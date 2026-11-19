@@ -239,6 +239,7 @@ func waitForInputManifest(t *testing.T, client dynamic.Interface, name, namespac
 
 	const stablePolls = 8
 	var done, failed int
+	var last v1beta1.InputManifest
 	err := wait.PollUntilContextTimeout(t.Context(), pollInterval, inputManifestBuildTimeout, false, func(ctx context.Context) (bool, error) {
 		obj, err := client.Resource(inputManifests).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
@@ -249,6 +250,7 @@ func waitForInputManifest(t *testing.T, client dynamic.Interface, name, namespac
 		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &im); err != nil {
 			return false, fmt.Errorf("decoding inputmanifest %s: %w", name, err)
 		}
+		last = im
 
 		isDone, isFailed := inputManifestOutcome(t, im)
 		switch {
@@ -267,7 +269,21 @@ func waitForInputManifest(t *testing.T, client dynamic.Interface, name, namespac
 		return done == stablePolls, nil
 	})
 	if err != nil {
+		logFailedWorkflows(t, last)
 		t.Fatalf("waiting for inputmanifest %s: %v", name, err)
+	}
+}
+
+// logFailedWorkflows logs the ERROR entries Claudie keeps in the workflow history of each cluster.
+func logFailedWorkflows(t *testing.T, im v1beta1.InputManifest) {
+	t.Helper()
+
+	for name, c := range im.Status.Clusters {
+		for _, w := range c.Previous {
+			if w.Status == v1beta1.STATUS_ERROR {
+				t.Logf("cluster %s: stage %s failed at %s: %s", name, w.Stage, w.Timestamp, w.TaskDescription)
+			}
+		}
 	}
 }
 
