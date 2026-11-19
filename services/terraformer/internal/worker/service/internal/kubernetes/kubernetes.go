@@ -20,26 +20,6 @@ import (
 // The default value on how many nodepools can be built concurrently.
 const DefaultNodePoolConcurrencyLimit = 8
 
-// ReconcileNodePoolMode sets the mode for how to deal with the common infrastructure
-// when reconciling a single nodepool.
-type ReconcileNodePoolMode uint8
-
-const (
-	// ReconcileModeRead reads only the output of the common infrastructure.
-	ReconcileModeRead ReconcileNodePoolMode = iota
-
-	// ReconcileModeReadWrite reconciles the common infrastructure
-	// with the nodes of the cluster and reads the output.
-	ReconcileModeReadWrite
-)
-
-var (
-	// ErrReconcileAll error is returned when reconciliation of the common nodepool infrastructure
-	// was executed and therefore nodepools may need to be reconciled aswell by calling the [K8Scluster.ReconcileAll]
-	// function.
-	ErrReconcileAll = errors.New("reconciliation of the whole cluster may be needed")
-)
-
 type K8Scluster struct {
 	ProjectName string
 	Cluster     *spec.K8Scluster
@@ -102,59 +82,6 @@ func (k *K8Scluster) ReconcileAll(ctx context.Context, logger zerolog.Logger) er
 		group.Go(func() error { return builder.ReconcileNodePool(out, i) })
 	}
 	return group.Wait()
-}
-
-// ReconcileNodePool reconciles the state of a single nodepool. It is expected that the nodepool with the passed in 'handle' is part
-// of the [K8Scluster.Cluster].
-//
-// When the reconciliation of the common nodepool infrastructure is performed the [ErrReconcileAll] error is returned hinting that all
-// of the infrastructure should be reconciled via the [K8Scluster.ReconcileAll].
-func (c *K8Scluster) ReconcileNodePool(_ context.Context, logger zerolog.Logger, handle string, mode ReconcileNodePoolMode) error {
-	var (
-		dynamic = nodepools.Dynamic(c.Cluster.ClusterInfo.NodePools)
-		builder = cluster_builder.ClusterBuilder{
-			ClusterName:   c.Cluster.ClusterInfo.Name,
-			ClusterHash:   c.Cluster.ClusterInfo.Hash,
-			ClusterId:     c.Cluster.ClusterInfo.Id(),
-			InputManifest: c.ProjectName,
-			Type:          cluster_builder.KubernetesCluster,
-			K8sInfo: cluster_builder.KubernetesClusterInfo{
-				ExportPort6443: c.ExportPort6443,
-			},
-			SpawnProcessLimit: c.SpawnProcessLimit,
-		}
-	)
-
-	idx := nodepools.IndexByName(handle, dynamic)
-	if idx < 0 {
-		return nil
-	}
-
-	err := builder.Init(logger, dynamic)
-	if err != nil {
-		return err
-	}
-	defer builder.Cleanup()
-
-	switch mode {
-	case ReconcileModeRead:
-		latest, err := builder.OutputOnlyCommon()
-		if err != nil {
-			return fmt.Errorf("failed to read common nodepool infrastructure: %w", err)
-		}
-		return builder.ReconcileNodePool(latest, idx)
-	case ReconcileModeReadWrite:
-		updated, err := builder.ReconcileCommon()
-		if err != nil {
-			return fmt.Errorf("failed to reconcile common nodepool infrastructure: %w: %w", err, ErrReconcileAll)
-		}
-		if err := builder.ReconcileNodePool(updated, idx); err != nil {
-			return fmt.Errorf("failed to reconcile nodepool: %w: %w", err, ErrReconcileAll)
-		}
-		return ErrReconcileAll
-	default:
-		return fmt.Errorf("unknown nodepool reconcile mode %d", mode)
-	}
 }
 
 // DestroyAll destroys all of the infrastructure of the kubernetes cluster.
@@ -247,79 +174,6 @@ func (k *K8Scluster) DestroyAll(ctx context.Context, logger zerolog.Logger, s3 s
 	return nil
 }
 
-// DestroyNodePool destroys the passed in nodepool and its state. It is expected that the nodepool is no longer part of the [K8Scluster.Cluster].
-//
-// The [ErrReconcileAll] error is returned when the reconciliation of the common nodepool infrastructure is executed to indicate
-// that other nodepools may have had their state invalidated.
-func (c *K8Scluster) DestroyNodePool(ctx context.Context, logger zerolog.Logger, deleted *spec.NodePool, s3 store.S3StateStorage) error {
-	var (
-		builder = cluster_builder.ClusterBuilder{
-			ClusterName:   c.Cluster.ClusterInfo.Name,
-			ClusterHash:   c.Cluster.ClusterInfo.Hash,
-			ClusterId:     c.Cluster.ClusterInfo.Id(),
-			InputManifest: c.ProjectName,
-			Type:          cluster_builder.KubernetesCluster,
-			K8sInfo: cluster_builder.KubernetesClusterInfo{
-				ExportPort6443: c.ExportPort6443,
-			},
-			SpawnProcessLimit: c.SpawnProcessLimit,
-		}
-		nodepoolStateFileKey = store.ObjectKey(builder.InputManifest, cluster_builder.NodePoolStateKey(builder.ClusterId, deleted.Name))
-	)
-
-	dynamic := nodepools.Dynamic(c.Cluster.ClusterInfo.NodePools)
-	dynamic = append(dynamic, deleted)
-
-	if err := builder.Init(logger, dynamic); err != nil {
-		return cluster_builder.ExplainUnknownCommit(err, builder.ClusterId)
-	}
-
-	statefileExists := true
-	if err := s3.Stat(ctx, nodepoolStateFileKey); err != nil {
-		if !errors.Is(err, store.ErrS3KeyNotExists) {
-			builder.Cleanup()
-			return fmt.Errorf("failed to read statefile for nodepool %q: %w", deleted.Name, err)
-		}
-
-		logger.
-			Warn().
-			Msgf("No state file found for nodepool %q, assuming infrastructure was deleted", deleted.Name)
-
-		statefileExists = false
-	}
-
-	if statefileExists {
-		latest, err := builder.OutputOnlyCommon()
-		if err != nil {
-			builder.Cleanup()
-			return fmt.Errorf("failed to read last common nodepool infrastructure output: %w", err)
-		}
-
-		if err := builder.DestroyNodePool(latest, len(dynamic)-1); err != nil {
-			builder.Cleanup()
-			return fmt.Errorf("failed to destroy nodepool %q: %w", deleted.Name, err)
-		}
-	}
-
-	builder.Cleanup()
-
-	dynamic = dynamic[:len(dynamic)-1]
-	if err := builder.Init(logger, dynamic, deleted /* Include the deleted nodepool for its provider */); err != nil {
-		return err
-	}
-	defer builder.Cleanup()
-
-	if err := s3.DeleteStateFile(ctx, nodepoolStateFileKey); err != nil {
-		return fmt.Errorf("failed to delete state file for nodepool %q: %w", deleted.Name, err)
-	}
-
-	// Needs to follow DeleteStateFile for having idempotent deletes.
-	if _, err := builder.ReconcileCommon(); err != nil {
-		return fmt.Errorf("failed to reconcile common nodepool infrastructure after nodepool deletion: %w: %w", err, ErrReconcileAll)
-	}
-	return ErrReconcileAll
-}
-
 // ReconcileCommon reconciles common infrastructure for all of the nodepools of the cluster.
 func (c *K8Scluster) ReconcileCommon(_ context.Context, logger zerolog.Logger) error {
 	builder := cluster_builder.ClusterBuilder{
@@ -342,6 +196,136 @@ func (c *K8Scluster) ReconcileCommon(_ context.Context, logger zerolog.Logger) e
 
 	if _, err := builder.ReconcileCommon(); err != nil {
 		return fmt.Errorf("failed to reconcile common nodepool infrastructure: %w", err)
+	}
+	return nil
+}
+
+// ReconcileCommonNoReplace reconciles common infrastructure for all of the nodepools of
+// the cluster and the added nodepools, which are not yet part of the cluster, refusing to
+// replace existing resources, see [cluster_builder.ClusterBuilder.ReconcileCommonNoReplace].
+// The removed nodepools, which must no longer be part of the cluster, are only used for
+// generating their providers so that common infrastructure no longer used can be destroyed.
+func (c *K8Scluster) ReconcileCommonNoReplace(_ context.Context, logger zerolog.Logger, added, removed []*spec.NodePool) error {
+	builder := cluster_builder.ClusterBuilder{
+		ClusterName:   c.Cluster.ClusterInfo.Name,
+		ClusterHash:   c.Cluster.ClusterInfo.Hash,
+		ClusterId:     c.Cluster.ClusterInfo.Id(),
+		InputManifest: c.ProjectName,
+		Type:          cluster_builder.KubernetesCluster,
+		K8sInfo: cluster_builder.KubernetesClusterInfo{
+			ExportPort6443: c.ExportPort6443,
+		},
+		SpawnProcessLimit: c.SpawnProcessLimit,
+	}
+
+	dynamic := append(nodepools.Dynamic(c.Cluster.ClusterInfo.NodePools), nodepools.Dynamic(added)...)
+	if err := builder.Init(logger, dynamic, removed...); err != nil {
+		return err
+	}
+	defer builder.Cleanup()
+
+	if _, err := builder.ReconcileCommonNoReplace(); err != nil {
+		return fmt.Errorf("failed to reconcile common nodepool infrastructure: %w", err)
+	}
+	return nil
+}
+
+// NodePools reconciles the state of the dynamic nodepools with the passed in names,
+// using the already existing common infrastructure, which is only read. Names that
+// are not dynamic nodepools of the cluster are ignored.
+func (c *K8Scluster) NodePools(ctx context.Context, logger zerolog.Logger, names ...string) error {
+	if c.NodePoolConcurrencyLimit == 0 {
+		c.NodePoolConcurrencyLimit = DefaultNodePoolConcurrencyLimit
+	}
+
+	var (
+		dynamic = nodepools.Dynamic(c.Cluster.ClusterInfo.NodePools)
+		builder = cluster_builder.ClusterBuilder{
+			ClusterName:   c.Cluster.ClusterInfo.Name,
+			ClusterHash:   c.Cluster.ClusterInfo.Hash,
+			ClusterId:     c.Cluster.ClusterInfo.Id(),
+			InputManifest: c.ProjectName,
+			Type:          cluster_builder.KubernetesCluster,
+			K8sInfo: cluster_builder.KubernetesClusterInfo{
+				ExportPort6443: c.ExportPort6443,
+			},
+			SpawnProcessLimit: c.SpawnProcessLimit,
+		}
+		handles []int
+	)
+
+	for _, name := range names {
+		if idx := nodepools.IndexByName(name, dynamic); idx >= 0 {
+			handles = append(handles, idx)
+		}
+	}
+	if len(handles) == 0 {
+		return nil
+	}
+
+	if err := builder.Init(logger, dynamic); err != nil {
+		return err
+	}
+	defer builder.Cleanup()
+
+	out, err := builder.OutputOnlyCommon()
+	if err != nil {
+		return fmt.Errorf("failed to read common nodepool infrastructure: %w", err)
+	}
+
+	group, _ /* ctx Currently not used */ := errgroup.WithContext(ctx)
+	group.SetLimit(c.NodePoolConcurrencyLimit)
+
+	for _, i := range handles {
+		group.Go(func() error { return builder.ReconcileNodePool(out, i) })
+	}
+	return group.Wait()
+}
+
+// DestroyNodePoolOnly destroys the infrastructure of the passed in nodepool and deletes
+// its state file, without reconciling the common infrastructure. It is expected that the
+// nodepool is no longer part of the [K8Scluster.Cluster]. A missing state file is a no-op.
+func (c *K8Scluster) DestroyNodePoolOnly(ctx context.Context, logger zerolog.Logger, deleted *spec.NodePool, s3 store.S3StateStorage) error {
+	var (
+		builder = cluster_builder.ClusterBuilder{
+			ClusterName:   c.Cluster.ClusterInfo.Name,
+			ClusterHash:   c.Cluster.ClusterInfo.Hash,
+			ClusterId:     c.Cluster.ClusterInfo.Id(),
+			InputManifest: c.ProjectName,
+			Type:          cluster_builder.KubernetesCluster,
+			K8sInfo: cluster_builder.KubernetesClusterInfo{
+				ExportPort6443: c.ExportPort6443,
+			},
+			SpawnProcessLimit: c.SpawnProcessLimit,
+		}
+		nodepoolStateFileKey = store.ObjectKey(builder.InputManifest, cluster_builder.NodePoolStateKey(builder.ClusterId, deleted.Name))
+	)
+
+	if err := s3.Stat(ctx, nodepoolStateFileKey); err != nil {
+		if !errors.Is(err, store.ErrS3KeyNotExists) {
+			return fmt.Errorf("failed to read statefile for nodepool %q: %w", deleted.Name, err)
+		}
+		logger.Info().Msgf("No state file found for nodepool %q, assuming infrastructure was deleted", deleted.Name)
+		return nil
+	}
+
+	dynamic := append(nodepools.Dynamic(c.Cluster.ClusterInfo.NodePools), deleted)
+	if err := builder.Init(logger, dynamic); err != nil {
+		return cluster_builder.ExplainUnknownCommit(err, builder.ClusterId)
+	}
+	defer builder.Cleanup()
+
+	latest, err := builder.OutputOnlyCommon()
+	if err != nil {
+		return fmt.Errorf("failed to read last common nodepool infrastructure output: %w", err)
+	}
+
+	if err := builder.DestroyNodePool(latest, len(dynamic)-1); err != nil {
+		return fmt.Errorf("failed to destroy nodepool %q: %w", deleted.Name, err)
+	}
+
+	if err := s3.DeleteStateFile(ctx, nodepoolStateFileKey); err != nil {
+		return fmt.Errorf("failed to delete state file for nodepool %q: %w", deleted.Name, err)
 	}
 	return nil
 }

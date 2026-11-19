@@ -161,6 +161,7 @@ func TestScheduleDeletionsInNodePoolsPipelineShape(t *testing.T) {
 	tests := []struct {
 		name             string
 		nodepool         *spec.NodePool
+		others           []*spec.NodePool
 		lbs              []*spec.LBcluster
 		diff             NodePoolsDiffResult
 		opts             K8sNodeDeletionOptions
@@ -218,7 +219,7 @@ func TestScheduleDeletionsInNodePoolsPipelineShape(t *testing.T) {
 				},
 				{
 					about:       "Reconciling infrastructure for kubernetes cluster",
-					terraformer: []spec.StageTerraformer_SubPassKind{spec.StageTerraformer_UPDATE_INFRASTRUCTURE},
+					terraformer: []spec.StageTerraformer_SubPassKind{spec.StageTerraformer_UPDATE_NODEPOOLS},
 				},
 			},
 			wantNodepool: p1,
@@ -263,11 +264,47 @@ func TestScheduleDeletionsInNodePoolsPipelineShape(t *testing.T) {
 			wantNodepool:     p2,
 			wantNodes:        []string{"node-1", "node-2"},
 		},
+		{
+			name:     "whole dynamic nodepool sharing its group and region only destroys the nodepool",
+			nodepool: namedDynamicNodePool(p1),
+			others:   []*spec.NodePool{namedDynamicNodePool(p2)},
+			diff:     NodePoolsDiffResult{Deleted: NodePoolsViewType{p1: {"node-1"}}},
+			wantPipeline: []expectedStage{
+				kuberTrackedDelete,
+				kuberClusterDeleteWholeNodePool,
+				{
+					about:       "Reconciling infrastructure for kubernetes cluster",
+					terraformer: []spec.StageTerraformer_SubPassKind{spec.StageTerraformer_UPDATE_NODEPOOLS},
+				},
+			},
+			wantWithNodePool: true,
+			wantNodepool:     p1,
+			wantNodes:        []string{"node-1"},
+		},
+		{
+			name:     "last dynamic nodepool of its group also reconciles the common infrastructure",
+			nodepool: namedDynamicNodePool(p1),
+			diff:     NodePoolsDiffResult{Deleted: NodePoolsViewType{p1: {"node-1"}}},
+			wantPipeline: []expectedStage{
+				kuberTrackedDelete,
+				kuberClusterDeleteWholeNodePool,
+				{
+					about: "Reconciling infrastructure for kubernetes cluster",
+					terraformer: []spec.StageTerraformer_SubPassKind{
+						spec.StageTerraformer_UPDATE_NODEPOOLS,
+						spec.StageTerraformer_UPDATE_COMMON_INFRA,
+					},
+				},
+			},
+			wantWithNodePool: true,
+			wantNodepool:     p1,
+			wantNodes:        []string{"node-1"},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			te := ScheduleDeletionsInNodePools(deletionClusters(tt.lbs, tt.nodepool), &tt.diff, tt.opts)
+			te := ScheduleDeletionsInNodePools(deletionClusters(tt.lbs, append([]*spec.NodePool{tt.nodepool}, tt.others...)...), &tt.diff, tt.opts)
 			if te == nil {
 				t.Fatal("ScheduleDeletionsInNodePools() = nil, want a task event")
 			}

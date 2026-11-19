@@ -198,6 +198,100 @@ func (t *Terraform) Destroy() error {
 	return nil
 }
 
+// Plan creates an execution plan saved to planFile inside the [Terraform.Directory]
+// and returns the planned actions of each resource change, keyed by the resource address.
+func (t *Terraform) Plan(planFile string) (map[string][]string, error) {
+	if err := t.SpawnProcessLimit.Acquire(context.Background(), 1); err != nil {
+		return nil, fmt.Errorf("failed to prepare tofu plan process: %w", err)
+	}
+	defer t.SpawnProcessLimit.Release(1)
+
+	if t.Parallelism <= 0 {
+		t.Parallelism = parallelism
+	}
+
+	args := []string{
+		"plan",
+		"-no-color",
+		"-input=false",
+		"-out=" + planFile,
+		fmt.Sprintf("--parallelism=%v", t.Parallelism),
+	}
+
+	//nolint
+	cmd := exec.Command("tofu", args...)
+	cmd.Dir = t.Directory
+	cmd.Stdout = t.Stdout
+	cmd.Stderr = t.Stderr
+
+	if err := cmd.Run(); err != nil {
+		command := fmt.Sprintf("tofu %s", strings.Join(args, " "))
+
+		log.Warn().Msgf("Error encountered while executing %s from %s: %v", cmd, t.Directory, err)
+
+		retryCmd := comm.Cmd{
+			Command: command,
+			Dir:     t.Directory,
+			Stdout:  cmd.Stdout,
+			Stderr:  cmd.Stderr,
+		}
+
+		if err := retryCmd.RetryCommand(maxTfCommandRetryCount); err != nil {
+			return nil, fmt.Errorf("failed to execute cmd: %s: %w", retryCmd.Command, err)
+		}
+	}
+
+	//nolint
+	show := exec.Command("tofu", "show", "-json", planFile)
+	show.Dir = t.Directory
+	out, err := show.Output()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read plan %s: %w", planFile, err)
+	}
+
+	var plan struct {
+		ResourceChanges []struct {
+			Address string `json:"address"`
+			Change  struct {
+				Actions []string `json:"actions"`
+			} `json:"change"`
+		} `json:"resource_changes"`
+	}
+	if err := json.Unmarshal(out, &plan); err != nil {
+		return nil, fmt.Errorf("failed to parse plan %s: %w", planFile, err)
+	}
+
+	changes := make(map[string][]string, len(plan.ResourceChanges))
+	for _, rc := range plan.ResourceChanges {
+		changes[rc.Address] = rc.Change.Actions
+	}
+	return changes, nil
+}
+
+// ApplyPlan applies a plan previously saved by [Terraform.Plan]. A saved plan
+// cannot be applied again after a partial failure, thus the command is not retried.
+func (t *Terraform) ApplyPlan(planFile string) error {
+	if err := t.SpawnProcessLimit.Acquire(context.Background(), 1); err != nil {
+		return fmt.Errorf("failed to prepare tofu apply process: %w", err)
+	}
+	defer t.SpawnProcessLimit.Release(1)
+
+	if t.Parallelism <= 0 {
+		t.Parallelism = parallelism
+	}
+
+	//nolint
+	cmd := exec.Command("tofu", "apply", "-no-color", "-input=false", fmt.Sprintf("--parallelism=%v", t.Parallelism), planFile)
+	cmd.Dir = t.Directory
+	cmd.Stdout = t.Stdout
+	cmd.Stderr = t.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to apply plan %s: %w", planFile, err)
+	}
+	return nil
+}
+
 func (t *Terraform) OutputString(resourceName string) (string, error) {
 	if err := t.SpawnProcessLimit.Acquire(context.Background(), 1); err != nil {
 		return "", fmt.Errorf("failed to prepare tofu output process: %w", err)

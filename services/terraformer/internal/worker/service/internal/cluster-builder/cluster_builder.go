@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -11,11 +12,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/berops/claudie/internal/commoninfra"
 	"github.com/berops/claudie/internal/extemplates/extofu"
 	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/generics"
 	"github.com/berops/claudie/internal/loggerutils"
-	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/berops/claudie/services/terraformer/internal/worker/service/internal/templates"
 	"github.com/berops/claudie/services/terraformer/internal/worker/service/internal/tofu"
@@ -23,6 +24,11 @@ import (
 	"github.com/rs/zerolog"
 
 	"golang.org/x/sync/semaphore"
+)
+
+const (
+	// Plan file to which the output from Tofu.Plan is stored.
+	planFile = "common.tfplan"
 )
 
 var (
@@ -132,64 +138,54 @@ func (c *ClusterBuilder) Init(log zerolog.Logger, dynamic []*spec.NodePool, opti
 		}
 	}()
 
-	optional := make(map[string]map[string][]*spec.NodePool)
-	for specName, nps := range nodepools.ByProviderSpecName(optionalProviders) {
-		optional[specName] = make(map[string][]*spec.NodePool)
-		for path, group := range extofu.NodePoolsByTemplatesVersion(nps) {
-			optional[specName][path] = append(optional[specName][path], group...)
-		}
-	}
-
+	optional := maps.Collect(commoninfra.GroupNodePools(optionalProviders))
 	usedProviders := make(map[string]ProviderBlock, len(dynamic))
-	for specName, nps := range nodepools.ByProviderSpecName(c.inner.dynamic) {
-		for path, group := range extofu.NodePoolsByTemplatesVersion(nps) {
-			var providers map[string]ProviderBlock
-			if err = ensureTemplates(c.ClusterId, group); err != nil {
-				return err
-			}
-			providers, err = readProviderVersion(c.ClusterId, group)
-			if err != nil {
-				return err
-			}
-			if err = mergeProviderVersions(usedProviders, providers, c.inner.log); err != nil {
-				return err
-			}
-			if err = c.generateCommonNetworking(group); err != nil {
-				return err
-			}
-			// For generating the providers include also any
-			// deleted optional nodepools to have their
-			// providers generate, so that common infrastructure
-			// can be cleaned up. Only nodepools of the same
-			// templates version are merged in; a different
-			// version renders as its own group with its own
-			// fingerprint below.
-			if o, ok := optional[specName][path]; ok {
-				group = append(slices.Clone(group), o...)
-				delete(optional[specName], path)
-			}
-			if err = c.generateCommonNetworkingProviders(group); err != nil {
-				return err
-			}
+
+	for g, group := range commoninfra.GroupNodePools(c.inner.dynamic) {
+		var providers map[string]ProviderBlock
+		if err = ensureTemplates(c.ClusterId, group); err != nil {
+			return err
+		}
+		providers, err = readProviderVersion(c.ClusterId, group)
+		if err != nil {
+			return err
+		}
+		if err = mergeProviderVersions(usedProviders, providers, c.inner.log); err != nil {
+			return err
+		}
+		if err = c.generateCommonNetworking(group); err != nil {
+			return err
+		}
+		// For generating the providers include also any
+		// deleted optional nodepools to have their
+		// providers generate, so that common infrastructure
+		// can be cleaned up. Only nodepools of the same
+		// group are merged in; a different templates
+		// version renders as its own group with its own
+		// fingerprint below.
+		if o, ok := optional[g]; ok {
+			group = append(slices.Clone(group), o...)
+			delete(optional, g)
+		}
+		if err = c.generateCommonNetworkingProviders(group); err != nil {
+			return err
 		}
 	}
 
-	for _, nps := range optional {
-		for _, group := range nps {
-			var providers map[string]ProviderBlock
-			if err = ensureTemplates(c.ClusterId, group); err != nil {
-				return err
-			}
-			providers, err = readProviderVersion(c.ClusterId, group)
-			if err != nil {
-				return err
-			}
-			if err = mergeProviderVersions(usedProviders, providers, c.inner.log); err != nil {
-				return err
-			}
-			if err = c.generateCommonNetworkingProviders(group); err != nil {
-				return err
-			}
+	for _, group := range optional {
+		var providers map[string]ProviderBlock
+		if err = ensureTemplates(c.ClusterId, group); err != nil {
+			return err
+		}
+		providers, err = readProviderVersion(c.ClusterId, group)
+		if err != nil {
+			return err
+		}
+		if err = mergeProviderVersions(usedProviders, providers, c.inner.log); err != nil {
+			return err
+		}
+		if err = c.generateCommonNetworkingProviders(group); err != nil {
+			return err
 		}
 	}
 
@@ -365,6 +361,64 @@ func (c *ClusterBuilder) ReconcileCommon() (extofu.NetworkingOutput, error) {
 	return extofu.NetworkingOutput{All: out}, nil
 }
 
+// ReconcileCommonNoReplace reconciles the common infrastructure, same as
+// [ClusterBuilder.ReconcileCommon], but refuses to apply when the plan would
+// replace any existing resource.
+//
+// Nodepools depend on the common infrastructure only through its outputs, i.e.
+// the IDs of its resources. Creations, in-place updates and deletions keep the
+// IDs of the resources used by the nodepools, as deletions only remove resources
+// no longer rendered for any of the nodepools. A replacement changes the ID of
+// a resource that existing nodepools may still reference, which would require
+// them to be reconciled again.
+func (c *ClusterBuilder) ReconcileCommonNoReplace() (extofu.NetworkingOutput, error) {
+	tofu := tofu.Terraform{
+		Directory: c.inner.networkingDir,
+		CacheDir:  CacheDir,
+		Stdout: c.inner.log.Output(zerolog.ConsoleWriter{
+			Out:          os.Stderr,
+			TimeFormat:   loggerutils.LogTimeFormat,
+			FormatLevel:  tofuFormatLevel(),
+			FormatCaller: tofuFormatCaller(),
+		}),
+		Stderr: c.inner.log.Output(zerolog.ConsoleWriter{
+			Out:          os.Stderr,
+			TimeFormat:   loggerutils.LogTimeFormat,
+			FormatLevel:  tofuFormatLevel(),
+			FormatCaller: tofuFormatCaller(),
+		}),
+		SpawnProcessLimit: c.SpawnProcessLimit,
+	}
+
+	if err := tinit(c.inner.log, tofu, c.InputManifest, CommonInfraStateKey(c.ClusterId)); err != nil {
+		return extofu.NetworkingOutput{}, fmt.Errorf("%w: %w", ErrTofuCommonInfrastructure, err)
+	}
+
+	changes, err := tofu.Plan(planFile)
+	if err != nil {
+		return extofu.NetworkingOutput{}, fmt.Errorf("%w: %w", ErrTofuCommonInfrastructure, err)
+	}
+
+	for address, actions := range changes {
+		if slices.Contains(actions, "delete") && slices.Contains(actions, "create") {
+			return extofu.NetworkingOutput{}, fmt.Errorf(
+				"%w: plan would replace %s, replacing existing common infrastructure is not allowed when adding nodepools",
+				ErrTofuCommonInfrastructure, address,
+			)
+		}
+	}
+
+	if err := tofu.ApplyPlan(planFile); err != nil {
+		return extofu.NetworkingOutput{}, fmt.Errorf("%w: %w", ErrTofuCommonInfrastructure, err)
+	}
+
+	out, err := tofu.OutputAll()
+	if err != nil {
+		return extofu.NetworkingOutput{}, err
+	}
+	return extofu.NetworkingOutput{All: out}, nil
+}
+
 func (c *ClusterBuilder) DestroyCommon() error {
 	tofu := tofu.Terraform{
 		Directory: c.inner.networkingDir,
@@ -464,13 +518,7 @@ func readProviderVersion(clusterId string, sameProviderGroup []*spec.NodePool) (
 // of the external templates for spawning common networking infrastructure for all of the nodepools.
 func (c *ClusterBuilder) generateCommonNetworkingProviders(sameProviderGroup []*spec.NodePool) error {
 	p := sameProviderGroup[0].GetDynamicNodePool().Provider
-	d := nodepools.ExtractDynamic(sameProviderGroup)
-	r := nodepools.ExtractRegions(d)
-	var rgn []extofu.RegionNetwork
-
-	for _, v := range nodepools.ExtractRegionNetwork(d) {
-		rgn = append(rgn, extofu.RegionNetwork(v))
-	}
+	r, rgn := templateRegions(sameProviderGroup)
 
 	g := extofu.Generator{
 		ID:                c.ClusterId,
@@ -509,13 +557,7 @@ func (c *ClusterBuilder) generateCommonNetworkingProviders(sameProviderGroup []*
 // spawning common networking infrastructure for all the nodepools.
 func (c *ClusterBuilder) generateCommonNetworking(sameProviderGroup []*spec.NodePool) error {
 	p := sameProviderGroup[0].GetDynamicNodePool().Provider
-	d := nodepools.ExtractDynamic(sameProviderGroup)
-	r := nodepools.ExtractRegions(d)
-	var rgn []extofu.RegionNetwork
-
-	for _, v := range nodepools.ExtractRegionNetwork(d) {
-		rgn = append(rgn, extofu.RegionNetwork(v))
-	}
+	r, rgn := templateRegions(sameProviderGroup)
 
 	g := extofu.Generator{
 		ID:                c.ClusterId,
@@ -621,4 +663,20 @@ func tinit(log zerolog.Logger, tofu tofu.Terraform, inputManifest, stateFileKey 
 	}
 
 	return tofu.Init()
+}
+
+// templateRegions returns the unique region names and the unique region networks
+// of the nodepools of a single [commoninfra.Group], as expected by the networking templates.
+func templateRegions(sameProviderGroup []*spec.NodePool) ([]string, []extofu.RegionNetwork) {
+	var (
+		r   []string
+		rgn []extofu.RegionNetwork
+	)
+	for _, v := range commoninfra.Regions(sameProviderGroup) {
+		if !slices.Contains(r, v.Region) {
+			r = append(r, v.Region)
+		}
+		rgn = append(rgn, v)
+	}
+	return r, rgn
 }

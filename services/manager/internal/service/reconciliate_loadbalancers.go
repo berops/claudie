@@ -7,6 +7,7 @@ import (
 
 	"github.com/berops/claudie/api/manifest"
 	"github.com/berops/claudie/internal/clusters"
+	"github.com/berops/claudie/internal/commoninfra"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/google/uuid"
@@ -321,9 +322,9 @@ func ScheduleDeletionLoadBalancerNodePools(
 					},
 					SubPasses: []*spec.StageTerraformer_SubPass{
 						{
-							Kind: spec.StageTerraformer_UPDATE_INFRASTRUCTURE,
+							Kind: spec.StageTerraformer_UPDATE_NODEPOOLS,
 							Description: &spec.StageDescription{
-								About:      "Remvoing firewalls and nodes",
+								About:      "Removing VMs of deleted nodes",
 								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 							},
 						},
@@ -511,6 +512,26 @@ func ScheduleDeletionLoadBalancerNodePools(
 				}
 			}
 		} else {
+			lb := current.LoadBalancers.Clusters[cid.Index]
+			if deleted := nodepools.FindByName(np, lb.ClusterInfo.NodePools); deleted != nil && commoninfra.NeedsCommonInfra(lb.ClusterInfo.NodePools, deleted) {
+				pipeline[0].GetTerraformer().SubPasses = []*spec.StageTerraformer_SubPass{
+					{
+						Kind: spec.StageTerraformer_UPDATE_NODEPOOLS,
+						Description: &spec.StageDescription{
+							About:      "Destroying VMs of the deleted nodepool",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
+						Kind: spec.StageTerraformer_UPDATE_COMMON_INFRA,
+						Description: &spec.StageDescription{
+							About:      "Removing common infrastructure no longer used",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+				}
+			}
+
 			update.Update.Delta = &spec.Update_TfDeleteLoadBalancerNodes{
 				TfDeleteLoadBalancerNodes: &spec.Update_TerraformerDeleteLoadBalancerNodes{
 					Unreachable:  opts.Unreachable,
@@ -559,9 +580,9 @@ func ScheduleAdditionLoadBalancerNodePools(
 				},
 				SubPasses: []*spec.StageTerraformer_SubPass{
 					{
-						Kind: spec.StageTerraformer_UPDATE_INFRASTRUCTURE,
+						Kind: spec.StageTerraformer_UPDATE_NODEPOOLS,
 						Description: &spec.StageDescription{
-							About:      "Reconciling firewalls and VMs for new nodes/nodepools",
+							About:      "Reconciling VMs for new nodes",
 							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 						},
 					},
@@ -743,6 +764,26 @@ func ScheduleAdditionLoadBalancerNodePools(
 				},
 			}
 		} else {
+			lb := current.LoadBalancers.Clusters[cid.Index]
+			if commoninfra.NeedsCommonInfra(lb.ClusterInfo.NodePools, toAdd) {
+				pipeline[0].GetTerraformer().SubPasses = []*spec.StageTerraformer_SubPass{
+					{
+						Kind: spec.StageTerraformer_UPDATE_COMMON_INFRA,
+						Description: &spec.StageDescription{
+							About:      "Reconciling common infrastructure for the new nodepool",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
+						Kind: spec.StageTerraformer_UPDATE_NODEPOOLS,
+						Description: &spec.StageDescription{
+							About:      "Spawning VMs for the new nodepool",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+				}
+			}
+
 			update.Update.Delta = &spec.Update_TfAddLoadBalancerNodes{
 				TfAddLoadBalancerNodes: &spec.Update_TerraformerAddLoadBalancerNodes{
 					Handle: cid.Id,
@@ -1447,7 +1488,7 @@ func ScheduleDeleteRoles(current *spec.Clusters, cid LoadBalancerIdentifier, rol
 						},
 						SubPasses: []*spec.StageTerraformer_SubPass{
 							{
-								Kind: spec.StageTerraformer_UPDATE_INFRASTRUCTURE,
+								Kind: spec.StageTerraformer_UPDATE_COMMON_INFRA,
 								Description: &spec.StageDescription{
 									About:      "Adjusting firewalls rules after deletetion of roles",
 									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
@@ -1560,7 +1601,7 @@ func ScheduleAddRoles(current, desired *spec.Clusters, cid, did LoadBalancerIden
 						},
 						SubPasses: []*spec.StageTerraformer_SubPass{
 							{
-								Kind: spec.StageTerraformer_UPDATE_INFRASTRUCTURE,
+								Kind: spec.StageTerraformer_UPDATE_COMMON_INFRA,
 								Description: &spec.StageDescription{
 									About:      "Reconciling firewalls for new roles",
 									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
@@ -1888,7 +1929,7 @@ func ScheduleRefreshLoadBalancerRoleExternalSettings(
 						},
 						SubPasses: []*spec.StageTerraformer_SubPass{
 							{
-								Kind: spec.StageTerraformer_UPDATE_INFRASTRUCTURE,
+								Kind: spec.StageTerraformer_UPDATE_COMMON_INFRA,
 								Description: &spec.StageDescription{
 									About:      "Reconciling firewalls for role",
 									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,

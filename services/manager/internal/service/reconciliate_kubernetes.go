@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/berops/claudie/internal/commoninfra"
 	"github.com/berops/claudie/internal/nodepools"
 	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/google/uuid"
@@ -609,7 +610,7 @@ func ScheduleAdditionsInNodePools(
 					},
 					SubPasses: []*spec.StageTerraformer_SubPass{
 						{
-							Kind: spec.StageTerraformer_UPDATE_INFRASTRUCTURE,
+							Kind: spec.StageTerraformer_UPDATE_NODEPOOLS,
 							Description: &spec.StageDescription{
 								About:      "Spawning VMs for new nodes",
 								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
@@ -730,6 +731,25 @@ func ScheduleAdditionsInNodePools(
 			continue
 		}
 		toAdd = proto.Clone(toAdd).(*spec.NodePool)
+
+		if terraformerStage != nil && commoninfra.NeedsCommonInfra(current.K8S.ClusterInfo.NodePools, toAdd) {
+			terraformerStage.GetTerraformer().SubPasses = []*spec.StageTerraformer_SubPass{
+				{
+					Kind: spec.StageTerraformer_UPDATE_COMMON_INFRA,
+					Description: &spec.StageDescription{
+						About:      "Reconciling common infrastructure for the new nodepool",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+				},
+				{
+					Kind: spec.StageTerraformer_UPDATE_NODEPOOLS,
+					Description: &spec.StageDescription{
+						About:      "Spawning VMs for the new nodepool",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+				},
+			}
+		}
 
 		// If the ApiServer is on the kubernetes cluster on addition of the
 		// control plane nodes the Kubeadm config map needs to be updated which
@@ -1175,7 +1195,7 @@ func ScheduleDeletionsInNodePools(
 					},
 					SubPasses: []*spec.StageTerraformer_SubPass{
 						{
-							Kind: spec.StageTerraformer_UPDATE_INFRASTRUCTURE,
+							Kind: spec.StageTerraformer_UPDATE_NODEPOOLS,
 							Description: &spec.StageDescription{
 								About:      "Destroying VMs for deleted nodes",
 								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
@@ -1327,6 +1347,25 @@ func ScheduleDeletionsInNodePools(
 		// ever fills [NodePoolsDiffResult.PartiallyDeleted], thus the lookup
 		// cannot return nil.
 		currentStateNodePool := nodepools.FindByName(np, current.K8S.ClusterInfo.NodePools)
+
+		if infraRemovalStage != nil && commoninfra.NeedsCommonInfra(current.K8S.ClusterInfo.NodePools, currentStateNodePool) {
+			infraRemovalStage.GetTerraformer().SubPasses = []*spec.StageTerraformer_SubPass{
+				{
+					Kind: spec.StageTerraformer_UPDATE_NODEPOOLS,
+					Description: &spec.StageDescription{
+						About:      "Destroying VMs of the deleted nodepool",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+				},
+				{
+					Kind: spec.StageTerraformer_UPDATE_COMMON_INFRA,
+					Description: &spec.StageDescription{
+						About:      "Removing common infrastructure no longer used",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+					},
+				},
+			}
+		}
 
 		// If the ApiServer is on the kubernetes cluster on deletion of the
 		// control plane nodes the Kubeadm config map needs to be updated which

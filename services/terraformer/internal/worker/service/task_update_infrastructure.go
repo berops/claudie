@@ -39,12 +39,6 @@ func reconcileInfrastructure(
 		// Since refreshing the infrastructure is currently equivalent
 		// to building it, re-use the code.
 		build(logger, projectName, processLimit, tracker)
-	case *spec.Update_TfReplaceRoleExternalSettings:
-		action := ReplaceRoleExternalSettings{
-			State:   state,
-			Replace: delta.TfReplaceRoleExternalSettings,
-		}
-		replaceRoleExternalSettings(logger, projectName, processLimit, action, tracker)
 	case *spec.Update_TfMoveNodePoolFromAutoscaled:
 		action := MoveNodePoolFromAutoscaled{
 			State: state,
@@ -60,30 +54,6 @@ func reconcileInfrastructure(
 	case *spec.Update_TfAddLoadBalancer:
 		lb := delta.TfAddLoadBalancer.Handle
 		addLoadBalancer(logger, projectName, processLimit, lb, tracker)
-	case *spec.Update_TfDeleteLoadBalancerNodes:
-		action := DeleteLoadBalancerNodes{
-			State:  state,
-			Delete: delta.TfDeleteLoadBalancerNodes,
-		}
-		deleteLoadBalancerNodes(logger, stores, projectName, processLimit, action, tracker)
-	case *spec.Update_TfAddLoadBalancerNodes:
-		action := AddLoadBalancerNodes{
-			State: state,
-			Add:   delta.TfAddLoadBalancerNodes,
-		}
-		addLoadBalancerNodes(logger, projectName, processLimit, action, tracker)
-	case *spec.Update_DeleteLoadBalancerRoles_:
-		action := DeleteLoadBalancerRoles{
-			State:  state,
-			Delete: delta.DeleteLoadBalancerRoles,
-		}
-		deleteLoadBalancerRoles(logger, projectName, processLimit, action, tracker)
-	case *spec.Update_TfAddLoadBalancerRoles:
-		action := AddLoadBalancerRoles{
-			State: state,
-			Add:   delta.TfAddLoadBalancerRoles,
-		}
-		addLoadBalancerRoles(logger, projectName, processLimit, action, tracker)
 	case *spec.Update_TfReplaceDns:
 		action := ReplaceDns{
 			State:   state,
@@ -93,18 +63,6 @@ func reconcileInfrastructure(
 	case *spec.Update_DeleteLoadBalancer_:
 		id := delta.DeleteLoadBalancer.Handle
 		destroyLoadBalancer(logger, projectName, id, state.LoadBalancers, processLimit, stores, tracker)
-	case *spec.Update_DeletedK8SNodes_:
-		action := DeleteKubernetesNodes{
-			State:  state,
-			Delete: delta.DeletedK8SNodes,
-		}
-		deleteKubernetesNodes(logger, stores, projectName, processLimit, action, tracker)
-	case *spec.Update_TfAddK8SNodes:
-		action := AddKubernetesNodes{
-			State: state,
-			Add:   delta.TfAddK8SNodes,
-		}
-		addKubernetesNodes(logger, projectName, processLimit, action, tracker)
 	default:
 		logger.
 			Warn().

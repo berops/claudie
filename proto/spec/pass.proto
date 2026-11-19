@@ -32,6 +32,8 @@ message StageTerraformer {
     UPDATE_INFRASTRUCTURE = 1;
     DESTROY_INFRASTRUCTURE = 2;
     API_PORT_ON_KUBERNETES = 3;
+    UPDATE_COMMON_INFRA = 4;
+    UPDATE_NODEPOOLS = 5;
   }
   message SubPass {
     SubPassKind kind = 1;

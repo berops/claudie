@@ -50,6 +50,20 @@ type (
 
 		// Diagnostics during the processing of the received [Work.Task]
 		Diagnostics *Diagnostics
+
+		// Shared is shared among all of the passes of a single [Work].
+		Shared *Shared
+	}
+
+	// Shared holds information that needs to be passed between the
+	// individual passes of a single [Work]. Every retry of a [Work]
+	// replays all of its passes from the start, so it is rebuilt the
+	// same way on each attempt.
+	Shared struct {
+		// DeletedLoadBalancerNodePool holds the loadbalancer nodepool removed
+		// from the state by an UPDATE_NODEPOOLS pass, so that the following
+		// passes can still work with it after it was removed from the state.
+		DeletedLoadBalancerNodePool *spec.NodePool
 	}
 
 	Diagnostics []error
@@ -78,6 +92,9 @@ func ProcessTask(ctx context.Context, stores Stores, work Work) *spec.TaskResult
 		// state the current state of the progress in [Work].
 		// Start with None and update result as passes make changes.
 		result = spec.TaskResult{Result: &spec.TaskResult_None_{None: new(spec.TaskResult_None)}}
+
+		// shared among all of the passes.
+		shared Shared
 	)
 
 passes:
@@ -97,6 +114,7 @@ passes:
 			Task:        work.Task,
 			Result:      &result,
 			Diagnostics: &diags,
+			Shared:      &shared,
 		}
 		last := len(diags)
 
@@ -113,6 +131,12 @@ passes:
 		case spec.StageTerraformer_API_PORT_ON_KUBERNETES:
 			logger.Info().Msg("Reconciling Api Port on kuberentes cluster")
 			reconcileApiPort(logger, work.InputManifestName, processlimit, tracker)
+		case spec.StageTerraformer_UPDATE_COMMON_INFRA:
+			logger.Info().Msg("Updating common infrastructure")
+			reconcileCommonInfrastructure(logger, work.InputManifestName, processlimit, tracker)
+		case spec.StageTerraformer_UPDATE_NODEPOOLS:
+			logger.Info().Msg("Updating nodepools infrastructure")
+			reconcileNodePoolsInfrastructure(logger, stores, work.InputManifestName, processlimit, tracker)
 		default:
 			logger.Warn().Msg("Stage not recognized, skipping")
 			continue

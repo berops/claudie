@@ -46,7 +46,7 @@ func reconcileApiPort(
 
 	// This should only change rules into the firewall and no other
 	// changes should be done by the templates that would invalidate
-	// the nodepools that would result in needed to act on the [kubernetes.ErrReconcileAll]
+	// the nodepools that would require them to be reconciled again.
 	if err := cluster.ReconcileCommon(ctx, logger); err != nil {
 		logger.Err(err).Msg("Failed to reconcile cluster api port")
 		tracker.Diagnostics.Push(err)

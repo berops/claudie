@@ -54,7 +54,7 @@ func deleteLoadBalancerRoles(
 
 	// This should only delete new rules into firewalls and no other
 	// changes should be done by the templates that would invalidate
-	// the nodepools that would result in needed to act on the [loadbalancer.ErrReconcileAll]
+	// the nodepools that would require them to be reconciled again.
 	if err := lb.ReconcileCommon(ctx, logger); err != nil {
 		logger.Err(err).Msg("Failed to reconcile cluster after roles deletion")
 		tracker.Diagnostics.Push(err)
