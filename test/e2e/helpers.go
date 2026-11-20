@@ -197,8 +197,8 @@ func newClient[T any](t *testing.T, kubeconfig string, newForConfig func(*rest.C
 }
 
 // applyInputManifest server-side applies the InputManifest in path, creating or updating it, and
-// returns its name and the timestamp of its newest finished workflow at apply time. Environment
-// variables in the file, like ${CLAUDIE_NAMESPACE}, are expanded.
+// returns its name and the timestamp of its newest finished workflow at apply time.
+// Only ${CLAUDIE_NAMESPACE} in the file is expanded, other variables are kept.
 // The InputManifest and its infrastructure are deleted when the test passes,
 // on a failed test they are kept for debugging.
 func applyInputManifest(t *testing.T, client dynamic.Interface, path, namespace string) (name string, lastFinished time.Time) {
@@ -208,8 +208,14 @@ func applyInputManifest(t *testing.T, client dynamic.Interface, path, namespace 
 	if err != nil {
 		t.Fatalf("reading inputmanifest: %v", err)
 	}
+	expanded := os.Expand(string(data), func(name string) string {
+		if name == "CLAUDIE_NAMESPACE" {
+			return namespace
+		}
+		return "$" + name
+	})
 	var obj unstructured.Unstructured
-	if err := yaml.Unmarshal([]byte(os.ExpandEnv(string(data))), &obj.Object); err != nil {
+	if err := yaml.Unmarshal([]byte(expanded), &obj.Object); err != nil {
 		t.Fatalf("decoding inputmanifest %s: %v", path, err)
 	}
 	if obj.GetName() == "" {
