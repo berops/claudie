@@ -235,5 +235,5 @@ jobs:
         env:
           CLAUDIE_NAMESPACE: ${{ needs.deploy-claudie.outputs.namespace }}
         run: |
-          kubectl delete namespace "$CLAUDIE_NAMESPACE" --ignore-not-found --wait --timeout 10m
           kubectl delete clusterrolebinding,validatingwebhookconfiguration -l claudie.io/ci-namespace="$CLAUDIE_NAMESPACE"
+          kubectl delete namespace "$CLAUDIE_NAMESPACE" --ignore-not-found --wait --timeout 10m
