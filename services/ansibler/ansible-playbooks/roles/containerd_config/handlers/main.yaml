@@ -2,4 +2,5 @@
 - name: Restart containerd
   ansible.builtin.systemd:
     name: containerd
+    enabled: true
     state: restarted

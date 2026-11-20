@@ -19,3 +19,4 @@
         timeout: 100
   roles:
     - node-prereq
+    - containerd_config

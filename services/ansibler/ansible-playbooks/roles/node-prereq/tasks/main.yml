@@ -30,6 +30,8 @@
 - name: Configure containerd and the kubelet
   ansible.builtin.import_tasks: configure-containerd-kubelet.yml
 
-# A pending containerd restart has to happen before kubeadm talks to it.
-- name: Apply the containerd configuration
-  ansible.builtin.meta: flush_handlers
+    # kubeadm starts the kubelet itself, it only has to come back after a reboot.
+    - name: Enable kubelet
+      ansible.builtin.systemd:
+        name: kubelet
+        enabled: true
