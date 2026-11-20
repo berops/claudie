@@ -189,7 +189,7 @@ jobs:
         if: always() && matrix.test == 'TestDestroyCluster'
         run: |
           cd "$RUNNER_TEMP/static-nodes"
-          [ ! -f terraform.tfstate ] || tofu destroy -auto-approve -input=false -lock=false
+          [ ! -f terraform.tfstate ] || tofu destroy -auto-approve -input=false -lock=false > /dev/null 2>&1
 
       # Files the tests keep with t.ArtifactDir, e.g. the hydrophone logs. Only on a failed test.
       - name: Upload test artifacts
