@@ -52,7 +52,8 @@ jobs:
     needs: [golangci-lint, unit-tests]
     # Only known labels, so a mistyped one doesn't fall through to the e2e-tests matrix default of all tests.
     if: >-
-      github.event_name == 'workflow_dispatch' || !github.event.pull_request.head.repo.fork
+      github.event_name == 'workflow_dispatch' || (!github.event.pull_request.head.repo.fork &&
+      contains(fromJSON('["test-all", "test-conformance", "test-upgrade-cluster", "test-destroy-cluster", "test-api-endpoint-moves"]'), github.event.label.name))
     name: build-images (${{ matrix.service }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
