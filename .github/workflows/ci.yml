@@ -91,7 +91,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
-      namespace: ${{ steps.deploy.outputs.namespace }}
+      namespace: ${{ steps.namespace.outputs.namespace }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -102,12 +102,15 @@ jobs:
         with:
           kubeconfig: ${{ secrets.E2E_CLUSTER_KUBECONFIG }}
 
+      - name: Set Claudie namespace
+        id: namespace
+        run: echo "namespace=claudie-${GITHUB_SHA::7}-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+
       - name: Deploy Claudie
-        id: deploy
         working-directory: manifests/claudie
+        env:
+          NAMESPACE: ${{ steps.namespace.outputs.namespace }}
         run: |
-          # Each run gets its own Claudie, so pipelines running at the same time don't collide.
-          export NAMESPACE="claudie-${GITHUB_SHA::7}-${GITHUB_RUN_NUMBER}"
           yq -i '.images[].newTag = strenv(GITHUB_SHA) | .namespace = strenv(NAMESPACE)' kustomization.yaml
 
           # Cluster-scoped objects get a per-run name and a label for the cleanup. The operator and its
@@ -120,7 +123,6 @@ jobs:
           ' - | kubectl apply -f -
 
           kubectl wait deployment --all --for=condition=Available --namespace "$NAMESPACE" --timeout 15m
-          echo "namespace=$NAMESPACE" >> "$GITHUB_OUTPUT"
 
   e2e-tests:
     needs: deploy-claudie
@@ -217,7 +219,9 @@ jobs:
 
   delete-claudie-namespace:
     needs: [deploy-claudie, e2e-tests, delete-leftover-inputmanifests]
-    if: always() && needs.delete-leftover-inputmanifests.result == 'success'
+    if: >-
+      always() && (needs.delete-leftover-inputmanifests.result == 'success'
+      || (needs.deploy-claudie.result != 'success' && needs.deploy-claudie.outputs.namespace != ''))
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
