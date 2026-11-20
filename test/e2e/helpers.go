@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"maps"
 	"net"
 	"os"
@@ -655,8 +656,9 @@ func staticNodeIPs(ctx context.Context, dir string) ([]string, error) {
 func runTofu(ctx context.Context, dir string, args ...string) error {
 	cmd := exec.CommandContext(ctx, "tofu", args...)
 	cmd.Dir = dir
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	// discard output to prevent leakage of secrets
+	cmd.Stdout = io.Discard
+	cmd.Stderr = io.Discard
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("tofu %v failed: %w", args, err)
 	}
