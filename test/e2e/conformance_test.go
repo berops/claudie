@@ -24,8 +24,8 @@ func TestConformance(t *testing.T) {
 	namespace := claudieNamespace(t)
 	e2eClusterClient := newClient(t, e2eClusterKubeconfig(t), dynamic.NewForConfig)
 
-	manifest := applyInputManifest(t, e2eClusterClient, clusterManifestFile, namespace)
-	waitForInputManifest(t, e2eClusterClient, manifest, namespace)
+	manifest, lastFinished := applyInputManifest(t, e2eClusterClient, clusterManifestFile, namespace)
+	waitForInputManifest(t, e2eClusterClient, manifest, namespace, lastFinished)
 
 	childClusterKubeconfig := childKubeconfig(t, e2eClusterClient, namespace, clusterName)
 	childClusterClient := newClient(t, childClusterKubeconfig, kubernetes.NewForConfig)

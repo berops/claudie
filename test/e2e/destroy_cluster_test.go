@@ -30,8 +30,8 @@ func TestDestroyCluster(t *testing.T) {
 
 	staticNodeIP := provisionStaticNodes(t)[0]
 	manifest := replaceManifestValue(t, clusterManifestFile, staticNodeEndpointPlaceholder, staticNodeIP)
-	manifest = applyInputManifest(t, e2eClusterClient, manifest, namespace)
-	waitForInputManifest(t, e2eClusterClient, manifest, namespace)
+	manifest, lastFinished := applyInputManifest(t, e2eClusterClient, manifest, namespace)
+	waitForInputManifest(t, e2eClusterClient, manifest, namespace, lastFinished)
 
 	childClusterClient := newClient(t, childKubeconfig(t, e2eClusterClient, namespace, clusterName), kubernetes.NewForConfig)
 	if got := nodeCount(t, childClusterClient); got != expectedNodeCount {

@@ -196,10 +196,11 @@ func newClient[T any](t *testing.T, kubeconfig string, newForConfig func(*rest.C
 }
 
 // applyInputManifest server-side applies the InputManifest in path, creating or updating it, and
-// returns its name. Environment variables in the file, like ${CLAUDIE_NAMESPACE}, are expanded.
+// returns its name and the timestamp of its newest finished workflow at apply time. Environment
+// variables in the file, like ${CLAUDIE_NAMESPACE}, are expanded.
 // The InputManifest and its infrastructure are deleted when the test passes,
 // on a failed test they are kept for debugging.
-func applyInputManifest(t *testing.T, client dynamic.Interface, path, namespace string) string {
+func applyInputManifest(t *testing.T, client dynamic.Interface, path, namespace string) (name string, lastFinished time.Time) {
 	t.Helper()
 
 	data, err := os.ReadFile(path)
@@ -223,19 +224,41 @@ func applyInputManifest(t *testing.T, client dynamic.Interface, path, namespace 
 		deleteInputManifest(t, client, obj.GetName(), namespace, time.Hour)
 	})
 	// Force takes over fields set by an earlier kubectl apply or another manager.
-	_, err = retryValue(func() (*unstructured.Unstructured, error) {
-		return client.Resource(inputManifests).Namespace(namespace).
-			Apply(t.Context(), obj.GetName(), &obj, metav1.ApplyOptions{FieldManager: fieldManager, Force: true})
+	applied, err := retryValue(func() (*unstructured.Unstructured, error) {
+		return client.Resource(inputManifests).Namespace(namespace).Apply(t.Context(), obj.GetName(), &obj, metav1.ApplyOptions{FieldManager: fieldManager, Force: true})
 	})
 	if err != nil {
 		t.Fatalf("applying inputmanifest %s: %v", obj.GetName(), err)
 	}
-	return obj.GetName()
+	var im v1beta1.InputManifest
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(applied.Object, &im); err != nil {
+		t.Fatalf("decoding applied inputmanifest %s: %v", obj.GetName(), err)
+	}
+	return obj.GetName(), latestFinishedWorkflow(t, im)
 }
 
-// waitForInputManifest waits until Claudie has built the InputManifest and fails the test on an
-// error or timeout. The status can flip, so a state counts once it held for stablePolls polls.
-func waitForInputManifest(t *testing.T, client dynamic.Interface, name, namespace string) {
+// latestFinishedWorkflow returns the timestamp of the newest workflow Claudie finished on any cluster of im.
+func latestFinishedWorkflow(t *testing.T, im v1beta1.InputManifest) time.Time {
+	t.Helper()
+
+	var latest time.Time
+	for name, c := range im.Status.Clusters {
+		for _, w := range c.Previous {
+			finished, err := time.Parse(time.RFC3339, w.Timestamp)
+			if err != nil {
+				t.Fatalf("cluster %s: parsing finished workflow timestamp: %v", name, err)
+			}
+			if finished.After(latest) {
+				latest = finished
+			}
+		}
+	}
+	return latest
+}
+
+// waitForInputManifest waits until Claudie has built the InputManifest, finishing a workflow after
+// lastFinished, and fails the test on an error or timeout. A state counts once it held for stablePolls polls.
+func waitForInputManifest(t *testing.T, client dynamic.Interface, name, namespace string, lastFinished time.Time) {
 	t.Helper()
 
 	const stablePolls = 8
@@ -257,7 +280,7 @@ func waitForInputManifest(t *testing.T, client dynamic.Interface, name, namespac
 		switch {
 		case isFailed:
 			done, failed = 0, failed+1
-		case isDone:
+		case isDone && latestFinishedWorkflow(t, im).After(lastFinished):
 			done, failed = done+1, 0
 		default:
 			done, failed = 0, 0

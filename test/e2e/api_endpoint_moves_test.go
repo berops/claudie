@@ -7,7 +7,6 @@ import (
 	"slices"
 	"strings"
 	"testing"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -80,10 +79,8 @@ func TestAPIEndpointMoves(t *testing.T) {
 	}
 
 	for _, step := range testCases {
-		manifest := applyInputManifest(t, e2eClusterClient, step.manifestFile, namespace)
-		// Gives Claudie time to pick up the change, otherwise the old DONE state passes the wait.
-		time.Sleep(time.Minute)
-		waitForInputManifest(t, e2eClusterClient, manifest, namespace)
+		manifest, lastFinished := applyInputManifest(t, e2eClusterClient, step.manifestFile, namespace)
+		waitForInputManifest(t, e2eClusterClient, manifest, namespace, lastFinished)
 
 		t.Run(step.name, func(t *testing.T) {
 			// Fetched in every step, Claudie replaces the kubeconfig when the API endpoint moves.
