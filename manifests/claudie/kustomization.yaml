@@ -5,7 +5,6 @@ resources:
 - operator.yaml
 - terraformer.yaml
 - ansibler.yaml
-- kube-eleven.yaml
 - kuber.yaml
 - manager.yaml
 - cluster-rbac
@@ -20,7 +19,6 @@ replacements:
     kind: Namespace
   targets:
   - fieldPaths:
-    - webhooks.*.namespaceSelector.matchLabels.kubernetes\.io/metadata\.name
     - webhooks.*.clientConfig.service.namespace
     select:
       kind: ValidatingWebhookConfiguration
@@ -56,14 +54,14 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
 - name: ghcr.io/berops/claudie/ansibler
-  newTag: aacc283-4627
+  newTag: 35c30b7-4670
 - name: ghcr.io/berops/claudie/claudie-operator
-  newTag: aacc283-4627
+  newTag: 35c30b7-4670
 - name: ghcr.io/berops/claudie/kube-eleven
-  newTag: aacc283-4627
+  newTag: 35c30b7-4670
 - name: ghcr.io/berops/claudie/kuber
-  newTag: aacc283-4627
+  newTag: 35c30b7-4670
 - name: ghcr.io/berops/claudie/manager
-  newTag: aacc283-4627
+  newTag: 35c30b7-4670
 - name: ghcr.io/berops/claudie/terraformer
-  newTag: aacc283-4627
+  newTag: 35c30b7-4670

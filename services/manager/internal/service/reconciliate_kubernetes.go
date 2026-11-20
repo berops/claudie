@@ -233,17 +233,17 @@ func ScheduleUpgradeKubernetesVersion(current, desired *spec.Clusters) *spec.Tas
 		Description: "Updating kubernetes version",
 		Pipeline: []*spec.Stage{
 			{
-				StageKind: &spec.Stage_KubeEleven{
-					KubeEleven: &spec.StageKubeEleven{
+				StageKind: &spec.Stage_Ansibler{
+					Ansibler: &spec.StageAnsibler{
 						Description: &spec.StageDescription{
-							About:      "Reconciling kubernetes cluster",
+							About:      "Upgrading kubernetes cluster",
 							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 						},
-						SubPasses: []*spec.StageKubeEleven_SubPass{
+						SubPasses: []*spec.StageAnsibler_SubPass{
 							{
-								Kind: spec.StageKubeEleven_RECONCILE_CLUSTER,
+								Kind: spec.StageAnsibler_UPGRADE_K8S_VERSION,
 								Description: &spec.StageDescription{
-									About:      "Rolling update of the nodes",
+									About:      "Rolling upgrade of the nodes using kubeadm",
 									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 								},
 							},

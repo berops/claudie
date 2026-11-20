@@ -171,6 +171,7 @@ func run() error {
 	// Register inputManifest validation webhook
 	if err := mgr.Add(controller.NewWebhook(
 		mgr.GetClient(),
+		usecases.Manager,
 		mgr.GetScheme(),
 		port,
 		certDir,

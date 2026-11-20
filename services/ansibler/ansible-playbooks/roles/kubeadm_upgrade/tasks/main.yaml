@@ -1,0 +1,108 @@
+---
+# Upgrades the node to kubernetes_version, following "Upgrading kubeadm clusters" of the kubeadm
+# docs: kubeadm is upgraded and upgrades the node, then the node is drained, its kubelet and kubectl
+# are upgraded, and it is uncordoned once the upgraded kubelet reports it ready. Used by
+# upgrade-k8s-version.yml. Parameters:
+#   first_control_node  true on the first control node to be upgraded, which runs kubeadm upgrade
+#                       apply: it upgrades the cluster configuration and the control plane of the
+#                       node, before any other node. false on the other nodes, which run kubeadm
+#                       upgrade node: it upgrades the control plane of a control node and the
+#                       kubelet configuration of every node.
+#
+# A node whose kubelet already runs kubernetes_version is not upgraded again, so that a retried run
+# does not drain the nodes upgraded by the failed one. kubeadm upgrades the node before its kubelet,
+# so such a node only gets the waits and the uncordon, which the failed run may not have reached.
+#
+# Every kubectl task is delegated to kubectl_node (vars/main.yaml), the first control node, as only
+# control nodes have admin.conf. The rest runs on the node itself: kubeadm upgrade node talks to the
+# cluster with kubelet.conf on a worker node and with admin.conf on a control node.
+
+- name: Read the kubelet version of the node
+  ansible.builtin.command:
+    cmd: >-
+      kubectl --kubeconfig /etc/kubernetes/admin.conf get node {{ inventory_hostname }}
+      --output jsonpath={.status.nodeInfo.kubeletVersion}
+  delegate_to: "{{ kubectl_node }}"
+  register: kubelet_version
+  changed_when: false
+
+- name: Upgrade the node
+  when: kubelet_version.stdout != 'v' ~ kubernetes_version
+  block:
+    # pkgs.k8s.io has an apt repository per minor version.
+    - name: Point the Kubernetes apt repository at the new version
+      ansible.builtin.import_role:
+        name: node-prereq
+        tasks_from: add-apt-repositories.yml
+
+    # The packages stay held (roles/node-prereq).
+    - name: Upgrade kubeadm
+      ansible.builtin.apt:
+        name: "kubeadm={{ kubernetes_version }}-*"
+        update_cache: true
+        allow_change_held_packages: true
+        lock_timeout: 600
+
+    # kube-proxy is skipped as in roles/kubeadm_init, Cilium replaces it. The kubeadm changelog asks
+    # to skip the addons skipped by kubeadm init in both commands, the addons are upgraded together
+    # with the last control node.
+    - name: Upgrade the cluster and the control plane of the node
+      ansible.builtin.command:
+        cmd: kubeadm upgrade apply v{{ kubernetes_version }} --yes --skip-phases addon/kube-proxy
+      when: first_control_node
+
+    - name: Upgrade the node to the new cluster configuration
+      ansible.builtin.command:
+        cmd: kubeadm upgrade node --skip-phases addon/kube-proxy
+      when: not first_control_node
+
+    # --delete-emptydir-data and --force as kubeone did, otherwise pods with emptyDir volumes (e.g.
+    # metrics-server) and pods without a controller fail the drain. The timeout stays below the 25
+    # minutes of ANSIBLE_TASK_TIMEOUT of the ansibler. A drain still blocked after it, e.g. by a
+    # PodDisruptionBudget, fails the upgrade, which is retried.
+    - name: Drain the node
+      ansible.builtin.command:
+        cmd: >-
+          kubectl --kubeconfig /etc/kubernetes/admin.conf drain {{ inventory_hostname }}
+          --ignore-daemonsets --delete-emptydir-data --force --timeout 15m
+      delegate_to: "{{ kubectl_node }}"
+
+    - name: Upgrade the kubelet and kubectl
+      ansible.builtin.apt:
+        name:
+          - "kubelet={{ kubernetes_version }}-*"
+          - "kubectl={{ kubernetes_version }}-*"
+        allow_change_held_packages: true
+        lock_timeout: 600
+
+    - name: Restart the kubelet
+      ansible.builtin.systemd_service:
+        name: kubelet
+        state: restarted
+        daemon_reload: true
+
+# Right after the restart, the node is still reported ready by the previous kubelet. The kubelet
+# version tells that the node status already comes from the upgraded one.
+- name: Wait for the upgraded kubelet to report the node status
+  ansible.builtin.command:
+    cmd: >-
+      kubectl --kubeconfig /etc/kubernetes/admin.conf wait node/{{ inventory_hostname }}
+      --for jsonpath={.status.nodeInfo.kubeletVersion}=v{{ kubernetes_version }} --timeout 5m
+  delegate_to: "{{ kubectl_node }}"
+  changed_when: false
+
+# Also stops the upgrade at a node whose upgraded kubelet does not work, before the next node.
+- name: Wait for the node to become ready
+  ansible.builtin.command:
+    cmd: >-
+      kubectl --kubeconfig /etc/kubernetes/admin.conf wait node/{{ inventory_hostname }}
+      --for condition=Ready --timeout 5m
+  delegate_to: "{{ kubectl_node }}"
+  changed_when: false
+
+- name: Uncordon the node
+  ansible.builtin.command:
+    cmd: kubectl --kubeconfig /etc/kubernetes/admin.conf uncordon {{ inventory_hostname }}
+  delegate_to: "{{ kubectl_node }}"
+  register: kubectl_uncordon
+  changed_when: "'already uncordoned' not in kubectl_uncordon.stdout"
