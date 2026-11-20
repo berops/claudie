@@ -641,14 +641,14 @@ func staticNodeIPs(ctx context.Context, dir string) ([]string, error) {
 	if err := json.Unmarshal(out, &ips); err != nil {
 		var byName map[string]string
 		if err := json.Unmarshal(out, &byName); err != nil {
-			return nil, fmt.Errorf("tofu output endpoints is neither a list nor a map of IPs: %s", out)
+			return nil, errors.New("tofu output endpoints is neither a list nor a map of IPs")
 		}
 		for _, name := range slices.Sorted(maps.Keys(byName)) {
 			ips = append(ips, byName[name])
 		}
 	}
 	if len(ips) == 0 {
-		return nil, fmt.Errorf("no IP in tofu output endpoints: %s", out)
+		return nil, errors.New("no IP in tofu output endpoints")
 	}
 	return ips, nil
 }
