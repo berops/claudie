@@ -1,0 +1,66 @@
+---
+# The whole containerd configuration of a node: the config for kubeadm on the nodes of the
+# kubernetes cluster, and the drop-in of the nodepool on every node, from
+# containerd/<inventory host>.toml next to the inventory on the controller.
+# Restarts containerd once when any of it changed.
+
+- name: Check whether the node has a containerd configuration
+  ansible.builtin.stat:
+    path: /etc/containerd/config.toml
+  register: default_containerd_config
+
+- name: Generate the default containerd configuration
+  when: not default_containerd_config.stat.exists
+  block:
+    - name: Render the default containerd configuration
+      ansible.builtin.command: containerd config default
+      register: containerd_config_default_command
+      changed_when: false
+
+    - name: Write the default containerd configuration
+      ansible.builtin.copy:
+        dest: /etc/containerd/config.toml
+        content: "{{ containerd_config_default_command.stdout }}\n"
+        mode: "0644"
+      register: containerd_default_config_written
+
+    # kubeadm configures the kubelet with the systemd cgroup driver, the runtime must match
+    # containerd config default outputs a file with SystemdCgroup=false
+    - name: Use the systemd cgroup driver in containerd
+      ansible.builtin.replace:
+        path: /etc/containerd/config.toml
+        regexp: '^(\s*SystemdCgroup\s*=\s*)false'
+        replace: '\1true'
+      register: containerd_systemd_cgroup
+
+- name: Create the containerd drop-in directory
+  ansible.builtin.file:
+    path: /etc/containerd/conf.d
+    state: directory
+    mode: "0755"
+
+- name: Copy the containerd config drop-in
+  ansible.builtin.copy:
+    src: "{{ containerd_config_dropin_src }}"
+    dest: /etc/containerd/conf.d/claudie.toml
+    mode: "0644"
+  when: containerd_config_dropin_src is file
+  register: containerd_dropin
+
+- name: Import the drop-ins in the containerd configuration
+  ansible.builtin.lineinfile:
+    path: /etc/containerd/config.toml
+    regexp: '^imports\s*='
+    line: 'imports = ["/etc/containerd/conf.d/*.toml"]'
+    insertbefore: BOF
+  register: containerd_dropin_import
+
+- name: Restart containerd
+  ansible.builtin.systemd:
+    name: containerd
+    state: restarted
+  when: >-
+    containerd_default_config_written is changed
+    or containerd_systemd_cgroup is changed
+    or containerd_dropin is changed
+    or containerd_dropin_import is changed
