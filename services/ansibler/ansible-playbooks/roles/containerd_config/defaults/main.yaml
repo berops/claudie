@@ -1,0 +1,3 @@
+---
+# Drop-in of the host on the controller, written by the ansibler (writeContainerdConfigs).
+containerd_config_dropin_src: "{{ inventory_dir }}/containerd/{{ inventory_hostname }}.toml"

@@ -9,58 +9,20 @@
     path: /etc/containerd/config.toml
   register: default_containerd_config
 
-- name: Generate the default containerd configuration
+- name: Set up the default containerd configuration
+  ansible.builtin.import_tasks: setup-default-config.yaml
   when: not default_containerd_config.stat.exists
-  block:
-    - name: Render the default containerd configuration
-      ansible.builtin.command: containerd config default
-      register: containerd_config_default_command
-      changed_when: false
+  notify: Restart containerd
 
-    - name: Write the default containerd configuration
-      ansible.builtin.copy:
-        dest: /etc/containerd/config.toml
-        content: "{{ containerd_config_default_command.stdout }}\n"
-        mode: "0644"
-      register: containerd_default_config_written
-
-    # kubeadm configures the kubelet with the systemd cgroup driver, the runtime must match
-    # containerd config default outputs a file with SystemdCgroup=false
-    - name: Use the systemd cgroup driver in containerd
-      ansible.builtin.replace:
-        path: /etc/containerd/config.toml
-        regexp: '^(\s*SystemdCgroup\s*=\s*)false'
-        replace: '\1true'
-      register: containerd_systemd_cgroup
-
-- name: Create the containerd drop-in directory
-  ansible.builtin.file:
-    path: /etc/containerd/conf.d
-    state: directory
-    mode: "0755"
-
-- name: Copy the containerd config drop-in
-  ansible.builtin.copy:
-    src: "{{ containerd_config_dropin_src }}"
-    dest: /etc/containerd/conf.d/claudie.toml
-    mode: "0644"
+- name: Add the containerd config drop-in
+  ansible.builtin.import_tasks: add-dropin-config.yaml
   when: containerd_config_dropin_src is file
-  register: containerd_dropin
+  notify: Restart containerd
 
-- name: Import the drop-ins in the containerd configuration
-  ansible.builtin.lineinfile:
-    path: /etc/containerd/config.toml
-    regexp: '^imports\s*='
-    line: 'imports = ["/etc/containerd/conf.d/*.toml"]'
-    insertbefore: BOF
-  register: containerd_dropin_import
+- name: Remove the containerd config drop-in
+  ansible.builtin.import_tasks: remove-dropin-config.yaml
+  when: containerd_config_dropin_src is not file
+  notify: Restart containerd
 
-- name: Restart containerd
-  ansible.builtin.systemd:
-    name: containerd
-    state: restarted
-  when: >-
-    containerd_default_config_written is changed
-    or containerd_systemd_cgroup is changed
-    or containerd_dropin is changed
-    or containerd_dropin_import is changed
+- name: Apply the containerd configuration
+  ansible.builtin.meta: flush_handlers
