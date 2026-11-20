@@ -3,6 +3,7 @@
 package e2e
 
 import (
+	"context"
 	"slices"
 	"strings"
 	"testing"
@@ -10,6 +11,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 )
@@ -74,6 +76,9 @@ func TestUpgradeCluster(t *testing.T) {
 			if got, want := controlPlaneVersions(t, pods), []string{step.wantVersion}; !slices.Equal(got, want) {
 				t.Errorf("cluster %s: got control plane versions %v, want %v", clusterName, got, want)
 			}
+			if got := notReadyControlPlanePods(t, childClusterClient); len(got) > 0 {
+				t.Errorf("cluster %s: got not Ready control plane pods %v, want none", clusterName, got)
+			}
 			if err := runCiliumConnectivityTestQuick(t, childClusterKubeconfig); err != nil {
 				t.Errorf("cluster %s: cilium connectivity test: %v", clusterName, err)
 			}
@@ -129,4 +134,48 @@ func controlPlaneVersions(t *testing.T, pods []corev1.Pod) []string {
 	}
 	slices.Sort(versions)
 	return slices.Compact(versions)
+}
+
+// notReadyControlPlanePods waits until the control plane pods of the cluster behind client stay
+// Ready for stablePolls polls, as they restart after an upgrade, and returns the last not Ready ones.
+func notReadyControlPlanePods(t *testing.T, client kubernetes.Interface) []string {
+	t.Helper()
+
+	const (
+		timeout     = 5 * time.Minute
+		stablePolls = 3
+	)
+	var lastNotReady []string
+	readyPolls := 0
+	err := wait.PollUntilContextTimeout(t.Context(), pollInterval, timeout, true, func(context.Context) (bool, error) {
+		notReady := notReadyPods(controlPlanePods(t, client))
+		if len(notReady) > 0 {
+			lastNotReady, readyPolls = notReady, 0
+		} else {
+			readyPolls++
+		}
+		t.Logf("control plane pods: not Ready %v (ready %d/%d)", notReady, readyPolls, stablePolls)
+		return readyPolls == stablePolls, nil
+	})
+	if err != nil {
+		return lastNotReady
+	}
+	return nil
+}
+
+// notReadyPods returns the names of pods that are not Ready, e.g. with a crash-looping container.
+func notReadyPods(pods []corev1.Pod) []string {
+	var notReady []string
+	for _, p := range pods {
+		if !isPodReady(p) {
+			notReady = append(notReady, p.Name)
+		}
+	}
+	return notReady
+}
+
+func isPodReady(p corev1.Pod) bool {
+	return slices.ContainsFunc(p.Status.Conditions, func(c corev1.PodCondition) bool {
+		return c.Type == corev1.PodReady && c.Status == corev1.ConditionTrue
+	})
 }
