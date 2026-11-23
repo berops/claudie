@@ -148,7 +148,7 @@ type StaticNodePool struct {
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=65535
 	SshPort int32 `json:"sshPort,omitempty"`
-	// ConfigMap in the namespace of the InputManifest whose only entry is the containerd drop-in TOML. Kubernetes nodepools only.
+	// ConfigMap in the namespace of the InputManifest whose only entry is the containerd drop-in TOML.
 	// +optional
 	ContainerdConfigMap string `json:"containerdConfigMap,omitempty"`
 }

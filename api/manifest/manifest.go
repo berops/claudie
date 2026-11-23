@@ -288,7 +288,7 @@ type ProviderSpec struct {
 
 // Containerd is the containerd drop-in of a nodepool, written to /etc/containerd/conf.d/ on its nodes.
 type Containerd struct {
-	// ConfigMap in the namespace of the InputManifest whose only entry is the containerd drop-in TOML. Kubernetes nodepools only.
+	// ConfigMap in the namespace of the InputManifest whose only entry is the containerd drop-in TOML.
 	// +optional
 	ConfigMap string `yaml:"configMap,omitempty" json:"containerdConfigMap,omitempty"`
 	// TOML of ConfigMap, filled by the operator and kept out of the CRD.

@@ -291,8 +291,7 @@ spec:
                           type: object
                         containerdConfigMap:
                           description: ConfigMap in the namespace of the InputManifest
-                            whose only entry is the containerd drop-in TOML. Kubernetes
-                            nodepools only.
+                            whose only entry is the containerd drop-in TOML.
                           type: string
                         count:
                           description: Number of the nodes in the nodepool. Mutually
@@ -435,8 +434,7 @@ spec:
                           type: object
                         containerdConfigMap:
                           description: ConfigMap in the namespace of the InputManifest
-                            whose only entry is the containerd drop-in TOML. Kubernetes
-                            nodepools only.
+                            whose only entry is the containerd drop-in TOML.
                           type: string
                         labels:
                           additionalProperties:

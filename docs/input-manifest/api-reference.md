@@ -503,7 +503,7 @@ Autoscaler configuration on per nodepool basis. Defines the number of nodes, aut
 The containerd configuration of a nodepool is read from a ConfigMap in the namespace of the InputManifest and written on its nodes as a drop-in `/etc/containerd/conf.d/claudie.toml`. The ConfigMap holds the TOML as its only entry. Changing the ConfigMap, or removing `containerdConfigMap`, restarts containerd on the nodes of the nodepool one node at a time. Running containers keep running during the restart.
 
 - Only nodes built by kubeadm load the drop-in.
-- Only Kubernetes nodepools support it. A load balancer nodepool with `containerdConfigMap` is rejected.
+- Load balancer nodepools support it too. Their containerd runs under Docker without the CRI plugin, so `io.containerd.cri.*` settings have no effect there.
 - The drop-in uses containerd config version 3, e.g. `[plugins."io.containerd.cri.v1.images"]`.
 - Claudie owns `SystemdCgroup` and the CRI plugin. Don't override them in the drop-in.
 - The TOML syntax is validated.
