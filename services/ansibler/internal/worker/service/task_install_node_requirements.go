@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/berops/claudie/internal/fileutils"
@@ -113,6 +114,11 @@ func installLonghornRequirements(nodepoolsInfo *NodepoolsInfo, flags string, pro
 
 	if err := nodepools.StaticGenerateKeys(nodepoolsInfo.Nodepools.Static, clusterDirectory); err != nil {
 		return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
+	}
+
+	nps := slices.Concat(nodepoolsInfo.Nodepools.Dynamic, nodepoolsInfo.Nodepools.Static)
+	if err := writeContainerdConfigs(clusterDirectory, nodepoolsInfo.ClusterID, nps); err != nil {
+		return err
 	}
 
 	data := AllNodesInventoryData{
