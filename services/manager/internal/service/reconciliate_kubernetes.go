@@ -162,6 +162,10 @@ func KubernetesLowPriority(r KubernetesReconciliate) *spec.TaskEvent {
 		return SchedulePatchNodes(r.Current, r.Diff.LabelsTaintsAnnotations)
 	}
 
+	for np, config := range r.Diff.ContainerdConfigs {
+		return ScheduleReconcileContainerdConfig(r.Current, "", np, config)
+	}
+
 	// If this path gets hit, means that there are no changes to the counts
 	// of the nodepools and just that the Autoscaler config was changed but
 	// the count of nodes remains same.
@@ -244,6 +248,60 @@ func ScheduleUpgradeKubernetesVersion(current, desired *spec.Clusters) *spec.Tas
 								Kind: spec.StageAnsibler_UPGRADE_K8S_VERSION,
 								Description: &spec.StageDescription{
 									About:      "Rolling upgrade of the nodes using kubeadm",
+									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+// Schedules a task that will write the desired containerd drop-in on the nodes of the nodepool
+// and restart containerd on them one node at a time. The nodepool belongs to the load balancer
+// with the id lb, or to the kubernetes cluster if lb is empty.
+//
+// The returned [spec.TaskEvent] does not point to or share any memory with the passed in state.
+func ScheduleReconcileContainerdConfig(current *spec.Clusters, lb, nodepool, config string) *spec.TaskEvent {
+	inFlight := proto.Clone(current).(*spec.Clusters)
+
+	return &spec.TaskEvent{
+		Id:        uuid.New().String(),
+		Timestamp: timestamppb.New(time.Now().UTC()),
+		Event:     spec.Event_UPDATE,
+		Task: &spec.Task{
+			Do: &spec.Task_Update{
+				Update: &spec.Update{
+					State: &spec.Update_State{
+						K8S:           inFlight.K8S,
+						LoadBalancers: inFlight.LoadBalancers.Clusters,
+					},
+					Delta: &spec.Update_ReconcileContainerdConfig_{
+						ReconcileContainerdConfig: &spec.Update_ReconcileContainerdConfig{
+							Handle:   lb,
+							Nodepool: nodepool,
+							Config:   config,
+						},
+					},
+				},
+			},
+		},
+		Description: fmt.Sprintf("Updating containerd configuration of nodepool %q", nodepool),
+		Pipeline: []*spec.Stage{
+			{
+				StageKind: &spec.Stage_Ansibler{
+					Ansibler: &spec.StageAnsibler{
+						Description: &spec.StageDescription{
+							About:      "Configuring containerd",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+						SubPasses: []*spec.StageAnsibler_SubPass{
+							{
+								Kind: spec.StageAnsibler_RECONCILE_CONTAINERD_CONFIG,
+								Description: &spec.StageDescription{
+									About:      "Writing the containerd drop-in and restarting containerd node by node",
 									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 								},
 							},

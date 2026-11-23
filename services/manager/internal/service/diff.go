@@ -109,6 +109,10 @@ type (
 		// RollingUpdates are nodepools present in both states but
 		// having different templates commit hash.
 		RollingUpdates PendingRollingUpdates
+
+		// ContainerdConfigs are nodepools present in both states but
+		// having a different containerd drop-in, with the desired one.
+		ContainerdConfigs map[string]string
 	}
 
 	ModifiedLoadBalancer struct {
@@ -178,6 +182,9 @@ type (
 
 		// Nodepools that have their templates changed.
 		RollingUpdate PendingRollingUpdates
+
+		// Same as [KubernetesDiffResult.ContainerdConfigs].
+		ContainerdConfigs map[string]string
 	}
 
 	LoadBalancerIdentifier struct {
@@ -415,10 +422,15 @@ func KubernetesDiff(old, desired *spec.K8Scluster) KubernetesDiffResult {
 	result.ChangedToAutoscaled = make(PendingAutoscaledNodePoolTransitions)
 	result.ChangedToFixed = make(PendingFixedNodePoolTransitions)
 	result.RollingUpdates = make(PendingRollingUpdates)
+	result.ContainerdConfigs = make(map[string]string)
 	for _, cnp := range old.ClusterInfo.NodePools {
 		for _, dnp := range desired.ClusterInfo.NodePools {
 			if cnp.Name != dnp.Name {
 				continue
+			}
+
+			if cnp.ContainerdConfig != dnp.ContainerdConfig {
+				result.ContainerdConfigs[dnp.Name] = dnp.ContainerdConfig
 			}
 
 			if cnp.GetDynamicNodePool() != nil && dnp.GetDynamicNodePool() != nil {
@@ -752,6 +764,7 @@ func LoadBalancersDiff(old, desired *spec.LoadBalancers) LoadBalancersDiffResult
 		pendingDynamicDeletions := make(PendingDeletionsViewType)
 		pendingStaticDeletions := make(PendingDeletionsViewType)
 		rollingUpdates := make(PendingRollingUpdates)
+		containerdConfigs := make(map[string]string)
 
 		// Check for [spec.NodeStatus_MarkedForDeletion] nodes.
 		//
@@ -764,6 +777,10 @@ func LoadBalancersDiff(old, desired *spec.LoadBalancers) LoadBalancersDiffResult
 			for _, dnp := range desired.ClusterInfo.NodePools {
 				if cnp.Name != dnp.Name {
 					continue
+				}
+
+				if cnp.ContainerdConfig != dnp.ContainerdConfig {
+					containerdConfigs[dnp.Name] = dnp.ContainerdConfig
 				}
 
 				if cnp.GetDynamicNodePool() != nil && dnp.GetDynamicNodePool() != nil {
@@ -808,6 +825,7 @@ func LoadBalancersDiff(old, desired *spec.LoadBalancers) LoadBalancersDiffResult
 		modified = modified || dnsChanged
 		modified = modified || len(pendingDynamicDeletions) > 0 || len(pendingStaticDeletions) > 0
 		modified = modified || len(rollingUpdates) > 0
+		modified = modified || len(containerdConfigs) > 0
 		modified = modified || (!dynDiff.IsEmpty() || !sttDiff.IsEmpty())
 		if modified {
 			entry := struct {
@@ -828,6 +846,7 @@ func LoadBalancersDiff(old, desired *spec.LoadBalancers) LoadBalancersDiffResult
 				PendingDynamicDeletions PendingDeletionsViewType
 				PendingStaticDeletions  PendingDeletionsViewType
 				RollingUpdate           PendingRollingUpdates
+				ContainerdConfigs       map[string]string
 			}{}
 
 			entry.CurrentIdx = oldIdx
@@ -844,6 +863,7 @@ func LoadBalancersDiff(old, desired *spec.LoadBalancers) LoadBalancersDiffResult
 			entry.PendingDynamicDeletions = pendingDynamicDeletions
 			entry.PendingStaticDeletions = pendingStaticDeletions
 			entry.RollingUpdate = rollingUpdates
+			entry.ContainerdConfigs = containerdConfigs
 
 			if !dynDiff.IsEmpty() {
 				entry.Dynamic = dynDiff
