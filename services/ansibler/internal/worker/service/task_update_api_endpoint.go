@@ -136,11 +136,18 @@ func updateApiEndpoint(
 
 	newApiEndpoint := newEndpointNode.GetPublic()
 
-	return utils.ChangeAPIEndpoint(
+	kubeconfig, err := utils.ChangeAPIEndpoint(
 		clusterID,
 		apiEndpointNode.GetPublic(),
 		newApiEndpoint,
 		clusterDirectory,
 		processLimit,
 	)
+	if err != nil {
+		return err
+	}
+
+	cluster.Kubeconfig = kubeconfig
+
+	return nil
 }
