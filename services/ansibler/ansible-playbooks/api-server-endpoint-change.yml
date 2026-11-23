@@ -11,6 +11,23 @@
 #
 # The ansibler retries the whole playbook on failure, so every play has to be re-runnable.
 
+# A run interrupted between the backup and the issuing of the certificate (roles/kubeadm_apiserver_cert)
+# leaves a node without it, the api server of the node cannot start then.
+- name: Restore the api server certificates an interrupted run left moved aside
+  hosts: control
+  become: true
+  gather_facts: false
+  any_errors_fatal: true
+  tasks:
+    - name: Restore the api server certificate from the backup
+      ansible.builtin.command:
+        cmd: mv {{ item }}.bak {{ item }}
+        creates: "{{ item }}"
+        removes: "{{ item }}.bak"
+      loop:
+        - /etc/kubernetes/pki/apiserver.crt
+        - /etc/kubernetes/pki/apiserver.key
+
 - name: Set the new control plane endpoint in the ClusterConfiguration of the cluster
   hosts: control[0]
   become: true
