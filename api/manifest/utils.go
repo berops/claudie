@@ -428,11 +428,12 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.Nod
 			}
 
 			nodePools = append(nodePools, &spec.NodePool{
-				Name:        nodePool.Name,
-				IsControl:   isControl,
-				Labels:      nodePool.Labels,
-				Annotations: nodePool.Annotations,
-				Taints:      getTaints(nodePool.Taints),
+				Name:             nodePool.Name,
+				IsControl:        isControl,
+				Labels:           nodePool.Labels,
+				Annotations:      nodePool.Annotations,
+				Taints:           getTaints(nodePool.Taints),
+				ContainerdConfig: nodePool.Containerd.Config,
 				// The nodes are left empty, as the desired state
 				// in the manifest does not specify each of the nodes
 				// individually, just the count of the nodes that the
@@ -466,12 +467,13 @@ func (ds *Manifest) CreateNodepools(pools []string, isControl bool) ([]*spec.Nod
 				// for the static nodepools are explicitly defined
 				// in the manifest itself, thus they already are stored
 				// in this step of the build pipeline.
-				Nodes:       nodes,
-				IsControl:   isControl,
-				Labels:      nodePool.Labels,
-				Annotations: nodePool.Annotations,
-				Taints:      taints,
-				SshPort:     resolveSSHPort(nodePool.SshPort),
+				Nodes:            nodes,
+				IsControl:        isControl,
+				Labels:           nodePool.Labels,
+				Annotations:      nodePool.Annotations,
+				Taints:           taints,
+				SshPort:          resolveSSHPort(nodePool.SshPort),
+				ContainerdConfig: nodePool.Containerd.Config,
 				Type: &spec.NodePool_StaticNodePool{
 					StaticNodePool: &spec.StaticNodePool{
 						NodeKeys: keys,
