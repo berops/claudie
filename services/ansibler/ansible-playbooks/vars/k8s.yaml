@@ -19,10 +19,12 @@ kubernetes_packages:
   - kubernetes-cni
   - cri-tools
 
-# Installed on every node, Longhorn attaches its volumes over iSCSI and serves RWX volumes over NFS.
-longhorn_packages:
+# Installed on every kubernetes node, not on the load balancers: iSCSI and NFS for Longhorn
+# volumes, unpigz for parallel decompression of image layers in containerd.
+common_packages:
   - open-iscsi
   - nfs-common
+  - pigz
 
 # control_plane_endpoint_host, the DNS hostname of the api loadbalancer or the public IP of
 # the api endpoint node, is always passed by the ansibler (task_create_cluster.go,
