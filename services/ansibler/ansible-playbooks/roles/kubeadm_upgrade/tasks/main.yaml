@@ -10,24 +10,27 @@
 #                       kubelet configuration of every node.
 #
 # A node whose kubelet already runs kubernetes_version is not upgraded again, so that a retried run
-# does not drain the nodes upgraded by the failed one. kubeadm upgrades the node before its kubelet,
-# so such a node only gets the waits and the uncordon, which the failed run may not have reached.
+# does not drain the nodes upgraded by the failed one. The upgrade marks a node it cordons with
+# upgrade_cordon_annotation (vars/main.yaml) and uncordons only marked nodes, so a node cordoned by a
+# failed run is uncordoned by the retry and a node cordoned by someone else stays cordoned.
 #
 # Every kubectl task is delegated to kubectl_node (vars/main.yaml), the first control node, as only
 # control nodes have admin.conf. The rest runs on the node itself: kubeadm upgrade node talks to the
 # cluster with kubelet.conf on a worker node and with admin.conf on a control node.
 
-- name: Read the kubelet version of the node
+- name: Read the node
   ansible.builtin.command:
-    cmd: >-
-      kubectl --kubeconfig /etc/kubernetes/admin.conf get node {{ inventory_hostname }}
-      --output jsonpath={.status.nodeInfo.kubeletVersion}
+    cmd: kubectl --kubeconfig /etc/kubernetes/admin.conf get node {{ inventory_hostname }} --output json
   delegate_to: "{{ kubectl_node }}"
-  register: kubelet_version
+  register: node_json
   changed_when: false
 
+- name: Parse the node
+  ansible.builtin.set_fact:
+    upgrade_node: "{{ node_json.stdout | from_json }}"
+
 - name: Upgrade the node
-  when: kubelet_version.stdout != 'v' ~ kubernetes_version
+  when: upgrade_node.status.nodeInfo.kubeletVersion != 'v' ~ kubernetes_version
   block:
     # pkgs.k8s.io has an apt repository per minor version.
     - name: Point the Kubernetes apt repository at the new version
@@ -60,6 +63,15 @@
     # metrics-server) and pods without a controller fail the drain. The timeout stays below the 25
     # minutes of ANSIBLE_TASK_TIMEOUT of the ansibler. A drain still blocked after it, e.g. by a
     # PodDisruptionBudget, fails the upgrade, which is retried.
+    # Before the drain, which cordons the node. A node already cordoned is left unmarked.
+    - name: Mark the node as cordoned by the upgrade
+      ansible.builtin.command:
+        cmd: >-
+          kubectl --kubeconfig /etc/kubernetes/admin.conf annotate node {{ inventory_hostname }}
+          {{ upgrade_cordon_annotation }}=true --overwrite
+      delegate_to: "{{ kubectl_node }}"
+      when: not upgrade_node.spec.unschedulable | default(false)
+
     - name: Drain the node
       ansible.builtin.command:
         cmd: >-
@@ -100,9 +112,29 @@
   delegate_to: "{{ kubectl_node }}"
   changed_when: false
 
+# Read again, the mark may come from this run or from a failed one.
+- name: Read the upgrade mark of the node
+  ansible.builtin.command:
+    cmd: >-
+      kubectl --kubeconfig /etc/kubernetes/admin.conf get node {{ inventory_hostname }}
+      --output 'jsonpath={.metadata.annotations.{{ upgrade_cordon_annotation | replace(".", "\\.") }}}'
+  delegate_to: "{{ kubectl_node }}"
+  register: upgrade_mark
+  changed_when: false
+
 - name: Uncordon the node
   ansible.builtin.command:
     cmd: kubectl --kubeconfig /etc/kubernetes/admin.conf uncordon {{ inventory_hostname }}
   delegate_to: "{{ kubectl_node }}"
+  when: upgrade_mark.stdout == 'true'
   register: kubectl_uncordon
   changed_when: "'already uncordoned' not in kubectl_uncordon.stdout"
+
+# After the uncordon, so a failure in between only repeats the uncordon.
+- name: Remove the upgrade mark
+  ansible.builtin.command:
+    cmd: >-
+      kubectl --kubeconfig /etc/kubernetes/admin.conf annotate node {{ inventory_hostname }}
+      {{ upgrade_cordon_annotation }}-
+  delegate_to: "{{ kubectl_node }}"
+  when: upgrade_mark.stdout == 'true'
