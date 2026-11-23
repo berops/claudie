@@ -36,12 +36,15 @@
     # that could drift from it: it reads the config from stdin. The InitConfiguration in front is
     # needed because the api server certificate is also issued for the node name and the advertise
     # address, both are set as in roles/kubeadm_init and roles/kubeadm_join. Same apiVersion as
-    # the stored ClusterConfiguration.
+    # the stored ClusterConfiguration. The old endpoint stays in the certificate only, so the
+    # kubeconfig in the cluster state still reaches the api server if this playbook fails.
     - name: Issue the api server certificate
+      vars:
+        cluster_configuration: "{{ kubeadm_cluster_configuration.stdout | from_yaml }}"
       ansible.builtin.command:
         cmd: kubeadm init phase certs apiserver --config /dev/stdin
         stdin: |
-          apiVersion: {{ (kubeadm_cluster_configuration.stdout | from_yaml).apiVersion }}
+          apiVersion: {{ cluster_configuration.apiVersion }}
           kind: InitConfiguration
           localAPIEndpoint:
             advertiseAddress: {{ node_ip }}
@@ -49,7 +52,9 @@
           nodeRegistration:
             name: {{ inventory_hostname }}
           ---
-          {{ kubeadm_cluster_configuration.stdout }}
+          {{ cluster_configuration | combine({'apiServer': {'certSANs':
+               (cluster_configuration.apiServer.certSANs + [old_control_plane_endpoint_host]) | unique}},
+             recursive=true) | to_yaml }}
   rescue:
     - name: Restore the previous api server certificate
       ansible.builtin.command:
