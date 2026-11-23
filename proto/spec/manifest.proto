@@ -603,6 +603,15 @@ message Update {
     string version = 1;
   }
 
+  // ReconcileContainerdConfig works with the [State] that is part of the [Update]
+  // message, thus no "message consuming" needs to happen.
+  message ReconcileContainerdConfig {
+    // Id of the load balancer of the nodepool, empty for a nodepool of the kubernetes cluster.
+    string handle = 1;
+    string nodepool = 2;
+    string config = 3;
+  }
+
   // KuberPatchNodes is a message that once processed by the Kuber service
   // and a result is send back to the Manager, it will consume the message
   // and further stages will only have a [PatchedNodes] message to process.
@@ -796,6 +805,7 @@ message Update {
     ApiPortOnCluster clusterApiPort = 39;
     K8sOnlyApiEndpoint k8sApiEndpoint = 40;
     UpgradeVersion upgradeVersion = 41;
+    ReconcileContainerdConfig reconcileContainerdConfig = 42;
   }
 }
 
