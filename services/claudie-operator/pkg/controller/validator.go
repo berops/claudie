@@ -346,7 +346,8 @@ func validateReferences(ctx context.Context, kc client.Client, im *v1beta.InputM
 		}
 	}
 
-	return nil
+	_, err := readContainerdConfigs(ctx, kc, im)
+	return err
 }
 
 // getDynamicNodepoolsMap will read manifest from the given config and return map of provider names keyed by dynamic nodepool names
