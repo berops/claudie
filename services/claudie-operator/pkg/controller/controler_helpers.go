@@ -17,9 +17,16 @@ limitations under the License.
 package controller
 
 import (
+	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/BurntSushi/toml"
+	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	v1beta1manifest "github.com/berops/claudie/api/crd/inputmanifest/v1beta1"
 	"github.com/berops/claudie/api/manifest"
@@ -32,6 +39,7 @@ func constructInputManifest(
 	crd v1beta1manifest.InputManifest,
 	providerData []v1beta1manifest.ProviderWithData,
 	staticNodesWithSecret map[string][]v1beta1manifest.StaticNodeWithData,
+	containerdConfigs map[string]string,
 ) (manifest.Manifest, error) {
 	var providers manifest.Provider
 
@@ -321,9 +329,13 @@ func constructInputManifest(
 	}
 
 	var nodePools manifest.NodePool
-	nodePools.Dynamic = crd.Spec.NodePools.Dynamic
-	nodePools.Static = make([]manifest.StaticNodePool, 0, len(crd.Spec.NodePools.Static))
 
+	nodePools.Dynamic = slices.Clone(crd.Spec.NodePools.Dynamic)
+	for i := range nodePools.Dynamic {
+		nodePools.Dynamic[i].Containerd.Config = containerdConfigs[nodePools.Dynamic[i].Containerd.ConfigMap]
+	}
+
+	nodePools.Static = make([]manifest.StaticNodePool, 0, len(crd.Spec.NodePools.Static))
 	for nodepool, withSecret := range generics.IterateMapInOrder(staticNodesWithSecret) {
 		nodes := make([]manifest.Node, 0, len(withSecret))
 		for _, n := range withSecret {
@@ -346,6 +358,7 @@ func constructInputManifest(
 			Taints:      np.Taints,
 			Annotations: np.Annotations,
 			SshPort:     &np.SshPort,
+			Containerd:  manifest.Containerd{ConfigMap: np.ContainerdConfigMap, Config: containerdConfigs[np.ContainerdConfigMap]},
 		})
 	}
 
@@ -364,6 +377,49 @@ func constructInputManifest(
 			Clusters: crd.Spec.LoadBalancer.Clusters,
 		},
 	}, nil
+}
+
+func readContainerdConfigs(ctx context.Context, kc client.Client, im *v1beta1manifest.InputManifest) (map[string]string, error) {
+	var names []string
+	for _, np := range im.Spec.NodePools.Dynamic {
+		names = append(names, np.Containerd.ConfigMap)
+	}
+	for _, np := range im.Spec.NodePools.Static {
+		names = append(names, np.ContainerdConfigMap)
+	}
+
+	configs := make(map[string]string)
+	for _, name := range names {
+		if _, ok := configs[name]; ok {
+			continue
+		}
+		config, err := readContainerdConfigMap(ctx, kc, im.Namespace, name)
+		if err != nil {
+			return nil, err
+		}
+		configs[name] = config
+	}
+	return configs, nil
+}
+
+func readContainerdConfigMap(ctx context.Context, kc client.Client, namespace, name string) (string, error) {
+	if name == "" {
+		return "", nil
+	}
+
+	var cm corev1.ConfigMap
+	if err := kc.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, &cm); err != nil {
+		return "", fmt.Errorf("failed to read the containerd config from configmap %s/%s: %w", namespace, name, err)
+	}
+	if len(cm.Data) != 1 {
+		return "", fmt.Errorf("configmap %s/%s must hold exactly 1 entry with the containerd config, got %d", namespace, name, len(cm.Data))
+	}
+
+	config := slices.Collect(maps.Values(cm.Data))[0]
+	if _, err := toml.Decode(config, new(map[string]any)); err != nil {
+		return "", fmt.Errorf("containerd config in configmap %s/%s is not valid TOML: %w", namespace, name, err)
+	}
+	return config, nil
 }
 
 // buildSecretError builds an error with the name of the NamespaceName
