@@ -136,13 +136,22 @@ func (v *InputManifestValidator) validateVersionUpgrades(ctx context.Context, ol
 	for _, desired := range im.Spec.Kubernetes.Clusters {
 		state := resp.Config.GetClusters()[desired.Name]
 
-		current := state.GetCurrent().GetK8S().GetKubernetes()
-		if current == "" {
-			continue
+		if current := state.GetCurrent().GetK8S().GetKubernetes(); current != "" {
+			if err := manifest.ValidateVersionUpgrade(current, desired.Version); err != nil {
+				return fmt.Errorf("kubernetes version check for cluster %q failed: %w", desired.Name, err)
+			}
 		}
 
-		if err := manifest.ValidateVersionUpgrade(current, desired.Version); err != nil {
-			return fmt.Errorf("kubernetes version check for cluster %q failed: %w", desired.Name, err)
+		// A cluster removed and re-added skips the previous-manifest check, so it could
+		// downgrade below an upgrade that is still pending. Check every queued upgrade.
+		for task := state.GetInFlight(); task != nil; task = task.GetLowerPriority() {
+			pending := task.GetTask().GetUpdate().GetUpgradeVersion().GetVersion()
+			if pending == "" {
+				continue
+			}
+			if err := manifest.ValidateVersionUpgrade(pending, desired.Version); err != nil {
+				return fmt.Errorf("cluster %q has a pending upgrade to %s: %w", desired.Name, pending, err)
+			}
 		}
 	}
 
