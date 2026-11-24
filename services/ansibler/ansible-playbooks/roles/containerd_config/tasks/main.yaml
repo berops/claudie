@@ -44,3 +44,8 @@
   rescue:
     - name: Roll back the containerd config drop-in
       ansible.builtin.import_tasks: rollback-dropin-config.yaml
+
+- name: Remove the containerd config drop-in backup
+  ansible.builtin.file:
+    path: /etc/containerd/conf.d/claudie.toml.bak
+    state: absent
