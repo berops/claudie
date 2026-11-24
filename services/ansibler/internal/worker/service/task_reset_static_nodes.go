@@ -139,6 +139,7 @@ func resetStaticNodes(clusterID string, static []*spec.NodePool, processLimit *s
 		Inventory:         utils.InventoryFileName,
 		Directory:         clusterDirectory,
 		SpawnProcessLimit: processLimit,
+		RetryCount:        1,
 	}
 
 	if err := ansible.RunAnsiblePlaybook(fmt.Sprintf("Reset static nodes - %s", clusterID)); err != nil {
