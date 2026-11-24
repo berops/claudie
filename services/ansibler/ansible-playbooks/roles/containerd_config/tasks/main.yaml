@@ -2,22 +2,23 @@
 # The whole containerd configuration of a node: the default config for kubeadm and the
 # drop-in of the nodepool, the same on the nodes of the kubernetes cluster and of the load balancers, from
 # containerd/<inventory host>.toml next to the inventory on the controller.
-# Restarts containerd once when any of it changed.
+# Restarts containerd on every run.
 
 # The containerd.io package ships a config.toml that disables the CRI plugin, it is replaced.
 - name: Set up the default containerd configuration
   ansible.builtin.import_tasks: setup-default-config.yaml
-  notify: Restart containerd
 
 - name: Add the containerd config drop-in
   ansible.builtin.import_tasks: add-dropin-config.yaml
   when: containerd_config_dropin_src is file
-  notify: Restart containerd
 
 - name: Remove the containerd config drop-in
   ansible.builtin.import_tasks: remove-dropin-config.yaml
   when: containerd_config_dropin_src is not file
-  notify: Restart containerd
 
+# Also when nothing changed: a failed run may have copied the drop-in without restarting.
 - name: Apply the containerd configuration
-  ansible.builtin.meta: flush_handlers
+  ansible.builtin.systemd:
+    name: containerd
+    enabled: true
+    state: restarted
