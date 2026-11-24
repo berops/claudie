@@ -1,21 +1,15 @@
 ---
-# Writes the default containerd configuration with the systemd cgroup driver.
+# Writes the default containerd configuration with the systemd cgroup driver, in one write so the
+# file only changes when the default of the installed containerd changes.
 
 - name: Render the default containerd configuration
   ansible.builtin.command: containerd config default
   register: containerd_config_default_command
   changed_when: false
 
+# kubeadm configures the kubelet with the systemd cgroup driver, the runtime must match.
 - name: Write the default containerd configuration
   ansible.builtin.copy:
     dest: /etc/containerd/config.toml
-    content: "{{ containerd_config_default_command.stdout }}\n"
+    content: "{{ containerd_config_default_command.stdout | regex_replace('SystemdCgroup = false', 'SystemdCgroup = true') }}\n"
     mode: "0644"
-
-# kubeadm configures the kubelet with the systemd cgroup driver, the runtime must match
-# containerd config default outputs a file with SystemdCgroup=false
-- name: Use the systemd cgroup driver in containerd
-  ansible.builtin.replace:
-    path: /etc/containerd/config.toml
-    regexp: '^(\s*SystemdCgroup\s*=\s*)false'
-    replace: '\1true'

@@ -1,6 +1,5 @@
 ---
-# Removes the drop-in of a nodepool whose containerd config override was dropped. The imports line
-# stays, containerd ignores a glob without matches.
+# Removes the drop-in of a nodepool whose containerd config override was dropped.
 
 - name: Remove the containerd config drop-in
   ansible.builtin.file:
