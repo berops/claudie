@@ -1,7 +1,7 @@
 ---
 # Puts a node of the kubernetes cluster into the state Claudie needs: the Longhorn dependencies,
 # the pinned containerd and Kubernetes packages, raised node limits, no swap, kernel networking for
-# pods and containerd configured for kubeadm.
+# pods and containerd configured for kubeadm (roles/containerd_config).
 # Validation is left to the kubeadm preflight checks.
 #
 # The package installation is the slowest part. It runs in the background while the rest of the
@@ -27,11 +27,11 @@
 - name: Wait for the package installation
   ansible.builtin.import_tasks: wait-for-packages.yml
 
-- name: Configure containerd and the kubelet
-  ansible.builtin.import_tasks: configure-containerd-kubelet.yml
+- name: Configure containerd
+  ansible.builtin.import_role:
+    name: containerd_config
 
-    # kubeadm starts the kubelet itself, it only has to come back after a reboot.
-    - name: Enable kubelet
-      ansible.builtin.systemd:
-        name: kubelet
-        enabled: true
+- name: Enable kubelet
+  ansible.builtin.systemd:
+    name: kubelet
+    enabled: true
