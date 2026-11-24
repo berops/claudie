@@ -22,3 +22,12 @@
     name: containerd
     enabled: true
     state: restarted
+
+# containerd stays up when a plugin fails to load, the restart alone doesn't catch it.
+- name: Check that no containerd plugin failed to load
+  ansible.builtin.command: ctr plugins ls
+  register: containerd_config_plugins
+  changed_when: false
+  retries: 5
+  delay: 3
+  until: containerd_config_plugins.rc == 0 and containerd_config_plugins.stdout is not search('\\serror$', multiline=True)
