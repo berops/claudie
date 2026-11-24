@@ -88,6 +88,7 @@ spec:
     #       - key:          # The taint key to be applied to a node.
     #         value:        # The taint value corresponding to the taint key.
     #         effect:       # The effect of the taint on pods that do not tolerate the taint.
+    #     containerdConfigMap: # Name of the ConfigMap with the containerd configuration for every node in the nodepool. (optional)
     #
     # Example definitions for each provider
     dynamic:
@@ -268,6 +269,7 @@ spec:
     #       - key:          # The taint key to be applied to a node.
     #         value:        # The taint value corresponding to the taint key.
     #         effect:       # The effect of the taint on pods that do not tolerate the taint.
+    #     containerdConfigMap: # Name of the ConfigMap with the containerd configuration for every node in the nodepool. (optional)
     #
     # Example definitions
     static:

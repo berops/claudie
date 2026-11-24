@@ -500,13 +500,15 @@ Autoscaler configuration on per nodepool basis. Defines the number of nodes, aut
 
 ## Containerd
 
-The containerd configuration of a nodepool is read from a ConfigMap in the namespace of the InputManifest and written on its nodes as a drop-in `/etc/containerd/conf.d/claudie.toml`. The ConfigMap holds the TOML as its only entry. Changing the ConfigMap, or removing `containerdConfigMap`, restarts containerd on the nodes of the nodepool one node at a time. Running containers keep running during the restart.
+The containerd configuration of a nodepool is read from a ConfigMap in the namespace of the InputManifest and written on its nodes as a drop-in `/etc/containerd/conf.d/claudie.toml`. The ConfigMap holds the TOML as its only entry. Changing the ConfigMap, or removing `containerdConfigMap`, restarts containerd on the nodes of the nodepool one node at a time. Running containers keep running during the restart. A changed ConfigMap is picked up without re-applying the InputManifest.
 
 - Only nodes built by kubeadm load the drop-in.
 - Load balancer nodepools support it too. Their containerd runs under Docker without the CRI plugin, so `io.containerd.cri.*` settings have no effect there.
 - The drop-in uses containerd config version 3, e.g. `[plugins."io.containerd.cri.v1.images"]`.
 - Claudie owns `SystemdCgroup` and the CRI plugin. Don't override them in the drop-in.
-- The TOML syntax is validated.
+- An InputManifest is rejected when the ConfigMap is missing, doesn't hold exactly one entry, or the entry isn't valid TOML. A ConfigMap that becomes invalid later is reported as a `ProvisioningFailed` event on the InputManifest and the nodes keep their current drop-in.
+- Nodes added to the nodepool later get the drop-in when they are set up.
+- When containerd doesn't restart or one of its plugins fails to load with the new drop-in, the previous drop-in is restored on that node, the remaining nodes are left untouched and the workflow fails.
 
 Create the ConfigMap from your file and reference it from the nodepool:
 
