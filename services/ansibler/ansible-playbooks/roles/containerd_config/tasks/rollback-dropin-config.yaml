@@ -1,0 +1,22 @@
+---
+# Puts back the drop-in the node had before this run and fails the play, so the node keeps a
+# working containerd.
+
+- name: Restore the previous containerd config drop-in
+  ansible.builtin.command: cp -a /etc/containerd/conf.d/claudie.toml.bak /etc/containerd/conf.d/claudie.toml
+  when: containerd_config_backup is not skipped
+
+- name: Remove the new containerd config drop-in
+  ansible.builtin.file:
+    path: /etc/containerd/conf.d/claudie.toml
+    state: absent
+  when: containerd_config_backup is skipped
+
+- name: Restart containerd with the previous configuration
+  ansible.builtin.systemd:
+    name: containerd
+    state: restarted
+
+- name: Fail after rolling back the containerd config drop-in
+  ansible.builtin.fail:
+    msg: "containerd config drop-in rolled back: {{ ansible_failed_result.msg | default('containerd failed with the new drop-in') }}"
