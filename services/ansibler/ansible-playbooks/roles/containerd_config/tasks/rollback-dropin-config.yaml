@@ -4,13 +4,13 @@
 
 - name: Restore the previous containerd config drop-in
   ansible.builtin.command: cp -a /etc/containerd/conf.d/claudie.toml.bak /etc/containerd/conf.d/claudie.toml
-  when: containerd_config_backup is not skipped
+  when: containerd_config_backup is changed
 
 - name: Remove the new containerd config drop-in
   ansible.builtin.file:
     path: /etc/containerd/conf.d/claudie.toml
     state: absent
-  when: containerd_config_backup is skipped
+  when: containerd_config_backup is not changed
 
 - name: Restart containerd with the previous configuration
   ansible.builtin.systemd:

@@ -8,7 +8,7 @@
 - name: Set up the default containerd configuration
   ansible.builtin.import_tasks: setup-default-config.yaml
 
-# Skipped when the node has no drop-in, the rescue then removes the new one.
+# Not changed when the node has no drop-in, the rescue then removes the new one.
 - name: Back up the containerd config drop-in
   ansible.builtin.command: cp -a /etc/containerd/conf.d/claudie.toml /etc/containerd/conf.d/claudie.toml.bak
   args:
