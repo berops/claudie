@@ -136,6 +136,10 @@ func run() error {
 	crlog.SetLogger(zerologr.New(&log.Logger))
 	logger := crlog.Log
 	scheme := runtime.NewScheme()
+	// The manager's client resolves the DisableFor types before the controller registers its own.
+	if err := corev1.AddToScheme(scheme); err != nil {
+		return err
+	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
