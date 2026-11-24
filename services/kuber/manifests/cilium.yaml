@@ -16,7 +16,8 @@
 #     --set hubble.tls.auto.method=cronJob \
 #     --set operator.podDisruptionBudget.enabled=true \
 #     --set hubble.relay.podDisruptionBudget.enabled=true \
-#     --set hubble.ui.podDisruptionBudget.enabled=true
+#     --set hubble.ui.podDisruptionBudget.enabled=true \
+#     --set policyCIDRMatchMode=nodes
 #
 # claudie-api-endpoint-replace-me is replaced by kuber with the API endpoint of the cluster.
 #
@@ -63,6 +64,8 @@
 #                                                                     (poddisruptionbudgets.yaml).
 #   hubble.ui.podDisruptionBudget.enabled    false                    kubeone: hubble-ui PodDisruptionBudget
 #                                                                     (poddisruptionbudgets.yaml).
+#   policyCIDRMatchMode                      ""                       CIDR selectors in network policies also select nodes.
+#                                                                     kubeone: policy-cidr-match-mode: "nodes" (config map).
 ---
 # Source: cilium/templates/cilium-secrets-namespace.yaml
 apiVersion: v1
@@ -217,6 +220,7 @@ data:
   # default, always and never.
   # https://docs.cilium.io/en/latest/security/policy/intro/#policy-enforcement-modes
   enable-policy: "default"
+  policy-cidr-match-mode: "nodes"
   # If you want metrics enabled in cilium-operator, set the port for
   # which the Cilium Operator will have their metrics exposed.
   # NOTE that this will open the port on the nodes where Cilium operator pod
@@ -489,13 +493,13 @@ data:
     listen-address: :4245
     gops: true
     gops-port: "9893"
-    retry-timeout: 
-    sort-buffer-len-max: 
-    sort-buffer-drain-timeout: 
+    retry-timeout:
+    sort-buffer-len-max:
+    sort-buffer-drain-timeout:
     tls-hubble-client-cert-file: /var/lib/hubble-relay/tls/client.crt
     tls-hubble-client-key-file: /var/lib/hubble-relay/tls/client.key
     tls-hubble-server-ca-files: /var/lib/hubble-relay/tls/hubble-server-ca.crt
-    
+
     disable-server-tls: true
 
 ---
@@ -1416,7 +1420,7 @@ spec:
                     set -o errexit
                     set -o pipefail
                     set -o nounset
-                    
+
                     # When running in AWS ENI mode, it's likely that 'aws-node' has
                     # had a chance to install SNAT iptables rules. These can result
                     # in dropped traffic, so we should attempt to remove them.
@@ -1432,7 +1436,7 @@ spec:
                         iptables-save | grep -E -v 'AWS-SNAT-CHAIN|AWS-CONNMARK-CHAIN' | iptables-restore
                     fi
                     echo 'Done!'
-                    
+
           preStop:
             exec:
               command:
@@ -1508,7 +1512,7 @@ spec:
           readOnly: true
         - name: tmp
           mountPath: /tmp
-        
+
       initContainers:
       - name: config
         image: "quay.io/cilium/cilium:v1.20.4@sha256:20fe92e4c86641233a450098c158d2d29085f3419931ab6bf681d2485dedf16e"
@@ -1715,7 +1719,7 @@ spec:
       terminationGracePeriodSeconds: 1
       hostNetwork: true
       hostUsers: true
-      
+
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -1727,7 +1731,7 @@ spec:
         kubernetes.io/os: linux
       tolerations:
         - operator: Exists
-      
+
       volumes:
       # For sharing configuration between the "config" initContainer and the agent
       - name: tmp
@@ -1841,7 +1845,7 @@ spec:
                 path: server.key
               - key: ca.crt
                 path: client-ca.crt
-      
+
 
 ---
 # Source: cilium/templates/cilium-envoy/daemonset.yaml
@@ -1860,7 +1864,7 @@ spec:
   selector:
     matchLabels:
       k8s-app: cilium-envoy
-  
+
   updateStrategy:
     rollingUpdate:
       maxUnavailable: 2
@@ -1889,7 +1893,7 @@ spec:
         - '-c /var/run/cilium/envoy/bootstrap-config.json'
         - '--base-id 0'
         - '--log-level info'
-        
+
         startupProbe:
           httpGet:
             host: "127.0.0.1"
@@ -1939,7 +1943,7 @@ spec:
           value: "claudie-api-endpoint-replace-me"
         - name: KUBERNETES_SERVICE_PORT
           value: "6443"
-        
+
         ports:
         - name: envoy-metrics
           containerPort: 9964
@@ -1969,7 +1973,7 @@ spec:
         - name: bpf-maps
           mountPath: /sys/fs/bpf
           mountPropagation: HostToContainer
-        
+
       restartPolicy: Always
       priorityClassName: system-node-critical
       serviceAccountName: "cilium-envoy"
@@ -1977,7 +1981,7 @@ spec:
       terminationGracePeriodSeconds: 1
       hostNetwork: true
       hostUsers: true
-      
+
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -2026,7 +2030,7 @@ spec:
         hostPath:
           path: /sys/fs/bpf
           type: DirectoryOrCreate
-    
+
 
 ---
 # Source: cilium/templates/cilium-operator/deployment.yaml
@@ -2134,7 +2138,7 @@ spec:
         - name: cilium-config-path
           mountPath: /tmp/cilium/config-map
           readOnly: true
-        
+
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -2158,7 +2162,7 @@ spec:
             topologyKey: kubernetes.io/hostname
       nodeSelector:
         kubernetes.io/os: linux
-      
+
       tolerations:
         - key: node-role.kubernetes.io/control-plane
           operator: Exists
@@ -2170,13 +2174,13 @@ spec:
           operator: Exists
         - key: node.cilium.io/agent-not-ready
           operator: Exists
-      
+
       volumes:
         # To read the configuration from the config map
       - name: cilium-config-path
         configMap:
           name: cilium-config
-      
+
 
 ---
 # Source: cilium/templates/hubble-relay/deployment.yaml
@@ -2277,9 +2281,9 @@ spec:
             mountPath: /var/lib/hubble-relay/tls
             readOnly: true
           terminationMessagePolicy: FallbackToLogsOnError
-        
+
       restartPolicy: Always
-      priorityClassName: 
+      priorityClassName:
       serviceAccountName: "hubble-relay"
       automountServiceAccountToken: false
       terminationGracePeriodSeconds: 1
@@ -2315,7 +2319,7 @@ spec:
                   path: client.key
                 - key: ca.crt
                   path: hubble-server-ca.crt
-      
+
 
 ---
 # Source: cilium/templates/hubble-ui/deployment.yaml
@@ -2354,7 +2358,7 @@ spec:
         runAsUser: 1001
         seccompProfile:
           type: RuntimeDefault
-      priorityClassName: 
+      priorityClassName:
       serviceAccountName: "hubble-ui"
       automountServiceAccountToken: true
       containers:
@@ -2480,7 +2484,7 @@ spec:
                   - key encipherment
                   - client auth
                   validity: 8760h
-            
+
       hostNetwork: false
       serviceAccountName: "hubble-generate-certs"
       automountServiceAccountToken: true
@@ -2559,7 +2563,7 @@ spec:
                       - key encipherment
                       - client auth
                       validity: 8760h
-                
+
           hostNetwork: false
           serviceAccountName: "hubble-generate-certs"
           automountServiceAccountToken: true

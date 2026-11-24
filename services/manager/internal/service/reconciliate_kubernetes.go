@@ -233,17 +233,17 @@ func ScheduleUpgradeKubernetesVersion(current, desired *spec.Clusters) *spec.Tas
 		Description: "Updating kubernetes version",
 		Pipeline: []*spec.Stage{
 			{
-				StageKind: &spec.Stage_KubeEleven{
-					KubeEleven: &spec.StageKubeEleven{
+				StageKind: &spec.Stage_Ansibler{
+					Ansibler: &spec.StageAnsibler{
 						Description: &spec.StageDescription{
-							About:      "Reconciling kubernetes cluster",
+							About:      "Upgrading kubernetes cluster",
 							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 						},
-						SubPasses: []*spec.StageKubeEleven_SubPass{
+						SubPasses: []*spec.StageAnsibler_SubPass{
 							{
-								Kind: spec.StageKubeEleven_RECONCILE_CLUSTER,
+								Kind: spec.StageAnsibler_UPGRADE_K8S_VERSION,
 								Description: &spec.StageDescription{
-									About:      "Rolling update of the nodes",
+									About:      "Rolling upgrade of the nodes using kubeadm",
 									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 								},
 							},
@@ -520,29 +520,10 @@ func ScheduleTransferApiEndpoint(current *spec.Clusters, nodepool, node string) 
 				},
 			},
 			{
-				StageKind: &spec.Stage_KubeEleven{
-					KubeEleven: &spec.StageKubeEleven{
-						Description: &spec.StageDescription{
-							About:      "Reconciling kubernetes cluster",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-						SubPasses: []*spec.StageKubeEleven_SubPass{
-							{
-								Kind: spec.StageKubeEleven_RECONCILE_CLUSTER,
-								Description: &spec.StageDescription{
-									About:      "Refreshing kubeconfig after API endpoint change",
-									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-								},
-							},
-						},
-					},
-				},
-			},
-			{
 				StageKind: &spec.Stage_Kuber{
 					Kuber: &spec.StageKuber{
 						Description: &spec.StageDescription{
-							About:      "Updating Config Maps after endpoint change",
+							About:      "Updating cluster after endpoint change",
 							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 						},
 						SubPasses: []*spec.StageKuber_SubPass{
@@ -554,17 +535,10 @@ func ScheduleTransferApiEndpoint(current *spec.Clusters, nodepool, node string) 
 								},
 							},
 							{
-								Kind: spec.StageKuber_PATCH_KUBEADM,
+								Kind: spec.StageKuber_RECONCILE_CILIUM,
 								Description: &spec.StageDescription{
-									About:      "Updating Kubeadm cluster map with new endpoint",
+									About:      "Pointing Cilium at the new endpoint",
 									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-								},
-							},
-							{
-								Kind: spec.StageKuber_CILIUM_RESTART,
-								Description: &spec.StageDescription{
-									About:      "Performing rollout restart for cilium after changes",
-									ErrorLevel: spec.ErrorLevel_ERROR_WARN,
 								},
 							},
 						},
@@ -595,7 +569,6 @@ func ScheduleAdditionsInNodePools(
 
 		terraformerStage *spec.Stage
 		ansiblerStage    *spec.Stage
-		kubeElevenStage  *spec.Stage
 		kuberStage       *spec.Stage
 	)
 
@@ -683,25 +656,14 @@ func ScheduleAdditionsInNodePools(
 		}...)
 	}
 
-	kubeElevenStage = &spec.Stage{
-		StageKind: &spec.Stage_KubeEleven{
-			KubeEleven: &spec.StageKubeEleven{
-				Description: &spec.StageDescription{
-					About:      "Reconciling kubernetes cluster",
-					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-				},
-				SubPasses: []*spec.StageKubeEleven_SubPass{
-					{
-						Kind: spec.StageKubeEleven_RECONCILE_CLUSTER,
-						Description: &spec.StageDescription{
-							About:      "Joining new nodes into the kubernetes cluster",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-				},
-			},
+	// Last, so that the subpasses above already configured the new nodes.
+	ans.Ansibler.SubPasses = append(ans.Ansibler.SubPasses, &spec.StageAnsibler_SubPass{
+		Kind: spec.StageAnsibler_NODE_ADDITION,
+		Description: &spec.StageDescription{
+			About:      "Joining new nodes into the kubernetes cluster",
+			ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 		},
-	}
+	})
 
 	kuber := spec.Stage_Kuber{
 		Kuber: &spec.StageKuber{
@@ -730,29 +692,6 @@ func ScheduleAdditionsInNodePools(
 			continue
 		}
 		toAdd = proto.Clone(toAdd).(*spec.NodePool)
-
-		// If the ApiServer is on the kubernetes cluster on addition of the
-		// control plane nodes the Kubeadm config map needs to be updated which
-		// is used during the join operation of new nodes.
-		if opts.HasApiServer && toAdd.IsControl {
-			kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, []*spec.StageKuber_SubPass{
-				{
-					Kind: spec.StageKuber_PATCH_KUBEADM,
-					Description: &spec.StageDescription{
-						About:      "Updating Kubeadm certSANs",
-						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-					},
-				},
-				{
-					Kind: spec.StageKuber_CILIUM_RESTART,
-					Description: &spec.StageDescription{
-						About: "Rollout restart of cilium pods",
-						// Rollout restart failing is not a fatal error.
-						ErrorLevel: spec.ErrorLevel_ERROR_WARN,
-					},
-				},
-			}...)
-		}
 
 		enableCA := len(nodepools.Autoscaled(current.K8S.ClusterInfo.NodePools)) == 0
 		enableCA = enableCA && nodepools.IsAutoscaled(toAdd)
@@ -861,8 +800,32 @@ func ScheduleAdditionsInNodePools(
 		}
 
 		if len(toAdd.Nodes) != 0 {
+			// If the ApiServer is on the kubernetes cluster on addition of the
+			// control plane nodes the Kubeadm config map needs to be updated which
+			// is used during the join operation of new nodes, thus the update is
+			// scheduled before the stage that joins them.
+			if opts.HasApiServer && toAdd.IsControl {
+				pipeline = append(pipeline, &spec.Stage{
+					StageKind: &spec.Stage_Kuber{
+						Kuber: &spec.StageKuber{
+							Description: &spec.StageDescription{
+								About:      "Preparing kubernetes cluster for new control nodes",
+								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+							},
+							SubPasses: []*spec.StageKuber_SubPass{
+								{
+									Kind: spec.StageKuber_PATCH_KUBEADM,
+									Description: &spec.StageDescription{
+										About:      "Updating Kubeadm certSANs",
+										ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+									},
+								},
+							},
+						},
+					},
+				})
+			}
 			pipeline = append(pipeline, ansiblerStage)
-			pipeline = append(pipeline, kubeElevenStage)
 			pipeline = append(pipeline, kuberStage)
 
 			if updateLoadBalancersStage != nil {
@@ -883,31 +846,9 @@ func ScheduleAdditionsInNodePools(
 	}
 
 	for np, nodes := range diff.PartiallyAdded {
-		// If the ApiServer is on the kubernetes cluster on addition of the
-		// control plane nodes the Kubeadm config map needs to be updated which
-		// is used during the join operation of new nodes.
-		if matchedNodePool := nodepools.FindByName(np, current.K8S.ClusterInfo.NodePools); matchedNodePool != nil {
-			if opts.HasApiServer && matchedNodePool.IsControl {
-				kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, []*spec.StageKuber_SubPass{
-					{
-						Kind: spec.StageKuber_PATCH_KUBEADM,
-						Description: &spec.StageDescription{
-							About:      "Updating Kubeadm certSANs",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-					{
-						Kind: spec.StageKuber_CILIUM_RESTART,
-						Description: &spec.StageDescription{
-							About: "Rollout restart of cilium pods",
-							// Rollout restart failing is not a fatal error.
-							ErrorLevel: spec.ErrorLevel_ERROR_WARN,
-						},
-					},
-				}...)
-			}
-		} else {
-			// Not possible to add nodes into a nodepool that is not tracked.
+		// Not possible to add nodes into a nodepool that is not tracked.
+		matchedNodePool := nodepools.FindByName(np, current.K8S.ClusterInfo.NodePools)
+		if matchedNodePool == nil {
 			continue
 		}
 
@@ -1001,8 +942,32 @@ func ScheduleAdditionsInNodePools(
 			pipeline = append(pipeline, terraformerStage)
 		}
 
+		// If the ApiServer is on the kubernetes cluster on addition of the
+		// control plane nodes the Kubeadm config map needs to be updated which
+		// is used during the join operation of new nodes, thus the update is
+		// scheduled before the stage that joins them.
+		if opts.HasApiServer && matchedNodePool.IsControl {
+			pipeline = append(pipeline, &spec.Stage{
+				StageKind: &spec.Stage_Kuber{
+					Kuber: &spec.StageKuber{
+						Description: &spec.StageDescription{
+							About:      "Preparing kubernetes cluster for new control nodes",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+						SubPasses: []*spec.StageKuber_SubPass{
+							{
+								Kind: spec.StageKuber_PATCH_KUBEADM,
+								Description: &spec.StageDescription{
+									About:      "Updating Kubeadm certSANs",
+									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+								},
+							},
+						},
+					},
+				},
+			})
+		}
 		pipeline = append(pipeline, ansiblerStage)
-		pipeline = append(pipeline, kubeElevenStage)
 		pipeline = append(pipeline, kuberStage)
 
 		if updateLoadBalancersStage != nil {
@@ -1122,16 +1087,27 @@ func ScheduleDeletionsInNodePools(
 	}
 
 	// Unless static nodes are being deleted in which case a cleanup
-	// needs to be executed that removes claudie installed utilities.
+	// needs to be executed that resets the nodes and removes claudie
+	// installed utilities, same as on the deletion of the whole cluster.
 	if opts.IsStatic {
-		ans.Ansibler.SubPasses = append(ans.Ansibler.SubPasses, &spec.StageAnsibler_SubPass{
-			Kind: spec.StageAnsibler_REMOVE_CLAUDIE_UTILITIES,
-			Description: &spec.StageDescription{
-				About: "Removing claudie install utilities",
-				// Failing to remove the utilities is not considered as a fatal error.
-				ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+		ans.Ansibler.SubPasses = append(ans.Ansibler.SubPasses, []*spec.StageAnsibler_SubPass{
+			{
+				Kind: spec.StageAnsibler_RESET_STATIC_NODES,
+				Description: &spec.StageDescription{
+					About: "Resetting static nodes and removing kubernetes packages",
+					// Failing to reset the nodes is not considered as a fatal error.
+					ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+				},
 			},
-		})
+			{
+				Kind: spec.StageAnsibler_REMOVE_CLAUDIE_UTILITIES,
+				Description: &spec.StageDescription{
+					About: "Removing claudie install utilities",
+					// Failing to remove the utilities is not considered as a fatal error.
+					ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+				},
+			},
+		}...)
 	}
 
 	// Unless the proxy is in use, in which case the task needs to also
@@ -1189,28 +1165,19 @@ func ScheduleDeletionsInNodePools(
 
 	for np, nodes := range diff.PartiallyDeleted {
 		currentStateNodePool := nodepools.FindByName(np, current.K8S.ClusterInfo.NodePools)
+
 		if currentStateNodePool != nil {
 			// If the ApiServer is on the kubernetes cluster on deletion of the
 			// control plane nodes the Kubeadm config map needs to be updated which
 			// is used during the join operation of new nodes.
 			if opts.HasApiServer && currentStateNodePool.IsControl {
-				kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, []*spec.StageKuber_SubPass{
-					{
-						Kind: spec.StageKuber_PATCH_KUBEADM,
-						Description: &spec.StageDescription{
-							About:      "Updating Kubeadm certSANs",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
+				kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, &spec.StageKuber_SubPass{
+					Kind: spec.StageKuber_PATCH_KUBEADM,
+					Description: &spec.StageDescription{
+						About:      "Updating Kubeadm certSANs",
+						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 					},
-					{
-						Kind: spec.StageKuber_CILIUM_RESTART,
-						Description: &spec.StageDescription{
-							About: "Rollout restart of cilium pods",
-							// Rollout restart failing is not a fatal error.
-							ErrorLevel: spec.ErrorLevel_ERROR_WARN,
-						},
-					},
-				}...)
+				})
 			}
 		}
 
@@ -1332,23 +1299,13 @@ func ScheduleDeletionsInNodePools(
 		// control plane nodes the Kubeadm config map needs to be updated which
 		// is used during the join operation of new nodes.
 		if opts.HasApiServer && currentStateNodePool.IsControl {
-			kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, []*spec.StageKuber_SubPass{
-				{
-					Kind: spec.StageKuber_PATCH_KUBEADM,
-					Description: &spec.StageDescription{
-						About:      "Updating Kubeadm certSANs",
-						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-					},
+			kuber.Kuber.SubPasses = append(kuber.Kuber.SubPasses, &spec.StageKuber_SubPass{
+				Kind: spec.StageKuber_PATCH_KUBEADM,
+				Description: &spec.StageDescription{
+					About:      "Updating Kubeadm certSANs",
+					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 				},
-				{
-					Kind: spec.StageKuber_CILIUM_RESTART,
-					Description: &spec.StageDescription{
-						About: "Rollout restart of cilium pods",
-						// Rollout restart failing is not a fatal error.
-						ErrorLevel: spec.ErrorLevel_ERROR_WARN,
-					},
-				},
-			}...)
+			})
 		}
 
 		// If the deletion of the last autoscaled nodepools is to be scheduled. Also remove

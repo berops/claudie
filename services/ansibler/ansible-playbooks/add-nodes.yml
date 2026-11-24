@@ -1,0 +1,50 @@
+---
+# Joins new nodes into an existing Kubernetes cluster with kubeadm.
+# Run by the ansibler on the NODE_ADDITION stage, see task_node_addition.go.
+#
+# Expects the inventory generated from templates/k8s-inventory.goini with the new nodes in the
+# [control] and [compute] groups and a control node that is already part of the cluster in the
+# [existing_control_node] group. The ansibler passes control_plane_endpoint_host as an extra var.
+# WireGuard and the node requirements are installed on the new nodes beforehand by the
+# INSTALL_VPN and the INSTALL_NODE_REQUIREMENTS stages.
+#
+# The ansibler retries the whole playbook on failure, so every play has to be re-runnable:
+# fresh join credentials are created on every run, and a node that already joined is left untouched.
+
+# Any control node of the cluster can create the credentials, the bootstrap token is stored
+# in the cluster and the certificates are the same on every control node.
+- name: Create join credentials on the existing control node
+  hosts: existing_control_node
+  become: true
+  gather_facts: false
+  any_errors_fatal: true
+  roles:
+    - kubeadm_join_credentials
+
+# Control nodes join one at a time, joining a control node adds an etcd member and
+# concurrent membership changes are refused by etcd.
+- name: Join the new control nodes
+  hosts: control
+  become: true
+  gather_facts: false
+  serial: 1
+  any_errors_fatal: true
+  vars_files:
+    - vars/k8s.yaml
+  roles:
+    - role: kubeadm_join
+      join_as_control_plane: true
+      existing_control_node: "{{ groups['existing_control_node'] | first }}"
+
+- name: Join the new worker nodes
+  hosts: compute
+  become: true
+  gather_facts: false
+  strategy: mitogen_free
+  any_errors_fatal: true
+  vars_files:
+    - vars/k8s.yaml
+  roles:
+    - role: kubeadm_join
+      join_as_control_plane: false
+      existing_control_node: "{{ groups['existing_control_node'] | first }}"

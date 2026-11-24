@@ -1,0 +1,12 @@
+# {{ ansible_managed }}
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: ResetConfiguration
+# Reset without prompting for confirmation.
+force: true
+# Also clean /etc/kubernetes/tmp, where kubeadm keeps backups made during init, join and upgrades.
+cleanupTmpDir: true
+# The etcd member is not removed, the whole cluster is being destroyed. Removing it needs a working
+# etcd quorum, which is lost as soon as the control nodes are reset in parallel, and kubeadm would
+# keep retrying. kubeadm deletes the etcd data only in this phase, the role deletes it instead.
+skipPhases:
+  - remove-etcd-member
