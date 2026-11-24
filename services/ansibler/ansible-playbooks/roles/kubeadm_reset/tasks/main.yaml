@@ -27,11 +27,14 @@
   ansible.builtin.command:
     cmd: kubeadm reset --config /root/kubeadm/reset.yaml
     removes: /usr/bin/kubeadm
+  register: kubeadm_reset_result
   ignore_errors: true
 
-# kubeadm reset leaves /etc/kubernetes itself, the etcd data, the emptied kubelet directory and
-# the CNI configuration in /etc/cni. /root/kubeadm holds the configs and the init.done
-# marker of the kubeadm_init role, a leftover marker would make a later init skip this node.
+# kubeadm reset leaves /etc/kubernetes itself, the etcd data and the CNI configuration in /etc/cni.
+# /root/kubeadm holds the configs and the init.done marker of the kubeadm_init role, a leftover
+# marker would make a later init skip this node.
+# /var/lib/kubelet is left alone: a successful reset already emptied it, and after a failed one
+# volumes can still be mounted there, removing it would delete their data.
 - name: Remove the cluster files
   ansible.builtin.file:
     path: "{{ item }}"
@@ -39,6 +42,11 @@
   loop:
     - /etc/kubernetes
     - /var/lib/etcd
-    - /var/lib/kubelet
     - /root/kubeadm
     - /etc/cni
+
+# Fails before roles/node-prereq-remove removes kubeadm, so that a retry runs the reset again.
+- name: Report the failed reset
+  ansible.builtin.fail:
+    msg: kubeadm reset failed, /var/lib/kubelet was kept because volumes can still be mounted there
+  when: kubeadm_reset_result is failed
