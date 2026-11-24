@@ -10,7 +10,7 @@ kubernetes_major_minor: "{{ kubernetes_version.split('.')[:2] | join('.') }}"
 # built by kubeadm and by kubeone run the same containerd.
 containerd_version: "2.2.*"
 
-# Installed on the nodes that did not join a cluster yet (roles/node-prereq).
+# Installed on every node (roles/node-prereq), pinned to the version of the cluster.
 kubernetes_packages:
   - "containerd.io={{ containerd_version }}"
   - "kubelet={{ kubernetes_version }}-*"

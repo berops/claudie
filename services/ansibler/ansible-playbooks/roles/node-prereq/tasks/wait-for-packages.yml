@@ -1,5 +1,5 @@
 ---
-# Waits for the package installation started by install-packages.yml.
+# Waits for the package installation started by install-packages.yml and holds the Kubernetes packages.
 
 - name: Wait for the package installation
   block:
@@ -42,3 +42,13 @@
         lock_timeout: 600
       retries: 2
       delay: 10
+
+# Unattended upgrades must not move the cluster to a new patch behind our back.
+- name: Hold Kubernetes packages
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop:
+    - kubelet
+    - kubeadm
+    - kubectl

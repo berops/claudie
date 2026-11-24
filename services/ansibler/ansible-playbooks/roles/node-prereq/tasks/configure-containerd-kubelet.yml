@@ -1,16 +1,6 @@
 ---
-# Holds the Kubernetes packages, configures containerd for kubeadm and enables the kubelet.
+# Configures containerd for kubeadm and enables the kubelet.
 # The containerd restart is applied by the flush_handlers in main.yml.
-
-# Unattended upgrades must not move the cluster to a new patch behind our back.
-- name: Hold Kubernetes packages
-  ansible.builtin.dpkg_selections:
-    name: "{{ item }}"
-    selection: hold
-  loop:
-    - kubelet
-    - kubeadm
-    - kubectl
 
 # The containerd.io package ships a config that disables the CRI plugin, and the default
 # config uses the cgroupfs driver while the kubelet is configured with the systemd driver.

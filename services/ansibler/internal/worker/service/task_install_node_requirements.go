@@ -36,7 +36,6 @@ func InstallNodeRequirements(
 		clusterId string
 		network   string
 		version   string
-		refresh   bool
 	)
 
 	switch do := tracker.Task.Do.(type) {
@@ -57,7 +56,6 @@ func InstallNodeRequirements(
 			nps = []*spec.NodePool{np}
 		} else {
 			nps = do.Update.State.K8S.ClusterInfo.NodePools
-			refresh = true
 		}
 	default:
 		logger.
@@ -75,11 +73,11 @@ func InstallNodeRequirements(
 		ClusterNetwork: network,
 	}
 
-	// The nodes that did not join a cluster yet get the Kubernetes packages of this version,
+	// The nodes get the Kubernetes packages of this version, also on a refresh to repair drift,
 	// used by kubeadm (CREATE_CLUSTER) and by kubeone in kube-eleven for the added nodes.
 	var flags string
 	if v := strings.TrimPrefix(strings.TrimSpace(version), "v"); v != "" {
-		flags = fmt.Sprintf("--extra-vars \"kubernetes_version=%s infrastructure_refresh=%t\"", v, refresh)
+		flags = fmt.Sprintf("--extra-vars \"kubernetes_version=%s\"", v)
 	}
 
 	if err := installLonghornRequirements(&ni, flags, processLimit); err != nil {

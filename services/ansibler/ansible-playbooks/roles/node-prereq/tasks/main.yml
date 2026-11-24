@@ -1,21 +1,17 @@
 ---
-# Puts a node of the kubernetes cluster into the state Claudie needs: raised node limits, no swap,
-# kernel networking for pods, and on nodes that are not part of a cluster yet also the Longhorn
-# dependencies and the pinned containerd and Kubernetes packages, with containerd configured
-# for kubeadm. Validation is left to the kubeadm preflight checks.
+# Puts a node of the kubernetes cluster into the state Claudie needs: the Longhorn dependencies,
+# the pinned containerd and Kubernetes packages, raised node limits, no swap, kernel networking for
+# pods and containerd configured for kubeadm.
+# Validation is left to the kubeadm preflight checks.
 #
 # The package installation is the slowest part. It runs in the background while the rest of the
 # node is configured and is waited for before the packages are used.
 
-# An infrastructure refresh (infrastructure_refresh, passed by the ansibler) only reconfigures
-# the running nodes, nothing is installed and containerd is left alone.
 - name: Add the Kubernetes and Docker apt repositories
   ansible.builtin.import_tasks: add-apt-repositories.yml
-  when: not infrastructure_refresh | bool
 
 - name: Start installing packages in the background
   ansible.builtin.import_tasks: install-packages.yml
-  when: not infrastructure_refresh | bool
 
 # Everything up to wait-for-packages.yml runs while the packages are being installed.
 
@@ -30,11 +26,9 @@
 
 - name: Wait for the package installation
   ansible.builtin.import_tasks: wait-for-packages.yml
-  when: not infrastructure_refresh | bool
 
 - name: Configure containerd and the kubelet
   ansible.builtin.import_tasks: configure-containerd-kubelet.yml
-  when: not infrastructure_refresh | bool
 
 # A pending containerd restart has to happen before kubeadm talks to it.
 - name: Apply the containerd configuration
