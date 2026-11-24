@@ -3,20 +3,20 @@
 package e2e
 
 import (
-	"encoding/json"
 	"fmt"
 	"slices"
 	"strings"
 	"testing"
 
+	"github.com/BurntSushi/toml"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	applycorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 )
 
-// TestContainerdConfig builds a cluster and checks after each change that the running containerd
-// of the compute nodes uses the drop-in from the ConfigMap, and that the control nodes never get it.
+// TestContainerdConfig builds a cluster and checks after each change that containerd of the compute
+// nodes is configured with the drop-in from the ConfigMap, and that the control nodes never get it.
 func TestContainerdConfig(t *testing.T) {
 	const (
 		withContainerdConfigManifestFile    = "manifests/containerd-config/with-containerd-config.yaml"
@@ -27,10 +27,9 @@ func TestContainerdConfig(t *testing.T) {
 		controlNodePool   = "htz-ctrl"
 		computeNodePool   = "htz-cmpt"
 		expectedNodeCount = 3
-		// What containerd uses when no drop-in sets max_container_log_line_size.
-		defaultLogLineSize = 16384
-		// A harmless setting the running containerd reports back.
-		containerdDropInFormat = "version = 3\n\n[plugins.'io.containerd.cri.v1.runtime']\n  max_container_log_line_size = %d\n"
+		// What containerd uses when no drop-in sets image_pull_progress_timeout.
+		defaultPullTimeout     = "5m0s"
+		containerdDropInFormat = "version = 3\n\n[plugins.'io.containerd.cri.v1.images']\n  image_pull_progress_timeout = '%s'\n"
 	)
 
 	namespace := claudieNamespace(t)
@@ -39,39 +38,39 @@ func TestContainerdConfig(t *testing.T) {
 
 	testCases := []struct {
 		name string
-		// Put in the ConfigMap before the apply, 0 leaves the ConfigMap as it is.
-		configMapLogLineSize int
+		// Put in the ConfigMap before the apply, "" leaves the ConfigMap as it is.
+		configMapPullTimeout string
 		manifestFile         string
-		wantLogLineSize      int
+		wantPullTimeout      string
 	}{
 		{
 			name:                 "create cluster with containerd config",
-			configMapLogLineSize: 32768,
+			configMapPullTimeout: "10m",
 			manifestFile:         withContainerdConfigManifestFile,
-			wantLogLineSize:      32768,
+			wantPullTimeout:      "10m",
 		},
 		{
 			// The InputManifest stays the same, Claudie has to notice the ConfigMap change itself.
 			name:                 "change ConfigMap",
-			configMapLogLineSize: 65536,
+			configMapPullTimeout: "15m",
 			manifestFile:         withContainerdConfigManifestFile,
-			wantLogLineSize:      65536,
+			wantPullTimeout:      "15m",
 		},
 		{
 			name:            "remove containerd config",
 			manifestFile:    withoutContainerdConfigManifestFile,
-			wantLogLineSize: defaultLogLineSize,
+			wantPullTimeout: defaultPullTimeout,
 		},
 		{
 			name:            "add containerd config to existing nodes",
 			manifestFile:    withContainerdConfigManifestFile,
-			wantLogLineSize: 65536,
+			wantPullTimeout: "15m",
 		},
 	}
 
 	for _, step := range testCases {
-		if step.configMapLogLineSize != 0 {
-			applyContainerdConfigMap(t, e2eClusterKubeClient, namespace, configMapName, fmt.Sprintf(containerdDropInFormat, step.configMapLogLineSize))
+		if step.configMapPullTimeout != "" {
+			applyContainerdConfigMap(t, e2eClusterKubeClient, namespace, configMapName, fmt.Sprintf(containerdDropInFormat, step.configMapPullTimeout))
 		}
 		manifest, lastFinished := applyInputManifest(t, e2eClusterClient, step.manifestFile, namespace)
 		waitForInputManifest(t, e2eClusterClient, manifest, namespace, lastFinished)
@@ -85,11 +84,11 @@ func TestContainerdConfig(t *testing.T) {
 			if got := notReadyNodes(t, childClusterClient); len(got) > 0 {
 				t.Errorf("cluster %s: got not Ready nodes %v, want none", clusterName, got)
 			}
-			if got, want := runningContainerdLogLineSizes(t, e2eClusterClient, namespace, clusterName, computeNodePool), []int{step.wantLogLineSize, step.wantLogLineSize}; !slices.Equal(got, want) {
-				t.Errorf("cluster %s: got max_container_log_line_size %v in the running containerd of the %s nodes, want %v", clusterName, got, computeNodePool, want)
+			if got, want := imagePullProgressTimeouts(t, e2eClusterClient, namespace, clusterName, computeNodePool), []string{step.wantPullTimeout, step.wantPullTimeout}; !slices.Equal(got, want) {
+				t.Errorf("cluster %s: got image_pull_progress_timeout %v in the containerd config of the %s nodes, want %v", clusterName, got, computeNodePool, want)
 			}
-			if got, want := runningContainerdLogLineSizes(t, e2eClusterClient, namespace, clusterName, controlNodePool), []int{defaultLogLineSize}; !slices.Equal(got, want) {
-				t.Errorf("cluster %s: got max_container_log_line_size %v in the running containerd of the %s nodes, want the default %v", clusterName, got, controlNodePool, want)
+			if got, want := imagePullProgressTimeouts(t, e2eClusterClient, namespace, clusterName, controlNodePool), []string{defaultPullTimeout}; !slices.Equal(got, want) {
+				t.Errorf("cluster %s: got image_pull_progress_timeout %v in the containerd config of the %s nodes, want the default %v", clusterName, got, controlNodePool, want)
 			}
 		})
 		// The next step builds on this one, on a broken cluster it would only add noise.
@@ -113,33 +112,33 @@ func applyContainerdConfigMap(t *testing.T, client kubernetes.Interface, namespa
 	}
 }
 
-// runningContainerdLogLineSizes returns max_container_log_line_size of the running containerd of
-// each of the cluster's dynamic nodes in nodePool, named as in the InputManifest.
-func runningContainerdLogLineSizes(t *testing.T, client dynamic.Interface, namespace, cluster, nodePool string) []int {
+// imagePullProgressTimeouts returns image_pull_progress_timeout of containerd on each of the
+// cluster's dynamic nodes in nodePool, named as in the InputManifest.
+func imagePullProgressTimeouts(t *testing.T, client dynamic.Interface, namespace, cluster, nodePool string) []string {
 	t.Helper()
 
-	var sizes []int
+	var timeouts []string
 	for _, n := range dynamicNodes(t, client, namespace, cluster) {
 		if strings.HasPrefix(n.NodePool, nodePool+"-") {
-			sizes = append(sizes, runningContainerdLogLineSize(t, n))
+			timeouts = append(timeouts, imagePullProgressTimeout(t, n))
 		}
 	}
-	return sizes
+	return timeouts
 }
 
-// runningContainerdLogLineSize asks the CRI plugin of the node's containerd for its config, so
-// it returns what the daemon loaded, not what is on disk.
-func runningContainerdLogLineSize(t *testing.T, node dynamicNode) int {
+// imagePullProgressTimeout reads the merged containerd config on the node, as the CRI doesn't
+// report the image config of the running containerd.
+func imagePullProgressTimeout(t *testing.T, node dynamicNode) string {
 	t.Helper()
 
-	const criInfo = "crictl --runtime-endpoint unix:///run/containerd/containerd.sock info"
-	var info struct {
-		Config struct {
-			MaxContainerLogLineSize int `json:"maxContainerLogLineSize"`
-		} `json:"config"`
+	const configDump = "containerd config dump"
+	var config struct {
+		Plugins map[string]struct {
+			ImagePullProgressTimeout string `toml:"image_pull_progress_timeout"`
+		} `toml:"plugins"`
 	}
-	if err := json.Unmarshal([]byte(runSSH(t, node.IP, dynamicNodeSSHPort, node.Key, criInfo)), &info); err != nil {
-		t.Fatalf("node %s: decoding crictl info: %v", node.Name, err)
+	if _, err := toml.Decode(runSSH(t, node.IP, dynamicNodeSSHPort, node.Key, configDump), &config); err != nil {
+		t.Fatalf("node %s: decoding containerd config dump: %v", node.Name, err)
 	}
-	return info.Config.MaxContainerLogLineSize
+	return config.Plugins["io.containerd.cri.v1.images"].ImagePullProgressTimeout
 }
