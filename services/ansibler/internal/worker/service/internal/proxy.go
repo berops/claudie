@@ -10,7 +10,6 @@ import (
 const (
 	defaultHttpProxyUrl = "http://proxy.claudie.io:8880"
 
-	// 10.244.0.0/16 is kubeone's default PodCIDR and 10.96.0.0/12 is kubeone's default ServiceCIDR.
 	// 10.0.0.0/8, 172.16.0.0/12 and 192.168.0.0/16 are the RFC 1918 private ranges, which the
 	// proxy cannot reach anyway. They also cover the private IPs of the cluster's own nodes.
 	noProxyDefault = "127.0.0.1/8,localhost,cluster.local,10.244.0.0/16,10.96.0.0/12,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"

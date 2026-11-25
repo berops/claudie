@@ -99,9 +99,8 @@ spec:
               path: /healthz
               port: 8081
           env:
-            # PROVIDER_REGEX must remain permissive (".*") because kuber deploys after kube-eleven.
-            # A stricter regex (e.g., matching only existing nodepool names) would deny CSRs from
-            # newly added nodepools. kube-eleven proceeds on Approved or missing CSRs, but blocks on Denied
+            # Must stay permissive: kuber deploys after ansibler joins the nodes, so a regex of
+            # existing nodepool names would deny the kubelet serving CSRs of newly added nodepools.
             - name: PROVIDER_REGEX
               value: ".*"
             # the kubelet-csr-approver still checks the SAN IP of the CSR even though the bypassing of the DNS resolution is turned on

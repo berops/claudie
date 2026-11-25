@@ -4756,7 +4756,6 @@ NAME                                   READY   STATUS      RESTARTS        AGE
 ansibler-5c6c776b75-82c2q              1/1     Running     0               8m10s
 manager-5d76c89b4d-tb6h4               1/1     Running     1 (6m37s ago)   8m10s
 claudie-operator-5755b7bc69-5l84h      1/1     Running     0               8m10s
-kube-eleven-64468cd5bd-qp4d4           1/1     Running     0               8m10s
 kuber-698c4564c-dhsvg                  1/1     Running     0               8m10s
 make-bucket-job-fb5sp                  0/1     Completed   0               8m10s
 minio-0                                1/1     Running     0               8m10s
@@ -4828,7 +4827,7 @@ We use Wireguard for secure node-to-node connectivity. However, it requires sett
 
 ### Hetzner and OCI node pools(https://docs.claudie.io/latest/troubleshooting/troubleshooting/\#hetzner-and-oci-node-pools)
 
-We're experiencing networking issues caused by the blacklisting of public IPs owned by Hetzner and OCI. This problem affects the Ansibler and Kube-eleven services, which fail when attempting to add GPG keys to access the Google repository for package downloads. Unfortunately, there's no straightforward solution to bypass this issue. The recommended approach is to allow the services to fail, remove failed cluster and attempt provisioning a new cluster with newly allocated IP addresses that are not blocked by Google.
+We're experiencing networking issues caused by the blacklisting of public IPs owned by Hetzner and OCI. This problem affects the Ansibler service, which fails when attempting to add GPG keys to access the Google repository for package downloads. Unfortunately, there's no straightforward solution to bypass this issue. The recommended approach is to allow the services to fail, remove failed cluster and attempt provisioning a new cluster with newly allocated IP addresses that are not blocked by Google.
 
 ## Resolving issues with Terraform state lock(https://docs.claudie.io/latest/troubleshooting/troubleshooting/\#resolving-issues-with-terraform-state-lock)
 
@@ -4978,7 +4977,6 @@ NAME                                READY   STATUS      RESTARTS      AGE
 ansibler-6f4557cf74-b4dts           1/1     Running     0             18m
 claudie-operator-6d9ddc7f8b-hv84c   1/1     Running     0             18m
 manager-5d75bfffc6-d9qfm            1/1     Running     0             18m
-kube-eleven-556cfdfd98-jq6hl        1/1     Running     0             18m
 kuber-7f8cd4cd89-6ds2w              1/1     Running     0             18m
 make-bucket-job-9mjft               0/1     Completed   0             18m
 minio-0                             1/1     Running     0             18m
