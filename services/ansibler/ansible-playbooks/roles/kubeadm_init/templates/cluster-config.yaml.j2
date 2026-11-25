@@ -35,10 +35,14 @@ scheduler:
       value: "false"
 etcd:
   local:
-    # etcd has no profiling flag, enable-pprof is its equivalent.
     extraArgs:
+      # etcd has no profiling flag, enable-pprof is its equivalent.
       - name: enable-pprof
         value: "false"
+      - name: corrupt-check-time
+        value: 240m
+      - name: feature-gates
+        value: CompactHashCheck=true
     extraEnvs:
       - name: ETCDCTL_CACERT
         value: /etc/kubernetes/pki/etcd/ca.crt
