@@ -24,7 +24,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
 
 ## Prerequisites
 1. Install Kind by following the [Kind documentation](https://kind.sigs.k8s.io/docs/user/quick-start/#installation).
-2. Install kubectl tool to communicate with your management cluster by following the [Kubernetes documentation](https://kubernetes.io/docs/tasks/tools/#kubectl). 
+2. Install kubectl tool to communicate with your management cluster by following the [Kubernetes documentation](https://kubernetes.io/docs/tasks/tools/#kubectl).
 3. Install Kustomize by following [Kustomize documentation](https://kubectl.docs.kubernetes.io/installation/kustomize/).
 4. Install Docker by following [Docker documentation](https://docs.docker.com/engine/install/).
 
@@ -63,7 +63,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     wget https://github.com/berops/claudie/releases/latest/download/claudie.yaml
     ```
 
-    !!! note "Tip!"  
+    !!! note "Tip!"
         For the initial attempt, it's highly recommended to enable debug logs, especially when creating a large cluster with DNS. This helps identify and resolve any permission issues that may occur across different hyperscalers. Locate `ConfigMap` with `GOLANG_LOG` variable in `claudie.yaml` file, and change `GOLANG_LOG: info` to `GOLANG_LOG: debug` to enable debug logging, for more customization refer to [this table](#claudie-customization).
 
 6. Deploy Claudie using Kustomize plugin:
@@ -86,13 +86,12 @@ This detailed guide for Claudie serves as a resource for providing an overview o
 7. Claudie will be deployed into `claudie` namespace, you can view if all pods are running:
 
     ```bash
-    kubectl get pods -n claudie 
+    kubectl get pods -n claudie
     ```
     ```text
     NAME                                READY   STATUS              RESTARTS       AGE
     ansibler-6bf78cccf4-pnxrk           1/1     Running             0              3m20s
     claudie-operator-64c9554c66-rvtr5   1/1     Running             0              3m19s
-    kube-eleven-7bd47945c5-kbpd6        1/1     Running             0              3m19s
     kuber-64554ffffc-fkdj6              1/1     Running             0              3m19s
     make-bucket-job-4mxw7               0/1     Completed           0              3m19s
     manager-7696cb7f9-jfbwq             1/1     Running             0              3m19s
@@ -107,16 +106,16 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     nats-2                              2/2     Running             0              3m19s
     terraformer-5868fb7695-w49sw        1/1     Running             0              3m19s
     ```
-    !!! warning "Changing the namespace" 
+    !!! warning "Changing the namespace"
         By default, Claudie will monitor all namespaces, and it will watch for `Input Manifest` and provider `Secrets` in the cluster. If you would like limit the namespaces to watch - overwrite `CLAUDIE_NAMESPACES` environment variable in `claudie-operator` deployment. Example:
         ```
         env:
           - name: CLAUDIE_NAMESPACES
             value: "claudie,different-namespace"
-        ``` 
+        ```
 
-    !!! warning "Troubleshoot!" 
-        If you experience problems refer to our [troubleshooting guide](https://docs.claudie.io/latest/troubleshooting/troubleshooting/). 
+    !!! warning "Troubleshoot!"
+        If you experience problems refer to our [troubleshooting guide](https://docs.claudie.io/latest/troubleshooting/troubleshooting/).
 
 8. Let's create a AWS high availability cluster which we'll expand later on with Hetzner bursting capacity. Let's start by creating providers secrets for the infrastructure, and next we will reference them in `inputmanifest-bursting.yaml`.
 
@@ -146,7 +145,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
           providerType: aws
           secretRef:
             name: aws-secret-dns
-            namespace: <your-namespace>    
+            namespace: <your-namespace>
       nodePools:
         dynamic:
           - name: aws-control
@@ -248,7 +247,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     !!! warning "Provisioning times may vary!"
         Please note that cluster creation time may vary due to provisioning capacity and machine provisioning times of selected hyperscalers.
 
-    After finishing, the `InputManifest` state reflects that the cluster is provisioned, the state `WATCHING_FOR_CHANGES` indicates that the changes were built and that the `InputManifest` 
+    After finishing, the `InputManifest` state reflects that the cluster is provisioned, the state `WATCHING_FOR_CHANGES` indicates that the changes were built and that the `InputManifest`
     sits idle until changes are detected.
 
     ```json
@@ -264,12 +263,6 @@ This detailed guide for Claudie serves as a resource for providing an overview o
                 "timestamp": "2026-03-23T10:19:22Z"
               },
               {
-                "stage": "KUBE_ELEVEN",
-                "status": "DONE",
-                "taskDescription": "creating cluster\n- Reconciling kubernetes cluster\n  - Creating kubernetes cluster from the set up infrastructure",
-                "timestamp": "2026-03-23T10:23:01Z"
-              },
-              {
                 "stage": "KUBER",
                 "status": "DONE",
                 "taskDescription": "creating cluster\n- Configuring cluster\n  - Deploying kubelet csr-approver\n  - Patching nodes\n  - Deploying longhorn for storage\n  - Reconciling longhorn claudie storage classes\n  - Storing scrape config for loadbalancers",
@@ -283,7 +276,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
       }
 
     ```
-    
+
 12. Claudie creates kubeconfig secret in claudie namespace:
 
     ```bash
@@ -364,7 +357,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
           providerType: hetzner
           secretRef:
             name: hetzner-secret-1
-            namespace: <your-namespace>        
+            namespace: <your-namespace>
       nodePools:
         dynamic:
           - name: hetzner-worker  # add under nodePools.dynamic section
@@ -458,7 +451,7 @@ This detailed guide for Claudie serves as a resource for providing an overview o
     !!! warning "Removing clusters"
         Deleting Claudie or the management cluster does not remove the Claudie managed clusters. Delete the secret first to initiate Claudie's deletion process.
 
-19. After Claudie-operator finished deletion workflow delete minikube cluster 
+19. After Claudie-operator finished deletion workflow delete minikube cluster
     ```bash
     kind delete cluster
     ```
@@ -478,7 +471,7 @@ Hyperscalers charge for outbound data and multi-region infrastructure.
 
 - **Control plane:** To avoid egress traffic deploy control plane node pools in the same region to one hyperscaler. If availability is more important than egress traffic costs, you can have multiple control plane node pools spanning across different hyperscalers.
 
-- **Workloads:** Egress costs associated with workloads are more complicated as they depend on each use case. What we recommend it to try and use localised workloads where possible. 
+- **Workloads:** Egress costs associated with workloads are more complicated as they depend on each use case. What we recommend it to try and use localised workloads where possible.
 
 !!! note "Example"
     Consider a scenario where you have a workload that involves processing extensive datasets from GCP storage using Claudie managed AWS GPU instances. To minimize egress network traffic costs, it is recommended to host the datasets in an S3 bucket and limit egress traffic from GCP and keep the workload localised.

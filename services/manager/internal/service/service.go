@@ -275,7 +275,6 @@ func (s *Service) consumerLoop(exit chan<- struct{}) {
 			AckWait,
 			natsutils.AnsiblerResponse,
 			natsutils.KuberResponse,
-			natsutils.KubeElevenResponse,
 			natsutils.TerraformerResponse,
 		)
 

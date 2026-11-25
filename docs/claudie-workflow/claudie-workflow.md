@@ -9,7 +9,6 @@
 - [Manager](https://github.com/berops/claudie/tree/master/services/manager)
 - [Terraformer](https://github.com/berops/claudie/tree/master/services/terraformer)
 - [Ansibler](https://github.com/berops/claudie/tree/master/services/ansibler)
-- [Kube-eleven](https://github.com/berops/claudie/tree/master/services/kube-eleven)
 - [Kuber](https://github.com/berops/claudie/tree/master/services/kuber)
 - [Claudie-operator](https://github.com/berops/claudie/tree/master/services/claudie-operator)
 
@@ -23,7 +22,6 @@
 
 - [Terraform](https://github.com/hashicorp/terraform)
 - [Ansible](https://github.com/ansible/ansible)
-- [KubeOne](https://github.com/kubermatic/kubeone)
 - [Longhorn](https://github.com/longhorn/longhorn)
 - [Envoy](https://www.envoyproxy.io/)
 - [Cilium](https://cilium.io/)
@@ -41,8 +39,8 @@ For the API see the [GRPC definitions](https://github.com/berops/claudie/blob/ma
 Each newly created manifest starts in the Pending state. Pending manifests are periodically checked for
 changes from which the desired state for each cluster, along with the tasks to be performed to achieve the desired state are created,
 after which the manifest is moved to the scheduled state. Tasks from Scheduled manifests are picked up
-by worker services from `NATS` work queues, gradually building the desired state. From this state, the manifest can end up in either 
-Done or Error state. Any changes to the input manifest while it is in the Scheduled state will be reflected after 
+by worker services from `NATS` work queues, gradually building the desired state. From this state, the manifest can end up in either
+Done or Error state. Any changes to the input manifest while it is in the Scheduled state will be reflected after
 it is moved to the Done state. After which the cycle repeats.
 
 Each cluster has a current state and desired state based on which tasks are created. The desired state is created only
@@ -78,16 +76,9 @@ Incoming tasks are picked up from the NATS worker queue.
 
 Ansibler uses Ansible to:
 
-- set up Wireguard VPN between the infrastructure spawned in the Terraformer service. 
+- set up Wireguard VPN between the infrastructure spawned in the Terraformer service.
 - set up envoy load balancer for the infrastructure
 - install dependencies for required by nodes in a kubernetes cluster
-
-Incoming tasks are picked up from the NATS worker queue.
-
-## Kube-eleven
-
-Kube-eleven uses [KubeOne](https://github.com/kubermatic/kubeone) to spin up a kubernetes clusters,
-out of the spawned and pre-configured infrastructure.
 
 Incoming tasks are picked up from the NATS worker queue.
 
@@ -99,7 +90,7 @@ Incoming tasks are picked up from the NATS worker queue.
 
 ## Claudie-operator
 
-Claudie-operator is a layer between the user and Claudie. It is a `InputManifest` Custom Resource Definition controller, 
+Claudie-operator is a layer between the user and Claudie. It is a `InputManifest` Custom Resource Definition controller,
 that will communicate with the `manager` service to communicate changes to the config made by the user.
 
 ### Flow

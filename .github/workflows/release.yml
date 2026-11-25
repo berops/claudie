@@ -5,7 +5,7 @@ on:
     types: [published]
 
 env:
-  SERVICES: manager terraformer ansibler kube-eleven kuber claudie-operator
+  SERVICES: manager terraformer ansibler kuber claudie-operator
 
 jobs:
   build-and-publish:

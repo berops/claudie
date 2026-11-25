@@ -66,19 +66,6 @@ message StageAnsibler {
   repeated SubPass subPasses = 2;
 }
 
-message StageKubeEleven {
-  enum SubPassKind {
-    RECONCILE_CLUSTER = 0;
-    DESTROY_CLUSTER = 1;
-  }
-  message SubPass {
-    SubPassKind kind = 1;
-    StageDescription description = 2;
-  }
-  StageDescription description = 1;
-  repeated SubPass subPasses = 2;
-}
-
 message StageKuber {
   enum SubPassKind {
     CILIUM_RESTART = 0;
@@ -108,7 +95,6 @@ message Stage {
   oneof StageKind {
     StageTerraformer terraformer = 1;
     StageAnsibler ansibler = 2;
-    StageKubeEleven kubeEleven = 3;
     StageKuber kuber = 4;
   }
 }

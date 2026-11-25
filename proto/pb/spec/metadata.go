@@ -28,7 +28,6 @@ const (
 	KubernetesRegionKey LabelKey = "topology.kubernetes.io~1region"
 	KubernetesOsKey     LabelKey = "kubernetes.io~1os"
 	KubernetesArchKey   LabelKey = "kubernetes.io~1arch"
-	KubeoneOsKey        LabelKey = "v1.kubeone.io~1operating-system"
 	SpotKey             LabelKey = "claudie.io~1spot"
 )
 
@@ -68,7 +67,6 @@ func (np *NodePool) AllLabels(additionalLabels map[string]string) (map[string]st
 	m[string(NodeTypeKey)] = getNodeType(np)
 	// Other labels.
 	m[string(KubernetesOsKey)] = "linux" // Only Linux is supported.
-	m[string(KubeoneOsKey)] = "ubuntu"   // Only supported Os
 
 	// Dynamic nodepool data.
 	if n := np.GetDynamicNodePool(); n != nil {

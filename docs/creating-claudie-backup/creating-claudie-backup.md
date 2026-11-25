@@ -6,7 +6,7 @@ new cluster.
 
 ## Claudie state
 
-Claudie stores its state in 3 different places. 
+Claudie stores its state in 3 different places.
 
 -   Input Manifests are stored in <b>Mongo</b>.
 -   Terraform/OpenTofu state files are stored in **Silo**, an S3-compatible object store (a maintained fork of MinIO). This same **Silo** instance is utilized for the locking mechanism, leveraging [S3 native state locking](https://opentofu.org/blog/opentofu-1-10-0/) in OpenTofu.
@@ -16,7 +16,7 @@ These are the only services that will have a PVC attached to it, the other are s
 
 ## Backing up Claudie
 
-!!! note "During the backup procedure it is advised to scale down the following Claudie deployments (kuber, kube-eleven, ansibler, terraformer, manager) to 0 replicas to avoid issues"
+!!! note "During the backup procedure it is advised to scale down the following Claudie deployments (kuber, ansibler, terraformer, manager) to 0 replicas to avoid issues"
 
 ### Using Velero
 
@@ -32,7 +32,7 @@ All resources that are deployed or created by Claudie can be identified with the
 
 !!! note "If you want to include your deployed Input Manifests to be part of the backup you'll have to add the same label to them."
 
-We'll walk through the following scenario step-by-step to back up claudie and then restore it. 
+We'll walk through the following scenario step-by-step to back up claudie and then restore it.
 
 Claudie is already deployed on an existing Management Cluster and at least 1 Input Manifest has been applied. The state
 is backed up and the Management Cluster is replaced by a new one on which we restore the state.
@@ -45,14 +45,14 @@ The following steps will all be executed with the existing Management Cluster in
    providers for the external storage can be found in the [link](https://velero.io/docs/v1.11/supported-providers/).
    In this guide we'll be using AWS S3 object storage for our backup.
 
-   
+
 2. Prepare the S3 bucket by following the first two steps in this [setup guide](https://github.com/vmware-tanzu/velero-plugin-for-aws#setup), excluding the installation step, as this will be different for our use-case.
 
 
 !!! note "If you do not have the `aws` CLI locally installed, follow the [user guide](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html) to set it up."
 
 3. Execute the following command to install Velero on the Management Cluster.
-```bash 
+```bash
 velero install \
 --provider aws \
 --plugins velero/velero-plugin-for-aws:v1.14.0 \
@@ -95,7 +95,7 @@ Once all resources are restored, you should be able to deploy new input manifest
 
 ### Manual backup
 
-!!! note "During the backup procedure it is advised to scale down the following Claudie deployments (kuber, kube-eleven, ansibler, terraformer, manager) to 0 replicas to avoid issues"
+!!! note "During the backup procedure it is advised to scale down the following Claudie deployments (kuber, ansibler, terraformer, manager) to 0 replicas to avoid issues"
 
 Claudie is already deployed on an existing Management Cluster and at least 1 Input Manifest has been applied.
 
@@ -205,7 +205,7 @@ You can now scale the deployments back and apply your Claudie inputmanifests and
 kubectl get inputmanifests -A
 ```
 
-Now you can make any new changes to your inputmanifests on the new management cluster and the state will be re-used. 
+Now you can make any new changes to your inputmanifests on the new management cluster and the state will be re-used.
 
 !!! note "The secrets for the clusters, namely kubeconfig and cluster-metadata, are re-created after the workflow with the changes has finished."
 

@@ -57,8 +57,6 @@ images:
   newTag: 94588f6-4677
 - name: ghcr.io/berops/claudie/claudie-operator
   newTag: 94588f6-4677
-- name: ghcr.io/berops/claudie/kube-eleven
-  newTag: 94588f6-4677
 - name: ghcr.io/berops/claudie/kuber
   newTag: 94588f6-4677
 - name: ghcr.io/berops/claudie/manager

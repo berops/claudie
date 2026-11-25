@@ -65,13 +65,6 @@ a specific service, noted in the description.
 | `ANSIBLER_CONCURRENT_CLUSTERS` | `8` | How many clusters ansibler works on concurrently. |
 | `ANSIBLER_FORKS` | `32` | With how many forks each ansible playbook is spawned (`--forks`). |
 
-## Kube-eleven
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `KUBE_ELEVEN_PORT` | `50054` | Port of the kube-eleven gRPC healthcheck server. |
-| `KUBE_ELEVEN_CONCURRENT_CLUSTERS` | `7` | How many clusters kube-eleven works on concurrently. |
-
 ## Kuber
 
 | Variable | Default | Description |
@@ -94,8 +87,8 @@ a specific service, noted in the description.
 
 ## Advanced service internals
 
-Each of the manager, terraformer, ansibler, kube-eleven and kuber services additionally reads the following
-variables, where `<SERVICE>` is the service name (e.g. `KUBE_ELEVEN_ACK_WAIT_TIME`). These rarely need to be changed.
+Each of the manager, terraformer, ansibler, and kuber services additionally reads the following
+variables, where `<SERVICE>` is the service name (e.g. `ANSIBLER_ACK_WAIT_TIME`). These rarely need to be changed.
 
 | Variable | Default | Description |
 |----------|---------|-------------|

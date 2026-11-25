@@ -309,8 +309,6 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				switch current.StageKind.(type) {
 				case *spec.Stage_Ansibler:
 					stage = "Ansibler"
-				case *spec.Stage_KubeEleven:
-					stage = "KubeEleven"
 				case *spec.Stage_Kuber:
 					stage = "Kuber"
 				case *spec.Stage_Terraformer:

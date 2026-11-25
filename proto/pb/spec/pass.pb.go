@@ -210,52 +210,6 @@ func (StageAnsibler_SubPassKind) EnumDescriptor() ([]byte, []int) {
 	return file_spec_pass_proto_rawDescGZIP(), []int{2, 0}
 }
 
-type StageKubeEleven_SubPassKind int32
-
-const (
-	StageKubeEleven_RECONCILE_CLUSTER StageKubeEleven_SubPassKind = 0
-	StageKubeEleven_DESTROY_CLUSTER   StageKubeEleven_SubPassKind = 1
-)
-
-// Enum value maps for StageKubeEleven_SubPassKind.
-var (
-	StageKubeEleven_SubPassKind_name = map[int32]string{
-		0: "RECONCILE_CLUSTER",
-		1: "DESTROY_CLUSTER",
-	}
-	StageKubeEleven_SubPassKind_value = map[string]int32{
-		"RECONCILE_CLUSTER": 0,
-		"DESTROY_CLUSTER":   1,
-	}
-)
-
-func (x StageKubeEleven_SubPassKind) Enum() *StageKubeEleven_SubPassKind {
-	p := new(StageKubeEleven_SubPassKind)
-	*p = x
-	return p
-}
-
-func (x StageKubeEleven_SubPassKind) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (StageKubeEleven_SubPassKind) Descriptor() protoreflect.EnumDescriptor {
-	return file_spec_pass_proto_enumTypes[3].Descriptor()
-}
-
-func (StageKubeEleven_SubPassKind) Type() protoreflect.EnumType {
-	return &file_spec_pass_proto_enumTypes[3]
-}
-
-func (x StageKubeEleven_SubPassKind) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use StageKubeEleven_SubPassKind.Descriptor instead.
-func (StageKubeEleven_SubPassKind) EnumDescriptor() ([]byte, []int) {
-	return file_spec_pass_proto_rawDescGZIP(), []int{3, 0}
-}
-
 type StageKuber_SubPassKind int32
 
 const (
@@ -322,11 +276,11 @@ func (x StageKuber_SubPassKind) String() string {
 }
 
 func (StageKuber_SubPassKind) Descriptor() protoreflect.EnumDescriptor {
-	return file_spec_pass_proto_enumTypes[4].Descriptor()
+	return file_spec_pass_proto_enumTypes[3].Descriptor()
 }
 
 func (StageKuber_SubPassKind) Type() protoreflect.EnumType {
-	return &file_spec_pass_proto_enumTypes[4]
+	return &file_spec_pass_proto_enumTypes[3]
 }
 
 func (x StageKuber_SubPassKind) Number() protoreflect.EnumNumber {
@@ -335,7 +289,7 @@ func (x StageKuber_SubPassKind) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use StageKuber_SubPassKind.Descriptor instead.
 func (StageKuber_SubPassKind) EnumDescriptor() ([]byte, []int) {
-	return file_spec_pass_proto_rawDescGZIP(), []int{4, 0}
+	return file_spec_pass_proto_rawDescGZIP(), []int{3, 0}
 }
 
 type StageDescription struct {
@@ -494,58 +448,6 @@ func (x *StageAnsibler) GetSubPasses() []*StageAnsibler_SubPass {
 	return nil
 }
 
-type StageKubeEleven struct {
-	state         protoimpl.MessageState     `protogen:"open.v1"`
-	Description   *StageDescription          `protobuf:"bytes,1,opt,name=description,proto3" json:"description,omitempty"`
-	SubPasses     []*StageKubeEleven_SubPass `protobuf:"bytes,2,rep,name=subPasses,proto3" json:"subPasses,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *StageKubeEleven) Reset() {
-	*x = StageKubeEleven{}
-	mi := &file_spec_pass_proto_msgTypes[3]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *StageKubeEleven) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*StageKubeEleven) ProtoMessage() {}
-
-func (x *StageKubeEleven) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_pass_proto_msgTypes[3]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use StageKubeEleven.ProtoReflect.Descriptor instead.
-func (*StageKubeEleven) Descriptor() ([]byte, []int) {
-	return file_spec_pass_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *StageKubeEleven) GetDescription() *StageDescription {
-	if x != nil {
-		return x.Description
-	}
-	return nil
-}
-
-func (x *StageKubeEleven) GetSubPasses() []*StageKubeEleven_SubPass {
-	if x != nil {
-		return x.SubPasses
-	}
-	return nil
-}
-
 type StageKuber struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Description   *StageDescription      `protobuf:"bytes,1,opt,name=description,proto3" json:"description,omitempty"`
@@ -556,7 +458,7 @@ type StageKuber struct {
 
 func (x *StageKuber) Reset() {
 	*x = StageKuber{}
-	mi := &file_spec_pass_proto_msgTypes[4]
+	mi := &file_spec_pass_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -568,7 +470,7 @@ func (x *StageKuber) String() string {
 func (*StageKuber) ProtoMessage() {}
 
 func (x *StageKuber) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_pass_proto_msgTypes[4]
+	mi := &file_spec_pass_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -581,7 +483,7 @@ func (x *StageKuber) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StageKuber.ProtoReflect.Descriptor instead.
 func (*StageKuber) Descriptor() ([]byte, []int) {
-	return file_spec_pass_proto_rawDescGZIP(), []int{4}
+	return file_spec_pass_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *StageKuber) GetDescription() *StageDescription {
@@ -604,7 +506,6 @@ type Stage struct {
 	//
 	//	*Stage_Terraformer
 	//	*Stage_Ansibler
-	//	*Stage_KubeEleven
 	//	*Stage_Kuber
 	StageKind     isStage_StageKind `protobuf_oneof:"StageKind"`
 	unknownFields protoimpl.UnknownFields
@@ -613,7 +514,7 @@ type Stage struct {
 
 func (x *Stage) Reset() {
 	*x = Stage{}
-	mi := &file_spec_pass_proto_msgTypes[5]
+	mi := &file_spec_pass_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -625,7 +526,7 @@ func (x *Stage) String() string {
 func (*Stage) ProtoMessage() {}
 
 func (x *Stage) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_pass_proto_msgTypes[5]
+	mi := &file_spec_pass_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -638,7 +539,7 @@ func (x *Stage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Stage.ProtoReflect.Descriptor instead.
 func (*Stage) Descriptor() ([]byte, []int) {
-	return file_spec_pass_proto_rawDescGZIP(), []int{5}
+	return file_spec_pass_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Stage) GetStageKind() isStage_StageKind {
@@ -666,15 +567,6 @@ func (x *Stage) GetAnsibler() *StageAnsibler {
 	return nil
 }
 
-func (x *Stage) GetKubeEleven() *StageKubeEleven {
-	if x != nil {
-		if x, ok := x.StageKind.(*Stage_KubeEleven); ok {
-			return x.KubeEleven
-		}
-	}
-	return nil
-}
-
 func (x *Stage) GetKuber() *StageKuber {
 	if x != nil {
 		if x, ok := x.StageKind.(*Stage_Kuber); ok {
@@ -696,10 +588,6 @@ type Stage_Ansibler struct {
 	Ansibler *StageAnsibler `protobuf:"bytes,2,opt,name=ansibler,proto3,oneof"`
 }
 
-type Stage_KubeEleven struct {
-	KubeEleven *StageKubeEleven `protobuf:"bytes,3,opt,name=kubeEleven,proto3,oneof"`
-}
-
 type Stage_Kuber struct {
 	Kuber *StageKuber `protobuf:"bytes,4,opt,name=kuber,proto3,oneof"`
 }
@@ -707,8 +595,6 @@ type Stage_Kuber struct {
 func (*Stage_Terraformer) isStage_StageKind() {}
 
 func (*Stage_Ansibler) isStage_StageKind() {}
-
-func (*Stage_KubeEleven) isStage_StageKind() {}
 
 func (*Stage_Kuber) isStage_StageKind() {}
 
@@ -722,7 +608,7 @@ type StageTerraformer_SubPass struct {
 
 func (x *StageTerraformer_SubPass) Reset() {
 	*x = StageTerraformer_SubPass{}
-	mi := &file_spec_pass_proto_msgTypes[6]
+	mi := &file_spec_pass_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -734,7 +620,7 @@ func (x *StageTerraformer_SubPass) String() string {
 func (*StageTerraformer_SubPass) ProtoMessage() {}
 
 func (x *StageTerraformer_SubPass) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_pass_proto_msgTypes[6]
+	mi := &file_spec_pass_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -774,7 +660,7 @@ type StageAnsibler_SubPass struct {
 
 func (x *StageAnsibler_SubPass) Reset() {
 	*x = StageAnsibler_SubPass{}
-	mi := &file_spec_pass_proto_msgTypes[7]
+	mi := &file_spec_pass_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -786,7 +672,7 @@ func (x *StageAnsibler_SubPass) String() string {
 func (*StageAnsibler_SubPass) ProtoMessage() {}
 
 func (x *StageAnsibler_SubPass) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_pass_proto_msgTypes[7]
+	mi := &file_spec_pass_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -816,58 +702,6 @@ func (x *StageAnsibler_SubPass) GetDescription() *StageDescription {
 	return nil
 }
 
-type StageKubeEleven_SubPass struct {
-	state         protoimpl.MessageState      `protogen:"open.v1"`
-	Kind          StageKubeEleven_SubPassKind `protobuf:"varint,1,opt,name=kind,proto3,enum=spec.StageKubeEleven_SubPassKind" json:"kind,omitempty"`
-	Description   *StageDescription           `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *StageKubeEleven_SubPass) Reset() {
-	*x = StageKubeEleven_SubPass{}
-	mi := &file_spec_pass_proto_msgTypes[8]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *StageKubeEleven_SubPass) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*StageKubeEleven_SubPass) ProtoMessage() {}
-
-func (x *StageKubeEleven_SubPass) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_pass_proto_msgTypes[8]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use StageKubeEleven_SubPass.ProtoReflect.Descriptor instead.
-func (*StageKubeEleven_SubPass) Descriptor() ([]byte, []int) {
-	return file_spec_pass_proto_rawDescGZIP(), []int{3, 0}
-}
-
-func (x *StageKubeEleven_SubPass) GetKind() StageKubeEleven_SubPassKind {
-	if x != nil {
-		return x.Kind
-	}
-	return StageKubeEleven_RECONCILE_CLUSTER
-}
-
-func (x *StageKubeEleven_SubPass) GetDescription() *StageDescription {
-	if x != nil {
-		return x.Description
-	}
-	return nil
-}
-
 type StageKuber_SubPass struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Kind          StageKuber_SubPassKind `protobuf:"varint,1,opt,name=kind,proto3,enum=spec.StageKuber_SubPassKind" json:"kind,omitempty"`
@@ -878,7 +712,7 @@ type StageKuber_SubPass struct {
 
 func (x *StageKuber_SubPass) Reset() {
 	*x = StageKuber_SubPass{}
-	mi := &file_spec_pass_proto_msgTypes[9]
+	mi := &file_spec_pass_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -890,7 +724,7 @@ func (x *StageKuber_SubPass) String() string {
 func (*StageKuber_SubPass) ProtoMessage() {}
 
 func (x *StageKuber_SubPass) ProtoReflect() protoreflect.Message {
-	mi := &file_spec_pass_proto_msgTypes[9]
+	mi := &file_spec_pass_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -903,7 +737,7 @@ func (x *StageKuber_SubPass) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StageKuber_SubPass.ProtoReflect.Descriptor instead.
 func (*StageKuber_SubPass) Descriptor() ([]byte, []int) {
-	return file_spec_pass_proto_rawDescGZIP(), []int{4, 0}
+	return file_spec_pass_proto_rawDescGZIP(), []int{3, 0}
 }
 
 func (x *StageKuber_SubPass) GetKind() StageKuber_SubPassKind {
@@ -961,16 +795,7 @@ const file_spec_pass_proto_rawDesc = "" +
 	"\x12RESET_STATIC_NODES\x10\n" +
 	"\x12\x11\n" +
 	"\rNODE_ADDITION\x10\v\x12\x17\n" +
-	"\x13UPGRADE_K8S_VERSION\x10\f\"\xbf\x02\n" +
-	"\x0fStageKubeEleven\x128\n" +
-	"\vdescription\x18\x01 \x01(\v2\x16.spec.StageDescriptionR\vdescription\x12;\n" +
-	"\tsubPasses\x18\x02 \x03(\v2\x1d.spec.StageKubeEleven.SubPassR\tsubPasses\x1az\n" +
-	"\aSubPass\x125\n" +
-	"\x04kind\x18\x01 \x01(\x0e2!.spec.StageKubeEleven.SubPassKindR\x04kind\x128\n" +
-	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"9\n" +
-	"\vSubPassKind\x12\x15\n" +
-	"\x11RECONCILE_CLUSTER\x10\x00\x12\x13\n" +
-	"\x0fDESTROY_CLUSTER\x10\x01\"\xdb\x04\n" +
+	"\x13UPGRADE_K8S_VERSION\x10\f\"\xdb\x04\n" +
 	"\n" +
 	"StageKuber\x128\n" +
 	"\vdescription\x18\x01 \x01(\v2\x16.spec.StageDescriptionR\vdescription\x126\n" +
@@ -993,13 +818,10 @@ const file_spec_pass_proto_rawDesc = "" +
 	"\"RECONCILE_LONGHORN_STORAGE_CLASSES\x10\v\x12\x1f\n" +
 	"\x1bDEPLOY_KUBELET_CSR_APPROVER\x10\f\x12\x14\n" +
 	"\x10RECONCILE_CILIUM\x10\r\x12\x11\n" +
-	"\rDEPLOY_ADDONS\x10\x0e\"\xe6\x01\n" +
+	"\rDEPLOY_ADDONS\x10\x0e\"\xad\x01\n" +
 	"\x05Stage\x12:\n" +
 	"\vterraformer\x18\x01 \x01(\v2\x16.spec.StageTerraformerH\x00R\vterraformer\x121\n" +
-	"\bansibler\x18\x02 \x01(\v2\x13.spec.StageAnsiblerH\x00R\bansibler\x127\n" +
-	"\n" +
-	"kubeEleven\x18\x03 \x01(\v2\x15.spec.StageKubeElevenH\x00R\n" +
-	"kubeEleven\x12(\n" +
+	"\bansibler\x18\x02 \x01(\v2\x13.spec.StageAnsiblerH\x00R\bansibler\x12(\n" +
 	"\x05kuber\x18\x04 \x01(\v2\x10.spec.StageKuberH\x00R\x05kuberB\v\n" +
 	"\tStageKind*-\n" +
 	"\n" +
@@ -1020,52 +842,44 @@ func file_spec_pass_proto_rawDescGZIP() []byte {
 	return file_spec_pass_proto_rawDescData
 }
 
-var file_spec_pass_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_spec_pass_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_spec_pass_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_spec_pass_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_spec_pass_proto_goTypes = []any{
 	(ErrorLevel)(0),                   // 0: spec.ErrorLevel
 	(StageTerraformer_SubPassKind)(0), // 1: spec.StageTerraformer.SubPassKind
 	(StageAnsibler_SubPassKind)(0),    // 2: spec.StageAnsibler.SubPassKind
-	(StageKubeEleven_SubPassKind)(0),  // 3: spec.StageKubeEleven.SubPassKind
-	(StageKuber_SubPassKind)(0),       // 4: spec.StageKuber.SubPassKind
-	(*StageDescription)(nil),          // 5: spec.StageDescription
-	(*StageTerraformer)(nil),          // 6: spec.StageTerraformer
-	(*StageAnsibler)(nil),             // 7: spec.StageAnsibler
-	(*StageKubeEleven)(nil),           // 8: spec.StageKubeEleven
-	(*StageKuber)(nil),                // 9: spec.StageKuber
-	(*Stage)(nil),                     // 10: spec.Stage
-	(*StageTerraformer_SubPass)(nil),  // 11: spec.StageTerraformer.SubPass
-	(*StageAnsibler_SubPass)(nil),     // 12: spec.StageAnsibler.SubPass
-	(*StageKubeEleven_SubPass)(nil),   // 13: spec.StageKubeEleven.SubPass
-	(*StageKuber_SubPass)(nil),        // 14: spec.StageKuber.SubPass
+	(StageKuber_SubPassKind)(0),       // 3: spec.StageKuber.SubPassKind
+	(*StageDescription)(nil),          // 4: spec.StageDescription
+	(*StageTerraformer)(nil),          // 5: spec.StageTerraformer
+	(*StageAnsibler)(nil),             // 6: spec.StageAnsibler
+	(*StageKuber)(nil),                // 7: spec.StageKuber
+	(*Stage)(nil),                     // 8: spec.Stage
+	(*StageTerraformer_SubPass)(nil),  // 9: spec.StageTerraformer.SubPass
+	(*StageAnsibler_SubPass)(nil),     // 10: spec.StageAnsibler.SubPass
+	(*StageKuber_SubPass)(nil),        // 11: spec.StageKuber.SubPass
 }
 var file_spec_pass_proto_depIdxs = []int32{
 	0,  // 0: spec.StageDescription.errorLevel:type_name -> spec.ErrorLevel
-	5,  // 1: spec.StageTerraformer.description:type_name -> spec.StageDescription
-	11, // 2: spec.StageTerraformer.subPasses:type_name -> spec.StageTerraformer.SubPass
-	5,  // 3: spec.StageAnsibler.description:type_name -> spec.StageDescription
-	12, // 4: spec.StageAnsibler.subPasses:type_name -> spec.StageAnsibler.SubPass
-	5,  // 5: spec.StageKubeEleven.description:type_name -> spec.StageDescription
-	13, // 6: spec.StageKubeEleven.subPasses:type_name -> spec.StageKubeEleven.SubPass
-	5,  // 7: spec.StageKuber.description:type_name -> spec.StageDescription
-	14, // 8: spec.StageKuber.subPasses:type_name -> spec.StageKuber.SubPass
-	6,  // 9: spec.Stage.terraformer:type_name -> spec.StageTerraformer
-	7,  // 10: spec.Stage.ansibler:type_name -> spec.StageAnsibler
-	8,  // 11: spec.Stage.kubeEleven:type_name -> spec.StageKubeEleven
-	9,  // 12: spec.Stage.kuber:type_name -> spec.StageKuber
-	1,  // 13: spec.StageTerraformer.SubPass.kind:type_name -> spec.StageTerraformer.SubPassKind
-	5,  // 14: spec.StageTerraformer.SubPass.description:type_name -> spec.StageDescription
-	2,  // 15: spec.StageAnsibler.SubPass.kind:type_name -> spec.StageAnsibler.SubPassKind
-	5,  // 16: spec.StageAnsibler.SubPass.description:type_name -> spec.StageDescription
-	3,  // 17: spec.StageKubeEleven.SubPass.kind:type_name -> spec.StageKubeEleven.SubPassKind
-	5,  // 18: spec.StageKubeEleven.SubPass.description:type_name -> spec.StageDescription
-	4,  // 19: spec.StageKuber.SubPass.kind:type_name -> spec.StageKuber.SubPassKind
-	5,  // 20: spec.StageKuber.SubPass.description:type_name -> spec.StageDescription
-	21, // [21:21] is the sub-list for method output_type
-	21, // [21:21] is the sub-list for method input_type
-	21, // [21:21] is the sub-list for extension type_name
-	21, // [21:21] is the sub-list for extension extendee
-	0,  // [0:21] is the sub-list for field type_name
+	4,  // 1: spec.StageTerraformer.description:type_name -> spec.StageDescription
+	9,  // 2: spec.StageTerraformer.subPasses:type_name -> spec.StageTerraformer.SubPass
+	4,  // 3: spec.StageAnsibler.description:type_name -> spec.StageDescription
+	10, // 4: spec.StageAnsibler.subPasses:type_name -> spec.StageAnsibler.SubPass
+	4,  // 5: spec.StageKuber.description:type_name -> spec.StageDescription
+	11, // 6: spec.StageKuber.subPasses:type_name -> spec.StageKuber.SubPass
+	5,  // 7: spec.Stage.terraformer:type_name -> spec.StageTerraformer
+	6,  // 8: spec.Stage.ansibler:type_name -> spec.StageAnsibler
+	7,  // 9: spec.Stage.kuber:type_name -> spec.StageKuber
+	1,  // 10: spec.StageTerraformer.SubPass.kind:type_name -> spec.StageTerraformer.SubPassKind
+	4,  // 11: spec.StageTerraformer.SubPass.description:type_name -> spec.StageDescription
+	2,  // 12: spec.StageAnsibler.SubPass.kind:type_name -> spec.StageAnsibler.SubPassKind
+	4,  // 13: spec.StageAnsibler.SubPass.description:type_name -> spec.StageDescription
+	3,  // 14: spec.StageKuber.SubPass.kind:type_name -> spec.StageKuber.SubPassKind
+	4,  // 15: spec.StageKuber.SubPass.description:type_name -> spec.StageDescription
+	16, // [16:16] is the sub-list for method output_type
+	16, // [16:16] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_spec_pass_proto_init() }
@@ -1073,10 +887,9 @@ func file_spec_pass_proto_init() {
 	if File_spec_pass_proto != nil {
 		return
 	}
-	file_spec_pass_proto_msgTypes[5].OneofWrappers = []any{
+	file_spec_pass_proto_msgTypes[4].OneofWrappers = []any{
 		(*Stage_Terraformer)(nil),
 		(*Stage_Ansibler)(nil),
-		(*Stage_KubeEleven)(nil),
 		(*Stage_Kuber)(nil),
 	}
 	type x struct{}
@@ -1084,8 +897,8 @@ func file_spec_pass_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_spec_pass_proto_rawDesc), len(file_spec_pass_proto_rawDesc)),
-			NumEnums:      5,
-			NumMessages:   10,
+			NumEnums:      4,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
