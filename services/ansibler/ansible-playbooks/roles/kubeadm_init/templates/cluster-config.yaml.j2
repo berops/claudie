@@ -25,6 +25,8 @@ apiServer:
   extraArgs:
     - name: profiling
       value: "false"
+    - name: kubelet-certificate-authority
+      value: /etc/kubernetes/pki/ca.crt
 controllerManager:
   extraArgs:
     - name: profiling
