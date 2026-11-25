@@ -38,13 +38,11 @@
         name: node-prereq
         tasks_from: add-apt-repositories.yml
 
-    # The packages stay held (roles/node-prereq).
     - name: Upgrade kubeadm
-      ansible.builtin.apt:
-        name: "kubeadm={{ kubernetes_version }}-*"
-        update_cache: true
-        allow_change_held_packages: true
-        lock_timeout: 600
+      ansible.builtin.include_tasks: upgrade-packages.yml
+      vars:
+        upgrade_packages:
+          - "kubeadm={{ kubernetes_version }}-*"
 
     # kube-proxy is skipped as in roles/kubeadm_init, Cilium replaces it. The kubeadm changelog asks
     # to skip the addons skipped by kubeadm init in both commands, the addons are upgraded together
@@ -80,12 +78,11 @@
       delegate_to: "{{ kubectl_node }}"
 
     - name: Upgrade the kubelet and kubectl
-      ansible.builtin.apt:
-        name:
+      ansible.builtin.include_tasks: upgrade-packages.yml
+      vars:
+        upgrade_packages:
           - "kubelet={{ kubernetes_version }}-*"
           - "kubectl={{ kubernetes_version }}-*"
-        allow_change_held_packages: true
-        lock_timeout: 600
 
     - name: Restart the kubelet
       ansible.builtin.systemd_service:
