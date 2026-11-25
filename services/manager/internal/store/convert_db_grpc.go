@@ -41,29 +41,6 @@ func ConvertToGRPCStages(stages []Stage) ([]*spec.Stage, error) {
 					},
 				},
 			}
-		case KubeEleven:
-			subpasses := make([]*spec.StageKubeEleven_SubPass, 0, len(dbStage.SubPasses))
-			for _, p := range dbStage.SubPasses {
-				subpasses = append(subpasses, &spec.StageKubeEleven_SubPass{
-					Kind: spec.StageKubeEleven_SubPassKind(spec.StageKubeEleven_SubPassKind_value[p.Kind]),
-					Description: &spec.StageDescription{
-						About:      p.Description.About,
-						ErrorLevel: spec.ErrorLevel(spec.ErrorLevel_value[p.Description.ErrorLevel]),
-					},
-				})
-			}
-
-			stage = &spec.Stage{
-				StageKind: &spec.Stage_KubeEleven{
-					KubeEleven: &spec.StageKubeEleven{
-						Description: &spec.StageDescription{
-							About:      dbStage.Description.About,
-							ErrorLevel: spec.ErrorLevel(spec.ErrorLevel_value[dbStage.Description.ErrorLevel]),
-						},
-						SubPasses: subpasses,
-					},
-				},
-			}
 		case Kuber:
 			subpasses := make([]*spec.StageKuber_SubPass, 0, len(dbStage.SubPasses))
 			for _, p := range dbStage.SubPasses {
@@ -138,12 +115,6 @@ func ConvertFromGRPCStages(stages []*spec.Stage) ([]Stage, error) {
 		case *spec.Stage_Ansibler:
 			dbStage.Kind, stageDescription = Ansibler, typ.Ansibler.GetDescription()
 			for _, p := range typ.Ansibler.GetSubPasses() {
-				subpassesDescriptions = append(subpassesDescriptions, p.GetDescription())
-				subpassesKinds = append(subpassesKinds, p.GetKind().String())
-			}
-		case *spec.Stage_KubeEleven:
-			dbStage.Kind, stageDescription = KubeEleven, typ.KubeEleven.GetDescription()
-			for _, p := range typ.KubeEleven.GetSubPasses() {
 				subpassesDescriptions = append(subpassesDescriptions, p.GetDescription())
 				subpassesKinds = append(subpassesKinds, p.GetKind().String())
 			}

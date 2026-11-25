@@ -228,8 +228,6 @@ func taskStageFromNatsSubject(subject string) (store.StageKind, bool) {
 		return store.Terraformer, true
 	case natsutils.AnsiblerResponse:
 		return store.Ansibler, true
-	case natsutils.KubeElevenResponse:
-		return store.KubeEleven, true
 	case natsutils.KuberResponse:
 		return store.Kuber, true
 	default:
