@@ -33,6 +33,10 @@
       overlay
       br_netfilter
 
+- name: Disable ufw
+  ansible.builtin.shell: systemctl disable --now ufw || true
+  changed_when: false
+
 - name: Configure kernel networking for Kubernetes
   ansible.posix.sysctl:
     name: "{{ item }}"
