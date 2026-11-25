@@ -17,6 +17,21 @@
   register: kubeadm_joined_node
   changed_when: false
 
+- name: Wait for the control plane components of an already joined control node
+  when: join_as_control_plane and kubeadm_joined_node.stdout != ''
+  ansible.builtin.uri:
+    url: "{{ item }}"
+    validate_certs: false
+    use_proxy: false
+  loop:
+    - https://{{ node_ip }}:{{ api_server_port }}/livez
+    - https://127.0.0.1:10257/healthz
+    - https://127.0.0.1:10259/livez
+  register: kubeadm_control_plane_health
+  until: kubeadm_control_plane_health.status == 200
+  retries: 18
+  delay: 10
+
 - name: Join the cluster
   when: kubeadm_joined_node.stdout == ''
   block:
