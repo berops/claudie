@@ -433,7 +433,6 @@ NAME                           READY   STATUS      RESTARTS        AGE
 ansibler-5c6c776b75-82c2q      1/1     Running     0               8m10s
 manager-5d76c89b4d-tb6h4       1/1     Running     1 (6m37s ago)   8m10s
 claudie-operator-5755b7bc69-5l84h      1/1     Running     0               8m10s
-kube-eleven-64468cd5bd-qp4d4   1/1     Running     0               8m10s
 kuber-698c4564c-dhsvg          1/1     Running     0               8m10s
 make-bucket-job-fb5sp          0/1     Completed   0               8m10s
 minio-0                        1/1     Running     0               8m10s
@@ -3004,7 +3003,7 @@ spec:
   #
   # clusters:
   #   - name:           # Name of the cluster. The name will be appended to the created node name.
-  #     version:        # Kubernetes version in semver scheme, must be supported by KubeOne.
+  #     version:        # Kubernetes version in semver scheme.
   #     network:        # Private network IP range.
   #     pools:          # Nodepool names which cluster will be composed of. User can reuse same nodepool specification on multiple clusters.
   #       control:      # List of nodepool names, which will be used as control nodes.
@@ -3888,7 +3887,7 @@ Name of the Kubernetes cluster. The name is limited by 28 characters. Each clust
 
 Kubernetes version of the cluster.
 
-Version should be defined in format `vX.Y`. In terms of supported versions of Kubernetes, Claudie follows `kubeone` releases and their supported versions. The current `kubeone` version used in Claudie is `1.14.1`. To see the list of supported versions, please refer to `kubeone` [documentation](https://docs.kubermatic.com/kubeone/v1.14/architecture/compatibility/supported-versions/).
+Version should be defined in format `vX.Y`. In terms of supported versions of Kubernetes.
 
 - `network`
 
@@ -4012,7 +4011,6 @@ By default, Claudie applies following labels on every node in the cluster, toget
 | `topology.kubernetes.io/zone` | Zone of the region where node resides. |
 | `kubernetes.io/os` | Os family of the node. |
 | `kubernetes.io/arch` | Architecture type of the CPU. |
-| `v1.kubeone.io/operating-system` | Os type of the node. |
 
 ### Default taints(https://docs.claudie.io/latest/input-manifest/api-reference/\#default-taints)
 
@@ -4174,13 +4172,6 @@ Variables shared by all services. They are read by every service, though some on
 | `ANSIBLER_CONCURRENT_CLUSTERS` | `8` | How many clusters ansibler works on concurrently. |
 | `ANSIBLER_FORKS` | `32` | With how many forks each ansible playbook is spawned (`--forks`). |
 
-## Kube-eleven(https://docs.claudie.io/latest/environment-settings/environment/\#kube-eleven)
-
-| Variable | Default | Description |
-| --- | --- | --- |
-| `KUBE_ELEVEN_PORT` | `50054` | Port of the kube-eleven gRPC healthcheck server. |
-| `KUBE_ELEVEN_CONCURRENT_CLUSTERS` | `7` | How many clusters kube-eleven works on concurrently. |
-
 ## Kuber(https://docs.claudie.io/latest/environment-settings/environment/\#kuber)
 
 | Variable | Default | Description |
@@ -4203,7 +4194,7 @@ Variables shared by all services. They are read by every service, though some on
 
 ## Advanced service internals(https://docs.claudie.io/latest/environment-settings/environment/\#advanced-service-internals)
 
-Each of the manager, terraformer, ansibler, kube-eleven and kuber services additionally reads the following variables, where `<SERVICE>` is the service name (e.g. `KUBE_ELEVEN_ACK_WAIT_TIME`). These rarely need to be changed.
+Each of the manager, terraformer, ansibler, and kuber services additionally reads the following variables, where `<SERVICE>` is the service name (e.g. `ANSIBLER_ACK_WAIT_TIME`). These rarely need to be changed.
 
 | Variable | Default | Description |
 | --- | --- | --- |
@@ -4225,7 +4216,6 @@ Each of the manager, terraformer, ansibler, kube-eleven and kuber services addit
 - [Manager](https://github.com/berops/claudie/tree/master/services/manager)
 - [Terraformer](https://github.com/berops/claudie/tree/master/services/terraformer)
 - [Ansibler](https://github.com/berops/claudie/tree/master/services/ansibler)
-- [Kube-eleven](https://github.com/berops/claudie/tree/master/services/kube-eleven)
 - [Kuber](https://github.com/berops/claudie/tree/master/services/kuber)
 - [Claudie-operator](https://github.com/berops/claudie/tree/master/services/claudie-operator)
 
@@ -4238,7 +4228,6 @@ Each of the manager, terraformer, ansibler, kube-eleven and kuber services addit
 
 - [Terraform](https://github.com/hashicorp/terraform)
 - [Ansible](https://github.com/ansible/ansible)
-- [KubeOne](https://github.com/kubermatic/kubeone)
 - [Longhorn](https://github.com/longhorn/longhorn)
 - [Nginx](https://www.nginx.com/)
 - [Calico](https://github.com/projectcalico/calico)
@@ -4301,7 +4290,7 @@ The individual states of the Input Manifest and how they are processed within ma
 ### Flow(https://docs.claudie.io/latest/claudie-workflow/claudie-workflow/\#flow_1)
 
 - Periodically polls Manager for available tasks to be worked on.
-- Communicates with Terraformer, Ansibler, Kube-eleven and Kuber
+- Communicates with Terraformer, Ansibler, and Kuber
 - After a task is completed, either successfully or not, the current state is updated along with the status, if errored.
 
 ## Terraformer(https://docs.claudie.io/latest/claudie-workflow/claudie-workflow/\#terraformer)
@@ -4319,13 +4308,6 @@ Ansibler uses Ansible to:
 - install dependencies for required by nodes in a kubernetes cluster
 
 For the API see the [GRPC definitions](https://github.com/berops/claudie/blob/master/proto/ansibler.proto).
-
-## Kube-eleven(https://docs.claudie.io/latest/claudie-workflow/claudie-workflow/\#kube-eleven)
-
-Kube-eleven uses [KubeOne](https://github.com/kubermatic/kubeone) to spin up a kubernetes clusters,
-out of the spawned and pre-configured infrastructure.
-
-For the API see the [GRPC definitions](https://github.com/berops/claudie/blob/master/proto/kubeEleven.proto).
 
 ## Kuber(https://docs.claudie.io/latest/claudie-workflow/claudie-workflow/\#kuber)
 

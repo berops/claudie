@@ -318,7 +318,7 @@ spec:
         count: 1
         # GPU instance type, e.g. 1× B200.
         serverType: 1B200.30V
-        # CUDA image without Docker (KubeOne installs its own containerd).
+        # CUDA image without Docker (Ansibler service installs its own containerd).
         image: "ubuntu-24.04-cuda-12.8-open"
         storageDiskSize: 100
 

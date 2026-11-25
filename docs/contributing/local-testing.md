@@ -18,13 +18,13 @@ Since Claudie generates two types of output per cluster (node metadata and kubec
 
 ## Hardware requirements to run Claudie locally
 
-Running Claudie services requires sufficient CPU and memory resources to ensure stable operation. The system should be provisioned with enough capacity to accommodate both the resource **requests** and **limits** of the deployed services.  
+Running Claudie services requires sufficient CPU and memory resources to ensure stable operation. The system should be provisioned with enough capacity to accommodate both the resource **requests** and **limits** of the deployed services.
 
 ### Minimal Requirements
 
-- **Memory:** at least 8 GB  
-- **CPU:** at least 2 cores  
-- **Disk space:** at least 1 GB (for storing Tofu providers) 
+- **Memory:** at least 8 GB
+- **CPU:** at least 2 cores
+- **Disk space:** at least 1 GB (for storing Tofu providers)
 
 ## Software requirements to run Claudie locally
 
@@ -33,7 +33,6 @@ As Claudie uses number of external tools to build and manage clusters, it is imp
 - `go` - check current version used in `go.mod` file
 - `tofu` - check current version used in Terraformer Dockerfile
 - `ansible` - check current version used in Ansibler Dockerfile
-- `kubeone` - check current version used in Kube-eleven Dockerfile
 - `kubectl` - check current version used in Kuber Dockerfile
 - `mongo` - when running locally, we recommend to run `mongo` as a container, check current version used in manifests for Mongo
 - `silo` - when running locally, we recommend to run `silo` as a container, check current version used in manifests for Silo (`manifests/claudie/minio`)
@@ -163,7 +162,7 @@ loadBalancers:
       protocol: tcp
       port: 6443
       targetPort: 6443
-      targetPools: 
+      targetPools:
         - static-pool
   clusters:
     - name: miro-lb
@@ -179,7 +178,7 @@ loadBalancers:
 
 ### Test Claudie using manual manifest injection
 
-To test Claudie in a more "manual" way, you can use the specified [GRPC API](https://github.com/berops/claudie/blob/master/proto/manager.proto) to inject/delete/modify an input manifest. 
+To test Claudie in a more "manual" way, you can use the specified [GRPC API](https://github.com/berops/claudie/blob/master/proto/manager.proto) to inject/delete/modify an input manifest.
 
 When using this technique, you most likely will omit the initial step of the InputManifest being passed through the operator.
 If this is the case, you will need to add templates to the providers listed in the InputManifest otherwise the workflow will panic at an early stage due to unset templates.

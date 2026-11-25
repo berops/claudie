@@ -13,9 +13,6 @@ import (
 var (
 	// kubernetesVersionRegexString is a regex expression used for parsing semantic versioning
 	// based on https://github.com/go-playground/validator/blob/master/regexes.go#L65:2
-	// NOTE:
-	// first/second capturing group MUST be changed whenever new kubeone version is introduced in Claudie
-	// so validation will catch unsupported versions
 	kubernetesVersionRegexString = `^(1)\.(34|35|36)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`
 
 	// semverRegex is a regex using the semverRegexString.

@@ -704,7 +704,6 @@ Collection of data Claudie uses to create a DNS record for the loadbalancer.
   | `topology.kubernetes.io/zone`    | Zone of the region where node resides.           |
   | `kubernetes.io/os`               | Os family of the node.                           |
   | `kubernetes.io/arch`             | Architecture type of the CPU.                    |
-  | `v1.kubeone.io/operating-system` | Os type of the node.                             |
   | `claudie.io/spot`                | `true` — present only on spot nodepools (GCP, Verda, AWS, Azure, OCI). |
 
 ### Default taints
