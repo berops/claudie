@@ -22,8 +22,23 @@ apiServer:
 {% for san in api_server_cert_sans %}
     - "{{ san }}"
 {% endfor %}
+  extraArgs:
+    - name: profiling
+      value: "false"
+controllerManager:
+  extraArgs:
+    - name: profiling
+      value: "false"
+scheduler:
+  extraArgs:
+    - name: profiling
+      value: "false"
 etcd:
   local:
+    # etcd has no profiling flag, enable-pprof is its equivalent.
+    extraArgs:
+      - name: enable-pprof
+        value: "false"
     extraEnvs:
       - name: ETCDCTL_CACERT
         value: /etc/kubernetes/pki/etcd/ca.crt
