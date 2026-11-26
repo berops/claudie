@@ -798,21 +798,8 @@ const file_spec_pass_proto_rawDesc = "" +
 	"\x12RESET_STATIC_NODES\x10\n" +
 	"\x12\x11\n" +
 	"\rNODE_ADDITION\x10\v\x12\x17\n" +
-<<<<<<< HEAD
-	"\x13UPGRADE_K8S_VERSION\x10\f\"\xdb\x04\n" +
-=======
 	"\x13UPGRADE_K8S_VERSION\x10\f\x12\x1f\n" +
-	"\x1bRECONCILE_CONTAINERD_CONFIG\x10\r\"\xbf\x02\n" +
-	"\x0fStageKubeEleven\x128\n" +
-	"\vdescription\x18\x01 \x01(\v2\x16.spec.StageDescriptionR\vdescription\x12;\n" +
-	"\tsubPasses\x18\x02 \x03(\v2\x1d.spec.StageKubeEleven.SubPassR\tsubPasses\x1az\n" +
-	"\aSubPass\x125\n" +
-	"\x04kind\x18\x01 \x01(\x0e2!.spec.StageKubeEleven.SubPassKindR\x04kind\x128\n" +
-	"\vdescription\x18\x02 \x01(\v2\x16.spec.StageDescriptionR\vdescription\"9\n" +
-	"\vSubPassKind\x12\x15\n" +
-	"\x11RECONCILE_CLUSTER\x10\x00\x12\x13\n" +
-	"\x0fDESTROY_CLUSTER\x10\x01\"\xdb\x04\n" +
->>>>>>> 19f61f3a (new ansibler stage and lib for TOML file validation)
+	"\x1bRECONCILE_CONTAINERD_CONFIG\x10\r\"\xdb\x04\n" +
 	"\n" +
 	"StageKuber\x128\n" +
 	"\vdescription\x18\x01 \x01(\v2\x16.spec.StageDescriptionR\vdescription\x126\n" +
