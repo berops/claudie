@@ -18,7 +18,7 @@ func TestConformance(t *testing.T) {
 	const (
 		clusterManifestFile = "manifests/conformance/cluster.yaml"
 		clusterName         = "conformance-test-cluster"
-		expectedNodeCount   = 13
+		expectedNodeCount   = 11
 	)
 
 	namespace := claudieNamespace(t)
