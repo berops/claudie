@@ -114,7 +114,7 @@
   ansible.builtin.command:
     cmd: >-
       kubectl --kubeconfig /etc/kubernetes/admin.conf get node {{ inventory_hostname }}
-      --output 'jsonpath={.metadata.annotations.{{ upgrade_cordon_annotation | replace(".", "\\.") }}}'
+      --output 'jsonpath={.metadata.annotations.{{ upgrade_cordon_annotation | replace(".", "\.") }}}'
   delegate_to: "{{ kubectl_node }}"
   register: upgrade_mark
   changed_when: false
