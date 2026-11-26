@@ -102,7 +102,6 @@ const (
 	Unknown     StageKind = ""
 	Terraformer StageKind = "TERRAFORMER"
 	Ansibler    StageKind = "ANSIBLER"
-	KubeEleven  StageKind = "KUBE_ELEVEN"
 	Kuber       StageKind = "KUBER"
 )
 

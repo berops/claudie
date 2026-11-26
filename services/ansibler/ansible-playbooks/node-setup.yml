@@ -1,10 +1,21 @@
 ---
 # Installs the node requirements on the nodes of the kubernetes cluster.
-# Run by the ansibler on the INSTALL_NODE_REQUIREMENTS stage, see task_install_node_requirements.go.
+# Run by the ansibler on the INSTALL_NODE_REQUIREMENTS stage, see task_install_node_requirements.go,
+# on every node of the cluster or only on the newly added ones. It also runs on every
+# infrastructure refresh, so every task has to be safe to repeat on a running node.
 # WireGuard and the apt configuration (tasks/apt-config.yml) are set up beforehand
 # by the INSTALL_VPN stage (configure-wireguard.yml).
 
-# runs with mitogen_free strategy
-- import_playbook: install-packages.yml
-# runs with mitogen_free strategy
-- import_playbook: configure-node.yml
+- name: Set up the nodes of the kubernetes cluster
+  hosts: all
+  become: true
+  gather_facts: false
+  strategy: mitogen_free
+  vars_files:
+    - vars/k8s.yaml
+  pre_tasks:
+    - name: Wait 100 seconds for target connection to become reachable/usable
+      ansible.builtin.wait_for_connection:
+        timeout: 100
+  roles:
+    - node-prereq

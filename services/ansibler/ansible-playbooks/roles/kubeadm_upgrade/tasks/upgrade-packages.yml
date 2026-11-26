@@ -1,0 +1,24 @@
+---
+# Upgrades upgrade_packages. A failed run killed while apt installed them leaves dpkg interrupted,
+# then apt fails until dpkg is repaired. The packages stay held (roles/node-prereq).
+
+- name: Upgrade the packages
+  block:
+    - name: Upgrade {{ upgrade_packages | join(', ') }}
+      ansible.builtin.apt:
+        name: "{{ upgrade_packages }}"
+        update_cache: true
+        allow_change_held_packages: true
+        lock_timeout: 600
+  rescue:
+    - name: Repair interrupted dpkg
+      ansible.builtin.import_role:
+        name: node-prereq
+        tasks_from: repair-dpkg.yml
+
+    - name: Retry upgrading {{ upgrade_packages | join(', ') }}
+      ansible.builtin.apt:
+        name: "{{ upgrade_packages }}"
+        update_cache: true
+        allow_change_held_packages: true
+        lock_timeout: 600

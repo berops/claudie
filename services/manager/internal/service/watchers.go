@@ -379,23 +379,6 @@ func messageForStage(
 		description = b.String()
 		subject = natsutils.AnsiblerRequests
 		replySubject = natsutils.AnsiblerResponse
-	case *spec.Stage_KubeEleven:
-		b := new(strings.Builder)
-		b.WriteString(stage.KubeEleven.Description.About)
-
-		for _, pass := range stage.KubeEleven.GetSubPasses() {
-			r, err := anypb.New(pass)
-			if err != nil {
-				return nats.Msg{}, "", err
-			}
-			work.Passes = append(work.Passes, r)
-			b.WriteByte('\n')
-			fmt.Fprintf(b, "  - %s", pass.Description.About)
-		}
-
-		description = b.String()
-		subject = natsutils.KubeElevenRequests
-		replySubject = natsutils.KubeElevenResponse
 	case *spec.Stage_Kuber:
 		b := new(strings.Builder)
 		b.WriteString(stage.Kuber.Description.About)

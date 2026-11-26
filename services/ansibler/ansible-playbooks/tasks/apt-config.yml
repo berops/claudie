@@ -3,8 +3,7 @@
 #   1. stop, configures and defers unattended upgrades
 #     unattended-upgrades is started by apt-daily-upgrade.timer (apt-daily.timer runs "apt-get update").
 #     The stock timers use Persistent=true, so if the VM was off at the scheduled time they fire right
-#     after boot (plus RandomizedDelaySec). The upgrade then holds the dpkg lock while Claudie
-#     (e.g. kubeone in kube-eleven) runs apt-get, which fails.
+#     after boot (plus RandomizedDelaySec).
 #
 #     Not every provider supports cloud-init, so the upgrade can not be prevented before boot. Instead:
 #       1. make apt wait for the dpkg lock instead of failing,

@@ -5,7 +5,6 @@ LICENSE
 *.yaml
 .git
 services/terraformer
-services/kube-eleven
 services/testing-framework
 services/claudie-operator
 services/ansibler

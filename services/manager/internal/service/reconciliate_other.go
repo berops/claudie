@@ -42,38 +42,26 @@ func ScheduleDeleteCluster(current *spec.Clusters) *spec.TaskEvent {
 	var pipeline []*spec.Stage
 
 	if static := nodepools.Static(current.K8S.ClusterInfo.NodePools); len(static) > 0 {
-		// The idea is to continue during the destruction of these two stages even if the
-		// kube-eleven stage fails. The static nodes could already be unreachable, for
-		// example when credits on a provider expired and there is no way to reach those
-		// VMs anymore.
-		ke := &spec.Stage{
-			StageKind: &spec.Stage_KubeEleven{
-				KubeEleven: &spec.StageKubeEleven{
-					Description: &spec.StageDescription{
-						About:      "Destroying kubernetes cluster and related binaries",
-						ErrorLevel: spec.ErrorLevel_ERROR_WARN,
-					},
-					SubPasses: []*spec.StageKubeEleven_SubPass{
-						{
-							Kind: spec.StageKubeEleven_DESTROY_CLUSTER,
-							Description: &spec.StageDescription{
-								About:      "Tearing down kuberentes cluster",
-								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-							},
-						},
-					},
-				},
-			},
-		}
-
+		// The idea is to continue with the destruction of the infrastructure even if
+		// cleaning up the static nodes fails. The static nodes could already be unreachable,
+		// for example when credits on a provider expired and there is no way to reach those
+		// VMs anymore. Only the static nodes are cleaned up, the dynamic ones are destroyed
+		// with the infrastructure.
 		ans := &spec.Stage{
 			StageKind: &spec.Stage_Ansibler{
 				Ansibler: &spec.StageAnsibler{
 					Description: &spec.StageDescription{
-						About:      "Removing claudie installed utilities across nodes",
+						About:      "Destroying kubernetes cluster and removing claudie installed utilities across nodes",
 						ErrorLevel: spec.ErrorLevel_ERROR_WARN,
 					},
 					SubPasses: []*spec.StageAnsibler_SubPass{
+						{
+							Kind: spec.StageAnsibler_RESET_STATIC_NODES,
+							Description: &spec.StageDescription{
+								About:      "Resetting static nodes and removing kubernetes packages",
+								ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+							},
+						},
 						{
 							Kind: spec.StageAnsibler_REMOVE_CLAUDIE_UTILITIES,
 							Description: &spec.StageDescription{
@@ -86,7 +74,6 @@ func ScheduleDeleteCluster(current *spec.Clusters) *spec.TaskEvent {
 			},
 		}
 
-		pipeline = append(pipeline, ke)
 		pipeline = append(pipeline, ans)
 	}
 
@@ -361,24 +348,6 @@ func CreatePipeline(clusters *spec.Clusters, isCreate bool) []*spec.Stage {
 			},
 		}
 
-		kubeeleven = spec.Stage_KubeEleven{
-			KubeEleven: &spec.StageKubeEleven{
-				Description: &spec.StageDescription{
-					About:      "Reconciling kubernetes cluster",
-					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-				},
-				SubPasses: []*spec.StageKubeEleven_SubPass{
-					{
-						Kind: spec.StageKubeEleven_RECONCILE_CLUSTER,
-						Description: &spec.StageDescription{
-							About:      "Creating kubernetes cluster from the set up infrastructure",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-					},
-				},
-			},
-		}
-
 		kuber = spec.Stage_Kuber{
 			Kuber: &spec.StageKuber{
 				Description: &spec.StageDescription{
@@ -386,11 +355,28 @@ func CreatePipeline(clusters *spec.Clusters, isCreate bool) []*spec.Stage {
 					ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 				},
 				SubPasses: []*spec.StageKuber_SubPass{
+					// The cluster created by the ansibler has no CNI, the nodes stay
+					// NotReady and no pods can be scheduled until Cilium is deployed,
+					// thus this has to be the first sub-pass and is fatal.
+					{
+						Kind: spec.StageKuber_RECONCILE_CILIUM,
+						Description: &spec.StageDescription{
+							About:      "Deploying Cilium CNI",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
 					{
 						Kind: spec.StageKuber_DEPLOY_KUBELET_CSR_APPROVER,
 						Description: &spec.StageDescription{
 							About:      "Deploying kubelet csr-approver",
-							ErrorLevel: spec.ErrorLevel_ERROR_WARN,
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+						},
+					},
+					{
+						Kind: spec.StageKuber_DEPLOY_ADDONS,
+						Description: &spec.StageDescription{
+							About:      "Deploying cluster addons (nodelocaldns, coredns-pdb, metrics-server)",
+							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 						},
 					},
 					{
@@ -427,12 +413,22 @@ func CreatePipeline(clusters *spec.Clusters, isCreate bool) []*spec.Stage {
 				ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 			},
 		})
+	} else {
+		createCluster := &spec.StageAnsibler_SubPass{
+			Kind: spec.StageAnsibler_CREATE_CLUSTER,
+			Description: &spec.StageDescription{
+				About:      "Creating a Kubernetes cluster using kubeadm",
+				ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
+			},
+		}
+		ansProxy.Ansibler.SubPasses = append(ansProxy.Ansibler.SubPasses, createCluster)
+		ansNoProxy.Ansibler.SubPasses = append(ansNoProxy.Ansibler.SubPasses, createCluster)
 	}
 
+	// terraformer, ansibler (which also bootstraps the cluster with kubeadm), kuber.
 	pipeline := []*spec.Stage{
 		{StageKind: nil},
 		{StageKind: nil},
-		{StageKind: &kubeeleven},
 		{StageKind: &kuber},
 	}
 

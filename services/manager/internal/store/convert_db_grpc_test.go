@@ -214,7 +214,7 @@ func TestConvertToGRPCWorkflow(t *testing.T) {
 					{
 						Status:          spec.Workflow_DONE.String(),
 						TaskDescription: "previous",
-						Stage:           store.KubeEleven,
+						Stage:           store.Ansibler,
 						Timestamp:       "not-a-valid-timestamp",
 					},
 				},
@@ -266,7 +266,6 @@ func TestConvertToGRPCWorkflow(t *testing.T) {
 
 				assert.Equal(t, spec.Workflow_DONE, got.Previous[0].Status)
 				assert.Equal(t, "previous", got.Previous[0].TaskDescription)
-				assert.Equal(t, string(store.KubeEleven), got.Previous[0].Stage)
 				return
 			}
 
@@ -567,48 +566,6 @@ func TestConvertFromGRPCStages(t *testing.T) {
 			},
 		},
 		{
-			name: "KubeEleven stage with subpass",
-			input: []*spec.Stage{
-				{
-					StageKind: &spec.Stage_KubeEleven{
-						KubeEleven: &spec.StageKubeEleven{
-							Description: &spec.StageDescription{
-								About:      "KubeEleven about",
-								ErrorLevel: spec.ErrorLevel_ERROR_WARN,
-							},
-							SubPasses: []*spec.StageKubeEleven_SubPass{
-								{
-									Kind: spec.StageKubeEleven_RECONCILE_CLUSTER,
-									Description: &spec.StageDescription{
-										About:      "KubeEleven subpass about",
-										ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			want: []store.Stage{
-				{
-					Kind: store.KubeEleven,
-					Description: store.StageDescription{
-						About:      "KubeEleven about",
-						ErrorLevel: spec.ErrorLevel_ERROR_WARN.String(),
-					},
-					SubPasses: []store.SubPass{
-						{
-							Kind: spec.StageKubeEleven_RECONCILE_CLUSTER.String(),
-							Description: store.StageDescription{
-								About:      "KubeEleven subpass about",
-								ErrorLevel: spec.ErrorLevel_ERROR_FATAL.String(),
-							},
-						},
-					},
-				},
-			},
-		},
-		{
 			name: "Terraformer stage with subpass",
 			input: []*spec.Stage{
 				{
@@ -880,48 +837,6 @@ func TestConvertToGRPCStages(t *testing.T) {
 									Description: &spec.StageDescription{
 										About:      "Ansibler subpass about",
 										ErrorLevel: spec.ErrorLevel_ERROR_WARN,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "KubeEleven stage with subpass",
-			input: []store.Stage{
-				{
-					Kind: store.KubeEleven,
-					Description: store.StageDescription{
-						About:      "KubeEleven about",
-						ErrorLevel: spec.ErrorLevel_ERROR_WARN.String(),
-					},
-					SubPasses: []store.SubPass{
-						{
-							Kind: spec.StageKubeEleven_RECONCILE_CLUSTER.String(),
-							Description: store.StageDescription{
-								About:      "KubeEleven subpass about",
-								ErrorLevel: spec.ErrorLevel_ERROR_FATAL.String(),
-							},
-						},
-					},
-				},
-			},
-			want: []*spec.Stage{
-				{
-					StageKind: &spec.Stage_KubeEleven{
-						KubeEleven: &spec.StageKubeEleven{
-							Description: &spec.StageDescription{
-								About:      "KubeEleven about",
-								ErrorLevel: spec.ErrorLevel_ERROR_WARN,
-							},
-							SubPasses: []*spec.StageKubeEleven_SubPass{
-								{
-									Kind: spec.StageKubeEleven_RECONCILE_CLUSTER,
-									Description: &spec.StageDescription{
-										About:      "KubeEleven subpass about",
-										ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 									},
 								},
 							},

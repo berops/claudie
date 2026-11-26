@@ -73,8 +73,6 @@ func InstallNodeRequirements(
 		ClusterNetwork: network,
 	}
 
-	// Pre-install the Kubernetes packages of this version, which kubeone would otherwise
-	// install one node group at a time during `kubeone apply` in kube-eleven.
 	var flags string
 	if v := strings.TrimPrefix(strings.TrimSpace(version), "v"); v != "" {
 		flags = fmt.Sprintf("--extra-vars \"kubernetes_version=%s\"", v)

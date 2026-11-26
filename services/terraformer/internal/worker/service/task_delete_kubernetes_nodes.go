@@ -42,7 +42,7 @@ func deleteKubernetesNodes(
 		cluster = kubernetes.K8Scluster{
 			ProjectName:       projectName,
 			Cluster:           k8s,
-			ExportPort6443:    clusters.FindAssignedLbApiEndpoint(action.State.LoadBalancers) == nil,
+			ExportPort6443:    clusters.FindLoadBalancerApiServerEndpoint(action.State.LoadBalancers) == nil,
 			SpawnProcessLimit: processLimit,
 		}
 	)

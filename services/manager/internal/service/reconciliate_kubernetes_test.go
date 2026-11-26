@@ -180,7 +180,7 @@ func TestScheduleDeletionsInNodePoolsPipelineShape(t *testing.T) {
 				{
 					about: "Configuring nodes of the cluster and its loadbalancers",
 					ansibler: append(
-						[]spec.StageAnsibler_SubPassKind{spec.StageAnsibler_REMOVE_CLAUDIE_UTILITIES},
+						[]spec.StageAnsibler_SubPassKind{spec.StageAnsibler_RESET_STATIC_NODES, spec.StageAnsibler_REMOVE_CLAUDIE_UTILITIES},
 						proxyPasses...,
 					),
 				},
@@ -189,7 +189,7 @@ func TestScheduleDeletionsInNodePoolsPipelineShape(t *testing.T) {
 			wantNodes:    []string{"node-1"},
 		},
 		{
-			name:     "tracked static nodepool without proxy schedules only the utilities cleanup",
+			name:     "tracked static nodepool without proxy schedules only the node reset and the utilities cleanup",
 			nodepool: namedStaticNodePool(p2),
 			diff:     NodePoolsDiffResult{PartiallyDeleted: NodePoolsViewType{p2: {"node-1"}}},
 			opts:     K8sNodeDeletionOptions{IsStatic: true},
@@ -198,7 +198,7 @@ func TestScheduleDeletionsInNodePoolsPipelineShape(t *testing.T) {
 				kuberClusterDelete,
 				{
 					about:    "Configuring nodes of the cluster and its loadbalancers",
-					ansibler: []spec.StageAnsibler_SubPassKind{spec.StageAnsibler_REMOVE_CLAUDIE_UTILITIES},
+					ansibler: []spec.StageAnsibler_SubPassKind{spec.StageAnsibler_RESET_STATIC_NODES, spec.StageAnsibler_REMOVE_CLAUDIE_UTILITIES},
 				},
 			},
 			wantNodepool: p2,
@@ -254,7 +254,7 @@ func TestScheduleDeletionsInNodePoolsPipelineShape(t *testing.T) {
 				{
 					about: "Configuring nodes of the cluster and its loadbalancers",
 					ansibler: append(
-						[]spec.StageAnsibler_SubPassKind{spec.StageAnsibler_REMOVE_CLAUDIE_UTILITIES},
+						[]spec.StageAnsibler_SubPassKind{spec.StageAnsibler_RESET_STATIC_NODES, spec.StageAnsibler_REMOVE_CLAUDIE_UTILITIES},
 						proxyPasses...,
 					),
 				},

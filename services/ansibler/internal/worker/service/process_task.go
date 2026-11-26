@@ -127,6 +127,14 @@ passes:
 			ClearProxyEnvs(logger, work.InputManifestName, processlimit, tracker)
 		case spec.StageAnsibler_COMMIT_PROXY_ENVS:
 			CommitProxyEnvs(logger, work.InputManifestName, processlimit, tracker)
+		case spec.StageAnsibler_CREATE_CLUSTER:
+			CreateCluster(logger, work.InputManifestName, processlimit, tracker)
+		case spec.StageAnsibler_RESET_STATIC_NODES:
+			ResetStaticNodes(logger, work.InputManifestName, processlimit, tracker)
+		case spec.StageAnsibler_NODE_ADDITION:
+			AddNodes(logger, work.InputManifestName, processlimit, tracker)
+		case spec.StageAnsibler_UPGRADE_K8S_VERSION:
+			UpgradeK8sVersion(logger, work.InputManifestName, processlimit, tracker)
 		default:
 			logger.Warn().Msg("Stage not recognized, skipping")
 			continue

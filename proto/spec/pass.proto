@@ -53,19 +53,10 @@ message StageAnsibler {
     COMMIT_PROXY_ENVS = 6;
     UPDATE_PROXY_ENVS_ON_NODES = 7;
     CLEAR_PROXY_ENVS_ON_NODES = 8;
-  }
-  message SubPass {
-    SubPassKind kind = 1;
-    StageDescription description = 2;
-  }
-  StageDescription description = 1;
-  repeated SubPass subPasses = 2;
-}
-
-message StageKubeEleven {
-  enum SubPassKind {
-    RECONCILE_CLUSTER = 0;
-    DESTROY_CLUSTER = 1;
+    CREATE_CLUSTER = 9;
+    RESET_STATIC_NODES = 10;
+    NODE_ADDITION = 11;
+    UPGRADE_K8S_VERSION = 12;
   }
   message SubPass {
     SubPassKind kind = 1;
@@ -89,6 +80,8 @@ message StageKuber {
     DISABLE_LONGHORN_CA = 10;
     RECONCILE_LONGHORN_STORAGE_CLASSES = 11;
     DEPLOY_KUBELET_CSR_APPROVER = 12;
+    RECONCILE_CILIUM = 13;
+    DEPLOY_ADDONS = 14;
   }
   message SubPass {
     SubPassKind kind = 1;
@@ -102,7 +95,6 @@ message Stage {
   oneof StageKind {
     StageTerraformer terraformer = 1;
     StageAnsibler ansibler = 2;
-    StageKubeEleven kubeEleven = 3;
     StageKuber kuber = 4;
   }
 }

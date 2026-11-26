@@ -1,0 +1,14 @@
+---
+# An apt run killed while dpkg configures packages leaves dpkg interrupted, after which every apt call
+# fails with "dpkg was interrupted, you must manually run 'dpkg --configure -a'". A no-op otherwise.
+# Also imported by roles/kubeadm_upgrade.
+
+- name: Repair interrupted dpkg
+  ansible.builtin.command: dpkg --force-confdef --force-confold --configure -a
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+  register: dpkg_configure
+  until: dpkg_configure is not failed
+  retries: 6
+  delay: 10
+  changed_when: dpkg_configure.stdout | length > 0
