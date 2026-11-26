@@ -66,16 +66,16 @@ func TestDestroyCluster(t *testing.T) {
 
 // staticNodeInstallation is what Claudie puts on a static node and has to remove when the
 // cluster is deleted, by roles/kubeadm_reset and wireguard-uninstall.yml in the ansibler.
-// What the reset keeps on purpose, like the Longhorn packages, is not listed.
+// What the reset keeps on purpose, like containerd or the Longhorn packages, is not listed.
 var staticNodeInstallation = []string{
-	// Kubernetes and containerd packages.
-	"/usr/bin/kubeadm", "/usr/bin/kubelet", "/usr/bin/kubectl", "/usr/bin/containerd",
+	// Kubernetes packages.
+	"/usr/bin/kubeadm", "/usr/bin/kubelet", "/usr/bin/kubectl",
 	// Cluster state and configuration.
-	"/etc/kubernetes", "/var/lib/etcd", "/var/lib/kubelet", "/root/kubeadm",
-	"/etc/containerd", "/var/lib/containerd", "/opt/cni", "/etc/cni",
+	"/etc/kubernetes", "/var/lib/etcd", "/var/lib/kubelet", "/root/kubeadm", "/opt/cni",
+	// The CNI configs, containerd recreates the empty /etc/cni/net.d when it starts.
+	"/etc/cni/net.d/*",
 	// Apt repositories and kernel settings.
-	"/etc/apt/sources.list.d/kubernetes.sources", "/etc/apt/sources.list.d/docker.sources",
-	"/etc/apt/keyrings/kubernetes.asc", "/etc/apt/keyrings/docker.asc",
+	"/etc/apt/sources.list.d/kubernetes.sources", "/etc/apt/keyrings/kubernetes.asc",
 	"/etc/modules-load.d/k8s.conf", "/etc/sysctl.d/99-kubernetes.conf",
 	// WireGuard, the interface is in /sys/class/net while it exists.
 	"/etc/wireguard", "/usr/bin/wg", "/sys/class/net/wg0",
