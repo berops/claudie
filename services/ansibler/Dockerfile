@@ -1,4 +1,4 @@
-FROM docker.io/library/golang:1.27.2 AS go_builder
+FROM docker.io/library/golang:1.27.3 AS go_builder
 
 ARG TARGETARCH
 
