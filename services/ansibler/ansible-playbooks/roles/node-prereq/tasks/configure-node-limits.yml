@@ -56,6 +56,9 @@
           fs.inotify.max_user_watches = {{ max_user_watches }}
           fs.inotify.max_user_instances = {{ max_user_instances }}
           net.ipv4.ip_local_port_range = 2048 65535
+          # 4244 reserved for the Hubble server of the Cilium agent
+          # 30000-32767 reserved by Cilium for NodePorts, set here too so it's not wiped out on refresh
+          net.ipv4.ip_local_reserved_ports = 4244,30000-32767
           net.core.somaxconn = 65535
           net.ipv4.tcp_fin_timeout = 30
 
