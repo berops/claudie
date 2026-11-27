@@ -468,7 +468,7 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
 - `containerdConfigMap` [Containerd](#containerd)
 
-  Specifies the name of the ConfigMap used to configure containerd on all nodes in the nodepool. If omitted, the default configuration provided by the installed containerd version is used.
+  Specifies the name of the ConfigMap used to configure containerd on all nodes in the nodepool. If omitted, the default configuration provided by the installed containerd version is used. Not supported for load balancer nodepools.
 
 ## Provider Spec
 
@@ -503,7 +503,7 @@ Autoscaler configuration on per nodepool basis. Defines the number of nodes, aut
 The containerd configuration of a nodepool is read from a ConfigMap in the namespace of the InputManifest and written on its nodes as a drop-in `/etc/containerd/conf.d/claudie.toml`. The ConfigMap holds the TOML as its only entry. Changing the ConfigMap, or removing `containerdConfigMap`, restarts containerd on the nodes of the nodepool one node at a time. Running containers keep running during the restart. A changed ConfigMap is picked up without re-applying the InputManifest.
 
 - Only nodes built by kubeadm load the drop-in.
-- Load balancer nodepools support it too. Their containerd runs under Docker without the CRI plugin, so `io.containerd.cri.*` settings have no effect there.
+- Only Kubernetes nodepools are supported. Load balancer nodepools aren't, so don't set it on a nodepool used by a load balancer.
 - The drop-in uses containerd config version 3, e.g. `[plugins."io.containerd.cri.v1.images"]`.
 - Claudie owns `SystemdCgroup` and the CRI plugin. Don't override them in the drop-in.
 - An InputManifest is rejected when the ConfigMap is missing, doesn't hold exactly one entry, or the entry isn't valid TOML. A ConfigMap that becomes invalid later is reported as a `ProvisioningFailed` event on the InputManifest and the nodes keep their current drop-in.
@@ -559,7 +559,7 @@ Static nodepools are defined for static machines which Claudie will not manage. 
 
 - `containerdConfigMap` [Containerd](#containerd)
 
-  Name of the ConfigMap with the containerd configuration for every node in the node pool. This field is optional.
+  Name of the ConfigMap with the containerd configuration for every node in the node pool. This field is optional. Not supported for load balancer nodepools.
 
 ## Static node
 

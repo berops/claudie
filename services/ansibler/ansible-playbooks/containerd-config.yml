@@ -1,7 +1,7 @@
 ---
 # Replaces the containerd drop-in on the nodes of a nodepool that is already part of the kubernetes
-# cluster or of a load balancer. Run by the ansibler on the RECONCILE_CONTAINERD_CONFIG stage, see
-# task_reconcile_containerd_config.go. New nodes get theirs from node-setup.yml and deploy-envoy.goyml.
+# cluster. Run by the ansibler on the RECONCILE_CONTAINERD_CONFIG stage, see
+# task_reconcile_containerd_config.go. New nodes get theirs from node-setup.yml.
 
 # One node at a time, a failed node stops the play: restarting containerd restarts no containers,
 # but the node can't run new ones until it is back.

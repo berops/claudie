@@ -1,6 +1,6 @@
 ---
 # The whole containerd configuration of a node: the default config for kubeadm and the
-# drop-in of the nodepool, the same on the nodes of the kubernetes cluster and of the load balancers, from
+# drop-in of the nodepool, on the nodes of the kubernetes cluster only, from
 # containerd/<inventory host>.toml next to the inventory on the controller.
 # Restarts containerd on every run.
 
