@@ -21,9 +21,21 @@
 
 # Stores the CA and the other shared control plane certificates in the kubeadm-certs Secret,
 # encrypted with the certificate key. Joining control nodes download them from there.
+# kubeadm reaches the api server at the advertise address. Without a config it takes the
+# address of the default interface, which is not in the api server certificate on every
+# provider (the VPC address on GCP), so the InitConfiguration sets it as roles/kubeadm_init.
 - name: Upload the control plane certificates
   ansible.builtin.command:
-    cmd: kubeadm init phase upload-certs --upload-certs --certificate-key {{ kubeadm_certificate_key.stdout | trim }}
+    cmd: kubeadm init phase upload-certs --upload-certs --config /dev/stdin
+    stdin: |
+      apiVersion: kubeadm.k8s.io/v1beta4
+      kind: InitConfiguration
+      certificateKey: {{ kubeadm_certificate_key.stdout | trim }}
+      localAPIEndpoint:
+        advertiseAddress: {{ node_ip }}
+        bindPort: {{ api_server_port }}
+      nodeRegistration:
+        name: {{ inventory_hostname }}
   no_log: true
 
 # The join command is the one kubeadm output that carries the CA cert hash, the token is

@@ -18,6 +18,8 @@
   become: true
   gather_facts: false
   any_errors_fatal: true
+  vars_files:
+    - vars/k8s.yaml
   roles:
     - kubeadm_join_credentials
 
