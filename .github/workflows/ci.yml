@@ -23,7 +23,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
 
@@ -40,7 +40,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
 
@@ -153,12 +153,12 @@ jobs:
           kubeconfig: ${{ secrets.E2E_CLUSTER_KUBECONFIG }}
 
       - name: Install Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
 
       - name: Install Cilium CLI
-        uses: cilium/cilium-cli@v0.20.2
+        uses: cilium/cilium-cli@v0.20.3
         with:
           release-version: v0.20.2
 
