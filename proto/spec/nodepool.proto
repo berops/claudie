@@ -26,6 +26,8 @@ message NodePool {
   map<string, string> annotations = 8;
   // SSH port for the nodes in this node pool. Default 0 means port 22.
   int32 sshPort = 9;
+  // TOML of the containerd drop-in written to /etc/containerd/conf.d/ on the nodes.
+  string containerdConfig = 10;
 }
 
 // Taint defines a custom defined taint for the node pools.

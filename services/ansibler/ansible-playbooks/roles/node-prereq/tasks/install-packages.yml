@@ -3,7 +3,7 @@
 
 - name: Select the packages to install
   ansible.builtin.set_fact:
-    node_packages: "{{ longhorn_packages + kubernetes_packages }}"
+    node_packages: "{{ common_packages + kubernetes_packages }}"
 
 - name: Start installing packages
   ansible.builtin.apt:

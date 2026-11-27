@@ -12,6 +12,10 @@ rules:
       - get
       - list
       - watch
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs:
+      - get
   - apiGroups: ["", "events.k8s.io"]
     resources: ["events"]
     verbs:

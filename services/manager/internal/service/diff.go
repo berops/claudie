@@ -109,6 +109,10 @@ type (
 		// RollingUpdates are nodepools present in both states but
 		// having different templates commit hash.
 		RollingUpdates PendingRollingUpdates
+
+		// ContainerdConfigs are nodepools present in both states but
+		// having a different containerd drop-in, with the desired one.
+		ContainerdConfigs map[string]string
 	}
 
 	ModifiedLoadBalancer struct {
@@ -415,10 +419,15 @@ func KubernetesDiff(old, desired *spec.K8Scluster) KubernetesDiffResult {
 	result.ChangedToAutoscaled = make(PendingAutoscaledNodePoolTransitions)
 	result.ChangedToFixed = make(PendingFixedNodePoolTransitions)
 	result.RollingUpdates = make(PendingRollingUpdates)
+	result.ContainerdConfigs = make(map[string]string)
 	for _, cnp := range old.ClusterInfo.NodePools {
 		for _, dnp := range desired.ClusterInfo.NodePools {
 			if cnp.Name != dnp.Name {
 				continue
+			}
+
+			if cnp.ContainerdConfig != dnp.ContainerdConfig {
+				result.ContainerdConfigs[dnp.Name] = dnp.ContainerdConfig
 			}
 
 			if cnp.GetDynamicNodePool() != nil && dnp.GetDynamicNodePool() != nil {

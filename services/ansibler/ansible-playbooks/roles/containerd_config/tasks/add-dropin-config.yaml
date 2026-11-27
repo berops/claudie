@@ -1,0 +1,16 @@
+---
+# Copies the drop-in of the nodepool to the node. The default containerd configuration imports
+# /etc/containerd/conf.d/*.toml.
+
+- name: Create the containerd drop-in directory
+  ansible.builtin.file:
+    path: /etc/containerd/conf.d
+    state: directory
+    mode: "0755"
+
+- name: Copy the containerd config drop-in
+  ansible.builtin.copy:
+    src: "{{ containerd_config_dropin_src }}"
+    dest: /etc/containerd/conf.d/claudie.toml
+    mode: "0644"
+  register: containerd_config_dropin_added

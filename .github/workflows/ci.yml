@@ -53,7 +53,7 @@ jobs:
     # Only known labels, so a mistyped one doesn't fall through to the e2e-tests matrix default of all tests.
     if: >-
       github.event_name == 'workflow_dispatch' || (!github.event.pull_request.head.repo.fork &&
-      contains(fromJSON('["test-all", "test-conformance", "test-upgrade-cluster", "test-destroy-cluster", "test-api-endpoint-moves"]'), github.event.label.name))
+      contains(fromJSON('["test-all", "test-conformance", "test-upgrade-cluster", "test-destroy-cluster", "test-api-endpoint-moves", "test-containerd-config"]'), github.event.label.name))
     name: build-images (${{ matrix.service }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -141,7 +141,8 @@ jobs:
             github.event.label.name == 'test-upgrade-cluster'    && '["TestUpgradeCluster"]' ||
             github.event.label.name == 'test-destroy-cluster'    && '["TestDestroyCluster"]' ||
             github.event.label.name == 'test-api-endpoint-moves' && '["TestAPIEndpointMoves"]' ||
-            '["TestConformance", "TestUpgradeCluster", "TestDestroyCluster", "TestAPIEndpointMoves"]'
+            github.event.label.name == 'test-containerd-config'  && '["TestContainerdConfig"]' ||
+            '["TestConformance", "TestUpgradeCluster", "TestDestroyCluster", "TestAPIEndpointMoves", "TestContainerdConfig"]'
           ) }}
     steps:
       - uses: actions/checkout@v7
