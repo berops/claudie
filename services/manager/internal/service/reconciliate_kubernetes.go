@@ -163,7 +163,7 @@ func KubernetesLowPriority(r KubernetesReconciliate) *spec.TaskEvent {
 	}
 
 	for np, config := range r.Diff.ContainerdConfigs {
-		return ScheduleReconcileContainerdConfig(r.Current, "", np, config)
+		return ScheduleReconcileContainerdConfig(r.Current, np, config)
 	}
 
 	// If this path gets hit, means that there are no changes to the counts
@@ -260,11 +260,10 @@ func ScheduleUpgradeKubernetesVersion(current, desired *spec.Clusters) *spec.Tas
 }
 
 // Schedules a task that will write the desired containerd drop-in on the nodes of the nodepool
-// and restart containerd on them one node at a time. The nodepool belongs to the load balancer
-// with the id lb, or to the kubernetes cluster if lb is empty.
+// and restart containerd on them one node at a time.
 //
 // The returned [spec.TaskEvent] does not point to or share any memory with the passed in state.
-func ScheduleReconcileContainerdConfig(current *spec.Clusters, lb, nodepool, config string) *spec.TaskEvent {
+func ScheduleReconcileContainerdConfig(current *spec.Clusters, nodepool, config string) *spec.TaskEvent {
 	inFlight := proto.Clone(current).(*spec.Clusters)
 
 	return &spec.TaskEvent{
@@ -280,7 +279,6 @@ func ScheduleReconcileContainerdConfig(current *spec.Clusters, lb, nodepool, con
 					},
 					Delta: &spec.Update_ReconcileContainerdConfig_{
 						ReconcileContainerdConfig: &spec.Update_ReconcileContainerdConfig{
-							Handle:   lb,
 							Nodepool: nodepool,
 							Config:   config,
 						},

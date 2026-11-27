@@ -275,10 +275,6 @@ func LoadBalancersLowPriority(r LoadBalancersReconciliate) *spec.TaskEvent {
 			)
 		}
 
-		for np, config := range modified.ContainerdConfigs {
-			return ScheduleReconcileContainerdConfig(r.Current, cid.Id, np, config)
-		}
-
 		for np, tpl := range modified.RollingUpdate {
 			opts := LoadBalancerNodePoolsOptions{
 				UseProxy: r.Proxy.CurrentUsed,

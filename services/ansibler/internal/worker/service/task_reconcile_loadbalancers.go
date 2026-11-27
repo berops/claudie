@@ -257,10 +257,6 @@ func setUpLoadbalancers(
 			return fmt.Errorf("failed to create key file(s) for static nodes : %w", err)
 		}
 
-		if err := writeContainerdConfigs(clusterDirectory, lbClusterId, lbnps); err != nil {
-			return err
-		}
-
 		if err := setUpNodeExporter(lbCluster, clusterDirectory, processLimit); err != nil {
 			return err
 		}

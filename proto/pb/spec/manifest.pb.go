@@ -4431,11 +4431,9 @@ func (x *Update_UpgradeVersion) GetVersion() string {
 // ReconcileContainerdConfig works with the [State] that is part of the [Update]
 // message, thus no "message consuming" needs to happen.
 type Update_ReconcileContainerdConfig struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Id of the load balancer of the nodepool, empty for a nodepool of the kubernetes cluster.
-	Handle        string `protobuf:"bytes,1,opt,name=handle,proto3" json:"handle,omitempty"`
-	Nodepool      string `protobuf:"bytes,2,opt,name=nodepool,proto3" json:"nodepool,omitempty"`
-	Config        string `protobuf:"bytes,3,opt,name=config,proto3" json:"config,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Nodepool      string                 `protobuf:"bytes,1,opt,name=nodepool,proto3" json:"nodepool,omitempty"`
+	Config        string                 `protobuf:"bytes,2,opt,name=config,proto3" json:"config,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4468,13 +4466,6 @@ func (x *Update_ReconcileContainerdConfig) ProtoReflect() protoreflect.Message {
 // Deprecated: Use Update_ReconcileContainerdConfig.ProtoReflect.Descriptor instead.
 func (*Update_ReconcileContainerdConfig) Descriptor() ([]byte, []int) {
 	return file_spec_manifest_proto_rawDescGZIP(), []int{17, 30}
-}
-
-func (x *Update_ReconcileContainerdConfig) GetHandle() string {
-	if x != nil {
-		return x.Handle
-	}
-	return ""
 }
 
 func (x *Update_ReconcileContainerdConfig) GetNodepool() string {
@@ -6122,7 +6113,7 @@ const file_spec_manifest_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\v2&.spec.Unreachable.UnreachableNodePoolsR\x05value:\x028\x01\"c\n" +
 	"\x06Create\x12\"\n" +
 	"\x03k8s\x18\x01 \x01(\v2\x10.spec.K8sclusterR\x03k8s\x125\n" +
-	"\rloadBalancers\x18\x02 \x03(\v2\x0f.spec.LBclusterR\rloadBalancers\"\xf1O\n" +
+	"\rloadBalancers\x18\x02 \x03(\v2\x0f.spec.LBclusterR\rloadBalancers\"\xd9O\n" +
 	"\x06Update\x12(\n" +
 	"\x05state\x18\x01 \x01(\v2\x12.spec.Update.StateR\x05state\x12'\n" +
 	"\x04none\x18\x02 \x01(\v2\x11.spec.Update.NoneH\x00R\x04none\x12W\n" +
@@ -6293,11 +6284,10 @@ const file_spec_manifest_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12B\n" +
 	"\x05value\x18\x02 \x01(\v2,.spec.Update.ReplacedTargetPools.TargetPoolsR\x05value:\x028\x01\x1a*\n" +
 	"\x0eUpgradeVersion\x12\x18\n" +
-	"\aversion\x18\x01 \x01(\tR\aversion\x1ag\n" +
-	"\x19ReconcileContainerdConfig\x12\x16\n" +
-	"\x06handle\x18\x01 \x01(\tR\x06handle\x12\x1a\n" +
-	"\bnodepool\x18\x02 \x01(\tR\bnodepool\x12\x16\n" +
-	"\x06config\x18\x03 \x01(\tR\x06config\x1a\xf8\r\n" +
+	"\aversion\x18\x01 \x01(\tR\aversion\x1aO\n" +
+	"\x19ReconcileContainerdConfig\x12\x1a\n" +
+	"\bnodepool\x18\x01 \x01(\tR\bnodepool\x12\x16\n" +
+	"\x06config\x18\x02 \x01(\tR\x06config\x1a\xf8\r\n" +
 	"\x0fKuberPatchNodes\x127\n" +
 	"\x03add\x18\x01 \x01(\v2%.spec.Update.KuberPatchNodes.AddBatchR\x03add\x12@\n" +
 	"\x06remove\x18\x02 \x01(\v2(.spec.Update.KuberPatchNodes.RemoveBatchR\x06remove\x1a3\n" +

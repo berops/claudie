@@ -122,10 +122,6 @@
         enabled: yes
         state: started
 
-    - name: Configure containerd
-      ansible.builtin.import_role:
-        name: ../../../ansible-playbooks/roles/containerd_config
-
     - name: Create directory '/var/lib/envoy' if it does not exist
       ansible.builtin.file:
           path: /var/lib/envoy

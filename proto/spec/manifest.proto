@@ -606,10 +606,8 @@ message Update {
   // ReconcileContainerdConfig works with the [State] that is part of the [Update]
   // message, thus no "message consuming" needs to happen.
   message ReconcileContainerdConfig {
-    // Id of the load balancer of the nodepool, empty for a nodepool of the kubernetes cluster.
-    string handle = 1;
-    string nodepool = 2;
-    string config = 3;
+    string nodepool = 1;
+    string config = 2;
   }
 
   // KuberPatchNodes is a message that once processed by the Kuber service
