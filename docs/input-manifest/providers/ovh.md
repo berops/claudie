@@ -17,7 +17,7 @@ type: Opaque
 ```
 
 !!! note "No native security groups"
-    The `ovh/ovh` provider does not expose security group or firewall resources. Claudie configures host-level `iptables` rules in cloud-init (the same approach as the CloudRift provider). KubeOne disables UFW during node bootstrap, but the iptables rules persist via `iptables-persistent`.
+    The `ovh/ovh` provider does not expose security group or firewall resources. Claudie configures host-level `iptables` rules in cloud-init (the same approach as the CloudRift provider). Ansibler disables UFW during node bootstrap, but the iptables rules persist via `iptables-persistent`.
 
 !!! note "Public IP by default"
     Every Claudie-provisioned OVH instance gets a routable public IPv4 (`network { public = true }`). Floating IPs are not modelled in v1 because the OVH provider does not yet expose a native floating-IP resource ([issue](https://github.com/ovh/terraform-provider-ovh/issues/1245)).

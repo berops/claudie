@@ -1,0 +1,35 @@
+---
+# Puts a node of the kubernetes cluster into the state Claudie needs: the Longhorn dependencies,
+# the pinned containerd and Kubernetes packages, raised node limits, no swap, kernel networking for
+# pods and containerd configured for kubeadm.
+# Validation is left to the kubeadm preflight checks.
+#
+# The package installation is the slowest part. It runs in the background while the rest of the
+# node is configured and is waited for before the packages are used.
+
+- name: Add the Kubernetes and Docker apt repositories
+  ansible.builtin.import_tasks: add-apt-repositories.yml
+
+- name: Start installing packages in the background
+  ansible.builtin.import_tasks: install-packages.yml
+
+# Everything up to wait-for-packages.yml runs while the packages are being installed.
+
+- name: Blacklist Longhorn block devices in multipath
+  ansible.builtin.import_tasks: configure-longhorn-multipath.yml
+
+- name: Configure node limits
+  ansible.builtin.import_tasks: configure-node-limits.yml
+
+- name: Configure the kernel for Kubernetes
+  ansible.builtin.import_tasks: configure-kernel.yml
+
+- name: Wait for the package installation
+  ansible.builtin.import_tasks: wait-for-packages.yml
+
+- name: Configure containerd and the kubelet
+  ansible.builtin.import_tasks: configure-containerd-kubelet.yml
+
+# A pending containerd restart has to happen before kubeadm talks to it.
+- name: Apply the containerd configuration
+  ansible.builtin.meta: flush_handlers

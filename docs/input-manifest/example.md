@@ -302,7 +302,7 @@ spec:
   #
   # clusters:
   #   - name:           # Name of the cluster. The name will be appended to the created node name.
-  #     version:        # Kubernetes version in semver scheme, must be supported by KubeOne.
+  #     version:        # Kubernetes version in semver scheme.
   #     network:        # Private network IP range.
   #     pools:          # Nodepool names which cluster will be composed of. User can reuse same nodepool specification on multiple clusters.
   #       control:      # List of nodepool names, which will be used as control nodes.

@@ -1,36 +1,38 @@
 - hosts: control
   gather_facts: false
   become: true
+  vars_files:
+    - ../vars/k8s.yaml
   tasks:
     - name: Reset ssh connection to allow changes to environment to affect 'current login user'
       # This playbook works with modified environment variables so kill any SSH connections that are
       # reused and force a new connection to be established.
       ansible.builtin.meta: reset_connection
 
-    - name: Filter out relevant files containing configurations for current node
-      # this setup can change in future kubeone versions.
-      # https://github.com/kubermatic/kubeone/blob/66d3281919890e7c43148d2f72140acdff168e73/pkg/scripts/kubeadm.go#L42
-      shell: |
-        grep -r -lE "{{inventory_hostname}}" /root/kubeone/cfg/*full* | xargs grep -lE "InitConfiguration|ClusterConfiguration"
-      register: grep_results
+    - name: Read the ClusterConfiguration of the cluster
+      ansible.builtin.command:
+        cmd: >-
+          kubectl --kubeconfig /etc/kubernetes/admin.conf --server https://{{ node_ip }}:{{ api_server_port }}
+          --namespace kube-system get configmap kubeadm-config --output jsonpath={.data.ClusterConfiguration}
+      register: kubeadm_cluster_configuration
+      changed_when: false
 
-    - name: fail if no file was found
-      fail:
-        msg: "No file with {{inventory_hostname}} was found"
-      when: grep_results.stdout_lines == []
-
-    - name: Select file
-      set_fact:
-        file: "{{grep_results.stdout_lines[0]}}"
-
-    - name: Chosen file with cluster configuration
-      ansible.builtin.debug:
-        var: file
-
-    # Update and restart static pods with new proxy envs.
+    # kubeadm copies the proxy envs of its own process (the new login environment, see the reset
+    # above) into the static pod manifests, the kubelet restarts the pods whose manifest changed.
+    # The InitConfiguration sets the advertise address as in roles/kubeadm_init and roles/kubeadm_join.
     - name: Update NO_PROXY and no_proxy in static pods /etc/kubernetes/manifests
-      ansible.builtin.shell: |
-        kubeadm init phase control-plane all --config {{file}}
+      ansible.builtin.command:
+        cmd: kubeadm init phase control-plane all --config /dev/stdin
+        stdin: |
+          apiVersion: {{ (kubeadm_cluster_configuration.stdout | from_yaml).apiVersion }}
+          kind: InitConfiguration
+          localAPIEndpoint:
+            advertiseAddress: {{ node_ip }}
+            bindPort: {{ api_server_port }}
+          nodeRegistration:
+            name: {{ inventory_hostname }}
+          ---
+          {{ kubeadm_cluster_configuration.stdout }}
 
 - hosts: all
   gather_facts: false

@@ -16,7 +16,6 @@ Claudie relies on all services to be interconnected. If any of these services fa
     NAME                                READY   STATUS              RESTARTS       AGE
     ansibler-6bf78cccf4-pnxrk           1/1     Running             0              3m20s
     claudie-operator-64c9554c66-rvtr5   1/1     Running             0              3m19s
-    kube-eleven-7bd47945c5-kbpd6        1/1     Running             0              3m19s
     kuber-64554ffffc-fkdj6              1/1     Running             0              3m19s
     make-bucket-job-4mxw7               0/1     Completed           0              3m19s
     manager-7696cb7f9-jfbwq             1/1     Running             0              3m19s
@@ -80,7 +79,7 @@ The `make-bucket-job` creates a bucket in the Silo datastore. If this job encoun
 We use Wireguard for secure node-to-node connectivity. However, it requires setting the MTU value to match that of Wireguard. While the host system interface MTU value is adjusted accordingly, networking issues may arise for services hosted on Claudie managed Kubernetes clusters. For example, we observed that the GitHub actions runner docker container had to be configured with an MTU value of `1380` to avoid network errors during `docker build` process.
 
 ### Hetzner and OCI node pools
-We're experiencing networking issues caused by the blacklisting of public IPs owned by Hetzner and OCI. This problem affects the Ansibler and Kube-eleven services, which fail when attempting to add GPG keys to access the Google repository for package downloads. Unfortunately, there's no straightforward solution to bypass this issue. The recommended approach is to allow the services to fail, remove failed cluster and attempt provisioning a new cluster with newly allocated IP addresses that are not blocked by Google.
+We're experiencing networking issues caused by the blacklisting of public IPs owned by Hetzner and OCI. This problem affects the Ansibler service, which fail when attempting to add GPG keys to access the Google repository for package downloads. Unfortunately, there's no straightforward solution to bypass this issue. The recommended approach is to allow the services to fail, remove failed cluster and attempt provisioning a new cluster with newly allocated IP addresses that are not blocked by Google.
 
 ## Resolving issues with Tofu state lock
 

@@ -121,6 +121,10 @@ func (d *Deleter) DeleteNodes(logger zerolog.Logger) error {
 			logger.
 				Warn().
 				Msgf("Node with name %s not found in cluster", master.K8sName)
+			// A missing Node object does not mean the etcd member is gone (e.g. kubectl delete node).
+			if err := d.deleteFromEtcd(logger, kubectl, master.K8sName); err != nil {
+				return fmt.Errorf("error while deleting nodes from etcd: %w", err)
+			}
 			continue
 		}
 

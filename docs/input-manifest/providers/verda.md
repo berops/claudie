@@ -18,7 +18,7 @@ type: Opaque
     Verda Cloud does not provide DNS resources. If you need load balancer DNS records for Verda clusters, use a separate DNS provider (e.g., Cloudflare, AWS Route53, GCP Cloud DNS).
 
 !!! warning "Choose a non-Docker Ubuntu image"
-    Verda offers Ubuntu images both with and without Docker pre-installed (e.g., `ubuntu-24.04-cuda-12.8-open-docker` vs `ubuntu-24.04-cuda-12.8-open`). Claudie uses KubeOne for cluster bootstrap, which installs and pins its own version of `containerd.io`. Pre-installed Docker on the image conflicts with this and causes apt-get to refuse the downgrade. **Always pick a Verda image without the `-docker` suffix.** Use `ubuntu-24.04` for non-GPU nodes and `ubuntu-24.04-cuda-12.8-open` (or similar) for GPU nodes.
+    Verda offers Ubuntu images both with and without Docker pre-installed (e.g., `ubuntu-24.04-cuda-12.8-open-docker` vs `ubuntu-24.04-cuda-12.8-open`). Ansibler service installs and pins its own version of `containerd.io`. Pre-installed Docker on the image conflicts with this and causes apt-get to refuse the downgrade. **Always pick a Verda image without the `-docker` suffix.** Use `ubuntu-24.04` for non-GPU nodes and `ubuntu-24.04-cuda-12.8-open` (or similar) for GPU nodes.
 
 !!! note "Credential handling"
     `clientid` is rendered as plaintext into the generated Terraform configuration (same pattern as Azure's `clientID`). `clientsecret` is written to a file in the cluster's working directory and read at apply time via the Terraform `file()` function, which keeps it out of the rendered HCL. Both end up in the Terraform state file (currently a side effect of the `data.http` IP-poll workaround for the upstream provider, removable once the provider is fixed). Claudie stores state in its Silo (S3-compatible) bucket, which is not encrypted at rest by default. If your threat model requires no plaintext credentials in state, treat the cluster's state bucket as the secret-bearing surface.
@@ -318,7 +318,7 @@ spec:
         count: 1
         # GPU instance type, e.g. 1× B200.
         serverType: 1B200.30V
-        # CUDA image without Docker (KubeOne installs its own containerd).
+        # CUDA image without Docker (Ansibler service installs its own containerd).
         image: "ubuntu-24.04-cuda-12.8-open"
         storageDiskSize: 100
 

@@ -5,17 +5,9 @@
     - distribution
     - distribution_release
   become: yes
-  vars:
-    # for node-limits tasks
-    nofile_soft: 65535
-    nofile_hard: 65535
-    file_max: 2097152
-    max_user_watches: 2097152
-    max_user_instances: 65535
-    max_queued_events: 65535
   tasks:
     - name: update node limits
-      include_tasks: ../../../ansible-playbooks/tasks/node-limits.yml
+      include_tasks: ../../../ansible-playbooks/roles/node-prereq/tasks/configure-node-limits.yml
 
     - name: Get dpkg architecture
       command: dpkg --print-architecture

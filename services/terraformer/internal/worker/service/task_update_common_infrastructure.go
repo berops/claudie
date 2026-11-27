@@ -63,7 +63,7 @@ func reconcileCommonInfrastructure(
 		cluster := kubernetes.K8Scluster{
 			ProjectName:       projectName,
 			Cluster:           state.K8S,
-			ExportPort6443:    clusters.FindAssignedLbApiEndpoint(state.LoadBalancers) == nil,
+			ExportPort6443:    clusters.FindLoadBalancerApiServerEndpoint(state.LoadBalancers) == nil,
 			SpawnProcessLimit: processLimit,
 		}
 
@@ -95,7 +95,7 @@ func reconcileCommonInfrastructure(
 		cluster := kubernetes.K8Scluster{
 			ProjectName:       projectName,
 			Cluster:           state.K8S,
-			ExportPort6443:    clusters.FindAssignedLbApiEndpoint(state.LoadBalancers) == nil,
+			ExportPort6443:    clusters.FindLoadBalancerApiServerEndpoint(state.LoadBalancers) == nil,
 			SpawnProcessLimit: processLimit,
 		}
 

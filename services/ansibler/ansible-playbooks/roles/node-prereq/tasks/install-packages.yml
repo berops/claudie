@@ -1,0 +1,19 @@
+---
+# Starts the package installation in the background, wait-for-packages.yml waits for it.
+
+- name: Select the packages to install
+  ansible.builtin.set_fact:
+    node_packages: "{{ longhorn_packages + kubernetes_packages }}"
+
+- name: Start installing packages
+  ansible.builtin.apt:
+    name: "{{ node_packages }}"
+    state: present
+    update_cache: true
+    install_recommends: false
+    allow_change_held_packages: true
+    allow_downgrade: true
+    lock_timeout: 600
+  async: 600
+  poll: 0
+  register: node_packages_job

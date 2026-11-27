@@ -54,7 +54,7 @@ func PatchKubeadmCM(logger zerolog.Logger, tracker Tracker) {
 	}()
 
 	var lbApiEndpoint string
-	if ep := clusters.FindAssignedLbApiEndpoint(action.Update.State.LoadBalancers); ep != nil {
+	if ep := clusters.FindLoadBalancerApiServerEndpoint(action.Update.State.LoadBalancers); ep != nil {
 		lbApiEndpoint = ep.Dns.Endpoint
 	}
 
@@ -71,7 +71,13 @@ func PatchKubeadmCM(logger zerolog.Logger, tracker Tracker) {
 		}
 	}
 
-	var err error
+	endpointHost, err := clusters.ControlPlaneEndpointHost(action.Update.State.K8S, action.Update.State.LoadBalancers)
+	if err != nil {
+		logger.Err(err).Msg("Failed to determine the control plane endpoint host")
+		tracker.Diagnostics.Push(err)
+		return
+	}
+
 	for i := range PatchKubeadmConfigRetries {
 		if i > 0 {
 			wait := time.Duration(150+rand.IntN(300)) * time.Millisecond
@@ -90,7 +96,7 @@ func PatchKubeadmCM(logger zerolog.Logger, tracker Tracker) {
 			n       int64
 		)
 
-		if patched, err = patchKubeadmConfigMap(action.Update.State.K8S.Kubeconfig, certSANs); err != nil {
+		if patched, err = patchKubeadmConfigMap(action.Update.State.K8S.Kubeconfig, certSANs, endpointHost); err != nil {
 			logger.Warn().Msgf("failed to patch kubeadm-config config map: %v", err)
 			continue
 		}
@@ -138,7 +144,7 @@ func PatchKubeadmCM(logger zerolog.Logger, tracker Tracker) {
 	logger.Info().Msgf("Kubeadm-config Config Map patched successfully")
 }
 
-func patchKubeadmConfigMap(kubeconfig string, certSANs []string) ([]byte, error) {
+func patchKubeadmConfigMap(kubeconfig string, certSANs []string, endpointHost string) ([]byte, error) {
 	k := kubectl.Kubectl{
 		Kubeconfig:        kubeconfig,
 		MaxKubectlRetries: 1,
@@ -180,7 +186,7 @@ func patchKubeadmConfigMap(kubeconfig string, certSANs []string) ([]byte, error)
 
 	apiServer["certSANs"] = certSANs
 	if _, ok := rawKubeadmConfig["controlPlaneEndpoint"]; ok {
-		rawKubeadmConfig["controlPlaneEndpoint"] = net.JoinHostPort(certSANs[0], fmt.Sprint(manifest.APIServerPort))
+		rawKubeadmConfig["controlPlaneEndpoint"] = net.JoinHostPort(endpointHost, fmt.Sprint(manifest.APIServerPort))
 	}
 
 	b, err := yaml.Marshal(rawKubeadmConfig)

@@ -1,0 +1,45 @@
+---
+# Waits for the package installation started by install-packages.yml and holds the Kubernetes packages.
+
+- name: Wait for the package installation
+  block:
+    - name: Wait for the package installation to finish
+      ansible.builtin.async_status:
+        jid: "{{ node_packages_job.ansible_job_id }}"
+      register: node_packages_result
+      until: node_packages_result.finished
+      retries: 600
+      delay: 1
+  # A background job can't be retried, a transient apt or network failure
+  # gets another chance in the foreground. A failure there fails the playbook.
+  rescue:
+    - name: Report the failed package installation
+      ansible.builtin.debug:
+        msg: >-
+          Installing packages failed on {{ inventory_hostname }}
+          ({{ ansible_failed_result.msg | default('no message') }}), retrying.
+
+    - name: Repair interrupted dpkg
+      ansible.builtin.import_tasks: repair-dpkg.yml
+
+    - name: Retry installing packages
+      ansible.builtin.apt:
+        name: "{{ node_packages }}"
+        state: present
+        update_cache: true
+        install_recommends: false
+        allow_change_held_packages: true
+        allow_downgrade: true
+        lock_timeout: 600
+      retries: 2
+      delay: 10
+
+# Unattended upgrades must not move the cluster to a new patch behind our back.
+- name: Hold Kubernetes packages
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop:
+    - kubelet
+    - kubeadm
+    - kubectl

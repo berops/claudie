@@ -13,7 +13,6 @@ mongodb/
 bin/
 
 # Kubernetes and cluster files
-kubeone.yaml
 cluster.tar.gz
 cluster-kubeconfig
 *.pem
@@ -40,5 +39,4 @@ services/terraformer/templates/
 
 # Claude
 .claude/
-CLAUDE.md
 *PLAN.md

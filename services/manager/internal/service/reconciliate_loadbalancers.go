@@ -230,7 +230,7 @@ func PostKubernetesDiff(r LoadBalancersReconciliate) *spec.TaskEvent {
 		return ScheduleDeleteLoadBalancer(r.Proxy.CurrentUsed, r.Current, lb)
 	}
 
-	if ep := clusters.FindAssignedLbApiEndpoint(r.Current.LoadBalancers.Clusters); ep != nil {
+	if ep := clusters.FindLoadBalancerApiServerEndpoint(r.Current.LoadBalancers.Clusters); ep != nil {
 		if r.Hc.Cluster.ControlNodesHave6443 {
 			return ScheduleControlNodesPort6443(r.Current, false)
 		}
@@ -908,29 +908,10 @@ func ScheduleReplaceDns(
 
 		pipeline = append(pipeline, &spec.Stage{StageKind: &ansStage})
 		pipeline = append(pipeline, &spec.Stage{
-			StageKind: &spec.Stage_KubeEleven{
-				KubeEleven: &spec.StageKubeEleven{
-					Description: &spec.StageDescription{
-						About:      "Reconciling kubernetes cluster",
-						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-					},
-					SubPasses: []*spec.StageKubeEleven_SubPass{
-						{
-							Kind: spec.StageKubeEleven_RECONCILE_CLUSTER,
-							Description: &spec.StageDescription{
-								About:      "Refreshing kubeconfig after API endpoint change",
-								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-							},
-						},
-					},
-				},
-			},
-		})
-		pipeline = append(pipeline, &spec.Stage{
 			StageKind: &spec.Stage_Kuber{
 				Kuber: &spec.StageKuber{
 					Description: &spec.StageDescription{
-						About:      "Updating Config Maps after endpoint change",
+						About:      "Updating cluster after endpoint change",
 						ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 					},
 					SubPasses: []*spec.StageKuber_SubPass{
@@ -942,17 +923,10 @@ func ScheduleReplaceDns(
 							},
 						},
 						{
-							Kind: spec.StageKuber_PATCH_KUBEADM,
+							Kind: spec.StageKuber_RECONCILE_CILIUM,
 							Description: &spec.StageDescription{
-								About:      "Updating Kubeadm cluster map with new endpoint",
+								About:      "Pointing Cilium at the new endpoint",
 								ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-							},
-						},
-						{
-							Kind: spec.StageKuber_CILIUM_RESTART,
-							Description: &spec.StageDescription{
-								About:      "Performing rollout restart for cilium after changes",
-								ErrorLevel: spec.ErrorLevel_ERROR_WARN,
 							},
 						},
 					},
@@ -1123,29 +1097,10 @@ func ScheduleMoveApiEndpoint(
 				},
 			},
 			{
-				StageKind: &spec.Stage_KubeEleven{
-					KubeEleven: &spec.StageKubeEleven{
-						Description: &spec.StageDescription{
-							About:      "Reconciling kubernetes cluster",
-							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-						},
-						SubPasses: []*spec.StageKubeEleven_SubPass{
-							{
-								Kind: spec.StageKubeEleven_RECONCILE_CLUSTER,
-								Description: &spec.StageDescription{
-									About:      "Refreshing kubeconfig after API endpoint change",
-									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-								},
-							},
-						},
-					},
-				},
-			},
-			{
 				StageKind: &spec.Stage_Kuber{
 					Kuber: &spec.StageKuber{
 						Description: &spec.StageDescription{
-							About:      "Updating Config Maps after endpoint change",
+							About:      "Updating cluster after endpoint change",
 							ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
 						},
 						SubPasses: []*spec.StageKuber_SubPass{
@@ -1157,17 +1112,10 @@ func ScheduleMoveApiEndpoint(
 								},
 							},
 							{
-								Kind: spec.StageKuber_PATCH_KUBEADM,
+								Kind: spec.StageKuber_RECONCILE_CILIUM,
 								Description: &spec.StageDescription{
-									About:      "Updating Kubeadm cluster map with new endpoint",
+									About:      "Pointing Cilium at the new endpoint",
 									ErrorLevel: spec.ErrorLevel_ERROR_FATAL,
-								},
-							},
-							{
-								Kind: spec.StageKuber_CILIUM_RESTART,
-								Description: &spec.StageDescription{
-									About:      "Performing rollout restart for cilium after changes",
-									ErrorLevel: spec.ErrorLevel_ERROR_WARN,
 								},
 							},
 						},

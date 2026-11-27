@@ -31,3 +31,17 @@
         {{- end }}
     {{- end }}
 {{- end }}
+
+{{- /* Only set by node addition (add-nodes.yml), a control node already part of the cluster in a
+       copy of its nodepool. Rendered with the same host lines as [control]. */}}
+{{- with $nodepool := .ExistingControlNode }}
+
+[existing_control_node]
+    {{- range $node := $nodepool.Nodes }}
+        {{- if $nodepool.GetDynamicNodePool }}
+{{ trimPrefix (printf "%s-" $.ClusterID) $node.Name }} ansible_user=root ansible_host={{ $node.Public }} ansible_port={{ nodeSshPort $nodepool $node }} private_ip={{ $node.Private }} ansible_ssh_private_key_file={{ $nodepool.Name }}.pem ansible_ssh_extra_args="-o IdentitiesOnly=yes"
+        {{- else }}
+{{ $node.Name }} ansible_user={{ $node.Username }} ansible_host={{ $node.Public }} ansible_port={{ nodeSshPort $nodepool $node }} private_ip={{ $node.Private }} ansible_ssh_private_key_file={{ $node.Name }}.pem ansible_ssh_extra_args="-o IdentitiesOnly=yes"
+        {{- end }}
+    {{- end }}
+{{- end }}

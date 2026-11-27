@@ -2,11 +2,13 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	v1beta "github.com/berops/claudie/api/crd/inputmanifest/v1beta1"
 	v1betatemplates "github.com/berops/claudie/api/crd/template-git-reference/v1beta1"
 	"github.com/berops/claudie/api/manifest"
+	managerclient "github.com/berops/claudie/services/manager/client"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 	wbhk "sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -20,13 +22,15 @@ import (
 
 // InputManifestValidator validates InputManifest containing the input-manifest
 type InputManifestValidator struct {
-	Logger logr.Logger
-	kc     client.Client
+	Logger  logr.Logger
+	kc      client.Client
+	manager managerclient.CrudAPI
 }
 
 // NewWebhook returns a new validation webhook for InputManifest resource
 func NewWebhook(
 	kc client.Client,
+	manager managerclient.CrudAPI,
 	scheme *runtime.Scheme,
 	port int,
 	dir,
@@ -40,7 +44,7 @@ func NewWebhook(
 
 	validator := admission.WithValidator[*v1beta.InputManifest](
 		scheme,
-		&InputManifestValidator{log, kc},
+		&InputManifestValidator{log, kc, manager},
 	)
 
 	hookServer.Register(path, validator)
@@ -95,7 +99,63 @@ func (v *InputManifestValidator) ValidateUpdate(ctx context.Context, oldObj, new
 		}
 	}
 
+	if err := v.validateVersionUpgrades(ctx, oldObj, newObj); err != nil {
+		return nil, err
+	}
+
 	return nil, v.validate(ctx, newObj)
+}
+
+// validateVersionUpgrades checks each cluster's kubernetes version against the previous
+// InputManifest and against the version the cluster actually runs.
+func (v *InputManifestValidator) validateVersionUpgrades(ctx context.Context, oldIm, im *v1beta.InputManifest) error {
+	previous := make(map[string]string)
+	for _, c := range oldIm.Spec.Kubernetes.Clusters {
+		previous[c.Name] = c.Version
+	}
+
+	for _, desired := range im.Spec.Kubernetes.Clusters {
+		prev, ok := previous[desired.Name]
+		if !ok {
+			continue
+		}
+
+		if err := manifest.ValidateVersionUpgrade(prev, desired.Version); err != nil {
+			return fmt.Errorf("kubernetes version check for cluster %q against the previous InputManifest failed: %w", desired.Name, err)
+		}
+	}
+
+	resp, err := v.manager.GetConfig(ctx, &managerclient.GetConfigRequest{Name: im.GetNamespacedNameDashed()})
+	if errors.Is(err, managerclient.ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("failed to read the current state of the clusters to validate their kubernetes versions: %w", err)
+	}
+
+	for _, desired := range im.Spec.Kubernetes.Clusters {
+		state := resp.Config.GetClusters()[desired.Name]
+
+		if current := state.GetCurrent().GetK8S().GetKubernetes(); current != "" {
+			if err := manifest.ValidateVersionUpgrade(current, desired.Version); err != nil {
+				return fmt.Errorf("kubernetes version check for cluster %q failed: %w", desired.Name, err)
+			}
+		}
+
+		// A cluster removed and re-added skips the previous-manifest check, so it could
+		// downgrade below an upgrade that is still pending. Check every queued upgrade.
+		for task := state.GetInFlight(); task != nil; task = task.GetLowerPriority() {
+			pending := task.GetTask().GetUpdate().GetUpgradeVersion().GetVersion()
+			if pending == "" {
+				continue
+			}
+			if err := manifest.ValidateVersionUpgrade(pending, desired.Version); err != nil {
+				return fmt.Errorf("cluster %q has a pending upgrade to %s: %w", desired.Name, pending, err)
+			}
+		}
+	}
+
+	return nil
 }
 
 // ValidateDelete defines the logic when a kubernetes obj resource is deleted

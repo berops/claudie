@@ -1,4 +1,4 @@
-.PHONY: proto manager terraformer ansibler kubeEleven test database minio containerimgs crd crd-apply controller-gen kind-load-images nats  kind-deploy
+.PHONY: proto manager terraformer ansibler test database minio containerimgs crd crd-apply controller-gen kind-load-images nats  kind-deploy
 
 # Enforce same version of protoc
 PROTOC_VERSION = "34.1"
@@ -22,10 +22,6 @@ terraformer:
 # Start Ansibler service on a local environment, exposed on port 50053
 ansibler:
 	GOLANG_LOG=debug PROMETHEUS_PORT=9094 go run ./services/ansibler/cmd/worker
-
-# Start Kube-eleven service on a local environment, exposed on port 50054
-kube-eleven:
-	GOLANG_LOG=debug PROMETHEUS_PORT=9095 go run ./services/kube-eleven/cmd/worker
 
 # Start Kuber service on a local environment, exposed on port 50057
 kuber:
@@ -103,7 +99,7 @@ kind-load-images:
 
 kind-deploy: kind-load-images
 	@echo " --- updating deployments in $(KIND_NAMESPACE) namespace --- "
-	@for svc in ansibler claudie-operator kube-eleven kuber manager terraformer; do \
+	@for svc in ansibler claudie-operator kuber manager terraformer; do \
 		echo " --- updating $$svc deployment --- "; \
 		kubectl set image deployment/$$svc $$svc=ghcr.io/berops/claudie/$$svc:$(REV) -n $(KIND_NAMESPACE); \
 	done

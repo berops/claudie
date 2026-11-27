@@ -1,0 +1,60 @@
+---
+# Joins the host into the cluster with the join credentials saved as facts on
+# existing_control_node by the kubeadm_join_credentials role. join_as_control_plane selects
+# whether the host joins as a control plane node or as a worker.
+#
+# The API server decides whether the host already joined, not a file on the host: files
+# outlive the cluster, so a reused node would skip the join. A control node is registered
+# before its etcd member and static pods exist, so it counts only once mark-control-plane
+# labeled it, after the etcd join.
+- name: Check whether the host already joined the cluster
+  ansible.builtin.command:
+    cmd: >-
+      kubectl --kubeconfig /etc/kubernetes/admin.conf get nodes -o name
+      --field-selector metadata.name={{ inventory_hostname }}
+      {{ '-l node-role.kubernetes.io/control-plane' if join_as_control_plane else '' }}
+  delegate_to: "{{ existing_control_node }}"
+  register: kubeadm_joined_node
+  changed_when: false
+
+- name: Wait for the control plane components of an already joined control node
+  when: join_as_control_plane and kubeadm_joined_node.stdout != ''
+  ansible.builtin.uri:
+    url: "{{ item }}"
+    validate_certs: false
+    use_proxy: false
+  loop:
+    - https://{{ node_ip }}:{{ api_server_port }}/livez
+    - https://127.0.0.1:10257/healthz
+    - https://127.0.0.1:10259/livez
+  register: kubeadm_control_plane_health
+  until: kubeadm_control_plane_health.status == 200
+  retries: 18
+  delay: 10
+
+- name: Join the cluster
+  when: kubeadm_joined_node.stdout == ''
+  block:
+    - name: Create directory for kubeadm configs
+      ansible.builtin.file:
+        path: /root/kubeadm
+        state: directory
+        mode: "0700"
+
+    - name: Write the kubeadm join config
+      ansible.builtin.template:
+        src: join.yaml.j2
+        dest: /root/kubeadm/join.yaml
+        mode: "0600"
+
+    # A previous attempt may have failed partway through, kubeadm join refuses to run over
+    # the leftover kubelet config, manifests and etcd data, so the node is reset first (a
+    # no-op on a fresh node). On a control plane node the reset also removes the etcd member
+    # added by the failed attempt, through the etcd members of the other control nodes.
+    - name: Reset a partially joined node
+      ansible.builtin.command:
+        cmd: kubeadm reset --force
+
+    - name: Run kubeadm join
+      ansible.builtin.command:
+        cmd: kubeadm join --config /root/kubeadm/join.yaml
