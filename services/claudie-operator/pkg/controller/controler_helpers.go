@@ -332,7 +332,7 @@ func constructInputManifest(
 
 	nodePools.Dynamic = slices.Clone(crd.Spec.NodePools.Dynamic)
 	for i := range nodePools.Dynamic {
-		nodePools.Dynamic[i].Containerd.Config = containerdConfigs[nodePools.Dynamic[i].Containerd.ConfigMap]
+		nodePools.Dynamic[i].Config = containerdConfigs[nodePools.Dynamic[i].ConfigMap]
 	}
 
 	nodePools.Static = make([]manifest.StaticNodePool, 0, len(crd.Spec.NodePools.Static))
@@ -382,7 +382,7 @@ func constructInputManifest(
 func readContainerdConfigs(ctx context.Context, kc client.Client, im *v1beta1manifest.InputManifest) (map[string]string, error) {
 	var names []string
 	for _, np := range im.Spec.NodePools.Dynamic {
-		names = append(names, np.Containerd.ConfigMap)
+		names = append(names, np.ConfigMap)
 	}
 	for _, np := range im.Spec.NodePools.Static {
 		names = append(names, np.ContainerdConfigMap)
