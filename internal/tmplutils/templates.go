@@ -2,16 +2,21 @@ package tmplutils
 
 import (
 	"bytes"
+	"cmp"
+	"encoding/json"
 	"fmt"
 	"net"
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"text/template"
 
 	"github.com/Masterminds/sprig/v3"
 	"github.com/berops/claudie/internal/nodepools"
+	"github.com/berops/claudie/proto/pb/spec"
+	k8sV1 "k8s.io/api/core/v1"
 )
 
 type Templates struct {
@@ -72,6 +77,7 @@ func LoadTemplate(tplFile string) (*template.Template, error) {
 	funcMap["hasExtension"] = HasExtension
 	funcMap["sshPort"] = nodepools.SSHPort
 	funcMap["nodeSshPort"] = nodepools.NodeSSHPort
+	funcMap["nodeTaints"] = NodeTaints
 	funcMap["sanitizeStringForResourceName"] = SanitizeStringForResourceName
 
 	tpl, err := template.New("").Funcs(funcMap).Parse(tplFile)
@@ -79,6 +85,27 @@ func LoadTemplate(tplFile string) (*template.Template, error) {
 		return nil, fmt.Errorf("failed to parse the template file : %w", err)
 	}
 	return tpl, nil
+}
+
+// NodeTaints returns the taints of the nodes of np as compact JSON
+// These are the taints that kuber sets after the join
+func NodeTaints(np *spec.NodePool) (string, error) {
+	taints := np.AllTaints(nil)
+	if taints == nil {
+		taints = []k8sV1.Taint{} // marshals as [], not null
+	}
+	slices.SortFunc(taints, func(a, b k8sV1.Taint) int {
+		return cmp.Or(
+			cmp.Compare(a.Key, b.Key),
+			cmp.Compare(a.Value, b.Value),
+			cmp.Compare(a.Effect, b.Effect),
+		)
+	})
+	b, err := json.Marshal(taints)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal the taints of nodepool %s: %w", np.Name, err)
+	}
+	return string(b), nil
 }
 
 func SanitizeStringForResourceName(s string) string {

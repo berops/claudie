@@ -3,6 +3,7 @@ package tmplutils
 import (
 	"testing"
 
+	"github.com/berops/claudie/proto/pb/spec"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -95,4 +96,26 @@ func TestHasExtension(t *testing.T) {
 	assert.False(t, HasExtension(tmp.Base, "Base3"))
 	tmp.Extension = nil
 	assert.False(t, HasExtension(tmp, "Extension"))
+}
+
+func TestNodeTaints(t *testing.T) {
+	compute := &spec.NodePool{
+		Name: "gpu",
+		Taints: []*spec.Taint{
+			{Key: "nvidia.com/gpu", Value: "true", Effect: "NoSchedule"},
+			{Key: "a.io/b", Value: "c", Effect: "NoExecute"},
+		},
+	}
+	got, err := NodeTaints(compute)
+	assert.NoError(t, err)
+	assert.Equal(t, `[{"key":"a.io/b","value":"c","effect":"NoExecute"},{"key":"nvidia.com/gpu","value":"true","effect":"NoSchedule"}]`, got)
+
+	control := &spec.NodePool{Name: "ctrl", IsControl: true}
+	got, err = NodeTaints(control)
+	assert.NoError(t, err)
+	assert.Equal(t, `[{"key":"node-role.kubernetes.io/control-plane","effect":"NoSchedule"}]`, got)
+
+	got, err = NodeTaints(&spec.NodePool{Name: "plain"})
+	assert.NoError(t, err)
+	assert.Equal(t, `[]`, got)
 }
