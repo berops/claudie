@@ -8,6 +8,9 @@ discovery:
       - {{ hostvars[existing_control_node].join_ca_cert_hash }}
 nodeRegistration:
   name: {{ inventory_hostname }}
+{% if node_taints is defined %}
+  taints: {{ (node_taints | from_json if node_taints is string else node_taints) | to_json }}
+{% endif %}
   kubeletExtraArgs:
     - name: node-ip
       value: {{ node_ip }}
