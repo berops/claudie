@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/berops/claudie/internal/clusters"
 	"github.com/berops/claudie/internal/fileutils"
 	"github.com/berops/claudie/internal/hash"
 	"github.com/berops/claudie/internal/nodepools"
@@ -21,7 +20,7 @@ import (
 const containerdConfigPlaybook = "../../ansible-playbooks/containerd-config.yml"
 
 // ReconcileContainerdConfig replaces the containerd drop-in on the nodes of the nodepool from the
-// delta of the update task, of the kubernetes cluster or of a load balancer, one node at a time.
+// delta of the update task, one node at a time.
 func ReconcileContainerdConfig(
 	logger zerolog.Logger,
 	projectName string,
@@ -41,24 +40,9 @@ func ReconcileContainerdConfig(
 	var (
 		state     = tracker.Task.GetUpdate().State
 		clusterID = state.K8S.ClusterInfo.Id()
-		nps       = state.K8S.ClusterInfo.NodePools
-		lb        *spec.LBcluster
 	)
 
-	if replace.Handle != "" {
-		idx := clusters.IndexLoadbalancerById(replace.Handle, state.LoadBalancers)
-		if idx < 0 {
-			err := fmt.Errorf("load balancer %q not found in cluster %s", replace.Handle, clusterID)
-			logger.Err(err).Msg("Failed to replace the containerd config")
-			tracker.Diagnostics.Push(err)
-			return
-		}
-		lb = state.LoadBalancers[idx]
-		clusterID = lb.ClusterInfo.Id()
-		nps = lb.ClusterInfo.NodePools
-	}
-
-	np := nodepools.FindByName(replace.Nodepool, nps)
+	np := nodepools.FindByName(replace.Nodepool, state.K8S.ClusterInfo.NodePools)
 	if np == nil {
 		err := fmt.Errorf("nodepool %q not found in cluster %s", replace.Nodepool, clusterID)
 		logger.Err(err).Msg("Failed to replace the containerd config")
@@ -67,19 +51,17 @@ func ReconcileContainerdConfig(
 	}
 	np.ContainerdConfig = replace.Config
 
-	if err := replaceContainerdConfig(clusterID, state.K8S.Network, np, processLimit); err != nil {
+	err := replaceContainerdConfig(clusterID, state.K8S.Network, np, processLimit)
+
+	update := tracker.Result.Update()
+	update.Kubernetes(state.K8S)
+	update.Commit()
+
+	if err != nil {
 		logger.Err(err).Msg("Failed to replace the containerd config")
 		tracker.Diagnostics.Push(err)
 		return
 	}
-
-	update := tracker.Result.Update()
-	if lb != nil {
-		update.Loadbalancers(lb)
-	} else {
-		update.Kubernetes(state.K8S)
-	}
-	update.Commit()
 
 	logger.Info().Msgf("Finished replacing the containerd config of nodepool %s", np.Name)
 }
