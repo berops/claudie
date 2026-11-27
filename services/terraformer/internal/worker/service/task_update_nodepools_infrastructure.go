@@ -58,6 +58,7 @@ func reconcileNodePoolsInfrastructure(
 			Msgf("Received update task with action %T while wanting to update nodepools, assuming the task was misscheduled, ignoring", action.Update.Delta)
 	}
 }
+
 func addKubernetesNodes(
 	logger zerolog.Logger,
 	projectName string,
