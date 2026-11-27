@@ -466,6 +466,10 @@ Dynamic nodepools are defined for cloud provider machines that Claudie is expect
 
   The taint prevents regular workloads from scheduling onto spot nodes. Only pods that explicitly declare a matching toleration will be scheduled there. For a complete usage example including the required pod toleration, see the spot section for [GCP](providers/gcp.md#spot-vm-support), [Verda](providers/verda.md#spot-instance-support), [AWS](providers/aws.md#spot-instance-support), [Azure](providers/azure.md#spot-instance-support), or [OCI](providers/oci.md#spot-instance-support).
 
+- `containerdConfigMap` [Containerd](#containerd)
+
+  Specifies the name of the ConfigMap used to configure containerd on all nodes in the nodepool. If omitted, the default configuration provided by the installed containerd version is used. Not supported for load balancer nodepools.
+
 ## Provider Spec
 
 Provider spec is an additional specification built on top of the data from any of the provider instance. Here are provider configuration examples for each individual provider: [aws](providers/aws.md), [azure](providers/azure.md), [cloudrift](providers/cloudrift.md), [exoscale](providers/exoscale.md), [gcp](providers/gcp.md), [cloudflare](providers/cloudflare.md), [hetzner](providers/hetzner.md), [oci](providers/oci.md), [ovh](providers/ovh.md), [vastai](providers/vastai.md) and [verda](providers/verda.md).
@@ -493,6 +497,28 @@ Autoscaler configuration on per nodepool basis. Defines the number of nodes, aut
 - `max`
 
   Maximum number of nodes in nodepool.
+
+## Containerd
+
+The containerd configuration of a nodepool is read from a ConfigMap in the namespace of the InputManifest and written on its nodes as a drop-in `/etc/containerd/conf.d/claudie.toml`. The ConfigMap holds the TOML as its only entry. Changing the ConfigMap, or removing `containerdConfigMap`, restarts containerd on the nodes of the nodepool one node at a time. Running containers keep running during the restart. A changed ConfigMap is picked up without re-applying the InputManifest.
+
+- Only nodes built by kubeadm load the drop-in.
+- Only Kubernetes nodepools are supported. Load balancer nodepools aren't, so don't set it on a nodepool used by a load balancer.
+- The drop-in uses containerd config version 3, e.g. `[plugins."io.containerd.cri.v1.images"]`.
+- Claudie owns `SystemdCgroup` and the CRI plugin. Don't override them in the drop-in.
+- An InputManifest is rejected when the ConfigMap is missing, doesn't hold exactly one entry, or the entry isn't valid TOML. A ConfigMap that becomes invalid later is reported as a `ProvisioningFailed` event on the InputManifest and the nodes keep their current drop-in.
+- Nodes added to the nodepool later get the drop-in when they are set up.
+- When containerd doesn't restart or one of its plugins fails to load with the new drop-in, the previous drop-in is restored on that node, the remaining nodes are left untouched and the workflow fails.
+
+Create the ConfigMap from your file and reference it from the nodepool:
+
+```bash
+kubectl create configmap gpu-containerd -n <inputmanifest-namespace> --from-file=config.toml
+```
+
+```yaml
+containerdConfigMap: gpu-containerd
+```
 
 ## Static
 
@@ -530,6 +556,10 @@ Static nodepools are defined for static machines which Claudie will not manage. 
 - `sshPort`
 
   SSH port used to connect to the static nodes in this node pool. This field is optional. If not specified, the default value of `22` is used.
+
+- `containerdConfigMap` [Containerd](#containerd)
+
+  Name of the ConfigMap with the containerd configuration for every node in the node pool. This field is optional. Not supported for load balancer nodepools.
 
 ## Static node
 

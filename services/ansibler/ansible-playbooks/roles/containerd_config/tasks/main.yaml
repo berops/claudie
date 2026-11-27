@@ -1,0 +1,53 @@
+---
+# The whole containerd configuration of a node: the default config for kubeadm and the
+# drop-in of the nodepool, on the nodes of the kubernetes cluster only, from
+# containerd/<inventory host>.toml next to the inventory on the controller.
+# Restarts containerd only when the configuration changed or an interrupted run left the marker.
+
+# Unchanged when an interrupted run left it.
+- name: Mark the containerd configuration as being applied
+  ansible.builtin.copy:
+    content: ""
+    dest: /etc/containerd/claudie-containerd-restart-required
+    mode: "0644"
+  register: containerd_config_marker
+
+# The containerd.io package ships a config.toml that disables the CRI plugin, it is replaced.
+- name: Set up the default containerd configuration
+  ansible.builtin.import_tasks: setup-default-config.yaml
+
+- name: Add the containerd config drop-in
+  ansible.builtin.import_tasks: add-dropin-config.yaml
+  when: containerd_config_dropin_src is file
+
+- name: Remove the containerd config drop-in
+  ansible.builtin.import_tasks: remove-dropin-config.yaml
+  when: containerd_config_dropin_src is not file
+
+# A drop-in that breaks containerd fails the play, the manager then rolls back to the previous one.
+- name: Apply the containerd configuration
+  ansible.builtin.systemd:
+    name: containerd
+    enabled: true
+    state: restarted
+  register: containerd_config_restarted
+  when: >-
+    containerd_config_marker is not changed
+    or containerd_config_default_written is changed
+    or containerd_config_dropin_added is changed
+    or containerd_config_dropin_removed is changed
+
+# containerd stays up when a plugin fails to load, the restart alone doesn't catch it.
+- name: Check that no containerd plugin failed to load
+  ansible.builtin.command: ctr plugins ls
+  register: containerd_config_plugins
+  changed_when: false
+  retries: 5
+  delay: 3
+  until: containerd_config_plugins.rc == 0 and containerd_config_plugins.stdout is not search('\\serror\\s*$', multiline=True)
+  when: containerd_config_restarted is changed
+
+- name: Remove the containerd configuration marker
+  ansible.builtin.file:
+    path: /etc/containerd/claudie-containerd-restart-required
+    state: absent

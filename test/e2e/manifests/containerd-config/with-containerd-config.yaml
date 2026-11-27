@@ -1,0 +1,44 @@
+apiVersion: claudie.io/v1beta1
+kind: InputManifest
+metadata:
+  name: containerd-config
+spec:
+  providers:
+    - name: hetzner-1
+      providerType: hetzner
+      templatesRef:
+        name: claudie-default-templates
+      secretRef:
+        name: hetzner-secret
+        namespace: e2e-secrets
+  nodePools:
+    dynamic:
+      - name: htz-ctrl
+        providerSpec:
+          name: hetzner-1
+          region: nbg1
+          zone: nbg1-dc3
+        count: 1
+        serverType: cpx22
+        image: ubuntu-24.04
+      - name: htz-cmpt
+        providerSpec:
+          name: hetzner-1
+          region: nbg1
+          zone: nbg1-dc3
+        count: 2
+        serverType: cpx22
+        image: ubuntu-24.04
+        storageDiskSize: 50
+        containerdConfigMap: compute-containerd
+
+  kubernetes:
+    clusters:
+      - name: containerd-config-cluster
+        version: "1.36.0"
+        network: 192.168.2.0/24
+        pools:
+          control:
+            - htz-ctrl
+          compute:
+            - htz-cmpt

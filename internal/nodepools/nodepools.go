@@ -129,14 +129,15 @@ func AppendDynamicNodes(dst *spec.NodePool, nodes []*spec.Node) {
 // passed in nodes are excluded from ones in the nodepool if present.
 func PartialCopyWithNodeExclusion(np *spec.NodePool, nodes []string) *spec.NodePool {
 	cp := &spec.NodePool{
-		Type:        nil,
-		Name:        np.Name,
-		Nodes:       []*spec.Node{},
-		IsControl:   np.IsControl,
-		Labels:      np.Labels,
-		Taints:      np.Taints,
-		Annotations: np.Annotations,
-		SshPort:     np.SshPort,
+		Type:             nil,
+		Name:             np.Name,
+		Nodes:            []*spec.Node{},
+		IsControl:        np.IsControl,
+		Labels:           np.Labels,
+		Taints:           np.Taints,
+		Annotations:      np.Annotations,
+		SshPort:          np.SshPort,
+		ContainerdConfig: np.ContainerdConfig,
 	}
 
 	for _, n := range np.Nodes {
@@ -180,14 +181,15 @@ func PartialCopyWithNodeExclusion(np *spec.NodePool, nodes []string) *spec.NodeP
 // need to change to reflect the filered nodes.
 func PartialCopyWithNodeFilter(np *spec.NodePool, nodes []string) *spec.NodePool {
 	cp := &spec.NodePool{
-		Type:        nil,
-		Name:        np.Name,
-		Nodes:       []*spec.Node{},
-		IsControl:   np.IsControl,
-		Labels:      np.Labels,
-		Taints:      np.Taints,
-		Annotations: np.Annotations,
-		SshPort:     np.SshPort,
+		Type:             nil,
+		Name:             np.Name,
+		Nodes:            []*spec.Node{},
+		IsControl:        np.IsControl,
+		Labels:           np.Labels,
+		Taints:           np.Taints,
+		Annotations:      np.Annotations,
+		SshPort:          np.SshPort,
+		ContainerdConfig: np.ContainerdConfig,
 	}
 
 	for _, n := range np.Nodes {
@@ -232,14 +234,15 @@ func PartialCopyWithNodeFilter(np *spec.NodePool, nodes []string) *spec.NodePool
 // to change to reflect the filtered nodes.
 func PartialCopyWithReplacedNodes(np *spec.NodePool, nodes []*spec.Node, nodeKeys map[string]string) *spec.NodePool {
 	cp := &spec.NodePool{
-		Type:        nil,
-		Name:        np.Name,
-		Nodes:       nodes,
-		IsControl:   np.IsControl,
-		Labels:      np.Labels,
-		Taints:      np.Taints,
-		Annotations: np.Annotations,
-		SshPort:     np.SshPort,
+		Type:             nil,
+		Name:             np.Name,
+		Nodes:            nodes,
+		IsControl:        np.IsControl,
+		Labels:           np.Labels,
+		Taints:           np.Taints,
+		Annotations:      np.Annotations,
+		SshPort:          np.SshPort,
+		ContainerdConfig: np.ContainerdConfig,
 	}
 
 	// To avoid issues with possible node counts, deep clone the node type itself.
