@@ -5,3 +5,4 @@
   ansible.builtin.file:
     path: /etc/containerd/conf.d/claudie.toml
     state: absent
+  register: containerd_config_dropin_removed

@@ -13,3 +13,4 @@
     src: "{{ containerd_config_dropin_src }}"
     dest: /etc/containerd/conf.d/claudie.toml
     mode: "0644"
+  register: containerd_config_dropin_added

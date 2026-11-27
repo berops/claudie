@@ -13,3 +13,4 @@
     dest: /etc/containerd/config.toml
     content: "{{ containerd_config_default_command.stdout | regex_replace('SystemdCgroup = false', 'SystemdCgroup = true') }}\n"
     mode: "0644"
+  register: containerd_config_default_written
