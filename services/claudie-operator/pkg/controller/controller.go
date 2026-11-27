@@ -218,11 +218,16 @@ func (r *InputManifestReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		staticNodeSecrets[s.Name] = nodes
 	}
 
-	containerdConfigs, err := readContainerdConfigs(ctx, r.kc, inputManifest)
-	if err != nil {
-		r.Recorder.Eventf(inputManifest, nil, corev1.EventTypeWarning, "ProvisioningFailed", "FetchingConfigMaps", "%v", err)
-		log.Error(err, "error while reading referenced configmaps", "will try again in", REQUEUE_AFTER_ERROR)
-		return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
+	// Deletion doesn't need the containerd configs, their ConfigMaps may already be gone.
+	var containerdConfigs map[string]string
+	if inputManifest.DeletionTimestamp.IsZero() {
+		var err error
+		containerdConfigs, err = readContainerdConfigs(ctx, r.kc, inputManifest)
+		if err != nil {
+			r.Recorder.Eventf(inputManifest, nil, corev1.EventTypeWarning, "ProvisioningFailed", "FetchingConfigMaps", "%v", err)
+			log.Error(err, "error while reading referenced configmaps", "will try again in", REQUEUE_AFTER_ERROR)
+			return ctrl.Result{RequeueAfter: REQUEUE_AFTER_ERROR}, nil
+		}
 	}
 
 	// Create a raw input manifest of manifest.Manifest and pull the referenced secrets into it
